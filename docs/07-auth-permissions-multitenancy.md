@@ -12,15 +12,15 @@ A career is **not** a security role. Job titles may inform role design but never
 User
  ├─ Organisation Membership A
  │    ├─ organisation roles / member overrides
- │    ├─ private CRM records owned by Organisation A
+ │    ├─ private CRM and commercial records owned by Organisation A
  │    └─ project memberships
  └─ Organisation Membership B
       ├─ different roles / overrides
-      ├─ different private CRM records
+      ├─ different private CRM and commercial records
       └─ different project memberships
 ```
 
-A CRM representation of a real-world person or business is not the same identity as a NuBlox user, organisation member or platform organisation.
+A CRM representation of a real-world person or business is not the same identity as a NuBlox user, organisation member or platform organisation. A commercial document references CRM identity but does not replace it with another editable customer master.
 
 ## 3. Effective authorisation
 
@@ -60,6 +60,12 @@ crm.manage
     ├─ crm.contact.manage
     ├─ crm.opportunity.manage
     └─ crm.activity.manage
+
+commercial.manage
+    ├─ commercial.estimate.manage
+    ├─ commercial.quotation.manage
+    ├─ commercial.quotation.issue
+    └─ commercial.quotation.response.record
 ```
 
 For an operation governed by a granular key, NuBlox resolves that granular key first. The umbrella is considered only when the granular key has no explicit member or active-role decision.
@@ -71,7 +77,7 @@ granular member deny
     > default deny
 ```
 
-An explicit granular deny therefore cannot be bypassed by `project.manage` or `crm.manage`.
+An explicit granular deny therefore cannot be bypassed by `project.manage`, `crm.manage` or `commercial.manage`.
 
 ## 4. Controlled account provisioning
 
@@ -111,7 +117,16 @@ The bootstrap flow uses the existing normalised identity/organisation/member/rol
 - `crm.opportunity.manage`
 - `crm.activity.manage`
 
-Planned domain namespaces include `document.*`, `commercial.*`, `invoice.*`, `inspection.*`, `asset.*`, `maintenance.*`, `report.*` and `admin.audit.*` as those application workflows are activated.
+### Commercial sales documents
+
+- `commercial.view`
+- `commercial.manage` — broad commercial sales-management umbrella
+- `commercial.estimate.manage`
+- `commercial.quotation.manage`
+- `commercial.quotation.issue`
+- `commercial.quotation.response.record`
+
+Planned domain namespaces still include `document.*`, broader `commercial.*`, `invoice.*`, `inspection.*`, `asset.*`, `maintenance.*`, `report.*` and `admin.audit.*` as those application workflows are activated.
 
 Permission keys are stable platform-policy identifiers. Careers and CRM/project classification roles do not grant application authority.
 
@@ -139,7 +154,7 @@ Every newly bootstrapped organisation receives Owner, Administrator, Manager, Fi
 
 ### Owner / Administrator
 
-Owner and Administrator retain the broad project and CRM management umbrellas plus the granular project and party/contact permissions already seeded by bootstrap:
+Owner and Administrator retain broad project, CRM and commercial umbrellas plus the currently implemented granular keys:
 
 ```text
 organisation.manage
@@ -156,13 +171,19 @@ crm.view
 crm.manage
 crm.party.manage
 crm.contact.manage
+commercial.view
+commercial.manage
+commercial.estimate.manage
+commercial.quotation.manage
+commercial.quotation.issue
+commercial.quotation.response.record
 ```
 
-Because `crm.manage` is an umbrella, Owner/Administrator may perform opportunity/activity management unless a granular member decision overrides it.
+Because `crm.manage` and `commercial.manage` are umbrellas, Owner/Administrator may exercise the corresponding granular operations unless an explicit granular member decision overrides the umbrella.
 
 ### Manager
 
-Manager receives operationally broad but deliberately granular authority:
+Manager receives operationally broad but deliberately granular project/CRM party-contact authority:
 
 ```text
 member.invite
@@ -178,18 +199,33 @@ crm.party.manage
 crm.contact.manage
 ```
 
-Manager does **not** receive `project.manage` or `crm.manage`. Newly introduced `crm.opportunity.manage` and `crm.activity.manage` are deliberately not auto-granted to Manager: organisations delegate them explicitly to the roles/members responsible for sales/opportunity work.
+Manager does **not** receive `project.manage` or `crm.manage`. `crm.opportunity.manage`, `crm.activity.manage` and the commercial permissions are deliberately not auto-granted to Manager; organisations delegate those responsibilities explicitly.
+
+### Finance/Commercial
+
+Finance/Commercial receives the first operational Package 003 commercial set:
+
+```text
+project.view
+crm.view
+commercial.view
+commercial.estimate.manage
+commercial.quotation.manage
+commercial.quotation.issue
+commercial.quotation.response.record
+```
+
+Finance/Commercial deliberately does **not** receive `commercial.manage`. This prevents future commercial permission families from silently expanding the role through umbrella fallback.
 
 ### Other standard roles
 
 ```text
-Finance/Commercial  → project.view + crm.view
 Member/Professional → project.view + crm.view
 Field Worker        → project.view
 Read Only           → project.view + crm.view
 ```
 
-The founding member receives Owner only. Existing custom roles holding broad umbrellas remain compatible unless an explicit granular exception overrides them.
+The founding member receives Owner only. Existing custom roles holding broad umbrellas remain compatible unless an explicit granular exception overrides them. Forward migrations for existing tenants and `OrganisationBootstrapService` for future tenants are guarded by exact standard-role integration tests.
 
 ## 8. Implemented CRM access model
 
@@ -286,7 +322,94 @@ The acting member is stored as the activity owner. Activity type, direction, sub
 
 Standalone non-opportunity activities and custom pipeline administration are not claimed implemented in this slice.
 
-## 9. Implemented project access model
+## 9. Implemented commercial access model
+
+Package 003 commercial records are private tenant-owned sales documents. The normal read boundary is:
+
+```text
+active NuBlox user
+AND active organisation membership
+AND commercial.view
+AND commercial record organisation_id = active tenant organisation_id
+```
+
+Mutation additionally requires the operation-specific granular permission or `commercial.manage` umbrella fallback plus document/version lifecycle policy.
+
+Direct estimate/quotation public IDs from another tenant are masked as not found.
+
+### Estimate authority
+
+```text
+commercial.estimate.manage
+    → create estimate from same-tenant CRM opportunity
+    → maintain draft estimate lines and cost components
+    → remove draft lines
+    → finalise a draft estimate version
+
+commercial.manage
+    → umbrella fallback
+```
+
+Estimate creation requires the CRM opportunity to be same-tenant and not lost/cancelled. The primary CRM opportunity customer remains the source identity; the estimate does not create another customer master.
+
+Estimate version 1 starts `draft`. Final/superseded versions are immutable through normal application writes. Finalisation requires at least one estimate line.
+
+### Quotation draft authority
+
+```text
+commercial.quotation.manage
+    → create quotation from a final estimate version
+    → maintain draft quotation header
+    → add/remove draft quotation lines
+    → apply/clear draft line tax snapshots
+    → add commercial narrative blocks
+
+commercial.manage
+    → umbrella fallback
+```
+
+Quotation creation retains the exact source estimate version through `quotation_version_estimates` and source estimate-item provenance on copied quotation lines. The customer remains the linked Package 002 CRM party.
+
+### Quotation issue authority
+
+```text
+commercial.quotation.issue
+    → verify draft/version integrity
+    → snapshot customer/contact identity and current primary addresses
+    → lock quotation version as issued
+    → create issue/recipient evidence
+
+commercial.manage
+    → umbrella fallback
+```
+
+Issue requires at least one line. Once issued, that quotation version is immutable through normal application writes. Issue-time party/address snapshots intentionally preserve what was sent even if CRM data later changes.
+
+This application boundary records issue evidence. It does not yet claim production outbound quotation email delivery.
+
+### Quotation response authority
+
+```text
+commercial.quotation.response.record
+    → record accepted/rejected/revision-requested/withdrawn-by-customer evidence
+
+commercial.manage
+    → umbrella fallback
+```
+
+Responses can be recorded only against an issued/locked quotation version. A second acceptance is rejected. Effective quotation status is derived from version state, response evidence and validity date rather than maintained as another editable status field.
+
+### Tax and calculation integrity
+
+Tenant tax configuration is resolved while a quotation is draft, then `quotation_item_taxes` snapshots applied rate, taxable amount and tax amount. Issued totals therefore do not require a mutable future tax rate for reconstruction.
+
+Authoritative estimate/quotation arithmetic uses scaled `BigInt` decimal calculations, not JavaScript binary floating-point math. Quantity uses scale 6; money/rates and percentages use scale 4; scale reduction uses half-up rounding.
+
+Current base totals exclude optional lines until an explicit customer option-selection model exists.
+
+Not yet implemented: estimate version-2 revision workflow, quotation version-2/supersession/withdrawal workflow, option selection, catalogue/tax administration UI, PDF rendering, production outbound quote delivery, accepted-quotation-to-project conversion or contract formation.
+
+## 10. Implemented project access model
 
 Project authority remains split into creation, viewing, lifecycle management, participant administration, team administration and participation response.
 
@@ -314,7 +437,7 @@ A same-organisation employee with `project.view` but no `project_members` row do
 
 Lifecycle mutation additionally requires the active organisation to own the project and the transition to be valid.
 
-## 10. Project participant and team administration
+## 11. Project participant and team administration
 
 Project collaboration reuses:
 
@@ -332,22 +455,25 @@ Project-role assignments are contextual metadata and never grant application per
 
 The service prevents removal of the final active scoped member with effective `project.team.manage` authority until another scoped project-team manager exists.
 
-## 11. Cross-organisation and CRM separation
+## 12. Cross-organisation and CRM separation
 
-Private CRM records are not automatically shared because the same external business later becomes a NuBlox project participant. Any future CRM↔platform-organisation linkage must be explicit, tenant-controlled and auditable.
+Private CRM records are not automatically shared because the same external business later becomes a NuBlox project participant. Commercial documents also remain private tenant records unless an explicit future sharing/project-conversion workflow says otherwise.
 
-## 12. Tenant-isolation rules
+Any future CRM↔platform-organisation linkage must be explicit, tenant-controlled and auditable.
+
+## 13. Tenant-isolation rules
 
 - Server derives tenant context from authenticated active membership.
 - Tenant-owned repository methods include tenant context; no record is fetched by internal ID alone where tenancy applies.
 - CRM party, opportunity, pipeline and activity reads/writes include the active tenant `organisation_id`.
+- Estimate, quotation, tax-snapshot, issue, party-snapshot and response reads/writes include the active tenant `organisation_id`.
 - A CRM party must never become a platform-global identity by inference.
 - Project reads require exact-member scope rather than organisation participation alone.
 - Cross-organisation project-team administration is denied.
 - Search, caches, exports, files and background jobs must preserve tenancy boundaries.
 - Platform support access requires a privileged auditable workflow.
 
-## 13. Session requirements
+## 14. Session requirements
 
 - secure HttpOnly cookies where cookie sessions are used;
 - Secure in production;
@@ -357,7 +483,7 @@ Private CRM records are not automatically shared because the same external busin
 - idle/absolute expiry policy;
 - MFA step-up where high-risk policy requires it.
 
-## 14. Permission, scope and provisioning testing
+## 15. Permission, scope and provisioning testing
 
 Automated release gates cover at least:
 
@@ -366,6 +492,7 @@ Automated release gates cover at least:
 - granular member deny overriding umbrella permission;
 - umbrella compatibility when no granular decision exists;
 - account invitation/bootstrap boundaries;
+- migrated/bootstrap standard-role parity;
 - CRM party/contact permission separation and subtype invariants;
 - CRM opportunity/activity permission separation;
 - opportunity cross-tenant party/pipeline rejection;
@@ -373,10 +500,19 @@ Automated release gates cover at least:
 - opportunity stage/outcome/closed-at behavior;
 - activity external-party and internal-member junction integrity;
 - default CRM pipeline first-use idempotency and audit evidence;
+- commercial read vs estimate/quotation/issue/response authority separation;
+- same-tenant opportunity requirement for estimate creation;
+- cross-tenant estimate and quotation public-ID masking;
+- fixed-point estimate sell/cost/margin arithmetic;
+- final estimate version immutability;
+- quotation creation only from a final estimate version;
+- CRM customer identity reuse rather than copied master data;
+- tax rate/amount snapshot arithmetic;
+- quotation issue locking and party/address snapshots;
+- post-issue mutation rejection;
+- response-before-issue rejection and single-acceptance semantics;
 - project exact-member scope and participant/team isolation;
 - project invitation-response exception and participant leave/removal behavior;
 - final scoped project-team-manager protection.
 
-The CRM opportunities/activity executable close-out passes **12 integration files / 50 real-MySQL tests**, all **9 production migrations** on MySQL 8.4.11, the unchanged **344 / 749 / 429** structural assertions, zero generated Kysely drift and `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head is required to pass the same gate before merge.
-
-Tenant isolation, controlled provisioning, explicit delegation and exact-member project scope remain release gates.
+The latest executable Package 003 candidate passes **13 integration files / 57 real-MySQL tests**, all **10 production migrations** on MySQL 8.4.11, the unchanged **344 / 749 / 429** structural assertions, zero generated Kysely drift and `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head is required to pass the same gate before merge.
