@@ -178,7 +178,7 @@ CREATE TABLE worker_careers (
         FOREIGN KEY (worker_id, organisation_id)
         REFERENCES workers (id, organisation_id)
         ON UPDATE RESTRICT
-        ON DELETE CASCADE,
+        ON DELETE RESTRICT,
     CONSTRAINT fk_worker_careers_career
         FOREIGN KEY (career_id)
         REFERENCES careers (id)
