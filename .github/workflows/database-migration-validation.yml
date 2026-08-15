@@ -1,4 +1,4 @@
-name: Database Migration, Type, Auth and Kernel Validation
+name: Database Migration, Type, Provisioning, Auth and Kernel Validation
 
 on:
   pull_request:
@@ -9,10 +9,7 @@ on:
       - 'app/.kysely-codegenrc.json'
       - 'app/vite.config.ts'
       - 'app/vitest.integration.config.ts'
-      - 'app/src/lib/server/**'
-      - 'app/src/lib/types/**'
-      - 'app/src/hooks.server.ts'
-      - 'app/src/routes/api/**'
+      - 'app/src/**'
       - '.github/workflows/database-migration-validation.yml'
   push:
     branches:
@@ -24,10 +21,7 @@ on:
       - 'app/.kysely-codegenrc.json'
       - 'app/vite.config.ts'
       - 'app/vitest.integration.config.ts'
-      - 'app/src/lib/server/**'
-      - 'app/src/lib/types/**'
-      - 'app/src/hooks.server.ts'
-      - 'app/src/routes/api/**'
+      - 'app/src/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
@@ -35,8 +29,8 @@ permissions:
   contents: read
 
 jobs:
-  migration-types-auth-kernel:
-    name: Dbmate migration, Kysely types, auth/kernel integration and Svelte check
+  migration-types-provisioning-auth-kernel:
+    name: Dbmate migration, Kysely types, provisioning/auth/kernel integration and Svelte check
     runs-on: ubuntu-latest
 
     services:
@@ -86,9 +80,9 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '342'
-          test "$fk_count" = '743'
-          test "$check_count" = '427'
+          test "$table_count" = '344'
+          test "$fk_count" = '749'
+          test "$check_count" = '429'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
@@ -99,13 +93,14 @@ jobs:
       - name: Verify generated types are committed
         run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts
 
-      - name: Run authentication and Platform Kernel integration tests
+      - name: Run provisioning, authentication and Platform Kernel integration tests
         working-directory: app
         env:
           DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
           DB_POOL_MAX: '5'
           BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
           BETTER_AUTH_URL: http://localhost:5173
+          EMAIL_DELIVERY_MODE: console
         run: pnpm test:integration
 
       - name: Type-check SvelteKit application
@@ -114,4 +109,5 @@ jobs:
           DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
           BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
           BETTER_AUTH_URL: http://localhost:5173
+          EMAIL_DELIVERY_MODE: console
         run: pnpm check
