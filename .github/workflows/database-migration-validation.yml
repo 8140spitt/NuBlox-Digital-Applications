@@ -1,0 +1,94 @@
+name: Database Migration and Type Validation
+
+on:
+  pull_request:
+    paths:
+      - 'database/migrations/**'
+      - 'app/package.json'
+      - 'app/pnpm-lock.yaml'
+      - 'app/.kysely-codegenrc.json'
+      - 'app/src/lib/server/db/**'
+      - '.github/workflows/database-migration-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'database/migrations/**'
+      - 'app/package.json'
+      - 'app/pnpm-lock.yaml'
+      - 'app/.kysely-codegenrc.json'
+      - 'app/src/lib/server/db/**'
+      - '.github/workflows/database-migration-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migration-types:
+    name: Dbmate migration, Kysely types and Svelte check
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install application dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply production migration stream
+        working-directory: app
+        env:
+          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
+        run: |
+          pnpm db:migrate
+          pnpm db:status
+
+      - name: Verify migrated structural baseline
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+        run: |
+          table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
+          fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
+          check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
+          echo "Migrated baseline: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
+          test "$table_count" = '337'
+          test "$fk_count" = '739'
+          test "$check_count" = '427'
+
+      - name: Regenerate database-derived Kysely types
+        working-directory: app
+        env:
+          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
+        run: pnpm db:types
+
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts
+
+      - name: Type-check SvelteKit application
+        working-directory: app
+        run: pnpm check

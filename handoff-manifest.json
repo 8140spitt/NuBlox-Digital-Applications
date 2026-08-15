@@ -4,6 +4,13 @@
   "career_count": 84,
   "domain_count": 16,
   "fixed_stack": ["Svelte 5", "SvelteKit", "MySQL/InnoDB"],
+  "database_tooling": {
+    "query_builder": "Kysely 0.29.5",
+    "node_driver": "mysql2 3.23.2",
+    "migration_tool": "Dbmate 2.34.1",
+    "type_generator": "kysely-codegen 0.20.0",
+    "schema_authority": "committed MySQL SQL migrations"
+  },
   "current_schema_package": "010-assets-maintenance",
   "schema_baseline_status": "001-010 complete; repeatable clean-build validation passed on MySQL 8.4.11",
   "schema_baseline_counts": {
@@ -18,6 +25,27 @@
     "validator": "database/validation/validate-baseline.sh",
     "repeatable_clean_builds": 2,
     "status": "passed"
+  },
+  "migration_baseline": {
+    "status": "created-and-clean-applied",
+    "file": "database/migrations/20260815140337_baseline_v1.sql",
+    "migration_tool": "Dbmate 2.34.1",
+    "mysql_version": "8.4.11",
+    "base_tables": 337,
+    "foreign_keys": 739,
+    "check_constraints": 427,
+    "rollback_policy": "irreversible-baseline-rebuild-non-production"
+  },
+  "architecture_decisions": [
+    "docs/adr/0001-database-query-and-migration-tooling.md"
+  ],
+  "database_runtime": {
+    "entrypoint": "app/src/lib/server/db/index.ts",
+    "connection": "app/src/lib/server/db/database.ts",
+    "configuration": "app/src/lib/server/db/config.ts",
+    "generated_types": "app/src/lib/server/db/generated/database.d.ts",
+    "codegen_config": "app/.kysely-codegenrc.json",
+    "migration_ci": ".github/workflows/database-migration-validation.yml"
   },
   "brand_docs": [
     "docs/branding/00-business-entity.md",
@@ -52,6 +80,9 @@
     "database/schema/008-site-quality-safety-integrity.sql",
     "database/schema/009-commercial-cost-control.sql",
     "database/schema/010-assets-maintenance.sql"
+  ],
+  "database_migrations": [
+    "database/migrations/20260815140337_baseline_v1.sql"
   ],
   "handoff_docs": [
     "docs/00-executive-summary.md",
