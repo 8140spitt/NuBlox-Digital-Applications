@@ -57,6 +57,7 @@ const betterAuthUrl = requireEnv('BETTER_AUTH_URL');
 const devTrustedOrigins = Array.from(
 	new Set([betterAuthUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'])
 );
+const runningUnderVitest = import.meta.env.MODE === 'test';
 
 export const authPool = createPool({
 	uri: requireEnv('DATABASE_URL'),
@@ -226,5 +227,9 @@ export const auth = betterAuth({
 			generateId: 'uuid'
 		}
 	},
-	plugins: [sveltekitCookies(getRequestEvent)]
+	// Server actions run inside a live SvelteKit request event, where this plugin is
+	// required to copy Better Auth's response cookies into event.cookies. Direct
+	// Vitest API tests intentionally run outside that request lifecycle and inspect
+	// returned Set-Cookie headers themselves, so the request-event plugin must not run.
+	plugins: runningUnderVitest ? [] : [sveltekitCookies(getRequestEvent)]
 });
