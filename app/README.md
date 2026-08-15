@@ -45,7 +45,7 @@ active organisation + active organisation_members proof
 trusted request locals
 ```
 
-`locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` is populated only when the selected organisation has been revalidated against that user’s active membership. A Better Auth identity linked to a pending NuBlox user is therefore not a trusted application actor.
+`locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` is populated only when the selected organisation has been revalidated against that user’s active membership.
 
 ## Controlled account provisioning
 
@@ -54,68 +54,11 @@ Better Auth sign-up remains fail-closed. Exactly one NuBlox provisioning intent 
 1. an existing-organisation invitation; or
 2. a self-service new-organisation bootstrap.
 
-If both provisioning cookies are present, sign-up is rejected as ambiguous. Entering either flow clears the other flow’s cookie.
-
-### Organisation invitation
-
-```text
-organisation invitation
-        ↓
-controlled Better Auth sign-up
-        ↓
-email verification
-        ↓
-auth_user_links
-        ↓
-NuBlox user + verified user email
-        ↓
-active organisation membership
-        ↓
-invitation role assignments
-```
-
 Invitation controls include random 256-bit tokens with only SHA-256 hashes persisted, seven-day expiry, re-invite revocation, verified-email activation, existing-user acceptance, intended role assignment and audit evidence.
 
-The invitation API is `POST /api/organisations/invitations`. Invitation lifecycle requires `member.invite` or `organisation.manage`. Attaching roles additionally requires member-management authority and is subject to the delegation ceiling.
+`/start` provides self-service first/additional organisation creation while retaining fail-closed account creation. The bootstrap token is short-lived HMAC-SHA256 pre-sign-up authorisation stored in an HttpOnly cookie; durable state reuses the normalised NuBlox domain model.
 
-### Organisation bootstrap
-
-`/start` provides self-service first-organisation creation while retaining fail-closed account creation.
-
-For a new customer:
-
-```text
-/start details
-   ↓
-HMAC-SHA256 signed bootstrap token
-   ↓
-Better Auth sign-up
-   ↓
-pending users row + unverified user_email
-auth_user_links
-pending organisation
-invited owner membership
-standard roles + Owner role assignment
-   ↓
-verified email
-   ↓
-active user + verified email
-active organisation + active Owner membership
-```
-
-The bootstrap token is short-lived and stored in an HttpOnly cookie. It is only pre-sign-up authorisation; there is no bootstrap-intent table. Durable pre-verification state uses existing Package 001 lifecycle values, and `getSessionActor()` resolves only an active NuBlox user.
-
-New organisations receive seven standard role templates:
-
-- Owner
-- Administrator
-- Manager
-- Finance/Commercial
-- Member/Professional
-- Field Worker
-- Read Only
-
-Stable defaults currently include:
+New organisations receive seven standard role templates. Stable defaults currently include:
 
 ```text
 Owner         → organisation.manage + member.invite + member.manage
@@ -128,15 +71,11 @@ Finance/Commercial, Member/Professional, Field Worker, Read Only
               → project.view
 ```
 
-A project permission grant does not itself expose a project; active member-level project scope is still required. The founding member is assigned only the Owner role.
-
-An already active NuBlox user can also visit `/start` to create another organisation without duplicating identity.
+A project permission grant does not itself expose a project; active member-level project scope is still required.
 
 ## Transactional email boundary
 
-`src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral.
-
-`EMAIL_DELIVERY_MODE=console` is for local development and integration tests only. A production provider adapter remains a separate integration decision.
+`src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral. `EMAIL_DELIVERY_MODE=console` is for local development and integration tests only.
 
 ## Application access
 
@@ -144,11 +83,11 @@ The current account/application UI includes:
 
 - `/start` — first/additional organisation creation;
 - `/signin` — Better Auth email/password sign-in;
-- `/invite/[token]` — invitation acceptance/account creation;
+- `/invite/[token]` — organisation invitation acceptance/account creation;
 - `/select-organisation` — active organisation membership selector;
 - `/dashboard` — protected organisation-scoped entry point;
-- `/projects` — member-scoped project portfolio and project creation;
-- `/projects/[projectPublicId]` — project workspace and lifecycle controls;
+- `/projects` — member-scoped project portfolio, project creation and project invitation inbox;
+- `/projects/[projectPublicId]` — project workspace, participant/team administration and lifecycle controls;
 - `/organisation` — permission-aware organisation administration workspace.
 
 The `(app)` route-group server layout rejects unauthenticated users and redirects authenticated users without a verified tenant to organisation selection.
@@ -167,11 +106,11 @@ organisation.manage → role definitions + permission grants + full admin author
 
 The domain layer enforces delegation ceilings, manager protection, self-mutation restrictions, cross-tenant rejection and last-manager lockout protection.
 
-## Project workspace
+## Project workspace and collaboration
 
-`src/lib/server/projects/project-workspace-service.ts` is the permission-aware application layer over the Platform Kernel project service.
+`src/lib/server/projects/project-workspace-service.ts` is the permission-aware application layer over the Platform Kernel project service. `project-team-service.ts` and `project-team-repository.ts` add collaboration administration while reusing the existing Package 001 project structures.
 
-Stable project permission keys are:
+Stable project permission keys remain:
 
 ```text
 project.create
@@ -179,7 +118,7 @@ project.view
 project.manage
 ```
 
-The effective project access model is intentionally conjunctive:
+The effective in-project access model is conjunctive:
 
 ```text
 active NuBlox user
@@ -190,18 +129,43 @@ AND active project_members membership
 AND lifecycle/ownership policy
 ```
 
-`/projects` lists only projects for which the current member has active project membership. A same-organisation user with `project.view` but no `project_members` row sees no project. `/projects/[projectPublicId]` likewise masks a non-member project as not found.
+`/projects` lists only projects for which the exact current member has active project membership. A same-organisation user with `project.view` but no `project_members` row sees no project. Direct non-member project lookups are masked as not found.
 
-Project creation requires `project.create` and delegates to the existing `ProjectService.createProject()` transaction, which creates:
+Project creation requires `project.create` and atomically creates the project, owning-organisation participation, creator project membership and audit evidence. Lifecycle management requires scoped `project.manage` and remains owner-only.
 
-- the project in `proposed` state;
-- owning-organisation project participation;
-- creator project membership;
-- append-only `project.created` audit evidence.
+### Project organisation invitations
 
-Lifecycle management requires `project.manage` plus active member-level project scope. It remains owner-only even if an external participating organisation holds `project.manage`. The existing lifecycle state machine and optimistic concurrency guard remain authoritative.
+The owning organisation can invite an active NuBlox organisation using its exact organisation public ID and assign one or more contextual project roles. The workflow intentionally does not provide an unrestricted organisation search directory.
 
-The current workspace displays participant organisations but deliberately does not yet expose participant-administration writes. Controlled information, commercial, site and asset areas are shown as subsequent application-module entry points rather than being claimed implemented.
+An invited organisation is not yet permitted to open the project. A member who effectively holds organisation-level `project.manage` may accept or decline from the `/projects` invitation inbox **before project scope exists**. This is the deliberate exception to the normal project-scoped `project.manage` evaluation:
+
+```text
+pending project invitation
+AND active organisation membership
+AND organisation-level project.manage
+        ↓ accept
+active project_organisations participation
+AND accepting member project_members scope
+```
+
+After acceptance, normal project-scope rules apply. Decline is preserved as explicit `project_organisations.status = declined`, and a later owner re-invitation can reactivate the collaboration request.
+
+Only the owning organisation may invite/re-invite, revoke/remove participant organisations, or change organisation-level project-role assignments. Removal terminates every active `project_members` scope belonging to the removed organisation.
+
+### Project team administration
+
+Each active participating organisation manages only **its own organisation members** within the project. A scoped project manager may:
+
+- add an active member from the same organisation to `project_members`;
+- remove that organisation member from the project;
+- assign/update contextual member project roles;
+- leave the project when the active organisation is not the owner.
+
+Cross-organisation member IDs are rejected by the service/repository boundary and by the underlying composite foreign keys.
+
+Project-role assignments in `project_role_types`, `project_organisation_roles` and `project_member_roles` describe delivery context only. They do **not** grant permissions. Effective authority continues to come from NuBlox organisation roles/overrides plus active project scope.
+
+The service prevents removal of the final active scoped member in an organisation who effectively holds `project.manage`; another scoped project manager must exist first. Leaving a project or owner removal terminates all active member scope for that participant while preserving participation history.
 
 ## Permission resolution
 
@@ -214,7 +178,7 @@ explicit member deny
     > default deny
 ```
 
-`decideMany()` resolves multiple organisation permissions efficiently. When a `projectId` is supplied, permission resolution additionally verifies project participation and member scope.
+`decideMany()` resolves multiple organisation permissions efficiently. When a `projectId` is supplied, permission resolution additionally verifies active participant and exact-member project scope.
 
 ## Implemented Platform Kernel foundation
 
@@ -254,4 +218,4 @@ pnpm check
 pnpm test:integration
 ```
 
-The permanent CI gate applies the migration stream to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs project-workspace/bootstrap/organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The project-workspace executable close-out passed **7 integration files / 28 tests** and `svelte-check` with **0 errors / 0 warnings**; the final documentation-synchronised branch head is validated by the same gate before merge.
+The permanent CI gate applies all six current migrations to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs project-team/project-workspace/bootstrap/organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The project-participants/team executable close-out passed **8 integration files / 35 tests** and `svelte-check` with **0 errors / 0 warnings**; the final documentation-synchronised branch head is validated by the same gate before merge.
