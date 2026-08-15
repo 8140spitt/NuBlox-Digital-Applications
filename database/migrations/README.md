@@ -91,9 +91,37 @@ The migration replaces one existing `CHECK` constraint with the broadened lifecy
 - **749 foreign keys**
 - **429 `CHECK` constraints**
 
+### `20260815214500_crm_contacts_permissions.sql`
+
+Seeds stable application policy identifiers for the Package 002 CRM surface:
+
+- `crm.view` — view tenant-owned CRM organisations, people, primary contact methods and contact relationships;
+- `crm.manage` — create and maintain tenant-owned parties, business-role assignments, primary contact methods and organisation contacts.
+
+Existing standard organisation roles receive:
+
+```text
+Owner, Administrator, Manager
+    → crm.view + crm.manage
+
+Finance/Commercial, Member/Professional, Read Only
+    → crm.view
+
+Field Worker
+    → no CRM grant by default
+```
+
+`OrganisationBootstrapService` applies the same defaults to future organisations, and the bootstrap integration suite verifies that parity. CRM grants never broaden tenancy: Package 002 records remain explicitly scoped by `parties.organisation_id` and related composite tenant keys.
+
+This migration is data-only. After all seven current migrations the application structure remains:
+
+- **344 base tables**
+- **749 foreign keys**
+- **429 `CHECK` constraints**
+
 ## Current migration validation
 
-The project-participants/team executable close-out applied all **six** production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **8 integration files / 35 real-MySQL tests**, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is required to pass the same gate before merge.
+The CRM executable close-out applied all **seven** production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **9 integration files / 41 real-MySQL tests**, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is required to pass the same gate before merge.
 
 ## Migration rules
 
