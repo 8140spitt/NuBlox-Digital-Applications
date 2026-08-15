@@ -72,6 +72,10 @@ This migration inserts or reactivates permission catalogue data only. It creates
 
 These permission keys are platform policy identifiers. Organisations grant them through their own `organisation_roles`/`role_permissions`; career titles do not implicitly confer administrative authority.
 
+## Current migration validation
+
+The organisation-administration close-out applied all four production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **5 integration files / 20 real-MySQL tests**, and passed `svelte-check` with zero errors and zero warnings.
+
 ## Migration rules
 
 - New migrations use Dbmate timestamp filenames.
