@@ -36,6 +36,13 @@ The baseline fails validation if any of the following occurs:
 
 The workflow also reports the resulting foreign-key and `CHECK`-constraint counts for traceability.
 
+## Validation corrections discovered
+
+The clean MySQL 8.4 execution pass is also used to correct pre-production DDL defects at their source. Corrections already identified include:
+
+- generated-column uniqueness guards in Packages 001 and 006 require `RESTRICT` rather than cascading delete actions on their generated-column base keys;
+- Package 007 object-storage bucket/key locators are ASCII/binary identifiers so their full 255/1000-character unique locator remains within the InnoDB index-width limit while user-facing filenames and document metadata remain Unicode.
+
 ## CI
 
 `.github/workflows/database-baseline-validation.yml` runs this validator using the official `mysql:8.4` container on schema/validation pull requests and on relevant changes merged to `main`.
