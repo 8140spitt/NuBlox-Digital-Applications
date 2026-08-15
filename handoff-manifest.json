@@ -85,7 +85,24 @@
     "create_policy": "project.create plus active organisation membership; creation atomically creates owner participation, creator project membership and audit evidence",
     "lifecycle_policy": "project.manage plus active project scope plus owning-organisation context plus valid lifecycle transition",
     "external_participant_policy": "explicitly scoped external participants may view but cannot mutate owner project lifecycle",
-    "participant_administration": "not implemented in this slice; requires a separate permission-controlled workflow"
+    "participant_administration": "implemented by ProjectTeamService using project.manage plus explicit ownership/self-organisation policy"
+  },
+  "project_collaboration": {
+    "migration": "database/migrations/20260815211600_project_participants_team.sql",
+    "repository": "app/src/lib/server/projects/project-team-repository.ts",
+    "service": "app/src/lib/server/projects/project-team-service.ts",
+    "integration_tests": "app/src/lib/server/projects/project-team-administration.integration.test.ts",
+    "invitation_inbox": "app/src/routes/(app)/projects/+page.svelte",
+    "workspace_administration": "app/src/routes/(app)/projects/[projectPublicId]/+page.svelte",
+    "participant_lifecycle": ["invited", "active", "suspended", "left", "removed", "declined"],
+    "invitation_policy": "owning organisation invites an active NuBlox organisation by exact public_id; no unrestricted organisation directory",
+    "invitation_response_policy": "active invited-organisation member with organisation-level project.manage may accept or decline before project_members scope exists",
+    "acceptance_policy": "acceptance atomically activates project_organisations participation and creates/reactivates accepting member project_members scope",
+    "participant_management_policy": "only owning organisation may invite/remove participants or manage project_organisation_roles",
+    "team_management_policy": "scoped project.manage permits a participant organisation to manage only its own active organisation members on the project",
+    "role_policy": "project_role_types/project_organisation_roles/project_member_roles are contextual metadata and never grant permissions",
+    "lockout_policy": "final active scoped member with effective project.manage cannot be removed until another scoped project manager exists",
+    "leave_policy": "non-owner participant may leave; leave/removal terminates all active project_members scope for that organisation while preserving history"
   },
   "current_schema_package": "010-assets-maintenance",
   "schema_baseline_status": "001-010 complete; repeatable clean-build validation passed on MySQL 8.4.11",
@@ -130,7 +147,7 @@
     "migration_ci": ".github/workflows/database-migration-validation.yml"
   },
   "application_implementation": {
-    "phase": "project-creation-project-workspace",
+    "phase": "project-participants-team-administration",
     "status": "implemented-and-integration-tested",
     "tenant_actor_context": "app/src/lib/server/auth/tenant-actor-context.ts",
     "auth_server": "app/src/lib/server/auth/better-auth.ts",
@@ -167,6 +184,8 @@
     "project_repository": "app/src/lib/server/projects/project-repository.ts",
     "project_service": "app/src/lib/server/projects/project-service.ts",
     "project_workspace_service": "app/src/lib/server/projects/project-workspace-service.ts",
+    "project_team_repository": "app/src/lib/server/projects/project-team-repository.ts",
+    "project_team_service": "app/src/lib/server/projects/project-team-service.ts",
     "project_portfolio_route": "app/src/routes/(app)/projects/+page.server.ts",
     "project_portfolio_ui": "app/src/routes/(app)/projects/+page.svelte",
     "project_workspace_route": "app/src/routes/(app)/projects/[projectPublicId]/+page.server.ts",
@@ -180,8 +199,9 @@
     "role_delegation_integration_tests": "app/src/lib/server/organisations/role-delegation.integration.test.ts",
     "organisation_bootstrap_integration_tests": "app/src/lib/server/organisations/organisation-bootstrap.integration.test.ts",
     "project_workspace_integration_tests": "app/src/lib/server/projects/project-workspace.integration.test.ts",
+    "project_team_integration_tests": "app/src/lib/server/projects/project-team-administration.integration.test.ts",
     "integration_test_config": "app/vitest.integration.config.ts",
-    "integration_ci_status": "7 integration files / 28 real-MySQL tests passed; 344/749/429 structure unchanged; Kysely drift clean; Svelte check 0 errors / 0 warnings before documentation close-out",
+    "integration_ci_status": "8 integration files / 35 real-MySQL tests passed; 344/749/429 structure unchanged; Kysely drift clean; Svelte check 0 errors / 0 warnings before documentation close-out",
     "validated_behaviours": [
       "organisation-user-member active tenant tuple verification",
       "non-participant project invisibility",
@@ -231,7 +251,16 @@
       "project.manage plus active owner project scope permits valid lifecycle mutation",
       "duplicate project numbers are rejected at the application boundary",
       "external participating organisation with explicit project scope can view shared project",
-      "external participating organisation cannot mutate owning-organisation project lifecycle"
+      "external participating organisation cannot mutate owning-organisation project lifecycle",
+      "project invitation does not grant project visibility before acceptance",
+      "project invitation may be explicitly declined and later re-invited",
+      "project invitation acceptance atomically establishes active participation and accepting-member project scope",
+      "participant project manager may add only active members from the same organisation",
+      "cross-organisation project-member public IDs are rejected",
+      "project roles remain contextual metadata and do not replace permission authority",
+      "final scoped project manager removal is blocked until another scoped project manager exists",
+      "non-owner participant organisation may leave and all active member scope is terminated",
+      "owning organisation removal terminates all active project-member scope for the participant"
     ]
   },
   "brand_docs": [
@@ -273,7 +302,8 @@
     "database/migrations/20260815145430_authentication_boundary.sql",
     "database/migrations/20260815151500_account_provisioning.sql",
     "database/migrations/20260815161900_organisation_administration_permissions.sql",
-    "database/migrations/20260815203700_project_workspace_permissions.sql"
+    "database/migrations/20260815203700_project_workspace_permissions.sql",
+    "database/migrations/20260815211600_project_participants_team.sql"
   ],
   "handoff_docs": [
     "docs/00-executive-summary.md",

@@ -50,7 +50,7 @@ explicit member deny
     > default deny
 ```
 
-For project-scoped operations an organisation permission is necessary but insufficient. The implemented project boundary additionally requires active organisation participation and the exact organisation member to have active `project_members` scope.
+For normal in-project operations an organisation permission is necessary but insufficient. The implemented project boundary additionally requires active organisation participation and the exact organisation member to have active `project_members` scope.
 
 ## 4. Controlled account provisioning
 
@@ -171,7 +171,7 @@ Field Worker        → project.view
 Read Only           → project.view
 ```
 
-The project grants only establish organisation-level authority. `project.view` and `project.manage` remain ineffective for a particular project unless active member-level project scope also exists. The founding member receives **Owner only**.
+The project grants only establish organisation-level authority. `project.view` and `project.manage` remain ineffective for a particular project unless active member-level project scope also exists, except for the explicit invitation-response boundary described below. The founding member receives **Owner only**.
 
 ## 8. Implemented project access model
 
@@ -180,10 +180,10 @@ The first application project boundary uses three stable permissions:
 ```text
 project.create → create a project owned by the active organisation
 project.view   → discover/open projects where the member has explicit project scope
-project.manage → lifecycle administration where member scope and ownership policy permit
+project.manage → project administration where scope and contextual policy permit
 ```
 
-The effective read rule is:
+The effective normal read rule is:
 
 ```text
 active NuBlox user
@@ -209,14 +209,66 @@ AND requested lifecycle transition is valid
 
 An external participating organisation may therefore view a shared project when explicitly scoped, but cannot change the owning organisation's project lifecycle merely because one of its members has `project.manage`.
 
-Project participant-administration writes are intentionally not part of the first project workspace slice and require a separate permission-controlled workflow.
+## 9. Implemented project participant and team administration
 
-## 9. Project roles
+Project collaboration reuses the Package 001 structures:
 
-Project roles may include:
+```text
+projects
+  ├─ project_organisations
+  │    └─ project_organisation_roles
+  └─ project_members
+       └─ project_member_roles
+```
+
+### Organisation invitation boundary
+
+Only the project owning organisation may invite/re-invite, revoke/remove another participant organisation or manage organisation-level project roles. Invitations identify the target by exact NuBlox organisation `public_id`; the application does not expose an unrestricted organisation directory.
+
+An invited organisation has no active project scope yet, so invitation response deliberately evaluates `project.manage` at **organisation level**:
+
+```text
+active NuBlox user
+AND active membership in invited organisation
+AND effective organisation-level project.manage
+AND pending project_organisations invitation for that organisation
+```
+
+Accepting then atomically establishes:
+
+```text
+project_organisations.status = active
+AND joined_at evidence
+AND accepting member's project_members.status = active
+```
+
+Only after that transaction does the normal member-scoped project boundary apply. Decline is preserved explicitly as `project_organisations.status = declined`; the owner may later re-invite the organisation.
+
+This invitation-response exception does **not** permit pre-acceptance project reads or arbitrary project mutation.
+
+### Participant organisation boundary
+
+Once accepted, all in-project participant/team administration requires normal scoped `project.manage`:
+
+```text
+effective project.manage
+AND active project_organisations participation
+AND exact actor project_members membership
+```
+
+A participant organisation may administer only its own project members. It may add active members from its own `organisation_members`, remove its own project members, update contextual member project roles, or—if it is not the owner—leave the project.
+
+Owner removal or voluntary leave terminates every active `project_members` scope belonging to that participant while retaining historical participation/member records and audit evidence.
+
+The service rejects removal of the final active scoped member in an organisation who effectively holds `project.manage`; another scoped project manager must exist first.
+
+## 10. Project roles
+
+The controlled project-role catalogue includes:
 
 - Client
 - Project administrator
+- Project manager
 - Designer
 - Engineer
 - Quantity surveyor/commercial
@@ -227,23 +279,25 @@ Project roles may include:
 - Facilities/operations
 - Read-only participant
 
-Project roles control project context and visibility; they do not replace organisation permissions or active project-member scope.
+Project roles are **contextual metadata**. Neither `project_organisation_roles` nor `project_member_roles` grants `project.view`, `project.manage`, or any other permission. Permission authority remains in organisation roles/member overrides, while project membership supplies project scope.
 
-## 10. Cross-organisation sharing
+## 11. Cross-organisation sharing
 
 Every share must specify source/owning organisation, target participant, project, record/access context, expiry where applicable, and granting actor. Revocation must not delete historical evidence that a record was previously shared.
 
-## 11. Tenant-isolation rules
+## 12. Tenant-isolation rules
 
 - Server determines tenant context from authenticated membership.
 - No repository method may fetch tenant-owned records by ID alone when tenant context is required.
 - Project reads must not treat organisation participation as implicit access for all organisation members.
+- Project team administration must never allow one participant organisation to add/remove members from another participant organisation.
+- Invitation response must match the selected active organisation to the exact pending `project_organisations` row.
 - Background jobs include tenant context explicitly.
 - Search indexes, caches and exports preserve tenancy boundaries.
 - Object-storage authorisation must not become a tenancy bypass.
 - Platform support access requires a privileged, auditable workflow.
 
-## 12. Session requirements
+## 13. Session requirements
 
 - secure, HttpOnly cookies where cookie sessions are used;
 - Secure flag in production;
@@ -253,7 +307,7 @@ Every share must specify source/owning organisation, target participant, project
 - idle/absolute expiry policy;
 - MFA step-up for high-risk actions where required by security design.
 
-## 13. Permission, project-scope and provisioning testing
+## 14. Permission, project-scope and provisioning testing
 
 Automated tests must include:
 
@@ -268,7 +322,15 @@ Automated tests must include:
 - verified bootstrap activation;
 - organisation project permission without project membership denied;
 - member-scoped project discovery after explicit membership;
+- project invitation invisible as a project before acceptance;
+- project invitation decline and controlled re-invite;
+- invitation acceptance atomically establishes first member scope;
 - external participant project view after explicit scope;
+- cross-organisation project-member administration denied;
+- project-role assignment does not create permission authority;
+- final scoped project-manager removal denied until handover;
+- participant voluntary leave revokes active member scope;
+- owner participant removal revokes active member scope;
 - external participant owner-lifecycle mutation denied;
 - invalid lifecycle transitions denied;
 - direct endpoint attempts;
@@ -276,4 +338,4 @@ Automated tests must include:
 - export/report access;
 - background job authorisation/context handling.
 
-Tenant isolation, controlled provisioning and member-level project scope are release gates.
+Tenant isolation, controlled provisioning and exact-member project scope are release gates.

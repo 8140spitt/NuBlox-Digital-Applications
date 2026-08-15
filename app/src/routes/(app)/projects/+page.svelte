@@ -24,6 +24,49 @@
 	{#if data.canCreate}<a class="header-action" href="#create-project">Create project</a>{/if}
 </section>
 
+{#if data.invitations.length > 0}
+	<section class="invitation-panel" aria-labelledby="project-invitations-heading">
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Collaboration</p>
+				<h2 id="project-invitations-heading">Project invitations</h2>
+				<p class="muted">Accepting establishes this organisation as an active participant and adds you as its first active project member.</p>
+			</div>
+			<span class="count">{data.invitations.length}</span>
+		</div>
+		<div class="invitation-list">
+			{#each data.invitations as invitation}
+				<article class="invitation-card">
+					<div>
+						<div class="card-topline">
+							<span class="project-number">{invitation.projectNumber}</span>
+							<span>{invitation.owningOrganisationName}</span>
+						</div>
+						<h3>{invitation.projectName}</h3>
+						<div class="role-list" aria-label="Invited project roles">
+							{#each invitation.roles as role}<span>{role.name}</span>{/each}
+						</div>
+						<small>Invited {new Date(invitation.invitedAt).toLocaleDateString()}</small>
+					</div>
+					<div class="invitation-actions">
+						<form method="POST" action="?/acceptInvitation">
+							<input type="hidden" name="projectPublicId" value={invitation.projectPublicId} />
+							<button type="submit">Accept</button>
+						</form>
+						<form method="POST" action="?/declineInvitation">
+							<input type="hidden" name="projectPublicId" value={invitation.projectPublicId} />
+							<button class="secondary" type="submit">Decline</button>
+						</form>
+					</div>
+					{#if form?.invitationError && form.invitationProjectPublicId === invitation.projectPublicId}
+						<p class="error invitation-error" role="alert">{form.invitationError}</p>
+					{/if}
+				</article>
+			{/each}
+		</div>
+	</section>
+{/if}
+
 {#if !data.canView}
 	<section class="notice">
 		<h2>Project access is not enabled</h2>
@@ -133,14 +176,25 @@
 		text-decoration: none;
 		cursor: pointer;
 	}
-	.notice, .empty-state, .create-panel {
+	button.secondary { background: white; color: #222; border-color: #aaa; }
+	.notice, .empty-state, .create-panel, .invitation-panel {
 		background: white;
 		border: 1px solid #d9d9d2;
 		border-radius: 0.8rem;
 		padding: 1.25rem;
 	}
-	.notice, .empty-state { margin-bottom: 1rem; }
-	.notice h2, .empty-state h2, .create-panel h2 { margin-top: 0; }
+	.notice, .empty-state, .invitation-panel { margin-bottom: 1rem; }
+	.notice h2, .empty-state h2, .create-panel h2, .invitation-panel h2 { margin-top: 0; }
+	.section-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 1rem; }
+	.count { min-width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 999px; background: #f0f0eb; font-weight: 750; }
+	.invitation-list { display: grid; gap: 0.75rem; }
+	.invitation-card { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; padding: 1rem; border: 1px solid #deded7; border-radius: 0.65rem; background: #fafaf7; }
+	.invitation-card h3 { margin: 0.45rem 0; }
+	.invitation-card small { display: block; margin-top: 0.55rem; color: #6b6b65; }
+	.invitation-actions { display: flex; gap: 0.55rem; }
+	.invitation-error { grid-column: 1 / -1; }
+	.role-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+	.role-list span { border-radius: 999px; background: #ecece6; padding: 0.24rem 0.48rem; font-size: 0.75rem; font-weight: 650; }
 	.project-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
@@ -159,7 +213,7 @@
 		transition: border-color 120ms ease, transform 120ms ease;
 	}
 	.project-card:hover, .project-card:focus-visible { border-color: #777; transform: translateY(-1px); }
-	.card-topline { display: flex; justify-content: space-between; gap: 0.75rem; align-items: center; }
+	.card-topline { display: flex; justify-content: space-between; gap: 0.75rem; align-items: center; color: #666; font-size: 0.8rem; }
 	.project-number { font-size: 0.8rem; font-weight: 750; color: #666; }
 	.project-card h2 { margin: 1rem 0 0.55rem; font-size: 1.25rem; }
 	.project-card p { color: #5d5d57; line-height: 1.5; }
@@ -190,5 +244,7 @@
 		.create-panel { grid-template-columns: 1fr; }
 		.project-form { grid-template-columns: 1fr; }
 		.full { grid-column: auto; }
+		.invitation-card { grid-template-columns: 1fr; }
+		.invitation-actions { justify-content: start; }
 	}
 </style>

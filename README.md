@@ -40,9 +40,10 @@ The production migration stream then adds:
 - `20260815145430_authentication_boundary.sql` — Better Auth infrastructure and explicit auth-to-domain user linking;
 - `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments;
 - `20260815161900_organisation_administration_permissions.sql` — stable organisation-administration permission catalogue entries;
-- `20260815203700_project_workspace_permissions.sql` — stable project permission catalogue entries and standard-role project defaults.
+- `20260815203700_project_workspace_permissions.sql` — stable project permission catalogue entries and standard-role project defaults;
+- `20260815211600_project_participants_team.sql` — explicit project-participation decline semantics and the controlled project-role catalogue.
 
-The two permission migrations are data-only, so the current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. Organisation bootstrap deliberately reuses existing Package 001 lifecycle states and does not add another persistence table.
+The current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The participant/team migration replaces an existing lifecycle check and adds reference data; it does not create a parallel project-team table set.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -178,13 +179,7 @@ Existing active NuBlox users can also use `/start` to create an additional organ
 
 ## Implemented organisation administration and membership management
 
-The protected `/organisation` workspace provides tenant-scoped administration for:
-
-- organisation members and membership status;
-- member-to-role assignments;
-- invitation history, resend and revoke;
-- organisation-role creation, editing and activation;
-- role-to-permission grants.
+The protected `/organisation` workspace provides tenant-scoped administration for organisation members, member-to-role assignments, invitation lifecycle, organisation roles and role-to-permission grants.
 
 Administrative authority is intentionally split:
 
@@ -200,43 +195,59 @@ organisation.manage
     → full organisation-administration authority
 ```
 
-`organisation.manage` is the explicit higher administrative authority. A normal member administrator may delegate only role permissions they effectively hold themselves. Lower-level administrators cannot suspend or rewrite the roles of an organisation manager, users cannot demote or rewrite their own organisation membership from this workspace, cross-tenant roles are rejected, and mutations cannot leave the organisation without an active organisation manager.
-
-Administration mutations use public IDs at the request boundary and append audit evidence server-side.
+`organisation.manage` is the explicit higher administrative authority. Delegation ceilings, organisation-manager protection, self-mutation restrictions, cross-tenant rejection and final-manager lockout prevention are enforced in the domain layer.
 
 ## Implemented project creation and project workspace
 
-The protected application now exposes the Platform Kernel project model through:
+The protected application exposes:
 
-- `/projects` — permission-aware project portfolio and project creation;
-- `/projects/[projectPublicId]` — member-scoped project workspace, project record, participant organisations and lifecycle controls.
+- `/projects` — permission-aware project portfolio, project creation and pending project invitations;
+- `/projects/[projectPublicId]` — member-scoped project workspace, participant organisations, project team and lifecycle controls.
 
 Stable project permissions are:
 
 ```text
 project.create → create an organisation-owned project
 project.view   → enter/list projects where the member also has active project scope
-project.manage → manage lifecycle where member scope and owner policy permit
+project.manage → administer projects where scope and contextual policy permit
 ```
 
-The security boundary intentionally requires both organisation authority and project scope. `project.view` does not expose every project in the organisation: portfolio and workspace reads require an active `project_members` record and active organisation participation. Non-member project lookups are masked as not found.
+The security boundary intentionally requires both organisation authority and project scope. `project.view` does not expose every project in an organisation: portfolio and workspace reads require active `project_organisations` participation and an active `project_members` row for the exact member. Non-member project lookups are masked as not found.
 
-Project creation reuses the tested Platform Kernel transaction and atomically creates the project, owning-organisation participation, creator project membership and `project.created` audit event. Lifecycle mutations use the existing state machine and optimistic concurrency protection, require `project.manage`, require active project membership, and remain restricted to the owning organisation. A participating external organisation can view a project when explicitly scoped but cannot mutate owner lifecycle state.
+Project creation atomically creates the project, owning-organisation participation, creator project membership and `project.created` audit evidence. Lifecycle mutation requires scoped `project.manage` and remains restricted to the owning organisation.
 
-The workspace also establishes navigation placeholders for controlled information, commercial, site and asset modules. Those relational domains already exist in Baseline v1; their application workflows are subsequent implementation slices rather than being claimed complete here.
+## Implemented project participants and project-team administration
+
+The project collaboration layer now uses the existing Package 001 relational model rather than a second sharing subsystem:
+
+```text
+Project
+  ├─ project_organisations
+  │    └─ project_organisation_roles
+  └─ project_members
+       └─ project_member_roles
+```
+
+The owning organisation may invite another active NuBlox organisation by its exact public ID, assign contextual organisation project roles, update those roles, revoke an invitation, or remove an existing participant. NuBlox deliberately does not expose an unrestricted organisation directory in this workflow.
+
+An invited organisation can accept or decline using organisation-level `project.manage` before it has project membership. Acceptance atomically activates the organisation's project participation and establishes the accepting member's first active `project_members` scope. Only after that scope exists can the project be discovered/opened normally.
+
+Once participating, an organisation with scoped `project.manage` may manage **only its own organisation members** on the project, including adding/removing active members and assigning contextual member project roles. A participating non-owner organisation may leave the project; leaving or owner removal terminates all of that organisation's active project-member scope.
+
+Project roles such as Client, Project manager, Engineer, Main contractor and Inspector are **contextual metadata, not permission grants**. They never manufacture `project.view` or `project.manage`. Removing the final scoped member who effectively holds `project.manage` for an organisation is blocked until another scoped project manager exists.
 
 ## Validation gate
 
-The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, project workspace behavior, account provisioning, organisation bootstrap, organisation administration, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
+The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, project participant/team administration, project workspace behavior, account provisioning, organisation bootstrap, organisation administration, authentication/tenant/permission behavior, Platform Kernel invariants and the SvelteKit type-check together.
 
-The project-workspace executable close-out passed **7 integration files / 28 real-MySQL tests**, retained zero Kysely generated-type drift, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is validated by the same gate before merge.
+The project-participants/team executable close-out applied all six migrations and passed **8 integration files / 35 real-MySQL tests**, retained zero Kysely generated-type drift, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is validated by the same gate before merge.
 
 ## Governing product rule
 
 > **NuBlox models what people and organisations do, not only what their job title is.**
 
-Career titles configure defaults. Reusable capabilities, organisation permissions, project permissions and workflow state determine actual behaviour.
+Career titles configure defaults. Reusable capabilities, organisation permissions, project membership scope and workflow state determine actual behaviour.
 
 ## Current status
 
-**Usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, hardened authentication/trusted-tenant/effective-permission resolution, controlled invitation and self-service organisation provisioning, organisation administration, and permission-aware project creation/project workspaces validated against MySQL 8.4.**
+**Usable multi-tenant application foundation with the relational baseline validated, SQL-first migrations and typed persistence established, hardened authentication/trusted-tenant/effective-permission resolution, controlled account and organisation provisioning, organisation administration, project creation/workspaces, and multi-organisation project participant/team administration validated against MySQL 8.4.**
