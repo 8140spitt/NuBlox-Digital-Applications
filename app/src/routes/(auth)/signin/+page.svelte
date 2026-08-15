@@ -1,5 +1,4 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
 	import { authClient } from '$lib/auth-client';
 
 	let { data } = $props();
@@ -10,22 +9,45 @@
 
 	async function signIn(event: SubmitEvent) {
 		event.preventDefault();
+		if (submitting) return;
+
 		submitting = true;
 		message = '';
-		const result = await authClient.signIn.email({
-			email: email.trim(),
-			password,
-			rememberMe: true
-		});
-		submitting = false;
-		if (result.error) {
-			message =
-				result.error.status === 403
-					? 'Verify your email address before signing in.'
-					: result.error.message ?? 'Sign-in failed.';
-			return;
+
+		try {
+			const result = await authClient.signIn.email({
+				email: email.trim(),
+				password,
+				rememberMe: true
+			});
+
+			if (result.error) {
+				message =
+					result.error.status === 403
+						? 'Verify your email address before signing in.'
+						: result.error.message ?? 'Sign-in failed.';
+				return;
+			}
+
+			// Confirm that the Set-Cookie from Better Auth is usable before entering
+			// the authenticated SvelteKit route tree. This turns cookie/origin issues
+			// into a visible error instead of an apparent no-op/redirect loop.
+			const sessionResult = await authClient.getSession();
+			if (sessionResult.error || !sessionResult.data) {
+				message =
+					'Sign-in was accepted, but the browser session could not be established. Make sure you are using the same origin configured by BETTER_AUTH_URL, then try again.';
+				return;
+			}
+
+			// Use a full navigation so the next server request definitely carries the
+			// newly issued authentication cookie when SvelteKit resolves locals.actor.
+			window.location.assign(data.returnTo ?? '/select-organisation');
+		} catch (cause) {
+			console.error('[NuBlox auth] Sign-in failed.', cause);
+			message = cause instanceof Error ? cause.message : 'Sign-in failed. Please try again.';
+		} finally {
+			submitting = false;
 		}
-		await goto(data.returnTo ?? '/select-organisation', { invalidateAll: true });
 	}
 </script>
 
