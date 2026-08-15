@@ -68,6 +68,12 @@ mysql_import() {
   fi
 }
 
+print_innodb_diagnostics() {
+  echo "--- InnoDB diagnostic excerpt ---" >&2
+  mysql_query "SHOW ENGINE INNODB STATUS;" 2>/dev/null | tail -n 80 >&2 || true
+  echo "--- End InnoDB diagnostic excerpt ---" >&2
+}
+
 wait_for_mysql() {
   echo "Waiting for MySQL..."
   for _ in $(seq 1 60); do
@@ -108,7 +114,11 @@ build_and_validate() {
 
   for schema_file in "${SCHEMA_FILES[@]}"; do
     echo "Applying $schema_file"
-    mysql_import "$database" "$schema_file"
+    if ! mysql_import "$database" "$schema_file"; then
+      echo "ERROR: schema import failed: $schema_file" >&2
+      print_innodb_diagnostics
+      exit 1
+    fi
   done
 
   local actual_tables
