@@ -147,4 +147,6 @@ jobs:
           git config user.email 'actions@users.noreply.github.com'
           git add app/package.json app/pnpm-lock.yaml app/.kysely-codegenrc.json app/src/lib/server/db/generated/database.d.ts database/migrations/20260815140337_baseline_v1.sql
           git commit -m 'Bootstrap SQL migration and typed query tooling'
+          git fetch origin architecture/sql-tooling-baseline
+          git rebase origin/architecture/sql-tooling-baseline
           git push origin HEAD:architecture/sql-tooling-baseline
