@@ -1,0 +1,115 @@
+name: Patch Package 007 Review Model
+
+on:
+  push:
+    branches:
+      - validation/database-baseline-v1
+    paths:
+      - '.github/workflows/patch-007-review-model.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: validation/database-baseline-v1
+          fetch-depth: 0
+
+      - name: Consolidate review assignment integrity into Package 007 base
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          base = Path('database/schema/007-project-information-documents.sql')
+          text = base.read_text()
+          pattern = re.compile(
+              r"CREATE TABLE information_review_step_reviewers \(.*?"
+              r"CREATE TABLE information_review_decisions \(.*?"
+              r"\) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;",
+              re.S,
+          )
+          replacement = '''CREATE TABLE information_review_step_reviewers (
+              id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              information_review_step_id BIGINT UNSIGNED NOT NULL,
+              information_review_workflow_id BIGINT UNSIGNED NOT NULL,
+              project_id BIGINT UNSIGNED NOT NULL,
+              reviewer_organisation_id BIGINT UNSIGNED NOT NULL,
+              reviewer_member_id BIGINT UNSIGNED NULL,
+              assigned_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+              reviewer_member_key BIGINT UNSIGNED
+                  GENERATED ALWAYS AS (COALESCE(reviewer_member_id, 0)) STORED,
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_information_review_step_reviewers_assignment (
+                  information_review_step_id,
+                  reviewer_organisation_id,
+                  reviewer_member_key
+              ),
+              CONSTRAINT fk_information_review_step_reviewers_step
+                  FOREIGN KEY (information_review_step_id, information_review_workflow_id)
+                  REFERENCES information_review_steps (id, information_review_workflow_id)
+                  ON UPDATE RESTRICT ON DELETE CASCADE,
+              CONSTRAINT fk_information_review_step_reviewers_org
+                  FOREIGN KEY (project_id, reviewer_organisation_id)
+                  REFERENCES project_organisations (project_id, participant_organisation_id)
+                  ON UPDATE RESTRICT ON DELETE RESTRICT,
+              CONSTRAINT fk_information_review_step_reviewers_member
+                  FOREIGN KEY (reviewer_member_id, reviewer_organisation_id)
+                  REFERENCES organisation_members (id, organisation_id)
+                  ON UPDATE RESTRICT ON DELETE RESTRICT
+          ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
+
+          CREATE TABLE information_review_decisions (
+              id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+              information_review_step_reviewer_id BIGINT UNSIGNED NOT NULL,
+              decision VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+              comments TEXT NULL,
+              decided_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+              PRIMARY KEY (id),
+              UNIQUE KEY uq_information_review_decisions_assignment (
+                  information_review_step_reviewer_id
+              ),
+              CONSTRAINT fk_information_review_decisions_assignment
+                  FOREIGN KEY (information_review_step_reviewer_id)
+                  REFERENCES information_review_step_reviewers (id)
+                  ON UPDATE RESTRICT ON DELETE RESTRICT,
+              CONSTRAINT ck_information_review_decisions_decision
+                  CHECK (decision IN ('approved', 'approved_with_comments', 'rejected', 'revise_resubmit', 'no_objection'))
+          ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;'''
+          text2, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one review-model block; found {count}')
+          base.write_text(text2)
+
+          integrity = Path('database/schema/007-project-information-integrity.sql')
+          itext = integrity.read_text()
+          ipattern = re.compile(
+              r"-- -----------------------------------------------------------------------------\n"
+              r"-- 2\. Review assignments require a stable identity\..*?"
+              r"(?=-- -----------------------------------------------------------------------------\n-- 3\.)",
+              re.S,
+          )
+          replacement2 = '''-- -----------------------------------------------------------------------------
+          -- 2. Review-assignment identity and 3NF decision linkage are now consolidated
+          --    into 007-project-information-documents.sql so the base package is valid
+          --    before this integrity stage is applied.
+          -- -----------------------------------------------------------------------------
+
+          '''
+          itext2, count2 = ipattern.subn(replacement2, itext, count=1)
+          if count2 != 1:
+              raise SystemExit(f'Expected one integrity review section; found {count2}')
+          integrity.write_text(itext2)
+          PY
+
+      - name: Commit consolidated review model
+        run: |
+          git config user.name 'NuBlox Schema Validation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add database/schema/007-project-information-documents.sql database/schema/007-project-information-integrity.sql
+          git commit -m 'Consolidate Package 007 review assignment integrity'
+          git push origin HEAD:validation/database-baseline-v1
