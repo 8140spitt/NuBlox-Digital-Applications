@@ -1,5 +1,5 @@
-import { fail, redirect, type Actions, type Cookies } from '@sveltejs/kit';
-import { parseSetCookieHeader } from 'better-auth/cookies';
+import { fail, redirect, type Actions } from '@sveltejs/kit';
+import { isAPIError } from 'better-auth/api';
 import type { PageServerLoad } from './$types';
 
 import { auth } from '$lib/server/auth/better-auth';
@@ -14,25 +14,6 @@ function safeReturnTo(value: string | null): string | null {
 function field(formData: FormData, name: string): string {
 	const value = formData.get(name);
 	return typeof value === 'string' ? value : '';
-}
-
-function copyAuthCookies(cookies: Cookies, headers: Headers): void {
-	const setCookieHeader = headers.get('set-cookie');
-	if (!setCookieHeader) return;
-
-	const parsed = parseSetCookieHeader(setCookieHeader);
-	for (const [name, { value, ...options }] of parsed) {
-		cookies.set(name, value, {
-			path: options.path || '/',
-			httpOnly: options.httponly,
-			secure: options.secure,
-			sameSite: options.samesite as 'lax' | 'strict' | 'none' | undefined,
-			expires: options.expires,
-			domain: options.domain,
-			maxAge: options['max-age'],
-			encode: (cookieValue) => cookieValue
-		});
-	}
 }
 
 export const load: PageServerLoad = async ({ locals, url, cookies }) => {
@@ -54,7 +35,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 };
 
 export const actions: Actions = {
-	default: async ({ request, url, cookies }) => {
+	default: async ({ request, url }) => {
 		const formData = await request.formData();
 		const email = field(formData, 'email').trim();
 		const password = field(formData, 'password');
@@ -67,44 +48,41 @@ export const actions: Actions = {
 			});
 		}
 
-		let authResponse: Response;
+		console.info('[NuBlox auth] Sign-in started.', { email });
+
 		try {
-			authResponse = await auth.api.signInEmail({
+			await auth.api.signInEmail({
 				body: {
 					email,
 					password,
 					rememberMe: true
 				},
-				headers: request.headers,
-				asResponse: true
+				headers: request.headers
 			});
 		} catch (cause) {
-			console.error('[NuBlox auth] Server-side sign-in failed.', cause);
+			if (isAPIError(cause)) {
+				console.warn('[NuBlox auth] Sign-in rejected.', {
+				email,
+					status: cause.status,
+					message: cause.message
+				});
+				return fail(cause.statusCode >= 400 && cause.statusCode < 600 ? cause.statusCode : 400, {
+					email,
+					message:
+						cause.statusCode === 403
+							? 'Verify your email address before signing in.'
+							: cause.message || 'The email address or password is incorrect.'
+				});
+			}
+
+			console.error('[NuBlox auth] Sign-in failed unexpectedly.', cause);
 			return fail(500, {
 				email,
 				message: 'Sign-in could not be completed. Check the application terminal for the server error.'
 			});
 		}
 
-		if (!authResponse.ok) {
-			let serverMessage = '';
-			try {
-				const body = (await authResponse.json()) as { message?: unknown };
-				serverMessage = typeof body.message === 'string' ? body.message : '';
-			} catch {
-				// Keep the user-facing fallback below when Better Auth returns a non-JSON error.
-			}
-
-			return fail(authResponse.status >= 400 && authResponse.status < 600 ? authResponse.status : 400, {
-				email,
-				message:
-					authResponse.status === 403
-						? 'Verify your email address before signing in.'
-						: serverMessage || 'The email address or password is incorrect.'
-			});
-		}
-
-		copyAuthCookies(cookies, authResponse.headers);
+		console.info('[NuBlox auth] Sign-in accepted; redirecting.', { email });
 		throw redirect(303, returnTo ?? '/select-organisation');
 	}
 };
