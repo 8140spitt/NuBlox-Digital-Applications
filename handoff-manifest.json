@@ -4,7 +4,7 @@
   "career_count": 84,
   "domain_count": 16,
   "fixed_stack": ["Svelte 5", "SvelteKit", "MySQL/InnoDB"],
-  "current_schema_package": "007-project-information-documents",
+  "current_schema_package": "008-site-quality-safety",
   "database_package_docs": [
     "database/docs/001-platform-kernel.md",
     "database/docs/002-crm-parties.md",
@@ -12,7 +12,8 @@
     "database/docs/004-contracts-finance.md",
     "database/docs/005-procurement.md",
     "database/docs/006-workforce-time-scheduling.md",
-    "database/docs/007-project-information-documents.md"
+    "database/docs/007-project-information-documents.md",
+    "database/docs/008-site-quality-safety.md"
   ],
   "database_schema": [
     "database/schema/001-platform-kernel.sql",
@@ -22,7 +23,9 @@
     "database/schema/005-procurement.sql",
     "database/schema/006-workforce-time-scheduling.sql",
     "database/schema/007-project-information-documents.sql",
-    "database/schema/007-project-information-integrity.sql"
+    "database/schema/007-project-information-integrity.sql",
+    "database/schema/008-site-quality-safety.sql",
+    "database/schema/008-site-quality-safety-integrity.sql"
   ],
   "handoff_docs": [
     "docs/00-executive-summary.md",
@@ -56,6 +59,7 @@
     "docs/24-contracts-finance.md",
     "docs/25-procurement.md",
     "docs/26-workforce-time-scheduling.md",
-    "docs/27-project-information-documents.md"
+    "docs/27-project-information-documents.md",
+    "docs/28-site-quality-safety.md"
   ]
 }
