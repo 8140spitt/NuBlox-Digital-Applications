@@ -1,11 +1,11 @@
 -- NuBlox: Digital Applications
--- Schema package 007a: Project Information integrity hardening
+-- Schema package 007: Project Information integrity hardening
 -- Depends on: 007-project-information-documents.sql
 -- Target: MySQL 8.4 / InnoDB
 -- Generated: 2026-08-15
 --
--- Pre-development companion patch. Consolidate into Package 007 when the production
--- migration baseline is frozen.
+-- Pre-development companion integrity stage. Consolidate further into Package 007
+-- when the production migration baseline is frozen.
 
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
@@ -18,8 +18,12 @@ SET time_zone = '+00:00';
 ALTER TABLE project_sites
     ADD UNIQUE KEY uq_project_sites_id_project (id, project_id);
 
+-- MySQL 8.4 requires the old named FK to be dropped before a constraint using the
+-- same name is added; do not combine these two operations in one ALTER statement.
 ALTER TABLE information_containers
-    DROP FOREIGN KEY fk_information_containers_site,
+    DROP FOREIGN KEY fk_information_containers_site;
+
+ALTER TABLE information_containers
     ADD CONSTRAINT fk_information_containers_site
         FOREIGN KEY (project_site_id, project_id)
         REFERENCES project_sites (id, project_id)
@@ -40,7 +44,9 @@ ALTER TABLE information_containers
 ALTER TABLE transmittal_recipients
     DROP FOREIGN KEY fk_transmittal_recipients_party,
     DROP CHECK ck_transmittal_recipients_source,
-    DROP COLUMN source_party_owner_organisation_id,
+    DROP COLUMN source_party_owner_organisation_id;
+
+ALTER TABLE transmittal_recipients
     ADD CONSTRAINT fk_transmittal_recipients_party
         FOREIGN KEY (source_party_id, issuing_organisation_id)
         REFERENCES parties (id, organisation_id)
