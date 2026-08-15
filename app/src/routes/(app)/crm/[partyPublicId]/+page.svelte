@@ -1,6 +1,6 @@
 <script lang="ts">
 	let { data, form } = $props();
-	const activeRoleCodes = new Set(data.party.roles.map((role) => role.code));
+	const activeRoleCodes = $derived(new Set(data.party.roles.map((role) => role.code)));
 	const statusLabels: Record<string, string> = {
 		active: 'Active',
 		inactive: 'Inactive',
