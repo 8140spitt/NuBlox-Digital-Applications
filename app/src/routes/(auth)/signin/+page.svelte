@@ -42,6 +42,9 @@
 		{#if data.verified}
 			<p class="notice success">Email verified. You can now sign in.</p>
 		{/if}
+		{#if data.passwordReset}
+			<p class="notice success">Password updated. Sign in with your new password.</p>
+		{/if}
 
 		<form class="stack" onsubmit={signIn}>
 			<label>
@@ -58,6 +61,7 @@
 					maxlength="128"
 				/>
 			</label>
+			<p class="recovery-link"><a href="/forgot-password">Forgot your password?</a></p>
 			{#if message}<p class="error" role="alert">{message}</p>{/if}
 			<button type="submit" disabled={submitting}>
 				{submitting ? 'Signing in…' : 'Sign in'}
@@ -110,6 +114,7 @@
 		cursor: pointer;
 	}
 	button:disabled { opacity: 0.55; cursor: wait; }
+	.recovery-link { margin: -0.25rem 0 0; text-align: right; font-size: 0.92rem; }
 	.error { color: #9b1c1c; margin: 0; }
 	.notice { padding: 0.8rem; border-radius: 0.55rem; }
 	.notice.success { background: #e8f6eb; }
