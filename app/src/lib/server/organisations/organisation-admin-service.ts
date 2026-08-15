@@ -4,6 +4,7 @@ import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import type { Database } from '$lib/server/db/database';
+import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { getEmailDelivery, type EmailDelivery } from '$lib/server/email/email-delivery';
 import { OrganisationInvitationService, type InvitationSummary } from './invitation-service';
 import {
@@ -379,26 +380,39 @@ export class OrganisationAdminService {
 	}
 
 	private async memberHasOrganisationManage(
-		executor: Parameters<Parameters<Database['transaction']>['0']>[0] extends never ? never : never,
+		executor: DatabaseExecutor,
 		organisationId: string,
 		userId: string,
 		memberId: string,
 		correlationId: string
 	): Promise<boolean> {
-		void executor;
-		void organisationId;
-		void userId;
-		void memberId;
-		void correlationId;
-		return false;
+		const decision = await new PermissionService(executor).decide(
+			{ organisationId, userId, memberId, correlationId },
+			'organisation.manage'
+		);
+		return decision.allowed;
 	}
 
 	private async requireActiveOrganisationManager(
-		executor: unknown,
+		executor: DatabaseExecutor,
 		actor: TenantActorContext
 	): Promise<void> {
-		const db = executor as Parameters<typeof OrganisationAdminRepository>[0];
-		void db;
-		void actor;
+		const activeMembers = await new OrganisationAdminRepository(
+			executor
+		).listActiveMembersForPermissionCheck(actor.organisationId);
+		for (const member of activeMembers) {
+			if (
+				await this.memberHasOrganisationManage(
+					executor,
+					actor.organisationId,
+					member.userId,
+					member.id,
+					actor.correlationId
+				)
+			) {
+				return;
+			}
+		}
+		throw new LastOrganisationManagerError();
 	}
 }
