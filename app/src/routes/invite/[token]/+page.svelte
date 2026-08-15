@@ -92,7 +92,7 @@
 			</form>
 			<p class="secondary-copy">
 				Already have a NuBlox account?
-				<a href={`/signin?returnTo=${encodeURIComponent(window.location.pathname)}`}>Sign in</a>
+				<a href={`/signin?returnTo=${encodeURIComponent(data.returnTo)}`}>Sign in</a>
 			</p>
 		{/if}
 	</section>
