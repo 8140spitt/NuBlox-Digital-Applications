@@ -20,7 +20,8 @@ database/
 │   ├── 001a-platform-kernel-integrity.sql
 │   ├── 002-crm-parties.sql
 │   ├── 003-sales-quotes.sql
-│   └── 004-contracts-finance.sql
+│   ├── 004-contracts-finance.sql
+│   └── 005-procurement.sql
 └── seeds/
     └── (reference-data seeds added as schema domains are frozen)
 ```
@@ -36,7 +37,7 @@ Planned packages:
 3. `002-crm-parties.sql` — normalised people/organisations, roles, contacts, opportunities and CRM activity
 4. `003-sales-quotes.sql` — units, tax reference, catalogue, estimates, quotation versions, issue/response and project conversion
 5. `004-contracts-finance.sql` — contracts/appointments, contract amendments, invoices, credit notes, payments and allocations
-6. `005-procurement.sql`
+6. `005-procurement.sql` — procurement packages, RFQs, supplier returns, evaluation, awards, purchase orders and receipts
 7. `006-workforce-time-scheduling.sql`
 8. `007-project-information-documents.sql`
 9. `008-site-quality-safety.sql`
@@ -51,6 +52,7 @@ The numbered SQL files currently describe the target schema in dependency order.
 - `docs/22-crm-party-model.md` — CRM/party model
 - `docs/23-sales-estimates-quotations.md` — sales, estimate and quotation model
 - `docs/24-contracts-finance.md` — contracts, invoicing, credit notes, payments and allocations
+- `docs/25-procurement.md` — procurement, supplier enquiry, evaluation, award, purchase ordering and receipts
 
 ## Normalisation policy
 
@@ -61,6 +63,7 @@ See:
 - `docs/22-crm-party-model.md`
 - `docs/23-sales-estimates-quotations.md`
 - `docs/24-contracts-finance.md`
+- `docs/25-procurement.md`
 
 Rules:
 
@@ -73,9 +76,13 @@ Rules:
 - Invoices and credit notes use a financial-document supertype with explicit subtypes rather than duplicated common header structures.
 - Payment-to-invoice is many-to-many through allocation rows.
 - Payment/allocation corrections use reversal records rather than deleting history.
+- Procurement supplier identity remains in the Party model; procurement stages reference the same party rather than duplicating supplier master data.
+- RFQ, supplier-return, award and purchase-order facts remain separate records rather than overwriting one another as a procurement process progresses.
+- Split awards use associative rows rather than one-winner assumptions.
+- Purchase-order receipts are separate facts; ordered, received and remaining quantities are not maintained as competing editable balances.
 - Reusable catalogue/reference data does not overwrite historical issued-document facts.
 - Historical immutable snapshots are allowed where they represent facts at issue/approval/execution time.
-- Ordinary derived quotation, invoice, credit-note and payment-status totals are not stored merely for convenience; materialisation requires a documented performance reason.
+- Ordinary derived quotation, invoice, credit-note, payment-status, PO-total and commitment values are not stored merely for convenience; materialisation requires a documented performance reason.
 - Tenant-scoping keys may form part of composite keys to permit MySQL to enforce tenant integrity.
 - Foreign keys target explicit `PRIMARY`/`UNIQUE` candidate keys; do not rely on deprecated MySQL non-standard partial/non-unique FK behaviour.
 - Any material denormalisation requires a documented reason and preferably an ADR.
@@ -110,6 +117,8 @@ Package 003 contains initial global reference rows for units of measure and sale
 
 Package 004 contains initial controlled reference rows for contract types, contract-party roles, contract value/key-date/amendment types and payment methods. Payment terms remain tenant-defined configuration.
 
+Package 005 contains initial controlled reference rows for procurement package types and purchase-order types. Supplier identity and supplier-side roles continue to use Package 002 party data.
+
 Before production migrations are frozen, the selected migration system should separate schema creation and idempotent reference-data seeding according to the project's migration convention.
 
 ## Security rule
@@ -121,3 +130,5 @@ CRM records are tenant-private by default. A later NuBlox Network identity link 
 Issued commercial and finance records must not be recomputed from mutable current catalogue prices, CRM addresses, current tax-rate reference rows or changed payment defaults.
 
 Contract execution, contract amendment agreement/rejection, financial-document issue/void, payment allocation and reversal are all privileged auditable actions.
+
+RFQ issue, supplier-return submission, tender evaluation, award approval, PO approval/issue and receipt reversal are privileged auditable procurement actions.
