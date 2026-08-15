@@ -22,7 +22,7 @@ test('password reset request uses a non-enumerating confirmation', async ({ page
 	});
 
 	await page.goto(`${appUrl}/forgot-password`);
-	await page.getByLabel('Email').fill('stephen@example.test');
+	await page.getByLabel('Email', { exact: true }).fill('stephen@example.test');
 	await page.getByRole('button', { name: 'Send reset link' }).click();
 
 	await expect(page.getByRole('status')).toContainText(
@@ -42,8 +42,8 @@ test('reset page rejects mismatched passwords before calling the auth API', asyn
 	});
 
 	await page.goto(`${appUrl}/reset-password?token=test-token`);
-	await page.getByLabel('New password').fill('NewPassword-1234');
-	await page.getByLabel('Confirm new password').fill('Different-Password-1234');
+	await page.getByLabel('New password', { exact: true }).fill('NewPassword-1234');
+	await page.getByLabel('Confirm new password', { exact: true }).fill('Different-Password-1234');
 	await page.getByRole('button', { name: 'Update password' }).click();
 
 	await expect(page.getByRole('alert')).toHaveText('The passwords do not match.');
@@ -60,8 +60,8 @@ test('successful reset returns to sign-in with confirmation', async ({ page }) =
 	});
 
 	await page.goto(`${appUrl}/reset-password?token=test-token`);
-	await page.getByLabel('New password').fill('NewPassword-1234');
-	await page.getByLabel('Confirm new password').fill('NewPassword-1234');
+	await page.getByLabel('New password', { exact: true }).fill('NewPassword-1234');
+	await page.getByLabel('Confirm new password', { exact: true }).fill('NewPassword-1234');
 	await page.getByRole('button', { name: 'Update password' }).click();
 
 	await expect(page).toHaveURL(`${appUrl}/signin?reset=1`);
