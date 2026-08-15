@@ -46,6 +46,7 @@
 		"vitest-browser-svelte": "^2.1.1"
 	},
 	"dependencies": {
+		"better-auth": "1.6.25",
 		"kysely": "0.29.5",
 		"mysql2": "3.23.2"
 	}
