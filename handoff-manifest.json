@@ -5,6 +5,9 @@
   "domain_count": 16,
   "fixed_stack": ["Svelte 5", "SvelteKit", "MySQL/InnoDB"],
   "current_schema_package": "009-commercial-cost-control",
+  "brand_docs": [
+    "docs/branding/00-business-entity.md"
+  ],
   "database_package_docs": [
     "database/docs/001-platform-kernel.md",
     "database/docs/002-crm-parties.md",
