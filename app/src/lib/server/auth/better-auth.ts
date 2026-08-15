@@ -54,6 +54,9 @@ function signupProvisioningIntentFromContext(ctx: {
 }
 
 const betterAuthUrl = requireEnv('BETTER_AUTH_URL');
+const devTrustedOrigins = Array.from(
+	new Set([betterAuthUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'])
+);
 
 export const authPool = createPool({
 	uri: requireEnv('DATABASE_URL'),
@@ -72,9 +75,7 @@ export const auth = betterAuth({
 	baseURL: betterAuthUrl,
 	basePath: '/api/auth',
 	secret: requireEnv('BETTER_AUTH_SECRET'),
-	trustedOrigins: dev
-		? [betterAuthUrl, 'http://localhost:*', 'http://127.0.0.1:*']
-		: [betterAuthUrl],
+	trustedOrigins: dev ? devTrustedOrigins : [betterAuthUrl],
 	database: authPool,
 	user: {
 		modelName: 'auth_users',
@@ -217,6 +218,12 @@ export const auth = betterAuth({
 				.catch((cause) => {
 					console.error('[NuBlox email] Password reset delivery failed.', cause);
 				});
+		}
+	},
+	advanced: {
+		cookiePrefix: 'nublox',
+		database: {
+			generateId: 'uuid'
 		}
 	},
 	plugins: [sveltekitCookies(getRequestEvent)]
