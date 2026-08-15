@@ -27,6 +27,7 @@
 	<aside class="sidebar" aria-label="Primary navigation">
 		<nav>
 			<a href="/dashboard">Dashboard</a>
+			<a href="/projects">Projects</a>
 			<a href="/organisation">Organisation</a>
 		</nav>
 	</aside>
