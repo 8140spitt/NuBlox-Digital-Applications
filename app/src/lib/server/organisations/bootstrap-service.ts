@@ -8,43 +8,64 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 const BOOTSTRAP_INTENT_LIFETIME_MS = 4 * 60 * 60 * 1000;
 const BOOTSTRAP_TOKEN_VERSION = 1;
-const ADMIN_PERMISSION_KEYS = ['organisation.manage', 'member.invite', 'member.manage'] as const;
+const BOOTSTRAP_PERMISSION_KEYS = [
+	'organisation.manage',
+	'member.invite',
+	'member.manage',
+	'project.create',
+	'project.view',
+	'project.manage'
+] as const;
 
 const STANDARD_ROLES = [
 	{
 		name: 'Owner',
 		description: 'Organisation owner with full organisation administration authority.',
-		permissionKeys: ['organisation.manage', 'member.invite', 'member.manage']
+		permissionKeys: [
+			'organisation.manage',
+			'member.invite',
+			'member.manage',
+			'project.create',
+			'project.view',
+			'project.manage'
+		]
 	},
 	{
 		name: 'Administrator',
 		description: 'Full organisation administration without ownership semantics.',
-		permissionKeys: ['organisation.manage', 'member.invite', 'member.manage']
+		permissionKeys: [
+			'organisation.manage',
+			'member.invite',
+			'member.manage',
+			'project.create',
+			'project.view',
+			'project.manage'
+		]
 	},
 	{
 		name: 'Manager',
-		description: 'Manages ordinary members and organisation invitations within delegated authority.',
-		permissionKeys: ['member.invite', 'member.manage']
+		description: 'Manages ordinary members, invitations and project delivery within delegated authority.',
+		permissionKeys: ['member.invite', 'member.manage', 'project.create', 'project.view', 'project.manage']
 	},
 	{
 		name: 'Finance/Commercial',
 		description: 'Commercial and finance role template; domain permissions are assigned as those modules are enabled.',
-		permissionKeys: []
+		permissionKeys: ['project.view']
 	},
 	{
 		name: 'Member/Professional',
 		description: 'General professional member role template.',
-		permissionKeys: []
+		permissionKeys: ['project.view']
 	},
 	{
 		name: 'Field Worker',
 		description: 'Site and field workforce role template.',
-		permissionKeys: []
+		permissionKeys: ['project.view']
 	},
 	{
 		name: 'Read Only',
 		description: 'Read-only role template; domain read permissions are assigned explicitly.',
-		permissionKeys: []
+		permissionKeys: ['project.view']
 	}
 ] as const;
 
@@ -489,11 +510,11 @@ export class OrganisationBootstrapService {
 		const permissionRows = await executor
 			.selectFrom('permissions')
 			.select(['id', 'permission_key'])
-			.where('permission_key', 'in', [...ADMIN_PERMISSION_KEYS])
+			.where('permission_key', 'in', [...BOOTSTRAP_PERMISSION_KEYS])
 			.where('is_active', '=', 1)
 			.execute();
 		const permissionIdByKey = new Map(permissionRows.map((row) => [row.permission_key, row.id]));
-		for (const permissionKey of ADMIN_PERMISSION_KEYS) {
+		for (const permissionKey of BOOTSTRAP_PERMISSION_KEYS) {
 			if (!permissionIdByKey.has(permissionKey)) {
 				throw new Error(`Required organisation bootstrap permission is missing: ${permissionKey}`);
 			}
