@@ -39,9 +39,10 @@ The production migration stream then adds:
 
 - `20260815145430_authentication_boundary.sql` — Better Auth infrastructure and explicit auth-to-domain user linking;
 - `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments;
-- `20260815161900_organisation_administration_permissions.sql` — stable organisation-administration permission catalogue entries.
+- `20260815161900_organisation_administration_permissions.sql` — stable organisation-administration permission catalogue entries;
+- `20260815203700_project_workspace_permissions.sql` — stable project permission catalogue entries and standard-role project defaults.
 
-The administration-permission migration is data-only, so the current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. Organisation bootstrap deliberately reuses existing Package 001 lifecycle states and does not add another persistence table.
+The two permission migrations are data-only, so the current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. Organisation bootstrap deliberately reuses existing Package 001 lifecycle states and does not add another persistence table.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -158,7 +159,20 @@ Every new organisation receives seven standard role templates:
 - Field Worker
 - Read Only
 
-The current administration catalogue gives Owner and Administrator `organisation.manage`, `member.invite` and `member.manage`; Manager receives `member.invite` and `member.manage`. The other role templates intentionally start without domain permission grants until their permission catalogues are implemented. The initial member is assigned **Owner only**.
+Current stable defaults are:
+
+```text
+Owner         → organisation.manage + member.invite + member.manage
+                + project.create + project.view + project.manage
+Administrator → organisation.manage + member.invite + member.manage
+                + project.create + project.view + project.manage
+Manager       → member.invite + member.manage
+                + project.create + project.view + project.manage
+Finance/Commercial, Member/Professional, Field Worker, Read Only
+              → project.view
+```
+
+Project permission grants do not create project visibility on their own. A user must also have active `project_members` scope for the project. The initial organisation member is assigned **Owner only**.
 
 Existing active NuBlox users can also use `/start` to create an additional organisation without creating another auth or domain identity; the new tenant is selected immediately after the transactional bootstrap completes.
 
@@ -190,11 +204,32 @@ organisation.manage
 
 Administration mutations use public IDs at the request boundary and append audit evidence server-side.
 
+## Implemented project creation and project workspace
+
+The protected application now exposes the Platform Kernel project model through:
+
+- `/projects` — permission-aware project portfolio and project creation;
+- `/projects/[projectPublicId]` — member-scoped project workspace, project record, participant organisations and lifecycle controls.
+
+Stable project permissions are:
+
+```text
+project.create → create an organisation-owned project
+project.view   → enter/list projects where the member also has active project scope
+project.manage → manage lifecycle where member scope and owner policy permit
+```
+
+The security boundary intentionally requires both organisation authority and project scope. `project.view` does not expose every project in the organisation: portfolio and workspace reads require an active `project_members` record and active organisation participation. Non-member project lookups are masked as not found.
+
+Project creation reuses the tested Platform Kernel transaction and atomically creates the project, owning-organisation participation, creator project membership and `project.created` audit event. Lifecycle mutations use the existing state machine and optimistic concurrency protection, require `project.manage`, require active project membership, and remain restricted to the owning organisation. A participating external organisation can view a project when explicitly scoped but cannot mutate owner lifecycle state.
+
+The workspace also establishes navigation placeholders for controlled information, commercial, site and asset modules. Those relational domains already exist in Baseline v1; their application workflows are subsequent implementation slices rather than being claimed complete here.
+
 ## Validation gate
 
-The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, account provisioning, organisation bootstrap, organisation administration, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
+The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, project workspace behavior, account provisioning, organisation bootstrap, organisation administration, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
 
-The organisation-bootstrap close-out passed **6 integration files / 24 real-MySQL tests**, retained zero Kysely generated-type drift, and passed `svelte-check` with **0 errors / 0 warnings**.
+The project-workspace executable close-out passed **7 integration files / 28 real-MySQL tests**, retained zero Kysely generated-type drift, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is validated by the same gate before merge.
 
 ## Governing product rule
 
@@ -204,4 +239,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Early usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, tenant-isolated Platform Kernel services implemented, authentication/trusted-tenant/effective-permission resolution integration-tested, controlled invitation and self-service organisation provisioning implemented, organisation selection and protected application access working, and permission-aware organisation administration validated against MySQL 8.4.**
+**Usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, hardened authentication/trusted-tenant/effective-permission resolution, controlled invitation and self-service organisation provisioning, organisation administration, and permission-aware project creation/project workspaces validated against MySQL 8.4.**

@@ -22,6 +22,14 @@ export type ProjectRecord = {
 	archivedAt: Date | null;
 };
 
+export type ProjectParticipantOrganisation = {
+	organisationId: string;
+	organisationPublicId: string;
+	organisationName: string;
+	status: string;
+	joinedAt: Date | null;
+};
+
 export type InsertProject = {
 	owningOrganisationId: string;
 	publicId: string;
@@ -90,6 +98,20 @@ export class ProjectRepository {
 		return row ? mapProject(row) : null;
 	}
 
+	async findOwnedByProjectNumber(
+		owningOrganisationId: string,
+		projectNumber: string
+	): Promise<ProjectRecord | null> {
+		const row = await this.db
+			.selectFrom('projects')
+			.select(PROJECT_COLUMNS)
+			.where('owning_organisation_id', '=', owningOrganisationId)
+			.where('project_number', '=', projectNumber)
+			.executeTakeFirst();
+
+		return row ? mapProject(row) : null;
+	}
+
 	async findParticipatingByPublicId(
 		participantOrganisationId: string,
 		publicId: string
@@ -116,6 +138,106 @@ export class ProjectRepository {
 			.executeTakeFirst();
 
 		return row ? mapProject(row) : null;
+	}
+
+	async findForMemberByPublicId(
+		participantOrganisationId: string,
+		organisationMemberId: string,
+		publicId: string
+	): Promise<ProjectRecord | null> {
+		const row = await this.db
+			.selectFrom('projects as p')
+			.innerJoin('project_organisations as po', 'po.project_id', 'p.id')
+			.innerJoin('project_members as pm', (join) =>
+				join
+					.onRef('pm.project_id', '=', 'po.project_id')
+					.onRef('pm.participant_organisation_id', '=', 'po.participant_organisation_id')
+			)
+			.select([
+				'p.id as id',
+				'p.owning_organisation_id as owning_organisation_id',
+				'p.public_id as public_id',
+				'p.project_number as project_number',
+				'p.name as name',
+				'p.description as description',
+				'p.status as status',
+				'p.created_by_member_id as created_by_member_id',
+				'p.started_on as started_on',
+				'p.completed_on as completed_on',
+				'p.archived_at as archived_at'
+			])
+			.where('po.participant_organisation_id', '=', participantOrganisationId)
+			.where('po.status', '=', 'active')
+			.where('pm.organisation_member_id', '=', organisationMemberId)
+			.where('pm.status', '=', 'active')
+			.where('p.public_id', '=', publicId)
+			.executeTakeFirst();
+
+		return row ? mapProject(row) : null;
+	}
+
+	async listForMember(
+		participantOrganisationId: string,
+		organisationMemberId: string
+	): Promise<ProjectRecord[]> {
+		const rows = await this.db
+			.selectFrom('projects as p')
+			.innerJoin('project_organisations as po', 'po.project_id', 'p.id')
+			.innerJoin('project_members as pm', (join) =>
+				join
+					.onRef('pm.project_id', '=', 'po.project_id')
+					.onRef('pm.participant_organisation_id', '=', 'po.participant_organisation_id')
+			)
+			.select([
+				'p.id as id',
+				'p.owning_organisation_id as owning_organisation_id',
+				'p.public_id as public_id',
+				'p.project_number as project_number',
+				'p.name as name',
+				'p.description as description',
+				'p.status as status',
+				'p.created_by_member_id as created_by_member_id',
+				'p.started_on as started_on',
+				'p.completed_on as completed_on',
+				'p.archived_at as archived_at'
+			])
+			.where('po.participant_organisation_id', '=', participantOrganisationId)
+			.where('po.status', '=', 'active')
+			.where('pm.organisation_member_id', '=', organisationMemberId)
+			.where('pm.status', '=', 'active')
+			.orderBy('p.id', 'desc')
+			.execute();
+
+		return rows.map(mapProject);
+	}
+
+	async listActiveParticipantOrganisations(
+		projectId: string
+	): Promise<ProjectParticipantOrganisation[]> {
+		const rows = await this.db
+			.selectFrom('project_organisations as po')
+			.innerJoin('organisations as organisation', 'organisation.id', 'po.participant_organisation_id')
+			.select([
+				'organisation.id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'organisation.legal_name as legalName',
+				'organisation.trading_name as tradingName',
+				'po.status as status',
+				'po.joined_at as joinedAt'
+			])
+			.where('po.project_id', '=', projectId)
+			.where('po.status', '=', 'active')
+			.orderBy('po.joined_at', 'asc')
+			.orderBy('organisation.id', 'asc')
+			.execute();
+
+		return rows.map((row) => ({
+			organisationId: row.organisationId,
+			organisationPublicId: row.organisationPublicId,
+			organisationName: row.tradingName ?? row.legalName,
+			status: row.status,
+			joinedAt: row.joinedAt
+		}));
 	}
 
 	async insert(project: InsertProject): Promise<string> {

@@ -31,50 +31,59 @@ The numbered files under `database/schema/` remain the design/provenance package
 
 ### `20260815145430_authentication_boundary.sql`
 
-Adds the authentication/session infrastructure selected in ADR-0002:
-
-- `auth_users`
-- `auth_sessions`
-- `auth_accounts`
-- `auth_verifications`
-- `auth_user_links`
-
-The first four tables are Better Auth infrastructure. `auth_user_links` is the explicit one-to-one bridge from an authentication identity to the existing NuBlox domain `users` row; authentication does not replace the NuBlox tenant/member/permission model.
+Adds Better Auth infrastructure (`auth_users`, `auth_sessions`, `auth_accounts`, `auth_verifications`) plus the explicit `auth_user_links` bridge to the NuBlox domain `users` identity.
 
 After this migration the application schema contains **342 tables, 743 foreign keys and 427 `CHECK` constraints**.
 
 ### `20260815151500_account_provisioning.sql`
 
-Adds controlled NuBlox organisation-account provisioning:
+Adds controlled organisation-account provisioning through `organisation_invitations` and `organisation_invitation_roles`, including tenant-safe role intent and invitation terminal-state rules.
 
-- `organisation_invitations`
-- `organisation_invitation_roles`
+After this migration the application schema contains **344 base tables, 749 foreign keys and 429 `CHECK` constraints**.
 
-Invitation identity and lifecycle remain NuBlox domain concerns. Better Auth supplies the login identity/session, while invitation acceptance creates or reuses the authoritative NuBlox `users` identity, `organisation_members` tenancy and `member_roles` assignments.
+### `20260815161900_organisation_administration_permissions.sql`
 
-The migration enforces tenant-safe invitation/role references, unique pending invitations per organisation/email, hashed-token identity, invitation terminal-state checks and explicit links to the accepting auth/domain users.
+Seeds stable organisation-administration policy identifiers:
 
-After this migration the application schema contains:
+- `organisation.manage`
+- `member.invite`
+- `member.manage`
+
+This migration is data-only and does not change structural counts.
+
+### `20260815203700_project_workspace_permissions.sql`
+
+Seeds the first stable project application policy identifiers:
+
+- `project.create` — create a project owned by the active organisation;
+- `project.view` — organisation-level authority to view explicitly scoped projects;
+- `project.manage` — organisation-level authority to manage projects where project scope and owner policy permit.
+
+The migration also applies current standard-role defaults to existing organisations:
+
+```text
+Owner         → project.create + project.view + project.manage
+Administrator → project.create + project.view + project.manage
+Manager       → project.create + project.view + project.manage
+Finance/Commercial → project.view
+Member/Professional → project.view
+Field Worker        → project.view
+Read Only           → project.view
+```
+
+The same defaults are seeded by `OrganisationBootstrapService` for future organisations.
+
+These are organisation permission grants only. They do not replace `project_organisations` participation or the exact member's active `project_members` scope. In particular, `project.view` does not make all organisation projects visible to every member holding that permission.
+
+This migration is data-only. After all five current production migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
 - **429 `CHECK` constraints**
 
-### `20260815161900_organisation_administration_permissions.sql`
-
-Seeds the stable platform permission catalogue entries used by the organisation-administration application boundary:
-
-- `organisation.manage` — organisation roles and permission grants, and explicit full organisation-administration authority;
-- `member.invite` — invitation creation/resend/revoke authority;
-- `member.manage` — member lifecycle and organisation role-assignment authority.
-
-This migration inserts or reactivates permission catalogue data only. It creates no tables, foreign keys or `CHECK` constraints, so the current application structure remains **344 / 749 / 429**.
-
-These permission keys are platform policy identifiers. Organisations grant them through their own `organisation_roles`/`role_permissions`; career titles do not implicitly confer administrative authority.
-
 ## Current migration validation
 
-The organisation-administration close-out applied all four production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **5 integration files / 20 real-MySQL tests**, and passed `svelte-check` with zero errors and zero warnings.
+The project-workspace executable close-out applied all five production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **7 integration files / 28 real-MySQL tests**, and passed `svelte-check` with zero errors and zero warnings before documentation synchronisation. The final documentation-synchronised head is required to pass the same gate before merge.
 
 ## Migration rules
 
