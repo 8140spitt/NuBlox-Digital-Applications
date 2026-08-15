@@ -1,11 +1,14 @@
 export type Actor = {
-	id: string;
+	authUserId: string;
+	userId: string;
 	email: string;
-	roles: string[];
+	displayName: string;
 };
 
 export type TenantContext = {
 	organisationId: string | null;
+	organisationPublicId: string | null;
+	memberId: string | null;
 	membershipVerified: boolean;
 };
 
