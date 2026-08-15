@@ -8,6 +8,8 @@
 -- PRINCIPLES:
 -- 1. Commercial control classifies authoritative source facts; it does not duplicate them.
 -- 2. Cost codes are classification/master data, not stored balances.
+--    Cost-code self-parent prohibition is enforced in the domain layer because MySQL 8.4
+--    does not permit CHECK constraints to reference an AUTO_INCREMENT column.
 -- 3. Approved budget/variation/forecast versions are historical facts.
 -- 4. PO commitments, labour actuals and customer financial values remain owned by source domains.
 -- 5. Forecast snapshots are intentional point-in-time reporting facts.
@@ -106,8 +108,6 @@ CREATE TABLE project_cost_codes (
         FOREIGN KEY (parent_cost_code_id, project_id, organisation_id)
         REFERENCES project_cost_codes (id, project_id, organisation_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
-    CONSTRAINT ck_project_cost_codes_parent
-        CHECK (parent_cost_code_id IS NULL OR parent_cost_code_id <> id),
     CONSTRAINT ck_project_cost_codes_sort
         CHECK (sort_order > 0)
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
