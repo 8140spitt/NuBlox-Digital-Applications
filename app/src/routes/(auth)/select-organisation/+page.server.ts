@@ -1,4 +1,5 @@
-import { redirect, type PageServerLoad } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 
 import { getDatabase } from '$lib/server/db/database';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
