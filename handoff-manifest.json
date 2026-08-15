@@ -1,0 +1,38 @@
+{
+  "name": "NuBlox Developer Handoff Pack",
+  "generated_date": "2026-08-15",
+  "career_count": 84,
+  "domain_count": 16,
+  "fixed_stack": [
+    "Svelte 5",
+    "SvelteKit",
+    "MySQL/InnoDB"
+  ],
+  "files": [
+    "README.md",
+    "docs/00-executive-summary.md",
+    "docs/01-product-requirements-document.md",
+    "docs/02-functional-requirements.md",
+    "docs/03-career-taxonomy.md",
+    "docs/04-career-capability-matrix.md",
+    "docs/05-system-architecture.md",
+    "docs/06-data-model.md",
+    "docs/07-auth-permissions-multitenancy.md",
+    "docs/08-api-integrations.md",
+    "docs/09-ux-information-architecture.md",
+    "docs/10-non-functional-requirements.md",
+    "docs/11-security-privacy-compliance.md",
+    "docs/12-devops-environments-testing.md",
+    "docs/13-delivery-roadmap.md",
+    "docs/14-backlog-acceptance-criteria.md",
+    "docs/15-open-decisions-assumptions.md",
+    "docs/16-glossary.md",
+    "docs/17-sources-and-standards.md",
+    "docs/18-development-company-brief.md",
+    "docs/19-risks-and-dependencies.md",
+    "docs/20-record-lifecycles.md",
+    "docs/career-taxonomy-seed.csv",
+    "docs/career-taxonomy-seed.json",
+    "handoff-manifest.json"
+  ]
+}
