@@ -53,6 +53,7 @@ export type CrmWorkspace = {
 export type CrmPartyWorkspace = {
 	party: CrmPartyDetail;
 	canManage: boolean;
+	canManageContacts: boolean;
 	roleTypes: CrmRoleType[];
 	contacts: CrmOrganisationContact[];
 	affiliations: CrmPersonAffiliation[];
@@ -91,6 +92,8 @@ type ValidatedPartyInput = {
 	primaryPhone: string | null;
 	roleCodes: string[];
 };
+
+type CrmManagePermission = 'crm.party.manage' | 'crm.contact.manage';
 
 function optionalText(value: string | null | undefined, maxLength: number, label: string): string | null {
 	const text = value?.trim() ?? '';
@@ -183,8 +186,12 @@ export class CrmService {
 		return membership;
 	}
 
-	private async assertManage(actor: TenantActorContext, db = this.db): Promise<void> {
-		const decision = await new PermissionService(db).decide(actor, 'crm.manage');
+	private async assertManage(
+		actor: TenantActorContext,
+		permissionKey: CrmManagePermission,
+		db = this.db
+	): Promise<void> {
+		const decision = await new PermissionService(db).decideWithUmbrella(actor, permissionKey, 'crm.manage');
 		if (!decision.allowed) throw new TenantAccessError('CRM management is not permitted.');
 	}
 
@@ -201,9 +208,13 @@ export class CrmService {
 
 	async listWorkspace(actor: TenantActorContext, filters: CrmListFilters = {}): Promise<CrmWorkspace> {
 		await this.assertActiveActor(actor);
-		const decisions = await new PermissionService(this.db).decideMany(actor, ['crm.view', 'crm.manage']);
-		const canView = decisions.get('crm.view')?.allowed ?? false;
-		const canManage = decisions.get('crm.manage')?.allowed ?? false;
+		const permissionService = new PermissionService(this.db);
+		const [viewDecision, partyManageDecision] = await Promise.all([
+			permissionService.decide(actor, 'crm.view'),
+			permissionService.decideWithUmbrella(actor, 'crm.party.manage', 'crm.manage')
+		]);
+		const canView = viewDecision.allowed;
+		const canManage = partyManageDecision.allowed;
 		const repository = new CrmRepository(this.db);
 		return {
 			canView,
@@ -217,20 +228,25 @@ export class CrmService {
 	async getPartyWorkspace(actor: TenantActorContext, partyPublicIdInput: string): Promise<CrmPartyWorkspace> {
 		await this.assertActiveActor(actor);
 		const publicId = normalisePublicId(partyPublicIdInput, 'CRM party ID');
-		const viewDecision = await new PermissionService(this.db).decide(actor, 'crm.view');
+		const permissionService = new PermissionService(this.db);
+		const viewDecision = await permissionService.decide(actor, 'crm.view');
 		if (!viewDecision.allowed) throw new RecordNotFoundError('CRM party not found.');
 		const repository = new CrmRepository(this.db);
 		const party = await repository.findPartyByPublicId(actor.organisationId, publicId);
 		if (!party) throw new RecordNotFoundError('CRM party not found.');
-		const manageDecision = await new PermissionService(this.db).decide(actor, 'crm.manage');
-		const canManage = manageDecision.allowed;
+		const [partyManageDecision, contactManageDecision] = await Promise.all([
+			permissionService.decideWithUmbrella(actor, 'crm.party.manage', 'crm.manage'),
+			permissionService.decideWithUmbrella(actor, 'crm.contact.manage', 'crm.manage')
+		]);
+		const canManage = partyManageDecision.allowed;
+		const canManageContacts = contactManageDecision.allowed;
 		const roleTypesPromise = canManage ? repository.listRoleTypes() : Promise.resolve([]);
 		const contactsPromise =
 			party.kind === 'organisation' ? repository.listOrganisationContacts(actor.organisationId, party.id) : Promise.resolve([]);
 		const affiliationsPromise =
 			party.kind === 'person' ? repository.listPersonAffiliations(actor.organisationId, party.id) : Promise.resolve([]);
 		const candidatesPromise =
-			party.kind === 'organisation' && canManage
+			party.kind === 'organisation' && canManageContacts
 				? repository.listParties(actor.organisationId, { kind: 'person', status: 'active' })
 				: Promise.resolve([]);
 		const [roleTypes, contacts, affiliations, candidateRows] = await Promise.all([
@@ -243,6 +259,7 @@ export class CrmService {
 		return {
 			party,
 			canManage,
+			canManageContacts,
 			roleTypes,
 			contacts,
 			affiliations,
@@ -306,19 +323,19 @@ export class CrmService {
 
 	async createParty(actor: TenantActorContext, input: CrmPartyInput): Promise<CrmPartyDetail> {
 		await this.assertActiveActor(actor);
-		await this.assertManage(actor);
+		await this.assertManage(actor, 'crm.party.manage');
 		const validated = validatePartyInput(input);
 		return this.db.transaction().execute(async (trx) => this.createPartyRecords(actor, trx, validated));
 	}
 
 	async updateParty(actor: TenantActorContext, input: UpdateCrmPartyInput): Promise<CrmPartyDetail> {
 		await this.assertActiveActor(actor);
-		await this.assertManage(actor);
+		await this.assertManage(actor, 'crm.party.manage');
 		const publicId = normalisePublicId(input.partyPublicId, 'CRM party ID');
 		const status = validateStatus(input.status);
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
-			await this.assertManage(actor, trx);
+			await this.assertManage(actor, 'crm.party.manage', trx);
 			const repository = new CrmRepository(trx);
 			const current = await repository.findPartyByPublicId(actor.organisationId, publicId);
 			if (!current) throw new RecordNotFoundError('CRM party not found.');
@@ -372,7 +389,7 @@ export class CrmService {
 		input: CrmContactInput
 	): Promise<CrmPartyDetail> {
 		await this.assertActiveActor(actor);
-		await this.assertManage(actor);
+		await this.assertManage(actor, 'crm.contact.manage');
 		const organisationPartyPublicId = normalisePublicId(organisationPartyPublicIdInput, 'Organisation party ID');
 		const jobTitle = optionalText(input.jobTitle, 200, 'Job title');
 		const department = optionalText(input.department, 200, 'Department');
@@ -388,7 +405,7 @@ export class CrmService {
 		});
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
-			await this.assertManage(actor, trx);
+			await this.assertManage(actor, 'crm.contact.manage', trx);
 			const repository = new CrmRepository(trx);
 			const organisationParty = await repository.findPartyByPublicId(
 				actor.organisationId,
@@ -442,14 +459,14 @@ export class CrmService {
 		}
 	): Promise<void> {
 		await this.assertActiveActor(actor);
-		await this.assertManage(actor);
+		await this.assertManage(actor, 'crm.contact.manage');
 		const organisationPublicId = normalisePublicId(input.organisationPartyPublicId, 'Organisation party ID');
 		const personPublicId = normalisePublicId(input.personPartyPublicId, 'Person party ID');
 		const jobTitle = optionalText(input.jobTitle, 200, 'Job title');
 		const department = optionalText(input.department, 200, 'Department');
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
-			await this.assertManage(actor, trx);
+			await this.assertManage(actor, 'crm.contact.manage', trx);
 			const repository = new CrmRepository(trx);
 			const [organisationParty, personParty] = await Promise.all([
 				repository.findPartyByPublicId(actor.organisationId, organisationPublicId),
@@ -496,12 +513,12 @@ export class CrmService {
 		personPartyPublicIdInput: string
 	): Promise<void> {
 		await this.assertActiveActor(actor);
-		await this.assertManage(actor);
+		await this.assertManage(actor, 'crm.contact.manage');
 		const organisationPublicId = normalisePublicId(organisationPartyPublicIdInput, 'Organisation party ID');
 		const personPublicId = normalisePublicId(personPartyPublicIdInput, 'Person party ID');
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
-			await this.assertManage(actor, trx);
+			await this.assertManage(actor, 'crm.contact.manage', trx);
 			const repository = new CrmRepository(trx);
 			const [organisationParty, personParty] = await Promise.all([
 				repository.findPartyByPublicId(actor.organisationId, organisationPublicId),
@@ -540,12 +557,12 @@ export class CrmService {
 		personPartyPublicIdInput: string
 	): Promise<void> {
 		await this.assertActiveActor(actor);
-		await this.assertManage(actor);
+		await this.assertManage(actor, 'crm.contact.manage');
 		const organisationPublicId = normalisePublicId(organisationPartyPublicIdInput, 'Organisation party ID');
 		const personPublicId = normalisePublicId(personPartyPublicIdInput, 'Person party ID');
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
-			await this.assertManage(actor, trx);
+			await this.assertManage(actor, 'crm.contact.manage', trx);
 			const repository = new CrmRepository(trx);
 			const [organisationParty, personParty] = await Promise.all([
 				repository.findPartyByPublicId(actor.organisationId, organisationPublicId),
