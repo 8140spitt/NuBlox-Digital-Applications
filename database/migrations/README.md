@@ -73,9 +73,19 @@ Read Only           → project.view
 
 The same defaults are seeded by `OrganisationBootstrapService` for future organisations.
 
-These are organisation permission grants only. They do not replace `project_organisations` participation or the exact member's active `project_members` scope. In particular, `project.view` does not make all organisation projects visible to every member holding that permission.
+These are organisation permission grants only. They do not replace `project_organisations` participation or the exact member's active `project_members` scope.
 
-This migration is data-only. After all five current production migrations the application structure remains:
+### `20260815211600_project_participants_team.sql`
+
+Completes the first cross-organisation project collaboration lifecycle without creating a parallel team model:
+
+- extends `project_organisations.status` with explicit `declined` state;
+- preserves the existing `project_organisations`, `project_members`, `project_organisation_roles` and `project_member_roles` structures;
+- seeds the controlled global `project_role_types` catalogue for client, project administration/management, designer, engineer, quantity surveying/commercial, contractor, supplier, inspector, facilities/operations and read-only participant contexts.
+
+Project-role rows are contextual classification only. They do not grant `project.view`, `project.manage`, or any other permission.
+
+The migration replaces one existing `CHECK` constraint with the broadened lifecycle check and adds reference data only. It therefore leaves the application structure at:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -83,7 +93,7 @@ This migration is data-only. After all five current production migrations the ap
 
 ## Current migration validation
 
-The project-workspace executable close-out applied all five production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **7 integration files / 28 real-MySQL tests**, and passed `svelte-check` with zero errors and zero warnings before documentation synchronisation. The final documentation-synchronised head is required to pass the same gate before merge.
+The project-participants/team executable close-out applied all **six** production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **8 integration files / 35 real-MySQL tests**, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is required to pass the same gate before merge.
 
 ## Migration rules
 
