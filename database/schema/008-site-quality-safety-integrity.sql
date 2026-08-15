@@ -82,8 +82,37 @@ ALTER TABLE quality_inspection_template_versions
                 AND published_by_member_id IS NOT NULL)
         );
 
+-- MySQL will not change a parent-key column while inbound/outbound FKs use that
+-- column. Temporarily remove those constraints, tighten nullability, then restore
+-- the same relationship graph. Supporting indexes are retained because the FK
+-- column shapes do not change.
+ALTER TABLE quality_inspection_responses
+    DROP FOREIGN KEY fk_quality_responses_inspection;
+
+ALTER TABLE quality_inspections
+    DROP FOREIGN KEY fk_quality_inspections_template;
+
 ALTER TABLE quality_inspections
     MODIFY COLUMN quality_inspection_template_version_id BIGINT UNSIGNED NOT NULL;
+
+ALTER TABLE quality_inspections
+    ADD CONSTRAINT fk_quality_inspections_template
+        FOREIGN KEY (quality_inspection_template_version_id, owning_organisation_id)
+        REFERENCES quality_inspection_template_versions (id, organisation_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT;
+
+ALTER TABLE quality_inspection_responses
+    ADD CONSTRAINT fk_quality_responses_inspection
+        FOREIGN KEY (
+            quality_inspection_id,
+            quality_inspection_template_version_id,
+            owning_organisation_id
+        ) REFERENCES quality_inspections (
+            id,
+            quality_inspection_template_version_id,
+            owning_organisation_id
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 -- -----------------------------------------------------------------------------
 -- 4. Delivery accepted/rejected quantities cannot exceed the recorded quantity.
