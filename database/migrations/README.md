@@ -134,7 +134,33 @@ Read Only
 
 The migration grants the granular keys to existing Owner, Administrator and Manager roles, then removes the two broad management umbrella grants from the standard Manager role. `OrganisationBootstrapService` creates the same role matrix for new organisations.
 
-This migration is data-only. After all current migrations the application structure remains:
+This migration is data-only and leaves structural counts unchanged.
+
+### `20260815223800_crm_opportunities_activities.sql`
+
+Activates the Package 002 opportunity and activity application surface without adding duplicate business tables.
+
+It seeds two additional stable granular permissions:
+
+- `crm.opportunity.manage` — create and maintain tenant-owned opportunities, stage/outcome state and opportunity-party relationships;
+- `crm.activity.manage` — create tenant-owned CRM timeline activities and their participant links.
+
+Both use `crm.manage` as umbrella fallback at runtime. They are deliberately **not** auto-granted to generic Manager, Finance/Commercial or other standard non-administrative role templates. This keeps opportunity/activity authority an explicit organisation delegation decision. Owner and Administrator retain access through their existing `crm.manage` umbrella unless a granular member decision overrides it.
+
+The migration also seeds a default `Sales` pipeline only for organisations that have **no CRM pipeline configuration at all**. It never overwrites existing/custom tenant pipeline configuration. The standard stages are:
+
+```text
+Lead         → sort 10 → 10%
+Qualified    → sort 20 → 30%
+Proposal     → sort 30 → 60%
+Negotiation  → sort 40 → 80%
+```
+
+Stage represents sales maturity; terminal result remains on `opportunities.status` (`open`, `won`, `lost`, `cancelled`). Won/lost/cancelled are therefore not duplicated as pipeline stages.
+
+Organisations created after this migration are handled by `CrmPipelineProvisioningService`: the first suitably authorised opportunity-management visit locks the organisation row, confirms no pipeline exists, creates the same Sales/stage configuration exactly once and records `crm.pipeline.initialized` audit evidence.
+
+This migration is data/reference-only. After all nine current migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -142,7 +168,7 @@ This migration is data-only. After all current migrations the application struct
 
 ## Current migration validation
 
-The permanent validation gate applies the full migration stream to MySQL 8.4, verifies the **344 / 749 / 429** structural contract, checks generated Kysely types for drift, runs the real-MySQL integration suite, and runs `svelte-check`. Permission/catalogue migrations are subject to the same gate even when they do not alter structural counts.
+The CRM opportunities/activity executable close-out applies all **nine** production migrations cleanly on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely type drift, passes **12 integration files / 50 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same permanent gate before merge.
 
 ## Migration rules
 
