@@ -44,9 +44,10 @@ The production migration stream then adds:
 - `20260815211600_project_participants_team.sql` — project-participation decline semantics and contextual project-role catalogue;
 - `20260815214500_crm_contacts_permissions.sql` — CRM view/manage catalogue and initial standard-role grants;
 - `20260815222500_permission_granularity.sql` — granular project and CRM management permissions and revised Manager defaults;
-- `20260815223800_crm_opportunities_activities.sql` — granular opportunity/activity permissions and a non-destructive default Sales pipeline/stage seed for existing tenants without pipeline configuration.
+- `20260815223800_crm_opportunities_activities.sql` — opportunity/activity permissions plus non-destructive default Sales pipeline provisioning;
+- `20260815231500_estimates_quotations_permissions.sql` — commercial estimate/quotation permissions and aligned standard-role grants.
 
-The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The latest migrations are data/reference-only and activate relational structures already present in Package 002.
+The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The newest CRM/commercial migrations are data/reference-only and activate normalised relational structures already present in Packages 002 and 003.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -105,7 +106,7 @@ explicit member deny
 
 ## Granular RBAC and umbrella compatibility
 
-NuBlox separates broad management authority into delegable responsibilities while retaining the original broad permissions for compatibility:
+NuBlox separates broad management authority into delegable responsibilities while retaining broad permissions for compatibility:
 
 ```text
 project.manage
@@ -119,89 +120,43 @@ crm.manage
     ├─ crm.contact.manage
     ├─ crm.opportunity.manage
     └─ crm.activity.manage
+
+commercial.manage
+    ├─ commercial.estimate.manage
+    ├─ commercial.quotation.manage
+    ├─ commercial.quotation.issue
+    └─ commercial.quotation.response.record
 ```
 
-The granular key is resolved first. The broad umbrella is used only when the granular key has no explicit member/role decision. Therefore a granular member deny cannot be bypassed by `project.manage` or `crm.manage`.
+The granular key is resolved first. The umbrella is used only when the granular key has no explicit member/role decision. A granular member deny therefore cannot be bypassed by an umbrella grant.
 
-This means existing custom roles with broad management grants keep working, while new roles can delegate responsibilities independently.
+## Controlled account provisioning and standard roles
 
-## Controlled account provisioning and onboarding
+NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisioning intent: an existing-organisation invitation or a self-service organisation bootstrap. The `/start` flow creates the first or an additional organisation through the normalised user/organisation/member/role model; pending identities cannot enter the protected application.
 
-NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisioning intent:
+Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
 
-```text
-existing organisation invitation
-              OR
-self-service organisation bootstrap
-              ↓
-       Better Auth sign-up
-              ↓
-        verified email
-              ↓
-     trusted NuBlox identity
-```
+**Owner and Administrator** receive the broad project/CRM/commercial umbrellas plus the implemented granular permissions appropriate to those domains.
 
-The `/start` flow creates the first or an additional organisation using the existing normalised user/organisation/member/role model. Pending identities cannot enter the protected application because trusted session resolution requires an active NuBlox domain user.
+**Manager** receives granular project and CRM party/contact operational authority without the broad project/CRM umbrellas. Manager does not automatically receive the newer opportunity/activity or commercial permissions.
 
-Every new organisation receives seven standard role templates:
-
-- Owner
-- Administrator
-- Manager
-- Finance/Commercial
-- Member/Professional
-- Field Worker
-- Read Only
-
-### Current standard role defaults
-
-**Owner and Administrator** receive the existing broad project/CRM umbrellas as well as the currently seeded granular project/party/contact keys. The new opportunity/activity keys do not require duplicate grants because `crm.manage` remains their compatibility umbrella unless an explicit granular decision exists.
+**Finance/Commercial** now receives:
 
 ```text
-organisation.manage
-member.invite
-member.manage
-project.create
 project.view
-project.manage
-project.lifecycle.manage
-project.participant.manage
-project.team.manage
-project.participation.manage
 crm.view
-crm.manage
-crm.party.manage
-crm.contact.manage
+commercial.view
+commercial.estimate.manage
+commercial.quotation.manage
+commercial.quotation.issue
+commercial.quotation.response.record
 ```
 
-**Manager** receives granular operational authority without the broad project/CRM umbrellas:
+Finance/Commercial deliberately does **not** receive `commercial.manage`. This preserves granular delegation and ensures later commercial permission families do not silently expand that role.
 
-```text
-member.invite
-member.manage
-project.create
-project.view
-project.lifecycle.manage
-project.participant.manage
-project.team.manage
-project.participation.manage
-crm.view
-crm.party.manage
-crm.contact.manage
-```
+Member/Professional receives `project.view + crm.view`, Field Worker receives `project.view`, and Read Only receives `project.view + crm.view`.
 
-`crm.opportunity.manage` and `crm.activity.manage` are deliberately **not** auto-granted to generic Manager or commercial role templates. They are explicit delegation points for organisations that want sales/opportunity responsibility separated from party/contact maintenance.
-
-Other defaults are:
-
-```text
-Finance/Commercial  → project.view + crm.view
-Member/Professional → project.view + crm.view
-Field Worker        → project.view
-Read Only           → project.view + crm.view
-```
-
-The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
+The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles. Forward migrations for existing organisations and `OrganisationBootstrapService` defaults for future organisations are kept in parity by integration tests.
 
 ## Organisation administration
 
@@ -215,104 +170,110 @@ organisation.manage → role definitions + permission grants + full organisation
 
 Delegation ceilings, organisation-manager protection, self-mutation restrictions, cross-tenant rejection and final-manager lockout prevention are enforced in the domain layer.
 
-## CRM parties and contacts
+## CRM parties, contacts, opportunities and activities
 
-The protected `/crm` surface is a **private tenant CRM**, not a platform-global directory.
-
-```text
-NuBlox organisation / tenant
-        ↓
-      parties
-      ├─ party_persons
-      └─ party_organisations
-        ↓
-roles + primary contact methods
-        ↓
-person ↔ organisation contact relationships
-```
+The protected `/crm` surface is a **private tenant CRM**, not a platform-global directory. CRM party identity is separate from NuBlox platform organisations, auth users, workforce records and project participants.
 
 CRM permissions are:
 
 ```text
 crm.view
-crm.manage              # umbrella
+crm.manage
 crm.party.manage
 crm.contact.manage
 crm.opportunity.manage
 crm.activity.manage
 ```
 
-`crm.party.manage` controls party creation/update/lifecycle, business-role classification and primary contact methods. `crm.contact.manage` controls organisation-contact relationships. The opportunity/activity keys control their respective application mutations. `crm.manage` remains umbrella fallback.
+The application includes:
 
-Every repository query remains explicitly tenant-scoped. CRM party identity is separate from NuBlox platform organisations, auth users, workforce records and project participants.
+- `/crm` — tenant CRM party directory and party creation;
+- `/crm/[partyPublicId]` — party maintenance, contacts and affiliations;
+- `/crm/opportunities` — opportunity portfolio, filtering and creation;
+- `/crm/opportunities/[opportunityPublicId]` — stage/value/outcome, participants and chronological activity timeline.
 
-The CRM party/contact UI supports organisation/person records, search/filtering, multi-role classification, primary email/phone, lifecycle state, new/existing organisation contacts, primary contact changes, dated relationship ending, affiliations and append-only audit evidence.
+Pipeline **stage** represents sales maturity while opportunity `status` represents the terminal outcome (`open`, `won`, `lost`, `cancelled`). Existing/future tenants without pipeline configuration receive an audited default Sales pipeline without overwriting custom configuration.
 
-## CRM opportunities and activity timeline
+See [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md).
 
-The protected application also exposes:
+## Estimates and quotations
 
-- `/crm/opportunities` — tenant-scoped opportunity portfolio, search/status filtering and opportunity creation;
-- `/crm/opportunities/[opportunityPublicId]` — opportunity commercial snapshot, lifecycle/stage/value maintenance, participant relationships and activity timeline.
-
-The implementation reuses Package 002's existing `crm_pipelines`, `crm_pipeline_stages`, `opportunities`, `opportunity_parties`, `crm_activities`, `crm_activity_parties` and `crm_activity_members` tables. No second sales/customer/activity schema is introduced.
+Package 003 is now activated as the first customer-pricing application slice:
 
 ```text
-CRM party / prospective customer
-             ↓
-        Opportunity
-             ↓
-     Pipeline + stage
-             ↓
- Participants / contacts
-             ↓
-     Activity timeline
+CRM Opportunity
+    ↓
+Estimate
+    ↓
+Estimate Version 1 (draft)
+    ↓
+Internal cost build-up + explicit sell rates
+    ↓
+Final Estimate Version
+    ↓
+Quotation
+    ↓
+Quotation Version 1 (draft)
+    ↓
+Tax + narrative
+    ↓
+Issue lock + customer/contact/address snapshots
+    ↓
+Customer response
 ```
 
-A new opportunity requires one primary CRM party. Additional participants are many-to-many through controlled opportunity roles such as contact, decision maker, consultant or referrer. Changing the primary prospective customer preserves the previous party assignment as non-primary history/context rather than duplicating party identity.
+Protected routes are:
 
-Pipeline **stage** represents sales maturity; opportunity `status` represents the terminal business outcome (`open`, `won`, `lost`, `cancelled`). Closing/reopening therefore does not require fake Won/Lost stages.
+- `/commercial/estimates` — estimate portfolio and opportunity-to-estimate creation;
+- `/commercial/estimates/[estimatePublicId]` — internal estimate lines, cost components, totals and finalisation;
+- `/commercial/quotations` — quotation portfolio and effective status;
+- `/commercial/quotations/[quotationPublicId]` — customer-facing lines, tax snapshots, narrative, issue evidence and response history.
 
-Existing tenants with no CRM pipeline receive a default `Sales` pipeline from the forward migration. Future tenants receive the same four-stage default (`Lead`, `Qualified`, `Proposal`, `Negotiation`) through an audited, idempotent first-use provisioning transaction when a suitably authorised actor first enters opportunity management.
+The implementation reuses Package 003's existing normalised `estimates`, `estimate_versions`, `estimate_items`, `estimate_item_cost_components`, `quotations`, `quotation_versions`, `quotation_items`, tax, snapshot, issue and response tables. No second customer/estimate/quotation ledger is introduced.
 
-Opportunity activities are chronological records linked to the opportunity and may reference external CRM parties plus internal organisation members through junction tables. Activity creation records the acting member as the internal owner and appends audit evidence.
+### Commercial calculation boundary
 
-Deliberately not implemented in this slice: custom pipeline administration, standalone activities not linked to an opportunity, estimates/quotations, or automatic opportunity-to-estimate conversion.
+Authoritative calculation uses scaled `BigInt` decimal arithmetic rather than JavaScript binary floating point:
+
+```text
+quantity       → scale 6
+money/rate     → scale 4
+percentage     → scale 4
+money result   → scale 4
+rounding       → half-up when reducing scale
+```
+
+Estimate sell/cost/margin and quotation net/tax/gross totals exclude optional lines until an explicit customer option-selection model is implemented. Cost-component `markup_percent` remains visible internal metadata and does not silently rewrite the explicit estimate sell rate.
+
+### Version and issue integrity
+
+Estimate version 1 supports `draft → final`; final/superseded versions are immutable through the service. A quotation can be created only from a final estimate version, and the exact source version is retained.
+
+Quotation version 1 supports `draft → issued`. Issue atomically snapshots current CRM customer/contact facts and primary addresses, records recipient/channel evidence, and locks the version. Subsequent CRM edits cannot rewrite what was actually issued.
+
+Tenant tax configuration is resolved while drafting and snapshotted per quotation line as applied rate, taxable amount and tax amount. Customer responses are recorded only against issued/locked versions. Effective quotation status is derived from immutable version state, response evidence and validity date rather than maintained as another editable status ledger.
+
+See [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md).
+
+**Deliberately not claimed implemented:** estimate version-2 revision UI, quotation version-2/supersession/withdrawal workflow, customer option selection, sales-catalogue/tax administration UI, PDF quotation rendering, production outbound quotation email delivery, accepted-quotation-to-project conversion or contract formation.
 
 ## Projects, participants and teams
 
-The protected application exposes:
+The protected application exposes `/projects` and `/projects/[projectPublicId]` for member-scoped portfolios, project creation, invitation response, participant organisations, own-organisation team administration and lifecycle controls.
 
-- `/projects` — member-scoped project portfolio, creation and pending invitation inbox;
-- `/projects/[projectPublicId]` — project workspace, participant organisations, own-organisation team administration and lifecycle controls.
-
-Project permissions are:
+Project permissions remain:
 
 ```text
 project.create
 project.view
-project.manage                    # umbrella
+project.manage
 project.lifecycle.manage
 project.participant.manage
 project.team.manage
 project.participation.manage
 ```
 
-Normal in-project access requires organisation authority **and** active organisation participation **and** an active `project_members` row for the exact member.
-
-Responsibilities are separated as follows:
-
-- `project.lifecycle.manage` — owning-organisation lifecycle transitions;
-- `project.participant.manage` — invite/remove participant organisations and maintain organisation-level contextual project roles;
-- `project.team.manage` — maintain the active organisation's project members and member project roles;
-- `project.participation.manage` — accept/decline invitations and non-owner voluntary leave;
-- `project.manage` — umbrella fallback for all four.
-
-Invitation response is a deliberate pre-project-scope boundary: the invited organisation can accept or decline with organisation-level `project.participation.manage` or umbrella fallback before a `project_members` row exists. Acceptance atomically establishes participation and the accepting member's first project scope.
-
-Project roles such as Client, Project manager, Engineer, Quantity surveyor/commercial, Main contractor and Inspector are contextual metadata. They never grant application permissions.
-
-The service prevents removal of the final active scoped member with effective `project.team.manage` authority until another scoped team manager exists.
+Normal in-project access requires organisation authority **and** active organisation participation **and** an active `project_members` row for the exact member. Project contextual roles never grant application permissions.
 
 ## Governing product rule
 
@@ -330,6 +291,6 @@ pnpm check
 pnpm test:integration
 ```
 
-The CRM opportunities/activity executable close-out applies **9 production migrations** cleanly on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift, passes **12 integration files / 50 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same gate before merge.
+The latest executable Package 003 candidate applies **10 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift, passes **13 integration files / 57 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same gate before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
