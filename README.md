@@ -41,7 +41,7 @@ The production migration stream then adds:
 - `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments;
 - `20260815161900_organisation_administration_permissions.sql` — stable organisation-administration permission catalogue entries.
 
-The administration-permission migration is data-only, so the current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**.
+The administration-permission migration is data-only, so the current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. Organisation bootstrap deliberately reuses existing Package 001 lifecycle states and does not add another persistence table.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -99,37 +99,72 @@ explicit deny > explicit allow > active role grant > default deny
 
 Project-scoped operations additionally require active project membership/participation. Better Auth handles authentication/session mechanics only; NuBlox remains authoritative for tenancy and business permissions.
 
-## Implemented account provisioning and application access
+## Implemented controlled account provisioning
 
-NuBlox has an end-to-end account path:
+NuBlox sign-up is not globally open. Better Auth accepts exactly one validated provisioning intent:
 
 ```text
-Authorised member invitation
-        ↓
-Invite-only account creation
-        ↓
-Verified email
-        ↓
-Auth identity ↔ NuBlox user link
-        ↓
-Active organisation membership
-        ↓
-Assigned organisation roles
-        ↓
-Sign in
-        ↓
-Organisation selection
-        ↓
-Protected application shell
+existing organisation invitation
+              OR
+self-service organisation bootstrap
+              ↓
+       Better Auth sign-up
+              ↓
+        verified email
+              ↓
+     trusted NuBlox identity
 ```
 
-Controls include hashed invitation tokens, seven-day invitation expiry, re-invite revocation, fail-closed Better Auth sign-up gating, verified-email activation, existing-user invite acceptance, role assignment and audit evidence. Invitation lifecycle requires `member.invite` or `organisation.manage`; attaching organisation roles additionally requires member-management authority and is subject to the role-delegation ceiling described below.
+Invitation controls include hashed random tokens, seven-day expiry, re-invite revocation, verified-email activation, existing-user invite acceptance, role assignment and audit evidence. Invitation lifecycle requires `member.invite` or `organisation.manage`; attaching organisation roles additionally requires member-management authority and is subject to the role-delegation ceiling described below.
 
 Transactional email is behind a provider-neutral application interface. `EMAIL_DELIVERY_MODE=console` is for development/integration testing only; production email-provider selection remains an explicit integration decision.
 
+## Implemented organisation bootstrap and onboarding
+
+The `/start` flow lets a new customer create a NuBlox account and first organisation without weakening the invitation boundary.
+
+```text
+/start
+  ↓
+short-lived HMAC-signed bootstrap intent
+  ↓
+Better Auth account creation
+  ↓
+pending NuBlox user
+pending organisation
+invited owner membership
+standard organisation roles + Owner assignment
+  ↓
+verified email
+  ↓
+active NuBlox user
+active organisation
+active Owner membership
+  ↓
+sign in → organisation selection → protected workspace
+```
+
+The bootstrap token is an HttpOnly, time-limited pre-sign-up authorisation envelope signed with HMAC-SHA256. It is not a second persistence model. Once Better Auth creates the auth identity, durable pre-verification state is stored in the existing normalised `users`, `user_emails`, `auth_user_links`, `organisations`, `organisation_members`, `organisation_roles`, `role_permissions`, `member_roles` and `audit_events` tables.
+
+A pending bootstrap identity cannot enter the application: trusted session resolution requires an **active** NuBlox domain user. Email verification transactionally activates the domain user, verified email, organisation and owner membership.
+
+Every new organisation receives seven standard role templates:
+
+- Owner
+- Administrator
+- Manager
+- Finance/Commercial
+- Member/Professional
+- Field Worker
+- Read Only
+
+The current administration catalogue gives Owner and Administrator `organisation.manage`, `member.invite` and `member.manage`; Manager receives `member.invite` and `member.manage`. The other role templates intentionally start without domain permission grants until their permission catalogues are implemented. The initial member is assigned **Owner only**.
+
+Existing active NuBlox users can also use `/start` to create an additional organisation without creating another auth or domain identity; the new tenant is selected immediately after the transactional bootstrap completes.
+
 ## Implemented organisation administration and membership management
 
-The protected `/organisation` workspace now provides tenant-scoped administration for:
+The protected `/organisation` workspace provides tenant-scoped administration for:
 
 - organisation members and membership status;
 - member-to-role assignments;
@@ -157,9 +192,9 @@ Administration mutations use public IDs at the request boundary and append audit
 
 ## Validation gate
 
-The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, account provisioning, organisation administration, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
+The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, account provisioning, organisation bootstrap, organisation administration, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
 
-The organisation-administration branch close-out passed **5 integration files / 20 real-MySQL tests** plus `svelte-check` with zero errors and zero warnings.
+The organisation-bootstrap close-out passed **6 integration files / 24 real-MySQL tests**, retained zero Kysely generated-type drift, and passed `svelte-check` with **0 errors / 0 warnings**.
 
 ## Governing product rule
 
@@ -169,4 +204,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Early usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, tenant-isolated Platform Kernel services implemented, authentication/trusted-tenant/effective-permission resolution integration-tested, controlled account provisioning implemented, and a permission-aware organisation administration workspace for membership, invitations, roles and permission grants validated against MySQL 8.4.**
+**Early usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, tenant-isolated Platform Kernel services implemented, authentication/trusted-tenant/effective-permission resolution integration-tested, controlled invitation and self-service organisation provisioning implemented, organisation selection and protected application access working, and permission-aware organisation administration validated against MySQL 8.4.**
