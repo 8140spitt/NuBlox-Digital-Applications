@@ -29,8 +29,6 @@ Architecture decisions are recorded in:
 
 ## Request trust flow
 
-`src/hooks.server.ts` resolves requests in this order:
-
 ```text
 request
   ↓
@@ -49,13 +47,56 @@ trusted request locals
 
 `locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` is populated only when the selected organisation has been revalidated against that user’s active membership.
 
-Browser-controlled organisation values never become trusted tenant context merely because they were supplied by the client.
+## Account provisioning
 
-## Tenant selection
+NuBlox account creation is invitation-controlled. Better Auth does not own organisation membership.
 
-`POST /api/tenant/select` accepts an organisation public ID and sets the `nublox_organisation` HttpOnly preference cookie only after active membership is proven. `DELETE /api/tenant/select` clears that selection.
+```text
+organisation invitation
+        ↓
+invite-only Better Auth sign-up
+        ↓
+email verification
+        ↓
+auth_user_links
+        ↓
+NuBlox user + verified user email
+        ↓
+active organisation membership
+        ↓
+invitation role assignments
+```
 
-The cookie is a preference/selection hint, not an authorisation token. Membership is checked again when tenant context is resolved.
+Key controls:
+
+- invitation tokens are random 256-bit values; only SHA-256 hashes are persisted;
+- pending invitations expire after seven days;
+- re-inviting the same organisation/email revokes the earlier pending invitation;
+- Better Auth `/sign-up/email` fails closed without the matching invitation cookie and email;
+- brand-new NuBlox membership activation occurs only from the verified-email path;
+- persisted `auth_users.email_verified` is checked before callback-driven activation;
+- existing signed-in NuBlox users can accept an invitation without creating a duplicate auth/domain identity;
+- intended organisation roles are stored before acceptance and assigned when membership activates;
+- creation and acceptance produce audit evidence.
+
+The provisioning API is `POST /api/organisations/invitations` and requires the effective `member.invite` permission.
+
+## Transactional email boundary
+
+`src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral.
+
+`EMAIL_DELIVERY_MODE=console` is for local development and integration tests only. An unconfigured production delivery mode fails before an invitation service is constructed, preventing an invitation from being committed when delivery is unavailable. A production provider adapter remains a separate integration decision.
+
+## Application access
+
+The first end-to-end account UI now includes:
+
+- `/signin` — Better Auth email/password sign-in;
+- `/invite/[token]` — invitation acceptance/account creation;
+- `/select-organisation` — active organisation membership selector;
+- `/dashboard` — protected organisation-scoped application entry point and member invitation surface.
+
+The `(app)` route-group server layout rejects unauthenticated users and redirects authenticated users without a verified tenant to organisation selection. Its Svelte layout provides the initial NuBlox application shell, organisation switcher and sign-out boundary.
 
 ## Permission resolution
 
@@ -68,26 +109,11 @@ explicit member deny
     > default deny
 ```
 
-When a project ID is supplied, an allowed organisation permission is additionally intersected with active project participation and active project membership. Record-state/business-policy checks remain the responsibility of the relevant domain service.
+Project-scoped operations additionally require active project participation and active project membership. Record-state/business-policy checks remain with the relevant domain service.
 
 ## Implemented Platform Kernel foundation
 
-The database-backed kernel currently includes:
-
-- active organisation/user/member tuple verification;
-- active organisation access;
-- participant-scoped project reads;
-- transactional project creation with owner participation and creator membership;
-- owning-organisation project lifecycle mutation;
-- server-side state-machine validation;
-- optimistic current-status guards;
-- append-only project audit evidence.
-
-## Authentication boundary
-
-Better Auth owns authentication/session mechanics in the `auth_*` tables. NuBlox retains the authoritative domain records for `users`, organisation membership, roles, permissions and project scope.
-
-The explicit `auth_user_links` relation connects those two identities. Public self-sign-up is currently disabled; production invitation/provisioning, email delivery/recovery, MFA and enterprise SSO are subsequent increments rather than hidden assumptions in the request boundary.
+The database-backed kernel includes active organisation/user/member tuple verification, participant-scoped project reads, transactional project creation, owner-scoped project lifecycle mutation, optimistic lifecycle guards and append-only audit evidence.
 
 ## Run
 
@@ -105,6 +131,7 @@ DATABASE_URL
 DB_POOL_MAX
 BETTER_AUTH_URL
 BETTER_AUTH_SECRET
+EMAIL_DELIVERY_MODE
 ```
 
 ## Database commands
@@ -122,4 +149,4 @@ pnpm check
 pnpm test:integration
 ```
 
-CI applies the production migration stream to MySQL 8.4, verifies the migrated structural counts, regenerates Kysely types with zero drift, runs the authentication/tenant/permission and Platform Kernel integration tests, and finally runs the SvelteKit type-check.
+The permanent CI gate applies the migration stream to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check.
