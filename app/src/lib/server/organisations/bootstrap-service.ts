@@ -15,8 +15,14 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'project.create',
 	'project.view',
 	'project.manage',
+	'project.lifecycle.manage',
+	'project.participant.manage',
+	'project.team.manage',
+	'project.participation.manage',
 	'crm.view',
-	'crm.manage'
+	'crm.manage',
+	'crm.party.manage',
+	'crm.contact.manage'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -30,8 +36,14 @@ const STANDARD_ROLES = [
 			'project.create',
 			'project.view',
 			'project.manage',
+			'project.lifecycle.manage',
+			'project.participant.manage',
+			'project.team.manage',
+			'project.participation.manage',
 			'crm.view',
-			'crm.manage'
+			'crm.manage',
+			'crm.party.manage',
+			'crm.contact.manage'
 		]
 	},
 	{
@@ -44,21 +56,31 @@ const STANDARD_ROLES = [
 			'project.create',
 			'project.view',
 			'project.manage',
+			'project.lifecycle.manage',
+			'project.participant.manage',
+			'project.team.manage',
+			'project.participation.manage',
 			'crm.view',
-			'crm.manage'
+			'crm.manage',
+			'crm.party.manage',
+			'crm.contact.manage'
 		]
 	},
 	{
 		name: 'Manager',
-		description: 'Manages ordinary members, invitations and project delivery within delegated authority.',
+		description: 'Manages ordinary members, invitations, projects and CRM within delegated authority.',
 		permissionKeys: [
 			'member.invite',
 			'member.manage',
 			'project.create',
 			'project.view',
-			'project.manage',
+			'project.lifecycle.manage',
+			'project.participant.manage',
+			'project.team.manage',
+			'project.participation.manage',
 			'crm.view',
-			'crm.manage'
+			'crm.party.manage',
+			'crm.contact.manage'
 		]
 	},
 	{
