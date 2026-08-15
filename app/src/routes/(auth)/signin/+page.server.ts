@@ -12,6 +12,7 @@ function safeReturnTo(value: string | null): string | null {
 export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 	const returnTo = safeReturnTo(url.searchParams.get('returnTo'));
 	const verified = url.searchParams.get('verified') === '1';
+	const passwordReset = url.searchParams.get('reset') === '1';
 	if (verified) {
 		cookies.delete(INVITATION_SIGNUP_COOKIE, { path: '/' });
 		cookies.delete(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE, { path: '/' });
@@ -20,5 +21,5 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 		throw redirect(303, returnTo ?? (locals.tenant.membershipVerified ? '/dashboard' : '/select-organisation'));
 	}
 
-	return { returnTo, verified };
+	return { returnTo, verified, passwordReset };
 };
