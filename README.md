@@ -2,72 +2,50 @@
 
 NuBlox is a proposed **Built Environment Business Operating System** serving businesses and professionals across construction and the built environment.
 
-It combines:
-
-- a shared business-management core;
-- a built-environment project, site and asset-management core;
-- profession-specific capability packs;
-- controlled collaboration across organisations; and
-- structured data, workflow automation and future AI assistance across the building lifecycle.
+It combines a shared business-management core, a built-environment project/site/asset core, profession-specific capability packs, controlled cross-organisation collaboration, and structured workflow/automation across the building lifecycle.
 
 ## Fixed technology direction
 
 - **Frontend:** Svelte 5
 - **Application framework:** SvelteKit
-- **Primary persistence:** MySQL using InnoDB
-- **Architecture:** modular monolith first, with explicit domain boundaries
+- **Primary persistence:** MySQL / InnoDB
+- **Architecture:** modular monolith first, explicit domain boundaries
 - **Database design:** normalised relational model, targeting 3NF by default
-- **Market assumption:** UK-first, with regionalisation designed in rather than hard-coded
+- **Market assumption:** UK-first, regionalisation designed in rather than hard-coded
 
-## Documentation index
+## Developer handoff documentation
 
-The `/docs` directory is the software-development-company handoff pack:
+The original product and delivery handoff remains under `/docs`:
 
-1. [Executive Summary](docs/00-executive-summary.md)
-2. [Product Requirements Document](docs/01-product-requirements-document.md)
-3. [Functional Requirements](docs/02-functional-requirements.md)
-4. [Career Taxonomy](docs/03-career-taxonomy.md)
-5. [Career Capability Matrix](docs/04-career-capability-matrix.md)
-6. [System Architecture](docs/05-system-architecture.md)
-7. [Data Model](docs/06-data-model.md)
-8. [Authentication, Permissions and Multi-tenancy](docs/07-auth-permissions-multitenancy.md)
-9. [API and Integrations](docs/08-api-integrations.md)
-10. [UX and Information Architecture](docs/09-ux-information-architecture.md)
-11. [Non-functional Requirements](docs/10-non-functional-requirements.md)
-12. [Security, Privacy and Compliance](docs/11-security-privacy-compliance.md)
-13. [DevOps, Environments and Testing](docs/12-devops-environments-testing.md)
-14. [Delivery Roadmap](docs/13-delivery-roadmap.md)
-15. [Backlog and Acceptance Criteria](docs/14-backlog-acceptance-criteria.md)
-16. [Open Decisions and Assumptions](docs/15-open-decisions-assumptions.md)
-17. [Glossary](docs/16-glossary.md)
-18. [Sources and Standards](docs/17-sources-and-standards.md)
-19. [Development Company Brief](docs/18-development-company-brief.md)
-20. [Risks and Dependencies](docs/19-risks-and-dependencies.md)
-21. [Record Lifecycles and State Machines](docs/20-record-lifecycles.md)
-22. [Normalised Database Schema — Platform Kernel](docs/21-normalised-database-schema.md)
-23. [CRM and Party Domain Model](docs/22-crm-party-model.md)
-24. [Sales, Estimates, Quotations and Proposals](docs/23-sales-estimates-quotations.md)
-25. [Contracts and Finance Domain Model](docs/24-contracts-finance.md)
-26. [Procurement Domain Model](docs/25-procurement.md)
-27. [Workforce, Time and Scheduling Domain Model](docs/26-workforce-time-scheduling.md)
-28. [Project Information and Documents Domain Model](docs/27-project-information-documents.md)
+- `docs/00-executive-summary.md` through `docs/20-record-lifecycles.md`
+- `docs/career-taxonomy-seed.csv`
+- `docs/career-taxonomy-seed.json`
 
-## Database implementation
+The historical `docs/21` through `docs/27` paths are retained as compatibility pointers.
 
-The `/database` directory contains the implementation-level MySQL schema baseline:
+## Database implementation packages
 
-- [Database workflow and migration rules](database/README.md)
-- [001 — Platform Kernel DDL](database/schema/001-platform-kernel.sql)
-- [001a — Reserved Kernel Integrity Checkpoint](database/schema/001a-platform-kernel-integrity.sql)
-- [002 — CRM and Party Model DDL](database/schema/002-crm-parties.sql)
-- [003 — Sales, Estimates and Quotations DDL](database/schema/003-sales-quotes.sql)
-- [004 — Contracts and Finance DDL](database/schema/004-contracts-finance.sql)
-- [005 — Procurement DDL](database/schema/005-procurement.sql)
-- [006 — Workforce, Time and Scheduling DDL](database/schema/006-workforce-time-scheduling.sql)
-- [007 — Project Information and Documents DDL](database/schema/007-project-information-documents.sql)
-- [007a — Project Information Integrity Hardening](database/schema/007a-project-information-integrity.sql)
+Implementation-level schema work is grouped under `/database`:
 
-Planned schema packages continue through site/quality/safety, commercial cost control and assets/maintenance.
+- [Database workflow and rules](database/README.md)
+- [Database package documentation](database/docs/README.md)
+- [SQL package index](database/schema/README.md)
+
+### Current completed packages
+
+| Package | Domain | Specification | SQL |
+|---|---|---|---|
+| 001 | Platform Kernel | `database/docs/001-platform-kernel.md` | `database/schema/001-platform-kernel.sql` |
+| 002 | CRM & Parties | `database/docs/002-crm-parties.md` | `database/schema/002-crm-parties.sql` |
+| 003 | Sales, Estimates & Quotations | `database/docs/003-sales-estimates-quotations.md` | `database/schema/003-sales-quotes.sql` |
+| 004 | Contracts & Finance | `database/docs/004-contracts-finance.md` | `database/schema/004-contracts-finance.sql` |
+| 005 | Procurement | `database/docs/005-procurement.md` | `database/schema/005-procurement.sql` |
+| 006 | Workforce, Time & Scheduling | `database/docs/006-workforce-time-scheduling.md` | `database/schema/006-workforce-time-scheduling.sql` |
+| 007 | Project Information & Documents | `database/docs/007-project-information-documents.md` | `database/schema/007-project-information-documents.sql` + integrity stage |
+
+Package 007's integrity stage is `database/schema/007-project-information-integrity.sql`; it is part of Package 007, not Package 007a.
+
+Planned next: **008 Site Operations, Quality & Safety → 009 Commercial Cost Control → 010 Assets & Maintenance**.
 
 ## Governing product rule
 
@@ -78,5 +56,3 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 ## Current status
 
 **Product definition / pre-development with implementation-level schema design in progress.**
-
-This repository defines the intended product, baseline architecture and acceptance expectations for discovery, estimation and implementation planning. Items explicitly marked as open decisions must be agreed before contractual scope is frozen.
