@@ -30,7 +30,7 @@ The original product and delivery handoff remains under `/docs`:
 - `docs/career-taxonomy-seed.csv`
 - `docs/career-taxonomy-seed.json`
 
-The historical `docs/21` through `docs/29` paths are retained as compatibility pointers.
+The historical `docs/21` through `docs/30` paths are retained as compatibility pointers.
 
 ## Database implementation packages
 
@@ -40,7 +40,7 @@ Implementation-level schema work is grouped under `/database`:
 - [Database package documentation](database/docs/README.md)
 - [SQL package index](database/schema/README.md)
 
-### Current completed packages
+### Completed baseline packages
 
 | Package | Domain | Specification | SQL |
 |---|---|---|---|
@@ -53,12 +53,13 @@ Implementation-level schema work is grouped under `/database`:
 | 007 | Project Information & Documents | `database/docs/007-project-information-documents.md` | `database/schema/007-project-information-documents.sql` + integrity stage |
 | 008 | Site Operations, Quality & Safety | `database/docs/008-site-quality-safety.md` | `database/schema/008-site-quality-safety.sql` + integrity stage |
 | 009 | Commercial Cost Control | `database/docs/009-commercial-cost-control.md` | `database/schema/009-commercial-cost-control.sql` |
+| 010 | Assets & Maintenance | `database/docs/010-assets-maintenance.md` | `database/schema/010-assets-maintenance.sql` |
 
 Package 007's integrity stage is `database/schema/007-project-information-integrity.sql`; it is part of Package 007, not Package 007a.
 
 Package 008's integrity stage is `database/schema/008-site-quality-safety-integrity.sql`; it is part of Package 008 and hardens attendance/inspection/RAMS/action integrity found during validation.
 
-Planned next: **010 Assets & Maintenance**.
+The planned **001–010 relational domain baseline is now complete**. The next database phase is to select the migration/query tooling, run the complete chain against clean MySQL 8.4 in CI, resolve any executable-chain defects as forward pre-production changes, and add tenant/lifecycle integrity tests before production migrations are frozen.
 
 ## Governing product rule
 
@@ -68,4 +69,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Product definition / pre-development with implementation-level schema design in progress.**
+**Product definition / pre-development with the planned 001–010 implementation-level relational schema baseline complete.**

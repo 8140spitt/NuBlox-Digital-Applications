@@ -4,7 +4,8 @@
   "career_count": 84,
   "domain_count": 16,
   "fixed_stack": ["Svelte 5", "SvelteKit", "MySQL/InnoDB"],
-  "current_schema_package": "009-commercial-cost-control",
+  "current_schema_package": "010-assets-maintenance",
+  "schema_baseline_status": "001-010 complete; full-chain MySQL validation pending",
   "brand_docs": [
     "docs/branding/00-business-entity.md",
     "docs/branding/01-brand-strategy.md"
@@ -18,7 +19,8 @@
     "database/docs/006-workforce-time-scheduling.md",
     "database/docs/007-project-information-documents.md",
     "database/docs/008-site-quality-safety.md",
-    "database/docs/009-commercial-cost-control.md"
+    "database/docs/009-commercial-cost-control.md",
+    "database/docs/010-assets-maintenance.md"
   ],
   "database_schema": [
     "database/schema/001-platform-kernel.sql",
@@ -31,7 +33,8 @@
     "database/schema/007-project-information-integrity.sql",
     "database/schema/008-site-quality-safety.sql",
     "database/schema/008-site-quality-safety-integrity.sql",
-    "database/schema/009-commercial-cost-control.sql"
+    "database/schema/009-commercial-cost-control.sql",
+    "database/schema/010-assets-maintenance.sql"
   ],
   "handoff_docs": [
     "docs/00-executive-summary.md",
@@ -67,6 +70,7 @@
     "docs/26-workforce-time-scheduling.md",
     "docs/27-project-information-documents.md",
     "docs/28-site-quality-safety.md",
-    "docs/29-commercial-cost-control.md"
+    "docs/29-commercial-cost-control.md",
+    "docs/30-assets-maintenance.md"
   ]
 }
