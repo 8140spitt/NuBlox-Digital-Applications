@@ -1,5 +1,5 @@
 -- NuBlox CRM opportunities and activity timeline activation
--- Data/reference-only forward migration over Package 002.
+-- Persistent data/reference-only forward migration over Package 002.
 -- migrate:up transaction:false
 
 INSERT INTO permissions (
@@ -22,9 +22,25 @@ ON DUPLICATE KEY UPDATE
 -- the existing crm.manage umbrella; organisations can delegate the new keys to
 -- the exact sales/commercial roles or members that need them.
 
--- Package 002 already contains tenant-owned pipeline/stage tables. Seed one
--- usable default only for organisations that have no pipeline configuration at
--- all; existing/custom tenant pipeline configuration is never overwritten.
+-- Snapshot only the organisations that have zero pipeline configuration before
+-- this migration creates anything. The temporary working set prevents the stage
+-- seed from mutating an existing/custom default pipeline that happens to be
+-- called "Sales" and has no stages yet.
+DROP TEMPORARY TABLE IF EXISTS tmp_crm_default_pipeline_organisations;
+CREATE TEMPORARY TABLE tmp_crm_default_pipeline_organisations (
+    organisation_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (organisation_id)
+) ENGINE = MEMORY;
+
+INSERT INTO tmp_crm_default_pipeline_organisations (organisation_id)
+SELECT organisation.id
+FROM organisations AS organisation
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM crm_pipelines AS existing_pipeline
+    WHERE existing_pipeline.organisation_id = organisation.id
+);
+
 INSERT INTO crm_pipelines (
     organisation_id,
     public_id,
@@ -33,21 +49,15 @@ INSERT INTO crm_pipelines (
     is_active
 )
 SELECT
-    organisation.id,
+    target.organisation_id,
     UUID(),
     'Sales',
     TRUE,
     TRUE
-FROM organisations AS organisation
-WHERE NOT EXISTS (
-    SELECT 1
-    FROM crm_pipelines AS existing_pipeline
-    WHERE existing_pipeline.organisation_id = organisation.id
-);
+FROM tmp_crm_default_pipeline_organisations AS target;
 
--- Seed the standard stages only when the default Sales pipeline has no stages.
--- Pipeline stage remains sales maturity; opportunity.status owns terminal
--- outcome, so a won/lost/cancelled opportunity preserves the last stage reached.
+-- Stage represents sales maturity. Opportunity.status owns terminal outcome, so
+-- a won/lost/cancelled opportunity preserves the last stage it actually reached.
 INSERT INTO crm_pipeline_stages (
     organisation_id,
     crm_pipeline_id,
@@ -63,22 +73,20 @@ SELECT
     stage.sort_order,
     stage.probability_percent,
     TRUE
-FROM crm_pipelines AS pipeline
+FROM tmp_crm_default_pipeline_organisations AS target
+INNER JOIN crm_pipelines AS pipeline
+    ON pipeline.organisation_id = target.organisation_id
+   AND pipeline.name = 'Sales'
+   AND pipeline.is_default = TRUE
+   AND pipeline.is_active = TRUE
 CROSS JOIN (
     SELECT 'Lead' AS name, 10 AS sort_order, CAST(10.00 AS DECIMAL(5,2)) AS probability_percent
     UNION ALL SELECT 'Qualified', 20, CAST(30.00 AS DECIMAL(5,2))
     UNION ALL SELECT 'Proposal', 30, CAST(60.00 AS DECIMAL(5,2))
     UNION ALL SELECT 'Negotiation', 40, CAST(80.00 AS DECIMAL(5,2))
-) AS stage
-WHERE pipeline.name = 'Sales'
-  AND pipeline.is_default = TRUE
-  AND pipeline.is_active = TRUE
-  AND NOT EXISTS (
-      SELECT 1
-      FROM crm_pipeline_stages AS existing_stage
-      WHERE existing_stage.organisation_id = pipeline.organisation_id
-        AND existing_stage.crm_pipeline_id = pipeline.id
-  );
+) AS stage;
+
+DROP TEMPORARY TABLE IF EXISTS tmp_crm_default_pipeline_organisations;
 
 -- migrate:down transaction:false
 -- Released permission catalogue and tenant pipeline configuration is forward-only.
