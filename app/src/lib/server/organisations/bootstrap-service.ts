@@ -1,15 +1,13 @@
-import { createHash, randomBytes, randomUUID } from 'node:crypto';
+import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto';
+import { env } from '$env/dynamic/private';
 
 import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import type { Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
-import {
-	OrganisationBootstrapRepository,
-	type PendingOrganisationBootstrap
-} from './bootstrap-repository';
 
 const BOOTSTRAP_INTENT_LIFETIME_MS = 4 * 60 * 60 * 1000;
+const BOOTSTRAP_TOKEN_VERSION = 1;
 const ADMIN_PERMISSION_KEYS = ['organisation.manage', 'member.invite', 'member.manage'] as const;
 
 const STANDARD_ROLES = [
@@ -57,6 +55,20 @@ export type OrganisationBootstrapDetails = {
 	defaultCurrencyCode?: string;
 };
 
+type ValidatedBootstrapDetails = {
+	legalName: string;
+	tradingName: string | null;
+	defaultTimezone: string;
+	defaultCurrencyCode: string;
+};
+
+type BootstrapTokenPayload = ValidatedBootstrapDetails & {
+	v: 1;
+	nonce: string;
+	email: string;
+	expiresAt: number;
+};
+
 export type OrganisationBootstrapIntent = {
 	publicId: string;
 	email: string;
@@ -92,8 +104,10 @@ export function normaliseBootstrapEmail(email: string): string {
 	return email.trim().toLowerCase();
 }
 
-export function hashBootstrapToken(token: string): string {
-	return createHash('sha256').update(token, 'utf8').digest('hex');
+function bootstrapSigningKey(): string {
+	const secret = env.BETTER_AUTH_SECRET?.trim();
+	if (!secret) throw new Error('BETTER_AUTH_SECRET is required for organisation bootstrap signing.');
+	return `nublox:organisation-bootstrap:v1:${secret}`;
 }
 
 function validateEmail(value: string): string {
@@ -104,7 +118,7 @@ function validateEmail(value: string): string {
 	return email;
 }
 
-function validateDetails(input: OrganisationBootstrapDetails): Required<Omit<OrganisationBootstrapDetails, 'tradingName'>> & { tradingName: string | null } {
+function validateDetails(input: OrganisationBootstrapDetails): ValidatedBootstrapDetails {
 	const legalName = input.legalName.trim();
 	if (!legalName || legalName.length > 255) {
 		throw new OrganisationBootstrapValidationError('Legal name must be between 1 and 255 characters.');
@@ -138,6 +152,65 @@ function validateDetails(input: OrganisationBootstrapDetails): Required<Omit<Org
 	};
 }
 
+function encodeBootstrapToken(payload: BootstrapTokenPayload): string {
+	const body = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+	const signature = createHmac('sha256', bootstrapSigningKey()).update(body).digest('base64url');
+	return `${body}.${signature}`;
+}
+
+function decodeBootstrapToken(rawToken: string): BootstrapTokenPayload {
+	const [body, suppliedSignature, extra] = rawToken.split('.');
+	if (!body || !suppliedSignature || extra) throw new OrganisationBootstrapAccessError();
+	const expectedSignature = createHmac('sha256', bootstrapSigningKey()).update(body).digest();
+	let supplied: Buffer;
+	try {
+		supplied = Buffer.from(suppliedSignature, 'base64url');
+	} catch {
+		throw new OrganisationBootstrapAccessError();
+	}
+	if (supplied.length !== expectedSignature.length || !timingSafeEqual(supplied, expectedSignature)) {
+		throw new OrganisationBootstrapAccessError();
+	}
+
+	let parsed: unknown;
+	try {
+		parsed = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+	} catch {
+		throw new OrganisationBootstrapAccessError();
+	}
+	if (!parsed || typeof parsed !== 'object') throw new OrganisationBootstrapAccessError();
+	const value = parsed as Partial<BootstrapTokenPayload>;
+	if (
+		value.v !== BOOTSTRAP_TOKEN_VERSION ||
+		typeof value.nonce !== 'string' ||
+		typeof value.email !== 'string' ||
+		typeof value.legalName !== 'string' ||
+		(value.tradingName !== null && typeof value.tradingName !== 'string') ||
+		typeof value.defaultTimezone !== 'string' ||
+		typeof value.defaultCurrencyCode !== 'string' ||
+		typeof value.expiresAt !== 'number' ||
+		!Number.isFinite(value.expiresAt) ||
+		value.expiresAt <= Date.now()
+	) {
+		throw new OrganisationBootstrapAccessError();
+	}
+
+	const email = validateEmail(value.email);
+	const details = validateDetails({
+		legalName: value.legalName,
+		tradingName: value.tradingName,
+		defaultTimezone: value.defaultTimezone,
+		defaultCurrencyCode: value.defaultCurrencyCode
+	});
+	return {
+		v: 1,
+		nonce: value.nonce,
+		email,
+		expiresAt: value.expiresAt,
+		...details
+	};
+}
+
 export class OrganisationBootstrapService {
 	constructor(private readonly db: Database) {}
 
@@ -147,67 +220,106 @@ export class OrganisationBootstrapService {
 	}): Promise<OrganisationBootstrapIntent> {
 		const email = validateEmail(input.email);
 		const details = validateDetails(input.details);
-		const token = randomBytes(32).toString('base64url');
-		const tokenHash = hashBootstrapToken(token);
+		const existingAuthUser = await this.db
+			.selectFrom('auth_users')
+			.select('id')
+			.where('email', '=', email)
+			.executeTakeFirst();
+		const existingDomainEmail = await this.db
+			.selectFrom('user_emails')
+			.select('user_id')
+			.where('email', '=', email)
+			.executeTakeFirst();
+		if (existingAuthUser || existingDomainEmail) {
+			throw new OrganisationBootstrapValidationError(
+				'A NuBlox account already uses this email. Sign in to create another organisation.'
+			);
+		}
+
 		const publicId = randomUUID();
 		const expiresAt = new Date(Date.now() + BOOTSTRAP_INTENT_LIFETIME_MS);
+		const token = encodeBootstrapToken({
+			v: 1,
+			nonce: publicId,
+			email,
+			expiresAt: expiresAt.getTime(),
+			...details
+		});
+		return { publicId, email, expiresAt, token };
+	}
 
-		await this.db.transaction().execute(async (trx) => {
-			const existingAuthUser = await trx
-				.selectFrom('auth_users')
-				.select('id')
-				.where('email', '=', email)
+	async validateSignup(rawToken: string, rawEmail: string): Promise<void> {
+		const payload = decodeBootstrapToken(rawToken);
+		if (payload.email !== validateEmail(rawEmail)) throw new OrganisationBootstrapAccessError();
+		const existingAuthUser = await this.db
+			.selectFrom('auth_users')
+			.select('id')
+			.where('email', '=', payload.email)
+			.executeTakeFirst();
+		const existingDomainEmail = await this.db
+			.selectFrom('user_emails')
+			.select('user_id')
+			.where('email', '=', payload.email)
+			.executeTakeFirst();
+		if (existingAuthUser || existingDomainEmail) throw new OrganisationBootstrapAccessError();
+	}
+
+	async provisionSignup(input: {
+		rawToken: string;
+		authUserId: string;
+		email: string;
+		displayName: string;
+		correlationId?: string;
+	}): Promise<OrganisationBootstrapResult> {
+		const payload = decodeBootstrapToken(input.rawToken);
+		const email = validateEmail(input.email);
+		if (payload.email !== email) throw new OrganisationBootstrapAccessError();
+
+		return this.db.transaction().execute(async (trx) => {
+			const existingLink = await trx
+				.selectFrom('auth_user_links')
+				.select('user_id')
+				.where('auth_user_id', '=', input.authUserId)
 				.executeTakeFirst();
-			const existingDomainEmail = await trx
+			const existingEmail = await trx
 				.selectFrom('user_emails')
 				.select('user_id')
 				.where('email', '=', email)
 				.executeTakeFirst();
-			if (existingAuthUser || existingDomainEmail) {
-				throw new OrganisationBootstrapValidationError(
-					'A NuBlox account already uses this email. Sign in to create another organisation.'
-				);
-			}
+			if (existingLink || existingEmail) throw new OrganisationBootstrapAccessError();
 
-			const repository = new OrganisationBootstrapRepository(trx);
-			await repository.revokePendingForEmail(email);
-			await repository.insertIntent({
-				publicId,
-				email,
-				tokenHash,
-				legalName: details.legalName,
-				tradingName: details.tradingName,
-				defaultTimezone: details.defaultTimezone,
-				defaultCurrencyCode: details.defaultCurrencyCode,
-				expiresAt
+			const userInsert = await trx
+				.insertInto('users')
+				.values({
+					public_id: randomUUID(),
+					display_name: input.displayName.trim() || email,
+					status: 'pending'
+				})
+				.executeTakeFirstOrThrow();
+			if (userInsert.insertId === undefined) throw new Error('User insert did not return an ID.');
+			const userId = userInsert.insertId.toString();
+
+			await trx
+				.insertInto('user_emails')
+				.values({
+					user_id: userId,
+					email,
+					is_primary: 1,
+					is_verified: 0,
+					verified_at: null
+				})
+				.executeTakeFirstOrThrow();
+			await trx
+				.insertInto('auth_user_links')
+				.values({ auth_user_id: input.authUserId, user_id: userId })
+				.executeTakeFirstOrThrow();
+
+			return this.createOrganisationRecords(trx, {
+				userId,
+				details: payload,
+				state: 'pending',
+				correlationId: input.correlationId ?? randomUUID()
 			});
-		});
-
-		return { publicId, email, expiresAt, token };
-	}
-
-	async validateSignup(rawToken: string, rawEmail: string): Promise<PendingOrganisationBootstrap> {
-		const email = validateEmail(rawEmail);
-		const intent = await new OrganisationBootstrapRepository(this.db).findPendingByTokenHash(
-			hashBootstrapToken(rawToken)
-		);
-		if (!intent || intent.authUserId || normaliseBootstrapEmail(intent.email) !== email) {
-			throw new OrganisationBootstrapAccessError();
-		}
-		return intent;
-	}
-
-	async bindSignupAuthUser(rawToken: string, rawEmail: string, authUserId: string): Promise<void> {
-		const email = validateEmail(rawEmail);
-		await this.db.transaction().execute(async (trx) => {
-			const repository = new OrganisationBootstrapRepository(trx);
-			const intent = await repository.findPendingByTokenHash(hashBootstrapToken(rawToken), new Date(), true);
-			if (!intent || intent.authUserId || normaliseBootstrapEmail(intent.email) !== email) {
-				throw new OrganisationBootstrapAccessError();
-			}
-			if (!(await repository.bindAuthUser(intent.id, authUserId))) {
-				throw new OrganisationBootstrapAccessError();
-			}
 		});
 	}
 
@@ -219,39 +331,94 @@ export class OrganisationBootstrapService {
 	}): Promise<OrganisationBootstrapResult | null> {
 		const email = validateEmail(input.email);
 		return this.db.transaction().execute(async (trx) => {
-			const repository = new OrganisationBootstrapRepository(trx);
-			const intent = await repository.findPendingByAuthUser(input.authUserId, email, new Date(), true);
-			if (!intent) return null;
-			if (intent.authUserId !== input.authUserId || normaliseBootstrapEmail(intent.email) !== email) {
-				throw new OrganisationBootstrapAccessError();
-			}
+			const link = await trx
+				.selectFrom('auth_user_links')
+				.select('user_id')
+				.where('auth_user_id', '=', input.authUserId)
+				.executeTakeFirst();
+			if (!link) return null;
 
-			const userId = await this.ensureVerifiedDomainUser(trx, {
-				authUserId: input.authUserId,
-				email,
-				displayName: input.displayName
-			});
-			const created = await this.createOrganisationFoundation(
-				trx,
-				userId,
-				{
-					legalName: intent.legalName,
-					tradingName: intent.tradingName,
-					defaultTimezone: intent.defaultTimezone,
-					defaultCurrencyCode: intent.defaultCurrencyCode
-				},
-				input.correlationId ?? randomUUID()
-			);
-			if (
-				!(await repository.markActivated({
-					intentId: intent.id,
-					userId,
-					organisationId: created.organisationId
-				}))
-			) {
-				throw new OrganisationBootstrapAccessError('Organisation setup changed concurrently.');
+			const pending = await trx
+				.selectFrom('organisation_members as member')
+				.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+				.select([
+					'member.id as memberId',
+					'member.public_id as memberPublicId',
+					'organisation.id as organisationId',
+					'organisation.public_id as organisationPublicId'
+				])
+				.where('member.user_id', '=', link.user_id)
+				.where('member.status', '=', 'invited')
+				.where('organisation.status', '=', 'pending')
+				.forUpdate()
+				.limit(2)
+				.execute();
+			if (pending.length === 0) return null;
+			if (pending.length !== 1) {
+				throw new OrganisationBootstrapAccessError('Multiple pending organisation bootstrap records were found.');
 			}
-			return created;
+			const target = pending[0]!;
+
+			const user = await trx
+				.selectFrom('users')
+				.select('status')
+				.where('id', '=', link.user_id)
+				.forUpdate()
+				.executeTakeFirstOrThrow();
+			const domainEmail = await trx
+				.selectFrom('user_emails')
+				.select(['email', 'is_verified'])
+				.where('user_id', '=', link.user_id)
+				.where('email', '=', email)
+				.executeTakeFirst();
+			if (!domainEmail || user.status !== 'pending') return null;
+
+			const now = new Date();
+			await trx
+				.updateTable('users')
+				.set({ status: 'active' })
+				.where('id', '=', link.user_id)
+				.where('status', '=', 'pending')
+				.executeTakeFirstOrThrow();
+			await trx
+				.updateTable('user_emails')
+				.set({ is_verified: 1, verified_at: now })
+				.where('user_id', '=', link.user_id)
+				.where('email', '=', email)
+				.executeTakeFirstOrThrow();
+			await trx
+				.updateTable('organisations')
+				.set({ status: 'active' })
+				.where('id', '=', target.organisationId)
+				.where('status', '=', 'pending')
+				.executeTakeFirstOrThrow();
+			await trx
+				.updateTable('organisation_members')
+				.set({ status: 'active', joined_at: now, disabled_at: null })
+				.where('id', '=', target.memberId)
+				.where('organisation_id', '=', target.organisationId)
+				.where('status', '=', 'invited')
+				.executeTakeFirstOrThrow();
+
+			await new AuditRepository(trx).append({
+				eventPublicId: randomUUID(),
+				actingOrganisationId: target.organisationId,
+				actorUserId: link.user_id,
+				actorMemberId: target.memberId,
+				actionKey: 'organisation.bootstrap.activate',
+				subjectType: 'organisation',
+				subjectPublicId: target.organisationPublicId,
+				correlationId: input.correlationId ?? randomUUID(),
+				changeSummary: { emailVerified: true, membershipActivated: true }
+			});
+
+			return {
+				organisationId: target.organisationId,
+				organisationPublicId: target.organisationPublicId,
+				memberId: target.memberId,
+				memberPublicId: target.memberPublicId,
+				userId: link.user_id
+			};
 		});
 	}
 
@@ -260,97 +427,35 @@ export class OrganisationBootstrapService {
 		detailsInput: OrganisationBootstrapDetails
 	): Promise<OrganisationBootstrapResult> {
 		const details = validateDetails(detailsInput);
-		return this.db.transaction().execute((trx) =>
-			this.createOrganisationFoundation(trx, actor.userId, details, actor.correlationId)
-		);
-	}
-
-	private async ensureVerifiedDomainUser(
-		executor: DatabaseExecutor,
-		input: { authUserId: string; email: string; displayName: string }
-	): Promise<string> {
-		const existingEmailOwner = await executor
-			.selectFrom('user_emails')
-			.select('user_id')
-			.where('email', '=', input.email)
-			.executeTakeFirst();
-		const existingLink = await executor
-			.selectFrom('auth_user_links')
-			.select('user_id')
-			.where('auth_user_id', '=', input.authUserId)
-			.executeTakeFirst();
-
-		let userId = existingLink?.user_id ?? null;
-		if (existingEmailOwner && userId && existingEmailOwner.user_id !== userId) {
-			throw new OrganisationBootstrapAccessError('The verified email is linked to another NuBlox user.');
-		}
-		if (existingEmailOwner && !userId) {
-			throw new OrganisationBootstrapAccessError('The verified email already belongs to another NuBlox identity.');
-		}
-
-		if (!userId) {
-			const insert = await executor
-				.insertInto('users')
-				.values({
-					public_id: randomUUID(),
-					display_name: input.displayName.trim() || input.email,
-					status: 'active'
-				})
-				.executeTakeFirstOrThrow();
-			if (insert.insertId === undefined) throw new Error('User insert did not return an ID.');
-			userId = insert.insertId.toString();
-
-			await executor
-				.insertInto('user_emails')
-				.values({
-					user_id: userId,
-					email: input.email,
-					is_primary: 1,
-					is_verified: 1,
-					verified_at: new Date()
-				})
-				.executeTakeFirstOrThrow();
-			await executor
-				.insertInto('auth_user_links')
-				.values({ auth_user_id: input.authUserId, user_id: userId })
-				.executeTakeFirstOrThrow();
-		} else if (!existingEmailOwner) {
-			const primaryEmail = await executor
-				.selectFrom('user_emails')
-				.select('id')
-				.where('user_id', '=', userId)
-				.where('is_primary', '=', 1)
+		return this.db.transaction().execute(async (trx) => {
+			const user = await trx
+				.selectFrom('users')
+				.select('status')
+				.where('id', '=', actor.userId)
+				.forUpdate()
 				.executeTakeFirst();
-			await executor
-				.insertInto('user_emails')
-				.values({
-					user_id: userId,
-					email: input.email,
-					is_primary: primaryEmail ? 0 : 1,
-					is_verified: 1,
-					verified_at: new Date()
-				})
-				.executeTakeFirstOrThrow();
-		}
-
-		const user = await executor
-			.selectFrom('users')
-			.select('status')
-			.where('id', '=', userId)
-			.executeTakeFirstOrThrow();
-		if (user.status !== 'active') {
-			throw new OrganisationBootstrapAccessError('The NuBlox user is not active.');
-		}
-		return userId;
+			if (!user || user.status !== 'active') {
+				throw new OrganisationBootstrapAccessError('Only an active NuBlox user can create an organisation.');
+			}
+			return this.createOrganisationRecords(trx, {
+				userId: actor.userId,
+				details,
+				state: 'active',
+				correlationId: actor.correlationId
+			});
+		});
 	}
 
-	private async createOrganisationFoundation(
+	private async createOrganisationRecords(
 		executor: DatabaseExecutor,
-		userId: string,
-		detailsInput: OrganisationBootstrapDetails,
-		correlationId: string
+		input: {
+			userId: string;
+			details: OrganisationBootstrapDetails;
+			state: 'pending' | 'active';
+			correlationId: string;
+		}
 	): Promise<OrganisationBootstrapResult> {
-		const details = validateDetails(detailsInput);
+		const details = validateDetails(input.details);
 		const organisationPublicId = randomUUID();
 		const organisationInsert = await executor
 			.insertInto('organisations')
@@ -360,7 +465,7 @@ export class OrganisationBootstrapService {
 				trading_name: details.tradingName,
 				default_timezone: details.defaultTimezone,
 				default_currency_code: details.defaultCurrencyCode,
-				status: 'active'
+				status: input.state
 			})
 			.executeTakeFirstOrThrow();
 		if (organisationInsert.insertId === undefined) throw new Error('Organisation insert did not return an ID.');
@@ -371,10 +476,10 @@ export class OrganisationBootstrapService {
 			.insertInto('organisation_members')
 			.values({
 				organisation_id: organisationId,
-				user_id: userId,
+				user_id: input.userId,
 				public_id: memberPublicId,
-				status: 'active',
-				joined_at: new Date(),
+				status: input.state === 'active' ? 'active' : 'invited',
+				joined_at: input.state === 'active' ? new Date() : null,
 				disabled_at: null
 			})
 			.executeTakeFirstOrThrow();
@@ -437,22 +542,30 @@ export class OrganisationBootstrapService {
 		await new AuditRepository(executor).append({
 			eventPublicId: randomUUID(),
 			actingOrganisationId: organisationId,
-			actorUserId: userId,
+			actorUserId: input.userId,
 			actorMemberId: memberId,
-			actionKey: 'organisation.bootstrap.create',
+			actionKey:
+				input.state === 'active' ? 'organisation.bootstrap.create' : 'organisation.bootstrap.pending',
 			subjectType: 'organisation',
 			subjectPublicId: organisationPublicId,
-			correlationId,
+			correlationId: input.correlationId,
 			changeSummary: {
 				legalName: details.legalName,
 				tradingName: details.tradingName,
 				defaultTimezone: details.defaultTimezone,
 				defaultCurrencyCode: details.defaultCurrencyCode,
 				standardRoleCount: STANDARD_ROLES.length,
-				ownerRoleAssigned: true
+				ownerRoleAssigned: true,
+				activationState: input.state
 			}
 		});
 
-		return { organisationId, organisationPublicId, memberId, memberPublicId, userId };
+		return {
+			organisationId,
+			organisationPublicId,
+			memberId,
+			memberPublicId,
+			userId: input.userId
+		};
 	}
 }
