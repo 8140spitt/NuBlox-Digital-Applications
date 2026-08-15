@@ -125,7 +125,7 @@
 				<button type="submit">Save CRM record</button>
 			</form>
 		{:else}
-			<p class="muted">You have <code>crm.view</code> access but not <code>crm.manage</code>.</p>
+			<p class="muted">You have CRM read access but not <code>crm.party.manage</code> (or its <code>crm.manage</code> umbrella).</p>
 		{/if}
 	</section>
 
@@ -156,7 +156,7 @@
 								{#if contact.primaryPhone}<span>{contact.primaryPhone}</span>{/if}
 							</div>
 							{#if contact.isPrimaryContact}<span class="primary-badge">Primary contact</span>{/if}
-							{#if data.canManage}
+							{#if data.canManageContacts}
 								<div class="row-actions">
 									{#if !contact.isPrimaryContact}
 										<form method="POST" action="?/makePrimaryContact">
@@ -175,7 +175,7 @@
 				</div>
 			{/if}
 
-			{#if data.canManage && data.party.status !== 'archived'}
+			{#if data.canManageContacts && data.party.status !== 'archived'}
 				<div class="contact-admin-grid">
 					<section class="subpanel">
 						<h3>Create a new contact</h3>
