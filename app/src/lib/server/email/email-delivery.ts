@@ -20,22 +20,19 @@ class ConsoleEmailDelivery implements EmailDelivery {
 	}
 }
 
-class UnconfiguredEmailDelivery implements EmailDelivery {
-	async send(_message: TransactionalEmail): Promise<void> {
-		throw new Error(
-			'Transactional email delivery is not configured. Set EMAIL_DELIVERY_MODE=console for local/test use or install a production provider adapter.'
-		);
-	}
-}
-
 /**
  * Provider-neutral transactional email boundary.
  *
  * `console` is intentionally suitable only for development/integration testing.
  * Production must select and configure a real provider adapter in a later ADR.
+ * Unsupported/unconfigured modes fail at service construction so invitation state
+ * is never committed before discovering that delivery is unavailable.
  */
 export function getEmailDelivery(): EmailDelivery {
-	return env.EMAIL_DELIVERY_MODE?.trim().toLowerCase() === 'console'
-		? new ConsoleEmailDelivery()
-		: new UnconfiguredEmailDelivery();
+	const mode = env.EMAIL_DELIVERY_MODE?.trim().toLowerCase();
+	if (mode === 'console') return new ConsoleEmailDelivery();
+
+	throw new Error(
+		'Transactional email delivery is not configured. Set EMAIL_DELIVERY_MODE=console for local/test use or install a production provider adapter.'
+	);
 }
