@@ -27,6 +27,19 @@ Package `010-assets-maintenance.sql` is one logical SQL stage. It creates the fa
 
 The former `001a` no-op checkpoint has been removed. Integrity stages are named with the same package number rather than presented as separate `a` packages.
 
-The planned **001–010 schema-domain baseline is complete**. Before production release, execute the entire chain against a clean MySQL 8.4 database in CI and adopt it into the selected migration/query system.
+## Baseline validation
 
-See `../docs/README.md` for the package specifications.
+The planned **001–010 schema-domain baseline is complete and validated on MySQL 8.4.11** using `../validation/validate-baseline.sh` and the repository GitHub Actions workflow.
+
+Two independent clean builds of the complete ordered chain each produced:
+
+- **337 base tables**
+- **739 foreign keys**
+- **427 `CHECK` constraints**
+- InnoDB throughout
+- `utf8mb4_0900_ai_ci` throughout
+- a primary key on every base table
+
+Keep the clean-build validation running on every future schema change. Before production release, adopt the validated chain into the selected migration/query system and add tenant-isolation plus lifecycle/invariant integration tests.
+
+See `../docs/README.md` for the package specifications and `../validation/README.md` for validation gates and results.
