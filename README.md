@@ -39,6 +39,7 @@ Implementation-level schema work is grouped under `/database`:
 - [Database workflow and rules](database/README.md)
 - [Database package documentation](database/docs/README.md)
 - [SQL package index](database/schema/README.md)
+- [Database baseline validation](database/validation/README.md)
 
 ### Completed baseline packages
 
@@ -59,7 +60,9 @@ Package 007's integrity stage is `database/schema/007-project-information-integr
 
 Package 008's integrity stage is `database/schema/008-site-quality-safety-integrity.sql`; it is part of Package 008 and hardens attendance/inspection/RAMS/action integrity found during validation.
 
-The planned **001–010 relational domain baseline is now complete**. The next database phase is to select the migration/query tooling, run the complete chain against clean MySQL 8.4 in CI, resolve any executable-chain defects as forward pre-production changes, and add tenant/lifecycle integrity tests before production migrations are frozen.
+The planned **001–010 relational domain baseline is complete and has passed repeatable clean-build validation on MySQL 8.4.11**. The validated chain creates **337 base tables, 739 foreign keys and 427 `CHECK` constraints** on each clean build.
+
+The next database phase is to select the migration/query tooling, record the decision in an ADR, adopt the validated package chain into that migration system, and add tenant-isolation/lifecycle integration tests before the first production migration baseline is frozen.
 
 ## Governing product rule
 
@@ -69,4 +72,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Product definition / pre-development with the planned 001–010 implementation-level relational schema baseline complete.**
+**Product definition / pre-development with the planned 001–010 implementation-level relational schema baseline complete and MySQL 8.4 validated.**
