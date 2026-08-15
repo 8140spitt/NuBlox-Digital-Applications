@@ -16,7 +16,7 @@ import {
 	type ProjectRecord
 } from './project-repository';
 
-const ALLOWED_PROJECT_TRANSITIONS: Readonly<
+export const PROJECT_LIFECYCLE_TRANSITIONS: Readonly<
 	Record<ProjectLifecycleStatus, readonly ProjectLifecycleStatus[]>
 > = {
 	proposed: ['active', 'cancelled'],
@@ -26,6 +26,12 @@ const ALLOWED_PROJECT_TRANSITIONS: Readonly<
 	cancelled: ['archived'],
 	archived: []
 };
+
+export function allowedProjectLifecycleTransitions(
+	status: ProjectLifecycleStatus
+): readonly ProjectLifecycleStatus[] {
+	return PROJECT_LIFECYCLE_TRANSITIONS[status];
+}
 
 export type CreateProjectInput = {
 	projectNumber: string;
@@ -137,7 +143,7 @@ export class ProjectService {
 				throw new RecordNotFoundError('Project not found in the owning organisation scope.');
 			}
 
-			if (!ALLOWED_PROJECT_TRANSITIONS[project.status].includes(input.toStatus)) {
+			if (!PROJECT_LIFECYCLE_TRANSITIONS[project.status].includes(input.toStatus)) {
 				throw new InvalidLifecycleTransitionError(project.status, input.toStatus);
 			}
 
