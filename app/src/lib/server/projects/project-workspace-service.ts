@@ -2,6 +2,7 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import {
 	ProjectRepository,
 	type ProjectLifecycleStatus,
@@ -66,7 +67,13 @@ function isDuplicateKeyError(error: unknown): boolean {
 export class ProjectWorkspaceService {
 	constructor(private readonly db: Database = getDatabase()) {}
 
+	private async assertActiveActor(actor: TenantActorContext): Promise<void> {
+		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		if (!membership) throw new TenantAccessError();
+	}
+
 	async listProjects(actor: TenantActorContext): Promise<ProjectListAccess> {
+		await this.assertActiveActor(actor);
 		const decisions = await new PermissionService(this.db).decideMany(actor, [
 			'project.view',
 			'project.create'
@@ -84,6 +91,7 @@ export class ProjectWorkspaceService {
 	}
 
 	async createProject(actor: TenantActorContext, input: CreateProjectInput): Promise<ProjectRecord> {
+		await this.assertActiveActor(actor);
 		const decision = await new PermissionService(this.db).decide(actor, 'project.create');
 		if (!decision.allowed) throw new TenantAccessError('Project creation is not permitted.');
 
@@ -109,6 +117,7 @@ export class ProjectWorkspaceService {
 	}
 
 	async getWorkspace(actor: TenantActorContext, projectPublicId: string): Promise<ProjectWorkspace> {
+		await this.assertActiveActor(actor);
 		const project = await new ProjectRepository(this.db).findForMemberByPublicId(
 			actor.organisationId,
 			actor.memberId,
@@ -148,6 +157,7 @@ export class ProjectWorkspaceService {
 			effectiveDate?: Date;
 		}
 	): Promise<ProjectRecord> {
+		await this.assertActiveActor(actor);
 		const project = await new ProjectRepository(this.db).findForMemberByPublicId(
 			actor.organisationId,
 			actor.memberId,
