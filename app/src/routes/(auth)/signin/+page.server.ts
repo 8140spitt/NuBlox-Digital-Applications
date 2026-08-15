@@ -1,4 +1,5 @@
-import { redirect, type PageServerLoad } from '@sveltejs/kit';
+import { redirect } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
 
 function safeReturnTo(value: string | null): string | null {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
