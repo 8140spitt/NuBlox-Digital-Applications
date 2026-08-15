@@ -8,22 +8,24 @@ function requireEnv(name: 'DATABASE_URL' | 'BETTER_AUTH_SECRET' | 'BETTER_AUTH_U
 	return value;
 }
 
+export const authPool = createPool({
+	uri: requireEnv('DATABASE_URL'),
+	waitForConnections: true,
+	connectionLimit: 5,
+	queueLimit: 0,
+	timezone: 'Z',
+	supportBigNumbers: true,
+	bigNumberStrings: true,
+	decimalNumbers: false,
+	multipleStatements: false
+});
+
 export const auth = betterAuth({
 	appName: 'NuBlox',
 	baseURL: requireEnv('BETTER_AUTH_URL'),
 	basePath: '/api/auth',
 	secret: requireEnv('BETTER_AUTH_SECRET'),
-	database: createPool({
-		uri: requireEnv('DATABASE_URL'),
-		waitForConnections: true,
-		connectionLimit: 5,
-		queueLimit: 0,
-		timezone: 'Z',
-		supportBigNumbers: true,
-		bigNumberStrings: true,
-		decimalNumbers: false,
-		multipleStatements: false
-	}),
+	database: authPool,
 	user: {
 		modelName: 'auth_users',
 		fields: {
