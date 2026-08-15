@@ -270,6 +270,58 @@ export interface AuditEvents {
   subject_type: string;
 }
 
+export interface AuthAccounts {
+  access_token: string | null;
+  access_token_expires_at: Date | null;
+  auth_user_id: string;
+  created_at: Generated<Date>;
+  id: string;
+  id_token: string | null;
+  password: string | null;
+  provider_account_id: string;
+  provider_id: string;
+  refresh_token: string | null;
+  refresh_token_expires_at: Date | null;
+  scope: string | null;
+  updated_at: Date;
+}
+
+export interface AuthSessions {
+  auth_user_id: string;
+  created_at: Generated<Date>;
+  expires_at: Date;
+  id: string;
+  ip_address: string | null;
+  token: string;
+  updated_at: Date;
+  user_agent: string | null;
+}
+
+export interface AuthUserLinks {
+  auth_user_id: string;
+  linked_at: Generated<Date>;
+  user_id: string;
+}
+
+export interface AuthUsers {
+  created_at: Generated<Date>;
+  display_name: string;
+  email: string;
+  email_verified: number;
+  id: string;
+  image: string | null;
+  updated_at: Generated<Date>;
+}
+
+export interface AuthVerifications {
+  created_at: Generated<Date>;
+  expires_at: Date;
+  id: string;
+  identifier: string;
+  updated_at: Generated<Date>;
+  value: string;
+}
+
 export interface BuildingLevels {
   created_at: Generated<Date>;
   facility_building_id: string;
@@ -4102,6 +4154,11 @@ export interface DB {
   assets: Assets;
   attendance_records: AttendanceRecords;
   audit_events: AuditEvents;
+  auth_accounts: AuthAccounts;
+  auth_sessions: AuthSessions;
+  auth_user_links: AuthUserLinks;
+  auth_users: AuthUsers;
+  auth_verifications: AuthVerifications;
   building_levels: BuildingLevels;
   building_system_types: BuildingSystemTypes;
   building_systems: BuildingSystems;
