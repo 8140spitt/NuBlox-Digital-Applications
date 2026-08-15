@@ -27,6 +27,7 @@
 	<aside class="sidebar" aria-label="Primary navigation">
 		<nav>
 			<a href="/dashboard">Dashboard</a>
+			<a href="/organisation">Organisation</a>
 		</nav>
 	</aside>
 
@@ -71,6 +72,7 @@
 		.tenant { flex: 1 1 100%; order: 3; }
 		.account { margin-left: auto; }
 		.sidebar { border-right: 0; border-bottom: 1px solid #d9d9d2; padding: 0.5rem 1rem; }
+		.sidebar nav { display: flex; flex-wrap: wrap; }
 		.content { padding: 1rem; }
 	}
 </style>
