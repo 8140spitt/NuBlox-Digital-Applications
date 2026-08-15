@@ -1,0 +1,9 @@
+{
+  "dialect": "mysql",
+  "url": "env(DATABASE_URL)",
+  "outFile": "./src/lib/server/db/generated/database.d.ts",
+  "camelCase": false,
+  "numericParser": "string",
+  "typeOnlyImports": true,
+  "logLevel": "warn"
+}
