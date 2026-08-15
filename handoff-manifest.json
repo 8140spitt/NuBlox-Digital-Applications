@@ -4,7 +4,7 @@
   "career_count": 84,
   "domain_count": 16,
   "fixed_stack": ["Svelte 5", "SvelteKit", "MySQL/InnoDB"],
-  "current_schema_package": "008-site-quality-safety",
+  "current_schema_package": "009-commercial-cost-control",
   "database_package_docs": [
     "database/docs/001-platform-kernel.md",
     "database/docs/002-crm-parties.md",
@@ -13,7 +13,8 @@
     "database/docs/005-procurement.md",
     "database/docs/006-workforce-time-scheduling.md",
     "database/docs/007-project-information-documents.md",
-    "database/docs/008-site-quality-safety.md"
+    "database/docs/008-site-quality-safety.md",
+    "database/docs/009-commercial-cost-control.md"
   ],
   "database_schema": [
     "database/schema/001-platform-kernel.sql",
@@ -25,7 +26,8 @@
     "database/schema/007-project-information-documents.sql",
     "database/schema/007-project-information-integrity.sql",
     "database/schema/008-site-quality-safety.sql",
-    "database/schema/008-site-quality-safety-integrity.sql"
+    "database/schema/008-site-quality-safety-integrity.sql",
+    "database/schema/009-commercial-cost-control.sql"
   ],
   "handoff_docs": [
     "docs/00-executive-summary.md",
@@ -60,6 +62,7 @@
     "docs/25-procurement.md",
     "docs/26-workforce-time-scheduling.md",
     "docs/27-project-information-documents.md",
-    "docs/28-site-quality-safety.md"
+    "docs/28-site-quality-safety.md",
+    "docs/29-commercial-cost-control.md"
   ]
 }
