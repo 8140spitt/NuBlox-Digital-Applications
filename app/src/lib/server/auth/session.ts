@@ -10,6 +10,7 @@ import { assertVerifiedAuthUser } from './verified-auth-user';
 import { recoverVerifiedPlatformIdentity } from './verified-identity-recovery';
 
 export async function getSessionActor(event: RequestEvent): Promise<Actor | null> {
+	const pathname = event.url?.pathname ?? new URL(event.request.url).pathname;
 	const cookieNames = (event.request.headers.get('cookie') ?? '')
 		.split(';')
 		.map((part) => part.split('=', 1)[0]?.trim())
@@ -19,7 +20,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 	if (!session) {
 		if (cookieNames.some((name) => name?.startsWith('nublox.'))) {
 			console.warn('[NuBlox auth] Auth cookie present but no Better Auth session was resolved.', {
-				pathname: event.url.pathname,
+				pathname,
 				cookieNames
 			});
 		}
@@ -32,7 +33,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 
 	if (!linkedUser) {
 		console.warn('[NuBlox auth] Session resolved but no active NuBlox platform user was found; reconciling.', {
-			pathname: event.url.pathname,
+			pathname,
 			authUserId: session.user.id,
 			email: session.user.email
 		});
@@ -71,14 +72,14 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 
 				if (recovery.recovered) {
 					console.warn('[NuBlox auth] Recovered verified NuBlox platform identity.', {
-						pathname: event.url.pathname,
+						pathname,
 						authUserId: session.user.id,
 						userId: recovery.userId,
 						outcome: recovery.outcome
 					});
 				} else {
 					console.error('[NuBlox auth] Verified platform identity recovery was blocked.', {
-						pathname: event.url.pathname,
+						pathname,
 						authUserId: session.user.id,
 						reason: recovery.reason
 					});
@@ -93,7 +94,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 
 	if (!linkedUser) {
 		console.error('[NuBlox auth] Better Auth session exists but NuBlox platform user is still unavailable.', {
-			pathname: event.url.pathname,
+			pathname,
 			authUserId: session.user.id,
 			email: session.user.email
 		});
@@ -101,7 +102,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 	}
 
 	console.info('[NuBlox auth] Session resolved to active NuBlox user.', {
-		pathname: event.url.pathname,
+		pathname,
 		authUserId: session.user.id,
 		userId: linkedUser.userId
 	});
