@@ -352,6 +352,7 @@ CREATE TABLE estimate_items (
     updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
 
     PRIMARY KEY (id),
+    UNIQUE KEY uq_estimate_items_id_organisation (id, organisation_id),
     UNIQUE KEY uq_estimate_items_id_context (id, organisation_id, estimate_version_id),
     UNIQUE KEY uq_estimate_items_line (organisation_id, estimate_version_id, line_number),
     KEY idx_estimate_items_section (estimate_section_id, organisation_id, estimate_version_id),
