@@ -10,7 +10,8 @@
     "docs/branding/00-business-entity.md",
     "docs/branding/01-brand-strategy.md",
     "docs/branding/02-brand-architecture-and-naming.md",
-    "docs/branding/03-verbal-identity-and-messaging.md"
+    "docs/branding/03-verbal-identity-and-messaging.md",
+    "docs/branding/04-visual-identity-brief.md"
   ],
   "database_package_docs": [
     "database/docs/001-platform-kernel.md",
