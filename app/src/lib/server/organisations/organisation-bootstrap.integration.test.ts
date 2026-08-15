@@ -274,6 +274,12 @@ describe('organisation bootstrap and onboarding', () => {
 			.orderBy('permission.permission_key', 'asc')
 			.execute();
 		expect(grants.map((row) => `${row.roleName}:${row.permissionKey}`)).toEqual([
+			'Administrator:commercial.estimate.manage',
+			'Administrator:commercial.manage',
+			'Administrator:commercial.quotation.issue',
+			'Administrator:commercial.quotation.manage',
+			'Administrator:commercial.quotation.response.record',
+			'Administrator:commercial.view',
 			'Administrator:crm.contact.manage',
 			'Administrator:crm.manage',
 			'Administrator:crm.party.manage',
@@ -289,6 +295,11 @@ describe('organisation bootstrap and onboarding', () => {
 			'Administrator:project.team.manage',
 			'Administrator:project.view',
 			'Field Worker:project.view',
+			'Finance/Commercial:commercial.estimate.manage',
+			'Finance/Commercial:commercial.quotation.issue',
+			'Finance/Commercial:commercial.quotation.manage',
+			'Finance/Commercial:commercial.quotation.response.record',
+			'Finance/Commercial:commercial.view',
 			'Finance/Commercial:crm.view',
 			'Finance/Commercial:project.view',
 			'Manager:crm.contact.manage',
@@ -304,6 +315,12 @@ describe('organisation bootstrap and onboarding', () => {
 			'Manager:project.view',
 			'Member/Professional:crm.view',
 			'Member/Professional:project.view',
+			'Owner:commercial.estimate.manage',
+			'Owner:commercial.manage',
+			'Owner:commercial.quotation.issue',
+			'Owner:commercial.quotation.manage',
+			'Owner:commercial.quotation.response.record',
+			'Owner:commercial.view',
 			'Owner:crm.contact.manage',
 			'Owner:crm.manage',
 			'Owner:crm.party.manage',
@@ -340,6 +357,9 @@ describe('organisation bootstrap and onboarding', () => {
 		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(
 			permissionService.decideWithUmbrella(ownerActor, 'crm.contact.manage', 'crm.manage')
+		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(
+			permissionService.decideWithUmbrella(ownerActor, 'commercial.quotation.issue', 'commercial.manage')
 		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
 		const auditActions = await db

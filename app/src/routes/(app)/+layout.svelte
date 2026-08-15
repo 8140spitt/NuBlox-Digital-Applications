@@ -29,6 +29,9 @@
 			<a href="/dashboard">Dashboard</a>
 			<a href="/crm">CRM</a>
 			<a class="subnav" href="/crm/opportunities">Opportunities</a>
+			<a href="/commercial/estimates">Commercial</a>
+			<a class="subnav" href="/commercial/estimates">Estimates</a>
+			<a class="subnav" href="/commercial/quotations">Quotations</a>
 			<a href="/projects">Projects</a>
 			<a href="/organisation">Organisation</a>
 		</nav>

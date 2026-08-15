@@ -43,111 +43,53 @@ After this migration the application schema contains **344 base tables, 749 fore
 
 ### `20260815161900_organisation_administration_permissions.sql`
 
-Seeds stable organisation-administration policy identifiers:
-
-- `organisation.manage`
-- `member.invite`
-- `member.manage`
-
-This migration is data-only and does not change structural counts.
+Seeds `organisation.manage`, `member.invite` and `member.manage`. This migration is data-only.
 
 ### `20260815203700_project_workspace_permissions.sql`
 
-Seeds the first stable project application policy identifiers:
-
-- `project.create` — create a project owned by the active organisation;
-- `project.view` — organisation-level authority to view explicitly scoped projects;
-- `project.manage` — umbrella authority for project-management responsibilities where project scope and contextual policy permit.
-
-The migration applies the original standard-role project defaults to existing organisations. Later granular permissions refine the management surface without invalidating `project.manage` as an umbrella authority.
-
-These are organisation permission grants only. They do not replace `project_organisations` participation or the exact member's active `project_members` scope.
+Seeds `project.create`, `project.view` and the broad `project.manage` umbrella. Organisation grants never replace `project_organisations` participation or exact-member `project_members` scope.
 
 ### `20260815211600_project_participants_team.sql`
 
-Completes the first cross-organisation project collaboration lifecycle without creating a parallel team model:
-
-- extends `project_organisations.status` with explicit `declined` state;
-- preserves the existing `project_organisations`, `project_members`, `project_organisation_roles` and `project_member_roles` structures;
-- seeds the controlled global `project_role_types` catalogue for client, project administration/management, designer, engineer, quantity surveying/commercial, contractor, supplier, inspector, facilities/operations and read-only participant contexts.
-
-Project-role rows are contextual classification only. They do not grant `project.view`, `project.manage`, or any other permission.
-
-The migration replaces one existing `CHECK` constraint with the broadened lifecycle check and adds reference data only. It therefore leaves the application structure at:
-
-- **344 base tables**
-- **749 foreign keys**
-- **429 `CHECK` constraints**
+Adds explicit declined project-participation state and seeds the contextual global `project_role_types` catalogue. Project roles classify context and never grant application permissions. Structural counts remain **344 / 749 / 429**.
 
 ### `20260815214500_crm_contacts_permissions.sql`
 
-Seeds the original Package 002 CRM umbrella policy identifiers:
-
-- `crm.view` — view tenant-owned CRM organisations, people, primary contact methods and contact relationships;
-- `crm.manage` — umbrella authority for CRM maintenance responsibilities.
-
-The later granular permission migration separates party/master-data management from organisation-contact relationship management while retaining `crm.manage` for compatibility and higher-authority roles.
-
-CRM grants never broaden tenancy: Package 002 records remain explicitly scoped by `parties.organisation_id` and related composite tenant keys.
+Seeds the original CRM `crm.view` and `crm.manage` umbrella identifiers. Package 002 tenancy remains bounded by `organisation_id` and composite tenant keys.
 
 ### `20260815222500_permission_granularity.sql`
 
-Refines project and CRM delegation with six stable policy identifiers:
-
-- `project.lifecycle.manage` — change project lifecycle state where owner and scope policy permit;
-- `project.participant.manage` — invite/remove participant organisations and maintain organisation-level project roles;
-- `project.team.manage` — maintain the active organisation's scoped project members and member project roles;
-- `project.participation.manage` — accept/decline project invitations and leave participation where contextual policy permits;
-- `crm.party.manage` — create and maintain tenant-owned CRM party master data, classifications and contact methods;
-- `crm.contact.manage` — create, link, promote and end tenant-owned organisation-contact relationships.
-
-`project.manage` and `crm.manage` remain umbrella permissions. Runtime permission resolution uses a granular permission first and falls back to its umbrella only when the granular key has no explicit member/role decision. An explicit granular member deny therefore cannot be bypassed by an umbrella grant.
-
-Existing and future standard-role defaults are aligned as follows:
+Adds:
 
 ```text
-Owner / Administrator
-    → retain project.manage + crm.manage umbrellas
-    → receive all six granular management permissions
-
-Manager
-    → project.lifecycle.manage
-    → project.participant.manage
-    → project.team.manage
-    → project.participation.manage
-    → crm.party.manage
-    → crm.contact.manage
-    → does not retain project.manage or crm.manage
-
-Finance/Commercial
-    → project.view + crm.view
-
-Member/Professional
-    → project.view + crm.view
-
-Field Worker
-    → project.view
-
-Read Only
-    → project.view + crm.view
+project.lifecycle.manage
+project.participant.manage
+project.team.manage
+project.participation.manage
+crm.party.manage
+crm.contact.manage
 ```
 
-The migration grants the granular keys to existing Owner, Administrator and Manager roles, then removes the two broad management umbrella grants from the standard Manager role. `OrganisationBootstrapService` creates the same role matrix for new organisations.
+`project.manage` and `crm.manage` remain umbrellas. A granular decision is resolved first; umbrella fallback occurs only on granular default-deny. Explicit granular member deny therefore cannot be bypassed by an umbrella grant.
 
-This migration is data-only and leaves structural counts unchanged.
+Standard Manager loses the broad project/CRM umbrellas but receives the established granular project and party/contact keys. Owner/Administrator retain umbrellas. `OrganisationBootstrapService` creates the same role matrix for new organisations.
 
 ### `20260815223800_crm_opportunities_activities.sql`
 
-Activates the Package 002 opportunity and activity application surface without adding duplicate business tables.
+Activates Package 002 opportunities/activities without adding duplicate business tables.
 
-It seeds two additional stable granular permissions:
+It seeds:
 
-- `crm.opportunity.manage` — create and maintain tenant-owned opportunities, stage/outcome state and opportunity-party relationships;
-- `crm.activity.manage` — create tenant-owned CRM timeline activities and their participant links.
+```text
+crm.opportunity.manage
+crm.activity.manage
+```
 
-Both use `crm.manage` as umbrella fallback at runtime. They are deliberately **not** auto-granted to generic Manager, Finance/Commercial or other standard non-administrative role templates. This keeps opportunity/activity authority an explicit organisation delegation decision. Owner and Administrator retain access through their existing `crm.manage` umbrella unless a granular member decision overrides it.
+Both use `crm.manage` as umbrella fallback. They are deliberately not auto-granted to generic Manager, Finance/Commercial or other non-administrative templates.
 
-The migration also seeds a default `Sales` pipeline only for organisations that have **no CRM pipeline configuration at all**. It never overwrites existing/custom tenant pipeline configuration. The standard stages are:
+The migration also seeds one default Sales pipeline only for organisations that had **zero pipeline configuration before the migration**. A temporary working set protects existing/custom pipelines, including an empty custom default named `Sales`.
+
+Standard stages are:
 
 ```text
 Lead         → sort 10 → 10%
@@ -156,11 +98,51 @@ Proposal     → sort 30 → 60%
 Negotiation  → sort 40 → 80%
 ```
 
-Stage represents sales maturity; terminal result remains on `opportunities.status` (`open`, `won`, `lost`, `cancelled`). Won/lost/cancelled are therefore not duplicated as pipeline stages.
+Stage is sales maturity; terminal result remains on `opportunities.status`. Future organisations use audited/idempotent first-use `CrmPipelineProvisioningService` provisioning under an organisation-row lock.
 
-Organisations created after this migration are handled by `CrmPipelineProvisioningService`: the first suitably authorised opportunity-management visit locks the organisation row, confirms no pipeline exists, creates the same Sales/stage configuration exactly once and records `crm.pipeline.initialized` audit evidence.
+### `20260815231500_estimates_quotations_permissions.sql`
 
-This migration is data/reference-only. After all nine current migrations the application structure remains:
+Activates the first Package 003 estimate/quotation application slice through stable commercial permission identifiers:
+
+```text
+commercial.view
+commercial.manage
+commercial.estimate.manage
+commercial.quotation.manage
+commercial.quotation.issue
+commercial.quotation.response.record
+```
+
+`commercial.manage` is the broad commercial sales-management umbrella. Runtime mutations resolve the granular permission first and use `commercial.manage` only as umbrella fallback.
+
+Existing standard roles are aligned as follows:
+
+```text
+Owner / Administrator
+    commercial.view
+    commercial.manage
+    commercial.estimate.manage
+    commercial.quotation.manage
+    commercial.quotation.issue
+    commercial.quotation.response.record
+
+Finance/Commercial
+    commercial.view
+    commercial.estimate.manage
+    commercial.quotation.manage
+    commercial.quotation.issue
+    commercial.quotation.response.record
+    # deliberately no commercial.manage umbrella
+
+Manager / Member/Professional / Field Worker / Read Only
+    no automatic Package 003 commercial grants in this increment
+```
+
+`OrganisationBootstrapService` applies the same matrix to future organisations and its exact-grant integration test prevents migrated/bootstrap standard-role drift.
+
+The migration is data-only: Package 003 already contains the normalised estimate, version, line, cost-component, quotation, tax-snapshot, issue, party-snapshot and response tables. No duplicate commercial ledger is introduced.
+
+After all **10** current production migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -168,7 +150,7 @@ This migration is data/reference-only. After all nine current migrations the app
 
 ## Current migration validation
 
-The CRM opportunities/activity executable close-out applies all **nine** production migrations cleanly on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely type drift, passes **12 integration files / 50 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same permanent gate before merge.
+The latest executable Package 003 candidate applies all **10** production migrations cleanly on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely type drift, passes **13 integration files / 57 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same permanent gate before merge.
 
 ## Migration rules
 

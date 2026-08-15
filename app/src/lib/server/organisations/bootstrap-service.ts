@@ -22,7 +22,13 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'crm.view',
 	'crm.manage',
 	'crm.party.manage',
-	'crm.contact.manage'
+	'crm.contact.manage',
+	'commercial.view',
+	'commercial.manage',
+	'commercial.estimate.manage',
+	'commercial.quotation.manage',
+	'commercial.quotation.issue',
+	'commercial.quotation.response.record'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -43,7 +49,13 @@ const STANDARD_ROLES = [
 			'crm.view',
 			'crm.manage',
 			'crm.party.manage',
-			'crm.contact.manage'
+			'crm.contact.manage',
+			'commercial.view',
+			'commercial.manage',
+			'commercial.estimate.manage',
+			'commercial.quotation.manage',
+			'commercial.quotation.issue',
+			'commercial.quotation.response.record'
 		]
 	},
 	{
@@ -63,7 +75,13 @@ const STANDARD_ROLES = [
 			'crm.view',
 			'crm.manage',
 			'crm.party.manage',
-			'crm.contact.manage'
+			'crm.contact.manage',
+			'commercial.view',
+			'commercial.manage',
+			'commercial.estimate.manage',
+			'commercial.quotation.manage',
+			'commercial.quotation.issue',
+			'commercial.quotation.response.record'
 		]
 	},
 	{
@@ -85,8 +103,16 @@ const STANDARD_ROLES = [
 	},
 	{
 		name: 'Finance/Commercial',
-		description: 'Commercial and finance role template; domain permissions are assigned as those modules are enabled.',
-		permissionKeys: ['project.view', 'crm.view']
+		description: 'Commercial and finance role template with delegated commercial sales-document authority.',
+		permissionKeys: [
+			'project.view',
+			'crm.view',
+			'commercial.view',
+			'commercial.estimate.manage',
+			'commercial.quotation.manage',
+			'commercial.quotation.issue',
+			'commercial.quotation.response.record'
+		]
 	},
 	{
 		name: 'Member/Professional',
