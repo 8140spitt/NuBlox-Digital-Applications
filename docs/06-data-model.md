@@ -3,6 +3,13 @@
 ## 1. Data modelling principles
 
 - Relational-first.
+- **Normalise to Third Normal Form (3NF) by default.**
+- Use BCNF, 4NF or 5NF where they materially improve integrity and accurately represent the domain.
+- Denormalisation is an explicit optimisation, never the default modelling technique.
+- Repeating groups, comma-separated lists, duplicated descriptive attributes and avoidable multi-valued columns are prohibited in the transactional model.
+- Many-to-many relationships use associative tables with appropriate keys and constraints.
+- Reference/master data is separated from transactional data where the concepts have independent lifecycles.
+- Derived values should normally be calculated from authoritative source data unless a historical snapshot, legal/business record, performance requirement or audit requirement justifies storage.
 - Every tenant-owned root record is explicitly owned by an organisation.
 - Project-sharing does not erase tenant ownership.
 - Historical attribution survives user/member deactivation.
@@ -11,7 +18,153 @@
 - Business status is explicit, not inferred from deletion.
 - Material records are archived/voided/superseded rather than physically deleted where history matters.
 
-## 2. Core identity/tenant model
+## 2. Normalisation policy
+
+The NuBlox transactional schema must be designed in normal form as far as is practical for a production business system.
+
+### First Normal Form — mandatory
+
+- Each table represents a defined entity, relationship or event.
+- Each row is uniquely identifiable.
+- Columns contain atomic values appropriate to the domain.
+- No repeating column groups such as `phone1`, `phone2`, `phone3` where the relationship is genuinely one-to-many.
+- No comma-separated IDs, roles, careers, tags, participants or similar multi-valued business relationships.
+
+Example:
+
+```text
+users
+user_emails
+```
+
+rather than:
+
+```text
+users.email_1
+users.email_2
+users.email_3
+```
+
+### Second Normal Form — mandatory
+
+Non-key attributes must depend on the whole candidate key, particularly in associative/junction tables.
+
+Example:
+
+```text
+organisation_members
+--------------------
+organisation_id
+user_id
+membership_status
+joined_at
+```
+
+Organisation attributes belong in `organisations`; user attributes belong in `users`.
+
+### Third Normal Form — default target
+
+Non-key attributes must not depend transitively on other non-key attributes unless there is an explicit historical-snapshot requirement.
+
+Example:
+
+```text
+projects.client_party_id
+```
+
+references the authoritative party/client record instead of duplicating the client's current name, telephone, email and address on every project.
+
+Where a legal/commercial document must preserve what was issued at a specific moment, a controlled immutable snapshot is acceptable. For example, an issued invoice may retain the customer name/address/tax details as issued even if the master customer record later changes.
+
+### BCNF and higher normal forms
+
+The design should apply BCNF and higher normal forms where they resolve real dependency anomalies, particularly for:
+
+- multi-role relationships;
+- professional careers and capabilities;
+- project participants;
+- qualifications and competencies;
+- contact methods and addresses;
+- document classifications;
+- assets and asset relationships;
+- product/catalogue attributes;
+- configurable workflow/template relationships.
+
+Do not pursue theoretical decomposition that makes ordinary transactions unnecessarily complex without improving integrity, maintainability or correctness.
+
+### Associative entities
+
+Many-to-many relationships must normally use explicit associative tables.
+
+Examples:
+
+```text
+user_careers
+career_capabilities
+team_members
+project_participants
+role_permissions
+member_roles
+rfq_recipients
+```
+
+Associative tables may contain attributes that belong to the relationship itself, for example:
+
+```text
+project_participants
+--------------------
+project_id
+organisation_id
+user_id
+project_role_id
+access_level
+start_date
+end_date
+```
+
+### Controlled duplication and snapshots
+
+Duplication is acceptable only when it has a defined semantic purpose, such as:
+
+- immutable issued quotations;
+- issued invoices and credit documents;
+- submitted tenders;
+- approved valuations;
+- signed/approved contract records;
+- document revisions;
+- audit/change history;
+- point-in-time regulatory or certification evidence.
+
+In these cases the duplicated data represents a **historical fact**, not an uncontrolled cache of master data.
+
+### Denormalisation exception process
+
+Any deliberate denormalisation of the transactional schema must be documented in an Architecture Decision Record (ADR) identifying:
+
+1. the normalised source model;
+2. the measured problem being solved;
+3. the denormalised field/table/materialised representation;
+4. how consistency is maintained;
+5. failure/rebuild behaviour;
+6. test coverage;
+7. rollback/removal strategy.
+
+Performance must first be addressed through appropriate schema design, indexes, query design, pagination, caching and reporting/read models before weakening transactional normalisation.
+
+### JSON usage
+
+JSON columns must not be used to bypass relational modelling for stable business concepts.
+
+Acceptable examples include:
+
+- provider-specific integration metadata;
+- controlled extension payloads;
+- immutable event/change summaries;
+- genuinely variable template response data where querying requirements are understood.
+
+If a JSON property becomes business-critical, relationally constrained, frequently filtered/joined, permission-sensitive or required for reporting, it should normally be promoted into the relational schema.
+
+## 3. Core identity/tenant model
 
 ```mermaid
 erDiagram
@@ -25,7 +178,7 @@ erDiagram
     PROJECTS ||--o{ PROJECT_PARTICIPANTS : has
 ```
 
-## 3. Core tables
+## 4. Core tables
 
 ### Identity and tenancy
 
@@ -156,7 +309,7 @@ The hierarchy must be optional for small jobs.
 - `integration_connections`
 - `webhook_deliveries`
 
-## 4. Tenant-key pattern
+## 5. Tenant-key pattern
 
 Most tenant tables require:
 
@@ -176,7 +329,7 @@ A unique business reference usually needs tenant scope:
 UNIQUE KEY uq_project_reference (organisation_id, reference)
 ```
 
-## 5. Public and internal identifiers
+## 6. Public and internal identifiers
 
 Final ID strategy is an open architecture decision.
 
@@ -189,7 +342,7 @@ Requirements:
 
 A valid approach is an internal `BIGINT UNSIGNED` primary key plus a unique public UUID/ULID-style identifier. A UUIDv7-style binary key is another option if the selected MySQL access layer handles it cleanly.
 
-## 6. Money
+## 7. Money
 
 Use fixed precision, e.g.:
 
@@ -209,7 +362,7 @@ Store:
 
 Never derive historic issued-document totals from mutable product/rate tables.
 
-## 7. Time and dates
+## 8. Time and dates
 
 Use:
 
@@ -219,7 +372,7 @@ Use:
 
 Do not store only formatted local strings.
 
-## 8. Soft deletion and archival
+## 9. Soft deletion and archival
 
 Do not apply generic soft-delete indiscriminately.
 
@@ -230,7 +383,7 @@ Recommended:
 - issued/approved/contractual records: void/supersede/cancel with history;
 - security/audit records: retention-controlled and not normal user-deletable.
 
-## 9. Document model
+## 10. Document model
 
 ```text
 documents
@@ -258,13 +411,13 @@ document_versions
 
 Never overwrite the payload of an existing document version.
 
-## 10. Generic linking
+## 11. Generic linking
 
 Cross-domain records often need links.
 
 Use a controlled relation/link table only where beneficial, e.g. linking a document to an asset, RFI or variation. Avoid making the entire business schema an entity-attribute-value model.
 
-## 11. Audit model
+## 12. Audit model
 
 Suggested fields:
 
@@ -285,7 +438,7 @@ change_summary JSON
 
 Audit data must not become a second uncontrolled store of sensitive full-record snapshots.
 
-## 12. Referential integrity
+## 13. Referential integrity
 
 Use foreign keys for strong ownership/referential rules where operationally practical.
 
@@ -296,7 +449,7 @@ Also enforce invariants in domain/application services, for example:
 - document version cannot belong to a different tenant from document;
 - a user cannot grant permissions they do not have authority to grant.
 
-## 13. Migration requirements
+## 14. Migration requirements
 
 - schema migrations are version controlled;
 - production migrations are repeatable and reviewed;
