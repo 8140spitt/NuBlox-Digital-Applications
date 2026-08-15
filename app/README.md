@@ -8,6 +8,20 @@ This app is structured as a modular monolith following `docs/05-system-architect
 - Business rules belong in server-side domain/application modules, not in Svelte components.
 - Route handlers act as request boundaries: auth, tenant context, validation, policy checks, service orchestration.
 - Correlation IDs are attached to every request for observability.
+- SQL belongs behind domain repositories; routes/components do not query the database directly.
+- MySQL SQL migrations are the schema source of truth; generated Kysely types are derivative.
+
+## Persistence stack
+
+- **MySQL 8.4 / InnoDB**
+- **Kysely** typed SQL query builder
+- **mysql2** pooled Node driver
+- **Dbmate** plain-SQL production migrations
+- **kysely-codegen** database-derived TypeScript interfaces
+
+The decision rationale is recorded in `docs/adr/0001-database-query-and-migration-tooling.md`.
+
+The server database boundary is documented in `src/lib/server/db/README.md`.
 
 ## Layout
 
@@ -64,7 +78,18 @@ And returns the correlation ID in `x-correlation-id` response headers.
 
 ```sh
 pnpm install
+cp .env.example .env
 pnpm dev
+```
+
+## Database commands
+
+With `DATABASE_URL` configured:
+
+```sh
+pnpm db:migrate
+pnpm db:status
+pnpm db:types
 ```
 
 ## Validate
