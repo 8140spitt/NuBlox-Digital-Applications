@@ -9,8 +9,9 @@ It combines a shared business-management core, a built-environment project/site/
 Corporate and brand strategy documentation is maintained separately from the product specification:
 
 - [NuBlox business entity](docs/branding/00-business-entity.md)
+- [NuBlox brand strategy](docs/branding/01-brand-strategy.md)
 
-This layer defines the business, master brand and commercial positioning that sit above the NuBlox software platform.
+This layer defines the business, master brand, audiences, positioning, value proposition and commercial identity that sit above the NuBlox software platform.
 
 ## Fixed technology direction
 
