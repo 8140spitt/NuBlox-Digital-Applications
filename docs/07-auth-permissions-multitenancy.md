@@ -2,7 +2,7 @@
 
 ## 1. Security model
 
-NuBlox requires a hybrid of:
+NuBlox uses a hybrid of:
 
 - authentication;
 - tenant membership;
@@ -12,7 +12,7 @@ NuBlox requires a hybrid of:
 - record-scoped tenant policy;
 - contextual policy checks.
 
-A career is **not** a security role.
+A career is **not** a security role. Job titles may inform role design, but they never confer authority automatically.
 
 ## 2. Identity model
 
@@ -38,13 +38,13 @@ Conceptually:
 ```text
 authenticated user
 AND active organisation membership
-AND organisation permission
-AND feature/capability entitlement
+AND effective organisation permission
+AND feature/capability entitlement where applicable
 AND tenant/project/record scope
 AND record-state/business policy
 ```
 
-Within organisation permission resolution, the implemented precedence is:
+Within one permission key, organisation permission precedence is:
 
 ```text
 explicit member deny
@@ -53,15 +53,44 @@ explicit member deny
     > default deny
 ```
 
-For normal in-project operations an organisation permission is necessary but insufficient. The implemented project boundary additionally requires active organisation participation and the exact organisation member to have active `project_members` scope.
+### Granular permissions and umbrella permissions
 
-For tenant-owned CRM operations the active organisation itself is the record scope: every repository read/write is bounded by the verified tenant `organisation_id` in addition to the effective CRM permission.
+Some management areas expose both a broad umbrella permission and narrower delegation permissions. The current umbrella pairs are:
+
+```text
+project.manage
+    ├─ project.lifecycle.manage
+    ├─ project.participant.manage
+    ├─ project.team.manage
+    └─ project.participation.manage
+
+crm.manage
+    ├─ crm.party.manage
+    └─ crm.contact.manage
+```
+
+For an operation governed by a granular key, NuBlox resolves the granular key first. It falls back to the umbrella only when the granular key has **no explicit member or active-role decision**.
+
+Therefore:
+
+```text
+granular member deny
+    > granular member allow / granular role grant
+    > umbrella permission fallback
+    > default deny
+```
+
+An explicit granular member deny cannot be bypassed by `project.manage` or `crm.manage`. This preserves compatibility for broad legacy/custom roles while allowing precise delegation and exceptions.
+
+For normal in-project operations, organisation permission is necessary but insufficient. The project boundary additionally requires active organisation participation and active `project_members` scope for the exact organisation member.
+
+For tenant-owned CRM operations, the active organisation is the record scope: repository reads/writes are bounded by the verified tenant `organisation_id` in addition to the effective CRM permission.
 
 ## 4. Controlled account provisioning
 
-Better Auth is the authentication/session provider; it is not allowed to create a trusted NuBlox tenant actor merely because an auth identity exists.
+Better Auth is the authentication/session provider; an authentication identity alone does not become a trusted NuBlox tenant actor.
 
-Email sign-up remains fail-closed unless exactly one valid NuBlox provisioning intent is present:
+Email sign-up remains fail-closed unless exactly one valid NuBlox provisioning intent exists:
 
 1. an organisation invitation; or
 2. a self-service organisation-bootstrap intent.
@@ -76,9 +105,9 @@ Invitation tokens are random values whose SHA-256 hashes are persisted. Invitati
 
 A new customer may create a first organisation through `/start` without turning Better Auth sign-up into an unrestricted public endpoint.
 
-The server validates the organisation/account input and issues a short-lived HMAC-SHA256 signed bootstrap token in an HttpOnly cookie. A modified, expired or email-mismatched token is rejected before account creation is authorised.
+The server validates organisation/account input and issues a short-lived HMAC-SHA256 signed bootstrap token in an HttpOnly cookie. A modified, expired or email-mismatched token is rejected before account creation is authorised.
 
-The token is only a pre-sign-up authorisation envelope; there is no parallel bootstrap-intent table. After Better Auth creates the auth identity, durable bootstrap state uses the existing normalised Package 001 model:
+Durable pre-verification state uses the existing normalised model:
 
 ```text
 users.status                 = pending
@@ -91,30 +120,42 @@ member_roles                 = Owner assignment
 audit_events                 = bootstrap pending evidence
 ```
 
-The session resolver requires an **active** NuBlox `users` row, so this pending state cannot produce a trusted application actor or tenant context.
+The session resolver requires an **active** NuBlox `users` row, so pending state cannot produce a trusted application actor or tenant context.
 
-Verified email then transactionally activates the existing user, email, organisation and owner membership records. An existing active NuBlox user may create an additional organisation without creating another auth/domain identity.
+Verified email transactionally activates the user, email, organisation and owner membership. An existing active NuBlox user may create another organisation without duplicating auth/domain identity.
 
-## 5. Permission namespaces
+## 5. Implemented permission catalogue
 
-Implemented platform-policy keys currently include:
+### Organisation and member administration
 
 - `organisation.manage`
 - `member.invite`
 - `member.manage`
+
+### Projects
+
 - `project.create`
 - `project.view`
-- `project.manage`
+- `project.manage` — broad project-management umbrella
+- `project.lifecycle.manage`
+- `project.participant.manage`
+- `project.team.manage`
+- `project.participation.manage`
+
+### CRM
+
 - `crm.view`
-- `crm.manage`
+- `crm.manage` — broad CRM-management umbrella
+- `crm.party.manage`
+- `crm.contact.manage`
 
-Planned domain namespaces include `document.*`, `commercial.*`, `invoice.*`, `inspection.*`, `asset.*`, `maintenance.*`, `report.*` and `admin.audit.*` permissions as their application workflows are implemented.
+Planned domain namespaces include `document.*`, `commercial.*`, `invoice.*`, `inspection.*`, `asset.*`, `maintenance.*`, `report.*` and `admin.audit.*` as their workflows are implemented.
 
-Permission keys are stable platform policy identifiers. Organisation roles decide which active permissions are granted to members; job/career titles do not confer permission automatically.
+Permission keys are stable platform-policy identifiers. Organisation roles decide which active permissions members receive; careers/job titles do not grant permission automatically.
 
 ## 6. Organisation administration authority
 
-Organisation administration is deliberately split rather than represented by one generic admin flag:
+Organisation administration is deliberately split:
 
 ```text
 member.invite
@@ -130,11 +171,11 @@ organisation.manage
     → full organisation-administration authority
 ```
 
-`organisation.manage` is the explicit higher administrative authority and acts as an override for the narrower administration capabilities.
+`organisation.manage` is the explicit higher administrative authority for organisation administration.
 
 ### Delegation ceiling
 
-A member administrator who does not hold `organisation.manage` may assign only roles whose active permission grants are all permissions the administrator effectively holds themselves. The same ceiling applies when role intent is attached to a pending invitation.
+A member administrator who does not hold `organisation.manage` may assign only roles whose active permission grants are all permissions the administrator effectively holds. The same ceiling applies when role intent is attached to a pending invitation.
 
 ### Manager protection and lockout prevention
 
@@ -161,37 +202,88 @@ Each newly bootstrapped organisation receives:
 - Field Worker
 - Read Only
 
-These are templates, not hard-coded assumptions about careers.
+These are templates, not careers.
 
-Current stable defaults are:
+### Owner
 
 ```text
-Owner         → organisation.manage + member.invite + member.manage
-                + project.create + project.view + project.manage
-                + crm.view + crm.manage
-Administrator → organisation.manage + member.invite + member.manage
-                + project.create + project.view + project.manage
-                + crm.view + crm.manage
-Manager       → member.invite + member.manage
-                + project.create + project.view + project.manage
-                + crm.view + crm.manage
-Finance/Commercial → project.view + crm.view
+organisation.manage
+member.invite
+member.manage
+project.create
+project.view
+project.manage
+project.lifecycle.manage
+project.participant.manage
+project.team.manage
+project.participation.manage
+crm.view
+crm.manage
+crm.party.manage
+crm.contact.manage
+```
+
+### Administrator
+
+Administrator receives the same permission catalogue as Owner, without ownership semantics.
+
+### Manager
+
+Manager receives operationally broad but deliberately **granular** management authority:
+
+```text
+member.invite
+member.manage
+project.create
+project.view
+project.lifecycle.manage
+project.participant.manage
+project.team.manage
+project.participation.manage
+crm.view
+crm.party.manage
+crm.contact.manage
+```
+
+Manager does not receive the `project.manage` or `crm.manage` umbrella grants. This means new permission families can be added beneath those umbrellas without silently expanding the standard Manager role.
+
+### Other standard roles
+
+```text
+Finance/Commercial  → project.view + crm.view
 Member/Professional → project.view + crm.view
 Field Worker        → project.view
 Read Only           → project.view + crm.view
 ```
 
-The project grants only establish organisation-level authority. `project.view` and `project.manage` remain ineffective for a particular project unless active member-level project scope also exists, except for the explicit invitation-response boundary described below. CRM grants remain effective only inside the active tenant's private CRM scope. The founding member receives **Owner only**.
+The founding member receives **Owner only**.
 
-The permission migration for existing organisations and `OrganisationBootstrapService` for future organisations deliberately apply the same CRM defaults. Integration tests verify that new tenants do not drift from migrated tenants.
+The forward permission migration updates existing standard roles and `OrganisationBootstrapService` seeds the same defaults for future organisations. Integration tests guard against migrated/bootstrap role drift.
+
+Custom organisation roles remain supported. Existing custom roles that hold `project.manage` or `crm.manage` continue to exercise the currently implemented granular operations through umbrella fallback unless a granular member exception overrides them.
 
 ## 8. Implemented CRM access model
 
-The first CRM application boundary uses two stable permissions:
+CRM authority is divided into read, party/master-data management and contact-relationship management:
 
 ```text
-crm.view   → discover and open tenant-owned CRM parties/contact relationships
-crm.manage → create and maintain tenant-owned CRM parties/contact relationships
+crm.view
+    → discover/open tenant-owned CRM parties and relationships
+
+crm.party.manage
+    → create/update/archive parties
+    → maintain person/organisation subtype data
+    → maintain business-role classifications
+    → maintain primary email/phone contact methods
+
+crm.contact.manage
+    → create a person as part of an organisation-contact workflow
+    → link an existing tenant CRM person to an organisation
+    → nominate/change the primary organisation contact
+    → end a current contact relationship while preserving history
+
+crm.manage
+    → umbrella fallback for crm.party.manage and crm.contact.manage
 ```
 
 The effective CRM rule is:
@@ -199,7 +291,7 @@ The effective CRM rule is:
 ```text
 active NuBlox user
 AND active organisation membership
-AND effective crm.view or crm.manage as required
+AND effective CRM permission
 AND CRM record organisation_id = active tenant organisation_id
 AND record-state policy
 ```
@@ -216,39 +308,52 @@ parties
 
 Each `parties` row belongs to one NuBlox tenant through `organisation_id`. A direct public ID from another tenant is masked as not found even when the actor has `crm.view` in their own organisation.
 
-A CRM `party_organisations` record is **not** a NuBlox platform `organisations` row. A CRM `party_persons` record is **not** an authenticated `users` row or workforce identity. The same external business/person may be represented separately in several customer tenants because CRM ownership and platform identity are different concepts.
+A CRM `party_organisations` row is **not** a NuBlox platform `organisations` row. A CRM `party_persons` row is **not** an authenticated `users` row or workforce identity. The same external business/person may be represented independently by several customer tenants.
 
-The application service enforces the Package 002 subtype invariant transactionally: a person party receives exactly one `party_persons` subtype and an organisation party exactly one `party_organisations` subtype.
+The application enforces subtype exclusivity transactionally: a person party receives exactly one `party_persons` subtype and an organisation party exactly one `party_organisations` subtype.
 
 ### Business roles and contact methods
 
-Business classifications such as Client, Supplier, Subcontractor, Consultant and Developer are `party_role_assignments` on one party record. They do not create duplicate masters and do not grant application permissions.
+Business classifications such as Client, Supplier, Subcontractor, Consultant and Developer are `party_role_assignments` on one party record. They do not duplicate identity and do not grant application permission.
 
-The first UI manages one primary email and one primary E.164 phone while preserving the underlying multi-contact-method schema for subsequent expansion.
+The current UI manages one primary email and one primary E.164 phone while retaining the normalised multi-contact-method schema for later expansion.
 
 ### Organisation contacts
 
 Person↔organisation business context is stored on `party_organisation_contacts`, including job title, department, primary-contact status and dated relationship evidence.
 
-`crm.manage` can:
+Archived parties cannot acquire new contact relationships. CRM mutations append tenant-scoped audit evidence using public IDs at the request boundary.
 
-- create a new person directly as an organisation contact;
-- link an existing active person party in the same tenant;
-- nominate the primary contact;
-- end a current relationship while preserving history.
-
-Archived parties cannot acquire new contact relationships. CRM mutations append tenant-scoped audit evidence using party public IDs at the request boundary.
-
-Opportunities, pipelines and CRM activity timelines remain separate Package 002 workflows and are not implied by `crm.view`/`crm.manage` until their application slices are implemented.
+Opportunities, pipelines and CRM activity timelines remain separate Package 002 workflows; the existing CRM permissions do not imply those future authorities automatically.
 
 ## 9. Implemented project access model
 
-The first application project boundary uses three stable permissions:
+Project authority is divided into creation, viewing, lifecycle management, participant administration, team administration and participation response:
 
 ```text
-project.create → create a project owned by the active organisation
-project.view   → discover/open projects where the member has explicit project scope
-project.manage → project administration where scope and contextual policy permit
+project.create
+    → create a project owned by the active organisation
+
+project.view
+    → discover/open projects where the exact member has active project scope
+
+project.lifecycle.manage
+    → change owner project lifecycle state
+
+project.participant.manage
+    → invite/re-invite/remove participant organisations
+    → maintain organisation-level contextual project roles
+
+project.team.manage
+    → add/remove the active organisation's project members
+    → maintain member contextual project roles
+
+project.participation.manage
+    → accept/decline an organisation project invitation
+    → leave participation when the organisation is not the project owner
+
+project.manage
+    → umbrella fallback for the four granular project-management permissions
 ```
 
 The effective normal read rule is:
@@ -261,21 +366,24 @@ AND active project_organisations participation
 AND active project_members membership for the exact organisation member
 ```
 
-A same-organisation employee with `project.view` but no `project_members` row does **not** inherit access from colleagues or from the organisation's participation. Portfolio queries return only projects within that exact member scope, and direct non-member project lookups are masked as not found.
+A same-organisation employee with `project.view` but no `project_members` row does **not** inherit access from colleagues or from organisation participation. Portfolio discovery and direct project lookups remain exact-member scoped.
 
-Project creation requires `project.create`. The existing Platform Kernel transaction creates the project, owner participation, creator project membership and audit evidence atomically.
+Project creation requires `project.create`. The Platform Kernel transaction creates the project, owner participation, creator project membership and audit evidence atomically.
+
+### Lifecycle mutation
 
 Lifecycle mutation requires:
 
 ```text
-project.manage
+effective project.lifecycle.manage
+    OR project.manage umbrella fallback
 AND active project participation
-AND active project membership
+AND active exact-member project membership
 AND active organisation is the project owning organisation
 AND requested lifecycle transition is valid
 ```
 
-An external participating organisation may therefore view a shared project when explicitly scoped, but cannot change the owning organisation's project lifecycle merely because one of its members has `project.manage`.
+An external participant cannot mutate owner lifecycle state simply because it holds project management permission.
 
 ## 10. Implemented project participant and team administration
 
@@ -291,44 +399,47 @@ projects
 
 ### Organisation invitation boundary
 
-Only the project owning organisation may invite/re-invite, revoke/remove another participant organisation or manage organisation-level project roles. Invitations identify the target by exact NuBlox organisation `public_id`; the application does not expose an unrestricted organisation directory.
+Only the project owning organisation may invite/re-invite or remove participant organisations and maintain organisation-level contextual project roles. These writes require `project.participant.manage` or umbrella fallback and normal project scope for the owner actor.
 
-An invited organisation has no active project scope yet, so invitation response deliberately evaluates `project.manage` at **organisation level**:
+Invitations identify targets by exact NuBlox organisation `public_id`; the application does not expose an unrestricted organisation directory.
+
+### Invitation response boundary
+
+An invited organisation has no active project-member scope yet. Invitation response therefore evaluates `project.participation.manage` (or `project.manage` umbrella fallback) at **organisation level** against the exact pending invitation:
 
 ```text
 active NuBlox user
 AND active membership in invited organisation
-AND effective organisation-level project.manage
+AND effective organisation-level project.participation.manage
+    OR project.manage umbrella fallback
 AND pending project_organisations invitation for that organisation
 ```
 
-Accepting then atomically establishes:
+Acceptance atomically establishes:
 
 ```text
 project_organisations.status = active
 AND joined_at evidence
-AND accepting member's project_members.status = active
+AND accepting member project_members.status = active
 ```
 
-Only after that transaction does the normal member-scoped project boundary apply. Decline is preserved explicitly as `project_organisations.status = declined`; the owner may later re-invite the organisation.
+Decline is preserved explicitly as `project_organisations.status = declined`; the owner may later re-invite the organisation.
 
 This invitation-response exception does **not** permit pre-acceptance project reads or arbitrary project mutation.
 
 ### Participant organisation boundary
 
-Once accepted, all in-project participant/team administration requires normal scoped `project.manage`:
+Once accepted:
 
-```text
-effective project.manage
-AND active project_organisations participation
-AND exact actor project_members membership
-```
+- participant-organisation administration uses `project.participant.manage` and is restricted to the owning organisation;
+- each participating organisation manages only its own project members using `project.team.manage`;
+- a non-owner participant may voluntarily leave using `project.participation.manage`.
 
-A participant organisation may administer only its own project members. It may add active members from its own `organisation_members`, remove its own project members, update contextual member project roles, or—if it is not the owner—leave the project.
+All in-project operations continue to require active participant and exact-member scope in addition to the effective permission.
 
-Owner removal or voluntary leave terminates every active `project_members` scope belonging to that participant while retaining historical participation/member records and audit evidence.
+Owner removal or voluntary leave terminates every active `project_members` scope belonging to that participant while preserving historical participation/member records and audit evidence.
 
-The service rejects removal of the final active scoped member in an organisation who effectively holds `project.manage`; another scoped project manager must exist first.
+The service rejects removal of the final active scoped member in an organisation who effectively holds `project.team.manage` (including `project.manage` umbrella fallback); another scoped project-team manager must exist first.
 
 ## 11. Project roles
 
@@ -347,7 +458,7 @@ The controlled project-role catalogue includes:
 - Facilities/operations
 - Read-only participant
 
-Project roles are **contextual metadata**. Neither `project_organisation_roles` nor `project_member_roles` grants `project.view`, `project.manage`, or any other permission. Permission authority remains in organisation roles/member overrides, while project membership supplies project scope.
+Project roles are **contextual metadata**. Neither `project_organisation_roles` nor `project_member_roles` grants application permission. Authority remains in organisation roles/member overrides, while project membership supplies project scope.
 
 ## 12. Cross-organisation sharing
 
@@ -359,10 +470,10 @@ Private CRM records are not automatically shared merely because the same externa
 
 - Server determines tenant context from authenticated membership.
 - No repository method may fetch tenant-owned records by ID alone when tenant context is required.
-- CRM party/contact queries must always include the active tenant `organisation_id`.
+- CRM party/contact queries include the active tenant `organisation_id`.
 - A CRM party must never become a platform-global directory identity by inference.
 - Project reads must not treat organisation participation as implicit access for all organisation members.
-- Project team administration must never allow one participant organisation to add/remove members from another participant organisation.
+- Project team administration must never allow one participant organisation to add/remove another participant's members.
 - Invitation response must match the selected active organisation to the exact pending `project_organisations` row.
 - Background jobs include tenant context explicitly.
 - Search indexes, caches and exports preserve tenancy boundaries.
@@ -385,14 +496,16 @@ Automated tests must include:
 
 - same-tenant allowed access and denied role;
 - different-tenant denial;
+- granular member deny overriding umbrella permission;
+- umbrella compatibility where no granular decision exists;
+- migrated and newly bootstrapped standard-role parity;
 - CRM cross-tenant direct-public-ID masking;
-- CRM view/manage permission separation;
+- CRM read vs party-management vs contact-management separation;
 - CRM person/organisation subtype exclusivity;
 - CRM business-role and primary contact-method persistence;
 - CRM existing-person contact linking without duplicate identity;
 - CRM primary-contact changes and dated relationship ending;
 - archived CRM party relationship protections;
-- CRM standard-role defaults for migrated and newly bootstrapped organisations;
 - administrative delegation-ceiling enforcement;
 - organisation-manager protection and final-manager lockout prevention;
 - sign-up without provisioning intent denied;
@@ -406,9 +519,10 @@ Automated tests must include:
 - project invitation decline and controlled re-invite;
 - invitation acceptance atomically establishes first member scope;
 - external participant project view after explicit scope;
+- project lifecycle / participant / team / participation authority separation;
 - cross-organisation project-member administration denied;
 - project-role assignment does not create permission authority;
-- final scoped project-manager removal denied until handover;
+- final scoped project-team-manager removal denied until handover;
 - participant voluntary leave revokes active member scope;
 - owner participant removal revokes active member scope;
 - external participant owner-lifecycle mutation denied;
@@ -417,5 +531,3 @@ Automated tests must include:
 - object/file download attempts;
 - export/report access;
 - background job authorisation/context handling.
-
-Tenant isolation, controlled provisioning, private CRM tenant scope and exact-member project scope are release gates.
