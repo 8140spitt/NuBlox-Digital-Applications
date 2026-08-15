@@ -45,16 +45,23 @@ active organisation + active organisation_members proof
 trusted request locals
 ```
 
-`locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` is populated only when the selected organisation has been revalidated against that user’s active membership.
+`locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` is populated only when the selected organisation has been revalidated against that user’s active membership. A Better Auth identity linked to a pending NuBlox user is therefore not a trusted application actor.
 
-## Account provisioning
+## Controlled account provisioning
 
-NuBlox account creation is invitation-controlled. Better Auth does not own organisation membership.
+Better Auth sign-up remains fail-closed. Exactly one NuBlox provisioning intent must validate:
+
+1. an existing-organisation invitation; or
+2. a self-service new-organisation bootstrap.
+
+If both provisioning cookies are present, sign-up is rejected as ambiguous. Entering either flow clears the other flow’s cookie.
+
+### Organisation invitation
 
 ```text
 organisation invitation
         ↓
-invite-only Better Auth sign-up
+controlled Better Auth sign-up
         ↓
 email verification
         ↓
@@ -67,34 +74,85 @@ active organisation membership
 invitation role assignments
 ```
 
-Key controls:
+Invitation controls include:
 
-- invitation tokens are random 256-bit values; only SHA-256 hashes are persisted;
-- pending invitations expire after seven days;
+- random 256-bit invitation tokens; only SHA-256 hashes are persisted;
+- seven-day expiry;
 - re-inviting the same organisation/email revokes the earlier pending invitation;
-- Better Auth `/sign-up/email` fails closed without the matching invitation cookie and email;
-- brand-new NuBlox membership activation occurs only from the verified-email path;
-- persisted `auth_users.email_verified` is checked before callback-driven activation;
-- existing signed-in NuBlox users can accept an invitation without creating a duplicate auth/domain identity;
+- email/sign-up mismatch is rejected;
+- persisted `auth_users.email_verified` is checked before activation;
+- existing signed-in NuBlox users can accept an invitation without duplicate identity;
 - intended organisation roles are stored before acceptance and assigned when membership activates;
-- an email already belonging to an active member cannot be invited again;
-- creation and acceptance produce audit evidence.
+- active members cannot be invited again;
+- creation and acceptance append audit evidence.
 
-The provisioning API is `POST /api/organisations/invitations`. Invitation lifecycle requires `member.invite` or `organisation.manage`. Attaching organisation roles additionally requires member-management authority and is subject to the delegation ceiling: a non-organisation-manager may delegate only permissions they effectively hold themselves.
+The invitation API is `POST /api/organisations/invitations`. Invitation lifecycle requires `member.invite` or `organisation.manage`. Attaching roles additionally requires member-management authority and is subject to the delegation ceiling.
+
+### Organisation bootstrap
+
+`/start` provides self-service first-organisation creation while retaining fail-closed account creation.
+
+For a new customer:
+
+```text
+/start details
+   ↓
+HMAC-SHA256 signed bootstrap token
+   ↓
+Better Auth sign-up
+   ↓
+pending users row + unverified user_email
+auth_user_links
+pending organisation
+invited owner membership
+standard roles + Owner role assignment
+   ↓
+verified email
+   ↓
+active user + verified email
+active organisation + active Owner membership
+```
+
+The bootstrap token is short-lived and stored in an HttpOnly cookie. Its payload contains the validated email, organisation settings and expiry, and is authenticated using a namespace-derived key from `BETTER_AUTH_SECRET`. It is only pre-sign-up authorisation; there is no bootstrap-intent table.
+
+Durable pre-verification state uses existing Package 001 lifecycle values. Because `getSessionActor()` resolves only an active NuBlox user, an unverified bootstrap identity cannot enter the protected application.
+
+New organisations receive these seven role templates:
+
+- Owner
+- Administrator
+- Manager
+- Finance/Commercial
+- Member/Professional
+- Field Worker
+- Read Only
+
+Current administration grants are:
+
+```text
+Owner         → organisation.manage + member.invite + member.manage
+Administrator → organisation.manage + member.invite + member.manage
+Manager       → member.invite + member.manage
+```
+
+The remaining role templates begin without domain permission grants until those permission catalogues are implemented. The founding member is assigned only the Owner role.
+
+An already active NuBlox user can also visit `/start` to create another organisation. The existing user identity is reused, the new organisation/member/roles/audit evidence are created transactionally, and the new organisation becomes the selected tenant.
 
 ## Transactional email boundary
 
 `src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral.
 
-`EMAIL_DELIVERY_MODE=console` is for local development and integration tests only. An unconfigured production delivery mode fails before an invitation service is constructed, preventing an invitation from being committed when delivery is unavailable. A production provider adapter remains a separate integration decision.
+`EMAIL_DELIVERY_MODE=console` is for local development and integration tests only. An unconfigured production delivery mode fails before invitation-dependent email delivery is committed. A production provider adapter remains a separate integration decision.
 
 ## Application access
 
 The current account/application UI includes:
 
+- `/start` — new-account/first-organisation bootstrap and additional-organisation creation for signed-in users;
 - `/signin` — Better Auth email/password sign-in;
 - `/invite/[token]` — invitation acceptance/account creation;
-- `/select-organisation` — active organisation membership selector;
+- `/select-organisation` — active organisation membership selector plus create-organisation entry;
 - `/dashboard` — protected organisation-scoped application entry point;
 - `/organisation` — permission-aware organisation administration workspace.
 
@@ -182,4 +240,4 @@ pnpm check
 pnpm test:integration
 ```
 
-The permanent CI gate applies the migration stream to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The organisation-administration close-out passed **5 integration files / 20 tests** and `svelte-check` with zero errors and zero warnings.
+The permanent CI gate applies the migration stream to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs bootstrap/organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The organisation-bootstrap close-out passed **6 integration files / 24 tests** and `svelte-check` with **0 errors / 0 warnings**.
