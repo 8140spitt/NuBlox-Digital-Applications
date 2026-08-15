@@ -11,7 +11,7 @@ This app is structured as a modular monolith following `docs/05-system-architect
 - SQL belongs behind domain repositories; routes/components do not query the database directly.
 - MySQL SQL migrations are the schema source of truth; generated Kysely types are derivative.
 - Tenant-owned records are queried with explicit verified tenant context rather than by surrogate ID alone.
-- Authentication identity does not imply organisation or project access.
+- Authentication identity does not imply organisation, CRM or project access.
 
 ## Persistence and authentication stack
 
@@ -63,15 +63,20 @@ New organisations receive seven standard role templates. Stable defaults current
 ```text
 Owner         → organisation.manage + member.invite + member.manage
                 + project.create + project.view + project.manage
+                + crm.view + crm.manage
 Administrator → organisation.manage + member.invite + member.manage
                 + project.create + project.view + project.manage
+                + crm.view + crm.manage
 Manager       → member.invite + member.manage
                 + project.create + project.view + project.manage
-Finance/Commercial, Member/Professional, Field Worker, Read Only
-              → project.view
+                + crm.view + crm.manage
+Finance/Commercial → project.view + crm.view
+Member/Professional → project.view + crm.view
+Field Worker        → project.view
+Read Only           → project.view + crm.view
 ```
 
-A project permission grant does not itself expose a project; active member-level project scope is still required.
+A project permission grant does not itself expose a project; active member-level project scope is still required. CRM grants remain tenant-bounded by the selected active organisation.
 
 ## Transactional email boundary
 
@@ -86,6 +91,8 @@ The current account/application UI includes:
 - `/invite/[token]` — organisation invitation acceptance/account creation;
 - `/select-organisation` — active organisation membership selector;
 - `/dashboard` — protected organisation-scoped entry point;
+- `/crm` — private tenant CRM directory and party creation;
+- `/crm/[partyPublicId]` — CRM party maintenance, contacts and affiliations;
 - `/projects` — member-scoped project portfolio, project creation and project invitation inbox;
 - `/projects/[projectPublicId]` — project workspace, participant/team administration and lifecycle controls;
 - `/organisation` — permission-aware organisation administration workspace.
@@ -105,6 +112,70 @@ organisation.manage → role definitions + permission grants + full admin author
 ```
 
 The domain layer enforces delegation ceilings, manager protection, self-mutation restrictions, cross-tenant rejection and last-manager lockout protection.
+
+## CRM parties and contacts
+
+`src/lib/server/crm/crm-service.ts` and `crm-repository.ts` activate the existing Package 002 relational model as a private organisation CRM.
+
+Stable CRM permission keys are:
+
+```text
+crm.view
+crm.manage
+```
+
+The effective CRM boundary is:
+
+```text
+active NuBlox user
+AND active organisation membership
+AND effective CRM permission
+AND record.organisation_id = active organisation
+AND record-state business policy
+```
+
+`crm.view` permits tenant-local discovery and direct reads. `crm.manage` permits party creation/update, business-role assignment, primary contact methods and person↔organisation contact relationships. Cross-tenant party public IDs are masked as not found.
+
+### Party identity
+
+CRM uses the Package 002 supertype/subtype model:
+
+```text
+parties
+├─ exactly one party_persons row
+└─ exactly one party_organisations row
+```
+
+The application transaction creates exactly the subtype matching `party_kind`. Business roles such as Client, Supplier, Subcontractor, Consultant and Developer are assignments to the same party identity rather than separate masters.
+
+CRM party identity is deliberately independent from:
+
+- NuBlox platform `organisations`;
+- authenticated `users`;
+- `organisation_members`;
+- workforce records;
+- project participant organisations.
+
+The same external business may therefore be represented privately in several customer tenants without becoming a global NuBlox directory record.
+
+### Contact methods and organisation contacts
+
+The first CRM UI maintains one primary email and one primary E.164 phone while retaining the underlying Package 002 multi-contact-method model for future expansion.
+
+Organisation contact context belongs on `party_organisation_contacts`, including:
+
+- person party;
+- organisation party;
+- job title;
+- department;
+- primary-contact flag;
+- relationship start/end dates.
+
+A user can create a new person directly as an organisation contact or link an existing tenant CRM person. Ending the relationship dates it rather than deleting party identity. Person workspaces show their current organisation affiliations.
+
+Archived CRM parties cannot receive new contact relationships. CRM mutations append audit evidence with public party IDs at the request boundary.
+
+Opportunities, pipelines and CRM activities are present in Baseline v1 but remain subsequent application slices.
 
 ## Project workspace and collaboration
 
@@ -218,4 +289,4 @@ pnpm check
 pnpm test:integration
 ```
 
-The permanent CI gate applies all six current migrations to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs project-team/project-workspace/bootstrap/organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The project-participants/team executable close-out passed **8 integration files / 35 tests** and `svelte-check` with **0 errors / 0 warnings**; the final documentation-synchronised branch head is validated by the same gate before merge.
+The permanent CI gate applies all seven current migrations to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs CRM/project-team/project-workspace/bootstrap/organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The CRM executable close-out passed **9 integration files / 41 tests** and `svelte-check` with **0 errors / 0 warnings**; the final documentation-synchronised branch head is validated by the same gate before merge.
