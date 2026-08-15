@@ -21,8 +21,8 @@ ON DUPLICATE KEY UPDATE
     description = VALUES(description),
     is_active = TRUE;
 
--- Preserve current effective access for existing standard roles while allowing
--- future custom roles to delegate narrower responsibilities.
+-- Existing standard roles receive the same granular defaults that new
+-- organisations receive from OrganisationBootstrapService.
 INSERT IGNORE INTO role_permissions (
     organisation_id,
     organisation_role_id,
@@ -34,32 +34,31 @@ SELECT
     permission.id
 FROM organisation_roles AS role
 INNER JOIN permissions AS permission
-    ON (
-        (
-            role.name IN ('Owner', 'Administrator')
-            AND permission.permission_key IN (
-                'project.lifecycle.manage',
-                'project.participant.manage',
-                'project.team.manage',
-                'project.participation.manage',
-                'crm.party.manage',
-                'crm.contact.manage'
-            )
-        )
-        OR (
-            role.name = 'Manager'
-            AND permission.permission_key IN (
-                'project.lifecycle.manage',
-                'project.participant.manage',
-                'project.team.manage',
-                'project.participation.manage',
-                'crm.party.manage',
-                'crm.contact.manage'
-            )
-        )
-    )
+    ON role.name IN ('Owner', 'Administrator', 'Manager')
+   AND permission.permission_key IN (
+        'project.lifecycle.manage',
+        'project.participant.manage',
+        'project.team.manage',
+        'project.participation.manage',
+        'crm.party.manage',
+        'crm.contact.manage'
+   )
 WHERE role.is_active = TRUE
   AND permission.is_active = TRUE;
+
+-- Manager moves from the two broad management umbrellas to the granular
+-- permissions above. Effective access to the currently implemented project and
+-- CRM workflows is preserved, while future responsibilities can be delegated
+-- independently. Owner and Administrator retain the umbrella authorities.
+DELETE role_permission
+FROM role_permissions AS role_permission
+INNER JOIN organisation_roles AS role
+    ON role.id = role_permission.organisation_role_id
+   AND role.organisation_id = role_permission.organisation_id
+INNER JOIN permissions AS permission
+    ON permission.id = role_permission.permission_id
+WHERE role.name = 'Manager'
+  AND permission.permission_key IN ('project.manage', 'crm.manage');
 
 -- migrate:down transaction:false
 -- Released permission catalogue/grant rows are forward-only because custom role
