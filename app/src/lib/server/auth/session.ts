@@ -7,6 +7,7 @@ import type { Actor } from '$lib/types/request-context';
 import { AuthIdentityRepository } from './auth-identity-repository';
 import { auth } from './better-auth';
 import { assertVerifiedAuthUser } from './verified-auth-user';
+import { recoverVerifiedPlatformIdentity } from './verified-identity-recovery';
 
 export async function getSessionActor(event: RequestEvent): Promise<Actor | null> {
 	const cookieNames = (event.request.headers.get('cookie') ?? '')
@@ -40,6 +41,8 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 			await assertVerifiedAuthUser(db, session.user.id, session.user.email);
 			const correlationId = event.locals.correlationId;
 
+			// First run the normal provisioning completion paths. These preserve any
+			// invitation or pending organisation bootstrap that survived sign-up.
 			await new OrganisationInvitationService(db).activateVerifiedAuthUser({
 				authUserId: session.user.id,
 				email: session.user.email,
@@ -54,6 +57,35 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 			});
 
 			linkedUser = await identities.findActivePlatformUser(session.user.id);
+
+			// If the original provisioning transaction was interrupted or partially
+			// lost, recover only the platform identity from the verified email. We do
+			// not invent organisation data; users with no surviving memberships land
+			// on /select-organisation and can create one through the standard flow.
+			if (!linkedUser) {
+				const recovery = await recoverVerifiedPlatformIdentity(db, {
+					authUserId: session.user.id,
+					email: session.user.email,
+					displayName: session.user.name
+				});
+
+				if (recovery.recovered) {
+					console.warn('[NuBlox auth] Recovered verified NuBlox platform identity.', {
+						pathname: event.url.pathname,
+						authUserId: session.user.id,
+						userId: recovery.userId,
+						outcome: recovery.outcome
+					});
+				} else {
+					console.error('[NuBlox auth] Verified platform identity recovery was blocked.', {
+						pathname: event.url.pathname,
+						authUserId: session.user.id,
+						reason: recovery.reason
+					});
+				}
+
+				linkedUser = await identities.findActivePlatformUser(session.user.id);
+			}
 		} catch (cause) {
 			console.error('[NuBlox auth] Verified-session reconciliation failed.', cause);
 		}
