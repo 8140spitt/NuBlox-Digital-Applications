@@ -21,7 +21,8 @@ database/
 │   ├── 002-crm-parties.sql
 │   ├── 003-sales-quotes.sql
 │   ├── 004-contracts-finance.sql
-│   └── 005-procurement.sql
+│   ├── 005-procurement.sql
+│   └── 006-workforce-time-scheduling.sql
 └── seeds/
     └── (reference-data seeds added as schema domains are frozen)
 ```
@@ -38,7 +39,7 @@ Planned packages:
 4. `003-sales-quotes.sql` — units, tax reference, catalogue, estimates, quotation versions, issue/response and project conversion
 5. `004-contracts-finance.sql` — contracts/appointments, contract amendments, invoices, credit notes, payments and allocations
 6. `005-procurement.sql` — procurement packages, RFQs, supplier returns, evaluation, awards, purchase orders and receipts
-7. `006-workforce-time-scheduling.sql`
+7. `006-workforce-time-scheduling.sql` — workers, engagements, careers, competencies, credentials, cost rates, calendars, scheduling, attendance and timesheets
 8. `007-project-information-documents.sql`
 9. `008-site-quality-safety.sql`
 10. `009-commercial-cost-control.sql`
@@ -53,6 +54,7 @@ The numbered SQL files currently describe the target schema in dependency order.
 - `docs/23-sales-estimates-quotations.md` — sales, estimate and quotation model
 - `docs/24-contracts-finance.md` — contracts, invoicing, credit notes, payments and allocations
 - `docs/25-procurement.md` — procurement, supplier enquiry, evaluation, award, purchase ordering and receipts
+- `docs/26-workforce-time-scheduling.md` — workforce identity, engagements, competence, scheduling, attendance and time approval
 
 ## Normalisation policy
 
@@ -64,6 +66,7 @@ See:
 - `docs/23-sales-estimates-quotations.md`
 - `docs/24-contracts-finance.md`
 - `docs/25-procurement.md`
+- `docs/26-workforce-time-scheduling.md`
 
 Rules:
 
@@ -80,9 +83,16 @@ Rules:
 - RFQ, supplier-return, award and purchase-order facts remain separate records rather than overwriting one another as a procurement process progresses.
 - Split awards use associative rows rather than one-winner assumptions.
 - Purchase-order receipts are separate facts; ordered, received and remaining quantities are not maintained as competing editable balances.
+- User identity, CRM person identity and workforce identity remain separate entities with controlled links.
+- Employment/engagement facts are effective/historical relationship records rather than mutable attributes on a global user.
+- Workforce careers are many-to-many and remain descriptive/configurational rather than authorisation grants.
+- Competency definitions, worker assessments, credential definitions and worker credentials remain separate facts.
+- Worker cost rates and work-calendar assignments are effective-dated rather than overwritten in place.
+- Planned schedule, actual attendance and claimed/approved timesheet time remain separate facts.
+- Approved timesheet labour-cost snapshots are allowed as historical approval-time facts and must not silently recalculate from changed current rates.
 - Reusable catalogue/reference data does not overwrite historical issued-document facts.
 - Historical immutable snapshots are allowed where they represent facts at issue/approval/execution time.
-- Ordinary derived quotation, invoice, credit-note, payment-status, PO-total and commitment values are not stored merely for convenience; materialisation requires a documented performance reason.
+- Ordinary derived quotation, invoice, credit-note, payment-status, PO-total, commitment, utilisation and expiry-state values are not stored merely for convenience; materialisation requires a documented performance reason.
 - Tenant-scoping keys may form part of composite keys to permit MySQL to enforce tenant integrity.
 - Foreign keys target explicit `PRIMARY`/`UNIQUE` candidate keys; do not rely on deprecated MySQL non-standard partial/non-unique FK behaviour.
 - Any material denormalisation requires a documented reason and preferably an ADR.
@@ -119,6 +129,8 @@ Package 004 contains initial controlled reference rows for contract types, contr
 
 Package 005 contains initial controlled reference rows for procurement package types and purchase-order types. Supplier identity and supplier-side roles continue to use Package 002 party data.
 
+Package 006 contains initial controlled reference rows for workforce engagement types, worker cost-rate types and schedule-event types. Competency, credential and time-activity definitions remain tenant-configurable.
+
 Before production migrations are frozen, the selected migration system should separate schema creation and idempotent reference-data seeding according to the project's migration convention.
 
 ## Security rule
@@ -132,3 +144,5 @@ Issued commercial and finance records must not be recomputed from mutable curren
 Contract execution, contract amendment agreement/rejection, financial-document issue/void, payment allocation and reversal are all privileged auditable actions.
 
 RFQ issue, supplier-return submission, tender evaluation, award approval, PO approval/issue and receipt reversal are privileged auditable procurement actions.
+
+Workforce cost rates are restricted commercial data and require a dedicated permission. Credential verification, workforce engagement changes, timesheet submission/approval/reopen, attendance correction and cost-rate changes are privileged auditable actions.
