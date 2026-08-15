@@ -1,13 +1,12 @@
 -- NuBlox: Digital Applications
--- Schema package 001a: Platform-kernel tenant-key hardening
+-- Schema package 001a: Reserved kernel integrity checkpoint
 -- Depends on: 001-platform-kernel.sql
--- Must run before: 002-crm-parties.sql and later packages
 -- Target: MySQL 8.4 / InnoDB
 -- Generated: 2026-08-15
 --
--- Several downstream tables deliberately use tenant-scoped composite foreign keys
--- to projects as (project_id, organisation_id). MySQL 8.4 requires an explicit
--- unique/primary candidate key for the complete referenced column list.
-
-ALTER TABLE projects
-    ADD UNIQUE KEY uq_projects_id_organisation (id, owning_organisation_id);
+-- No DDL is currently required in this checkpoint.
+--
+-- The project tenant candidate key required by later commercial packages is added
+-- at the start of 003-sales-quotes.sql before any foreign keys reference it.
+-- This file is retained only so the pre-development package history remains explicit;
+-- it may be consolidated away when the final migration system is selected.
