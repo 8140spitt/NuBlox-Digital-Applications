@@ -1,3 +1,4 @@
+import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
@@ -50,6 +51,8 @@ function signupProvisioningIntentFromContext(ctx: {
 	});
 }
 
+const betterAuthUrl = requireEnv('BETTER_AUTH_URL');
+
 export const authPool = createPool({
 	uri: requireEnv('DATABASE_URL'),
 	waitForConnections: true,
@@ -64,9 +67,15 @@ export const authPool = createPool({
 
 export const auth = betterAuth({
 	appName: 'NuBlox',
-	baseURL: requireEnv('BETTER_AUTH_URL'),
+	baseURL: betterAuthUrl,
 	basePath: '/api/auth',
 	secret: requireEnv('BETTER_AUTH_SECRET'),
+	// Keep production origin validation strict. During local development Vite may be
+	// opened via either localhost or 127.0.0.1; both are explicit trusted origins so
+	// Better Auth's first-login CSRF checks do not reject an otherwise valid sign-in.
+	trustedOrigins: dev
+		? [betterAuthUrl, 'http://localhost:*', 'http://127.0.0.1:*']
+		: [betterAuthUrl],
 	database: authPool,
 	user: {
 		modelName: 'auth_users',
