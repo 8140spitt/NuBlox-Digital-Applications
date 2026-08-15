@@ -48,6 +48,7 @@ The `/docs` directory is the software-development-company handoff pack:
 23. [CRM and Party Domain Model](docs/22-crm-party-model.md)
 24. [Sales, Estimates, Quotations and Proposals](docs/23-sales-estimates-quotations.md)
 25. [Contracts and Finance Domain Model](docs/24-contracts-finance.md)
+26. [Procurement Domain Model](docs/25-procurement.md)
 
 ## Database implementation
 
@@ -59,8 +60,9 @@ The `/database` directory contains the implementation-level MySQL schema baselin
 - [002 — CRM and Party Model DDL](database/schema/002-crm-parties.sql)
 - [003 — Sales, Estimates and Quotations DDL](database/schema/003-sales-quotes.sql)
 - [004 — Contracts and Finance DDL](database/schema/004-contracts-finance.sql)
+- [005 — Procurement DDL](database/schema/005-procurement.sql)
 
-Planned schema packages continue through procurement, workforce/time/scheduling, project information/documents, site/quality/safety, commercial cost control and assets/maintenance.
+Planned schema packages continue through workforce/time/scheduling, project information/documents, site/quality/safety, commercial cost control and assets/maintenance.
 
 ## Governing product rule
 
