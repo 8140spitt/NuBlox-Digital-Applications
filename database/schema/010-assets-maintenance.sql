@@ -9,6 +9,8 @@
 -- 1. Facilities and assets are long-lived operational records and may outlive any project.
 -- 2. Projects contribute to facilities through explicit links; they do not own the full asset lifecycle.
 -- 3. Building/space/system/asset identity is relational; no generic EAV asset master is introduced.
+--    Hierarchy self-parent prohibition is enforced in the domain layer because MySQL 8.4
+--    does not permit CHECK constraints to reference AUTO_INCREMENT identity columns.
 -- 4. Controlled information, labour, procurement and quality facts remain authoritative in source domains.
 -- 5. Maintenance requests, work orders, service events and compliance events are separate auditable facts.
 -- 6. Current warranty/compliance/due-state measures are derived from dates, rules and event evidence.
@@ -288,9 +290,7 @@ CREATE TABLE facility_spaces (
             parent_space_id, organisation_id, facility_id, facility_building_id
         ) REFERENCES facility_spaces (
             id, organisation_id, facility_id, facility_building_id
-        ) ON UPDATE RESTRICT ON DELETE RESTRICT,
-    CONSTRAINT ck_facility_spaces_parent
-        CHECK (parent_space_id IS NULL OR parent_space_id <> id)
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 -- -----------------------------------------------------------------------------
@@ -354,8 +354,6 @@ CREATE TABLE building_systems (
         FOREIGN KEY (parent_system_id, organisation_id, facility_id)
         REFERENCES building_systems (id, organisation_id, facility_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
-    CONSTRAINT ck_building_systems_parent
-        CHECK (parent_system_id IS NULL OR parent_system_id <> id),
     CONSTRAINT ck_building_systems_status
         CHECK (operational_status IN ('planned', 'active', 'inactive', 'isolated', 'decommissioned', 'archived'))
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
@@ -498,8 +496,6 @@ CREATE TABLE assets (
         FOREIGN KEY (created_by_member_id, organisation_id)
         REFERENCES organisation_members (id, organisation_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
-    CONSTRAINT ck_assets_parent
-        CHECK (parent_asset_id IS NULL OR parent_asset_id <> id),
     CONSTRAINT ck_assets_location
         CHECK (
             (building_level_id IS NULL OR facility_building_id IS NOT NULL)

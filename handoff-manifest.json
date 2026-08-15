@@ -5,7 +5,20 @@
   "domain_count": 16,
   "fixed_stack": ["Svelte 5", "SvelteKit", "MySQL/InnoDB"],
   "current_schema_package": "010-assets-maintenance",
-  "schema_baseline_status": "001-010 complete; full-chain MySQL validation pending",
+  "schema_baseline_status": "001-010 complete; repeatable clean-build validation passed on MySQL 8.4.11",
+  "schema_baseline_counts": {
+    "base_tables": 337,
+    "foreign_keys": 739,
+    "check_constraints": 427
+  },
+  "schema_validation": {
+    "date": "2026-08-15",
+    "mysql_version": "8.4.11",
+    "workflow": ".github/workflows/database-baseline-validation.yml",
+    "validator": "database/validation/validate-baseline.sh",
+    "repeatable_clean_builds": 2,
+    "status": "passed"
+  },
   "brand_docs": [
     "docs/branding/00-business-entity.md",
     "docs/branding/01-brand-strategy.md",

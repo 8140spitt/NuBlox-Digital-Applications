@@ -20,8 +20,15 @@ ALTER TABLE attendance_records
         id, worker_id, organisation_id
     );
 
+-- The original FK's automatically created supporting index survives DROP FOREIGN KEY.
+-- Drop it explicitly before replacing the FK with a wider composite key.
 ALTER TABLE site_diary_worker_entries
-    DROP FOREIGN KEY fk_site_diary_worker_attendance,
+    DROP FOREIGN KEY fk_site_diary_worker_attendance;
+
+ALTER TABLE site_diary_worker_entries
+    DROP INDEX fk_site_diary_worker_attendance;
+
+ALTER TABLE site_diary_worker_entries
     ADD CONSTRAINT fk_site_diary_worker_attendance
         FOREIGN KEY (attendance_record_id, worker_id, owning_organisation_id)
         REFERENCES attendance_records (id, worker_id, organisation_id)
@@ -40,8 +47,13 @@ ALTER TABLE quality_inspection_responses
     );
 
 ALTER TABLE quality_inspection_findings
-    DROP FOREIGN KEY fk_quality_findings_response,
-    DROP COLUMN project_id,
+    DROP FOREIGN KEY fk_quality_findings_response;
+
+ALTER TABLE quality_inspection_findings
+    DROP INDEX fk_quality_findings_response,
+    DROP COLUMN project_id;
+
+ALTER TABLE quality_inspection_findings
     ADD CONSTRAINT fk_quality_findings_response
         FOREIGN KEY (quality_inspection_response_id, quality_inspection_id)
         REFERENCES quality_inspection_responses (id, quality_inspection_id)
@@ -56,7 +68,9 @@ ALTER TABLE quality_inspection_findings
 -- -----------------------------------------------------------------------------
 
 ALTER TABLE quality_inspection_template_versions
-    DROP CHECK ck_quality_template_versions_published,
+    DROP CHECK ck_quality_template_versions_published;
+
+ALTER TABLE quality_inspection_template_versions
     ADD CONSTRAINT ck_quality_template_versions_published
         CHECK (
             (status IN ('draft', 'cancelled')
@@ -68,8 +82,37 @@ ALTER TABLE quality_inspection_template_versions
                 AND published_by_member_id IS NOT NULL)
         );
 
+-- MySQL will not change a parent-key column while inbound/outbound FKs use that
+-- column. Temporarily remove those constraints, tighten nullability, then restore
+-- the same relationship graph. Supporting indexes are retained because the FK
+-- column shapes do not change.
+ALTER TABLE quality_inspection_responses
+    DROP FOREIGN KEY fk_quality_responses_inspection;
+
+ALTER TABLE quality_inspections
+    DROP FOREIGN KEY fk_quality_inspections_template;
+
 ALTER TABLE quality_inspections
     MODIFY COLUMN quality_inspection_template_version_id BIGINT UNSIGNED NOT NULL;
+
+ALTER TABLE quality_inspections
+    ADD CONSTRAINT fk_quality_inspections_template
+        FOREIGN KEY (quality_inspection_template_version_id, owning_organisation_id)
+        REFERENCES quality_inspection_template_versions (id, organisation_id)
+        ON UPDATE RESTRICT
+        ON DELETE RESTRICT;
+
+ALTER TABLE quality_inspection_responses
+    ADD CONSTRAINT fk_quality_responses_inspection
+        FOREIGN KEY (
+            quality_inspection_id,
+            quality_inspection_template_version_id,
+            owning_organisation_id
+        ) REFERENCES quality_inspections (
+            id,
+            quality_inspection_template_version_id,
+            owning_organisation_id
+        ) ON UPDATE RESTRICT ON DELETE RESTRICT;
 
 -- -----------------------------------------------------------------------------
 -- 4. Delivery accepted/rejected quantities cannot exceed the recorded quantity.
@@ -98,11 +141,19 @@ ALTER TABLE rams_records
 
 ALTER TABLE rams_approval_events
     DROP FOREIGN KEY fk_rams_approval_events_version,
-    DROP FOREIGN KEY fk_rams_approval_events_member,
+    DROP FOREIGN KEY fk_rams_approval_events_member;
+
+-- Both dropped FKs were backed by automatically created indexes whose old column
+-- shapes do not satisfy the replacement constraints.
+ALTER TABLE rams_approval_events
+    DROP INDEX fk_rams_approval_events_version,
+    DROP INDEX fk_rams_approval_events_member,
     ADD COLUMN information_container_id BIGINT UNSIGNED NOT NULL
         AFTER information_container_version_id,
     ADD COLUMN deciding_organisation_id BIGINT UNSIGNED NOT NULL
-        AFTER decision,
+        AFTER decision;
+
+ALTER TABLE rams_approval_events
     ADD CONSTRAINT fk_rams_approval_events_rams_context
         FOREIGN KEY (
             rams_record_id,
@@ -136,10 +187,15 @@ ALTER TABLE rams_approval_events
 -- -----------------------------------------------------------------------------
 
 ALTER TABLE defect_actions
-    DROP FOREIGN KEY fk_defect_actions_completed_by,
+    DROP FOREIGN KEY fk_defect_actions_completed_by;
+
+ALTER TABLE defect_actions
+    DROP INDEX fk_defect_actions_completed_by,
     DROP CHECK ck_defect_actions_completed,
     ADD COLUMN completed_by_organisation_id BIGINT UNSIGNED NULL
-        AFTER completed_by_member_id,
+        AFTER completed_by_member_id;
+
+ALTER TABLE defect_actions
     ADD CONSTRAINT fk_defect_actions_completed_by
         FOREIGN KEY (completed_by_member_id, completed_by_organisation_id)
         REFERENCES organisation_members (id, organisation_id)
@@ -156,10 +212,15 @@ ALTER TABLE defect_actions
         );
 
 ALTER TABLE ncr_actions
-    DROP FOREIGN KEY fk_ncr_actions_completed_by,
+    DROP FOREIGN KEY fk_ncr_actions_completed_by;
+
+ALTER TABLE ncr_actions
+    DROP INDEX fk_ncr_actions_completed_by,
     DROP CHECK ck_ncr_actions_completed,
     ADD COLUMN completed_by_organisation_id BIGINT UNSIGNED NULL
-        AFTER completed_by_member_id,
+        AFTER completed_by_member_id;
+
+ALTER TABLE ncr_actions
     ADD CONSTRAINT fk_ncr_actions_completed_by
         FOREIGN KEY (completed_by_member_id, completed_by_organisation_id)
         REFERENCES organisation_members (id, organisation_id)
@@ -176,10 +237,15 @@ ALTER TABLE ncr_actions
         );
 
 ALTER TABLE safety_actions
-    DROP FOREIGN KEY fk_safety_actions_completed_by,
+    DROP FOREIGN KEY fk_safety_actions_completed_by;
+
+ALTER TABLE safety_actions
+    DROP INDEX fk_safety_actions_completed_by,
     DROP CHECK ck_safety_actions_completed,
     ADD COLUMN completed_by_organisation_id BIGINT UNSIGNED NULL
-        AFTER completed_by_member_id,
+        AFTER completed_by_member_id;
+
+ALTER TABLE safety_actions
     ADD CONSTRAINT fk_safety_actions_completed_by
         FOREIGN KEY (completed_by_member_id, completed_by_organisation_id)
         REFERENCES organisation_members (id, organisation_id)

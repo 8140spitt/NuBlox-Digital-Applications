@@ -27,20 +27,23 @@ database/
 │   ├── 008-site-quality-safety.md
 │   ├── 009-commercial-cost-control.md
 │   └── 010-assets-maintenance.md
-└── schema/
+├── schema/
+│   ├── README.md
+│   ├── 001-platform-kernel.sql
+│   ├── 002-crm-parties.sql
+│   ├── 003-sales-quotes.sql
+│   ├── 004-contracts-finance.sql
+│   ├── 005-procurement.sql
+│   ├── 006-workforce-time-scheduling.sql
+│   ├── 007-project-information-documents.sql
+│   ├── 007-project-information-integrity.sql
+│   ├── 008-site-quality-safety.sql
+│   ├── 008-site-quality-safety-integrity.sql
+│   ├── 009-commercial-cost-control.sql
+│   └── 010-assets-maintenance.sql
+└── validation/
     ├── README.md
-    ├── 001-platform-kernel.sql
-    ├── 002-crm-parties.sql
-    ├── 003-sales-quotes.sql
-    ├── 004-contracts-finance.sql
-    ├── 005-procurement.sql
-    ├── 006-workforce-time-scheduling.sql
-    ├── 007-project-information-documents.sql
-    ├── 007-project-information-integrity.sql
-    ├── 008-site-quality-safety.sql
-    ├── 008-site-quality-safety-integrity.sql
-    ├── 009-commercial-cost-control.sql
-    └── 010-assets-maintenance.sql
+    └── validate-baseline.sh
 ```
 
 ## Schema package order
@@ -64,7 +67,20 @@ Package 009 is one SQL stage: `009-commercial-cost-control.sql`. It adds two pre
 
 Package 010 is one SQL stage: `010-assets-maintenance.sql`. Facilities/assets are long-lived tenant operational records; projects contribute through explicit links rather than owning the asset lifecycle.
 
-The planned 001–010 domain baseline is complete. Before production, the full chain must be executed against clean MySQL 8.4 in CI and adopted into the selected migration/query tool without losing constraints.
+## Baseline validation status
+
+The planned **001–010 domain baseline is complete and has passed repeatable clean-build validation on MySQL 8.4.11** using `database/validation/validate-baseline.sh` in GitHub Actions.
+
+Each clean build produced:
+
+- **337 base tables**
+- **739 foreign keys**
+- **427 `CHECK` constraints**
+- InnoDB for every base table
+- `utf8mb4_0900_ai_ci` table collation throughout
+- a primary key on every base table
+
+The validator builds the complete chain twice against separate clean databases so package ordering and dependency assumptions are exercised repeatedly.
 
 ## Normalisation policy
 
@@ -104,10 +120,10 @@ The planned 001–010 domain baseline is complete. Before production, the full c
 
 1. Select the MySQL query/ORM/migration tool.
 2. Record the decision in an ADR.
-3. Adopt/consolidate the numbered pre-production packages into that migration system without losing constraints.
-4. Run the full chain against a clean MySQL 8.4 instance in CI.
+3. Adopt/consolidate the validated numbered pre-production packages into that migration system without losing constraints.
+4. Keep the complete clean-build MySQL 8.4 validation running in CI.
 5. Add same-tenant, candidate-key and lifecycle integrity tests.
-6. Test upgrades from the prior released schema.
+6. Test upgrades from the prior released schema once release migrations exist.
 7. Once migrations are released, never rewrite them in place; add forward migrations.
 
 ## Security rule

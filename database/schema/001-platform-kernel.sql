@@ -359,7 +359,7 @@ CREATE TABLE career_domains (
         FOREIGN KEY (career_id)
         REFERENCES careers (id)
         ON UPDATE RESTRICT
-        ON DELETE CASCADE,
+        ON DELETE RESTRICT,
     CONSTRAINT fk_career_domains_domain
         FOREIGN KEY (professional_domain_id)
         REFERENCES professional_domains (id)
@@ -454,7 +454,7 @@ CREATE TABLE member_careers (
         FOREIGN KEY (organisation_member_id, organisation_id)
         REFERENCES organisation_members (id, organisation_id)
         ON UPDATE RESTRICT
-        ON DELETE CASCADE,
+        ON DELETE RESTRICT,
     CONSTRAINT fk_member_careers_career
         FOREIGN KEY (career_id)
         REFERENCES careers (id)

@@ -1,0 +1,46 @@
+name: Database Baseline Validation
+
+on:
+  pull_request:
+    paths:
+      - 'database/schema/**'
+      - 'database/validation/**'
+      - '.github/workflows/database-baseline-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'database/schema/**'
+      - 'database/validation/**'
+      - '.github/workflows/database-baseline-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mysql-8-4-baseline:
+    name: MySQL 8.4 clean baseline build
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate 001-010 schema chain
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+          MYSQL_USER: root
+          MYSQL_PASSWORD: nublox_ci
+        run: bash database/validation/validate-baseline.sh

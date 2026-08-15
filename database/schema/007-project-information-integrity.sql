@@ -1,11 +1,11 @@
 -- NuBlox: Digital Applications
--- Schema package 007a: Project Information integrity hardening
+-- Schema package 007: Project Information integrity hardening
 -- Depends on: 007-project-information-documents.sql
 -- Target: MySQL 8.4 / InnoDB
 -- Generated: 2026-08-15
 --
--- Pre-development companion patch. Consolidate into Package 007 when the production
--- migration baseline is frozen.
+-- Pre-development companion integrity stage. Consolidate further into Package 007
+-- when the production migration baseline is frozen.
 
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
@@ -18,8 +18,12 @@ SET time_zone = '+00:00';
 ALTER TABLE project_sites
     ADD UNIQUE KEY uq_project_sites_id_project (id, project_id);
 
+-- MySQL 8.4 requires the old named FK to be dropped before a constraint using the
+-- same name is added; do not combine these two operations in one ALTER statement.
 ALTER TABLE information_containers
-    DROP FOREIGN KEY fk_information_containers_site,
+    DROP FOREIGN KEY fk_information_containers_site;
+
+ALTER TABLE information_containers
     ADD CONSTRAINT fk_information_containers_site
         FOREIGN KEY (project_site_id, project_id)
         REFERENCES project_sites (id, project_id)
@@ -27,47 +31,10 @@ ALTER TABLE information_containers
         ON DELETE RESTRICT;
 
 -- -----------------------------------------------------------------------------
--- 2. Review assignments require a stable identity.
---    A reviewer may be either an organisation generally or a specific member.
---    Nullable member IDs therefore must not be part of the primary key.
+-- 2. Review-assignment identity and 3NF decision linkage are now consolidated
+--    into 007-project-information-documents.sql so the base package is valid
+--    before this integrity stage is applied.
 -- -----------------------------------------------------------------------------
-
-ALTER TABLE information_review_step_reviewers
-    DROP PRIMARY KEY,
-    MODIFY COLUMN reviewer_member_id BIGINT UNSIGNED NULL,
-    ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
-    ADD COLUMN reviewer_member_key BIGINT UNSIGNED
-        GENERATED ALWAYS AS (COALESCE(reviewer_member_id, 0)) STORED,
-    ADD PRIMARY KEY (id),
-    ADD UNIQUE KEY uq_information_review_step_reviewers_assignment (
-        information_review_step_id,
-        reviewer_organisation_id,
-        reviewer_member_key
-    );
-
-ALTER TABLE information_review_decisions
-    DROP FOREIGN KEY fk_information_review_decisions_assignment,
-    DROP INDEX uq_information_review_decisions_reviewer,
-    ADD COLUMN information_review_step_reviewer_id BIGINT UNSIGNED NULL
-        AFTER information_review_step_id;
-
--- The baseline is pre-production and tables are expected to be empty when applied.
--- The reviewer-assignment row now determines step/workflow/reviewer. Remove those
--- transitive duplicates from the decision relation to keep the final model in 3NF.
-ALTER TABLE information_review_decisions
-    MODIFY information_review_step_reviewer_id BIGINT UNSIGNED NOT NULL,
-    DROP COLUMN information_review_step_id,
-    DROP COLUMN information_review_workflow_id,
-    DROP COLUMN reviewer_organisation_id,
-    DROP COLUMN reviewer_member_id,
-    ADD UNIQUE KEY uq_information_review_decisions_assignment (
-        information_review_step_reviewer_id
-    ),
-    ADD CONSTRAINT fk_information_review_decisions_assignment
-        FOREIGN KEY (information_review_step_reviewer_id)
-        REFERENCES information_review_step_reviewers (id)
-        ON UPDATE RESTRICT
-        ON DELETE RESTRICT;
 
 -- -----------------------------------------------------------------------------
 -- 3. External transmittal recipients use the issuing tenant's private Party record.
@@ -77,7 +44,9 @@ ALTER TABLE information_review_decisions
 ALTER TABLE transmittal_recipients
     DROP FOREIGN KEY fk_transmittal_recipients_party,
     DROP CHECK ck_transmittal_recipients_source,
-    DROP COLUMN source_party_owner_organisation_id,
+    DROP COLUMN source_party_owner_organisation_id;
+
+ALTER TABLE transmittal_recipients
     ADD CONSTRAINT fk_transmittal_recipients_party
         FOREIGN KEY (source_party_id, issuing_organisation_id)
         REFERENCES parties (id, organisation_id)
