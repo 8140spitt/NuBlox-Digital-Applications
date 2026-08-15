@@ -1,7 +1,9 @@
 import { dev } from '$app/environment';
+import { getRequestEvent } from '$app/server';
 import { env } from '$env/dynamic/private';
 import { betterAuth } from 'better-auth';
 import { APIError, createAuthMiddleware } from 'better-auth/api';
+import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { createPool } from 'mysql2/promise';
 
 import { getDatabase } from '$lib/server/db/database';
@@ -70,9 +72,6 @@ export const auth = betterAuth({
 	baseURL: betterAuthUrl,
 	basePath: '/api/auth',
 	secret: requireEnv('BETTER_AUTH_SECRET'),
-	// Keep production origin validation strict. During local development Vite may be
-	// opened via either localhost or 127.0.0.1; both are explicit trusted origins so
-	// Better Auth's first-login CSRF checks do not reject an otherwise valid sign-in.
 	trustedOrigins: dev
 		? [betterAuthUrl, 'http://localhost:*', 'http://127.0.0.1:*']
 		: [betterAuthUrl],
@@ -199,8 +198,6 @@ export const auth = betterAuth({
 	},
 	emailAndPassword: {
 		enabled: true,
-		// Sign-up is enabled only because the before hook above fail-closes every
-		// email sign-up without a validated invitation or organisation-bootstrap intent.
 		disableSignUp: false,
 		requireEmailVerification: true,
 		minPasswordLength: 12,
@@ -222,10 +219,5 @@ export const auth = betterAuth({
 				});
 		}
 	},
-	advanced: {
-		cookiePrefix: 'nublox',
-		database: {
-			generateId: 'uuid'
-		}
-	}
+	plugins: [sveltekitCookies(getRequestEvent)]
 });
