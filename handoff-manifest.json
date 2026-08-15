@@ -20,6 +20,18 @@
     "tenant_authority": "NuBlox users + organisation_members",
     "permission_authority": "NuBlox roles, overrides, project scope and domain policy"
   },
+  "account_provisioning": {
+    "migration": "database/migrations/20260815151500_account_provisioning.sql",
+    "invitation_repository": "app/src/lib/server/organisations/invitation-repository.ts",
+    "invitation_service": "app/src/lib/server/organisations/invitation-service.ts",
+    "invitation_endpoint": "app/src/routes/api/organisations/invitations/+server.ts",
+    "invitation_acceptance": "app/src/routes/invite/[token]/+page.server.ts",
+    "verified_auth_guard": "app/src/lib/server/auth/verified-auth-user.ts",
+    "email_delivery": "app/src/lib/server/email/email-delivery.ts",
+    "email_delivery_policy": "provider-neutral; console local/integration only; production provider pending",
+    "token_policy": "random 256-bit invitation token; only SHA-256 hash persisted",
+    "activation_policy": "new membership activates only after persisted Better Auth email verification"
+  },
   "current_schema_package": "010-assets-maintenance",
   "schema_baseline_status": "001-010 complete; repeatable clean-build validation passed on MySQL 8.4.11",
   "schema_baseline_counts": {
@@ -28,9 +40,9 @@
     "check_constraints": 427
   },
   "current_application_schema_counts": {
-    "base_tables": 342,
-    "foreign_keys": 743,
-    "check_constraints": 427
+    "base_tables": 344,
+    "foreign_keys": 749,
+    "check_constraints": 429
   },
   "schema_validation": {
     "date": "2026-08-15",
@@ -63,11 +75,12 @@
     "migration_ci": ".github/workflows/database-migration-validation.yml"
   },
   "application_implementation": {
-    "phase": "authentication-trusted-tenant-permissions",
+    "phase": "account-provisioning-application-access",
     "status": "implemented-and-integration-tested",
     "tenant_actor_context": "app/src/lib/server/auth/tenant-actor-context.ts",
     "auth_server": "app/src/lib/server/auth/better-auth.ts",
     "auth_identity_repository": "app/src/lib/server/auth/auth-identity-repository.ts",
+    "verified_auth_guard": "app/src/lib/server/auth/verified-auth-user.ts",
     "session_resolver": "app/src/lib/server/auth/session.ts",
     "request_context": "app/src/lib/server/request-context.ts",
     "tenant_selection_endpoint": "app/src/routes/api/tenant/select/+server.ts",
@@ -75,14 +88,26 @@
     "organisation_repository": "app/src/lib/server/organisations/organisation-repository.ts",
     "membership_repository": "app/src/lib/server/organisations/membership-repository.ts",
     "organisation_service": "app/src/lib/server/organisations/organisation-service.ts",
+    "role_repository": "app/src/lib/server/organisations/role-repository.ts",
+    "invitation_repository": "app/src/lib/server/organisations/invitation-repository.ts",
+    "invitation_service": "app/src/lib/server/organisations/invitation-service.ts",
+    "invitation_api": "app/src/routes/api/organisations/invitations/+server.ts",
+    "invitation_route": "app/src/routes/invite/[token]/+page.server.ts",
+    "sign_in_route": "app/src/routes/(auth)/signin/+page.server.ts",
+    "organisation_selector": "app/src/routes/(auth)/select-organisation/+page.server.ts",
+    "protected_app_layout": "app/src/routes/(app)/+layout.server.ts",
+    "application_shell": "app/src/routes/(app)/+layout.svelte",
+    "dashboard": "app/src/routes/(app)/dashboard/+page.svelte",
+    "email_delivery": "app/src/lib/server/email/email-delivery.ts",
     "project_repository": "app/src/lib/server/projects/project-repository.ts",
     "project_service": "app/src/lib/server/projects/project-service.ts",
     "audit_repository": "app/src/lib/server/audit/audit-repository.ts",
     "kernel_errors": "app/src/lib/server/kernel/errors.ts",
     "kernel_integration_tests": "app/src/lib/server/kernel/platform-kernel.integration.test.ts",
     "auth_permission_integration_tests": "app/src/lib/server/auth/auth-permissions.integration.test.ts",
+    "provisioning_integration_tests": "app/src/lib/server/organisations/account-provisioning.integration.test.ts",
     "integration_test_config": "app/vitest.integration.config.ts",
-    "integration_ci_status": "passed on PR #8 head before status close-out",
+    "integration_ci_status": "required migration/type/provisioning/auth/kernel/Svelte gates passing before merge",
     "validated_behaviours": [
       "organisation-user-member active tenant tuple verification",
       "non-participant project invisibility",
@@ -93,7 +118,17 @@
       "organisation selection revalidated against active membership",
       "forged organisation selection fails closed",
       "permission precedence deny over allow over role grant over default deny",
-      "project-scoped permission requires active project membership"
+      "project-scoped permission requires active project membership",
+      "invitation tokens are stored only as SHA-256 hashes",
+      "re-inviting an organisation/email revokes the earlier pending invitation",
+      "Better Auth email sign-up fails closed without a matching invitation",
+      "invitation email mismatch is rejected before auth identity creation",
+      "invited auth identity is bound to the NuBlox invitation",
+      "persisted email verification is required before new domain membership activation",
+      "verified auth identity creates or links one NuBlox user",
+      "invitation acceptance creates or activates tenant membership and intended organisation roles",
+      "invitation creation and acceptance append audit evidence",
+      "protected application routes require authentication and trusted tenant context"
     ]
   },
   "brand_docs": [
@@ -132,7 +167,8 @@
   ],
   "database_migrations": [
     "database/migrations/20260815140337_baseline_v1.sql",
-    "database/migrations/20260815145430_authentication_boundary.sql"
+    "database/migrations/20260815145430_authentication_boundary.sql",
+    "database/migrations/20260815151500_account_provisioning.sql"
   ],
   "handoff_docs": [
     "docs/00-executive-summary.md",

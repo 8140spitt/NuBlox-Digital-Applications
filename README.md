@@ -35,7 +35,12 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md), incl
 
 The planned **001–010 relational domain baseline is complete and has passed repeatable clean-build validation on MySQL 8.4.11**. Baseline v1 contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-Forward migration `20260815145430_authentication_boundary.sql` adds Better Auth infrastructure plus the explicit auth-to-domain user link. The current migrated application schema is therefore **342 tables, 743 foreign keys and 427 `CHECK` constraints**.
+The production migration stream then adds:
+
+- `20260815145430_authentication_boundary.sql` — Better Auth infrastructure and explicit auth-to-domain user linking;
+- `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments.
+
+The current migrated application schema is **344 tables, 749 foreign keys and 429 `CHECK` constraints**.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -65,19 +70,9 @@ Routes/components do not issue SQL directly. Tenant context and authorisation re
 
 ## Implemented Platform Kernel foundation
 
-The first database-backed application slice implements:
-
-- active membership verification by **organisation + user + member** tuple;
-- participant-scoped project reads;
-- transactional project creation with owning-organisation participation and creator project membership;
-- owner-scoped project lifecycle mutation;
-- optimistic lifecycle concurrency guards;
-- append-only project audit evidence;
-- MySQL integration tests for tenant isolation.
+The database-backed kernel includes active membership verification by **organisation + user + member**, participant-scoped project reads, transactional project creation, owner-scoped project lifecycle mutation, optimistic lifecycle concurrency guards and append-only project audit evidence.
 
 ## Implemented authentication, tenant and permission boundary
-
-Authentication now follows:
 
 ```text
 Better Auth session
@@ -103,7 +98,35 @@ explicit deny > explicit allow > active role grant > default deny
 
 Project-scoped operations additionally require active project membership/participation. Better Auth handles authentication/session mechanics only; NuBlox remains authoritative for tenancy and business permissions.
 
-The permanent MySQL CI gate now verifies credential sign-in and session resolution, explicit auth-to-domain identity linking, forged organisation-selection denial, role/override precedence, project scope, the existing Platform Kernel invariants, Kysely type drift and the SvelteKit type-check together.
+## Implemented account provisioning and application access
+
+NuBlox now has its first usable end-to-end account path:
+
+```text
+Authorised member invitation
+        ↓
+Invite-only account creation
+        ↓
+Verified email
+        ↓
+Auth identity ↔ NuBlox user link
+        ↓
+Active organisation membership
+        ↓
+Assigned organisation roles
+        ↓
+Sign in
+        ↓
+Organisation selection
+        ↓
+Protected application shell
+```
+
+Controls include hashed invitation tokens, seven-day invitation expiry, re-invite revocation, fail-closed Better Auth sign-up gating, verified-email activation, existing-user invite acceptance, role assignment and audit evidence. The dashboard exposes member invitations only when the current actor has `member.invite`.
+
+Transactional email is behind a provider-neutral application interface. `EMAIL_DELIVERY_MODE=console` is for development/integration testing only; production email-provider selection remains an explicit integration decision.
+
+The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, account provisioning, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
 
 ## Governing product rule
 
@@ -113,4 +136,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Early application implementation with the MySQL schema/migration baseline validated, typed persistence established, Platform Kernel tenant isolation integration-tested, and the authentication/trusted-tenant/effective-permission boundary implemented and integration-tested against MySQL 8.4.**
+**Early usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, tenant-isolated Platform Kernel services implemented, authentication/trusted-tenant/effective-permission resolution integration-tested, and controlled account provisioning plus a protected organisation-scoped SvelteKit application shell implemented and integration-tested against MySQL 8.4.**

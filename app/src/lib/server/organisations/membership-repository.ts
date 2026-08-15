@@ -10,6 +10,14 @@ export type ActiveOrganisationMembership = {
 	status: 'active';
 };
 
+export type OrganisationMembershipChoice = {
+	memberId: string;
+	memberPublicId: string;
+	organisationId: string;
+	organisationPublicId: string;
+	organisationName: string;
+};
+
 export class OrganisationMembershipRepository {
 	constructor(private readonly db: DatabaseExecutor) {}
 
@@ -72,5 +80,25 @@ export class OrganisationMembershipRepository {
 			publicId: row.publicId,
 			status: 'active'
 		};
+	}
+
+	async listActiveMembershipsForUser(userId: string): Promise<OrganisationMembershipChoice[]> {
+		const rows = await this.db
+			.selectFrom('organisation_members as member')
+			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+			.select([
+				'member.id as memberId',
+				'member.public_id as memberPublicId',
+				'member.organisation_id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'organisation.legal_name as organisationName'
+			])
+			.where('member.user_id', '=', userId)
+			.where('member.status', '=', 'active')
+			.where('organisation.status', '=', 'active')
+			.orderBy('organisation.legal_name', 'asc')
+			.execute();
+
+		return rows;
 	}
 }

@@ -41,11 +41,24 @@ Adds the authentication/session infrastructure selected in ADR-0002:
 
 The first four tables are Better Auth infrastructure. `auth_user_links` is the explicit one-to-one bridge from an authentication identity to the existing NuBlox domain `users` row; authentication does not replace the NuBlox tenant/member/permission model.
 
+After this migration the application schema contains **342 tables, 743 foreign keys and 427 `CHECK` constraints**.
+
+### `20260815151500_account_provisioning.sql`
+
+Adds controlled NuBlox organisation-account provisioning:
+
+- `organisation_invitations`
+- `organisation_invitation_roles`
+
+Invitation identity and lifecycle remain NuBlox domain concerns. Better Auth supplies the login identity/session, while invitation acceptance creates or reuses the authoritative NuBlox `users` identity, `organisation_members` tenancy and `member_roles` assignments.
+
+The migration enforces tenant-safe invitation/role references, unique pending invitations per organisation/email, hashed-token identity, invitation terminal-state checks and explicit links to the accepting auth/domain users.
+
 After this migration the current application schema contains:
 
-- **342 base tables**
-- **743 foreign keys**
-- **427 `CHECK` constraints**
+- **344 base tables**
+- **749 foreign keys**
+- **429 `CHECK` constraints**
 
 These application counts are deliberately reported separately from the frozen 337/739/427 domain Baseline v1 counts.
 

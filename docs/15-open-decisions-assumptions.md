@@ -16,6 +16,7 @@
 | Database query layer | Kysely + mysql2 — ADR-0001 |
 | Production migrations | Dbmate plain SQL — ADR-0001 |
 | Authentication/session boundary | Better Auth; NuBlox remains tenancy/permission authority — ADR-0002 |
+| Initial account provisioning | NuBlox organisation invitations + verified-email activation + organisation selection |
 
 ## Blockers to resolve during discovery / implementation planning
 
@@ -73,17 +74,19 @@ Claims require dedicated legal/domain validation.
 
 ## Authentication follow-on decisions
 
-The authentication provider/session boundary itself is fixed by ADR-0002. The remaining security/product increments are narrower decisions rather than a reopened provider choice:
+The authentication provider/session boundary is fixed by ADR-0002 and the initial invitation → verified identity → membership → organisation-selection path is implemented. Remaining security/product increments are narrower decisions:
 
-- transactional email provider and verified-email delivery;
-- invitation/provisioning and recovery UX;
+- production transactional email provider and operational deliverability/monitoring;
+- password-recovery UX and support/admin recovery workflow;
 - MFA/step-up policy for high-risk operations;
 - enterprise SSO/SAML/OIDC roadmap;
-- support/admin account-recovery workflow;
+- invitation administration UX beyond initial create/accept flow;
 - session lifetime tuning based on operational risk;
 - production trusted-origin/deployment configuration.
 
-These must extend the current boundary without moving organisation membership or NuBlox permissions into the authentication provider.
+The current provider-neutral email boundary uses `EMAIL_DELIVERY_MODE=console` only for local development and integration tests. Production must install a real delivery adapter rather than treating console delivery as a deployable configuration.
+
+These decisions must extend the current boundary without moving organisation membership or NuBlox permissions into the authentication provider.
 
 ## Important non-blocking decisions
 

@@ -1816,6 +1816,31 @@ export interface OrganisationIdentifiers {
   organisation_id: string;
 }
 
+export interface OrganisationInvitationRoles {
+  assigned_at: Generated<Date>;
+  organisation_id: string;
+  organisation_invitation_id: string;
+  organisation_role_id: string;
+}
+
+export interface OrganisationInvitations {
+  accepted_at: Date | null;
+  accepted_user_id: string | null;
+  auth_user_id: string | null;
+  created_at: Generated<Date>;
+  email: string;
+  expires_at: Date;
+  id: Generated<string>;
+  invited_by_member_id: string;
+  organisation_id: string;
+  pending_email: string | null;
+  public_id: string;
+  revoked_at: Date | null;
+  status: Generated<string>;
+  token_hash: string;
+  updated_at: Generated<Date>;
+}
+
 export interface OrganisationLocations {
   address_id: string | null;
   created_at: Generated<Date>;
@@ -4285,6 +4310,8 @@ export interface DB {
   opportunity_parties: OpportunityParties;
   opportunity_party_role_types: OpportunityPartyRoleTypes;
   organisation_identifiers: OrganisationIdentifiers;
+  organisation_invitation_roles: OrganisationInvitationRoles;
+  organisation_invitations: OrganisationInvitations;
   organisation_locations: OrganisationLocations;
   organisation_members: OrganisationMembers;
   organisation_roles: OrganisationRoles;
