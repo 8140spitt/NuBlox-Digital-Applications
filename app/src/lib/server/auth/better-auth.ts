@@ -21,7 +21,9 @@ function invitationService(): OrganisationInvitationService {
 	return new OrganisationInvitationService(getDatabase());
 }
 
-function invitationTokenFromContext(ctx: { getCookie(name: string): string | undefined }): string {
+function invitationTokenFromContext(ctx: {
+	getCookie(name: string): string | null | undefined;
+}): string {
 	const token = ctx.getCookie(INVITATION_SIGNUP_COOKIE)?.trim();
 	if (!token) {
 		throw new APIError('FORBIDDEN', { message: 'A valid NuBlox invitation is required.' });
