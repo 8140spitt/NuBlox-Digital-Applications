@@ -34,6 +34,7 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 			email: invitation.email,
 			expiresAt: invitation.expiresAt.toISOString()
 		},
+		returnTo: `/invite/${encodeURIComponent(params.token)}`,
 		actor: locals.actor
 			? {
 				email: locals.actor.email,
