@@ -41,9 +41,10 @@ The production migration stream then adds:
 - `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments;
 - `20260815161900_organisation_administration_permissions.sql` — stable organisation-administration permission catalogue entries;
 - `20260815203700_project_workspace_permissions.sql` — stable project permission catalogue entries and standard-role project defaults;
-- `20260815211600_project_participants_team.sql` — explicit project-participation decline semantics and the controlled project-role catalogue.
+- `20260815211600_project_participants_team.sql` — explicit project-participation decline semantics and the controlled project-role catalogue;
+- `20260815214500_crm_contacts_permissions.sql` — stable CRM view/manage permission entries and standard-role CRM defaults.
 
-The current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The participant/team migration replaces an existing lifecycle check and adds reference data; it does not create a parallel project-team table set.
+The current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The project-participant migration replaces an existing lifecycle check and adds reference data; the CRM migration is data-only. No parallel CRM or project-team table set has been introduced.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -88,9 +89,9 @@ Active organisation membership
         ↓
 Organisation roles / member overrides
         ↓
-Project membership scope
+Project membership scope where required
         ↓
-Lifecycle / business policy
+Record / lifecycle business policy
 ```
 
 The selected organisation cookie is only a selection hint. The server revalidates active membership before constructing trusted tenant context. Effective organisation permission precedence is:
@@ -165,15 +166,20 @@ Current stable defaults are:
 ```text
 Owner         → organisation.manage + member.invite + member.manage
                 + project.create + project.view + project.manage
+                + crm.view + crm.manage
 Administrator → organisation.manage + member.invite + member.manage
                 + project.create + project.view + project.manage
+                + crm.view + crm.manage
 Manager       → member.invite + member.manage
                 + project.create + project.view + project.manage
-Finance/Commercial, Member/Professional, Field Worker, Read Only
-              → project.view
+                + crm.view + crm.manage
+Finance/Commercial → project.view + crm.view
+Member/Professional → project.view + crm.view
+Field Worker        → project.view
+Read Only           → project.view + crm.view
 ```
 
-Project permission grants do not create project visibility on their own. A user must also have active `project_members` scope for the project. The initial organisation member is assigned **Owner only**.
+Project permission grants do not create project visibility on their own. A user must also have active `project_members` scope for the project. CRM grants remain bounded by the selected active organisation. The initial organisation member is assigned **Owner only**.
 
 Existing active NuBlox users can also use `/start` to create an additional organisation without creating another auth or domain identity; the new tenant is selected immediately after the transactional bootstrap completes.
 
@@ -196,6 +202,52 @@ organisation.manage
 ```
 
 `organisation.manage` is the explicit higher administrative authority. Delegation ceilings, organisation-manager protection, self-mutation restrictions, cross-tenant rejection and final-manager lockout prevention are enforced in the domain layer.
+
+## Implemented CRM parties and contacts
+
+The protected `/crm` workspace activates the existing Package 002 party model as a **private tenant CRM**, not a global NuBlox directory.
+
+```text
+NuBlox organisation / tenant
+        ↓
+      parties
+      ├─ party_persons
+      └─ party_organisations
+        ↓
+roles + primary contact methods
+        ↓
+person ↔ organisation contact relationships
+```
+
+A real-world organisation or person is stored once within the active tenant and may hold several business roles such as Client, Supplier, Subcontractor, Consultant or Developer. Those roles classify the party; they do not create duplicate customer/supplier/person master records.
+
+Stable CRM permissions are:
+
+```text
+crm.view   → search/open tenant-owned CRM parties and contact relationships
+crm.manage → create and maintain parties, roles, contact methods and organisation contacts
+```
+
+Every repository query is explicitly scoped by the active `organisation_id`. Direct cross-tenant party public IDs are masked as not found. CRM party identity is deliberately separate from NuBlox platform `organisations`, authentication `users`, workforce records and project participation.
+
+The CRM UI supports:
+
+- organisation and person records;
+- search by name, primary email or primary phone;
+- party type and lifecycle filters;
+- multi-role business classification;
+- primary email and E.164 phone maintenance;
+- active/inactive/archived lifecycle state;
+- creating a new person directly as an organisation contact;
+- linking an existing tenant CRM person to an organisation without identity duplication;
+- job title, department and primary-contact context on the relationship;
+- ending a contact relationship while retaining dated history;
+- person-side organisation affiliations;
+- append-only CRM audit evidence.
+
+The Package 002 subtype invariant—exactly one matching person or organisation subtype for each `parties` row—is enforced transactionally by the application service and integration tests. Archived parties cannot silently acquire new contact relationships.
+
+Opportunities, pipelines and CRM activity timelines already exist in the relational baseline but are **not claimed implemented in this slice**.
 
 ## Implemented project creation and project workspace
 
@@ -238,9 +290,9 @@ Project roles such as Client, Project manager, Engineer, Main contractor and Ins
 
 ## Validation gate
 
-The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, project participant/team administration, project workspace behavior, account provisioning, organisation bootstrap, organisation administration, authentication/tenant/permission behavior, Platform Kernel invariants and the SvelteKit type-check together.
+The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, CRM party/contact behavior, project participant/team administration, project workspace behavior, account provisioning, organisation bootstrap/default-role parity, organisation administration, authentication/tenant/permission behavior, Platform Kernel invariants and the SvelteKit type-check together.
 
-The project-participants/team executable close-out applied all six migrations and passed **8 integration files / 35 real-MySQL tests**, retained zero Kysely generated-type drift, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is validated by the same gate before merge.
+The CRM executable close-out applied all seven migrations and passed **9 integration files / 41 real-MySQL tests**, retained zero Kysely generated-type drift, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is validated by the same gate before merge.
 
 ## Governing product rule
 
@@ -250,4 +302,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Usable multi-tenant application foundation with the relational baseline validated, SQL-first migrations and typed persistence established, hardened authentication/trusted-tenant/effective-permission resolution, controlled account and organisation provisioning, organisation administration, project creation/workspaces, and multi-organisation project participant/team administration validated against MySQL 8.4.**
+**Usable multi-tenant application foundation with the relational baseline validated, SQL-first migrations and typed persistence established, hardened authentication/trusted-tenant/effective-permission resolution, controlled account and organisation provisioning, organisation administration, private CRM party/contact management, project creation/workspaces, and multi-organisation project participant/team administration validated against MySQL 8.4.**
