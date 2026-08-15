@@ -54,13 +54,23 @@ Invitation identity and lifecycle remain NuBlox domain concerns. Better Auth sup
 
 The migration enforces tenant-safe invitation/role references, unique pending invitations per organisation/email, hashed-token identity, invitation terminal-state checks and explicit links to the accepting auth/domain users.
 
-After this migration the current application schema contains:
+After this migration the application schema contains:
 
 - **344 base tables**
 - **749 foreign keys**
 - **429 `CHECK` constraints**
 
-These application counts are deliberately reported separately from the frozen 337/739/427 domain Baseline v1 counts.
+### `20260815161900_organisation_administration_permissions.sql`
+
+Seeds the stable platform permission catalogue entries used by the organisation-administration application boundary:
+
+- `organisation.manage` — organisation roles and permission grants, and explicit full organisation-administration authority;
+- `member.invite` — invitation creation/resend/revoke authority;
+- `member.manage` — member lifecycle and organisation role-assignment authority.
+
+This migration inserts or reactivates permission catalogue data only. It creates no tables, foreign keys or `CHECK` constraints, so the current application structure remains **344 / 749 / 429**.
+
+These permission keys are platform policy identifiers. Organisations grant them through their own `organisation_roles`/`role_permissions`; career titles do not implicitly confer administrative authority.
 
 ## Migration rules
 
@@ -73,3 +83,4 @@ These application counts are deliberately reported separately from the frozen 33
 - Every migration change must pass MySQL 8.4 clean-build validation.
 - Database-derived Kysely types must be regenerated after schema changes.
 - Authentication-provider infrastructure and NuBlox domain tables remain explicitly separated.
+- Data-only permission/catalogue migrations must also pass the full application migration and integration gate.
