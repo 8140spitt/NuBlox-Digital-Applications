@@ -4,6 +4,7 @@ import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
+import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import {
@@ -251,7 +252,7 @@ export class CrmService {
 
 	private async createPartyRecords(
 		actor: TenantActorContext,
-		db: Parameters<Database['transaction']>[0] extends never ? never : any,
+		db: DatabaseExecutor,
 		input: ValidatedPartyInput
 	): Promise<CrmPartyDetail> {
 		const repository = new CrmRepository(db);
@@ -414,6 +415,7 @@ export class CrmService {
 				actingOrganisationId: actor.organisationId,
 				actorUserId: actor.userId,
 				actorMemberId: membership.id,
+				projectId: null,
 				actionKey: 'crm.contact.created',
 				subjectType: 'crm_party',
 				subjectPublicId: person.publicId,
