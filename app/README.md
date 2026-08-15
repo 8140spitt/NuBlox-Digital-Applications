@@ -1,42 +1,75 @@
-# sv
+# NuBlox SvelteKit App
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+This app is structured as a modular monolith following `docs/05-system-architecture.md`.
 
-## Creating a project
+## Architectural principles
 
-If you're seeing this, you've probably already done this step. Congrats!
+- Single deployable SvelteKit app with explicit domain boundaries.
+- Business rules belong in server-side domain/application modules, not in Svelte components.
+- Route handlers act as request boundaries: auth, tenant context, validation, policy checks, service orchestration.
+- Correlation IDs are attached to every request for observability.
 
-```sh
-# create a new project
-npx sv create my-app
+## Layout
+
+```text
+src/
+├── lib/
+│   ├── components/
+│   │   ├── ui/
+│   │   ├── data/
+│   │   ├── forms/
+│   │   └── domain/
+│   ├── server/
+│   │   ├── auth/
+│   │   ├── db/
+│   │   ├── audit/
+│   │   ├── jobs/
+│   │   ├── organisations/
+│   │   ├── capabilities/
+│   │   ├── crm/
+│   │   ├── sales/
+│   │   ├── contracts/
+│   │   ├── finance/
+│   │   ├── procurement/
+│   │   ├── people/
+│   │   ├── projects/
+│   │   ├── documents/
+│   │   ├── commercial/
+│   │   ├── site/
+│   │   ├── safety/
+│   │   ├── quality/
+│   │   ├── assets/
+│   │   ├── maintenance/
+│   │   ├── reporting/
+│   │   └── integrations/
+│   └── types/
+└── routes/
+    ├── (auth)/
+    ├── (app)/
+    ├── portal/
+    └── api/
 ```
 
-To recreate this project with the same configuration:
+## Implemented request flow baseline
+
+`src/hooks.server.ts` currently initializes:
+
+- `locals.correlationId`
+- `locals.actor`
+- `locals.tenant`
+
+And returns the correlation ID in `x-correlation-id` response headers.
+
+## Run
 
 ```sh
-# recreate this project
-pnpm dlx sv@0.17.0 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright sveltekit-adapter="adapter:node" --install pnpm ./
+pnpm install
+pnpm dev
 ```
 
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## Validate
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm check
+pnpm test
 ```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
