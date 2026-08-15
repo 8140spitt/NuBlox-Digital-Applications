@@ -95,6 +95,24 @@ SvelteKit action / endpoint
 
 The generated Kysely database interface is derived from a migrated MySQL database and committed for compile-time checking. Tenant context and authorisation remain mandatory domain/repository concerns; query-builder typing does not replace access control.
 
+## Implemented Platform Kernel foundation
+
+The first real database-backed application slice is implemented for organisations, memberships, projects and audit evidence.
+
+Current kernel rules include:
+
+- active membership verification by **organisation + user + member** tuple;
+- active organisation access through a tenant-gated service;
+- participant-scoped project reads;
+- transactional project creation with owning-organisation participation and creator project membership;
+- owning-organisation project lifecycle mutation;
+- server-side project state-machine validation;
+- optimistic current-status guards for lifecycle writes;
+- append-only audit evidence for project creation and status transitions;
+- MySQL integration tests proving application and composite-FK tenant isolation.
+
+These tests run in CI against the actual Dbmate-migrated MySQL 8.4 database before the SvelteKit type-check.
+
 ## Governing product rule
 
 > **NuBlox models what people and organisations do, not only what their job title is.**
@@ -103,4 +121,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Product definition / implementation foundation with the 001–010 relational baseline MySQL-validated, Baseline v1 adopted into the SQL migration stream, and the typed SvelteKit database boundary established.**
+**Early application implementation with the 001–010 relational baseline MySQL-validated, Baseline v1 in the SQL migration stream, the typed SvelteKit persistence boundary established, and the first tenant-isolated Platform Kernel repositories/services integration-tested against MySQL 8.4.**
