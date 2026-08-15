@@ -49,7 +49,10 @@ ALTER TABLE quality_inspection_findings
         ON DELETE RESTRICT;
 
 -- -----------------------------------------------------------------------------
--- 3. Published/retired inspection-template versions must retain publication evidence.
+-- 3. Inspection templates are exact versioned definitions.
+--    Published/retired versions retain publication evidence and every inspection
+--    references one exact version. An "ad hoc" inspection is represented by an
+--    appropriate published ad-hoc template version rather than a NULL definition.
 -- -----------------------------------------------------------------------------
 
 ALTER TABLE quality_inspection_template_versions
@@ -64,6 +67,9 @@ ALTER TABLE quality_inspection_template_versions
                 AND published_at IS NOT NULL
                 AND published_by_member_id IS NOT NULL)
         );
+
+ALTER TABLE quality_inspections
+    MODIFY COLUMN quality_inspection_template_version_id BIGINT UNSIGNED NOT NULL;
 
 -- -----------------------------------------------------------------------------
 -- 4. Delivery accepted/rejected quantities cannot exceed the recorded quantity.
@@ -192,12 +198,14 @@ ALTER TABLE safety_actions
 -- -----------------------------------------------------------------------------
 -- 7. Additional required domain invariants retained after relational hardening.
 -- -----------------------------------------------------------------------------
--- A. RAMS deciding organisation must participate in the same project.
--- B. Defect/NCR/safety-action responsible and completing organisations must be valid
+-- A. Inspections may only start from a published (or policy-approved retired) exact
+--    template version; the NOT NULL FK proves identity, while status is domain policy.
+-- B. RAMS deciding organisation must participate in the same project.
+-- C. Defect/NCR/safety-action responsible and completing organisations must be valid
 --    project participants for the parent record and authorised for the transition.
--- C. Safety briefing attendees, permit authorised persons and safety-event people whose
+-- D. Safety briefing attendees, permit authorised persons and safety-event people whose
 --    worker belongs to another organisation require project-sharing/privacy permission.
--- D. Visitor person_party_id must reference a person subtype when populated.
--- E. Safety event injury fields are valid only under incident-specific policy.
--- F. All Package 008 information-version links must remain within the same project and
+-- E. Visitor person_party_id must reference a person subtype when populated.
+-- F. Safety event injury fields are valid only under incident-specific policy.
+-- G. All Package 008 information-version links must remain within the same project and
 --    effective visibility scope, even though their FK proves only stable revision identity.
