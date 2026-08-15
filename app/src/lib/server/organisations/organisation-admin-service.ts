@@ -11,6 +11,7 @@ import {
 	OrganisationAdminRepository,
 	type OrganisationMemberStatus
 } from './organisation-admin-repository';
+import { decideOrganisationRoleDelegation } from './role-delegation-policy';
 
 export class OrganisationAdminValidationError extends Error {
 	readonly code = 'ORGANISATION_ADMIN_VALIDATION';
@@ -174,6 +175,12 @@ export class OrganisationAdminService {
 			if (roleIds.length !== rolePublicIds.length) {
 				throw new OrganisationAdminValidationError(
 					'One or more selected roles are not active roles in this organisation.'
+				);
+			}
+			const delegation = await decideOrganisationRoleDelegation(trx, actor, rolePublicIds);
+			if (!delegation.allowed) {
+				throw new OrganisationAdminValidationError(
+					`You cannot delegate role permissions you do not hold: ${delegation.deniedPermissionKeys.join(', ')}.`
 				);
 			}
 
