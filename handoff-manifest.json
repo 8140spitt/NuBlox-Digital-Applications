@@ -8,6 +8,7 @@
     "SvelteKit",
     "MySQL/InnoDB"
   ],
+  "current_schema_package": "007-project-information-documents",
   "files": [
     "README.md",
     "docs/00-executive-summary.md",
@@ -31,8 +32,25 @@
     "docs/18-development-company-brief.md",
     "docs/19-risks-and-dependencies.md",
     "docs/20-record-lifecycles.md",
+    "docs/21-normalised-database-schema.md",
+    "docs/22-crm-party-model.md",
+    "docs/23-sales-estimates-quotations.md",
+    "docs/24-contracts-finance.md",
+    "docs/25-procurement.md",
+    "docs/26-workforce-time-scheduling.md",
+    "docs/27-project-information-documents.md",
     "docs/career-taxonomy-seed.csv",
     "docs/career-taxonomy-seed.json",
+    "database/README.md",
+    "database/schema/001-platform-kernel.sql",
+    "database/schema/001a-platform-kernel-integrity.sql",
+    "database/schema/002-crm-parties.sql",
+    "database/schema/003-sales-quotes.sql",
+    "database/schema/004-contracts-finance.sql",
+    "database/schema/005-procurement.sql",
+    "database/schema/006-workforce-time-scheduling.sql",
+    "database/schema/007-project-information-documents.sql",
+    "database/schema/007a-project-information-integrity.sql",
     "handoff-manifest.json"
   ]
 }
