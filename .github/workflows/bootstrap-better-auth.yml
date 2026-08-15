@@ -19,7 +19,6 @@ jobs:
         image: mysql:8.4
         env:
           MYSQL_ROOT_PASSWORD: nublox_ci
-          MYSQL_DATABASE: nublox_auth_bootstrap
         ports:
           - 3306:3306
         options: >-
@@ -45,33 +44,28 @@ jobs:
           cache: pnpm
           cache-dependency-path: app/pnpm-lock.yaml
 
-      - name: Install Better Auth
+      - name: Install application dependencies
         working-directory: app
-        run: pnpm add better-auth@1.6.25
+        run: pnpm install --frozen-lockfile
 
-      - name: Prepare SvelteKit aliases
-        working-directory: app
-        run: pnpm exec svelte-kit sync
-
-      - name: Generate Better Auth candidate SQL
+      - name: Apply NuBlox migrations including authentication boundary
         working-directory: app
         env:
           DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_auth_bootstrap
-          BETTER_AUTH_SECRET: bootstrap-only-secret-0123456789abcdef0123456789abcdef
-          BETTER_AUTH_URL: http://localhost:5173
-        run: |
-          mkdir -p ../database/auth
-          pnpm dlx auth@1.6.25 generate \
-            --config ./src/lib/server/auth/better-auth.ts \
-            --output ../database/auth/better-auth-core.generated.sql \
-            --yes
+        run: pnpm db:migrate
 
-      - name: Commit bootstrap outputs
+      - name: Regenerate Kysely types
+        working-directory: app
+        env:
+          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_auth_bootstrap
+        run: pnpm db:types
+
+      - name: Commit generated types
         run: |
           git config user.name 'NuBlox Auth Bootstrap'
           git config user.email 'actions@users.noreply.github.com'
-          git add app/package.json app/pnpm-lock.yaml database/auth/better-auth-core.generated.sql
-          git commit -m 'Bootstrap Better Auth dependency and core schema'
+          git add app/src/lib/server/db/generated/database.d.ts
+          git commit -m 'Regenerate database types for authentication boundary'
           git fetch origin implementation/auth-tenant-permissions
           git rebase origin/implementation/auth-tenant-permissions
           git push origin HEAD:implementation/auth-tenant-permissions
