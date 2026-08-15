@@ -21,10 +21,16 @@ This layer defines the business, master brand, audiences, positioning, value pro
 
 - **Frontend:** Svelte 5
 - **Application framework:** SvelteKit
-- **Primary persistence:** MySQL / InnoDB
+- **Primary persistence:** MySQL 8.4 / InnoDB
+- **Runtime query layer:** Kysely + mysql2
+- **Production migrations:** Dbmate plain SQL
+- **Database type generation:** kysely-codegen from the migrated MySQL schema
 - **Architecture:** modular monolith first, explicit domain boundaries
 - **Database design:** normalised relational model, targeting 3NF by default
+- **Schema authority:** committed MySQL SQL migrations; generated TypeScript types are derivative
 - **Market assumption:** UK-first, regionalisation designed in rather than hard-coded
+
+The persistence-tooling decision and rationale are recorded in [ADR-0001 — Database Query and Migration Tooling](docs/adr/0001-database-query-and-migration-tooling.md).
 
 ## Developer handoff documentation
 
@@ -43,6 +49,7 @@ Implementation-level schema work is grouped under `/database`:
 - [Database workflow and rules](database/README.md)
 - [Database package documentation](database/docs/README.md)
 - [SQL package index](database/schema/README.md)
+- [Production migration stream](database/migrations/README.md)
 - [Database baseline validation](database/validation/README.md)
 
 ### Completed baseline packages
@@ -66,7 +73,27 @@ Package 008's integrity stage is `database/schema/008-site-quality-safety-integr
 
 The planned **001–010 relational domain baseline is complete and has passed repeatable clean-build validation on MySQL 8.4.11**. The validated chain creates **337 base tables, 739 foreign keys and 427 `CHECK` constraints** on each clean build.
 
-The next database phase is to select the migration/query tooling, record the decision in an ADR, adopt the validated package chain into that migration system, and add tenant-isolation/lifecycle integration tests before the first production migration baseline is frozen.
+The same validated chain is consolidated into `database/migrations/20260815140337_baseline_v1.sql` for Dbmate. The production migration path is SQL-first; released migrations become immutable and subsequent changes are forward migrations.
+
+## Application database boundary
+
+Server-side persistence is rooted at `app/src/lib/server/db/`:
+
+```text
+SvelteKit action / endpoint
+          ↓
+     Domain service
+          ↓
+       Repository
+          ↓
+        Kysely
+          ↓
+      mysql2 pool
+          ↓
+      MySQL 8.4
+```
+
+The generated Kysely database interface is derived from a migrated MySQL database and committed for compile-time checking. Tenant context and authorisation remain mandatory domain/repository concerns; query-builder typing does not replace access control.
 
 ## Governing product rule
 
@@ -76,4 +103,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Product definition / pre-development with the planned 001–010 implementation-level relational schema baseline complete and MySQL 8.4 validated.**
+**Product definition / implementation foundation with the 001–010 relational baseline MySQL-validated, Baseline v1 adopted into the SQL migration stream, and the typed SvelteKit database boundary established.**
