@@ -14,7 +14,9 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'member.manage',
 	'project.create',
 	'project.view',
-	'project.manage'
+	'project.manage',
+	'crm.view',
+	'crm.manage'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -27,7 +29,9 @@ const STANDARD_ROLES = [
 			'member.manage',
 			'project.create',
 			'project.view',
-			'project.manage'
+			'project.manage',
+			'crm.view',
+			'crm.manage'
 		]
 	},
 	{
@@ -39,23 +43,33 @@ const STANDARD_ROLES = [
 			'member.manage',
 			'project.create',
 			'project.view',
-			'project.manage'
+			'project.manage',
+			'crm.view',
+			'crm.manage'
 		]
 	},
 	{
 		name: 'Manager',
 		description: 'Manages ordinary members, invitations and project delivery within delegated authority.',
-		permissionKeys: ['member.invite', 'member.manage', 'project.create', 'project.view', 'project.manage']
+		permissionKeys: [
+			'member.invite',
+			'member.manage',
+			'project.create',
+			'project.view',
+			'project.manage',
+			'crm.view',
+			'crm.manage'
+		]
 	},
 	{
 		name: 'Finance/Commercial',
 		description: 'Commercial and finance role template; domain permissions are assigned as those modules are enabled.',
-		permissionKeys: ['project.view']
+		permissionKeys: ['project.view', 'crm.view']
 	},
 	{
 		name: 'Member/Professional',
 		description: 'General professional member role template.',
-		permissionKeys: ['project.view']
+		permissionKeys: ['project.view', 'crm.view']
 	},
 	{
 		name: 'Field Worker',
@@ -65,7 +79,7 @@ const STANDARD_ROLES = [
 	{
 		name: 'Read Only',
 		description: 'Read-only role template; domain read permissions are assigned explicitly.',
-		permissionKeys: ['project.view']
+		permissionKeys: ['project.view', 'crm.view']
 	}
 ] as const;
 

@@ -274,6 +274,8 @@ describe('organisation bootstrap and onboarding', () => {
 			.orderBy('permission.permission_key', 'asc')
 			.execute();
 		expect(grants.map((row) => `${row.roleName}:${row.permissionKey}`)).toEqual([
+			'Administrator:crm.manage',
+			'Administrator:crm.view',
 			'Administrator:member.invite',
 			'Administrator:member.manage',
 			'Administrator:organisation.manage',
@@ -281,19 +283,26 @@ describe('organisation bootstrap and onboarding', () => {
 			'Administrator:project.manage',
 			'Administrator:project.view',
 			'Field Worker:project.view',
+			'Finance/Commercial:crm.view',
 			'Finance/Commercial:project.view',
+			'Manager:crm.manage',
+			'Manager:crm.view',
 			'Manager:member.invite',
 			'Manager:member.manage',
 			'Manager:project.create',
 			'Manager:project.manage',
 			'Manager:project.view',
+			'Member/Professional:crm.view',
 			'Member/Professional:project.view',
+			'Owner:crm.manage',
+			'Owner:crm.view',
 			'Owner:member.invite',
 			'Owner:member.manage',
 			'Owner:organisation.manage',
 			'Owner:project.create',
 			'Owner:project.manage',
 			'Owner:project.view',
+			'Read Only:crm.view',
 			'Read Only:project.view'
 		]);
 
@@ -307,6 +316,10 @@ describe('organisation bootstrap and onboarding', () => {
 		const ownerDecision = await permissionService.decide(ownerActor, 'organisation.manage');
 		expect(ownerDecision).toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decide(ownerActor, 'project.create')).resolves.toEqual({
+			allowed: true,
+			reason: 'role-grant'
+		});
+		await expect(permissionService.decide(ownerActor, 'crm.manage')).resolves.toEqual({
 			allowed: true,
 			reason: 'role-grant'
 		});
