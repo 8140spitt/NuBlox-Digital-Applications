@@ -4,6 +4,7 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 export type ActiveOrganisationMembership = {
 	id: string;
 	organisationId: string;
+	organisationPublicId?: string;
 	userId: string;
 	publicId: string;
 	status: 'active';
@@ -35,6 +36,40 @@ export class OrganisationMembershipRepository {
 			organisationId: row.organisation_id,
 			userId: row.user_id,
 			publicId: row.public_id,
+			status: 'active'
+		};
+	}
+
+	/** Resolve a browser-selected organisation only after proving active membership. */
+	async findActiveMembershipByOrganisationPublicId(
+		userId: string,
+		organisationPublicId: string
+	): Promise<ActiveOrganisationMembership | null> {
+		const row = await this.db
+			.selectFrom('organisation_members as member')
+			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+			.select([
+				'member.id as id',
+				'member.organisation_id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'member.user_id as userId',
+				'member.public_id as publicId',
+				'member.status as status'
+			])
+			.where('member.user_id', '=', userId)
+			.where('member.status', '=', 'active')
+			.where('organisation.public_id', '=', organisationPublicId)
+			.where('organisation.status', '=', 'active')
+			.executeTakeFirst();
+
+		if (!row || row.status !== 'active') return null;
+
+		return {
+			id: row.id,
+			organisationId: row.organisationId,
+			organisationPublicId: row.organisationPublicId,
+			userId: row.userId,
+			publicId: row.publicId,
 			status: 'active'
 		};
 	}
