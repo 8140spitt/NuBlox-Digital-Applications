@@ -27,12 +27,12 @@ export interface Addresses {
   city: string | null;
   country_code: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   line_1: string;
   line_2: string | null;
   line_3: string | null;
   locality: string | null;
-  organisation_id: number;
+  organisation_id: string;
   postal_code: string | null;
   region: string | null;
   updated_at: Generated<Date>;
@@ -41,7 +41,7 @@ export interface Addresses {
 export interface ApplicationModules {
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   module_key: string;
   name: string;
@@ -56,26 +56,26 @@ export interface AssetCategories {
 }
 
 export interface AssetComplianceAssignments {
-  asset_id: number;
+  asset_id: string;
   assigned_from: Date | null;
   assigned_to: Date | null;
-  compliance_requirement_id: number;
+  compliance_requirement_id: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
-  organisation_id: number;
-  responsible_member_id: number | null;
-  responsible_party_id: number | null;
+  organisation_id: string;
+  responsible_member_id: string | null;
+  responsible_party_id: string | null;
 }
 
 export interface AssetIdentifiers {
-  asset_id: number;
+  asset_id: string;
   asset_identifier_type_id: number;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   identifier_value: string;
   issuer: string | null;
-  organisation_id: number;
+  organisation_id: string;
   valid_from: Date | null;
   valid_to: Date | null;
 }
@@ -88,50 +88,50 @@ export interface AssetIdentifierTypes {
 }
 
 export interface AssetInformationLinks {
-  asset_id: number;
-  information_container_version_id: number;
+  asset_id: string;
+  information_container_version_id: string;
   link_role: string;
   linked_at: Generated<Date>;
-  linked_by_member_id: number;
-  organisation_id: number;
-  version_owner_organisation_id: number;
+  linked_by_member_id: string;
+  organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface AssetLifecycleEvents {
-  acted_by_member_id: number;
-  asset_id: number;
+  acted_by_member_id: string;
+  asset_id: string;
   created_at: Generated<Date>;
   effective_at: Date;
   event_type: string;
   from_status: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   to_status: string | null;
 }
 
 export interface AssetMeterReadings {
-  asset_meter_id: number;
+  asset_meter_id: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   reading_at: Date;
   reading_source: Generated<string>;
   reading_value: Decimal;
-  recorded_by_member_id: number | null;
+  recorded_by_member_id: string | null;
   source_reference: string | null;
 }
 
 export interface AssetMeters {
-  asset_id: number;
+  asset_id: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   meter_code: string;
   meter_type_id: number;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   rollover_value: Decimal | null;
   unit_of_measure_id: number;
@@ -139,61 +139,61 @@ export interface AssetMeters {
 }
 
 export interface AssetModels {
-  asset_type_id: number;
+  asset_type_id: string;
   created_at: Generated<Date>;
   expected_life_months: number | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   manufacturer_name: string | null;
-  manufacturer_party_id: number | null;
+  manufacturer_party_id: string | null;
   model_name: string | null;
   model_number: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface Assets {
-  asset_model_id: number | null;
+  asset_model_id: string | null;
   asset_tag: string;
-  asset_type_id: number;
-  building_level_id: number | null;
-  building_system_id: number | null;
+  asset_type_id: string;
+  building_level_id: string | null;
+  building_system_id: string | null;
   commissioned_on: Date | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   criticality: Generated<string>;
   decommissioned_on: Date | null;
   description: string | null;
-  facility_building_id: number | null;
-  facility_id: number;
-  facility_space_id: number | null;
-  id: Generated<number>;
+  facility_building_id: string | null;
+  facility_id: string;
+  facility_space_id: string | null;
+  id: Generated<string>;
   installed_on: Date | null;
   lifecycle_status: Generated<string>;
   name: string;
-  organisation_id: number;
-  parent_asset_id: number | null;
+  organisation_id: string;
+  parent_asset_id: string | null;
   public_id: string;
   serial_number: string | null;
   updated_at: Generated<Date>;
 }
 
 export interface AssetServiceEvents {
-  asset_id: number;
+  asset_id: string;
   condition_rating: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   performed_at: Date;
-  performed_by_member_id: number | null;
-  provider_party_id: number | null;
+  performed_by_member_id: string | null;
+  provider_party_id: string | null;
   public_id: string;
   recommended_next_service_on: Date | null;
   result_code: Generated<string>;
   service_event_type_id: number;
-  work_order_id: number | null;
+  work_order_id: string | null;
 }
 
 export interface AssetTypes {
@@ -201,41 +201,41 @@ export interface AssetTypes {
   code: string;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   is_maintainable: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface AssetWarranties {
-  asset_id: number;
+  asset_id: string;
   claim_contact_email: string | null;
   claim_contact_name: string | null;
   claim_contact_phone: string | null;
   created_at: Generated<Date>;
   ends_on: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   starts_on: Date;
   terms_summary: string | null;
   updated_at: Generated<Date>;
-  warranty_provider_party_id: number | null;
+  warranty_provider_party_id: string | null;
   warranty_reference: string | null;
   warranty_type_id: number;
 }
 
 export interface AssetWarrantyInformationLinks {
-  asset_warranty_id: number;
-  information_container_version_id: number;
+  asset_warranty_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
   linked_at: Generated<Date>;
-  organisation_id: number;
-  version_owner_organisation_id: number;
+  organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface AttendanceRecords {
@@ -244,57 +244,57 @@ export interface AttendanceRecords {
   attendance_source: Generated<string>;
   attendance_status: Generated<string>;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
-  recorded_by_member_id: number | null;
-  schedule_event_id: number | null;
+  recorded_by_member_id: string | null;
+  schedule_event_id: string | null;
   updated_at: Generated<Date>;
-  worker_id: number;
+  worker_id: string;
 }
 
 export interface AuditEvents {
-  acting_organisation_id: number | null;
+  acting_organisation_id: string | null;
   action_key: string;
-  actor_member_id: number | null;
-  actor_user_id: number | null;
+  actor_member_id: string | null;
+  actor_user_id: string | null;
   change_summary: Json | null;
   correlation_id: string | null;
   event_metadata: Json | null;
   event_public_id: string;
-  id: Generated<number>;
+  id: Generated<string>;
   occurred_at: Generated<Date>;
-  project_id: number | null;
+  project_id: string | null;
   subject_public_id: string | null;
   subject_type: string;
 }
 
 export interface BuildingLevels {
   created_at: Generated<Date>;
-  facility_building_id: number;
-  facility_id: number;
-  id: Generated<number>;
+  facility_building_id: string;
+  facility_id: string;
+  id: Generated<string>;
   level_code: string;
   level_number: Decimal | null;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   sort_order: Generated<number>;
   updated_at: Generated<Date>;
 }
 
 export interface BuildingSystems {
-  building_system_type_id: number;
+  building_system_type_id: string;
   created_at: Generated<Date>;
   description: string | null;
-  facility_building_id: number | null;
-  facility_id: number;
-  id: Generated<number>;
+  facility_building_id: string | null;
+  facility_id: string;
+  id: Generated<string>;
   name: string;
   operational_status: Generated<string>;
-  organisation_id: number;
-  parent_system_id: number | null;
+  organisation_id: string;
+  parent_system_id: string | null;
   public_id: string;
   system_code: string;
   updated_at: Generated<Date>;
@@ -304,20 +304,20 @@ export interface BuildingSystemTypes {
   code: string;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface Capabilities {
-  application_module_id: number;
+  application_module_id: string;
   capability_key: string;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
   updated_at: Generated<Date>;
@@ -325,44 +325,44 @@ export interface Capabilities {
 
 export interface CareerAliases {
   alias: string;
-  career_id: number;
+  career_id: string;
   created_at: Generated<Date>;
   locale: Generated<string>;
 }
 
 export interface CareerCapabilities {
-  capability_id: number;
-  career_id: number;
+  capability_id: string;
+  career_id: string;
   created_at: Generated<Date>;
   enabled_by_default: Generated<number>;
 }
 
 export interface CareerDomains {
-  career_id: number;
+  career_id: string;
   created_at: Generated<Date>;
   is_primary: Generated<number>;
-  primary_career_id: number | null;
-  professional_domain_id: number;
+  primary_career_id: string | null;
+  professional_domain_id: string;
 }
 
 export interface Careers {
   canonical_name: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   slug: string;
-  source_id: number;
+  source_id: string;
   source_last_verified_at: Date | null;
   source_profile_url: string | null;
   updated_at: Generated<Date>;
 }
 
 export interface ChangeEventInformationLinks {
-  change_owner_organisation_id: number;
-  information_container_version_id: number;
+  change_owner_organisation_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  project_change_event_id: number;
-  version_owner_organisation_id: number;
+  project_change_event_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface CommercialAdjustmentTypes {
@@ -383,29 +383,29 @@ export interface CommercialForecastLines {
   actual_cost_snapshot: Decimal;
   approved_change_snapshot: Generated<Decimal>;
   commentary: string | null;
-  commercial_forecast_id: number;
+  commercial_forecast_id: string;
   control_budget_snapshot: Decimal;
   created_at: Generated<Date>;
   forecast_to_complete_amount: Decimal;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   pending_change_exposure_snapshot: Generated<Decimal>;
-  project_cost_code_id: number;
+  project_cost_code_id: string;
   remaining_commitment_snapshot: Decimal;
 }
 
 export interface CommercialForecasts {
   approved_at: Date | null;
-  approved_by_member_id: number | null;
-  commercial_reporting_period_id: number;
+  approved_by_member_id: string | null;
+  commercial_reporting_period_id: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
   forecast_revenue_amount: Decimal;
-  id: Generated<number>;
+  id: Generated<string>;
   locked_at: Date | null;
-  organisation_id: number;
-  project_id: number;
+  organisation_id: string;
+  project_id: string;
   public_id: string;
   updated_at: Generated<Date>;
   version_number: number;
@@ -414,15 +414,15 @@ export interface CommercialForecasts {
 
 export interface CommercialReportingPeriods {
   closed_at: Date | null;
-  closed_by_member_id: number | null;
+  closed_by_member_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   period_end: Date;
   period_label: string;
   period_start: Date;
-  project_id: number;
+  project_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
@@ -430,12 +430,12 @@ export interface CommercialReportingPeriods {
 export interface CommercialValuationAdjustments {
   adjustment_amount: Decimal;
   commercial_valuation_adjustment_type_id: number;
-  commercial_valuation_id: number;
+  commercial_valuation_id: string;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface CommercialValuationAdjustmentTypes {
@@ -446,41 +446,41 @@ export interface CommercialValuationAdjustmentTypes {
 }
 
 export interface CommercialValuationInformationLinks {
-  commercial_valuation_id: number;
-  information_container_version_id: number;
+  commercial_valuation_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
   linked_at: Generated<Date>;
-  valuation_organisation_id: number;
-  version_owner_organisation_id: number;
+  valuation_organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface CommercialValuationItems {
-  commercial_valuation_id: number;
+  commercial_valuation_id: string;
   created_at: Generated<Date>;
   description: string;
   gross_value_to_date: Decimal;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
-  project_cost_code_id: number | null;
+  organisation_id: string;
+  project_cost_code_id: string | null;
 }
 
 export interface CommercialValuations {
   assessed_at: Date | null;
-  assessed_by_member_id: number | null;
+  assessed_by_member_id: string | null;
   closed_at: Date | null;
-  counterparty_party_id: number | null;
+  counterparty_party_id: string | null;
   created_at: Generated<Date>;
   currency_code: string;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   period_end: Date | null;
   period_start: Date | null;
-  project_id: number;
+  project_id: string;
   public_id: string;
-  recorded_by_member_id: number;
-  source_application_id: number | null;
+  recorded_by_member_id: string;
+  source_application_id: string | null;
   submitted_at: Date | null;
   updated_at: Generated<Date>;
   valuation_date: Date;
@@ -489,94 +489,94 @@ export interface CommercialValuations {
 }
 
 export interface CommercialVariationChangeEvents {
-  change_owner_organisation_id: number;
-  commercial_variation_id: number;
+  change_owner_organisation_id: string;
+  commercial_variation_id: string;
   linked_at: Generated<Date>;
-  project_change_event_id: number;
-  variation_organisation_id: number;
+  project_change_event_id: string;
+  variation_organisation_id: string;
 }
 
 export interface CommercialVariationContractAmendments {
-  commercial_variation_id: number;
-  contract_amendment_id: number;
+  commercial_variation_id: string;
+  contract_amendment_id: string;
   linked_at: Generated<Date>;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface CommercialVariationDecisionItems {
   comments: string | null;
-  commercial_variation_decision_id: number;
-  commercial_variation_item_id: number;
+  commercial_variation_decision_id: string;
+  commercial_variation_item_id: string;
   decided_amount: Decimal;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
 }
 
 export interface CommercialVariationDecisions {
   comments: string | null;
-  commercial_variation_version_id: number;
+  commercial_variation_version_id: string;
   created_at: Generated<Date>;
   decided_at: Date;
   decision: string;
   decision_amount: Decimal | null;
   decision_sequence: number;
-  id: Generated<number>;
-  organisation_id: number;
-  recorded_by_member_id: number;
-  responding_party_id: number | null;
+  id: Generated<string>;
+  organisation_id: string;
+  recorded_by_member_id: string;
+  responding_party_id: string | null;
 }
 
 export interface CommercialVariationInformationLinks {
-  commercial_variation_id: number;
-  information_container_version_id: number;
+  commercial_variation_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
   linked_at: Generated<Date>;
-  variation_organisation_id: number;
-  version_owner_organisation_id: number;
+  variation_organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface CommercialVariationIssueEvents {
-  commercial_variation_version_id: number;
+  commercial_variation_version_id: string;
   delivery_channel: string;
-  id: Generated<number>;
+  id: Generated<string>;
   issue_sequence: number;
   issued_at: Generated<Date>;
-  issued_by_member_id: number;
+  issued_by_member_id: string;
   note: string | null;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface CommercialVariationItems {
-  commercial_variation_version_id: number;
+  commercial_variation_version_id: string;
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
-  project_cost_code_id: number | null;
+  organisation_id: string;
+  project_cost_code_id: string | null;
   quantity: Generated<Decimal>;
   unit_of_measure_id: number | null;
   unit_rate: Decimal;
 }
 
 export interface CommercialVariationPurchaseOrderVersions {
-  commercial_variation_id: number;
+  commercial_variation_id: string;
   linked_at: Generated<Date>;
-  organisation_id: number;
-  purchase_order_version_id: number;
+  organisation_id: string;
+  purchase_order_version_id: string;
 }
 
 export interface CommercialVariations {
   commercial_side: string;
   commercial_variation_type_id: number;
-  counterparty_party_id: number | null;
+  counterparty_party_id: string | null;
   created_at: Generated<Date>;
   currency_code: string;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  owner_member_id: number;
-  project_id: number;
+  organisation_id: string;
+  owner_member_id: string;
+  project_id: string;
   public_id: string;
   title: string;
   updated_at: Generated<Date>;
@@ -591,12 +591,12 @@ export interface CommercialVariationTypes {
 }
 
 export interface CommercialVariationVersions {
-  commercial_variation_id: number;
+  commercial_variation_id: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
+  created_by_member_id: string;
+  id: Generated<string>;
   locked_at: Date | null;
-  organisation_id: number;
+  organisation_id: string;
   title: string;
   updated_at: Generated<Date>;
   version_number: number;
@@ -607,39 +607,39 @@ export interface CompetencyTypes {
   code: string;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   requires_expiry: Generated<number>;
   updated_at: Generated<Date>;
 }
 
 export interface ComplianceEventInformationLinks {
-  compliance_event_id: number;
+  compliance_event_id: string;
   created_at: Generated<Date>;
-  information_container_version_id: number;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  organisation_id: number;
-  version_owner_organisation_id: number;
+  organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface ComplianceEvents {
-  asset_compliance_assignment_id: number | null;
+  asset_compliance_assignment_id: string | null;
   compliance_event_number: string;
-  compliance_requirement_version_id: number;
+  compliance_requirement_version_id: string;
   created_at: Generated<Date>;
-  facility_compliance_assignment_id: number | null;
+  facility_compliance_assignment_id: string | null;
   findings_summary: string | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   outcome: string;
   performed_at: Date;
-  performed_by_member_id: number | null;
-  provider_party_id: number | null;
+  performed_by_member_id: string | null;
+  provider_party_id: string | null;
   public_id: string;
-  quality_inspection_id: number | null;
+  quality_inspection_id: string | null;
   recommended_next_due_on: Date | null;
 }
 
@@ -653,29 +653,29 @@ export interface ComplianceRequirementCategories {
 export interface ComplianceRequirements {
   compliance_requirement_category_id: number;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   requirement_code: string;
   updated_at: Generated<Date>;
 }
 
 export interface ComplianceRequirementVersions {
-  compliance_requirement_id: number;
+  compliance_requirement_id: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   effective_from: Date | null;
   effective_to: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   interval_unit: string | null;
   interval_value: number | null;
-  organisation_id: number;
+  organisation_id: string;
   published_at: Date | null;
-  published_by_member_id: number | null;
+  published_by_member_id: string | null;
   reference_code: string | null;
   requirement_text: string;
   version_number: number;
@@ -683,31 +683,31 @@ export interface ComplianceRequirementVersions {
 }
 
 export interface ContractAmendmentKeyDateChanges {
-  contract_amendment_id: number;
+  contract_amendment_id: string;
   contract_key_date_type_id: number;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   label: string | null;
   new_date: Date;
-  organisation_id: number;
+  organisation_id: string;
   sort_order: number;
 }
 
 export interface ContractAmendments {
   amendment_number: string;
   contract_amendment_type_id: number;
-  contract_id: number;
+  contract_id: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   decided_at: Date | null;
-  decided_by_member_id: number | null;
+  decided_by_member_id: string | null;
   description: string | null;
   effective_on: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   issued_at: Date | null;
-  issued_by_member_id: number | null;
+  issued_by_member_id: string | null;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   title: string;
   updated_at: Generated<Date>;
@@ -722,63 +722,63 @@ export interface ContractAmendmentTypes {
 
 export interface ContractAmendmentValueAdjustments {
   adjustment_amount: Decimal;
-  contract_amendment_id: number;
+  contract_amendment_id: string;
   contract_value_component_type_id: number;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   sort_order: number;
 }
 
 export interface ContractExecutionEvents {
-  contract_version_id: number;
+  contract_version_id: string;
   created_at: Generated<Date>;
   executed_at: Date;
   execution_method: string;
   external_transaction_reference: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   note: string | null;
-  organisation_id: number;
-  recorded_by_member_id: number;
+  organisation_id: string;
+  recorded_by_member_id: string;
 }
 
 export interface ContractExecutionSignatories {
-  contract_execution_event_id: number;
-  contract_version_id: number;
+  contract_execution_event_id: string;
+  contract_version_id: string;
   created_at: Generated<Date>;
   external_signature_reference: string | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   signatory_email: string | null;
   signatory_name: string;
   signed_at: Date | null;
   signing_role: string | null;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface ContractIssueEvents {
-  contract_version_id: number;
+  contract_version_id: string;
   delivery_channel: string;
-  id: Generated<number>;
+  id: Generated<string>;
   issue_sequence: number;
   issued_at: Generated<Date>;
-  issued_by_member_id: number;
+  issued_by_member_id: string;
   note: string | null;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface ContractIssueRecipients {
-  contract_issue_event_id: number;
-  contract_version_id: number;
+  contract_issue_event_id: string;
+  contract_version_id: string;
   created_at: Generated<Date>;
   delivered_at: Date | null;
   delivery_status: Generated<string>;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   recipient_email: string | null;
   recipient_name: string | null;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface ContractKeyDateTypes {
@@ -802,14 +802,14 @@ export interface Contracts {
   created_at: Generated<Date>;
   currency_code: string;
   ended_on: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  opportunity_id: number | null;
-  organisation_id: number;
-  owner_member_id: number;
-  project_id: number | null;
+  opportunity_id: string | null;
+  organisation_id: string;
+  owner_member_id: string;
+  project_id: string | null;
   public_id: string;
-  source_quotation_response_id: number | null;
+  source_quotation_response_id: string | null;
   started_on: Date | null;
   title: string;
   updated_at: Generated<Date>;
@@ -823,10 +823,10 @@ export interface ContractTypes {
 }
 
 export interface ContractValuations {
-  commercial_valuation_id: number;
-  contract_id: number;
+  commercial_valuation_id: string;
+  contract_id: string;
   created_at: Generated<Date>;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface ContractValueComponentTypes {
@@ -837,61 +837,61 @@ export interface ContractValueComponentTypes {
 }
 
 export interface ContractVariations {
-  commercial_variation_id: number;
-  contract_id: number;
+  commercial_variation_id: string;
+  contract_id: string;
   created_at: Generated<Date>;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface ContractVersionKeyDates {
   contract_key_date_type_id: number;
-  contract_version_id: number;
+  contract_version_id: string;
   created_at: Generated<Date>;
   date_value: Date;
-  id: Generated<number>;
+  id: Generated<string>;
   label: string | null;
-  organisation_id: number;
+  organisation_id: string;
   sort_order: number;
 }
 
 export interface ContractVersionParties {
   contract_party_role_type_id: number;
-  contract_version_id: number;
+  contract_version_id: string;
   created_at: Generated<Date>;
   display_name: string;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   reference_identifier: string | null;
   sort_order: number;
-  source_party_id: number;
+  source_party_id: string;
 }
 
 export interface ContractVersionPartyAddresses {
   address_role: Generated<string>;
   city: string | null;
-  contract_version_id: number;
-  contract_version_party_id: number;
+  contract_version_id: string;
+  contract_version_party_id: string;
   country_code: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   line_1: string;
   line_2: string | null;
   line_3: string | null;
   locality: string | null;
-  organisation_id: number;
+  organisation_id: string;
   postal_code: string | null;
   region: string | null;
 }
 
 export interface ContractVersions {
-  contract_id: number;
+  contract_id: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   customer_reference: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   locked_at: Date | null;
-  locked_by_member_id: number | null;
-  organisation_id: number;
+  locked_by_member_id: string | null;
+  organisation_id: string;
   title: string;
   updated_at: Generated<Date>;
   version_number: number;
@@ -901,11 +901,11 @@ export interface ContractVersions {
 export interface ContractVersionValueComponents {
   amount: Decimal;
   contract_value_component_type_id: number;
-  contract_version_id: number;
+  contract_version_id: string;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   sort_order: number;
 }
 
@@ -914,28 +914,28 @@ export interface CredentialTypes {
   created_at: Generated<Date>;
   credential_category: string;
   default_validity_months: number | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface CreditNoteItemSources {
   created_at: Generated<Date>;
-  credit_note_document_id: number;
-  credit_note_item_id: number;
-  organisation_id: number;
-  original_invoice_document_id: number;
-  original_invoice_item_id: number;
+  credit_note_document_id: string;
+  credit_note_item_id: string;
+  organisation_id: string;
+  original_invoice_document_id: string;
+  original_invoice_item_id: string;
 }
 
 export interface CreditNotes {
   created_at: Generated<Date>;
-  financial_document_id: number;
-  organisation_id: number;
-  original_invoice_document_id: number;
+  financial_document_id: string;
+  organisation_id: string;
+  original_invoice_document_id: string;
   reason: string;
   updated_at: Generated<Date>;
 }
@@ -943,30 +943,30 @@ export interface CreditNotes {
 export interface CrmActivities {
   body: string | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   crm_activity_type_id: number;
   direction: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   occurred_at: Generated<Date>;
-  opportunity_id: number | null;
-  organisation_id: number;
+  opportunity_id: string | null;
+  organisation_id: string;
   public_id: string;
   subject: string;
   updated_at: Generated<Date>;
 }
 
 export interface CrmActivityMembers {
-  crm_activity_id: number;
-  organisation_id: number;
-  organisation_member_id: number;
+  crm_activity_id: string;
+  organisation_id: string;
+  organisation_member_id: string;
   participant_role: Generated<string>;
 }
 
 export interface CrmActivityParties {
-  crm_activity_id: number;
-  organisation_id: number;
+  crm_activity_id: string;
+  organisation_id: string;
   participant_role: Generated<string>;
-  party_id: number;
+  party_id: string;
 }
 
 export interface CrmActivityTypes {
@@ -978,23 +978,23 @@ export interface CrmActivityTypes {
 
 export interface CrmPipelines {
   created_at: Generated<Date>;
-  default_organisation_id: number | null;
-  id: Generated<number>;
+  default_organisation_id: string | null;
+  id: Generated<string>;
   is_active: Generated<number>;
   is_default: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface CrmPipelineStages {
   created_at: Generated<Date>;
-  crm_pipeline_id: number;
-  id: Generated<number>;
+  crm_pipeline_id: string;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   probability_percent: Decimal | null;
   sort_order: number;
   updated_at: Generated<Date>;
@@ -1002,10 +1002,10 @@ export interface CrmPipelineStages {
 
 export interface CrmTags {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
@@ -1013,45 +1013,45 @@ export interface CrmTags {
 export interface DefectActions {
   action_text: string;
   completed_at: Date | null;
-  completed_by_member_id: number | null;
-  completed_by_organisation_id: number | null;
+  completed_by_member_id: string | null;
+  completed_by_organisation_id: string | null;
   completion_note: string | null;
   created_at: Generated<Date>;
-  defect_owner_organisation_id: number;
-  defect_record_id: number;
-  id: Generated<number>;
-  responsible_member_id: number | null;
-  responsible_organisation_id: number | null;
+  defect_owner_organisation_id: string;
+  defect_record_id: string;
+  id: Generated<string>;
+  responsible_member_id: string | null;
+  responsible_organisation_id: string | null;
   status: Generated<string>;
   target_date: Date | null;
 }
 
 export interface DefectInformationLinks {
-  defect_owner_organisation_id: number;
-  defect_record_id: number;
-  information_container_version_id: number;
+  defect_owner_organisation_id: string;
+  defect_record_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  version_owner_organisation_id: number;
+  version_owner_organisation_id: string;
 }
 
 export interface DefectRecords {
   closed_at: Date | null;
-  closed_by_member_id: number | null;
+  closed_by_member_id: string | null;
   created_at: Generated<Date>;
   defect_number: string;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   location_description: string | null;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
   raised_at: Generated<Date>;
-  raised_by_member_id: number;
-  responsible_member_id: number | null;
-  responsible_organisation_id: number | null;
+  raised_by_member_id: string;
+  responsible_member_id: string | null;
+  responsible_organisation_id: string | null;
   severity: Generated<string>;
-  source_inspection_finding_id: number | null;
+  source_inspection_finding_id: string | null;
   status: Generated<string>;
   target_date: Date | null;
   title: string;
@@ -1061,13 +1061,13 @@ export interface DefectRecords {
 export interface EstimateItemCostComponents {
   created_at: Generated<Date>;
   description: string;
-  estimate_item_id: number;
-  estimate_version_id: number;
-  id: Generated<number>;
+  estimate_item_id: string;
+  estimate_version_id: string;
+  id: Generated<string>;
   markup_percent: Generated<Decimal>;
-  organisation_id: number;
+  organisation_id: string;
   quantity: Decimal;
-  sales_catalog_item_id: number | null;
+  sales_catalog_item_id: string | null;
   sales_item_type_id: number;
   sort_order: number;
   unit_cost: Decimal;
@@ -1079,14 +1079,14 @@ export interface EstimateItemCostComponents {
 export interface EstimateItems {
   created_at: Generated<Date>;
   description: string;
-  estimate_section_id: number | null;
-  estimate_version_id: number;
-  id: Generated<number>;
+  estimate_section_id: string | null;
+  estimate_version_id: string;
+  id: Generated<string>;
   is_optional: Generated<number>;
   line_number: number;
-  organisation_id: number;
+  organisation_id: string;
   quantity: Decimal;
-  sales_catalog_item_id: number | null;
+  sales_catalog_item_id: string | null;
   sales_item_type_id: number;
   sell_unit_rate: Decimal;
   unit_of_measure_id: number | null;
@@ -1095,13 +1095,13 @@ export interface EstimateItems {
 
 export interface Estimates {
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   estimate_number: string;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  opportunity_id: number | null;
-  organisation_id: number;
-  project_id: number | null;
+  opportunity_id: string | null;
+  organisation_id: string;
+  project_id: string | null;
   public_id: string;
   title: string;
   updated_at: Generated<Date>;
@@ -1109,41 +1109,41 @@ export interface Estimates {
 
 export interface EstimateSections {
   description: string | null;
-  estimate_version_id: number;
+  estimate_version_id: string;
   heading: string;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   sort_order: number;
 }
 
 export interface EstimateVersions {
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
-  estimate_id: number;
+  estimate_id: string;
   finalised_at: Date | null;
-  finalised_by_member_id: number | null;
-  id: Generated<number>;
+  finalised_by_member_id: string | null;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   updated_at: Generated<Date>;
   version_number: number;
   version_status: Generated<string>;
 }
 
 export interface Facilities {
-  address_id: number | null;
+  address_id: string | null;
   commissioned_on: Date | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   decommissioned_on: Date | null;
   description: string | null;
   facility_code: string;
-  id: Generated<number>;
+  id: Generated<string>;
   name: string;
   opened_on: Date | null;
   operational_status: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   timezone: string | null;
   updated_at: Generated<Date>;
@@ -1153,11 +1153,11 @@ export interface FacilityBuildings {
   building_code: string;
   created_at: Generated<Date>;
   description: string | null;
-  facility_id: number;
-  id: Generated<number>;
+  facility_id: string;
+  id: Generated<string>;
   name: string;
   operational_status: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
@@ -1165,38 +1165,38 @@ export interface FacilityBuildings {
 export interface FacilityComplianceAssignments {
   assigned_from: Date | null;
   assigned_to: Date | null;
-  compliance_requirement_id: number;
+  compliance_requirement_id: string;
   created_at: Generated<Date>;
-  facility_id: number;
-  id: Generated<number>;
+  facility_id: string;
+  id: Generated<string>;
   is_active: Generated<number>;
-  organisation_id: number;
-  responsible_member_id: number | null;
-  responsible_party_id: number | null;
+  organisation_id: string;
+  responsible_member_id: string | null;
+  responsible_party_id: string | null;
 }
 
 export interface FacilityProjectLinks {
   created_at: Generated<Date>;
   ended_on: Date | null;
-  facility_id: number;
+  facility_id: string;
   link_role: string;
-  linked_by_member_id: number;
+  linked_by_member_id: string;
   linked_on: Date | null;
-  organisation_id: number;
-  project_id: number;
+  organisation_id: string;
+  project_id: string;
 }
 
 export interface FacilitySpaces {
-  building_level_id: number | null;
+  building_level_id: string | null;
   created_at: Generated<Date>;
   description: string | null;
-  facility_building_id: number;
-  facility_id: number;
-  id: Generated<number>;
+  facility_building_id: string;
+  facility_id: string;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
-  parent_space_id: number | null;
+  organisation_id: string;
+  parent_space_id: string | null;
   public_id: string;
   space_code: string;
   space_type: string | null;
@@ -1205,39 +1205,39 @@ export interface FacilitySpaces {
 
 export interface FinancialDocumentIssueEvents {
   delivery_channel: string;
-  financial_document_id: number;
-  id: Generated<number>;
+  financial_document_id: string;
+  id: Generated<string>;
   issue_sequence: number;
   issued_at: Generated<Date>;
-  issued_by_member_id: number;
+  issued_by_member_id: string;
   note: string | null;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface FinancialDocumentIssueRecipients {
   created_at: Generated<Date>;
   delivered_at: Date | null;
   delivery_status: Generated<string>;
-  financial_document_id: number;
-  financial_document_issue_event_id: number;
-  id: Generated<number>;
-  organisation_id: number;
+  financial_document_id: string;
+  financial_document_issue_event_id: string;
+  id: Generated<string>;
+  organisation_id: string;
   recipient_email: string | null;
   recipient_name: string | null;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface FinancialDocumentItems {
   created_at: Generated<Date>;
   description: string;
-  financial_document_id: number;
-  id: Generated<number>;
+  financial_document_id: string;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
+  organisation_id: string;
   quantity: Decimal;
-  sales_catalog_item_id: number | null;
+  sales_catalog_item_id: string | null;
   sales_item_type_id: number;
-  source_quotation_item_id: number | null;
+  source_quotation_item_id: string | null;
   unit_of_measure_id: number | null;
   unit_rate: Decimal;
   updated_at: Generated<Date>;
@@ -1246,22 +1246,22 @@ export interface FinancialDocumentItems {
 export interface FinancialDocumentItemTaxes {
   applied_rate_percent: Decimal;
   created_at: Generated<Date>;
-  financial_document_item_id: number;
-  organisation_id: number;
+  financial_document_item_id: string;
+  organisation_id: string;
   sort_order: number;
   tax_amount: Decimal;
-  tax_category_id: number;
+  tax_category_id: string;
   taxable_amount: Decimal;
 }
 
 export interface FinancialDocumentItemValueAllocations {
   allocated_net_amount: Decimal;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  financial_document_item_id: number;
-  id: Generated<number>;
-  organisation_id: number;
-  project_cost_code_id: number;
+  created_by_member_id: string;
+  financial_document_item_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  project_cost_code_id: string;
 }
 
 export interface FinancialDocumentPartySnapshotAddresses {
@@ -1269,14 +1269,14 @@ export interface FinancialDocumentPartySnapshotAddresses {
   city: string | null;
   country_code: string;
   created_at: Generated<Date>;
-  financial_document_id: number;
-  financial_document_party_snapshot_id: number;
-  id: Generated<number>;
+  financial_document_id: string;
+  financial_document_party_snapshot_id: string;
+  id: Generated<string>;
   line_1: string;
   line_2: string | null;
   line_3: string | null;
   locality: string | null;
-  organisation_id: number;
+  organisation_id: string;
   postal_code: string | null;
   region: string | null;
 }
@@ -1285,68 +1285,68 @@ export interface FinancialDocumentPartySnapshots {
   created_at: Generated<Date>;
   display_name: string;
   email: string | null;
-  financial_document_id: number;
-  id: Generated<number>;
-  organisation_id: number;
+  financial_document_id: string;
+  id: Generated<string>;
+  organisation_id: string;
   phone: string | null;
   reference_identifier: string | null;
   snapshot_role: string;
   sort_order: Generated<number>;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface FinancialDocuments {
-  billing_contact_party_id: number | null;
-  contract_id: number | null;
+  billing_contact_party_id: string | null;
+  contract_id: string | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
-  customer_party_id: number;
+  customer_party_id: string;
   document_kind: string;
   document_number: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  project_id: number | null;
+  organisation_id: string;
+  project_id: string | null;
   public_id: string;
   updated_at: Generated<Date>;
   void_reason: string | null;
   voided_at: Date | null;
-  voided_by_member_id: number | null;
+  voided_by_member_id: string | null;
 }
 
 export interface HandoverPackageAssets {
-  asset_id: number;
-  handover_package_id: number;
+  asset_id: string;
+  handover_package_id: string;
   included_at: Generated<Date>;
-  organisation_id: number;
+  organisation_id: string;
   sort_order: Generated<number>;
 }
 
 export interface HandoverPackageInformationLinks {
   created_at: Generated<Date>;
-  handover_package_id: number;
-  information_container_version_id: number;
+  handover_package_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   sort_order: Generated<number>;
-  version_owner_organisation_id: number;
+  version_owner_organisation_id: string;
 }
 
 export interface HandoverPackages {
   accepted_at: Date | null;
-  accepted_by_member_id: number | null;
+  accepted_by_member_id: string | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  facility_id: number;
+  created_by_member_id: string;
+  facility_id: string;
   handover_number: string;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  project_id: number | null;
+  organisation_id: string;
+  project_id: string | null;
   public_id: string;
   submitted_at: Date | null;
-  submitted_by_member_id: number | null;
+  submitted_by_member_id: string | null;
   title: string;
   updated_at: Generated<Date>;
 }
@@ -1355,14 +1355,14 @@ export interface InformationContainers {
   classification_code: string | null;
   container_number: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   discipline_code: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   information_container_type_id: number;
   lifecycle_status: Generated<string>;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number | null;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string | null;
   public_id: string;
   title: string;
   updated_at: Generated<Date>;
@@ -1377,14 +1377,14 @@ export interface InformationContainerTypes {
 
 export interface InformationContainerVersions {
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
-  information_container_id: number;
+  created_by_member_id: string;
+  id: Generated<string>;
+  information_container_id: string;
   information_purpose_code_id: number | null;
   locked_at: Date | null;
-  locked_by_member_id: number | null;
-  owning_organisation_id: number;
-  project_id: number;
+  locked_by_member_id: string | null;
+  owning_organisation_id: string;
+  project_id: string;
   public_id: string;
   revision_code: string;
   suitability_code: string | null;
@@ -1400,12 +1400,12 @@ export interface InformationFiles {
   content_type: string | null;
   created_at: Generated<Date>;
   file_role: string;
-  id: Generated<number>;
-  information_container_version_id: number;
+  id: Generated<string>;
+  information_container_version_id: string;
   malware_scan_status: Generated<string>;
   original_filename: string;
-  owning_organisation_id: number;
-  size_bytes: number;
+  owning_organisation_id: string;
+  size_bytes: string;
   storage_bucket: string;
   storage_key: string;
   storage_provider: string;
@@ -1422,90 +1422,90 @@ export interface InformationReviewDecisions {
   comments: string | null;
   decided_at: Generated<Date>;
   decision: string;
-  id: Generated<number>;
-  information_review_step_reviewer_id: number;
+  id: Generated<string>;
+  information_review_step_reviewer_id: string;
 }
 
 export interface InformationReviewStepReviewers {
   assigned_at: Generated<Date>;
-  id: Generated<number>;
-  information_review_step_id: number;
-  information_review_workflow_id: number;
-  project_id: number;
-  reviewer_member_id: number | null;
-  reviewer_member_key: number | null;
-  reviewer_organisation_id: number;
+  id: Generated<string>;
+  information_review_step_id: string;
+  information_review_workflow_id: string;
+  project_id: string;
+  reviewer_member_id: string | null;
+  reviewer_member_key: string | null;
+  reviewer_organisation_id: string;
 }
 
 export interface InformationReviewSteps {
   decision_rule: Generated<string>;
   due_at: Date | null;
-  id: Generated<number>;
-  information_review_workflow_id: number;
+  id: Generated<string>;
+  information_review_workflow_id: string;
   name: string;
   step_number: number;
-  workflow_owner_organisation_id: number;
+  workflow_owner_organisation_id: string;
 }
 
 export interface InformationReviewWorkflows {
   completed_at: Date | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  information_container_version_id: number;
-  owning_organisation_id: number;
-  project_id: number;
+  id: Generated<string>;
+  information_container_version_id: string;
+  owning_organisation_id: string;
+  project_id: string;
   public_id: string;
   started_at: Date | null;
-  started_by_member_id: number;
+  started_by_member_id: string;
   status: Generated<string>;
-  version_owner_organisation_id: number;
+  version_owner_organisation_id: string;
   workflow_name: string;
 }
 
 export interface InformationVersionIssueEvents {
-  id: Generated<number>;
-  information_container_version_id: number;
+  id: Generated<string>;
+  information_container_version_id: string;
   issue_channel: string;
   issue_sequence: number;
   issued_at: Generated<Date>;
-  issued_by_member_id: number;
-  issuing_organisation_id: number;
+  issued_by_member_id: string;
+  issuing_organisation_id: string;
   note: string | null;
-  project_id: number;
-  version_owner_organisation_id: number;
+  project_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface InformationVersionSupersessions {
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  owning_organisation_id: number;
-  superseded_version_id: number;
-  superseding_version_id: number;
+  created_by_member_id: string;
+  owning_organisation_id: string;
+  superseded_version_id: string;
+  superseding_version_id: string;
 }
 
 export interface InstructionChangeEvents {
-  change_owner_organisation_id: number;
-  instruction_id: number;
-  instruction_owner_organisation_id: number;
+  change_owner_organisation_id: string;
+  instruction_id: string;
+  instruction_owner_organisation_id: string;
   link_role: Generated<string>;
-  project_change_event_id: number;
+  project_change_event_id: string;
 }
 
 export interface InstructionInformationLinks {
-  information_container_version_id: number;
-  instruction_id: number;
-  issuing_organisation_id: number;
+  information_container_version_id: string;
+  instruction_id: string;
+  issuing_organisation_id: string;
   link_role: Generated<string>;
-  version_owner_organisation_id: number;
+  version_owner_organisation_id: string;
 }
 
 export interface InstructionRecipients {
   acknowledged_at: Date | null;
-  acknowledged_by_member_id: number | null;
-  instruction_id: number;
-  issuing_organisation_id: number;
-  project_id: number;
-  recipient_organisation_id: number;
+  acknowledged_by_member_id: string | null;
+  instruction_id: string;
+  issuing_organisation_id: string;
+  project_id: string;
+  recipient_organisation_id: string;
 }
 
 export interface InstructionTypes {
@@ -1519,33 +1519,33 @@ export interface Invoices {
   created_at: Generated<Date>;
   customer_purchase_order_reference: string | null;
   due_date: Date | null;
-  financial_document_id: number;
+  financial_document_id: string;
   invoice_type: Generated<string>;
-  organisation_id: number;
-  payment_term_id: number | null;
+  organisation_id: string;
+  payment_term_id: string | null;
   updated_at: Generated<Date>;
 }
 
 export interface MaintenancePlanAssets {
-  asset_id: number;
+  asset_id: string;
   assigned_on: Date | null;
   created_at: Generated<Date>;
   ended_on: Date | null;
-  maintenance_plan_id: number;
-  organisation_id: number;
+  maintenance_plan_id: string;
+  organisation_id: string;
 }
 
 export interface MaintenancePlans {
   created_at: Generated<Date>;
   description: string | null;
   ends_on: Date | null;
-  facility_id: number;
-  id: Generated<number>;
+  facility_id: string;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
   maintenance_plan_type_id: number;
   name: string;
-  organisation_id: number;
-  owner_member_id: number;
+  organisation_id: string;
+  owner_member_id: string;
   plan_number: string;
   public_id: string;
   starts_on: Date | null;
@@ -1555,11 +1555,11 @@ export interface MaintenancePlans {
 export interface MaintenancePlanTasks {
   created_at: Generated<Date>;
   estimated_duration_minutes: number | null;
-  id: Generated<number>;
+  id: Generated<string>;
   instructions: string | null;
   is_active: Generated<number>;
-  maintenance_plan_id: number;
-  organisation_id: number;
+  maintenance_plan_id: string;
+  organisation_id: string;
   requires_shutdown: Generated<number>;
   task_number: number;
   title: string;
@@ -1583,45 +1583,45 @@ export interface MaintenancePriorityLevels {
 }
 
 export interface MaintenanceRequestAssets {
-  asset_id: number;
+  asset_id: string;
   created_at: Generated<Date>;
-  maintenance_request_id: number;
-  organisation_id: number;
+  maintenance_request_id: string;
+  organisation_id: string;
   relationship_role: Generated<string>;
 }
 
 export interface MaintenanceRequests {
   created_at: Generated<Date>;
   description: string;
-  facility_id: number;
-  facility_space_id: number | null;
-  id: Generated<number>;
+  facility_id: string;
+  facility_space_id: string | null;
+  id: Generated<string>;
   maintenance_priority_level_id: number;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   reported_at: Date;
-  reported_by_member_id: number | null;
-  reported_by_party_id: number | null;
+  reported_by_member_id: string | null;
+  reported_by_party_id: string | null;
   reporter_name: string | null;
   request_number: string;
   request_status: Generated<string>;
   request_type: Generated<string>;
   resolution_note: string | null;
   resolved_at: Date | null;
-  resolved_by_member_id: number | null;
+  resolved_by_member_id: string | null;
   title: string;
   updated_at: Generated<Date>;
 }
 
 export interface MaintenanceTaskScheduleRules {
-  asset_meter_id: number | null;
+  asset_meter_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   interval_unit: string | null;
   interval_value: Decimal | null;
   is_active: Generated<number>;
-  maintenance_plan_task_id: number;
-  organisation_id: number;
+  maintenance_plan_task_id: string;
+  organisation_id: string;
   schedule_basis: string;
   starts_on: Date | null;
   tolerance_days: number | null;
@@ -1629,29 +1629,29 @@ export interface MaintenanceTaskScheduleRules {
 }
 
 export interface MemberCareers {
-  career_id: number;
+  career_id: string;
   created_at: Generated<Date>;
   is_primary: Generated<number>;
-  organisation_id: number;
-  organisation_member_id: number;
-  primary_member_id: number | null;
+  organisation_id: string;
+  organisation_member_id: string;
+  primary_member_id: string | null;
 }
 
 export interface MemberPermissionOverrides {
   created_at: Generated<Date>;
   effect: string;
-  organisation_id: number;
-  organisation_member_id: number;
-  permission_id: number;
+  organisation_id: string;
+  organisation_member_id: string;
+  permission_id: string;
   reason: string | null;
   updated_at: Generated<Date>;
 }
 
 export interface MemberRoles {
   assigned_at: Generated<Date>;
-  organisation_id: number;
-  organisation_member_id: number;
-  organisation_role_id: number;
+  organisation_id: string;
+  organisation_member_id: string;
+  organisation_role_id: string;
 }
 
 export interface MeterTypes {
@@ -1666,54 +1666,54 @@ export interface NcrActions {
   action_text: string;
   action_type: Generated<string>;
   completed_at: Date | null;
-  completed_by_member_id: number | null;
-  completed_by_organisation_id: number | null;
+  completed_by_member_id: string | null;
+  completed_by_organisation_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  ncr_owner_organisation_id: number;
-  nonconformance_report_id: number;
-  responsible_member_id: number | null;
-  responsible_organisation_id: number | null;
+  id: Generated<string>;
+  ncr_owner_organisation_id: string;
+  nonconformance_report_id: string;
+  responsible_member_id: string | null;
+  responsible_organisation_id: string | null;
   status: Generated<string>;
   target_date: Date | null;
   verification_note: string | null;
 }
 
 export interface NcrDefectLinks {
-  defect_owner_organisation_id: number;
-  defect_record_id: number;
-  ncr_owner_organisation_id: number;
-  nonconformance_report_id: number;
+  defect_owner_organisation_id: string;
+  defect_record_id: string;
+  ncr_owner_organisation_id: string;
+  nonconformance_report_id: string;
 }
 
 export interface NcrInformationLinks {
-  information_container_version_id: number;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  ncr_owner_organisation_id: number;
-  nonconformance_report_id: number;
-  version_owner_organisation_id: number;
+  ncr_owner_organisation_id: string;
+  nonconformance_report_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface NonconformanceReports {
   closed_at: Date | null;
-  closed_by_member_id: number | null;
+  closed_by_member_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   immediate_containment: string | null;
   ncr_number: string;
   nonconformance_statement: string;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string;
   proposed_disposition: string | null;
   public_id: string;
   raised_at: Generated<Date>;
-  raised_by_member_id: number;
-  responsible_member_id: number | null;
-  responsible_organisation_id: number | null;
+  raised_by_member_id: string;
+  responsible_member_id: string | null;
+  responsible_organisation_id: string | null;
   root_cause: string | null;
   severity: Generated<string>;
-  source_inspection_finding_id: number | null;
+  source_inspection_finding_id: string | null;
   status: Generated<string>;
   target_date: Date | null;
   title: string;
@@ -1723,15 +1723,15 @@ export interface NonconformanceReports {
 export interface Opportunities {
   closed_at: Date | null;
   created_at: Generated<Date>;
-  crm_pipeline_id: number;
-  crm_pipeline_stage_id: number;
+  crm_pipeline_id: string;
+  crm_pipeline_stage_id: string;
   currency_code: Generated<string>;
   description: string | null;
   estimated_value: Decimal | null;
   expected_close_date: Date | null;
-  id: Generated<number>;
-  organisation_id: number;
-  owner_member_id: number | null;
+  id: Generated<string>;
+  organisation_id: string;
+  owner_member_id: string | null;
   public_id: string;
   status: Generated<string>;
   title: string;
@@ -1741,11 +1741,11 @@ export interface Opportunities {
 export interface OpportunityParties {
   assigned_at: Generated<Date>;
   is_primary: Generated<number>;
-  opportunity_id: number;
+  opportunity_id: string;
   opportunity_party_role_type_id: number;
-  organisation_id: number;
-  party_id: number;
-  primary_opportunity_id: number | null;
+  organisation_id: string;
+  party_id: string;
+  primary_opportunity_id: string | null;
 }
 
 export interface OpportunityPartyRoleTypes {
@@ -1757,21 +1757,21 @@ export interface OpportunityPartyRoleTypes {
 
 export interface OrganisationIdentifiers {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   identifier_type: string;
   identifier_value: string;
   issuing_country_code: string | null;
-  organisation_id: number;
+  organisation_id: string;
 }
 
 export interface OrganisationLocations {
-  address_id: number | null;
+  address_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   location_type: Generated<string>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   timezone: string | null;
   updated_at: Generated<Date>;
@@ -1780,22 +1780,22 @@ export interface OrganisationLocations {
 export interface OrganisationMembers {
   created_at: Generated<Date>;
   disabled_at: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   joined_at: Date | null;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   status: Generated<string>;
   updated_at: Generated<Date>;
-  user_id: number;
+  user_id: string;
 }
 
 export interface OrganisationRoles {
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
@@ -1804,7 +1804,7 @@ export interface Organisations {
   created_at: Generated<Date>;
   default_currency_code: Generated<string>;
   default_timezone: Generated<string>;
-  id: Generated<number>;
+  id: Generated<string>;
   legal_name: string;
   public_id: string;
   status: Generated<string>;
@@ -1813,10 +1813,10 @@ export interface Organisations {
 }
 
 export interface Parties {
-  account_owner_member_id: number | null;
+  account_owner_member_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   party_kind: string;
   public_id: string;
   status: Generated<string>;
@@ -1824,15 +1824,15 @@ export interface Parties {
 }
 
 export interface PartyAddresses {
-  address_id: number;
+  address_id: string;
   address_role: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_primary: Generated<number>;
-  organisation_id: number;
-  party_id: number;
+  organisation_id: string;
+  party_id: string;
   primary_address_role: string | null;
-  primary_party_id: number | null;
+  primary_party_id: string | null;
   valid_from: Date | null;
   valid_to: Date | null;
 }
@@ -1841,9 +1841,9 @@ export interface PartyBillingSettings {
   created_at: Generated<Date>;
   customer_account_reference: string | null;
   default_currency_code: string | null;
-  default_payment_term_id: number | null;
-  organisation_id: number;
-  party_id: number;
+  default_payment_term_id: string | null;
+  organisation_id: string;
+  party_id: string;
   purchase_order_required: Generated<number>;
   updated_at: Generated<Date>;
 }
@@ -1851,25 +1851,25 @@ export interface PartyBillingSettings {
 export interface PartyEmailAddresses {
   created_at: Generated<Date>;
   email: string;
-  id: Generated<number>;
+  id: Generated<string>;
   is_primary: Generated<number>;
   is_verified: Generated<number>;
   label: string | null;
-  organisation_id: number;
-  party_id: number;
-  primary_party_id: number | null;
+  organisation_id: string;
+  party_id: string;
+  primary_party_id: string | null;
   updated_at: Generated<Date>;
   verified_at: Date | null;
 }
 
 export interface PartyIdentifiers {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   identifier_value: string;
   issuing_authority: string | null;
   issuing_country_code: string | null;
-  organisation_id: number;
-  party_id: number;
+  organisation_id: string;
+  party_id: string;
   party_identifier_type_id: number;
   valid_from: Date | null;
   valid_to: Date | null;
@@ -1886,13 +1886,13 @@ export interface PartyOrganisationContacts {
   created_at: Generated<Date>;
   department: string | null;
   ended_on: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_primary_contact: Generated<number>;
   job_title: string | null;
-  organisation_id: number;
-  organisation_party_id: number;
-  person_party_id: number;
-  primary_organisation_party_id: number | null;
+  organisation_id: string;
+  organisation_party_id: string;
+  person_party_id: string;
+  primary_organisation_party_id: string | null;
   started_on: Date | null;
   updated_at: Generated<Date>;
 }
@@ -1900,8 +1900,8 @@ export interface PartyOrganisationContacts {
 export interface PartyOrganisations {
   created_at: Generated<Date>;
   legal_name: string;
-  organisation_id: number;
-  party_id: number;
+  organisation_id: string;
+  party_id: string;
   trading_name: string | null;
   updated_at: Generated<Date>;
 }
@@ -1911,8 +1911,8 @@ export interface PartyPersons {
   family_name: string | null;
   given_names: string | null;
   honorific: string | null;
-  organisation_id: number;
-  party_id: number;
+  organisation_id: string;
+  party_id: string;
   preferred_name: string | null;
   updated_at: Generated<Date>;
 }
@@ -1920,25 +1920,25 @@ export interface PartyPersons {
 export interface PartyPhoneNumbers {
   created_at: Generated<Date>;
   extension: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_primary: Generated<number>;
   label: string | null;
-  organisation_id: number;
-  party_id: number;
+  organisation_id: string;
+  party_id: string;
   phone_e164: string;
-  primary_party_id: number | null;
+  primary_party_id: string | null;
   updated_at: Generated<Date>;
 }
 
 export interface PartyRelationships {
   created_at: Generated<Date>;
   ended_on: Date | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   party_relationship_type_id: number;
-  source_party_id: number;
+  source_party_id: string;
   started_on: Date | null;
-  target_party_id: number;
+  target_party_id: string;
   updated_at: Generated<Date>;
 }
 
@@ -1953,8 +1953,8 @@ export interface PartyRelationshipTypes {
 export interface PartyRoleAssignments {
   assigned_at: Generated<Date>;
   is_active: Generated<number>;
-  organisation_id: number;
-  party_id: number;
+  organisation_id: string;
+  party_id: string;
   party_role_type_id: number;
   updated_at: Generated<Date>;
 }
@@ -1968,27 +1968,27 @@ export interface PartyRoleTypes {
 
 export interface PartyTags {
   assigned_at: Generated<Date>;
-  crm_tag_id: number;
-  organisation_id: number;
-  party_id: number;
+  crm_tag_id: string;
+  organisation_id: string;
+  party_id: string;
 }
 
 export interface PaymentAllocationReversals {
-  organisation_id: number;
-  payment_allocation_id: number;
+  organisation_id: string;
+  payment_allocation_id: string;
   reason: string;
   reversed_at: Generated<Date>;
-  reversed_by_member_id: number;
+  reversed_by_member_id: string;
 }
 
 export interface PaymentAllocations {
   allocated_amount: Decimal;
   allocated_at: Generated<Date>;
-  allocated_by_member_id: number;
-  id: Generated<number>;
-  invoice_document_id: number;
-  organisation_id: number;
-  payment_id: number;
+  allocated_by_member_id: string;
+  id: Generated<string>;
+  invoice_document_id: string;
+  organisation_id: string;
+  payment_id: string;
 }
 
 export interface PaymentMethods {
@@ -1999,21 +1999,21 @@ export interface PaymentMethods {
 }
 
 export interface PaymentReversals {
-  organisation_id: number;
-  payment_id: number;
+  organisation_id: string;
+  payment_id: string;
   reason: string;
   reversed_at: Generated<Date>;
-  reversed_by_member_id: number;
+  reversed_by_member_id: string;
 }
 
 export interface Payments {
   amount: Decimal;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
-  id: Generated<number>;
-  organisation_id: number;
-  payer_party_id: number | null;
+  id: Generated<string>;
+  organisation_id: string;
+  payer_party_id: string | null;
   payment_method_id: number;
   payment_reference: string | null;
   public_id: string;
@@ -2024,21 +2024,21 @@ export interface PaymentTerms {
   calculation_basis: string;
   created_at: Generated<Date>;
   days_offset: Generated<number>;
-  default_organisation_id: number | null;
-  id: Generated<number>;
+  default_organisation_id: string | null;
+  id: Generated<string>;
   is_active: Generated<number>;
   is_default: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface Permissions {
-  capability_id: number | null;
+  capability_id: string | null;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
   permission_key: string;
@@ -2047,50 +2047,50 @@ export interface Permissions {
 
 export interface PermitAuthorisedPersons {
   authorised_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   organisation_name_snapshot: string | null;
-  permit_owner_organisation_id: number;
-  permit_to_work_id: number;
+  permit_owner_organisation_id: string;
+  permit_to_work_id: string;
   person_name_snapshot: string;
   role_description: string | null;
-  worker_id: number | null;
-  worker_organisation_id: number | null;
+  worker_id: string | null;
+  worker_organisation_id: string | null;
 }
 
 export interface PermitControls {
   confirmation_required: Generated<number>;
   confirmed_at: Date | null;
-  confirmed_by_member_id: number | null;
+  confirmed_by_member_id: string | null;
   control_number: number;
   control_text: string;
-  id: Generated<number>;
-  permit_owner_organisation_id: number;
-  permit_to_work_id: number;
+  id: Generated<string>;
+  permit_owner_organisation_id: string;
+  permit_to_work_id: string;
 }
 
 export interface PermitInformationLinks {
-  information_container_version_id: number;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  permit_owner_organisation_id: number;
-  permit_to_work_id: number;
-  version_owner_organisation_id: number;
+  permit_owner_organisation_id: string;
+  permit_to_work_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface PermitsToWork {
   closed_at: Date | null;
-  closed_by_member_id: number | null;
+  closed_by_member_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   issued_at: Date | null;
-  issued_by_member_id: number;
+  issued_by_member_id: string;
   location_description: string | null;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   permit_number: string;
   permit_type_id: number;
-  project_id: number;
-  project_site_id: number;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
-  responsible_organisation_id: number | null;
+  responsible_organisation_id: string | null;
   status: Generated<string>;
   suspended_at: Date | null;
   updated_at: Generated<Date>;
@@ -2110,36 +2110,36 @@ export interface ProcurementAwardItems {
   awarded_quantity: Decimal;
   awarded_unit_rate: Decimal;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
-  procurement_award_id: number;
-  procurement_package_item_id: number | null;
-  supplier_return_item_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  procurement_award_id: string;
+  procurement_package_item_id: string | null;
+  supplier_return_item_id: string;
 }
 
 export interface ProcurementAwards {
   approved_at: Date | null;
-  approved_by_member_id: number | null;
+  approved_by_member_id: string | null;
   award_number: number;
   award_status: Generated<string>;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
-  procurement_package_id: number;
+  organisation_id: string;
+  procurement_package_id: string;
   public_id: string;
   recommended_at: Generated<Date>;
-  recommended_by_member_id: number;
-  supplier_party_id: number;
-  supplier_return_id: number;
+  recommended_by_member_id: string;
+  supplier_party_id: string;
+  supplier_return_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface ProcurementComparisonReturns {
   included_at: Generated<Date>;
-  organisation_id: number;
-  procurement_comparison_id: number;
-  supplier_return_id: number;
+  organisation_id: string;
+  procurement_comparison_id: string;
+  supplier_return_id: string;
 }
 
 export interface ProcurementComparisons {
@@ -2147,22 +2147,22 @@ export interface ProcurementComparisons {
   comparison_status: Generated<string>;
   completed_at: Date | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
-  organisation_id: number;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
   public_id: string;
-  rfq_version_id: number;
+  rfq_version_id: string;
 }
 
 export interface ProcurementEvaluationCriteria {
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   maximum_score: Generated<Decimal>;
   name: string;
-  organisation_id: number;
-  procurement_package_id: number;
+  organisation_id: string;
+  procurement_package_id: string;
   sort_order: number;
   updated_at: Generated<Date>;
   weighting_percent: Decimal | null;
@@ -2171,10 +2171,10 @@ export interface ProcurementEvaluationCriteria {
 export interface ProcurementPackageItems {
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
-  procurement_package_id: number;
+  organisation_id: string;
+  procurement_package_id: string;
   quantity: Decimal;
   required_by_date: Date | null;
   sales_item_type_id: number;
@@ -2187,13 +2187,13 @@ export interface ProcurementPackages {
   created_at: Generated<Date>;
   currency_code: Generated<string>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  owner_member_id: number;
+  organisation_id: string;
+  owner_member_id: string;
   package_number: string;
   procurement_package_type_id: number;
-  project_id: number | null;
+  project_id: string | null;
   public_id: string;
   required_by_date: Date | null;
   title: string;
@@ -2211,7 +2211,7 @@ export interface ProfessionalDomains {
   created_at: Generated<Date>;
   description: string | null;
   domain_code: string;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
   updated_at: Generated<Date>;
@@ -2221,73 +2221,73 @@ export interface ProjectBudgetAdjustmentItems {
   adjustment_amount: Decimal;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
-  project_budget_adjustment_id: number;
-  project_cost_code_id: number;
+  organisation_id: string;
+  project_budget_adjustment_id: string;
+  project_cost_code_id: string;
 }
 
 export interface ProjectBudgetAdjustments {
   adjustment_number: string;
   approved_at: Date | null;
-  approved_by_member_id: number | null;
+  approved_by_member_id: string | null;
   commercial_adjustment_type_id: number;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   description: string;
   effective_on: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  project_budget_id: number;
+  organisation_id: string;
+  project_budget_id: string;
   public_id: string;
-  source_commercial_variation_id: number | null;
+  source_commercial_variation_id: string | null;
   updated_at: Generated<Date>;
 }
 
 export interface ProjectBudgetLineEstimateSources {
-  estimate_item_cost_component_id: number;
+  estimate_item_cost_component_id: string;
   linked_at: Generated<Date>;
-  organisation_id: number;
-  project_budget_line_id: number;
+  organisation_id: string;
+  project_budget_line_id: string;
 }
 
 export interface ProjectBudgetLines {
   budget_amount: Decimal;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
-  project_budget_version_id: number;
-  project_cost_code_id: number;
+  organisation_id: string;
+  project_budget_version_id: string;
+  project_cost_code_id: string;
 }
 
 export interface ProjectBudgets {
   budget_number: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
+  created_by_member_id: string;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
   name: string;
-  organisation_id: number;
-  project_id: number;
+  organisation_id: string;
+  project_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface ProjectBudgetVersions {
   approved_at: Date | null;
-  approved_by_member_id: number | null;
+  approved_by_member_id: string | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
   effective_on: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   locked_at: Date | null;
-  organisation_id: number;
-  project_budget_id: number;
+  organisation_id: string;
+  project_budget_id: string;
   updated_at: Generated<Date>;
   version_number: number;
   version_status: Generated<string>;
@@ -2298,12 +2298,12 @@ export interface ProjectChangeEvents {
   closed_at: Date | null;
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   identified_at: Generated<Date>;
-  identified_by_member_id: number;
-  owning_organisation_id: number;
+  identified_by_member_id: string;
+  owning_organisation_id: string;
   project_change_event_type_id: number;
-  project_id: number;
+  project_id: string;
   public_id: string;
   status: Generated<string>;
   title: string;
@@ -2322,12 +2322,12 @@ export interface ProjectCostCodes {
   commercial_cost_category_id: number;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
-  parent_cost_code_id: number | null;
-  project_id: number;
+  organisation_id: string;
+  parent_cost_code_id: string | null;
+  project_id: string;
   public_id: string;
   sort_order: Generated<number>;
   updated_at: Generated<Date>;
@@ -2335,31 +2335,31 @@ export interface ProjectCostCodes {
 
 export interface ProjectDirectCostReversals {
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
-  project_direct_cost_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  project_direct_cost_id: string;
   reason: string;
   reversal_amount: Decimal;
   reversed_at: Generated<Date>;
-  reversed_by_member_id: number;
+  reversed_by_member_id: string;
 }
 
 export interface ProjectDirectCosts {
   amount: Decimal;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
   description: string;
   direct_cost_number: string;
   entry_type: string;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  party_id: number | null;
+  organisation_id: string;
+  party_id: string | null;
   posted_at: Date | null;
-  posted_by_member_id: number | null;
-  project_cost_code_id: number;
-  project_id: number;
+  posted_by_member_id: string | null;
+  project_cost_code_id: string;
+  project_id: string;
   public_id: string;
   source_reference: string | null;
   source_system: string | null;
@@ -2369,14 +2369,14 @@ export interface ProjectDirectCosts {
 
 export interface ProjectInstructions {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   instruction_number: string;
   instruction_text: string;
   instruction_type_id: number;
   issued_at: Date | null;
-  issued_by_member_id: number;
-  issuing_organisation_id: number;
-  project_id: number;
+  issued_by_member_id: string;
+  issuing_organisation_id: string;
+  project_id: string;
   public_id: string;
   status: Generated<string>;
   subject: string;
@@ -2385,60 +2385,60 @@ export interface ProjectInstructions {
 
 export interface ProjectMemberRoles {
   assigned_at: Generated<Date>;
-  organisation_member_id: number;
-  participant_organisation_id: number;
-  project_id: number;
-  project_role_type_id: number;
+  organisation_member_id: string;
+  participant_organisation_id: string;
+  project_id: string;
+  project_role_type_id: string;
 }
 
 export interface ProjectMembers {
   joined_at: Generated<Date>;
   left_at: Date | null;
-  organisation_member_id: number;
-  participant_organisation_id: number;
-  project_id: number;
+  organisation_member_id: string;
+  participant_organisation_id: string;
+  project_id: string;
   status: Generated<string>;
 }
 
 export interface ProjectOrganisationRoles {
   assigned_at: Generated<Date>;
-  participant_organisation_id: number;
-  project_id: number;
-  project_role_type_id: number;
+  participant_organisation_id: string;
+  project_id: string;
+  project_role_type_id: string;
 }
 
 export interface ProjectOrganisations {
   created_at: Generated<Date>;
-  invited_by_member_id: number | null;
+  invited_by_member_id: string | null;
   joined_at: Date | null;
   left_at: Date | null;
-  participant_organisation_id: number;
-  project_id: number;
+  participant_organisation_id: string;
+  project_id: string;
   status: Generated<string>;
   updated_at: Generated<Date>;
 }
 
 export interface ProjectResourceAssignments {
-  assigned_by_member_id: number;
+  assigned_by_member_id: string;
   assignment_status: Generated<string>;
   created_at: Generated<Date>;
   ends_on: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   planned_allocation_percent: Decimal | null;
-  project_id: number;
-  project_role_type_id: number | null;
+  project_id: string;
+  project_role_type_id: string | null;
   public_id: string;
   starts_on: Date | null;
   updated_at: Generated<Date>;
-  worker_id: number;
+  worker_id: string;
 }
 
 export interface ProjectRoleTypes {
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
   role_key: string;
@@ -2449,11 +2449,11 @@ export interface Projects {
   archived_at: Date | null;
   completed_on: Date | null;
   created_at: Generated<Date>;
-  created_by_member_id: number | null;
+  created_by_member_id: string | null;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   name: string;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   project_number: string;
   public_id: string;
   started_on: Date | null;
@@ -2462,13 +2462,13 @@ export interface Projects {
 }
 
 export interface ProjectSites {
-  address_id: number | null;
+  address_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  owning_organisation_id: number;
-  project_id: number;
+  owning_organisation_id: string;
+  project_id: string;
   public_id: string;
   site_code: string;
   timezone: string | null;
@@ -2477,49 +2477,49 @@ export interface ProjectSites {
 
 export interface PurchaseOrderIssueEvents {
   delivery_channel: string;
-  id: Generated<number>;
+  id: Generated<string>;
   issue_sequence: number;
   issued_at: Generated<Date>;
-  issued_by_member_id: number;
+  issued_by_member_id: string;
   note: string | null;
-  organisation_id: number;
-  purchase_order_version_id: number;
+  organisation_id: string;
+  purchase_order_version_id: string;
 }
 
 export interface PurchaseOrderIssueRecipients {
   created_at: Generated<Date>;
   delivered_at: Date | null;
   delivery_status: Generated<string>;
-  id: Generated<number>;
-  organisation_id: number;
-  purchase_order_issue_event_id: number;
-  purchase_order_version_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  purchase_order_issue_event_id: string;
+  purchase_order_version_id: string;
   recipient_email: string | null;
   recipient_name: string | null;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface PurchaseOrderItemCostAllocations {
   allocated_net_amount: Decimal;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
-  organisation_id: number;
-  project_cost_code_id: number;
-  purchase_order_item_id: number;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  project_cost_code_id: string;
+  purchase_order_item_id: string;
 }
 
 export interface PurchaseOrderItems {
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
-  purchase_order_version_id: number;
+  organisation_id: string;
+  purchase_order_version_id: string;
   quantity: Decimal;
   sales_item_type_id: number;
-  source_procurement_award_item_id: number | null;
-  source_procurement_package_item_id: number | null;
+  source_procurement_award_item_id: string | null;
+  source_procurement_package_item_id: string | null;
   unit_of_measure_id: number | null;
   unit_rate: Decimal;
 }
@@ -2527,12 +2527,12 @@ export interface PurchaseOrderItems {
 export interface PurchaseOrderItemTaxes {
   applied_rate_percent: Decimal;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
-  purchase_order_item_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  purchase_order_item_id: string;
   sort_order: Generated<number>;
   tax_amount: Decimal;
-  tax_category_id: number;
+  tax_category_id: string;
   taxable_amount: Decimal;
 }
 
@@ -2541,15 +2541,15 @@ export interface PurchaseOrderPartySnapshotAddresses {
   city: string | null;
   country_code: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   line_1: string;
   line_2: string | null;
   line_3: string | null;
   locality: string | null;
-  organisation_id: number;
+  organisation_id: string;
   postal_code: string | null;
-  purchase_order_party_snapshot_id: number;
-  purchase_order_version_id: number;
+  purchase_order_party_snapshot_id: string;
+  purchase_order_version_id: string;
   region: string | null;
 }
 
@@ -2557,22 +2557,22 @@ export interface PurchaseOrderPartySnapshots {
   created_at: Generated<Date>;
   display_name: string;
   email: string | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   phone: string | null;
-  purchase_order_version_id: number;
+  purchase_order_version_id: string;
   reference_identifier: string | null;
   snapshot_role: string;
   sort_order: Generated<number>;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface PurchaseOrderReceiptItems {
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
-  purchase_order_item_id: number;
-  purchase_order_receipt_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  purchase_order_item_id: string;
+  purchase_order_receipt_id: string;
   quantity_received: Decimal;
   quantity_rejected: Generated<Decimal>;
   rejection_reason: string | null;
@@ -2580,16 +2580,16 @@ export interface PurchaseOrderReceiptItems {
 
 export interface PurchaseOrderReceipts {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
-  purchase_order_id: number;
+  purchase_order_id: string;
   receipt_number: string;
   receipt_status: Generated<string>;
   receipt_type: Generated<string>;
   received_at: Date;
-  received_by_member_id: number;
+  received_by_member_id: string;
   supplier_delivery_reference: string | null;
   updated_at: Generated<Date>;
 }
@@ -2597,17 +2597,17 @@ export interface PurchaseOrderReceipts {
 export interface PurchaseOrders {
   created_at: Generated<Date>;
   currency_code: string;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  owner_member_id: number;
-  procurement_package_id: number | null;
-  project_id: number | null;
+  organisation_id: string;
+  owner_member_id: string;
+  procurement_package_id: string | null;
+  project_id: string | null;
   public_id: string;
   purchase_order_number: string;
   purchase_order_type_id: number;
-  source_procurement_award_id: number | null;
-  supplier_party_id: number;
+  source_procurement_award_id: string | null;
+  supplier_party_id: string;
   updated_at: Generated<Date>;
 }
 
@@ -2615,9 +2615,9 @@ export interface PurchaseOrderTextBlocks {
   block_type: string;
   body: string;
   heading: string | null;
-  id: Generated<number>;
-  organisation_id: number;
-  purchase_order_version_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  purchase_order_version_id: string;
   sort_order: number;
 }
 
@@ -2629,30 +2629,30 @@ export interface PurchaseOrderTypes {
 }
 
 export interface PurchaseOrderValuations {
-  commercial_valuation_id: number;
+  commercial_valuation_id: string;
   created_at: Generated<Date>;
-  organisation_id: number;
-  purchase_order_id: number;
+  organisation_id: string;
+  purchase_order_id: string;
 }
 
 export interface PurchaseOrderVariations {
-  commercial_variation_id: number;
+  commercial_variation_id: string;
   created_at: Generated<Date>;
-  organisation_id: number;
-  purchase_order_id: number;
+  organisation_id: string;
+  purchase_order_id: string;
 }
 
 export interface PurchaseOrderVersions {
   approved_at: Date | null;
-  approved_by_member_id: number | null;
+  approved_by_member_id: string | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
+  created_by_member_id: string;
+  id: Generated<string>;
   locked_at: Date | null;
-  locked_by_member_id: number | null;
+  locked_by_member_id: string | null;
   order_date: Date | null;
-  organisation_id: number;
-  purchase_order_id: number;
+  organisation_id: string;
+  purchase_order_id: string;
   required_by_date: Date | null;
   supplier_reference: string | null;
   title: string;
@@ -2670,25 +2670,25 @@ export interface QualityFindingTypes {
 
 export interface QualityInspectionFindings {
   description: string;
-  id: Generated<number>;
-  owning_organisation_id: number;
+  id: Generated<string>;
+  owning_organisation_id: string;
   public_id: string;
   quality_finding_type_id: number;
-  quality_inspection_id: number;
-  quality_inspection_response_id: number | null;
+  quality_inspection_id: string;
+  quality_inspection_response_id: string | null;
   raised_at: Generated<Date>;
-  raised_by_member_id: number;
+  raised_by_member_id: string;
   severity: Generated<string>;
   title: string;
 }
 
 export interface QualityInspectionItemOptions {
-  id: Generated<number>;
+  id: Generated<string>;
   option_code: string;
   option_label: string;
-  organisation_id: number;
-  quality_inspection_template_item_id: number;
-  quality_inspection_template_version_id: number;
+  organisation_id: string;
+  quality_inspection_template_item_id: string;
+  quality_inspection_template_version_id: string;
   sort_order: number;
 }
 
@@ -2701,33 +2701,33 @@ export interface QualityInspectionItemTypes {
 
 export interface QualityInspectionResponses {
   comments: string | null;
-  id: Generated<number>;
-  owning_organisation_id: number;
-  quality_inspection_id: number;
-  quality_inspection_template_item_id: number;
-  quality_inspection_template_version_id: number;
+  id: Generated<string>;
+  owning_organisation_id: string;
+  quality_inspection_id: string;
+  quality_inspection_template_item_id: string;
+  quality_inspection_template_version_id: string;
   responded_at: Generated<Date>;
-  responded_by_member_id: number;
+  responded_by_member_id: string;
   response_boolean: number | null;
   response_date: Date | null;
   response_decimal: Decimal | null;
   response_text: string | null;
   result_code: Generated<string>;
-  selected_option_id: number | null;
+  selected_option_id: string | null;
 }
 
 export interface QualityInspections {
   completed_at: Date | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  inspected_by_member_id: number;
+  id: Generated<string>;
+  inspected_by_member_id: string;
   inspection_number: string;
   location_description: string | null;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
-  quality_inspection_template_version_id: number;
+  quality_inspection_template_version_id: string;
   scheduled_at: Date | null;
   started_at: Date | null;
   status: Generated<string>;
@@ -2738,88 +2738,88 @@ export interface QualityInspections {
 export interface QualityInspectionTemplateItems {
   allow_finding: Generated<number>;
   guidance_text: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_required: Generated<number>;
   item_number: number;
-  organisation_id: number;
+  organisation_id: string;
   prompt_text: string;
   quality_inspection_item_type_id: number;
-  quality_inspection_template_section_id: number;
-  quality_inspection_template_version_id: number;
+  quality_inspection_template_section_id: string;
+  quality_inspection_template_version_id: string;
 }
 
 export interface QualityInspectionTemplates {
   code: string;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface QualityInspectionTemplateSections {
   description: string | null;
-  id: Generated<number>;
-  organisation_id: number;
-  quality_inspection_template_version_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  quality_inspection_template_version_id: string;
   section_number: number;
   title: string;
 }
 
 export interface QualityInspectionTemplateVersions {
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
-  organisation_id: number;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
   public_id: string;
   published_at: Date | null;
-  published_by_member_id: number | null;
-  quality_inspection_template_id: number;
+  published_by_member_id: string | null;
+  quality_inspection_template_id: string;
   status: Generated<string>;
   version_number: number;
 }
 
 export interface QuotationIssueEvents {
   delivery_channel: string;
-  id: Generated<number>;
+  id: Generated<string>;
   issue_sequence: number;
   issued_at: Generated<Date>;
-  issued_by_member_id: number;
+  issued_by_member_id: string;
   note: string | null;
-  organisation_id: number;
-  quotation_version_id: number;
+  organisation_id: string;
+  quotation_version_id: string;
 }
 
 export interface QuotationIssueRecipients {
   created_at: Generated<Date>;
   delivered_at: Date | null;
   delivery_status: Generated<string>;
-  id: Generated<number>;
-  organisation_id: number;
-  quotation_issue_event_id: number;
-  quotation_version_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  quotation_issue_event_id: string;
+  quotation_version_id: string;
   recipient_email: string | null;
   recipient_name: string | null;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface QuotationItems {
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   is_optional: Generated<number>;
   line_number: number;
-  organisation_id: number;
+  organisation_id: string;
   quantity: Decimal;
-  quotation_section_id: number | null;
-  quotation_version_id: number;
-  sales_catalog_item_id: number | null;
+  quotation_section_id: string | null;
+  quotation_version_id: string;
+  sales_catalog_item_id: string | null;
   sales_item_type_id: number;
-  source_estimate_item_id: number | null;
+  source_estimate_item_id: string | null;
   unit_of_measure_id: number | null;
   unit_rate: Decimal;
   updated_at: Generated<Date>;
@@ -2828,12 +2828,12 @@ export interface QuotationItems {
 export interface QuotationItemTaxes {
   applied_rate_percent: Decimal;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
-  quotation_item_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  quotation_item_id: string;
   sort_order: Generated<number>;
   tax_amount: Decimal;
-  tax_category_id: number;
+  tax_category_id: string;
   taxable_amount: Decimal;
   updated_at: Generated<Date>;
 }
@@ -2843,15 +2843,15 @@ export interface QuotationPartySnapshotAddresses {
   city: string | null;
   country_code: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   line_1: string;
   line_2: string | null;
   line_3: string | null;
   locality: string | null;
-  organisation_id: number;
+  organisation_id: string;
   postal_code: string | null;
-  quotation_party_snapshot_id: number;
-  quotation_version_id: number;
+  quotation_party_snapshot_id: string;
+  quotation_version_id: string;
   region: string | null;
 }
 
@@ -2859,53 +2859,53 @@ export interface QuotationPartySnapshots {
   created_at: Generated<Date>;
   display_name: string;
   email: string | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   phone: string | null;
-  quotation_version_id: number;
+  quotation_version_id: string;
   reference_identifier: string | null;
   snapshot_role: string;
   sort_order: Generated<number>;
-  source_party_id: number | null;
+  source_party_id: string | null;
 }
 
 export interface QuotationProjectConversions {
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
-  organisation_id: number;
-  project_id: number;
-  quotation_response_id: number;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  project_id: string;
+  quotation_response_id: string;
 }
 
 export interface QuotationResponses {
-  accepted_quotation_id: number | null;
+  accepted_quotation_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
-  quotation_id: number;
-  quotation_issue_event_id: number | null;
-  quotation_version_id: number;
-  recorded_by_member_id: number | null;
+  quotation_id: string;
+  quotation_issue_event_id: string | null;
+  quotation_version_id: string;
+  recorded_by_member_id: string | null;
   responded_at: Date;
   respondent_email: string | null;
   respondent_name: string | null;
-  responding_party_id: number | null;
+  responding_party_id: string | null;
   response_type: string;
 }
 
 export interface Quotations {
   created_at: Generated<Date>;
-  customer_party_id: number;
-  id: Generated<number>;
+  customer_party_id: string;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  opportunity_id: number | null;
-  organisation_id: number;
-  owner_member_id: number;
-  primary_contact_party_id: number | null;
-  project_id: number | null;
+  opportunity_id: string | null;
+  organisation_id: string;
+  owner_member_id: string;
+  primary_contact_party_id: string | null;
+  project_id: string | null;
   public_id: string;
   quotation_number: string;
   updated_at: Generated<Date>;
@@ -2914,9 +2914,9 @@ export interface Quotations {
 export interface QuotationSections {
   description: string | null;
   heading: string;
-  id: Generated<number>;
-  organisation_id: number;
-  quotation_version_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  quotation_version_id: string;
   sort_order: number;
 }
 
@@ -2924,30 +2924,30 @@ export interface QuotationTextBlocks {
   block_type: string;
   body: string;
   heading: string | null;
-  id: Generated<number>;
-  organisation_id: number;
-  quotation_version_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  quotation_version_id: string;
   sort_order: number;
 }
 
 export interface QuotationVersionEstimates {
-  estimate_version_id: number;
+  estimate_version_id: string;
   linked_at: Generated<Date>;
-  organisation_id: number;
-  quotation_version_id: number;
+  organisation_id: string;
+  quotation_version_id: string;
   sort_order: number;
 }
 
 export interface QuotationVersions {
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
   customer_reference: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   locked_at: Date | null;
-  locked_by_member_id: number | null;
-  organisation_id: number;
-  quotation_id: number;
+  locked_by_member_id: string | null;
+  organisation_id: string;
+  quotation_id: string;
   title: string;
   updated_at: Generated<Date>;
   valid_until: Date | null;
@@ -2958,24 +2958,24 @@ export interface QuotationVersions {
 export interface RamsApprovalEvents {
   comments: string | null;
   decided_at: Generated<Date>;
-  decided_by_member_id: number;
-  deciding_organisation_id: number;
+  decided_by_member_id: string;
+  deciding_organisation_id: string;
   decision: string;
-  id: Generated<number>;
-  information_container_id: number;
-  information_container_version_id: number;
-  owning_organisation_id: number;
-  rams_record_id: number;
+  id: Generated<string>;
+  information_container_id: string;
+  information_container_version_id: string;
+  owning_organisation_id: string;
+  rams_record_id: string;
 }
 
 export interface RamsRecords {
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
-  information_container_id: number;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number | null;
+  created_by_member_id: string;
+  id: Generated<string>;
+  information_container_id: string;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string | null;
   public_id: string;
   rams_number: string;
   status: Generated<string>;
@@ -2984,45 +2984,45 @@ export interface RamsRecords {
 }
 
 export interface RfiAddressees {
-  addressee_organisation_id: number;
+  addressee_organisation_id: string;
   assigned_at: Generated<Date>;
-  project_id: number;
-  rfi_id: number;
-  rfi_owner_organisation_id: number;
+  project_id: string;
+  rfi_id: string;
+  rfi_owner_organisation_id: string;
 }
 
 export interface RfiInformationLinks {
   created_at: Generated<Date>;
-  information_container_version_id: number;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  rfi_id: number;
-  rfi_owner_organisation_id: number;
-  version_owner_organisation_id: number;
+  rfi_id: string;
+  rfi_owner_organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface RfiResponses {
-  id: Generated<number>;
+  id: Generated<string>;
   is_final_response: Generated<number>;
-  project_id: number;
+  project_id: string;
   responded_at: Generated<Date>;
-  responded_by_member_id: number;
-  responding_organisation_id: number;
+  responded_by_member_id: string;
+  responding_organisation_id: string;
   response_sequence: number;
   response_text: string;
-  rfi_id: number;
-  rfi_owner_organisation_id: number;
+  rfi_id: string;
+  rfi_owner_organisation_id: string;
 }
 
 export interface Rfis {
   closed_at: Date | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   due_at: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   opened_at: Date | null;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   priority: Generated<string>;
-  project_id: number;
+  project_id: string;
   public_id: string;
   question: string;
   rfi_number: string;
@@ -3032,52 +3032,52 @@ export interface Rfis {
 }
 
 export interface RfqInvitations {
-  contact_party_id: number | null;
+  contact_party_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   invitation_status: Generated<string>;
-  organisation_id: number;
+  organisation_id: string;
   recipient_email: string | null;
   recipient_name: string | null;
   responded_at: Date | null;
-  rfq_issue_event_id: number;
-  rfq_version_id: number;
-  supplier_party_id: number;
+  rfq_issue_event_id: string;
+  rfq_version_id: string;
+  supplier_party_id: string;
   updated_at: Generated<Date>;
 }
 
 export interface RfqIssueEvents {
   delivery_channel: string;
-  id: Generated<number>;
+  id: Generated<string>;
   issue_sequence: number;
   issued_at: Generated<Date>;
-  issued_by_member_id: number;
+  issued_by_member_id: string;
   note: string | null;
-  organisation_id: number;
-  rfq_version_id: number;
+  organisation_id: string;
+  rfq_version_id: string;
 }
 
 export interface RfqItems {
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
-  organisation_id: number;
+  organisation_id: string;
   quantity: Decimal;
   required_by_date: Date | null;
-  rfq_version_id: number;
+  rfq_version_id: string;
   sales_item_type_id: number;
-  source_procurement_package_item_id: number | null;
+  source_procurement_package_item_id: string | null;
   unit_of_measure_id: number | null;
 }
 
 export interface Rfqs {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   lifecycle_status: Generated<string>;
-  organisation_id: number;
-  owner_member_id: number;
-  procurement_package_id: number;
+  organisation_id: string;
+  owner_member_id: string;
+  procurement_package_id: string;
   public_id: string;
   rfq_number: string;
   updated_at: Generated<Date>;
@@ -3087,22 +3087,22 @@ export interface RfqTextBlocks {
   block_type: string;
   body: string;
   heading: string | null;
-  id: Generated<number>;
-  organisation_id: number;
-  rfq_version_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  rfq_version_id: string;
   sort_order: number;
 }
 
 export interface RfqVersions {
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
-  id: Generated<number>;
+  id: Generated<string>;
   locked_at: Date | null;
-  locked_by_member_id: number | null;
-  organisation_id: number;
+  locked_by_member_id: string | null;
+  organisation_id: string;
   response_deadline_at: Date | null;
-  rfq_id: number;
+  rfq_id: string;
   title: string;
   updated_at: Generated<Date>;
   version_number: number;
@@ -3111,23 +3111,23 @@ export interface RfqVersions {
 
 export interface RolePermissions {
   granted_at: Generated<Date>;
-  organisation_id: number;
-  organisation_role_id: number;
-  permission_id: number;
+  organisation_id: string;
+  organisation_role_id: string;
+  permission_id: string;
 }
 
 export interface SafetyActions {
   action_text: string;
   action_type: Generated<string>;
   completed_at: Date | null;
-  completed_by_member_id: number | null;
-  completed_by_organisation_id: number | null;
+  completed_by_member_id: string | null;
+  completed_by_organisation_id: string | null;
   created_at: Generated<Date>;
-  event_owner_organisation_id: number;
-  id: Generated<number>;
-  responsible_member_id: number | null;
-  responsible_organisation_id: number | null;
-  safety_event_id: number;
+  event_owner_organisation_id: string;
+  id: Generated<string>;
+  responsible_member_id: string | null;
+  responsible_organisation_id: string | null;
+  safety_event_id: string;
   status: Generated<string>;
   target_date: Date | null;
   verification_note: string | null;
@@ -3137,31 +3137,31 @@ export interface SafetyBriefingAttendees {
   acknowledged_at: Date | null;
   attendee_name_snapshot: string;
   attendee_organisation_snapshot: string | null;
-  attendee_worker_id: number | null;
-  attendee_worker_organisation_id: number | null;
-  briefing_owner_organisation_id: number;
-  id: Generated<number>;
+  attendee_worker_id: string | null;
+  attendee_worker_organisation_id: string | null;
+  briefing_owner_organisation_id: string;
+  id: Generated<string>;
   notes: string | null;
-  safety_briefing_id: number;
+  safety_briefing_id: string;
 }
 
 export interface SafetyBriefingInformationLinks {
-  briefing_owner_organisation_id: number;
-  information_container_version_id: number;
+  briefing_owner_organisation_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  safety_briefing_id: number;
-  version_owner_organisation_id: number;
+  safety_briefing_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface SafetyBriefings {
   briefing_reference: string | null;
   created_at: Generated<Date>;
-  delivered_by_member_id: number;
+  delivered_by_member_id: string;
   held_at: Date;
-  id: Generated<number>;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number;
+  id: Generated<string>;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
   safety_briefing_type_id: number;
   title: string;
@@ -3176,43 +3176,43 @@ export interface SafetyBriefingTypes {
 }
 
 export interface SafetyEventInformationLinks {
-  event_owner_organisation_id: number;
-  information_container_version_id: number;
+  event_owner_organisation_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  safety_event_id: number;
-  version_owner_organisation_id: number;
+  safety_event_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface SafetyEventPeople {
-  event_owner_organisation_id: number;
-  id: Generated<number>;
+  event_owner_organisation_id: string;
+  id: Generated<string>;
   injury_summary: string | null;
   involvement_type: string;
   lost_time_days: Decimal | null;
   organisation_name_snapshot: string | null;
   person_name_snapshot: string;
-  safety_event_id: number;
+  safety_event_id: string;
   treatment_summary: string | null;
-  worker_id: number | null;
-  worker_organisation_id: number | null;
+  worker_id: string | null;
+  worker_organisation_id: string | null;
 }
 
 export interface SafetyEvents {
   closed_at: Date | null;
-  closed_by_member_id: number | null;
+  closed_by_member_id: string | null;
   created_at: Generated<Date>;
   description: string;
   event_kind: string;
   event_number: string;
-  id: Generated<number>;
+  id: Generated<string>;
   location_description: string | null;
   occurred_at: Date;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
   reported_at: Generated<Date>;
-  reported_by_member_id: number;
+  reported_by_member_id: string;
   status: Generated<string>;
   title: string;
   updated_at: Generated<Date>;
@@ -3224,48 +3224,48 @@ export interface SafetyIncidents {
   immediate_response: string | null;
   injury_occurred: Generated<number>;
   investigation_summary: string | null;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   property_damage_occurred: Generated<number>;
-  safety_event_id: number;
+  safety_event_id: string;
   severity: Generated<string>;
 }
 
 export interface SafetyNearMisses {
   immediate_control: string | null;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   potential_outcome: string | null;
   potential_severity: Generated<string>;
-  safety_event_id: number;
+  safety_event_id: string;
 }
 
 export interface SafetyObservations {
   immediate_action_taken: string | null;
   is_positive_observation: Generated<number>;
   observation_category: string;
-  owning_organisation_id: number;
-  safety_event_id: number;
+  owning_organisation_id: string;
+  safety_event_id: string;
 }
 
 export interface SalesCatalogItemPrices {
   amount: Decimal;
   created_at: Generated<Date>;
   currency_code: string;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   price_type: string;
-  sales_catalog_item_id: number;
+  sales_catalog_item_id: string;
   valid_from: Date;
   valid_to: Date | null;
 }
 
 export interface SalesCatalogItems {
   created_at: Generated<Date>;
-  default_tax_category_id: number | null;
+  default_tax_category_id: string | null;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   sales_item_type_id: number;
   sku: string | null;
@@ -3281,15 +3281,15 @@ export interface SalesItemTypes {
 }
 
 export interface ScheduleEvents {
-  address_id: number | null;
+  address_id: string | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   description: string | null;
   ends_at: Date;
   event_status: Generated<string>;
-  id: Generated<number>;
-  organisation_id: number;
-  project_id: number | null;
+  id: Generated<string>;
+  organisation_id: string;
+  project_id: string | null;
   public_id: string;
   schedule_event_type_id: number;
   starts_at: Date;
@@ -3307,13 +3307,13 @@ export interface ScheduleEventTypes {
 
 export interface ScheduleEventWorkers {
   assigned_at: Generated<Date>;
-  assigned_by_member_id: number;
+  assigned_by_member_id: string;
   assignment_status: Generated<string>;
-  organisation_id: number;
-  project_resource_assignment_id: number | null;
+  organisation_id: string;
+  project_resource_assignment_id: string | null;
   responded_at: Date | null;
-  schedule_event_id: number;
-  worker_id: number;
+  schedule_event_id: string;
+  worker_id: string;
 }
 
 export interface SchemaMigrations {
@@ -3321,12 +3321,12 @@ export interface SchemaMigrations {
 }
 
 export interface ServiceEventInformationLinks {
-  asset_service_event_id: number;
+  asset_service_event_id: string;
   created_at: Generated<Date>;
-  information_container_version_id: number;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  organisation_id: number;
-  version_owner_organisation_id: number;
+  organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface ServiceEventTypes {
@@ -3340,47 +3340,47 @@ export interface SiteDeliveries {
   created_at: Generated<Date>;
   delivery_note_reference: string | null;
   delivery_reference: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
   received_at: Date;
-  received_by_member_id: number | null;
+  received_by_member_id: string | null;
   status: Generated<string>;
-  supplier_party_id: number | null;
+  supplier_party_id: string | null;
 }
 
 export interface SiteDeliveryItems {
   accepted_quantity: Decimal | null;
   description: string;
-  id: Generated<number>;
+  id: Generated<string>;
   line_number: number;
   notes: string | null;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   quantity: Decimal | null;
   rejected_quantity: Decimal | null;
-  site_delivery_id: number;
+  site_delivery_id: string;
   unit_of_measure_id: number | null;
 }
 
 export interface SiteDiaries {
   approved_at: Date | null;
-  approved_by_member_id: number | null;
+  approved_by_member_id: string | null;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   diary_date: Date;
-  id: Generated<number>;
+  id: Generated<string>;
   locked_at: Date | null;
-  owning_organisation_id: number;
-  project_id: number;
-  project_site_id: number;
+  owning_organisation_id: string;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
   shift_label: string | null;
   status: Generated<string>;
   submitted_at: Date | null;
-  submitted_by_member_id: number | null;
+  submitted_by_member_id: string | null;
   summary: string | null;
   updated_at: Generated<Date>;
 }
@@ -3390,104 +3390,104 @@ export interface SiteDiaryActivities {
   created_at: Generated<Date>;
   description: string;
   ended_at: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   location_description: string | null;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   progress_percent: Decimal | null;
-  site_diary_id: number;
+  site_diary_id: string;
   started_at: Date | null;
 }
 
 export interface SiteDiaryDelays {
-  change_owner_organisation_id: number | null;
+  change_owner_organisation_id: string | null;
   created_at: Generated<Date>;
   delay_type: string;
   description: string;
   duration_minutes: number | null;
-  id: Generated<number>;
+  id: Generated<string>;
   impact_summary: string | null;
-  owning_organisation_id: number;
-  project_change_event_id: number | null;
-  site_diary_id: number;
+  owning_organisation_id: string;
+  project_change_event_id: string | null;
+  site_diary_id: string;
 }
 
 export interface SiteDiaryDeliveries {
-  owning_organisation_id: number;
-  site_delivery_id: number;
-  site_diary_id: number;
+  owning_organisation_id: string;
+  site_delivery_id: string;
+  site_diary_id: string;
 }
 
 export interface SiteDiaryInformationLinks {
   created_at: Generated<Date>;
-  diary_owner_organisation_id: number;
-  information_container_version_id: number;
+  diary_owner_organisation_id: string;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  site_diary_id: number;
-  version_owner_organisation_id: number;
+  site_diary_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface SiteDiaryLabourGroups {
-  contractor_party_id: number | null;
+  contractor_party_id: string | null;
   created_at: Generated<Date>;
   headcount: number;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  owning_organisation_id: number;
-  site_diary_id: number;
+  owning_organisation_id: string;
+  site_diary_id: string;
   total_hours: Decimal | null;
   trade_description: string;
 }
 
 export interface SiteDiaryNotes {
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
+  created_by_member_id: string;
+  id: Generated<string>;
   note_text: string;
   note_type: Generated<string>;
-  owning_organisation_id: number;
-  site_diary_id: number;
+  owning_organisation_id: string;
+  site_diary_id: string;
 }
 
 export interface SiteDiaryPlantEntries {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
   operating_hours: Decimal | null;
-  operator_worker_id: number | null;
-  owning_organisation_id: number;
+  operator_worker_id: string | null;
+  owning_organisation_id: string;
   plant_description: string;
   plant_reference_snapshot: string | null;
-  site_diary_id: number;
+  site_diary_id: string;
 }
 
 export interface SiteDiaryVisitors {
-  owning_organisation_id: number;
-  site_diary_id: number;
-  site_visitor_entry_id: number;
+  owning_organisation_id: string;
+  site_diary_id: string;
+  site_visitor_entry_id: string;
 }
 
 export interface SiteDiaryWeatherRecords {
   condition_code: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   impact_note: string | null;
   observed_at: Date;
-  owning_organisation_id: number;
+  owning_organisation_id: string;
   rainfall_mm: Decimal | null;
-  site_diary_id: number;
+  site_diary_id: string;
   temperature_c: Decimal | null;
   wind_speed_mps: Decimal | null;
 }
 
 export interface SiteDiaryWorkerEntries {
   activity_summary: string | null;
-  attendance_record_id: number | null;
+  attendance_record_id: string | null;
   created_at: Generated<Date>;
   hours_on_site: Decimal | null;
-  id: Generated<number>;
-  owning_organisation_id: number;
-  site_diary_id: number;
-  worker_id: number;
+  id: Generated<string>;
+  owning_organisation_id: string;
+  site_diary_id: string;
+  worker_id: string;
 }
 
 export interface SiteVisitorEntries {
@@ -3495,55 +3495,55 @@ export interface SiteVisitorEntries {
   created_at: Generated<Date>;
   entered_at: Date;
   exited_at: Date | null;
-  host_member_id: number | null;
-  id: Generated<number>;
+  host_member_id: string | null;
+  id: Generated<string>;
   notes: string | null;
   organisation_name_snapshot: string | null;
-  owning_organisation_id: number;
-  person_party_id: number | null;
-  project_id: number;
-  project_site_id: number;
+  owning_organisation_id: string;
+  person_party_id: string | null;
+  project_id: string;
+  project_site_id: string;
   public_id: string;
   purpose: string | null;
   visitor_name_snapshot: string;
 }
 
 export interface SubmittalItems {
-  information_container_version_id: number;
+  information_container_version_id: string;
   note: string | null;
   sort_order: number;
-  submittal_id: number;
-  submittal_owner_organisation_id: number;
-  version_owner_organisation_id: number;
+  submittal_id: string;
+  submittal_owner_organisation_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface SubmittalReviewers {
   assigned_at: Generated<Date>;
   due_at: Date | null;
-  project_id: number;
-  reviewer_organisation_id: number;
-  submittal_id: number;
-  submittal_owner_organisation_id: number;
+  project_id: string;
+  reviewer_organisation_id: string;
+  submittal_id: string;
+  submittal_owner_organisation_id: string;
 }
 
 export interface SubmittalReviews {
   comments: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   outcome: string;
   review_sequence: number;
   reviewed_at: Generated<Date>;
-  reviewed_by_member_id: number;
-  reviewer_organisation_id: number;
-  submittal_id: number;
+  reviewed_by_member_id: string;
+  reviewer_organisation_id: string;
+  submittal_id: string;
 }
 
 export interface Submittals {
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   due_at: Date | null;
-  id: Generated<number>;
-  owning_organisation_id: number;
-  project_id: number;
+  id: Generated<string>;
+  owning_organisation_id: string;
+  project_id: string;
   public_id: string;
   status: Generated<string>;
   submittal_number: string;
@@ -3565,24 +3565,24 @@ export interface SupplierReturnAdjustments {
   amount: Decimal;
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   sort_order: number;
-  supplier_return_id: number;
+  supplier_return_id: string;
 }
 
 export interface SupplierReturnItems {
   compliance_status: Generated<string>;
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   lead_time_days: number | null;
   line_number: number;
   offered_quantity: Decimal;
-  organisation_id: number;
+  organisation_id: string;
   qualification_note: string | null;
-  rfq_item_id: number;
-  supplier_return_id: number;
+  rfq_item_id: string;
+  supplier_return_id: string;
   unit_rate: Decimal;
   updated_at: Generated<Date>;
 }
@@ -3590,13 +3590,13 @@ export interface SupplierReturnItems {
 export interface SupplierReturns {
   created_at: Generated<Date>;
   currency_code: string;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   public_id: string;
-  recorded_by_member_id: number | null;
+  recorded_by_member_id: string | null;
   return_status: Generated<string>;
-  rfq_invitation_id: number;
-  rfq_version_id: number;
+  rfq_invitation_id: string;
+  rfq_version_id: string;
   submission_number: number;
   submitted_at: Date | null;
   supplier_reference: string | null;
@@ -3606,22 +3606,22 @@ export interface SupplierReturns {
 
 export interface SupplierReturnScores {
   notes: string | null;
-  organisation_id: number;
-  procurement_comparison_id: number;
-  procurement_evaluation_criterion_id: number;
+  organisation_id: string;
+  procurement_comparison_id: string;
+  procurement_evaluation_criterion_id: string;
   score: Decimal;
   scored_at: Generated<Date>;
-  scored_by_member_id: number;
-  supplier_return_id: number;
+  scored_by_member_id: string;
+  supplier_return_id: string;
 }
 
 export interface TaxCategories {
   code: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   treatment: Generated<string>;
   updated_at: Generated<Date>;
@@ -3629,17 +3629,17 @@ export interface TaxCategories {
 
 export interface TaxCategoryRates {
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   rate_percent: Decimal;
-  tax_category_id: number;
+  tax_category_id: string;
   valid_from: Date;
   valid_to: Date | null;
 }
 
 export interface TaxonomySources {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   licence_name: string | null;
   licence_url: string | null;
   name: string;
@@ -3650,18 +3650,18 @@ export interface TaxonomySources {
 
 export interface TeamMembers {
   assigned_at: Generated<Date>;
-  organisation_id: number;
-  organisation_member_id: number;
-  team_id: number;
+  organisation_id: string;
+  organisation_member_id: string;
+  team_id: string;
 }
 
 export interface Teams {
   created_at: Generated<Date>;
   description: string | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
@@ -3670,10 +3670,10 @@ export interface TimeActivityTypes {
   code: string;
   created_at: Generated<Date>;
   default_billable: Generated<number>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
 }
@@ -3681,26 +3681,26 @@ export interface TimeActivityTypes {
 export interface TimesheetCostCodeAllocations {
   allocated_cost_amount: Decimal;
   created_at: Generated<Date>;
-  created_by_member_id: number;
-  id: Generated<number>;
-  organisation_id: number;
-  project_cost_code_id: number;
-  timesheet_entry_cost_snapshot_id: number;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  project_cost_code_id: string;
+  timesheet_entry_cost_snapshot_id: string;
 }
 
 export interface TimesheetEntries {
-  attendance_record_id: number | null;
+  attendance_record_id: string | null;
   created_at: Generated<Date>;
   description: string | null;
   ended_at: Date | null;
-  id: Generated<number>;
+  id: Generated<string>;
   is_billable: Generated<number>;
-  organisation_id: number;
-  project_id: number | null;
-  schedule_event_id: number | null;
+  organisation_id: string;
+  project_id: string | null;
+  schedule_event_id: string | null;
   started_at: Date | null;
-  time_activity_type_id: number | null;
-  timesheet_id: number;
+  time_activity_type_id: string | null;
+  timesheet_id: string;
   updated_at: Generated<Date>;
   work_date: Date;
   worked_minutes: number;
@@ -3710,76 +3710,76 @@ export interface TimesheetEntryCostSnapshots {
   cost_amount: Decimal;
   costed_minutes: number;
   currency_code: string;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   rate_amount: Decimal;
   rate_basis: string;
   snapshotted_at: Generated<Date>;
   sort_order: Generated<number>;
-  source_worker_cost_rate_id: number | null;
-  timesheet_entry_id: number;
+  source_worker_cost_rate_id: string | null;
+  timesheet_entry_id: string;
   worker_cost_rate_type_id: number;
 }
 
 export interface Timesheets {
   approved_at: Date | null;
-  approved_by_member_id: number | null;
+  approved_by_member_id: string | null;
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   period_end: Date;
   period_start: Date;
   public_id: string;
   submitted_at: Date | null;
-  submitted_by_member_id: number | null;
+  submitted_by_member_id: string | null;
   timesheet_status: Generated<string>;
   updated_at: Generated<Date>;
-  worker_id: number;
+  worker_id: string;
 }
 
 export interface TimesheetStatusEvents {
   acted_at: Generated<Date>;
-  acted_by_member_id: number;
+  acted_by_member_id: string;
   comment: string | null;
   from_status: string | null;
-  id: Generated<number>;
-  organisation_id: number;
-  timesheet_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  timesheet_id: string;
   to_status: string;
 }
 
 export interface TransmittalItems {
-  id: Generated<number>;
-  information_container_version_id: number;
-  issuing_organisation_id: number;
+  id: Generated<string>;
+  information_container_version_id: string;
+  issuing_organisation_id: string;
   note: string | null;
-  project_id: number;
+  project_id: string;
   sort_order: number;
-  transmittal_id: number;
-  version_owner_organisation_id: number;
+  transmittal_id: string;
+  version_owner_organisation_id: string;
 }
 
 export interface TransmittalRecipients {
   created_at: Generated<Date>;
   delivered_at: Date | null;
   delivery_status: Generated<string>;
-  id: Generated<number>;
-  issuing_organisation_id: number;
-  project_id: number;
+  id: Generated<string>;
+  issuing_organisation_id: string;
+  project_id: string;
   recipient_email: string | null;
   recipient_name: string;
-  recipient_project_organisation_id: number | null;
-  source_party_id: number | null;
-  transmittal_id: number;
+  recipient_project_organisation_id: string | null;
+  source_party_id: string | null;
+  transmittal_id: string;
 }
 
 export interface Transmittals {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   issued_at: Date;
-  issued_by_member_id: number;
-  issuing_organisation_id: number;
-  project_id: number;
+  issued_by_member_id: string;
+  issuing_organisation_id: string;
+  project_id: string;
   public_id: string;
   purpose: string | null;
   subject: string;
@@ -3798,19 +3798,19 @@ export interface UnitsOfMeasure {
 export interface UserEmails {
   created_at: Generated<Date>;
   email: string;
-  id: Generated<number>;
+  id: Generated<string>;
   is_primary: Generated<number>;
   is_verified: Generated<number>;
-  primary_user_id: number | null;
+  primary_user_id: string | null;
   updated_at: Generated<Date>;
-  user_id: number;
+  user_id: string;
   verified_at: Date | null;
 }
 
 export interface Users {
   created_at: Generated<Date>;
   display_name: string;
-  id: Generated<number>;
+  id: Generated<string>;
   public_id: string;
   status: Generated<string>;
   updated_at: Generated<Date>;
@@ -3825,10 +3825,10 @@ export interface WarrantyTypes {
 
 export interface WorkCalendars {
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   is_active: Generated<number>;
   name: string;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   timezone: Generated<string>;
   updated_at: Generated<Date>;
@@ -3838,58 +3838,58 @@ export interface WorkCalendarWeekdays {
   iso_weekday: number;
   local_end_time: string;
   local_start_time: string;
-  organisation_id: number;
+  organisation_id: string;
   unpaid_break_minutes: Generated<number>;
-  work_calendar_id: number;
+  work_calendar_id: string;
 }
 
 export interface WorkerCalendarAssignments {
   created_at: Generated<Date>;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   valid_from: Date;
   valid_to: Date | null;
-  work_calendar_id: number;
-  worker_id: number;
+  work_calendar_id: string;
+  worker_id: string;
 }
 
 export interface WorkerCareers {
   assigned_at: Generated<Date>;
-  career_id: number;
+  career_id: string;
   is_primary: Generated<number>;
-  organisation_id: number;
-  primary_worker_id: number | null;
-  worker_id: number;
+  organisation_id: string;
+  primary_worker_id: string | null;
+  worker_id: string;
 }
 
 export interface WorkerCompetencies {
-  assessed_by_member_id: number | null;
+  assessed_by_member_id: string | null;
   assessed_on: Date | null;
   assessment_status: Generated<string>;
-  competency_type_id: number;
+  competency_type_id: string;
   created_at: Generated<Date>;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   proficiency_level: string | null;
   updated_at: Generated<Date>;
   valid_from: Date | null;
   valid_to: Date | null;
-  worker_id: number;
+  worker_id: string;
 }
 
 export interface WorkerCostRates {
   amount: Decimal;
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   currency_code: string;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   rate_basis: Generated<string>;
   valid_from: Date;
   valid_to: Date | null;
   worker_cost_rate_type_id: number;
-  worker_id: number;
+  worker_id: string;
 }
 
 export interface WorkerCostRateTypes {
@@ -3902,20 +3902,20 @@ export interface WorkerCostRateTypes {
 export interface WorkerCredentials {
   created_at: Generated<Date>;
   credential_number: string | null;
-  credential_type_id: number;
-  id: Generated<number>;
+  credential_type_id: string;
+  id: Generated<string>;
   issued_on: Date | null;
   issuing_body: string | null;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   updated_at: Generated<Date>;
   valid_from: Date | null;
   valid_to: Date | null;
   verification_status: Generated<string>;
   verified_at: Date | null;
-  verified_by_member_id: number | null;
-  worker_id: number;
+  verified_by_member_id: string | null;
+  worker_id: string;
 }
 
 export interface WorkerEngagements {
@@ -3924,24 +3924,24 @@ export interface WorkerEngagements {
   ended_on: Date | null;
   engagement_reference: string | null;
   engagement_status: Generated<string>;
-  id: Generated<number>;
+  id: Generated<string>;
   job_title: string | null;
-  manager_worker_id: number | null;
-  organisation_id: number;
-  primary_team_id: number | null;
+  manager_worker_id: string | null;
+  organisation_id: string;
+  primary_team_id: string | null;
   started_on: Date;
   updated_at: Generated<Date>;
-  worker_id: number;
+  worker_id: string;
   workforce_engagement_type_id: number;
 }
 
 export interface Workers {
   created_at: Generated<Date>;
   display_name: string;
-  id: Generated<number>;
-  organisation_id: number;
-  organisation_member_id: number | null;
-  person_party_id: number | null;
+  id: Generated<string>;
+  organisation_id: string;
+  organisation_member_id: string | null;
+  person_party_id: string | null;
   public_id: string;
   status: Generated<string>;
   updated_at: Generated<Date>;
@@ -3950,17 +3950,17 @@ export interface Workers {
 
 export interface WorkerUnavailability {
   created_at: Generated<Date>;
-  created_by_member_id: number;
+  created_by_member_id: string;
   ends_at: Date;
-  id: Generated<number>;
+  id: Generated<string>;
   notes: string | null;
-  organisation_id: number;
+  organisation_id: string;
   public_id: string;
   starts_at: Date;
   status: Generated<string>;
   unavailability_type: string;
   updated_at: Generated<Date>;
-  worker_id: number;
+  worker_id: string;
 }
 
 export interface WorkforceEngagementTypes {
@@ -3971,59 +3971,59 @@ export interface WorkforceEngagementTypes {
 }
 
 export interface WorkOrderAssets {
-  asset_id: number;
+  asset_id: string;
   created_at: Generated<Date>;
-  organisation_id: number;
+  organisation_id: string;
   relationship_role: Generated<string>;
-  work_order_id: number;
+  work_order_id: string;
 }
 
 export interface WorkOrderInformationLinks {
   created_at: Generated<Date>;
-  information_container_version_id: number;
+  information_container_version_id: string;
   link_role: Generated<string>;
-  organisation_id: number;
-  version_owner_organisation_id: number;
-  work_order_id: number;
+  organisation_id: string;
+  version_owner_organisation_id: string;
+  work_order_id: string;
 }
 
 export interface WorkOrderPartyAssignments {
   assigned_at: Generated<Date>;
-  assigned_by_member_id: number;
+  assigned_by_member_id: string;
   assignment_role: Generated<string>;
-  id: Generated<number>;
-  organisation_id: number;
-  party_id: number;
+  id: Generated<string>;
+  organisation_id: string;
+  party_id: string;
   unassigned_at: Date | null;
-  work_order_id: number;
+  work_order_id: string;
 }
 
 export interface WorkOrderPurchaseOrderItems {
   link_role: Generated<string>;
   linked_at: Generated<Date>;
-  organisation_id: number;
-  purchase_order_item_id: number;
-  work_order_id: number;
+  organisation_id: string;
+  purchase_order_item_id: string;
+  work_order_id: string;
 }
 
 export interface WorkOrders {
   completed_at: Date | null;
-  completed_by_member_id: number | null;
+  completed_by_member_id: string | null;
   completion_summary: string | null;
   created_at: Generated<Date>;
   description: string | null;
-  facility_id: number;
-  facility_space_id: number | null;
-  id: Generated<number>;
+  facility_id: string;
+  facility_space_id: string | null;
+  id: Generated<string>;
   maintenance_priority_level_id: number;
-  organisation_id: number;
-  owner_member_id: number;
+  organisation_id: string;
+  owner_member_id: string;
   public_id: string;
   requested_on: Date | null;
   scheduled_end_at: Date | null;
   scheduled_start_at: Date | null;
-  source_maintenance_plan_task_id: number | null;
-  source_maintenance_request_id: number | null;
+  source_maintenance_plan_task_id: string | null;
+  source_maintenance_request_id: string | null;
   started_at: Date | null;
   title: string;
   updated_at: Generated<Date>;
@@ -4034,35 +4034,35 @@ export interface WorkOrders {
 
 export interface WorkOrderStatusEvents {
   acted_at: Generated<Date>;
-  acted_by_member_id: number;
+  acted_by_member_id: string;
   comment: string | null;
   from_status: string | null;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   to_status: string;
-  work_order_id: number;
+  work_order_id: string;
 }
 
 export interface WorkOrderTasks {
   completed_at: Date | null;
-  completed_by_member_id: number | null;
+  completed_by_member_id: string | null;
   completion_note: string | null;
   created_at: Generated<Date>;
   description: string;
-  id: Generated<number>;
-  organisation_id: number;
-  source_maintenance_plan_task_id: number | null;
+  id: Generated<string>;
+  organisation_id: string;
+  source_maintenance_plan_task_id: string | null;
   task_number: number;
   task_status: Generated<string>;
   updated_at: Generated<Date>;
-  work_order_id: number;
+  work_order_id: string;
 }
 
 export interface WorkOrderTimesheetEntries {
   linked_at: Generated<Date>;
-  organisation_id: number;
-  timesheet_entry_id: number;
-  work_order_id: number;
+  organisation_id: string;
+  timesheet_entry_id: string;
+  work_order_id: string;
 }
 
 export interface WorkOrderTypes {
@@ -4074,13 +4074,13 @@ export interface WorkOrderTypes {
 
 export interface WorkOrderWorkerAssignments {
   assigned_at: Generated<Date>;
-  assigned_by_member_id: number;
+  assigned_by_member_id: string;
   assignment_role: Generated<string>;
-  id: Generated<number>;
-  organisation_id: number;
+  id: Generated<string>;
+  organisation_id: string;
   unassigned_at: Date | null;
-  work_order_id: number;
-  worker_id: number;
+  work_order_id: string;
+  worker_id: string;
 }
 
 export interface DB {
