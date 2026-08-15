@@ -100,15 +100,19 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const data = await new OrganisationAdminService(getDatabase()).load(actor);
 	return {
 		...permissions,
-		members: permissions.canManageMembers ? data.members : [],
-		invitations: permissions.canInvite ? data.invitations : [],
+		members: permissions.canManageMembers
+			? data.members.map(({ id, userId: _userId, ...member }) => ({
+					...member,
+					isCurrent: id === actor.memberId
+				}))
+			: [],
+		invitations: permissions.canInvite
+			? data.invitations.map(({ id: _id, ...invitation }) => invitation)
+			: [],
 		roles:
 			permissions.canManageMembers || permissions.canManageOrganisation
-				? data.roles
-				: data.roles.map(({ id: _id, permissionKeys: _permissionKeys, ...role }) => ({
-						...role,
-						permissionKeys: [] as string[]
-					})),
+				? data.roles.map(({ id: _id, ...role }) => role)
+				: [],
 		permissions: permissions.canManageOrganisation ? data.permissions : []
 	};
 };
