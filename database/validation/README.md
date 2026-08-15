@@ -41,7 +41,8 @@ The workflow also reports the resulting foreign-key and `CHECK`-constraint count
 The clean MySQL 8.4 execution pass is also used to correct pre-production DDL defects at their source. Corrections already identified include:
 
 - generated-column uniqueness guards in Packages 001 and 006 require `RESTRICT` rather than cascading delete actions on their generated-column base keys;
-- Package 007 object-storage bucket/key locators are ASCII/binary identifiers so their full 255/1000-character unique locator remains within the InnoDB index-width limit while user-facing filenames and document metadata remain Unicode.
+- Package 007 object-storage bucket/key locators are ASCII/binary identifiers so their full 255/1000-character unique locator remains within the InnoDB index-width limit while user-facing filenames and document metadata remain Unicode;
+- Package 007 review assignments use a stable surrogate identity with null-normalised uniqueness, and review decisions reference that assignment directly; this previously deferred integrity hardening is now consolidated into the base Package 007 so the package itself is executable.
 
 ## CI
 
