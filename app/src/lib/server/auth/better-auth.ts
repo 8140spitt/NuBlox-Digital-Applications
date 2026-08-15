@@ -6,9 +6,14 @@ import { createPool } from 'mysql2/promise';
 import { getDatabase } from '$lib/server/db/database';
 import { getEmailDelivery } from '$lib/server/email/email-delivery';
 import {
+	OrganisationBootstrapAccessError,
+	OrganisationBootstrapService
+} from '$lib/server/organisations/bootstrap-service';
+import {
 	InvitationAccessError,
 	OrganisationInvitationService
 } from '$lib/server/organisations/invitation-service';
+import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from './bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
 import { assertVerifiedAuthUser } from './verified-auth-user';
 
@@ -22,14 +27,27 @@ function invitationService(): OrganisationInvitationService {
 	return new OrganisationInvitationService(getDatabase());
 }
 
-function invitationTokenFromContext(ctx: {
+function bootstrapService(): OrganisationBootstrapService {
+	return new OrganisationBootstrapService(getDatabase());
+}
+
+type SignupProvisioningIntent =
+	| { kind: 'invitation'; token: string }
+	| { kind: 'organisation-bootstrap'; token: string };
+
+function signupProvisioningIntentFromContext(ctx: {
 	getCookie(name: string): string | null | undefined;
-}): string {
-	const token = ctx.getCookie(INVITATION_SIGNUP_COOKIE)?.trim();
-	if (!token) {
-		throw new APIError('FORBIDDEN', { message: 'A valid NuBlox invitation is required.' });
+}): SignupProvisioningIntent {
+	const invitationToken = ctx.getCookie(INVITATION_SIGNUP_COOKIE)?.trim() ?? '';
+	const bootstrapToken = ctx.getCookie(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE)?.trim() ?? '';
+	if (invitationToken && bootstrapToken) {
+		throw new APIError('FORBIDDEN', { message: 'The NuBlox account setup state is ambiguous. Start again.' });
 	}
-	return token;
+	if (invitationToken) return { kind: 'invitation', token: invitationToken };
+	if (bootstrapToken) return { kind: 'organisation-bootstrap', token: bootstrapToken };
+	throw new APIError('FORBIDDEN', {
+		message: 'A valid NuBlox invitation or organisation setup request is required.'
+	});
 }
 
 export const authPool = createPool({
@@ -103,15 +121,21 @@ export const auth = betterAuth({
 	hooks: {
 		before: createAuthMiddleware(async (ctx) => {
 			if (ctx.path !== '/sign-up/email') return;
-			const token = invitationTokenFromContext(ctx);
+			const intent = signupProvisioningIntentFromContext(ctx);
 			const email = typeof ctx.body?.email === 'string' ? ctx.body.email : '';
 			try {
-				await invitationService().validateSignup(token, email);
-			} catch (error) {
-				if (error instanceof InvitationAccessError) {
-					throw new APIError('FORBIDDEN', { message: 'A valid NuBlox invitation is required.' });
+				if (intent.kind === 'invitation') {
+					await invitationService().validateSignup(intent.token, email);
+				} else {
+					await bootstrapService().validateSignup(intent.token, email);
 				}
-				throw error;
+			} catch (cause) {
+				if (cause instanceof InvitationAccessError || cause instanceof OrganisationBootstrapAccessError) {
+					throw new APIError('FORBIDDEN', {
+						message: 'A valid NuBlox invitation or organisation setup request is required.'
+					});
+				}
+				throw cause;
 			}
 		})
 	},
@@ -120,8 +144,12 @@ export const auth = betterAuth({
 			create: {
 				after: async (user, ctx) => {
 					if (ctx?.path !== '/sign-up/email') return;
-					const token = invitationTokenFromContext(ctx);
-					await invitationService().bindSignupAuthUser(token, user.email, user.id);
+					const intent = signupProvisioningIntentFromContext(ctx);
+					if (intent.kind === 'invitation') {
+						await invitationService().bindSignupAuthUser(intent.token, user.email, user.id);
+					} else {
+						await bootstrapService().bindSignupAuthUser(intent.token, user.email, user.id);
+					}
 				}
 			}
 		}
@@ -140,18 +168,25 @@ export const auth = betterAuth({
 		},
 		afterEmailVerification: async (user, request) => {
 			await assertVerifiedAuthUser(getDatabase(), user.id, user.email);
+			const correlationId = request?.headers.get('x-correlation-id') ?? undefined;
 			await invitationService().activateVerifiedAuthUser({
 				authUserId: user.id,
 				email: user.email,
 				displayName: user.name,
-				correlationId: request?.headers.get('x-correlation-id') ?? undefined
+				correlationId
+			});
+			await bootstrapService().activateVerifiedAuthUser({
+				authUserId: user.id,
+				email: user.email,
+				displayName: user.name,
+				correlationId
 			});
 		}
 	},
 	emailAndPassword: {
 		enabled: true,
 		// Sign-up is enabled only because the before hook above fail-closes every
-		// email sign-up request that does not carry a valid NuBlox invitation.
+		// email sign-up without a validated invitation or organisation-bootstrap intent.
 		disableSignUp: false,
 		requireEmailVerification: true,
 		minPasswordLength: 12,
