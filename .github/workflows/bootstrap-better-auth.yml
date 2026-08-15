@@ -1,0 +1,77 @@
+name: Bootstrap Better Auth
+
+on:
+  push:
+    branches:
+      - implementation/auth-tenant-permissions
+    paths:
+      - '.github/workflows/bootstrap-better-auth.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  bootstrap:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+          MYSQL_DATABASE: nublox_auth_bootstrap
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: implementation/auth-tenant-permissions
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install Better Auth
+        working-directory: app
+        run: pnpm add better-auth@1.6.25
+
+      - name: Prepare SvelteKit aliases
+        working-directory: app
+        run: pnpm exec svelte-kit sync
+
+      - name: Generate Better Auth candidate SQL
+        working-directory: app
+        env:
+          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_auth_bootstrap
+          BETTER_AUTH_SECRET: bootstrap-only-secret-0123456789abcdef0123456789abcdef
+          BETTER_AUTH_URL: http://localhost:5173
+        run: |
+          mkdir -p ../database/auth
+          pnpm dlx auth@1.6.25 generate \
+            --config ./src/lib/server/auth/better-auth.ts \
+            --output ../database/auth/better-auth-core.generated.sql \
+            --yes
+
+      - name: Commit bootstrap outputs
+        run: |
+          git config user.name 'NuBlox Auth Bootstrap'
+          git config user.email 'actions@users.noreply.github.com'
+          git add app/package.json app/pnpm-lock.yaml database/auth/better-auth-core.generated.sql
+          git commit -m 'Bootstrap Better Auth dependency and core schema'
+          git fetch origin implementation/auth-tenant-permissions
+          git rebase origin/implementation/auth-tenant-permissions
+          git push origin HEAD:implementation/auth-tenant-permissions
