@@ -838,14 +838,20 @@ CREATE TABLE information_review_steps (
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 CREATE TABLE information_review_step_reviewers (
+    id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
     information_review_step_id BIGINT UNSIGNED NOT NULL,
     information_review_workflow_id BIGINT UNSIGNED NOT NULL,
     project_id BIGINT UNSIGNED NOT NULL,
     reviewer_organisation_id BIGINT UNSIGNED NOT NULL,
     reviewer_member_id BIGINT UNSIGNED NULL,
     assigned_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
-    PRIMARY KEY (
-        information_review_step_id, reviewer_organisation_id, reviewer_member_id
+    reviewer_member_key BIGINT UNSIGNED
+        GENERATED ALWAYS AS (COALESCE(reviewer_member_id, 0)) STORED,
+    PRIMARY KEY (id),
+    UNIQUE KEY uq_information_review_step_reviewers_assignment (
+        information_review_step_id,
+        reviewer_organisation_id,
+        reviewer_member_key
     ),
     CONSTRAINT fk_information_review_step_reviewers_step
         FOREIGN KEY (information_review_step_id, information_review_workflow_id)
@@ -863,27 +869,18 @@ CREATE TABLE information_review_step_reviewers (
 
 CREATE TABLE information_review_decisions (
     id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-    information_review_step_id BIGINT UNSIGNED NOT NULL,
-    information_review_workflow_id BIGINT UNSIGNED NOT NULL,
-    reviewer_organisation_id BIGINT UNSIGNED NOT NULL,
-    reviewer_member_id BIGINT UNSIGNED NULL,
+    information_review_step_reviewer_id BIGINT UNSIGNED NOT NULL,
     decision VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     comments TEXT NULL,
     decided_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
     PRIMARY KEY (id),
-    UNIQUE KEY uq_information_review_decisions_reviewer (
-        information_review_step_id, reviewer_organisation_id, reviewer_member_id
+    UNIQUE KEY uq_information_review_decisions_assignment (
+        information_review_step_reviewer_id
     ),
     CONSTRAINT fk_information_review_decisions_assignment
-        FOREIGN KEY (
-            information_review_step_id,
-            reviewer_organisation_id,
-            reviewer_member_id
-        ) REFERENCES information_review_step_reviewers (
-            information_review_step_id,
-            reviewer_organisation_id,
-            reviewer_member_id
-        ) ON UPDATE RESTRICT ON DELETE RESTRICT,
+        FOREIGN KEY (information_review_step_reviewer_id)
+        REFERENCES information_review_step_reviewers (id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT ck_information_review_decisions_decision
         CHECK (decision IN ('approved', 'approved_with_comments', 'rejected', 'revise_resubmit', 'no_objection'))
 ) ENGINE=InnoDB DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;

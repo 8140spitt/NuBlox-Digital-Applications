@@ -27,47 +27,10 @@ ALTER TABLE information_containers
         ON DELETE RESTRICT;
 
 -- -----------------------------------------------------------------------------
--- 2. Review assignments require a stable identity.
---    A reviewer may be either an organisation generally or a specific member.
---    Nullable member IDs therefore must not be part of the primary key.
+-- 2. Review-assignment identity and 3NF decision linkage are now consolidated
+--    into 007-project-information-documents.sql so the base package is valid
+--    before this integrity stage is applied.
 -- -----------------------------------------------------------------------------
-
-ALTER TABLE information_review_step_reviewers
-    DROP PRIMARY KEY,
-    MODIFY COLUMN reviewer_member_id BIGINT UNSIGNED NULL,
-    ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
-    ADD COLUMN reviewer_member_key BIGINT UNSIGNED
-        GENERATED ALWAYS AS (COALESCE(reviewer_member_id, 0)) STORED,
-    ADD PRIMARY KEY (id),
-    ADD UNIQUE KEY uq_information_review_step_reviewers_assignment (
-        information_review_step_id,
-        reviewer_organisation_id,
-        reviewer_member_key
-    );
-
-ALTER TABLE information_review_decisions
-    DROP FOREIGN KEY fk_information_review_decisions_assignment,
-    DROP INDEX uq_information_review_decisions_reviewer,
-    ADD COLUMN information_review_step_reviewer_id BIGINT UNSIGNED NULL
-        AFTER information_review_step_id;
-
--- The baseline is pre-production and tables are expected to be empty when applied.
--- The reviewer-assignment row now determines step/workflow/reviewer. Remove those
--- transitive duplicates from the decision relation to keep the final model in 3NF.
-ALTER TABLE information_review_decisions
-    MODIFY information_review_step_reviewer_id BIGINT UNSIGNED NOT NULL,
-    DROP COLUMN information_review_step_id,
-    DROP COLUMN information_review_workflow_id,
-    DROP COLUMN reviewer_organisation_id,
-    DROP COLUMN reviewer_member_id,
-    ADD UNIQUE KEY uq_information_review_decisions_assignment (
-        information_review_step_reviewer_id
-    ),
-    ADD CONSTRAINT fk_information_review_decisions_assignment
-        FOREIGN KEY (information_review_step_reviewer_id)
-        REFERENCES information_review_step_reviewers (id)
-        ON UPDATE RESTRICT
-        ON DELETE RESTRICT;
 
 -- -----------------------------------------------------------------------------
 -- 3. External transmittal recipients use the issuing tenant's private Party record.
