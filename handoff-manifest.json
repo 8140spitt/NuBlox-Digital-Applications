@@ -18,7 +18,8 @@
     "session_resolution": "app/src/lib/server/auth/session.ts",
     "auth_domain_link": "auth_user_links",
     "tenant_authority": "NuBlox users + organisation_members",
-    "permission_authority": "NuBlox roles, overrides, project scope and domain policy"
+    "permission_authority": "NuBlox roles, overrides, project scope and domain policy",
+    "signup_policy": "fail-closed; exactly one validated invitation or self-service organisation-bootstrap intent is required"
   },
   "account_provisioning": {
     "migration": "database/migrations/20260815151500_account_provisioning.sql",
@@ -31,6 +32,24 @@
     "email_delivery_policy": "provider-neutral; console local/integration only; production provider pending",
     "token_policy": "random 256-bit invitation token; only SHA-256 hash persisted",
     "activation_policy": "new membership activates only after persisted Better Auth email verification"
+  },
+  "organisation_bootstrap": {
+    "start_route": "app/src/routes/(auth)/start/+page.svelte",
+    "start_server": "app/src/routes/(auth)/start/+page.server.ts",
+    "intent_endpoint": "app/src/routes/api/organisations/bootstrap-intents/+server.ts",
+    "bootstrap_cookie": "app/src/lib/server/auth/bootstrap-cookie.ts",
+    "service": "app/src/lib/server/organisations/bootstrap-service.ts",
+    "token_policy": "short-lived HMAC-SHA256 signed HttpOnly bootstrap token derived from BETTER_AUTH_SECRET; no bootstrap-intent persistence table",
+    "new_user_pending_state": "pending users + pending organisation + invited owner membership until verified email",
+    "activation_policy": "verified email transactionally activates domain user, verified user email, organisation and owner membership",
+    "existing_user_policy": "active NuBlox user can create an additional organisation without duplicating auth/domain identity",
+    "standard_roles": ["Owner", "Administrator", "Manager", "Finance/Commercial", "Member/Professional", "Field Worker", "Read Only"],
+    "initial_role": "Owner only",
+    "initial_admin_grants": {
+      "Owner": ["organisation.manage", "member.invite", "member.manage"],
+      "Administrator": ["organisation.manage", "member.invite", "member.manage"],
+      "Manager": ["member.invite", "member.manage"]
+    }
   },
   "organisation_administration": {
     "permission_seed_migration": "database/migrations/20260815161900_organisation_administration_permissions.sql",
@@ -91,7 +110,7 @@
     "migration_ci": ".github/workflows/database-migration-validation.yml"
   },
   "application_implementation": {
-    "phase": "organisation-administration-membership-management",
+    "phase": "organisation-bootstrap-onboarding",
     "status": "implemented-and-integration-tested",
     "tenant_actor_context": "app/src/lib/server/auth/tenant-actor-context.ts",
     "auth_server": "app/src/lib/server/auth/better-auth.ts",
@@ -104,6 +123,11 @@
     "organisation_repository": "app/src/lib/server/organisations/organisation-repository.ts",
     "membership_repository": "app/src/lib/server/organisations/membership-repository.ts",
     "organisation_service": "app/src/lib/server/organisations/organisation-service.ts",
+    "organisation_bootstrap_service": "app/src/lib/server/organisations/bootstrap-service.ts",
+    "organisation_bootstrap_cookie": "app/src/lib/server/auth/bootstrap-cookie.ts",
+    "organisation_bootstrap_intent_api": "app/src/routes/api/organisations/bootstrap-intents/+server.ts",
+    "organisation_bootstrap_route": "app/src/routes/(auth)/start/+page.server.ts",
+    "organisation_bootstrap_ui": "app/src/routes/(auth)/start/+page.svelte",
     "role_repository": "app/src/lib/server/organisations/role-repository.ts",
     "role_delegation_policy": "app/src/lib/server/organisations/role-delegation-policy.ts",
     "organisation_admin_repository": "app/src/lib/server/organisations/organisation-admin-repository.ts",
@@ -129,8 +153,9 @@
     "provisioning_integration_tests": "app/src/lib/server/organisations/account-provisioning.integration.test.ts",
     "organisation_administration_integration_tests": "app/src/lib/server/organisations/organisation-administration.integration.test.ts",
     "role_delegation_integration_tests": "app/src/lib/server/organisations/role-delegation.integration.test.ts",
+    "organisation_bootstrap_integration_tests": "app/src/lib/server/organisations/organisation-bootstrap.integration.test.ts",
     "integration_test_config": "app/vitest.integration.config.ts",
-    "integration_ci_status": "5 integration files / 20 real-MySQL tests passed; Kysely drift clean; Svelte check 0 errors / 0 warnings before documentation close-out",
+    "integration_ci_status": "6 integration files / 24 real-MySQL tests passed; 344/749/429 structure unchanged; Kysely drift clean; Svelte check 0 errors / 0 warnings before documentation close-out",
     "validated_behaviours": [
       "organisation-user-member active tenant tuple verification",
       "non-participant project invisibility",
@@ -146,13 +171,22 @@
       "invitation tokens are stored only as SHA-256 hashes",
       "re-inviting an organisation/email revokes the earlier pending invitation",
       "active organisation-member email cannot be re-invited",
-      "Better Auth email sign-up fails closed without a matching invitation",
+      "Better Auth email sign-up fails closed without one validated provisioning intent",
+      "invitation and organisation-bootstrap signup intents are mutually exclusive",
       "invitation email mismatch is rejected before auth identity creation",
       "invited auth identity is bound to the NuBlox invitation",
-      "persisted email verification is required before new domain membership activation",
-      "verified auth identity creates or links one NuBlox user",
+      "persisted email verification is required before invited membership activation",
+      "self-service bootstrap token is HMAC-signed, time-limited and tamper-detecting",
+      "bootstrap email mismatch is rejected before authorised sign-up",
+      "bootstrap intent creates no parallel persistence table",
+      "bootstrap sign-up provisions pending NuBlox user, unverified email, pending organisation and invited owner membership",
+      "pending bootstrap user cannot resolve to a trusted NuBlox session actor",
+      "verified bootstrap activation makes user, email, organisation and owner membership active transactionally",
+      "new organisation bootstrap creates seven standard role templates",
+      "founding member receives Owner only with organisation management authority",
+      "existing active NuBlox user can create an additional organisation without identity duplication",
       "invitation acceptance creates or activates tenant membership and intended organisation roles",
-      "invitation creation and acceptance append audit evidence",
+      "provisioning and bootstrap lifecycle changes append audit evidence",
       "protected application routes require authentication and trusted tenant context",
       "organisation administration reads remain tenant-scoped",
       "member lifecycle changes reject invalid transitions and self-demotion",

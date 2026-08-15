@@ -64,7 +64,10 @@
 			</button>
 		</form>
 
-		<p class="support-copy">Accounts are created through a NuBlox organisation invitation.</p>
+		<p class="support-copy">
+			New to NuBlox? <a href="/start">Create your account and organisation</a>. Invited users can
+			also create an account from their organisation invitation.
+		</p>
 	</section>
 </main>
 
@@ -110,4 +113,5 @@
 	.error { color: #9b1c1c; margin: 0; }
 	.notice { padding: 0.8rem; border-radius: 0.55rem; }
 	.notice.success { background: #e8f6eb; }
+	a { color: inherit; font-weight: 700; }
 </style>

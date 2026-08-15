@@ -1,0 +1,1 @@
+export const ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE = 'nublox_organisation_bootstrap_signup';

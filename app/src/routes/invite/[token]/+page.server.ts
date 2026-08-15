@@ -2,6 +2,7 @@ import { dev } from '$app/environment';
 import { error, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
+import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
 import { getDatabase } from '$lib/server/db/database';
 import {
@@ -21,6 +22,7 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 		60,
 		Math.floor((invitation.expiresAt.getTime() - Date.now()) / 1000)
 	);
+	cookies.delete(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE, { path: '/' });
 	cookies.set(INVITATION_SIGNUP_COOKIE, params.token, {
 		httpOnly: true,
 		secure: !dev,
@@ -67,6 +69,7 @@ export const actions: Actions = {
 				maxAge: 60 * 60 * 24 * 30
 			});
 			cookies.delete(INVITATION_SIGNUP_COOKIE, { path: '/' });
+			cookies.delete(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE, { path: '/' });
 		} catch (cause) {
 			if (cause instanceof InvitationAccessError) throw error(403, cause.message);
 			throw cause;
