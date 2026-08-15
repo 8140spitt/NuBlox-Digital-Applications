@@ -1,8 +1,12 @@
 import { randomUUID } from 'node:crypto';
 import type { RequestEvent } from '@sveltejs/kit';
+
+import { getDatabase } from '$lib/server/db/database';
+import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import type { TenantContext } from '$lib/types/request-context';
 
 const CORRELATION_HEADER = 'x-correlation-id';
+const ORGANISATION_COOKIE = 'nublox_organisation';
 
 export function resolveCorrelationId(event: RequestEvent): string {
 	const inbound = event.request.headers.get(CORRELATION_HEADER);
@@ -10,20 +14,37 @@ export function resolveCorrelationId(event: RequestEvent): string {
 }
 
 export async function resolveTenantContext(event: RequestEvent): Promise<TenantContext> {
-	const requestedOrganisation = event.request.headers.get('x-organisation-id');
+	const actor = event.locals.actor;
+	const requestedOrganisation = event.cookies.get(ORGANISATION_COOKIE)?.trim();
 
-	// Never trust browser-supplied organisation identifiers for write access.
-	if (requestedOrganisation) {
+	if (!actor || !requestedOrganisation) {
 		return {
 			organisationId: null,
+			organisationPublicId: null,
+			memberId: null,
+			membershipVerified: false
+		};
+	}
+
+	const membership = await new OrganisationMembershipRepository(
+		getDatabase()
+	).findActiveMembershipByOrganisationPublicId(actor.userId, requestedOrganisation);
+
+	if (!membership?.organisationPublicId) {
+		return {
+			organisationId: null,
+			organisationPublicId: null,
+			memberId: null,
 			membershipVerified: false
 		};
 	}
 
 	return {
-		organisationId: null,
-		membershipVerified: false
+		organisationId: membership.organisationId,
+		organisationPublicId: membership.organisationPublicId,
+		memberId: membership.id,
+		membershipVerified: true
 	};
 }
 
-export { CORRELATION_HEADER };
+export { CORRELATION_HEADER, ORGANISATION_COOKIE };

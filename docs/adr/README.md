@@ -5,6 +5,7 @@ Architecture Decision Records (ADRs) capture technical decisions that materially
 | ADR | Decision | Status |
 |---|---|---|
 | [ADR-0001](0001-database-query-and-migration-tooling.md) | Database query and migration tooling | Accepted |
+| [ADR-0002](0002-authentication-session-boundary.md) | Authentication and session boundary | Accepted |
 
 ## Rules
 

@@ -6,103 +6,108 @@ This app is structured as a modular monolith following `docs/05-system-architect
 
 - Single deployable SvelteKit app with explicit domain boundaries.
 - Business rules belong in server-side domain/application modules, not in Svelte components.
-- Route handlers act as request boundaries: auth, tenant context, validation, policy checks, service orchestration.
+- Route handlers act as request boundaries: authentication, tenant context, validation, policy checks and service orchestration.
 - Correlation IDs are attached to every request for observability.
 - SQL belongs behind domain repositories; routes/components do not query the database directly.
 - MySQL SQL migrations are the schema source of truth; generated Kysely types are derivative.
-- Tenant-owned records are queried with explicit tenant context rather than by surrogate ID alone.
+- Tenant-owned records are queried with explicit verified tenant context rather than by surrogate ID alone.
+- Authentication identity does not imply organisation or project access.
 
-## Persistence stack
+## Persistence and authentication stack
 
 - **MySQL 8.4 / InnoDB**
 - **Kysely** typed SQL query builder
 - **mysql2** pooled Node driver
 - **Dbmate** plain-SQL production migrations
 - **kysely-codegen** database-derived TypeScript interfaces
+- **Better Auth 1.6.25** authentication/session boundary
 
-The decision rationale is recorded in `docs/adr/0001-database-query-and-migration-tooling.md`.
+Architecture decisions are recorded in:
 
-The server database boundary is documented in `src/lib/server/db/README.md`.
+- `docs/adr/0001-database-query-and-migration-tooling.md`
+- `docs/adr/0002-authentication-session-boundary.md`
 
-## Layout
+## Request trust flow
+
+`src/hooks.server.ts` resolves requests in this order:
 
 ```text
-src/
-├── lib/
-│   ├── components/
-│   │   ├── ui/
-│   │   ├── data/
-│   │   ├── forms/
-│   │   └── domain/
-│   ├── server/
-│   │   ├── auth/
-│   │   ├── db/
-│   │   ├── audit/
-│   │   ├── kernel/
-│   │   ├── jobs/
-│   │   ├── organisations/
-│   │   ├── capabilities/
-│   │   ├── crm/
-│   │   ├── sales/
-│   │   ├── contracts/
-│   │   ├── finance/
-│   │   ├── procurement/
-│   │   ├── people/
-│   │   ├── projects/
-│   │   ├── documents/
-│   │   ├── commercial/
-│   │   ├── site/
-│   │   ├── safety/
-│   │   ├── quality/
-│   │   ├── assets/
-│   │   ├── maintenance/
-│   │   ├── reporting/
-│   │   └── integrations/
-│   └── types/
-└── routes/
-    ├── (auth)/
-    ├── (app)/
-    ├── portal/
-    └── api/
+request
+  ↓
+correlation ID
+  ↓
+Better Auth session
+  ↓
+auth_user_links → active NuBlox users row
+  ↓
+selected organisation cookie (hint only)
+  ↓
+active organisation + active organisation_members proof
+  ↓
+trusted request locals
 ```
 
-## Implemented request flow baseline
+`locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` is populated only when the selected organisation has been revalidated against that user’s active membership.
 
-`src/hooks.server.ts` currently initializes:
+Browser-controlled organisation values never become trusted tenant context merely because they were supplied by the client.
 
-- `locals.correlationId`
-- `locals.actor`
-- `locals.tenant`
+## Tenant selection
 
-And returns the correlation ID in `x-correlation-id` response headers.
+`POST /api/tenant/select` accepts an organisation public ID and sets the `nublox_organisation` HttpOnly preference cookie only after active membership is proven. `DELETE /api/tenant/select` clears that selection.
 
-Authentication/session and trusted tenant-selection resolution remain a separate implementation step; browser-supplied organisation IDs are not trusted for write access.
+The cookie is a preference/selection hint, not an authorisation token. Membership is checked again when tenant context is resolved.
+
+## Permission resolution
+
+`src/lib/server/capabilities/permission-service.ts` implements organisation permission precedence:
+
+```text
+explicit member deny
+    > explicit member allow
+    > active organisation-role grant
+    > default deny
+```
+
+When a project ID is supplied, an allowed organisation permission is additionally intersected with active project participation and active project membership. Record-state/business-policy checks remain the responsibility of the relevant domain service.
 
 ## Implemented Platform Kernel foundation
 
-The first database-backed application slice now exists under `src/lib/server`:
+The database-backed kernel currently includes:
 
-- `organisations/organisation-repository.ts` — active organisation reads;
-- `organisations/membership-repository.ts` — active organisation/user/member tuple verification;
-- `organisations/organisation-service.ts` — tenant-gated current organisation access;
-- `projects/project-repository.ts` — owner- and participant-scoped project persistence;
-- `projects/project-service.ts` — transactional project creation and lifecycle transitions;
-- `audit/audit-repository.ts` — append-only material action evidence;
-- `kernel/errors.ts` — explicit tenant/lifecycle/concurrency domain errors.
+- active organisation/user/member tuple verification;
+- active organisation access;
+- participant-scoped project reads;
+- transactional project creation with owner participation and creator membership;
+- owning-organisation project lifecycle mutation;
+- server-side state-machine validation;
+- optimistic current-status guards;
+- append-only project audit evidence.
 
-Project creation atomically creates the owning organisation participation and creator project membership. Project lifecycle changes follow the baseline state machine, use an optimistic current-status predicate, and append audit evidence.
+## Authentication boundary
+
+Better Auth owns authentication/session mechanics in the `auth_*` tables. NuBlox retains the authoritative domain records for `users`, organisation membership, roles, permissions and project scope.
+
+The explicit `auth_user_links` relation connects those two identities. Public self-sign-up is currently disabled; production invitation/provisioning, email delivery/recovery, MFA and enterprise SSO are subsequent increments rather than hidden assumptions in the request boundary.
 
 ## Run
 
 ```sh
 pnpm install
 cp .env.example .env
+pnpm db:migrate
 pnpm dev
 ```
 
-## Database commands
+Required server environment includes:
 
-With `DATABASE_URL` configured:
+```text
+DATABASE_URL
+DB_POOL_MAX
+BETTER_AUTH_URL
+BETTER_AUTH_SECRET
+```
+
+## Database commands
 
 ```sh
 pnpm db:migrate
@@ -114,13 +119,7 @@ pnpm db:types
 
 ```sh
 pnpm check
-pnpm test
-```
-
-Database-backed kernel integration tests require a migrated MySQL database:
-
-```sh
 pnpm test:integration
 ```
 
-CI runs these integration tests against MySQL 8.4 after applying the production Dbmate migration stream. The tests cover tenant tuple isolation, project participant visibility, composite-FK tenant protection, atomic project creation/audit evidence, lifecycle transitions, and cross-tenant mutation rejection.
+CI applies the production migration stream to MySQL 8.4, verifies the migrated structural counts, regenerates Kysely types with zero drift, runs the authentication/tenant/permission and Platform Kernel integration tests, and finally runs the SvelteKit type-check.

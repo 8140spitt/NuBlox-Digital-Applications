@@ -6,25 +6,18 @@
 |---|---|
 | Frontend | Svelte 5 |
 | Framework | SvelteKit |
-| Primary relational persistence | MySQL / InnoDB |
+| Primary relational persistence | MySQL 8.4 / InnoDB |
 | Initial architecture | Modular monolith |
 | Product model | Business OS + Built Environment OS + capability packs |
 | Career baseline | 84 National Careers Service construction/built-environment profiles |
 | Tenancy | Multi-tenant |
 | Market starting point | UK-first |
 | Accessibility target | WCAG 2.2 AA |
+| Database query layer | Kysely + mysql2 — ADR-0001 |
+| Production migrations | Dbmate plain SQL — ADR-0001 |
+| Authentication/session boundary | Better Auth; NuBlox remains tenancy/permission authority — ADR-0002 |
 
-## Blockers to resolve during discovery
-
-### Authentication
-
-Choose:
-
-- first-party credential/session implementation;
-- managed identity provider;
-- hybrid/enterprise SSO roadmap.
-
-Decision must cover MFA, recovery, session management, SSO path and operational security.
+## Blockers to resolve during discovery / implementation planning
 
 ### Hosting
 
@@ -37,17 +30,6 @@ Define:
 - object storage;
 - backup/DR;
 - observability.
-
-### MySQL access layer
-
-Select and document:
-
-- ORM/query builder or typed SQL strategy;
-- migration tool;
-- transaction conventions;
-- test DB approach.
-
-Do not select solely on popularity; validate SvelteKit/server compatibility, migration quality, type safety and operational behaviour.
 
 ### File/object storage
 
@@ -88,6 +70,20 @@ Decide whether NuBlox will specifically market support for:
 - other professional regulated forms.
 
 Claims require dedicated legal/domain validation.
+
+## Authentication follow-on decisions
+
+The authentication provider/session boundary itself is fixed by ADR-0002. The remaining security/product increments are narrower decisions rather than a reopened provider choice:
+
+- transactional email provider and verified-email delivery;
+- invitation/provisioning and recovery UX;
+- MFA/step-up policy for high-risk operations;
+- enterprise SSO/SAML/OIDC roadmap;
+- support/admin account-recovery workflow;
+- session lifetime tuning based on operational risk;
+- production trusted-origin/deployment configuration.
+
+These must extend the current boundary without moving organisation membership or NuBlox permissions into the authentication provider.
 
 ## Important non-blocking decisions
 
