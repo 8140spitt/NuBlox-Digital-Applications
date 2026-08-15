@@ -277,23 +277,39 @@ describe('organisation bootstrap and onboarding', () => {
 			'Administrator:member.invite',
 			'Administrator:member.manage',
 			'Administrator:organisation.manage',
+			'Administrator:project.create',
+			'Administrator:project.manage',
+			'Administrator:project.view',
+			'Field Worker:project.view',
+			'Finance/Commercial:project.view',
 			'Manager:member.invite',
 			'Manager:member.manage',
+			'Manager:project.create',
+			'Manager:project.manage',
+			'Manager:project.view',
+			'Member/Professional:project.view',
 			'Owner:member.invite',
 			'Owner:member.manage',
-			'Owner:organisation.manage'
+			'Owner:organisation.manage',
+			'Owner:project.create',
+			'Owner:project.manage',
+			'Owner:project.view',
+			'Read Only:project.view'
 		]);
 
-		const ownerDecision = await new PermissionService(db).decide(
-			{
-				organisationId,
-				userId: platformUserId,
-				memberId,
-				correlationId: `bootstrap-it-${randomUUID()}`
-			},
-			'organisation.manage'
-		);
+		const permissionService = new PermissionService(db);
+		const ownerActor = {
+			organisationId,
+			userId: platformUserId,
+			memberId,
+			correlationId: `bootstrap-it-${randomUUID()}`
+		};
+		const ownerDecision = await permissionService.decide(ownerActor, 'organisation.manage');
 		expect(ownerDecision).toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decide(ownerActor, 'project.create')).resolves.toEqual({
+			allowed: true,
+			reason: 'role-grant'
+		});
 
 		const auditActions = await db
 			.selectFrom('audit_events')
