@@ -10,6 +10,7 @@ import {
 	OrganisationInvitationRepository,
 	type PendingOrganisationInvitation
 } from './invitation-repository';
+import { decideOrganisationRoleDelegation } from './role-delegation-policy';
 
 const INVITATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 
@@ -23,8 +24,8 @@ export class InvitationAccessError extends Error {
 
 export class InvitationRoleError extends Error {
 	readonly code = 'INVITATION_ROLE_INVALID';
-	constructor() {
-		super('One or more selected roles are not active roles in this organisation.');
+	constructor(message = 'One or more selected roles are not active roles in this organisation.') {
+		super(message);
 		this.name = 'InvitationRoleError';
 	}
 }
@@ -81,7 +82,7 @@ export class OrganisationInvitationService {
 			throw new InvitationAccessError('A valid email address is required.');
 		}
 
-		const rolePublicIds = [...new Set(input.rolePublicIds.filter(Boolean))];
+		const rolePublicIds = [...new Set(input.rolePublicIds.map((role) => role.trim()).filter(Boolean))];
 		const token = randomBytes(32).toString('base64url');
 		const tokenHash = hashInvitationToken(token);
 		const publicId = randomUUID();
@@ -94,6 +95,16 @@ export class OrganisationInvitationService {
 				rolePublicIds
 			);
 			if (roleIds.length !== rolePublicIds.length) throw new InvitationRoleError();
+
+			const delegation = await decideOrganisationRoleDelegation(trx, input.actor, rolePublicIds);
+			if (!delegation.allowed) {
+				throw new InvitationRoleError(
+					`You cannot delegate role permissions you do not hold: ${delegation.deniedPermissionKeys.join(', ')}.`
+				);
+			}
+			if (await invitations.hasActiveMemberByEmail(input.actor.organisationId, email)) {
+				throw new InvitationAccessError('This email already belongs to an active member of the organisation.');
+			}
 
 			await invitations.revokePendingForEmail(input.actor.organisationId, email);
 			const invitationId = await invitations.insertInvitation({

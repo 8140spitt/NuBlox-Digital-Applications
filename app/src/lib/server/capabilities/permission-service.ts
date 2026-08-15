@@ -14,24 +14,26 @@ export type PermissionDecision = {
 export class PermissionService {
 	constructor(private readonly db: DatabaseExecutor) {}
 
-	private async resolveOrganisationPermission(
+	async decideMany(
 		actor: TenantActorContext,
-		permissionKey: string
-	): Promise<PermissionDecision> {
-		const override = await this.db
+		permissionKeysInput: readonly string[]
+	): Promise<Map<string, PermissionDecision>> {
+		const permissionKeys = [...new Set(permissionKeysInput.map((key) => key.trim()).filter(Boolean))];
+		const decisions = new Map<string, PermissionDecision>();
+		if (permissionKeys.length === 0) return decisions;
+
+		const overrides = await this.db
 			.selectFrom('member_permission_overrides as mpo')
 			.innerJoin('permissions as p', 'p.id', 'mpo.permission_id')
-			.select('mpo.effect')
+			.select(['p.permission_key as permissionKey', 'mpo.effect as effect'])
 			.where('mpo.organisation_id', '=', actor.organisationId)
 			.where('mpo.organisation_member_id', '=', actor.memberId)
-			.where('p.permission_key', '=', permissionKey)
+			.where('p.permission_key', 'in', permissionKeys)
 			.where('p.is_active', '=', 1)
-			.executeTakeFirst();
+			.execute();
+		const overrideByKey = new Map(overrides.map((row) => [row.permissionKey, row.effect]));
 
-		if (override?.effect === 'deny') return { allowed: false, reason: 'member-deny' };
-		if (override?.effect === 'allow') return { allowed: true, reason: 'member-allow' };
-
-		const roleGrant = await this.db
+		const roleGrants = await this.db
 			.selectFrom('member_roles as mr')
 			.innerJoin('organisation_roles as role', (join) =>
 				join
@@ -44,16 +46,41 @@ export class PermissionService {
 					.onRef('rp.organisation_id', '=', 'mr.organisation_id')
 			)
 			.innerJoin('permissions as p', 'p.id', 'rp.permission_id')
-			.select('p.id')
+			.select('p.permission_key as permissionKey')
 			.where('mr.organisation_id', '=', actor.organisationId)
 			.where('mr.organisation_member_id', '=', actor.memberId)
 			.where('role.is_active', '=', 1)
 			.where('p.is_active', '=', 1)
-			.where('p.permission_key', '=', permissionKey)
-			.executeTakeFirst();
+			.where('p.permission_key', 'in', permissionKeys)
+			.execute();
+		const roleGrantKeys = new Set(roleGrants.map((row) => row.permissionKey));
 
-		if (roleGrant) return { allowed: true, reason: 'role-grant' };
-		return { allowed: false, reason: 'default-deny' };
+		for (const permissionKey of permissionKeys) {
+			const override = overrideByKey.get(permissionKey);
+			if (override === 'deny') {
+				decisions.set(permissionKey, { allowed: false, reason: 'member-deny' });
+			} else if (override === 'allow') {
+				decisions.set(permissionKey, { allowed: true, reason: 'member-allow' });
+			} else if (roleGrantKeys.has(permissionKey)) {
+				decisions.set(permissionKey, { allowed: true, reason: 'role-grant' });
+			} else {
+				decisions.set(permissionKey, { allowed: false, reason: 'default-deny' });
+			}
+		}
+
+		return decisions;
+	}
+
+	private async resolveOrganisationPermission(
+		actor: TenantActorContext,
+		permissionKey: string
+	): Promise<PermissionDecision> {
+		return (
+			(await this.decideMany(actor, [permissionKey])).get(permissionKey) ?? {
+				allowed: false,
+				reason: 'default-deny'
+			}
+		);
 	}
 
 	private async hasActiveProjectScope(actor: TenantActorContext, projectId: string): Promise<boolean> {

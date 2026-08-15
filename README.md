@@ -38,9 +38,10 @@ The planned **001–010 relational domain baseline is complete and has passed re
 The production migration stream then adds:
 
 - `20260815145430_authentication_boundary.sql` — Better Auth infrastructure and explicit auth-to-domain user linking;
-- `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments.
+- `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments;
+- `20260815161900_organisation_administration_permissions.sql` — stable organisation-administration permission catalogue entries.
 
-The current migrated application schema is **344 tables, 749 foreign keys and 429 `CHECK` constraints**.
+The administration-permission migration is data-only, so the current migrated application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -100,7 +101,7 @@ Project-scoped operations additionally require active project membership/partici
 
 ## Implemented account provisioning and application access
 
-NuBlox now has its first usable end-to-end account path:
+NuBlox has an end-to-end account path:
 
 ```text
 Authorised member invitation
@@ -122,11 +123,43 @@ Organisation selection
 Protected application shell
 ```
 
-Controls include hashed invitation tokens, seven-day invitation expiry, re-invite revocation, fail-closed Better Auth sign-up gating, verified-email activation, existing-user invite acceptance, role assignment and audit evidence. The dashboard exposes member invitations only when the current actor has `member.invite`.
+Controls include hashed invitation tokens, seven-day invitation expiry, re-invite revocation, fail-closed Better Auth sign-up gating, verified-email activation, existing-user invite acceptance, role assignment and audit evidence. Invitation lifecycle requires `member.invite` or `organisation.manage`; attaching organisation roles additionally requires member-management authority and is subject to the role-delegation ceiling described below.
 
 Transactional email is behind a provider-neutral application interface. `EMAIL_DELIVERY_MODE=console` is for development/integration testing only; production email-provider selection remains an explicit integration decision.
 
-The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, account provisioning, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
+## Implemented organisation administration and membership management
+
+The protected `/organisation` workspace now provides tenant-scoped administration for:
+
+- organisation members and membership status;
+- member-to-role assignments;
+- invitation history, resend and revoke;
+- organisation-role creation, editing and activation;
+- role-to-permission grants.
+
+Administrative authority is intentionally split:
+
+```text
+member.invite
+    → create / resend / revoke invitations
+
+member.manage
+    → member status and member role assignment
+
+organisation.manage
+    → role definitions and permission grants
+    → full organisation-administration authority
+```
+
+`organisation.manage` is the explicit higher administrative authority. A normal member administrator may delegate only role permissions they effectively hold themselves. Lower-level administrators cannot suspend or rewrite the roles of an organisation manager, users cannot demote or rewrite their own organisation membership from this workspace, cross-tenant roles are rejected, and mutations cannot leave the organisation without an active organisation manager.
+
+Administration mutations use public IDs at the request boundary and append audit evidence server-side.
+
+## Validation gate
+
+The permanent MySQL CI gate verifies the **344 / 749 / 429** application structure, Kysely type drift, account provisioning, organisation administration, authentication/tenant/permission behaviour, Platform Kernel invariants and the SvelteKit type-check together.
+
+The organisation-administration branch close-out passed **5 integration files / 20 real-MySQL tests** plus `svelte-check` with zero errors and zero warnings.
 
 ## Governing product rule
 
@@ -136,4 +169,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Early usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, tenant-isolated Platform Kernel services implemented, authentication/trusted-tenant/effective-permission resolution integration-tested, and controlled account provisioning plus a protected organisation-scoped SvelteKit application shell implemented and integration-tested against MySQL 8.4.**
+**Early usable application foundation with the relational baseline validated, SQL-first production migrations and typed persistence established, tenant-isolated Platform Kernel services implemented, authentication/trusted-tenant/effective-permission resolution integration-tested, controlled account provisioning implemented, and a permission-aware organisation administration workspace for membership, invitations, roles and permission grants validated against MySQL 8.4.**

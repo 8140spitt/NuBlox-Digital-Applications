@@ -6,7 +6,7 @@ import { OrganisationRoleRepository } from '$lib/server/organisations/role-repos
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) {
-		return { canInviteMembers: false, roles: [] };
+		return { canInviteMembers: false, canAssignRoles: false, roles: [] };
 	}
 
 	const actor = {
@@ -15,15 +15,23 @@ export const load: PageServerLoad = async ({ locals }) => {
 		memberId: locals.tenant.memberId,
 		correlationId: locals.correlationId
 	};
-	const invitationPermission = await new PermissionService(getDatabase()).decide(actor, 'member.invite');
-	const roles = invitationPermission.allowed
+	const decisions = await new PermissionService(getDatabase()).decideMany(actor, [
+		'organisation.manage',
+		'member.invite',
+		'member.manage'
+	]);
+	const canManageOrganisation = decisions.get('organisation.manage')?.allowed ?? false;
+	const canInviteMembers = canManageOrganisation || (decisions.get('member.invite')?.allowed ?? false);
+	const canAssignRoles = canManageOrganisation || (decisions.get('member.manage')?.allowed ?? false);
+	const roles = canInviteMembers && canAssignRoles
 		? await new OrganisationRoleRepository(getDatabase()).listActiveForOrganisation(
 				locals.tenant.organisationId
 			)
 		: [];
 
 	return {
-		canInviteMembers: invitationPermission.allowed,
+		canInviteMembers,
+		canAssignRoles,
 		roles
 	};
 };
