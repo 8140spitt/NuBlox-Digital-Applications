@@ -21,7 +21,7 @@ The original product and delivery handoff remains under `/docs`:
 - `docs/career-taxonomy-seed.csv`
 - `docs/career-taxonomy-seed.json`
 
-The historical `docs/21` through `docs/28` paths are retained as compatibility pointers.
+The historical `docs/21` through `docs/29` paths are retained as compatibility pointers.
 
 ## Database implementation packages
 
@@ -43,12 +43,13 @@ Implementation-level schema work is grouped under `/database`:
 | 006 | Workforce, Time & Scheduling | `database/docs/006-workforce-time-scheduling.md` | `database/schema/006-workforce-time-scheduling.sql` |
 | 007 | Project Information & Documents | `database/docs/007-project-information-documents.md` | `database/schema/007-project-information-documents.sql` + integrity stage |
 | 008 | Site Operations, Quality & Safety | `database/docs/008-site-quality-safety.md` | `database/schema/008-site-quality-safety.sql` + integrity stage |
+| 009 | Commercial Cost Control | `database/docs/009-commercial-cost-control.md` | `database/schema/009-commercial-cost-control.sql` |
 
 Package 007's integrity stage is `database/schema/007-project-information-integrity.sql`; it is part of Package 007, not Package 007a.
 
 Package 008's integrity stage is `database/schema/008-site-quality-safety-integrity.sql`; it is part of Package 008 and hardens attendance/inspection/RAMS/action integrity found during validation.
 
-Planned next: **009 Commercial Cost Control → 010 Assets & Maintenance**.
+Planned next: **010 Assets & Maintenance**.
 
 ## Governing product rule
 
