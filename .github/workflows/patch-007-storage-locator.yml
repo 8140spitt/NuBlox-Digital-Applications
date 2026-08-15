@@ -1,0 +1,52 @@
+name: Patch Package 007 Storage Locator
+
+on:
+  push:
+    branches:
+      - validation/database-baseline-v1
+    paths:
+      - '.github/workflows/patch-007-storage-locator.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: validation/database-baseline-v1
+          fetch-depth: 0
+
+      - name: Patch object-storage locator character sets
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('database/schema/007-project-information-documents.sql')
+          text = path.read_text()
+          replacements = {
+              '    storage_bucket VARCHAR(255) NOT NULL,':
+                  '    storage_bucket VARCHAR(255) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,',
+              '    storage_key VARCHAR(1000) NOT NULL,':
+                  '    storage_key VARCHAR(1000) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,',
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one occurrence of {old!r}; found {count}')
+              text = text.replace(old, new)
+          path.write_text(text)
+          PY
+
+      - name: Commit patch
+        run: |
+          if git diff --quiet; then
+            echo 'No patch required.'
+            exit 0
+          fi
+          git config user.name 'NuBlox Schema Validation'
+          git config user.email 'actions@users.noreply.github.com'
+          git add database/schema/007-project-information-documents.sql
+          git commit -m 'Fix Package 007 object storage locator index width'
+          git push origin HEAD:validation/database-baseline-v1
