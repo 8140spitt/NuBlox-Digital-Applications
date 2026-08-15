@@ -1,14 +1,20 @@
 # NuBlox Database
 
-This directory contains the implementation-level MySQL schema baseline for NuBlox.
+This directory contains the implementation-level MySQL schema baseline and production SQL migration stream for NuBlox.
 
-## Target
+## Target and tooling
 
 - MySQL 8.4
 - InnoDB
-- `utf8mb4`
+- `utf8mb4_0900_ai_ci`
 - UTC event timestamps
 - 3NF by default
+- **Query builder:** Kysely
+- **Node driver:** mysql2
+- **Production migrations:** Dbmate plain SQL
+- **Database-derived TypeScript types:** kysely-codegen
+
+The accepted tooling decision is recorded in `docs/adr/0001-database-query-and-migration-tooling.md`.
 
 ## Layout
 
@@ -41,6 +47,9 @@ database/
 │   ├── 008-site-quality-safety-integrity.sql
 │   ├── 009-commercial-cost-control.sql
 │   └── 010-assets-maintenance.sql
+├── migrations/
+│   ├── README.md
+│   └── 20260815140337_baseline_v1.sql
 └── validation/
     ├── README.md
     └── validate-baseline.sh
@@ -59,17 +68,15 @@ database/
 9. 009 — cost codes, budgets, source-cost/value allocations, direct costs, variations, valuations and commercial forecasts
 10. 010 — facilities, buildings, spaces, systems, assets, handover, maintenance, service history and operational compliance
 
-Package 007 is applied as two ordered SQL stages: `007-project-information-documents.sql` followed by `007-project-information-integrity.sql`. They are one logical package. The second stage captures integrity hardening found during validation and is no longer labelled as a separate `007a` package.
+Package 007 is applied as two ordered SQL stages: `007-project-information-documents.sql` followed by `007-project-information-integrity.sql`. They are one logical package.
 
-Package 008 is applied as two ordered SQL stages: `008-site-quality-safety.sql` followed by `008-site-quality-safety-integrity.sql`. They are one logical package. The integrity stage strengthens cross-domain candidate keys and removes avoidable transitive duplication identified during validation.
+Package 008 is applied as two ordered SQL stages: `008-site-quality-safety.sql` followed by `008-site-quality-safety-integrity.sql`. They are one logical package.
 
-Package 009 is one SQL stage: `009-commercial-cost-control.sql`. It adds two prerequisite tenant-safe candidate keys to earlier estimate/timesheet cost-source tables and then establishes the commercial-control domain.
-
-Package 010 is one SQL stage: `010-assets-maintenance.sql`. Facilities/assets are long-lived tenant operational records; projects contribute through explicit links rather than owning the asset lifecycle.
+Packages 009 and 010 are single SQL stages.
 
 ## Baseline validation status
 
-The planned **001–010 domain baseline is complete and has passed repeatable clean-build validation on MySQL 8.4.11** using `database/validation/validate-baseline.sh` in GitHub Actions.
+The planned **001–010 domain baseline has passed repeatable clean-build validation on MySQL 8.4.11** using `database/validation/validate-baseline.sh` in GitHub Actions.
 
 Each clean build produced:
 
@@ -81,6 +88,28 @@ Each clean build produced:
 - a primary key on every base table
 
 The validator builds the complete chain twice against separate clean databases so package ordering and dependency assumptions are exercised repeatedly.
+
+## Production migration baseline
+
+The validated package chain has been consolidated into:
+
+```text
+database/migrations/20260815140337_baseline_v1.sql
+```
+
+Dbmate has applied this Baseline v1 migration to a clean MySQL 8.4.11 database and reproduced the same **337 / 739 / 427** structural counts. The migration is intentionally irreversible: non-production databases are rebuilt instead of rolling the complete baseline backward.
+
+The numbered files under `database/schema/` remain the detailed design/provenance inputs for Baseline v1. Once Baseline v1 is frozen, `database/migrations/` is the production schema-evolution source of truth.
+
+## Runtime persistence boundary
+
+The SvelteKit runtime database layer lives under `app/src/lib/server/db/` and uses:
+
+```text
+Domain repository → Kysely → mysql2 pool → MySQL 8.4
+```
+
+`kysely-codegen` generates the `DB` interface from an actually migrated MySQL database. Generated files are committed but must not be edited manually. `BIGINT` values are mapped as strings and `DECIMAL` values remain precision-safe strings at the persistence boundary.
 
 ## Normalisation policy
 
@@ -97,7 +126,7 @@ The validator builds the complete chain twice against separate clean databases s
 - Cross-organisation project participation never automatically grants record visibility.
 - Site diary, quality and safety evidence remain separate lifecycle records rather than being collapsed into generic forms.
 - Inspection template identity is separate from immutable/published template versions.
-- Inspection findings, defects and NCRs are separate records; conversion/linkage preserves the source evidence.
+- Inspection findings, defects and NCRs are separate records; conversion/linkage preserves source evidence.
 - RAMS approval and briefings reference exact controlled-information revisions.
 - Safety incident, near-miss and observation facts use a supertype/subtype design to avoid duplicated nullable columns.
 - Cost codes classify commercial facts; they do not store editable budget/commitment/actual balances.
@@ -116,15 +145,17 @@ The validator builds the complete chain twice against separate clean databases s
 - Foreign keys target explicit primary/unique candidate keys.
 - Material denormalisation requires measured evidence and an ADR/rationale.
 
-## Migration rules before production
+## Migration rules
 
-1. Select the MySQL query/ORM/migration tool.
-2. Record the decision in an ADR.
-3. Adopt/consolidate the validated numbered pre-production packages into that migration system without losing constraints.
-4. Keep the complete clean-build MySQL 8.4 validation running in CI.
-5. Add same-tenant, candidate-key and lifecycle integrity tests.
-6. Test upgrades from the prior released schema once release migrations exist.
-7. Once migrations are released, never rewrite them in place; add forward migrations.
+1. SQL migrations under `database/migrations/` are authoritative after Baseline v1 freeze.
+2. Migration filenames use Dbmate timestamp versions.
+3. Released migrations are immutable.
+4. Add forward migrations; never rewrite a released migration in place.
+5. Keep complete MySQL 8.4 migration validation running in CI.
+6. Regenerate and verify database-derived Kysely types after schema changes.
+7. Add same-tenant, candidate-key and lifecycle integration tests.
+8. Test upgrade paths between released migration versions.
+9. Use expand/migrate/contract sequencing for destructive live-data changes where required.
 
 ## Security rule
 
