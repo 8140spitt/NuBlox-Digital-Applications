@@ -103,6 +103,8 @@ explicit deny > explicit allow > active role grant > default deny
 
 Project-scoped operations additionally require active project membership/participation. Better Auth handles authentication/session mechanics only; NuBlox remains authoritative for tenancy and business permissions.
 
+The permanent MySQL CI gate now verifies credential sign-in and session resolution, explicit auth-to-domain identity linking, forged organisation-selection denial, role/override precedence, project scope, the existing Platform Kernel invariants, Kysely type drift and the SvelteKit type-check together.
+
 ## Governing product rule
 
 > **NuBlox models what people and organisations do, not only what their job title is.**
@@ -111,4 +113,4 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Early application implementation with the MySQL schema/migration baseline validated, typed persistence established, Platform Kernel tenant isolation integration-tested, and the authentication/trusted-tenant/effective-permission boundary implemented pending the current CI merge gate.**
+**Early application implementation with the MySQL schema/migration baseline validated, typed persistence established, Platform Kernel tenant isolation integration-tested, and the authentication/trusted-tenant/effective-permission boundary implemented and integration-tested against MySQL 8.4.**
