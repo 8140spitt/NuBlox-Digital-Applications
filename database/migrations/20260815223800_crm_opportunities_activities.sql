@@ -17,24 +17,10 @@ ON DUPLICATE KEY UPDATE
     description = VALUES(description),
     is_active = TRUE;
 
--- Existing standard management roles receive the same granular defaults that
--- OrganisationBootstrapService applies to future organisations. Owner and
--- Administrator also retain crm.manage as the broad umbrella.
-INSERT IGNORE INTO role_permissions (
-    organisation_id,
-    organisation_role_id,
-    permission_id
-)
-SELECT
-    role.organisation_id,
-    role.id,
-    permission.id
-FROM organisation_roles AS role
-INNER JOIN permissions AS permission
-    ON role.name IN ('Owner', 'Administrator', 'Manager')
-   AND permission.permission_key IN ('crm.opportunity.manage', 'crm.activity.manage')
-WHERE role.is_active = TRUE
-  AND permission.is_active = TRUE;
+-- These granular permissions are intentionally not auto-granted to standard
+-- non-administrative roles. Owner and Administrator continue to operate through
+-- the existing crm.manage umbrella; organisations can delegate the new keys to
+-- the exact sales/commercial roles or members that need them.
 
 -- Package 002 already contains tenant-owned pipeline/stage tables. Seed one
 -- usable default only for organisations that have no pipeline configuration at
@@ -95,7 +81,7 @@ WHERE pipeline.name = 'Sales'
   );
 
 -- migrate:down transaction:false
--- Released permission/grant and tenant pipeline configuration is forward-only.
+-- Released permission catalogue and tenant pipeline configuration is forward-only.
 -- Non-production environments are rebuilt instead of attempting destructive
 -- rollback over customer CRM configuration.
 SELECT 1;
