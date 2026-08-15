@@ -8,7 +8,8 @@
   "schema_baseline_status": "001-010 complete; full-chain MySQL validation pending",
   "brand_docs": [
     "docs/branding/00-business-entity.md",
-    "docs/branding/01-brand-strategy.md"
+    "docs/branding/01-brand-strategy.md",
+    "docs/branding/02-brand-architecture-and-naming.md"
   ],
   "database_package_docs": [
     "database/docs/001-platform-kernel.md",
