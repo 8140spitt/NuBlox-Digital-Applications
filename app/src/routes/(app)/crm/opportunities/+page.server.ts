@@ -2,6 +2,7 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { CrmPipelineProvisioningService } from '$lib/server/crm/crm-pipeline-provisioning';
 import {
 	CrmOpportunityService,
 	CrmOpportunityValidationError
@@ -40,10 +41,18 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	const search = (url.searchParams.get('q') ?? '').trim().slice(0, 200);
-	return new CrmOpportunityService(getDatabase()).listWorkspace(actor, {
+	const filters = {
 		search: search || undefined,
 		status: parseStatus(url.searchParams.get('status'))
-	});
+	};
+	const db = getDatabase();
+	const service = new CrmOpportunityService(db);
+	let workspace = await service.listWorkspace(actor, filters);
+	if (workspace.canManageOpportunities && workspace.pipelines.length === 0) {
+		await new CrmPipelineProvisioningService(db).ensureDefaultPipeline(actor);
+		workspace = await service.listWorkspace(actor, filters);
+	}
+	return workspace;
 };
 
 export const actions: Actions = {
