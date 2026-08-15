@@ -47,6 +47,7 @@ The `/docs` directory is the software-development-company handoff pack:
 22. [Normalised Database Schema — Platform Kernel](docs/21-normalised-database-schema.md)
 23. [CRM and Party Domain Model](docs/22-crm-party-model.md)
 24. [Sales, Estimates, Quotations and Proposals](docs/23-sales-estimates-quotations.md)
+25. [Contracts and Finance Domain Model](docs/24-contracts-finance.md)
 
 ## Database implementation
 
@@ -54,10 +55,12 @@ The `/database` directory contains the implementation-level MySQL schema baselin
 
 - [Database workflow and migration rules](database/README.md)
 - [001 — Platform Kernel DDL](database/schema/001-platform-kernel.sql)
+- [001a — Reserved Kernel Integrity Checkpoint](database/schema/001a-platform-kernel-integrity.sql)
 - [002 — CRM and Party Model DDL](database/schema/002-crm-parties.sql)
 - [003 — Sales, Estimates and Quotations DDL](database/schema/003-sales-quotes.sql)
+- [004 — Contracts and Finance DDL](database/schema/004-contracts-finance.sql)
 
-Planned schema packages continue through contracts/finance, procurement, workforce, project information/documents, site/quality/safety, commercial cost control and assets/maintenance.
+Planned schema packages continue through procurement, workforce/time/scheduling, project information/documents, site/quality/safety, commercial cost control and assets/maintenance.
 
 ## Governing product rule
 
