@@ -20,7 +20,7 @@ export class OrganisationInvitationRepository {
 		now = new Date(),
 		lock = false
 	): Promise<PendingOrganisationInvitation | null> {
-		let query = this.db
+		const query = this.db
 			.selectFrom('organisation_invitations as invitation')
 			.innerJoin('organisations as organisation', 'organisation.id', 'invitation.organisation_id')
 			.select([
@@ -39,8 +39,7 @@ export class OrganisationInvitationRepository {
 			.where('invitation.expires_at', '>', now)
 			.where('organisation.status', '=', 'active');
 
-		if (lock) query = query.forUpdate();
-		return (await query.executeTakeFirst()) ?? null;
+		return (await (lock ? query.forUpdate() : query).executeTakeFirst()) ?? null;
 	}
 
 	async findPendingByAuthUser(
@@ -49,7 +48,7 @@ export class OrganisationInvitationRepository {
 		now = new Date(),
 		lock = false
 	): Promise<PendingOrganisationInvitation | null> {
-		let query = this.db
+		const query = this.db
 			.selectFrom('organisation_invitations as invitation')
 			.innerJoin('organisations as organisation', 'organisation.id', 'invitation.organisation_id')
 			.select([
@@ -70,8 +69,7 @@ export class OrganisationInvitationRepository {
 			.where('organisation.status', '=', 'active')
 			.orderBy('invitation.created_at', 'asc');
 
-		if (lock) query = query.forUpdate();
-		return (await query.executeTakeFirst()) ?? null;
+		return (await (lock ? query.forUpdate() : query).executeTakeFirst()) ?? null;
 	}
 
 	async listRoleIds(invitationId: string, organisationId: string): Promise<string[]> {
@@ -153,6 +151,7 @@ export class OrganisationInvitationRepository {
 					organisation_invitation_id: invitationId,
 					organisation_role_id: roleId
 				}))
+			)
 			.execute();
 	}
 
