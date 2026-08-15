@@ -1,54 +1,5 @@
 <script lang="ts">
-	import { authClient } from '$lib/auth-client';
-
-	let { data } = $props();
-	let email = $state('');
-	let password = $state('');
-	let submitting = $state(false);
-	let message = $state('');
-
-	async function signIn(event: SubmitEvent) {
-		event.preventDefault();
-		if (submitting) return;
-
-		submitting = true;
-		message = '';
-
-		try {
-			const result = await authClient.signIn.email({
-				email: email.trim(),
-				password,
-				rememberMe: true
-			});
-
-			if (result.error) {
-				message =
-					result.error.status === 403
-						? 'Verify your email address before signing in.'
-						: result.error.message ?? 'Sign-in failed.';
-				return;
-			}
-
-			// Confirm that the Set-Cookie from Better Auth is usable before entering
-			// the authenticated SvelteKit route tree. This turns cookie/origin issues
-			// into a visible error instead of an apparent no-op/redirect loop.
-			const sessionResult = await authClient.getSession();
-			if (sessionResult.error || !sessionResult.data) {
-				message =
-					'Sign-in was accepted, but the browser session could not be established. Make sure you are using the same origin configured by BETTER_AUTH_URL, then try again.';
-				return;
-			}
-
-			// Use a full navigation so the next server request definitely carries the
-			// newly issued authentication cookie when SvelteKit resolves locals.actor.
-			window.location.assign(data.returnTo ?? '/select-organisation');
-		} catch (cause) {
-			console.error('[NuBlox auth] Sign-in failed.', cause);
-			message = cause instanceof Error ? cause.message : 'Sign-in failed. Please try again.';
-		} finally {
-			submitting = false;
-		}
-	}
+	let { data, form } = $props();
 </script>
 
 <svelte:head>
@@ -68,15 +19,22 @@
 			<p class="notice success">Password updated. Sign in with your new password.</p>
 		{/if}
 
-		<form class="stack" onsubmit={signIn}>
+		<form class="stack" method="POST">
 			<label>
 				<span>Email</span>
-				<input bind:value={email} type="email" autocomplete="email" required maxlength="320" />
+				<input
+					name="email"
+					value={form?.email ?? ''}
+					type="email"
+					autocomplete="email"
+					required
+					maxlength="320"
+				/>
 			</label>
 			<label>
 				<span>Password</span>
 				<input
-					bind:value={password}
+					name="password"
 					type="password"
 					autocomplete="current-password"
 					required
@@ -84,10 +42,8 @@
 				/>
 			</label>
 			<p class="recovery-link"><a href="/forgot-password">Forgot your password?</a></p>
-			{#if message}<p class="error" role="alert">{message}</p>{/if}
-			<button type="submit" disabled={submitting}>
-				{submitting ? 'Signing in…' : 'Sign in'}
-			</button>
+			{#if form?.message}<p class="error" role="alert">{form.message}</p>{/if}
+			<button type="submit">Sign in</button>
 		</form>
 
 		<p class="support-copy">
@@ -135,7 +91,6 @@
 		color: white;
 		cursor: pointer;
 	}
-	button:disabled { opacity: 0.55; cursor: wait; }
 	.recovery-link { margin: -0.25rem 0 0; text-align: right; font-size: 0.92rem; }
 	.error { color: #9b1c1c; margin: 0; }
 	.notice { padding: 0.8rem; border-radius: 0.55rem; }
