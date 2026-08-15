@@ -40,8 +40,8 @@
 
 		{#if data.memberships.length === 0}
 			<div class="notice">
-				Your account does not currently have an active organisation membership. Ask an organisation
-				administrator for an invitation.
+				Your account does not currently have an active organisation membership. Create your own
+				organisation or ask an existing organisation administrator for an invitation.
 			</div>
 		{:else}
 			<div class="choices">
@@ -65,8 +65,11 @@
 			</div>
 		{/if}
 
+		<div class="actions">
+			<a class="create" href="/start">Create organisation</a>
+			<button class="signout" type="button" onclick={signOut}>Sign out</button>
+		</div>
 		{#if message}<p class="error" role="alert">{message}</p>{/if}
-		<button class="signout" type="button" onclick={signOut}>Sign out</button>
 	</section>
 </main>
 
@@ -87,6 +90,8 @@
 	.choices span { font-weight: 700; }
 	.choices small { color: #666; }
 	.notice { margin: 1.5rem 0; padding: 1rem; border-radius: 0.6rem; background: #f0f0ec; line-height: 1.5; }
+	.actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
+	.create { display: inline-block; border: 1px solid #111; border-radius: 0.55rem; padding: 0.7rem 0.9rem; background: #111; color: white; text-decoration: none; font-weight: 700; }
 	.error { color: #9b1c1c; }
 	.signout { border: 0; background: transparent; padding: 0; text-decoration: underline; cursor: pointer; font: inherit; }
 </style>
