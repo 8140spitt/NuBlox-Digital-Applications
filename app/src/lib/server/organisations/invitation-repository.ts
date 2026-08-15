@@ -98,6 +98,20 @@ export class OrganisationInvitationRepository {
 		return rows.map((row) => row.id);
 	}
 
+	async hasActiveMemberByEmail(organisationId: string, email: string): Promise<boolean> {
+		const row = await this.db
+			.selectFrom('user_emails as email')
+			.innerJoin('users as user', 'user.id', 'email.user_id')
+			.innerJoin('organisation_members as member', 'member.user_id', 'user.id')
+			.select('member.id')
+			.where('email.email', '=', email)
+			.where('member.organisation_id', '=', organisationId)
+			.where('member.status', '=', 'active')
+			.where('user.status', '=', 'active')
+			.executeTakeFirst();
+		return Boolean(row);
+	}
+
 	async revokePendingForEmail(
 		organisationId: string,
 		email: string,
