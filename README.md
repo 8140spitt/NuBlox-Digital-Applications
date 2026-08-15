@@ -4,6 +4,14 @@ NuBlox is a proposed **Built Environment Business Operating System** serving bus
 
 It combines a shared business-management core, a built-environment project/site/asset core, profession-specific capability packs, controlled cross-organisation collaboration, and structured workflow/automation across the building lifecycle.
 
+## Business and brand foundation
+
+Corporate and brand strategy documentation is maintained separately from the product specification:
+
+- [NuBlox business entity](docs/branding/00-business-entity.md)
+
+This layer defines the business, master brand and commercial positioning that sit above the NuBlox software platform.
+
 ## Fixed technology direction
 
 - **Frontend:** Svelte 5
