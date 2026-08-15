@@ -47,6 +47,30 @@
     "codegen_config": "app/.kysely-codegenrc.json",
     "migration_ci": ".github/workflows/database-migration-validation.yml"
   },
+  "application_implementation": {
+    "phase": "platform-kernel-foundation",
+    "status": "implemented-and-integration-tested",
+    "tenant_actor_context": "app/src/lib/server/auth/tenant-actor-context.ts",
+    "organisation_repository": "app/src/lib/server/organisations/organisation-repository.ts",
+    "membership_repository": "app/src/lib/server/organisations/membership-repository.ts",
+    "organisation_service": "app/src/lib/server/organisations/organisation-service.ts",
+    "project_repository": "app/src/lib/server/projects/project-repository.ts",
+    "project_service": "app/src/lib/server/projects/project-service.ts",
+    "audit_repository": "app/src/lib/server/audit/audit-repository.ts",
+    "kernel_errors": "app/src/lib/server/kernel/errors.ts",
+    "integration_tests": "app/src/lib/server/kernel/platform-kernel.integration.test.ts",
+    "integration_test_config": "app/vitest.integration.config.ts",
+    "validated_behaviours": [
+      "organisation-user-member active tenant tuple verification",
+      "non-participant project invisibility",
+      "cross-tenant project-member composite foreign-key rejection",
+      "atomic project owner participation and creator membership",
+      "project creation audit evidence",
+      "project lifecycle state-machine enforcement",
+      "owning-organisation lifecycle mutation scope",
+      "optimistic current-status lifecycle write guard"
+    ]
+  },
   "brand_docs": [
     "docs/branding/00-business-entity.md",
     "docs/branding/01-brand-strategy.md",
