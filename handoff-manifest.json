@@ -45,10 +45,14 @@
     "existing_user_policy": "active NuBlox user can create an additional organisation without duplicating auth/domain identity",
     "standard_roles": ["Owner", "Administrator", "Manager", "Finance/Commercial", "Member/Professional", "Field Worker", "Read Only"],
     "initial_role": "Owner only",
-    "initial_admin_grants": {
-      "Owner": ["organisation.manage", "member.invite", "member.manage"],
-      "Administrator": ["organisation.manage", "member.invite", "member.manage"],
-      "Manager": ["member.invite", "member.manage"]
+    "standard_role_grants": {
+      "Owner": ["organisation.manage", "member.invite", "member.manage", "project.create", "project.view", "project.manage"],
+      "Administrator": ["organisation.manage", "member.invite", "member.manage", "project.create", "project.view", "project.manage"],
+      "Manager": ["member.invite", "member.manage", "project.create", "project.view", "project.manage"],
+      "Finance/Commercial": ["project.view"],
+      "Member/Professional": ["project.view"],
+      "Field Worker": ["project.view"],
+      "Read Only": ["project.view"]
     }
   },
   "organisation_administration": {
@@ -66,6 +70,22 @@
     "delegation_policy": "non-organisation-managers may delegate only role permissions they effectively hold themselves",
     "manager_protection": "lower-level member administrators cannot change the status or roles of organisation managers",
     "lockout_policy": "member and role mutations cannot remove the final active organisation.manage authority"
+  },
+  "project_workspace": {
+    "permission_seed_migration": "database/migrations/20260815203700_project_workspace_permissions.sql",
+    "permissions": ["project.create", "project.view", "project.manage"],
+    "portfolio_route": "app/src/routes/(app)/projects/+page.server.ts",
+    "portfolio_ui": "app/src/routes/(app)/projects/+page.svelte",
+    "workspace_route": "app/src/routes/(app)/projects/[projectPublicId]/+page.server.ts",
+    "workspace_ui": "app/src/routes/(app)/projects/[projectPublicId]/+page.svelte",
+    "repository": "app/src/lib/server/projects/project-repository.ts",
+    "kernel_service": "app/src/lib/server/projects/project-service.ts",
+    "application_service": "app/src/lib/server/projects/project-workspace-service.ts",
+    "read_policy": "project.view plus active project_organisations participation plus exact active project_members membership",
+    "create_policy": "project.create plus active organisation membership; creation atomically creates owner participation, creator project membership and audit evidence",
+    "lifecycle_policy": "project.manage plus active project scope plus owning-organisation context plus valid lifecycle transition",
+    "external_participant_policy": "explicitly scoped external participants may view but cannot mutate owner project lifecycle",
+    "participant_administration": "not implemented in this slice; requires a separate permission-controlled workflow"
   },
   "current_schema_package": "010-assets-maintenance",
   "schema_baseline_status": "001-010 complete; repeatable clean-build validation passed on MySQL 8.4.11",
@@ -110,7 +130,7 @@
     "migration_ci": ".github/workflows/database-migration-validation.yml"
   },
   "application_implementation": {
-    "phase": "organisation-bootstrap-onboarding",
+    "phase": "project-creation-project-workspace",
     "status": "implemented-and-integration-tested",
     "tenant_actor_context": "app/src/lib/server/auth/tenant-actor-context.ts",
     "auth_server": "app/src/lib/server/auth/better-auth.ts",
@@ -146,6 +166,11 @@
     "email_delivery": "app/src/lib/server/email/email-delivery.ts",
     "project_repository": "app/src/lib/server/projects/project-repository.ts",
     "project_service": "app/src/lib/server/projects/project-service.ts",
+    "project_workspace_service": "app/src/lib/server/projects/project-workspace-service.ts",
+    "project_portfolio_route": "app/src/routes/(app)/projects/+page.server.ts",
+    "project_portfolio_ui": "app/src/routes/(app)/projects/+page.svelte",
+    "project_workspace_route": "app/src/routes/(app)/projects/[projectPublicId]/+page.server.ts",
+    "project_workspace_ui": "app/src/routes/(app)/projects/[projectPublicId]/+page.svelte",
     "audit_repository": "app/src/lib/server/audit/audit-repository.ts",
     "kernel_errors": "app/src/lib/server/kernel/errors.ts",
     "kernel_integration_tests": "app/src/lib/server/kernel/platform-kernel.integration.test.ts",
@@ -154,8 +179,9 @@
     "organisation_administration_integration_tests": "app/src/lib/server/organisations/organisation-administration.integration.test.ts",
     "role_delegation_integration_tests": "app/src/lib/server/organisations/role-delegation.integration.test.ts",
     "organisation_bootstrap_integration_tests": "app/src/lib/server/organisations/organisation-bootstrap.integration.test.ts",
+    "project_workspace_integration_tests": "app/src/lib/server/projects/project-workspace.integration.test.ts",
     "integration_test_config": "app/vitest.integration.config.ts",
-    "integration_ci_status": "6 integration files / 24 real-MySQL tests passed; 344/749/429 structure unchanged; Kysely drift clean; Svelte check 0 errors / 0 warnings before documentation close-out",
+    "integration_ci_status": "7 integration files / 28 real-MySQL tests passed; 344/749/429 structure unchanged; Kysely drift clean; Svelte check 0 errors / 0 warnings before documentation close-out",
     "validated_behaviours": [
       "organisation-user-member active tenant tuple verification",
       "non-participant project invisibility",
@@ -182,8 +208,8 @@
       "bootstrap sign-up provisions pending NuBlox user, unverified email, pending organisation and invited owner membership",
       "pending bootstrap user cannot resolve to a trusted NuBlox session actor",
       "verified bootstrap activation makes user, email, organisation and owner membership active transactionally",
-      "new organisation bootstrap creates seven standard role templates",
-      "founding member receives Owner only with organisation management authority",
+      "new organisation bootstrap creates seven standard role templates with current project defaults",
+      "founding member receives Owner only with organisation and project creation authority",
       "existing active NuBlox user can create an additional organisation without identity duplication",
       "invitation acceptance creates or activates tenant membership and intended organisation roles",
       "provisioning and bootstrap lifecycle changes append audit evidence",
@@ -197,7 +223,15 @@
       "organisation manager mutations cannot remove the final active organisation.manage authority",
       "invitation resend preserves permitted role intent and revokes the earlier pending invitation",
       "invitation revoke and resend append audit evidence",
-      "organisation administration request transport exposes public IDs rather than internal surrogate IDs"
+      "organisation administration request transport exposes public IDs rather than internal surrogate IDs",
+      "project.create gates project creation at the application boundary",
+      "project creation atomically creates owning participation, creator project membership and audit evidence",
+      "project.view without active project_members membership does not expose a same-organisation project",
+      "member-scoped project portfolio becomes visible after explicit project membership",
+      "project.manage plus active owner project scope permits valid lifecycle mutation",
+      "duplicate project numbers are rejected at the application boundary",
+      "external participating organisation with explicit project scope can view shared project",
+      "external participating organisation cannot mutate owning-organisation project lifecycle"
     ]
   },
   "brand_docs": [
@@ -238,7 +272,8 @@
     "database/migrations/20260815140337_baseline_v1.sql",
     "database/migrations/20260815145430_authentication_boundary.sql",
     "database/migrations/20260815151500_account_provisioning.sql",
-    "database/migrations/20260815161900_organisation_administration_permissions.sql"
+    "database/migrations/20260815161900_organisation_administration_permissions.sql",
+    "database/migrations/20260815203700_project_workspace_permissions.sql"
   ],
   "handoff_docs": [
     "docs/00-executive-summary.md",
