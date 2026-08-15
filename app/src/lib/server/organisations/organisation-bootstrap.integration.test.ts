@@ -274,33 +274,49 @@ describe('organisation bootstrap and onboarding', () => {
 			.orderBy('permission.permission_key', 'asc')
 			.execute();
 		expect(grants.map((row) => `${row.roleName}:${row.permissionKey}`)).toEqual([
+			'Administrator:crm.contact.manage',
 			'Administrator:crm.manage',
+			'Administrator:crm.party.manage',
 			'Administrator:crm.view',
 			'Administrator:member.invite',
 			'Administrator:member.manage',
 			'Administrator:organisation.manage',
 			'Administrator:project.create',
+			'Administrator:project.lifecycle.manage',
 			'Administrator:project.manage',
+			'Administrator:project.participant.manage',
+			'Administrator:project.participation.manage',
+			'Administrator:project.team.manage',
 			'Administrator:project.view',
 			'Field Worker:project.view',
 			'Finance/Commercial:crm.view',
 			'Finance/Commercial:project.view',
-			'Manager:crm.manage',
+			'Manager:crm.contact.manage',
+			'Manager:crm.party.manage',
 			'Manager:crm.view',
 			'Manager:member.invite',
 			'Manager:member.manage',
 			'Manager:project.create',
-			'Manager:project.manage',
+			'Manager:project.lifecycle.manage',
+			'Manager:project.participant.manage',
+			'Manager:project.participation.manage',
+			'Manager:project.team.manage',
 			'Manager:project.view',
 			'Member/Professional:crm.view',
 			'Member/Professional:project.view',
+			'Owner:crm.contact.manage',
 			'Owner:crm.manage',
+			'Owner:crm.party.manage',
 			'Owner:crm.view',
 			'Owner:member.invite',
 			'Owner:member.manage',
 			'Owner:organisation.manage',
 			'Owner:project.create',
+			'Owner:project.lifecycle.manage',
 			'Owner:project.manage',
+			'Owner:project.participant.manage',
+			'Owner:project.participation.manage',
+			'Owner:project.team.manage',
 			'Owner:project.view',
 			'Read Only:crm.view',
 			'Read Only:project.view'
@@ -319,10 +335,12 @@ describe('organisation bootstrap and onboarding', () => {
 			allowed: true,
 			reason: 'role-grant'
 		});
-		await expect(permissionService.decide(ownerActor, 'crm.manage')).resolves.toEqual({
-			allowed: true,
-			reason: 'role-grant'
-		});
+		await expect(
+			permissionService.decideWithUmbrella(ownerActor, 'project.team.manage', 'project.manage')
+		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(
+			permissionService.decideWithUmbrella(ownerActor, 'crm.contact.manage', 'crm.manage')
+		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
 		const auditActions = await db
 			.selectFrom('audit_events')
