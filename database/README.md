@@ -24,7 +24,8 @@ database/
 │   ├── 005-procurement.md
 │   ├── 006-workforce-time-scheduling.md
 │   ├── 007-project-information-documents.md
-│   └── 008-site-quality-safety.md
+│   ├── 008-site-quality-safety.md
+│   └── 009-commercial-cost-control.md
 └── schema/
     ├── README.md
     ├── 001-platform-kernel.sql
@@ -36,7 +37,8 @@ database/
     ├── 007-project-information-documents.sql
     ├── 007-project-information-integrity.sql
     ├── 008-site-quality-safety.sql
-    └── 008-site-quality-safety-integrity.sql
+    ├── 008-site-quality-safety-integrity.sql
+    └── 009-commercial-cost-control.sql
 ```
 
 ## Schema package order
@@ -49,14 +51,16 @@ database/
 6. 006 — workers, engagements, competence, credentials, rates, calendars, scheduling, attendance and timesheets
 7. 007 — project sites, controlled information, immutable revisions, files, transmittals, RFIs, submittals, instructions, change events and reviews
 8. 008 — site diaries, deliveries, visitors, inspections, defects, NCRs, RAMS, briefings, permits and safety events/actions
+9. 009 — cost codes, budgets, source-cost/value allocations, direct costs, variations, valuations and commercial forecasts
 
 Package 007 is applied as two ordered SQL stages: `007-project-information-documents.sql` followed by `007-project-information-integrity.sql`. They are one logical package. The second stage captures integrity hardening found during validation and is no longer labelled as a separate `007a` package.
 
 Package 008 is applied as two ordered SQL stages: `008-site-quality-safety.sql` followed by `008-site-quality-safety-integrity.sql`. They are one logical package. The integrity stage strengthens cross-domain candidate keys and removes avoidable transitive duplication identified during validation.
 
+Package 009 is one SQL stage: `009-commercial-cost-control.sql`. It adds two prerequisite tenant-safe candidate keys to earlier estimate/timesheet cost-source tables and then establishes the commercial-control domain.
+
 Planned:
 
-9. 009 — Commercial Cost Control
 10. 010 — Assets and Maintenance
 
 ## Normalisation policy
@@ -77,7 +81,11 @@ Planned:
 - Inspection findings, defects and NCRs are separate records; conversion/linkage preserves the source evidence.
 - RAMS approval and briefings reference exact controlled-information revisions.
 - Safety incident, near-miss and observation facts use a supertype/subtype design to avoid duplicated nullable columns.
-- Historical snapshots are permitted where they represent issue/approval/execution/field evidence.
+- Cost codes classify commercial facts; they do not store editable budget/commitment/actual balances.
+- PO commitments, approved labour costs and customer financial-document values remain authoritative in their source domains and are classified through allocation tables.
+- Approved budget/variation versions are historical facts; normal change does not rewrite prior approved versions.
+- Forecast line values are intentional point-in-time snapshots for reproducible approved reporting, not competing live balances.
+- Historical snapshots are permitted where they represent issue/approval/execution/field/reporting evidence.
 - Ordinary derived balances/totals/statuses are not duplicated merely for convenience.
 - Tenant-scoping keys may be included in composite candidate keys to let MySQL enforce tenant integrity.
 - Foreign keys target explicit primary/unique candidate keys.
@@ -97,6 +105,6 @@ Planned:
 
 No application repository/query may retrieve organisation-owned data solely by surrogate ID when tenant context is required. Tenant context and authorisation must be validated before returning records.
 
-Privileged actions—including commercial issue/void, payment allocation/reversal, procurement award/PO issue, workforce rate changes/time approval, controlled-information issue/review/approval, formal instruction, diary approval/lock, inspection close-out, defect/NCR close-out, RAMS approval, permit issue/close and safety-event investigation/closure—must be auditable.
+Privileged actions—including commercial issue/void, payment allocation/reversal, procurement award/PO issue, workforce rate changes/time approval, controlled-information issue/review/approval, formal instruction, diary approval/lock, inspection close-out, defect/NCR close-out, RAMS approval, permit issue/close, safety-event investigation/closure, budget approval/adjustment, variation issue/decision, valuation assessment/certification, direct-cost posting/reversal and forecast approval—must be auditable.
 
-Safety incident/injury data may require stricter application policy than ordinary project records and must not become broadly visible merely because an organisation participates in the project.
+Safety incident/injury data and commercial budget/rate/margin/forecast data may require stricter application policy than ordinary project records and must not become broadly visible merely because an organisation participates in the project.
