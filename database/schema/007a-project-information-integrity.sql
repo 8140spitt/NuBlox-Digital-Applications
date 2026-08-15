@@ -34,6 +34,7 @@ ALTER TABLE information_containers
 
 ALTER TABLE information_review_step_reviewers
     DROP PRIMARY KEY,
+    MODIFY COLUMN reviewer_member_id BIGINT UNSIGNED NULL,
     ADD COLUMN id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT FIRST,
     ADD COLUMN reviewer_member_key BIGINT UNSIGNED
         GENERATED ALWAYS AS (COALESCE(reviewer_member_id, 0)) STORED,
@@ -51,9 +52,11 @@ ALTER TABLE information_review_decisions
         AFTER information_review_step_id;
 
 -- The baseline is pre-production and tables are expected to be empty when applied.
--- Make the new assignment FK mandatory after the structural transition.
+-- The reviewer-assignment row now determines step/workflow/reviewer. Remove those
+-- transitive duplicates from the decision relation to keep the final model in 3NF.
 ALTER TABLE information_review_decisions
     MODIFY information_review_step_reviewer_id BIGINT UNSIGNED NOT NULL,
+    DROP COLUMN information_review_step_id,
     DROP COLUMN information_review_workflow_id,
     DROP COLUMN reviewer_organisation_id,
     DROP COLUMN reviewer_member_id,
