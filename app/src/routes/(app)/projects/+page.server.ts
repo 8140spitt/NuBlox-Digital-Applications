@@ -28,7 +28,14 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { createError: 'Authentication and organisation context are required.' });
+		if (!actor) {
+			return fail(401, {
+				createError: 'Authentication and organisation context are required.',
+				projectNumber: '',
+				name: '',
+				description: ''
+			});
+		}
 
 		const data = await request.formData();
 		const projectNumber = String(data.get('projectNumber') ?? '');
