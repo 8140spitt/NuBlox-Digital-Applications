@@ -1,5 +1,6 @@
 import { dev } from '$app/environment';
-import { error, redirect, type Actions, type PageServerLoad } from '@sveltejs/kit';
+import { error, redirect } from '@sveltejs/kit';
+import type { Actions, PageServerLoad } from './$types';
 
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
 import { getDatabase } from '$lib/server/db/database';
