@@ -16,6 +16,7 @@ It combines:
 - **Application framework:** SvelteKit
 - **Primary persistence:** MySQL using InnoDB
 - **Architecture:** modular monolith first, with explicit domain boundaries
+- **Database design:** normalised relational model, targeting 3NF by default
 - **Market assumption:** UK-first, with regionalisation designed in rather than hard-coded
 
 ## Documentation index
@@ -43,6 +44,16 @@ The `/docs` directory is the software-development-company handoff pack:
 19. [Development Company Brief](docs/18-development-company-brief.md)
 20. [Risks and Dependencies](docs/19-risks-and-dependencies.md)
 21. [Record Lifecycles and State Machines](docs/20-record-lifecycles.md)
+22. [Normalised Database Schema — Platform Kernel](docs/21-normalised-database-schema.md)
+
+## Database implementation
+
+The `/database` directory contains the implementation-level MySQL schema baseline:
+
+- [Database workflow and migration rules](database/README.md)
+- [001 — Platform Kernel DDL](database/schema/001-platform-kernel.sql)
+
+Planned schema packages continue through CRM, sales, contracts/finance, procurement, workforce, project information/documents, site/quality/safety, commercial cost control and assets/maintenance.
 
 ## Governing product rule
 
@@ -52,6 +63,6 @@ Career titles configure defaults. Reusable capabilities, organisation permission
 
 ## Current status
 
-**Product definition / pre-development.**
+**Product definition / pre-development with implementation-level schema design in progress.**
 
 This repository defines the intended product, baseline architecture and acceptance expectations for discovery, estimation and implementation planning. Items explicitly marked as open decisions must be agreed before contractual scope is frozen.
