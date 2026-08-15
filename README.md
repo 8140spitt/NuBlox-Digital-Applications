@@ -13,8 +13,9 @@ Corporate and brand strategy documentation is maintained separately from the pro
 - [NuBlox brand architecture and naming](docs/branding/02-brand-architecture-and-naming.md)
 - [NuBlox verbal identity and messaging](docs/branding/03-verbal-identity-and-messaging.md)
 - [NuBlox visual identity brief](docs/branding/04-visual-identity-brief.md)
+- [NuBlox logo concept directions](docs/branding/05-logo-concept-directions.md)
 
-This layer defines the business, master brand, audiences, positioning, value proposition, naming architecture, verbal identity, visual direction and commercial identity that sit above the NuBlox software platform.
+This layer defines the business, master brand, audiences, positioning, value proposition, naming architecture, verbal identity, visual direction, logo-concept territories and commercial identity that sit above the NuBlox software platform.
 
 ## Fixed technology direction
 
