@@ -64,7 +64,7 @@
   },
   "application_implementation": {
     "phase": "authentication-trusted-tenant-permissions",
-    "status": "implemented-pending-pr-ci",
+    "status": "implemented-and-integration-tested",
     "tenant_actor_context": "app/src/lib/server/auth/tenant-actor-context.ts",
     "auth_server": "app/src/lib/server/auth/better-auth.ts",
     "auth_identity_repository": "app/src/lib/server/auth/auth-identity-repository.ts",
@@ -82,6 +82,7 @@
     "kernel_integration_tests": "app/src/lib/server/kernel/platform-kernel.integration.test.ts",
     "auth_permission_integration_tests": "app/src/lib/server/auth/auth-permissions.integration.test.ts",
     "integration_test_config": "app/vitest.integration.config.ts",
+    "integration_ci_status": "passed on PR #8 head before status close-out",
     "validated_behaviours": [
       "organisation-user-member active tenant tuple verification",
       "non-participant project invisibility",
