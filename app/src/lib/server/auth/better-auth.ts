@@ -10,6 +10,7 @@ import {
 	OrganisationInvitationService
 } from '$lib/server/organisations/invitation-service';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
+import { assertVerifiedAuthUser } from './verified-auth-user';
 
 function requireEnv(name: 'DATABASE_URL' | 'BETTER_AUTH_SECRET' | 'BETTER_AUTH_URL'): string {
 	const value = env[name]?.trim();
@@ -138,6 +139,7 @@ export const auth = betterAuth({
 			});
 		},
 		afterEmailVerification: async (user, request) => {
+			await assertVerifiedAuthUser(getDatabase(), user.id, user.email);
 			await invitationService().activateVerifiedAuthUser({
 				authUserId: user.id,
 				email: user.email,
