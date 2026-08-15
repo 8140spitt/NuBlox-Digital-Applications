@@ -57,21 +57,9 @@ Seeds the first stable project application policy identifiers:
 
 - `project.create` — create a project owned by the active organisation;
 - `project.view` — organisation-level authority to view explicitly scoped projects;
-- `project.manage` — organisation-level authority to manage projects where project scope and owner policy permit.
+- `project.manage` — umbrella authority for project-management responsibilities where project scope and contextual policy permit.
 
-The migration also applies current standard-role defaults to existing organisations:
-
-```text
-Owner         → project.create + project.view + project.manage
-Administrator → project.create + project.view + project.manage
-Manager       → project.create + project.view + project.manage
-Finance/Commercial → project.view
-Member/Professional → project.view
-Field Worker        → project.view
-Read Only           → project.view
-```
-
-The same defaults are seeded by `OrganisationBootstrapService` for future organisations.
+The migration applies the original standard-role project defaults to existing organisations. Later granular permissions refine the management surface without invalidating `project.manage` as an umbrella authority.
 
 These are organisation permission grants only. They do not replace `project_organisations` participation or the exact member's active `project_members` scope.
 
@@ -93,27 +81,60 @@ The migration replaces one existing `CHECK` constraint with the broadened lifecy
 
 ### `20260815214500_crm_contacts_permissions.sql`
 
-Seeds stable application policy identifiers for the Package 002 CRM surface:
+Seeds the original Package 002 CRM umbrella policy identifiers:
 
 - `crm.view` — view tenant-owned CRM organisations, people, primary contact methods and contact relationships;
-- `crm.manage` — create and maintain tenant-owned parties, business-role assignments, primary contact methods and organisation contacts.
+- `crm.manage` — umbrella authority for CRM maintenance responsibilities.
 
-Existing standard organisation roles receive:
+The later granular permission migration separates party/master-data management from organisation-contact relationship management while retaining `crm.manage` for compatibility and higher-authority roles.
+
+CRM grants never broaden tenancy: Package 002 records remain explicitly scoped by `parties.organisation_id` and related composite tenant keys.
+
+### `20260815222500_permission_granularity.sql`
+
+Refines project and CRM delegation with six stable policy identifiers:
+
+- `project.lifecycle.manage` — change project lifecycle state where owner and scope policy permit;
+- `project.participant.manage` — invite/remove participant organisations and maintain organisation-level project roles;
+- `project.team.manage` — maintain the active organisation's scoped project members and member project roles;
+- `project.participation.manage` — accept/decline project invitations and leave participation where contextual policy permits;
+- `crm.party.manage` — create and maintain tenant-owned CRM party master data, classifications and contact methods;
+- `crm.contact.manage` — create, link, promote and end tenant-owned organisation-contact relationships.
+
+`project.manage` and `crm.manage` remain umbrella permissions. Runtime permission resolution uses a granular permission first and falls back to its umbrella only when the granular key has no explicit member/role decision. An explicit granular member deny therefore cannot be bypassed by an umbrella grant.
+
+Existing and future standard-role defaults are aligned as follows:
 
 ```text
-Owner, Administrator, Manager
-    → crm.view + crm.manage
+Owner / Administrator
+    → retain project.manage + crm.manage umbrellas
+    → receive all six granular management permissions
 
-Finance/Commercial, Member/Professional, Read Only
-    → crm.view
+Manager
+    → project.lifecycle.manage
+    → project.participant.manage
+    → project.team.manage
+    → project.participation.manage
+    → crm.party.manage
+    → crm.contact.manage
+    → does not retain project.manage or crm.manage
+
+Finance/Commercial
+    → project.view + crm.view
+
+Member/Professional
+    → project.view + crm.view
 
 Field Worker
-    → no CRM grant by default
+    → project.view
+
+Read Only
+    → project.view + crm.view
 ```
 
-`OrganisationBootstrapService` applies the same defaults to future organisations, and the bootstrap integration suite verifies that parity. CRM grants never broaden tenancy: Package 002 records remain explicitly scoped by `parties.organisation_id` and related composite tenant keys.
+The migration grants the granular keys to existing Owner, Administrator and Manager roles, then removes the two broad management umbrella grants from the standard Manager role. `OrganisationBootstrapService` creates the same role matrix for new organisations.
 
-This migration is data-only. After all seven current migrations the application structure remains:
+This migration is data-only. After all current migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -121,7 +142,7 @@ This migration is data-only. After all seven current migrations the application 
 
 ## Current migration validation
 
-The CRM executable close-out applied all **seven** production migrations cleanly to MySQL 8.4.11, retained the **344 / 749 / 429** application structure, produced zero Kysely type drift, passed **9 integration files / 41 real-MySQL tests**, and passed `svelte-check` with **0 errors / 0 warnings** before documentation synchronisation. The final documentation-synchronised head is required to pass the same gate before merge.
+The permanent validation gate applies the full migration stream to MySQL 8.4, verifies the **344 / 749 / 429** structural contract, checks generated Kysely types for drift, runs the real-MySQL integration suite, and runs `svelte-check`. Permission/catalogue migrations are subject to the same gate even when they do not alter structural counts.
 
 ## Migration rules
 
