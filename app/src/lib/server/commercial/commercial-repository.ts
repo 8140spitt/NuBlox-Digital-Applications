@@ -1,5 +1,5 @@
 import type { DatabaseExecutor } from '$lib/server/db/executor';
-import { lineAmount, sumMoney } from './commercial-decimal';
+import { applyPercentage, lineAmount, sumMoney } from './commercial-decimal';
 
 export type EstimateLifecycleStatus = 'active' | 'cancelled' | 'archived';
 export type EstimateVersionStatus = 'draft' | 'final' | 'superseded';
@@ -525,9 +525,8 @@ export class CommercialRepository {
 			.execute();
 		return rows.map((row) => {
 			const baseCost = lineAmount(row.quantity, row.unitCost);
-			// waste is a percentage addition to the raw component cost; markup remains
+			// Waste is a percentage addition to the raw component cost; markup remains
 			// visible commercial metadata and does not silently rewrite the item sell rate.
-			const { applyPercentage } = require('./commercial-decimal') as typeof import('./commercial-decimal');
 			return { ...row, baseCost, wastedCost: applyPercentage(baseCost, row.wastePercent) };
 		});
 	}
@@ -726,8 +725,7 @@ export class CommercialRepository {
 			const taxes = await this.listQuotationItemTaxes(organisationId, row.id);
 			const netAmount = lineAmount(row.quantity, row.unitRate);
 			const taxAmount = sumMoney(taxes.map((tax) => tax.taxAmount));
-			const { sumMoney: sum } = await import('./commercial-decimal');
-			result.push({ ...row, isOptional: row.isOptional === 1, netAmount, taxes, taxAmount, grossAmount: sum([netAmount, taxAmount]) });
+			result.push({ ...row, isOptional: row.isOptional === 1, netAmount, taxes, taxAmount, grossAmount: sumMoney([netAmount, taxAmount]) });
 		}
 		return result;
 	}
