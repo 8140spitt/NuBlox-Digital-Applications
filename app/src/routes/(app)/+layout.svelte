@@ -28,6 +28,7 @@
 		<nav>
 			<a href="/dashboard">Dashboard</a>
 			<a href="/crm">CRM</a>
+			<a class="subnav" href="/crm/opportunities">Opportunities</a>
 			<a href="/projects">Projects</a>
 			<a href="/organisation">Organisation</a>
 		</nav>
@@ -65,6 +66,7 @@
 	.sidebar { border-right: 1px solid #d9d9d2; background: white; padding: 1rem; }
 	.sidebar nav { display: grid; gap: 0.35rem; }
 	.sidebar a { padding: 0.7rem 0.8rem; border-radius: 0.45rem; text-decoration: none; color: inherit; font-weight: 650; }
+	.sidebar a.subnav { margin-left: .8rem; padding-block: .5rem; color:#5d5d58; font-size:.88rem; font-weight:600; }
 	.sidebar a:hover, .sidebar a:focus-visible { background: #f0f0eb; }
 	.content { min-width: 0; padding: 2rem; }
 	@media (max-width: 760px) {
@@ -75,6 +77,7 @@
 		.account { margin-left: auto; }
 		.sidebar { border-right: 0; border-bottom: 1px solid #d9d9d2; padding: 0.5rem 1rem; }
 		.sidebar nav { display: flex; flex-wrap: wrap; }
+		.sidebar a.subnav { margin-left:0; }
 		.content { padding: 1rem; }
 	}
 </style>
