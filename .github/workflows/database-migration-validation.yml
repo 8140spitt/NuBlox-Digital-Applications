@@ -72,7 +72,7 @@ jobs:
           pnpm db:migrate
           pnpm db:status
 
-      - name: Verify migrated structural baseline
+      - name: Verify migrated application structure
         env:
           MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
         run: |
