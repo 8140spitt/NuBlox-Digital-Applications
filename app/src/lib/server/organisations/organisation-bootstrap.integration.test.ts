@@ -5,17 +5,13 @@ import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap
 import { auth, authPool } from '$lib/server/auth/better-auth';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
-import {
-	hashBootstrapToken,
-	OrganisationBootstrapService
-} from './bootstrap-service';
+import { OrganisationBootstrapService } from './bootstrap-service';
 
 const PREFIX = 'Bootstrap Integration ';
 const PASSWORD = 'NuBlox-Bootstrap-Test-2026!';
 
 let db: Database;
 let email: string;
-let activeIntentPublicId: string;
 let activeToken: string;
 let authUserId: string;
 let platformUserId: string;
@@ -35,9 +31,6 @@ async function cleanupOrganisation(id: string): Promise<void> {
 
 async function cleanup(): Promise<void> {
 	if (!db) return;
-	if (email) {
-		await db.deleteFrom('organisation_bootstrap_intents').where('email', '=', email).execute();
-	}
 	for (const id of [...createdOrganisationIds].reverse()) {
 		await cleanupOrganisation(id);
 	}
@@ -66,22 +59,8 @@ describe('organisation bootstrap and onboarding', () => {
 		await authPool.end();
 	});
 
-	it('stores only a bootstrap token hash and revokes an earlier unbound setup intent', async () => {
-		const service = new OrganisationBootstrapService(db);
-		const first = await service.createIntent({
-			email,
-			details: { legalName: `${PREFIX}First Organisation` }
-		});
-		const firstRow = await db
-			.selectFrom('organisation_bootstrap_intents')
-			.select(['token_hash', 'status'])
-			.where('public_id', '=', first.publicId)
-			.executeTakeFirstOrThrow();
-		expect(firstRow.token_hash).toBe(hashBootstrapToken(first.token));
-		expect(firstRow.token_hash).not.toBe(first.token);
-		expect(firstRow.status).toBe('pending');
-
-		const second = await service.createIntent({
+	it('issues a signed bootstrap intent without creating durable organisation records', async () => {
+		const intent = await new OrganisationBootstrapService(db).createIntent({
 			email,
 			details: {
 				legalName: `${PREFIX}Organisation`,
@@ -90,22 +69,25 @@ describe('organisation bootstrap and onboarding', () => {
 				defaultCurrencyCode: 'GBP'
 			}
 		});
-		activeIntentPublicId = second.publicId;
-		activeToken = second.token;
-		const revoked = await db
-			.selectFrom('organisation_bootstrap_intents')
-			.select(['status', 'revoked_at'])
-			.where('public_id', '=', first.publicId)
-			.executeTakeFirstOrThrow();
-		expect(revoked.status).toBe('revoked');
-		expect(revoked.revoked_at).not.toBeNull();
+		activeToken = intent.token;
+		expect(intent.publicId).toHaveLength(36);
+		expect(intent.email).toBe(email);
+		expect(intent.token.split('.')).toHaveLength(2);
+		expect(intent.expiresAt.getTime()).toBeGreaterThan(Date.now());
+
+		const organisation = await db
+			.selectFrom('organisations')
+			.select('id')
+			.where('legal_name', '=', `${PREFIX}Organisation`)
+			.executeTakeFirst();
+		expect(organisation).toBeUndefined();
 	});
 
-	it('keeps Better Auth signup closed unless the bootstrap token and email match', async () => {
-		const bootstrapCookie = `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${activeToken}`;
+	it('keeps Better Auth signup closed unless the signed bootstrap token is intact and matches the email', async () => {
+		const wrongEmailCookie = `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${activeToken}`;
 		await expect(
 			auth.api.signUpEmail({
-				headers: new Headers({ cookie: bootstrapCookie }),
+				headers: new Headers({ cookie: wrongEmailCookie }),
 				body: {
 					name: `${PREFIX}Wrong Email`,
 					email: `wrong-${randomUUID()}@example.test`,
@@ -114,8 +96,25 @@ describe('organisation bootstrap and onboarding', () => {
 			})
 		).rejects.toBeDefined();
 
+		const [body, signature] = activeToken.split('.');
+		const tamperedToken = `${body}x.${signature}`;
+		await expect(
+			auth.api.signUpEmail({
+				headers: new Headers({
+					cookie: `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${tamperedToken}`
+				}),
+				body: {
+					name: `${PREFIX}Tampered`,
+					email,
+					password: PASSWORD
+				}
+			})
+		).rejects.toBeDefined();
+
 		await auth.api.signUpEmail({
-			headers: new Headers({ cookie: bootstrapCookie }),
+			headers: new Headers({
+				cookie: `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${activeToken}`
+			}),
 			body: {
 				name: `${PREFIX}Owner`,
 				email,
@@ -132,42 +131,83 @@ describe('organisation bootstrap and onboarding', () => {
 		authUserId = authUser.id;
 		expect(authUser.email_verified).toBe(0);
 
-		const intent = await db
-			.selectFrom('organisation_bootstrap_intents')
-			.select(['auth_user_id', 'status'])
-			.where('public_id', '=', activeIntentPublicId)
+		const link = await db
+			.selectFrom('auth_user_links')
+			.select('user_id')
+			.where('auth_user_id', '=', authUserId)
 			.executeTakeFirstOrThrow();
-		expect(intent).toMatchObject({ auth_user_id: authUserId, status: 'pending' });
+		platformUserId = link.user_id;
+
+		const domainUser = await db
+			.selectFrom('users')
+			.select('status')
+			.where('id', '=', platformUserId)
+			.executeTakeFirstOrThrow();
+		expect(domainUser.status).toBe('pending');
+
+		const pendingOrganisation = await db
+			.selectFrom('organisation_members as member')
+			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+			.select([
+				'member.id as memberId',
+				'member.status as memberStatus',
+				'organisation.id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'organisation.status as organisationStatus'
+			])
+			.where('member.user_id', '=', platformUserId)
+			.where('organisation.legal_name', '=', `${PREFIX}Organisation`)
+			.executeTakeFirstOrThrow();
+		memberId = pendingOrganisation.memberId;
+		organisationId = pendingOrganisation.organisationId;
+		organisationPublicId = pendingOrganisation.organisationPublicId;
+		createdOrganisationIds.push(organisationId);
+		expect(pendingOrganisation.memberStatus).toBe('invited');
+		expect(pendingOrganisation.organisationStatus).toBe('pending');
+
+		const domainEmail = await db
+			.selectFrom('user_emails')
+			.select(['is_primary', 'is_verified', 'verified_at'])
+			.where('user_id', '=', platformUserId)
+			.where('email', '=', email)
+			.executeTakeFirstOrThrow();
+		expect(domainEmail).toMatchObject({ is_primary: 1, is_verified: 0, verified_at: null });
 	});
 
-	it('atomically creates the domain identity, organisation, owner membership and standard roles after verification', async () => {
+	it('activates the pending identity, organisation and owner membership only after verified email', async () => {
 		await db
 			.updateTable('auth_users')
 			.set({ email_verified: 1, updated_at: new Date() })
 			.where('id', '=', authUserId)
 			.executeTakeFirstOrThrow();
 
-		const created = await new OrganisationBootstrapService(db).activateVerifiedAuthUser({
+		const activated = await new OrganisationBootstrapService(db).activateVerifiedAuthUser({
 			authUserId,
 			email,
 			displayName: `${PREFIX}Owner`,
 			correlationId: `bootstrap-it-${randomUUID()}`
 		});
-		expect(created).not.toBeNull();
-		platformUserId = created!.userId;
-		organisationId = created!.organisationId;
-		organisationPublicId = created!.organisationPublicId;
-		memberId = created!.memberId;
-		createdOrganisationIds.push(organisationId);
+		expect(activated).toMatchObject({
+			organisationId,
+			organisationPublicId,
+			memberId,
+			userId: platformUserId
+		});
+
+		const user = await db
+			.selectFrom('users')
+			.select('status')
+			.where('id', '=', platformUserId)
+			.executeTakeFirstOrThrow();
+		expect(user.status).toBe('active');
 
 		const organisation = await db
 			.selectFrom('organisations')
-			.select(['public_id', 'legal_name', 'trading_name', 'default_timezone', 'default_currency_code'])
+			.select(['status', 'trading_name', 'default_timezone', 'default_currency_code'])
 			.where('id', '=', organisationId)
 			.executeTakeFirstOrThrow();
 		expect(organisation).toMatchObject({
-			public_id: organisationPublicId,
-			legal_name: `${PREFIX}Organisation`,
+			status: 'active',
 			trading_name: `${PREFIX}Trading`,
 			default_timezone: 'Europe/London',
 			default_currency_code: 'GBP'
@@ -175,11 +215,21 @@ describe('organisation bootstrap and onboarding', () => {
 
 		const membership = await db
 			.selectFrom('organisation_members')
-			.select(['user_id', 'status'])
+			.select(['status', 'joined_at'])
 			.where('id', '=', memberId)
 			.where('organisation_id', '=', organisationId)
 			.executeTakeFirstOrThrow();
-		expect(membership).toMatchObject({ user_id: platformUserId, status: 'active' });
+		expect(membership.status).toBe('active');
+		expect(membership.joined_at).not.toBeNull();
+
+		const domainEmail = await db
+			.selectFrom('user_emails')
+			.select(['is_verified', 'verified_at'])
+			.where('user_id', '=', platformUserId)
+			.where('email', '=', email)
+			.executeTakeFirstOrThrow();
+		expect(domainEmail.is_verified).toBe(1);
+		expect(domainEmail.verified_at).not.toBeNull();
 
 		const roles = await db
 			.selectFrom('organisation_roles')
@@ -197,7 +247,7 @@ describe('organisation bootstrap and onboarding', () => {
 			'Read Only'
 		]);
 
-		const assignedRole = await db
+		const assignedRoles = await db
 			.selectFrom('member_roles as assignment')
 			.innerJoin('organisation_roles as role', (join) =>
 				join
@@ -208,7 +258,31 @@ describe('organisation bootstrap and onboarding', () => {
 			.where('assignment.organisation_id', '=', organisationId)
 			.where('assignment.organisation_member_id', '=', memberId)
 			.execute();
-		expect(assignedRole.map((role) => role.name)).toEqual(['Owner']);
+		expect(assignedRoles.map((row) => row.name)).toEqual(['Owner']);
+
+		const grants = await db
+			.selectFrom('role_permissions as grant')
+			.innerJoin('organisation_roles as role', (join) =>
+				join
+					.onRef('role.id', '=', 'grant.organisation_role_id')
+					.onRef('role.organisation_id', '=', 'grant.organisation_id')
+			)
+			.innerJoin('permissions as permission', 'permission.id', 'grant.permission_id')
+			.select(['role.name as roleName', 'permission.permission_key as permissionKey'])
+			.where('grant.organisation_id', '=', organisationId)
+			.orderBy('role.name', 'asc')
+			.orderBy('permission.permission_key', 'asc')
+			.execute();
+		expect(grants.map((row) => `${row.roleName}:${row.permissionKey}`)).toEqual([
+			'Administrator:member.invite',
+			'Administrator:member.manage',
+			'Administrator:organisation.manage',
+			'Manager:member.invite',
+			'Manager:member.manage',
+			'Owner:member.invite',
+			'Owner:member.manage',
+			'Owner:organisation.manage'
+		]);
 
 		const ownerDecision = await new PermissionService(db).decide(
 			{
@@ -221,26 +295,20 @@ describe('organisation bootstrap and onboarding', () => {
 		);
 		expect(ownerDecision).toEqual({ allowed: true, reason: 'role-grant' });
 
-		const intent = await db
-			.selectFrom('organisation_bootstrap_intents')
-			.select(['status', 'created_user_id', 'organisation_id', 'activated_at'])
-			.where('public_id', '=', activeIntentPublicId)
-			.executeTakeFirstOrThrow();
-		expect(intent.status).toBe('activated');
-		expect(intent.created_user_id).toBe(platformUserId);
-		expect(intent.organisation_id).toBe(organisationId);
-		expect(intent.activated_at).not.toBeNull();
-
-		const audit = await db
+		const auditActions = await db
 			.selectFrom('audit_events')
 			.select('action_key')
 			.where('acting_organisation_id', '=', organisationId)
-			.where('action_key', '=', 'organisation.bootstrap.create')
-			.executeTakeFirst();
-		expect(audit?.action_key).toBe('organisation.bootstrap.create');
+			.where('action_key', 'in', ['organisation.bootstrap.pending', 'organisation.bootstrap.activate'])
+			.orderBy('occurred_at', 'asc')
+			.execute();
+		expect(auditActions.map((row) => row.action_key)).toEqual([
+			'organisation.bootstrap.pending',
+			'organisation.bootstrap.activate'
+		]);
 	});
 
-	it('lets an existing NuBlox user create an additional organisation without duplicating identity', async () => {
+	it('lets an existing active NuBlox user create an additional organisation without duplicating identity', async () => {
 		const created = await new OrganisationBootstrapService(db).createForExistingUser(
 			{ userId: platformUserId, correlationId: `bootstrap-existing-${randomUUID()}` },
 			{
@@ -253,12 +321,12 @@ describe('organisation bootstrap and onboarding', () => {
 		expect(created.userId).toBe(platformUserId);
 		expect(created.organisationId).not.toBe(organisationId);
 
-		const userCount = await db
+		const user = await db
 			.selectFrom('users')
-			.select(({ fn }) => fn.countAll<number>().as('count'))
+			.select('id')
 			.where('id', '=', platformUserId)
-			.executeTakeFirstOrThrow();
-		expect(Number(userCount.count)).toBe(1);
+			.execute();
+		expect(user).toHaveLength(1);
 
 		const membership = await db
 			.selectFrom('organisation_members')
