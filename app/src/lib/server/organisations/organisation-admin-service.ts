@@ -113,6 +113,18 @@ export class OrganisationAdminService {
 					member.id,
 					actor.correlationId
 				));
+			const actorIsManager = await this.memberHasOrganisationManage(
+				trx,
+				actor.organisationId,
+				actor.userId,
+				actor.memberId,
+				actor.correlationId
+			);
+			if (targetWasManager && !actorIsManager) {
+				throw new OrganisationAdminValidationError(
+					'Only an organisation manager can change another organisation manager’s membership status.'
+				);
+			}
 
 			const updated = await repository.updateMemberStatus(
 				actor.organisationId,
@@ -168,6 +180,19 @@ export class OrganisationAdminService {
 					member.id,
 					actor.correlationId
 				));
+			const actorIsManager = await this.memberHasOrganisationManage(
+				trx,
+				actor.organisationId,
+				actor.userId,
+				actor.memberId,
+				actor.correlationId
+			);
+			if (targetWasManager && !actorIsManager) {
+				throw new OrganisationAdminValidationError(
+					'Only an organisation manager can change another organisation manager’s roles.'
+				);
+			}
+
 			const roleIds = await repository.findActiveRoleIdsByPublicIds(
 				actor.organisationId,
 				rolePublicIds
