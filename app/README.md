@@ -77,9 +77,10 @@ Key controls:
 - persisted `auth_users.email_verified` is checked before callback-driven activation;
 - existing signed-in NuBlox users can accept an invitation without creating a duplicate auth/domain identity;
 - intended organisation roles are stored before acceptance and assigned when membership activates;
+- an email already belonging to an active member cannot be invited again;
 - creation and acceptance produce audit evidence.
 
-The provisioning API is `POST /api/organisations/invitations` and requires the effective `member.invite` permission.
+The provisioning API is `POST /api/organisations/invitations`. Invitation lifecycle requires `member.invite` or `organisation.manage`. Attaching organisation roles additionally requires member-management authority and is subject to the delegation ceiling: a non-organisation-manager may delegate only permissions they effectively hold themselves.
 
 ## Transactional email boundary
 
@@ -89,14 +90,44 @@ The provisioning API is `POST /api/organisations/invitations` and requires the e
 
 ## Application access
 
-The first end-to-end account UI now includes:
+The current account/application UI includes:
 
 - `/signin` — Better Auth email/password sign-in;
 - `/invite/[token]` — invitation acceptance/account creation;
 - `/select-organisation` — active organisation membership selector;
-- `/dashboard` — protected organisation-scoped application entry point and member invitation surface.
+- `/dashboard` — protected organisation-scoped application entry point;
+- `/organisation` — permission-aware organisation administration workspace.
 
-The `(app)` route-group server layout rejects unauthenticated users and redirects authenticated users without a verified tenant to organisation selection. Its Svelte layout provides the initial NuBlox application shell, organisation switcher and sign-out boundary.
+The `(app)` route-group server layout rejects unauthenticated users and redirects authenticated users without a verified tenant to organisation selection. Its Svelte layout provides the NuBlox application shell, organisation switcher, primary navigation and sign-out boundary.
+
+## Organisation administration
+
+`/organisation` is backed by `organisation-admin-service.ts` and `organisation-admin-repository.ts`. It provides:
+
+- tenant-scoped member listing;
+- membership status transitions;
+- member role assignment;
+- invitation history, resend and revoke;
+- organisation-role creation/update/activation;
+- role-to-permission grant management.
+
+Administrative authority is split deliberately:
+
+```text
+member.invite       → invitation lifecycle
+member.manage       → member status + member role assignment
+organisation.manage → role definitions + permission grants + full admin authority
+```
+
+Security invariants include:
+
+- request payloads use public IDs rather than internal database IDs;
+- users cannot change their own membership status or role assignments from the administration workspace;
+- cross-tenant/inactive role assignment is rejected;
+- `member.manage` cannot delegate role permissions the actor does not effectively hold;
+- a lower-level member administrator cannot alter an existing organisation manager;
+- role/member mutations cannot remove the final active `organisation.manage` authority;
+- administrative mutations append audit evidence.
 
 ## Permission resolution
 
@@ -108,6 +139,8 @@ explicit member deny
     > active organisation-role grant
     > default deny
 ```
+
+`decideMany()` resolves multiple organisation permissions in a bounded pair of queries and is used by the administration boundary to avoid repeated per-permission lookups.
 
 Project-scoped operations additionally require active project participation and active project membership. Record-state/business-policy checks remain with the relevant domain service.
 
@@ -149,4 +182,4 @@ pnpm check
 pnpm test:integration
 ```
 
-The permanent CI gate applies the migration stream to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check.
+The permanent CI gate applies the migration stream to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The organisation-administration close-out passed **5 integration files / 20 tests** and `svelte-check` with zero errors and zero warnings.
