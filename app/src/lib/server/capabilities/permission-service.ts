@@ -102,19 +102,48 @@ export class PermissionService {
 		return Boolean(row);
 	}
 
+	private async applyProjectScope(
+		actor: TenantActorContext,
+		decision: PermissionDecision,
+		projectId?: string
+	): Promise<PermissionDecision> {
+		if (!decision.allowed || !projectId) return decision;
+		return (await this.hasActiveProjectScope(actor, projectId))
+			? decision
+			: { allowed: false, reason: 'project-scope-deny' };
+	}
+
 	async decide(
 		actor: TenantActorContext,
 		permissionKey: string,
 		options: { projectId?: string } = {}
 	): Promise<PermissionDecision> {
 		const organisationDecision = await this.resolveOrganisationPermission(actor, permissionKey);
-		if (!organisationDecision.allowed) return organisationDecision;
+		return this.applyProjectScope(actor, organisationDecision, options.projectId);
+	}
 
-		if (options.projectId) {
-			const projectAllowed = await this.hasActiveProjectScope(actor, options.projectId);
-			if (!projectAllowed) return { allowed: false, reason: 'project-scope-deny' };
+	async decideWithUmbrella(
+		actor: TenantActorContext,
+		permissionKey: string,
+		umbrellaPermissionKey: string,
+		options: { projectId?: string } = {}
+	): Promise<PermissionDecision> {
+		const decisions = await this.decideMany(actor, [permissionKey, umbrellaPermissionKey]);
+		const granularDecision = decisions.get(permissionKey) ?? {
+			allowed: false,
+			reason: 'default-deny' as const
+		};
+
+		// A granular member deny is an intentional exception and must not be
+		// bypassed by an umbrella role grant or member allow.
+		if (granularDecision.reason !== 'default-deny') {
+			return this.applyProjectScope(actor, granularDecision, options.projectId);
 		}
 
-		return organisationDecision;
+		const umbrellaDecision = decisions.get(umbrellaPermissionKey) ?? {
+			allowed: false,
+			reason: 'default-deny' as const
+		};
+		return this.applyProjectScope(actor, umbrellaDecision, options.projectId);
 	}
 }
