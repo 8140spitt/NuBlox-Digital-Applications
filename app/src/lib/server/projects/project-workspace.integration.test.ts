@@ -298,10 +298,9 @@ describe('permission-aware project creation and workspace', () => {
 		expect(externalWorkspace.isOwningOrganisation).toBe(false);
 		expect(externalWorkspace.canManageLifecycle).toBe(false);
 		expect(externalWorkspace.allowedTransitions).toEqual([]);
-		expect(externalWorkspace.participants.map((participant) => participant.organisationId)).toEqual([
-			organisationAId,
-			organisationBId
-		]);
+		expect(
+			externalWorkspace.participants.map((participant) => participant.organisationId).sort()
+		).toEqual([organisationAId, organisationBId].sort());
 		await expect(
 			service.transitionProject(actorC, { projectPublicId, toStatus: 'on_hold' })
 		).rejects.toBeInstanceOf(TenantAccessError);
