@@ -148,7 +148,12 @@ export const auth = betterAuth({
 					if (intent.kind === 'invitation') {
 						await invitationService().bindSignupAuthUser(intent.token, user.email, user.id);
 					} else {
-						await bootstrapService().bindSignupAuthUser(intent.token, user.email, user.id);
+						await bootstrapService().provisionSignup({
+							rawToken: intent.token,
+							authUserId: user.id,
+							email: user.email,
+							displayName: user.name
+						});
 					}
 				}
 			}
