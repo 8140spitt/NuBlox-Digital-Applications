@@ -1,4 +1,4 @@
-name: Database Migration and Type Validation
+name: Database Migration, Type and Kernel Validation
 
 on:
   pull_request:
@@ -7,7 +7,9 @@ on:
       - 'app/package.json'
       - 'app/pnpm-lock.yaml'
       - 'app/.kysely-codegenrc.json'
-      - 'app/src/lib/server/db/**'
+      - 'app/vite.config.ts'
+      - 'app/vitest.integration.config.ts'
+      - 'app/src/lib/server/**'
       - '.github/workflows/database-migration-validation.yml'
   push:
     branches:
@@ -17,7 +19,9 @@ on:
       - 'app/package.json'
       - 'app/pnpm-lock.yaml'
       - 'app/.kysely-codegenrc.json'
-      - 'app/src/lib/server/db/**'
+      - 'app/vite.config.ts'
+      - 'app/vitest.integration.config.ts'
+      - 'app/src/lib/server/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
@@ -25,8 +29,8 @@ permissions:
   contents: read
 
 jobs:
-  migration-types:
-    name: Dbmate migration, Kysely types and Svelte check
+  migration-types-kernel:
+    name: Dbmate migration, Kysely types, kernel integration and Svelte check
     runs-on: ubuntu-latest
 
     services:
@@ -88,6 +92,13 @@ jobs:
 
       - name: Verify generated types are committed
         run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts
+
+      - name: Run Platform Kernel integration tests
+        working-directory: app
+        env:
+          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
+          DB_POOL_MAX: '5'
+        run: pnpm test:integration
 
       - name: Type-check SvelteKit application
         working-directory: app
