@@ -10,6 +10,15 @@
 		archived: 'Archived'
 	};
 
+	const participantStatusLabels: Record<string, string> = {
+		invited: 'Invited',
+		active: 'Active',
+		suspended: 'Suspended',
+		left: 'Left',
+		removed: 'Removed',
+		declined: 'Declined'
+	};
+
 	const transitionLabels: Record<string, string> = {
 		active: 'Set active',
 		on_hold: 'Put on hold',
@@ -74,20 +83,163 @@
 				<p class="eyebrow">Participants</p>
 				<h2>Project organisations</h2>
 			</div>
-			<span class="count">{data.participants.length}</span>
+			<span class="count">{data.team.participants.length}</span>
 		</div>
+
+		{#if form?.teamError && (form.teamAction === 'invite-participant' || form.teamAction.startsWith('participant-'))}
+			<p class="error" role="alert">{form.teamError}</p>
+		{/if}
+
 		<div class="participant-list">
-			{#each data.participants as participant}
-				<div class="participant">
-					<div>
-						<strong>{participant.organisationName}</strong>
-						<small>{participant.organisationId === data.project.owningOrganisationId ? 'Project owner' : 'Participant'}</small>
+			{#each data.team.participants as participant}
+				<article class="participant-card">
+					<div class="participant-summary">
+						<div>
+							<strong>{participant.organisationName}</strong>
+							<small>{participant.organisationId === data.project.owningOrganisationId ? 'Project owner' : 'Participant'}</small>
+							<code>{participant.organisationPublicId}</code>
+						</div>
+						<span class={`participant-status participant-${participant.status}`}>
+							{participantStatusLabels[participant.status] ?? participant.status}
+						</span>
 					</div>
-					<span>{participant.status}</span>
-				</div>
+					<div class="role-list">
+						{#if participant.roles.length === 0}<span class="empty-role">No contextual role</span>{/if}
+						{#each participant.roles as role}<span>{role.name}</span>{/each}
+					</div>
+
+					{#if data.team.canManageParticipants && !['removed', 'declined', 'left'].includes(participant.status)}
+						<div class="participant-controls">
+							<form method="POST" action="?/updateParticipantRoles" class="role-form">
+								<input type="hidden" name="organisationPublicId" value={participant.organisationPublicId} />
+								<label>
+									<span>Organisation project roles</span>
+									<select name="roleKeys" multiple size="4">
+										{#each data.team.roleTypes as role}
+											<option value={role.roleKey} selected={participant.roles.some((assigned) => assigned.roleKey === role.roleKey)}>{role.name}</option>
+										{/each}
+									</select>
+								</label>
+								<button class="secondary" type="submit">Save roles</button>
+							</form>
+							{#if participant.organisationId !== data.project.owningOrganisationId}
+								<form method="POST" action="?/removeParticipant">
+									<input type="hidden" name="organisationPublicId" value={participant.organisationPublicId} />
+									<button class="danger" type="submit">
+										{participant.status === 'invited' ? 'Revoke invitation' : 'Remove participant'}
+									</button>
+								</form>
+							{/if}
+						</div>
+					{/if}
+				</article>
 			{/each}
 		</div>
-		<p class="hint">Participant administration will be added as a separate permission-controlled workflow.</p>
+
+		{#if data.team.canManageParticipants}
+			<form method="POST" action="?/inviteParticipant" class="invite-form">
+				<h3>Invite organisation</h3>
+				<p class="hint">Use the organisation's exact NuBlox public ID. NuBlox does not expose an unrestricted organisation directory here.</p>
+				<label>
+					<span>Organisation ID</span>
+					<input name="organisationPublicId" required maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+				</label>
+				<label>
+					<span>Project roles</span>
+					<select name="roleKeys" multiple size="6" required>
+						{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option>{/each}
+					</select>
+				</label>
+				<button type="submit">Send project invitation</button>
+			</form>
+		{/if}
+	</section>
+
+	<section class="panel team">
+		<div class="panel-heading">
+			<div>
+				<p class="eyebrow">Team</p>
+				<h2>Your organisation's project members</h2>
+			</div>
+			<span class="count">{data.team.teamMembers.length}</span>
+		</div>
+		{#if data.team.ownOrganisationPublicId}
+			<p class="organisation-id">Your NuBlox organisation ID: <code>{data.team.ownOrganisationPublicId}</code></p>
+		{/if}
+		<p class="hint">Project membership controls scope. Project-role labels describe context and do not grant permissions by themselves.</p>
+
+		{#if form?.teamError && (form.teamAction === 'add-member' || form.teamAction.startsWith('member-') || form.teamAction === 'leave-project')}
+			<p class="error" role="alert">{form.teamError}</p>
+		{/if}
+
+		<div class="member-list">
+			{#each data.team.teamMembers as member}
+				<article class="member-card">
+					<div>
+						<strong>{member.displayName}</strong>
+						{#if member.email}<small>{member.email}</small>{/if}
+					</div>
+					<div class="role-list">
+						{#if member.roles.length === 0}<span class="empty-role">No contextual role</span>{/if}
+						{#each member.roles as role}<span>{role.name}</span>{/each}
+					</div>
+					{#if data.team.canManageTeam}
+						<div class="member-controls">
+							<form method="POST" action="?/updateMemberRoles" class="role-form">
+								<input type="hidden" name="memberPublicId" value={member.publicId} />
+								<label>
+									<span>Member project roles</span>
+									<select name="roleKeys" multiple size="4">
+										{#each data.team.roleTypes as role}
+											<option value={role.roleKey} selected={member.roles.some((assigned) => assigned.roleKey === role.roleKey)}>{role.name}</option>
+										{/each}
+									</select>
+								</label>
+								<button class="secondary" type="submit">Save roles</button>
+							</form>
+							<form method="POST" action="?/removeMember">
+								<input type="hidden" name="memberPublicId" value={member.publicId} />
+								<button class="danger ghost-danger" type="submit">Remove from project</button>
+							</form>
+						</div>
+					{/if}
+				</article>
+			{/each}
+		</div>
+
+		{#if data.team.canManageTeam && data.team.availableMembers.length > 0}
+			<form method="POST" action="?/addMember" class="add-member-form">
+				<h3>Add organisation member</h3>
+				<label>
+					<span>Member</span>
+					<select name="memberPublicId" required>
+						<option value="">Select member</option>
+						{#each data.team.availableMembers as member}
+							<option value={member.publicId}>{member.displayName}{member.email ? ` · ${member.email}` : ''}</option>
+						{/each}
+					</select>
+				</label>
+				<label>
+					<span>Project roles <small>optional</small></span>
+					<select name="roleKeys" multiple size="5">
+						{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option>{/each}
+					</select>
+				</label>
+				<button type="submit">Add to project team</button>
+			</form>
+		{/if}
+
+		{#if data.team.canLeaveParticipation}
+			<div class="leave-zone">
+				<div>
+					<strong>Leave project</strong>
+					<p>Leaving removes this organisation's active project-member scope. The owning organisation can invite it again later.</p>
+				</div>
+				<form method="POST" action="?/leaveProject">
+					<button class="danger" type="submit">Leave project</button>
+				</form>
+			</div>
+		{/if}
 	</section>
 
 	<section class="panel lifecycle">
@@ -161,24 +313,44 @@
 	.panel { background: white; border: 1px solid #d9d9d2; border-radius: 0.8rem; padding: 1.25rem; }
 	.panel-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 1rem; }
 	.eyebrow { margin: 0 0 0.28rem; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; font-weight: 750; color: #666; }
-	.panel h2 { margin: 0; }
+	.panel h2, .panel h3 { margin-top: 0; }
 	.count { min-width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 999px; background: #f0f0eb; font-weight: 750; }
 	dl { display: grid; gap: 0.75rem; margin: 0; }
 	dl div { display: grid; grid-template-columns: 8rem 1fr; gap: 1rem; }
 	dt { color: #6a6a64; }
 	dd { margin: 0; font-weight: 650; }
-	.participant-list { display: grid; gap: 0.6rem; }
-	.participant { display: flex; justify-content: space-between; gap: 1rem; align-items: center; padding: 0.8rem; border: 1px solid #e1e1db; border-radius: 0.55rem; }
-	.participant div { display: grid; gap: 0.18rem; }
-	.participant small, .participant > span { color: #6b6b65; font-size: 0.78rem; }
-	.hint, .muted { color: #65655f; line-height: 1.55; font-size: 0.9rem; }
+	.participant-list, .member-list { display: grid; gap: 0.75rem; }
+	.participant-card, .member-card { display: grid; gap: 0.75rem; padding: 0.9rem; border: 1px solid #e1e1db; border-radius: 0.6rem; }
+	.participant-summary { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
+	.participant-summary > div, .member-card > div:first-child { display: grid; gap: 0.2rem; }
+	.participant-card small, .member-card small { color: #6b6b65; font-size: 0.78rem; }
+	code { overflow-wrap: anywhere; font-size: 0.78rem; }
+	.participant-status { font-size: 0.72rem; font-weight: 750; border-radius: 999px; background: #ecece6; padding: 0.28rem 0.48rem; }
+	.participant-active { background: #e4f5e8; }
+	.participant-invited { background: #fff1cd; }
+	.participant-declined, .participant-left, .participant-removed { color: #666; }
+	.role-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+	.role-list span { border-radius: 999px; background: #ecece6; padding: 0.24rem 0.48rem; font-size: 0.75rem; font-weight: 650; }
+	.role-list .empty-role { background: transparent; border: 1px dashed #c8c8c0; color: #777; }
+	.participant-controls, .member-controls { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: end; }
+	.role-form { display: flex; flex: 1 1 18rem; gap: 0.65rem; align-items: end; }
+	.role-form label { flex: 1; }
+	.invite-form, .add-member-form { display: grid; gap: 0.8rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e1e1db; }
+	.invite-form label, .add-member-form label, .role-form label { display: grid; gap: 0.35rem; font-size: 0.82rem; font-weight: 650; }
+	input, select { font: inherit; border: 1px solid #b9b9b1; border-radius: 0.45rem; padding: 0.58rem; background: white; min-width: 0; }
+	select[multiple] { padding: 0.35rem; }
+	.organisation-id, .hint, .muted { color: #65655f; line-height: 1.55; font-size: 0.9rem; }
 	.hint { margin-bottom: 0; }
+	.leave-zone { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid #e1e1db; }
+	.leave-zone p { margin: 0.25rem 0 0; color: #666; font-size: 0.85rem; }
 	.transition-list { display: grid; gap: 0.75rem; }
 	.transition-form { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; padding: 0.75rem; border: 1px solid #e0e0da; border-radius: 0.55rem; }
 	.transition-form label { display: grid; gap: 0.3rem; font-size: 0.82rem; font-weight: 650; }
 	.transition-form input[type='date'] { font: inherit; border: 1px solid #b9b9b1; border-radius: 0.45rem; padding: 0.55rem; }
 	button { font: inherit; font-weight: 750; border: 1px solid #111; border-radius: 0.5rem; padding: 0.65rem 0.9rem; background: #111; color: white; cursor: pointer; }
+	button.secondary { background: white; color: #222; border-color: #aaa; }
 	button.danger { background: #8f2222; border-color: #8f2222; }
+	button.ghost-danger { background: white; color: #8f2222; }
 	.error { color: #9b1c1c; }
 	.modules { grid-column: 1 / -1; }
 	.module-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; }
@@ -189,8 +361,10 @@
 		.modules { grid-column: auto; }
 		.module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 	}
-	@media (max-width: 560px) {
+	@media (max-width: 620px) {
 		dl div { grid-template-columns: 1fr; gap: 0.15rem; }
 		.module-grid { grid-template-columns: 1fr; }
+		.participant-summary, .leave-zone { display: grid; }
+		.role-form { display: grid; width: 100%; }
 	}
 </style>
