@@ -253,4 +253,42 @@ describe('organisation role delegation ceiling', () => {
 		expect(invitation.email).toBe(allowedEmail);
 		expect(emailDelivery.messages.at(-1)?.to).toBe(allowedEmail);
 	});
+
+	it('prevents a lower-level member administrator from changing an organisation manager', async () => {
+		await db
+			.deleteFrom('member_roles')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_member_id', '=', targetMemberId)
+			.execute();
+		await db
+			.insertInto('member_roles')
+			.values({
+				organisation_id: organisationId,
+				organisation_member_id: targetMemberId,
+				organisation_role_id: administratorRoleId
+			})
+			.executeTakeFirstOrThrow();
+
+		const service = new OrganisationAdminService(db);
+		await expect(service.setMemberStatus(actor(), targetMemberPublicId, 'suspended')).rejects.toBeInstanceOf(
+			OrganisationAdminValidationError
+		);
+		await expect(
+			service.replaceMemberRoles(actor(), targetMemberPublicId, [delegableRolePublicId])
+		).rejects.toBeInstanceOf(OrganisationAdminValidationError);
+
+		const member = await db
+			.selectFrom('organisation_members')
+			.select('status')
+			.where('id', '=', targetMemberId)
+			.executeTakeFirstOrThrow();
+		expect(member.status).toBe('active');
+		const role = await db
+			.selectFrom('member_roles')
+			.select('organisation_role_id')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_member_id', '=', targetMemberId)
+			.executeTakeFirstOrThrow();
+		expect(role.organisation_role_id).toBe(administratorRoleId);
+	});
 });
