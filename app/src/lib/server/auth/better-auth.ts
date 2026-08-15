@@ -198,12 +198,19 @@ export const auth = betterAuth({
 		maxPasswordLength: 128,
 		autoSignIn: false,
 		revokeSessionsOnPasswordReset: true,
+		resetPasswordTokenExpiresIn: 60 * 60,
 		sendResetPassword: async ({ user, url }) => {
-			await getEmailDelivery().send({
-				to: user.email,
-				subject: 'Reset your NuBlox password',
-				text: `Reset your NuBlox password by opening this link:\n\n${url}`
-			});
+			void Promise.resolve()
+				.then(() =>
+					getEmailDelivery().send({
+						to: user.email,
+						subject: 'Reset your NuBlox password',
+						text: `Reset your NuBlox password by opening this link:\n\n${url}\n\nThe link expires in one hour.`
+					})
+				)
+				.catch((cause) => {
+					console.error('[NuBlox email] Password reset delivery failed.', cause);
+				});
 		}
 	},
 	advanced: {
