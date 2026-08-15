@@ -133,15 +133,18 @@ export class ProjectWorkspaceService {
 			throw new RecordNotFoundError('Project not found in the active member scope.');
 		}
 
-		const manageDecision = await permissionService.decide(actor, 'project.manage', {
-			projectId: project.id
-		});
+		const lifecycleDecision = await permissionService.decideWithUmbrella(
+			actor,
+			'project.lifecycle.manage',
+			'project.manage',
+			{ projectId: project.id }
+		);
 		const isOwningOrganisation = project.owningOrganisationId === actor.organisationId;
 
 		return {
 			project,
 			participants: await new ProjectRepository(this.db).listActiveParticipantOrganisations(project.id),
-			canManageLifecycle: manageDecision.allowed && isOwningOrganisation,
+			canManageLifecycle: lifecycleDecision.allowed && isOwningOrganisation,
 			allowedTransitions: isOwningOrganisation
 				? allowedProjectLifecycleTransitions(project.status)
 				: [],
@@ -165,9 +168,12 @@ export class ProjectWorkspaceService {
 		);
 		if (!project) throw new RecordNotFoundError('Project not found in the active member scope.');
 
-		const decision = await new PermissionService(this.db).decide(actor, 'project.manage', {
-			projectId: project.id
-		});
+		const decision = await new PermissionService(this.db).decideWithUmbrella(
+			actor,
+			'project.lifecycle.manage',
+			'project.manage',
+			{ projectId: project.id }
+		);
 		if (!decision.allowed || project.owningOrganisationId !== actor.organisationId) {
 			throw new TenantAccessError('Project lifecycle management is not permitted.');
 		}
