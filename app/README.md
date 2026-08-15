@@ -5,12 +5,12 @@ This app is structured as a modular monolith following `docs/05-system-architect
 ## Architectural principles
 
 - Single deployable SvelteKit app with explicit domain boundaries.
-- Business rules belong in server-side domain/application modules, not in Svelte components.
-- Route handlers act as request boundaries: authentication, tenant context, validation, policy checks and service orchestration.
-- Correlation IDs are attached to every request for observability.
+- Business rules belong in server-side domain/application modules, not Svelte components.
+- Route handlers are request boundaries for authentication, tenant context, validation, policy checks and service orchestration.
+- Correlation IDs are attached to requests for observability.
 - SQL belongs behind domain repositories; routes/components do not query the database directly.
 - MySQL SQL migrations are the schema source of truth; generated Kysely types are derivative.
-- Tenant-owned records are queried with explicit verified tenant context rather than by surrogate ID alone.
+- Tenant-owned records use explicit verified tenant context rather than surrogate ID alone.
 - Authentication identity does not imply organisation, CRM or project access.
 
 ## Persistence and authentication stack
@@ -22,10 +22,7 @@ This app is structured as a modular monolith following `docs/05-system-architect
 - **kysely-codegen** database-derived TypeScript interfaces
 - **Better Auth 1.6.25** authentication/session boundary
 
-Architecture decisions are recorded in:
-
-- `docs/adr/0001-database-query-and-migration-tooling.md`
-- `docs/adr/0002-authentication-session-boundary.md`
+Architecture decisions are recorded under `docs/adr/`.
 
 ## Request trust flow
 
@@ -45,7 +42,40 @@ active organisation + active organisation_members proof
 trusted request locals
 ```
 
-`locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` is populated only when the selected organisation has been revalidated against that user’s active membership.
+`locals.actor` identifies the authenticated NuBlox platform user. `locals.tenant` exists only after selected-organisation membership is revalidated.
+
+## Permission resolution
+
+`src/lib/server/capabilities/permission-service.ts` resolves each permission key with:
+
+```text
+explicit member deny
+    > explicit member allow
+    > active organisation-role grant
+    > default deny
+```
+
+Project operations additionally require active project participation and exact-member `project_members` scope when a project ID is supplied.
+
+### Granular management and umbrella compatibility
+
+NuBlox now supports granular delegation beneath broad compatibility permissions:
+
+```text
+project.manage
+    ├─ project.lifecycle.manage
+    ├─ project.participant.manage
+    ├─ project.team.manage
+    └─ project.participation.manage
+
+crm.manage
+    ├─ crm.party.manage
+    └─ crm.contact.manage
+```
+
+`decideWithUmbrella()` resolves the granular permission first and uses the umbrella only when the granular key has no explicit member/role decision. An explicit granular member deny therefore cannot be bypassed by the umbrella.
+
+This lets existing custom roles with `project.manage` or `crm.manage` remain compatible while new roles can delegate narrower responsibilities.
 
 ## Controlled account provisioning
 
@@ -54,54 +84,80 @@ Better Auth sign-up remains fail-closed. Exactly one NuBlox provisioning intent 
 1. an existing-organisation invitation; or
 2. a self-service new-organisation bootstrap.
 
-Invitation controls include random 256-bit tokens with only SHA-256 hashes persisted, seven-day expiry, re-invite revocation, verified-email activation, existing-user acceptance, intended role assignment and audit evidence.
+`/start` provides first/additional organisation creation while retaining fail-closed account creation. The bootstrap token is a short-lived HMAC-SHA256 pre-sign-up authorisation envelope in an HttpOnly cookie; durable state reuses the normalised NuBlox domain model.
 
-`/start` provides self-service first/additional organisation creation while retaining fail-closed account creation. The bootstrap token is short-lived HMAC-SHA256 pre-sign-up authorisation stored in an HttpOnly cookie; durable state reuses the normalised NuBlox domain model.
+## Standard organisation roles
 
-New organisations receive seven standard role templates. Stable defaults currently include:
+New organisations receive:
+
+- Owner
+- Administrator
+- Manager
+- Finance/Commercial
+- Member/Professional
+- Field Worker
+- Read Only
+
+Current stable defaults are:
 
 ```text
-Owner         → organisation.manage + member.invite + member.manage
-                + project.create + project.view + project.manage
-                + crm.view + crm.manage
-Administrator → organisation.manage + member.invite + member.manage
-                + project.create + project.view + project.manage
-                + crm.view + crm.manage
-Manager       → member.invite + member.manage
-                + project.create + project.view + project.manage
-                + crm.view + crm.manage
-Finance/Commercial → project.view + crm.view
+Owner / Administrator
+    organisation.manage
+    member.invite
+    member.manage
+    project.create
+    project.view
+    project.manage
+    project.lifecycle.manage
+    project.participant.manage
+    project.team.manage
+    project.participation.manage
+    crm.view
+    crm.manage
+    crm.party.manage
+    crm.contact.manage
+
+Manager
+    member.invite
+    member.manage
+    project.create
+    project.view
+    project.lifecycle.manage
+    project.participant.manage
+    project.team.manage
+    project.participation.manage
+    crm.view
+    crm.party.manage
+    crm.contact.manage
+
+Finance/Commercial  → project.view + crm.view
 Member/Professional → project.view + crm.view
 Field Worker        → project.view
 Read Only           → project.view + crm.view
 ```
 
-A project permission grant does not itself expose a project; active member-level project scope is still required. CRM grants remain tenant-bounded by the selected active organisation.
+Manager deliberately does not receive the broad `project.manage` or `crm.manage` umbrellas. Owner and Administrator retain those umbrellas plus all current granular keys.
 
-## Transactional email boundary
-
-`src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral. `EMAIL_DELIVERY_MODE=console` is for local development and integration tests only.
+A project permission grant never exposes a project by itself; active project-member scope is still required. CRM grants remain tenant-bounded by the active organisation.
 
 ## Application access
 
-The current account/application UI includes:
+The current UI includes:
 
 - `/start` — first/additional organisation creation;
 - `/signin` — Better Auth email/password sign-in;
 - `/invite/[token]` — organisation invitation acceptance/account creation;
 - `/select-organisation` — active organisation membership selector;
-- `/dashboard` — protected organisation-scoped entry point;
+- `/dashboard` — protected tenant-scoped entry point;
 - `/crm` — private tenant CRM directory and party creation;
 - `/crm/[partyPublicId]` — CRM party maintenance, contacts and affiliations;
 - `/projects` — member-scoped project portfolio, project creation and project invitation inbox;
 - `/projects/[projectPublicId]` — project workspace, participant/team administration and lifecycle controls;
-- `/organisation` — permission-aware organisation administration workspace.
+- `/organisation` — permission-aware organisation administration.
 
 The `(app)` route-group server layout rejects unauthenticated users and redirects authenticated users without a verified tenant to organisation selection.
 
 ## Organisation administration
-
-`/organisation` is backed by `organisation-admin-service.ts` and `organisation-admin-repository.ts` and provides member lifecycle, member role assignment, invitation management, role management and permission grants.
 
 Administrative authority remains split:
 
@@ -111,17 +167,19 @@ member.manage       → member status + member role assignment
 organisation.manage → role definitions + permission grants + full admin authority
 ```
 
-The domain layer enforces delegation ceilings, manager protection, self-mutation restrictions, cross-tenant rejection and last-manager lockout protection.
+The domain layer enforces delegation ceilings, manager protection, self-mutation restrictions, cross-tenant rejection and final `organisation.manage` lockout protection.
 
 ## CRM parties and contacts
 
-`src/lib/server/crm/crm-service.ts` and `crm-repository.ts` activate the existing Package 002 relational model as a private organisation CRM.
+`src/lib/server/crm/crm-service.ts` and `crm-repository.ts` activate the existing Package 002 relational model as a private tenant CRM.
 
-Stable CRM permission keys are:
+Stable CRM permissions are:
 
 ```text
 crm.view
-crm.manage
+crm.manage              # umbrella
+crm.party.manage
+crm.contact.manage
 ```
 
 The effective CRM boundary is:
@@ -134,126 +192,46 @@ AND record.organisation_id = active organisation
 AND record-state business policy
 ```
 
-`crm.view` permits tenant-local discovery and direct reads. `crm.manage` permits party creation/update, business-role assignment, primary contact methods and person↔organisation contact relationships. Cross-tenant party public IDs are masked as not found.
+`crm.party.manage` controls party master data, lifecycle, business classifications and primary email/phone. `crm.contact.manage` controls person↔organisation contact relationships. A contact manager may create a new person only as part of the contact-creation transaction without gaining general party-maintenance authority. `crm.manage` remains the umbrella fallback.
 
-### Party identity
-
-CRM uses the Package 002 supertype/subtype model:
-
-```text
-parties
-├─ exactly one party_persons row
-└─ exactly one party_organisations row
-```
-
-The application transaction creates exactly the subtype matching `party_kind`. Business roles such as Client, Supplier, Subcontractor, Consultant and Developer are assignments to the same party identity rather than separate masters.
-
-CRM party identity is deliberately independent from:
-
-- NuBlox platform `organisations`;
-- authenticated `users`;
-- `organisation_members`;
-- workforce records;
-- project participant organisations.
-
-The same external business may therefore be represented privately in several customer tenants without becoming a global NuBlox directory record.
-
-### Contact methods and organisation contacts
-
-The first CRM UI maintains one primary email and one primary E.164 phone while retaining the underlying Package 002 multi-contact-method model for future expansion.
-
-Organisation contact context belongs on `party_organisation_contacts`, including:
-
-- person party;
-- organisation party;
-- job title;
-- department;
-- primary-contact flag;
-- relationship start/end dates.
-
-A user can create a new person directly as an organisation contact or link an existing tenant CRM person. Ending the relationship dates it rather than deleting party identity. Person workspaces show their current organisation affiliations.
-
-Archived CRM parties cannot receive new contact relationships. CRM mutations append audit evidence with public party IDs at the request boundary.
-
-Opportunities, pipelines and CRM activities are present in Baseline v1 but remain subsequent application slices.
+CRM identity remains independent from NuBlox platform organisations, authenticated users, organisation memberships, workforce identity and project participation. Cross-tenant public IDs are masked as not found.
 
 ## Project workspace and collaboration
 
-`src/lib/server/projects/project-workspace-service.ts` is the permission-aware application layer over the Platform Kernel project service. `project-team-service.ts` and `project-team-repository.ts` add collaboration administration while reusing the existing Package 001 project structures.
-
-Stable project permission keys remain:
+Project permissions are:
 
 ```text
 project.create
 project.view
-project.manage
+project.manage                    # umbrella
+project.lifecycle.manage
+project.participant.manage
+project.team.manage
+project.participation.manage
 ```
 
-The effective in-project access model is conjunctive:
+The normal project boundary is conjunctive:
 
 ```text
 active NuBlox user
 AND active organisation membership
-AND effective organisation permission
+AND effective project permission
 AND active project_organisations participation
-AND active project_members membership
-AND lifecycle/ownership policy
+AND active exact-member project_members membership
+AND ownership/lifecycle policy
 ```
 
-`/projects` lists only projects for which the exact current member has active project membership. A same-organisation user with `project.view` but no `project_members` row sees no project. Direct non-member project lookups are masked as not found.
+`project.lifecycle.manage` controls owner lifecycle state changes. `project.participant.manage` controls participant organisations and organisation-level contextual project roles. `project.team.manage` controls the active organisation's project members and member project roles. `project.participation.manage` controls invitation response and non-owner voluntary leave. `project.manage` remains umbrella fallback.
 
-Project creation requires `project.create` and atomically creates the project, owning-organisation participation, creator project membership and audit evidence. Lifecycle management requires scoped `project.manage` and remains owner-only.
+The invitation-response path is a deliberate pre-project-scope exception: the invited organisation may accept/decline with organisation-level `project.participation.manage` or its `project.manage` umbrella before the accepting member has a `project_members` row. Acceptance creates the first active member scope atomically.
 
-### Project organisation invitations
+Project-role assignments are contextual metadata and never grant permissions.
 
-The owning organisation can invite an active NuBlox organisation using its exact organisation public ID and assign one or more contextual project roles. The workflow intentionally does not provide an unrestricted organisation search directory.
+The service prevents removal of the final active scoped member with effective `project.team.manage` (including umbrella fallback) until another scoped team manager exists.
 
-An invited organisation is not yet permitted to open the project. A member who effectively holds organisation-level `project.manage` may accept or decline from the `/projects` invitation inbox **before project scope exists**. This is the deliberate exception to the normal project-scoped `project.manage` evaluation:
+## Transactional email boundary
 
-```text
-pending project invitation
-AND active organisation membership
-AND organisation-level project.manage
-        ↓ accept
-active project_organisations participation
-AND accepting member project_members scope
-```
-
-After acceptance, normal project-scope rules apply. Decline is preserved as explicit `project_organisations.status = declined`, and a later owner re-invitation can reactivate the collaboration request.
-
-Only the owning organisation may invite/re-invite, revoke/remove participant organisations, or change organisation-level project-role assignments. Removal terminates every active `project_members` scope belonging to the removed organisation.
-
-### Project team administration
-
-Each active participating organisation manages only **its own organisation members** within the project. A scoped project manager may:
-
-- add an active member from the same organisation to `project_members`;
-- remove that organisation member from the project;
-- assign/update contextual member project roles;
-- leave the project when the active organisation is not the owner.
-
-Cross-organisation member IDs are rejected by the service/repository boundary and by the underlying composite foreign keys.
-
-Project-role assignments in `project_role_types`, `project_organisation_roles` and `project_member_roles` describe delivery context only. They do **not** grant permissions. Effective authority continues to come from NuBlox organisation roles/overrides plus active project scope.
-
-The service prevents removal of the final active scoped member in an organisation who effectively holds `project.manage`; another scoped project manager must exist first. Leaving a project or owner removal terminates all active member scope for that participant while preserving participation history.
-
-## Permission resolution
-
-`src/lib/server/capabilities/permission-service.ts` implements organisation permission precedence:
-
-```text
-explicit member deny
-    > explicit member allow
-    > active organisation-role grant
-    > default deny
-```
-
-`decideMany()` resolves multiple organisation permissions efficiently. When a `projectId` is supplied, permission resolution additionally verifies active participant and exact-member project scope.
-
-## Implemented Platform Kernel foundation
-
-The database-backed kernel includes active organisation/user/member tuple verification, participant-scoped project reads, transactional project creation, owner-scoped project lifecycle mutation, optimistic lifecycle guards and append-only audit evidence.
+`src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral. `EMAIL_DELIVERY_MODE=console` is for development and integration tests only.
 
 ## Run
 
@@ -289,4 +267,4 @@ pnpm check
 pnpm test:integration
 ```
 
-The permanent CI gate applies all seven current migrations to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** application structure, regenerates Kysely types with zero drift, runs CRM/project-team/project-workspace/bootstrap/organisation-administration/provisioning/authentication/permission and Platform Kernel integration tests, and runs the SvelteKit type-check. The CRM executable close-out passed **9 integration files / 41 tests** and `svelte-check` with **0 errors / 0 warnings**; the final documentation-synchronised branch head is validated by the same gate before merge.
+The permanent CI gate applies the full production migration stream to MySQL 8.4, verifies the **344-table / 749-FK / 429-CHECK** structural contract, checks generated Kysely types for drift, runs the real-MySQL integration suite, and runs the SvelteKit type-check.
