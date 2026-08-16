@@ -682,6 +682,9 @@ export class ContractAmendmentService {
 			const decision = await this.mutationDecision(actor, 'contract.amendment.issue', trx);
 			if (!decision.allowed) throw new TenantAccessError('Contract amendment issue is not permitted.');
 			const { contract, amendment } = await this.lockDraft(trx, actor, contractPublicId, amendmentPublicId);
+			if (!amendment.effectiveOn) {
+				throw new ContractAmendmentValidationError('Set an effective date before issuing the amendment.');
+			}
 			const [value, date] = await Promise.all([
 				trx.selectFrom('contract_amendment_value_adjustments').select('id').where('organisation_id', '=', actor.organisationId).where('contract_amendment_id', '=', amendment.id).limit(1).executeTakeFirst(),
 				trx.selectFrom('contract_amendment_key_date_changes').select('id').where('organisation_id', '=', actor.organisationId).where('contract_amendment_id', '=', amendment.id).limit(1).executeTakeFirst()
@@ -691,7 +694,7 @@ export class ContractAmendmentService {
 			}
 			const issuedAt = this.now();
 			await trx.updateTable('contract_amendments').set({ lifecycle_status: 'issued', issued_by_member_id: membership.id, issued_at: issuedAt }).where('id', '=', amendment.id).where('organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: 'contract.amendment.issued', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { issuedAt } });
+			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: 'contract.amendment.issued', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { issuedAt, effectiveOn: amendment.effectiveOn } });
 		});
 	}
 
