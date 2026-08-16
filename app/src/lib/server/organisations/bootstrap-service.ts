@@ -34,7 +34,17 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'contract.create',
 	'contract.draft.manage',
 	'contract.issue',
-	'contract.execute'
+	'contract.execute',
+	'contract.amendment.create',
+	'contract.amendment.draft.manage',
+	'contract.amendment.issue',
+	'contract.amendment.decide',
+	'finance.view',
+	'finance.manage',
+	'finance.billing.manage',
+	'finance.invoice.create',
+	'finance.invoice.draft.manage',
+	'finance.invoice.issue'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -67,7 +77,17 @@ const STANDARD_ROLES = [
 			'contract.create',
 			'contract.draft.manage',
 			'contract.issue',
-			'contract.execute'
+			'contract.execute',
+			'contract.amendment.create',
+			'contract.amendment.draft.manage',
+			'contract.amendment.issue',
+			'contract.amendment.decide',
+			'finance.view',
+			'finance.manage',
+			'finance.billing.manage',
+			'finance.invoice.create',
+			'finance.invoice.draft.manage',
+			'finance.invoice.issue'
 		]
 	},
 	{
@@ -99,7 +119,17 @@ const STANDARD_ROLES = [
 			'contract.create',
 			'contract.draft.manage',
 			'contract.issue',
-			'contract.execute'
+			'contract.execute',
+			'contract.amendment.create',
+			'contract.amendment.draft.manage',
+			'contract.amendment.issue',
+			'contract.amendment.decide',
+			'finance.view',
+			'finance.manage',
+			'finance.billing.manage',
+			'finance.invoice.create',
+			'finance.invoice.draft.manage',
+			'finance.invoice.issue'
 		]
 	},
 	{
@@ -121,7 +151,7 @@ const STANDARD_ROLES = [
 	},
 	{
 		name: 'Finance/Commercial',
-		description: 'Commercial and finance role template with delegated commercial sales-document authority.',
+		description: 'Commercial and finance role template with delegated commercial sales-document and accounts-receivable authority.',
 		permissionKeys: [
 			'project.view',
 			'crm.view',
@@ -130,7 +160,12 @@ const STANDARD_ROLES = [
 			'commercial.quotation.manage',
 			'commercial.quotation.issue',
 			'commercial.quotation.response.record',
-			'contract.view'
+			'contract.view',
+			'finance.view',
+			'finance.billing.manage',
+			'finance.invoice.create',
+			'finance.invoice.draft.manage',
+			'finance.invoice.issue'
 		]
 	},
 	{
