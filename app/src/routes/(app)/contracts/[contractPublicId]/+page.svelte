@@ -164,9 +164,45 @@
 				<p class="muted">The contract is active. Project lifecycle remains independently controlled.</p>
 			</section>
 		{/if}
+
+		<section class="panel amendments-panel">
+			<p class="eyebrow">Controlled change</p><h2>Contract amendments</h2>
+			{#if data.amendments.baselineValue !== null}
+				<dl>
+					<div><dt>Executed baseline</dt><dd>{currency(data.amendments.baselineValue)}</dd></div>
+					<div><dt>Agreed adjustments</dt><dd>{currency(data.amendments.agreedAdjustmentTotal)}</dd></div>
+					<div><dt>Current value</dt><dd><strong>{currency(data.amendments.currentContractValue ?? data.amendments.baselineValue)}</strong></dd></div>
+				</dl>
+			{/if}
+
+			{#if data.amendments.items.length === 0}
+				<p class="muted">No amendments have been recorded.</p>
+			{:else}
+				<div class="amendments">
+					{#each data.amendments.items as amendment}
+						<a href={`/contracts/${data.contract.publicId}/amendments/${amendment.publicId}`}>
+							<span><strong>{amendment.amendmentNumber} · {amendment.title}</strong><small>{amendment.typeName}{amendment.effectiveOn ? ` · effective ${new Date(amendment.effectiveOn).toLocaleDateString()}` : ''}</small></span>
+							<em>{amendment.lifecycleStatus}</em>
+						</a>
+					{/each}
+				</div>
+			{/if}
+
+			{#if data.amendments.canCreate}
+				<form class="amendment-form" method="POST" action="?/createAmendment">
+					<label>Amendment type<select name="typeCode" required>{#each data.amendments.amendmentTypes as type}<option value={type.code}>{type.name}</option>{/each}</select></label>
+					<label>Title<input name="title" maxlength="255" required/></label>
+					<label>Effective date<input name="effectiveOn" type="date"/></label>
+					<label>Description<textarea name="description" rows="4" maxlength="16000"></textarea></label>
+					<button type="submit">Create draft amendment</button>
+				</form>
+			{:else if !data.execution}
+				<p class="muted">An executed active contract baseline is required before amendments can be created.</p>
+			{/if}
+		</section>
 	</aside>
 </div>
 
 <style>
-	.breadcrumbs{display:flex;gap:.55rem;align-items:center;margin-bottom:1rem;color:#666;font-size:.9rem}.breadcrumbs a{color:inherit;font-weight:650}.page-heading{display:flex;justify-content:space-between;gap:1rem;align-items:start;margin-bottom:1rem}.page-heading h1{margin:.15rem 0 .3rem;font-size:clamp(2rem,5vw,2.8rem);letter-spacing:-.04em}.page-heading p{margin:0;color:#666}.eyebrow{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;font-weight:760;color:#666}.status{padding:.3rem .55rem;border-radius:999px;background:#e4f5e8;color:#285f35;font-size:.76rem;font-weight:760;text-transform:capitalize}.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(20rem,.7fr);gap:1rem;align-items:start}.stack{display:grid;gap:1rem}.panel{background:white;border:1px solid #d9d9d2;border-radius:.8rem;padding:1.1rem}.panel h2{margin:.3rem 0 .8rem}.action-panel{border-color:#b9cbe6}.success{border-color:#b9d7bf}.muted{color:#666;line-height:1.5}dl{display:grid;gap:.55rem;margin:.7rem 0}dl div{display:grid;grid-template-columns:8rem 1fr;gap:.6rem}dt{color:#666;font-size:.82rem}dd{margin:0}.lines{display:grid;gap:.45rem}.line{display:flex;gap:.8rem;align-items:center;justify-content:space-between;padding:.65rem;border:1px solid #e3e3dd;border-radius:.5rem}.line span{display:grid;gap:.1rem;min-width:0}.line small{color:#666}.inline-form,form{display:grid;gap:.7rem}.inline-form{margin-top:1rem;padding-top:1rem;border-top:1px solid #ecece7;grid-template-columns:1fr 1.2fr .7fr auto;align-items:end}label{display:grid;gap:.3rem;font-weight:650}input,select,textarea{width:100%;box-sizing:border-box;padding:.58rem;border:1px solid #c9c9c2;border-radius:.45rem;background:white;font:inherit}button{width:max-content;padding:.6rem .78rem;border:0;border-radius:.46rem;background:#111;color:white;font:inherit;font-weight:750;cursor:pointer}.quiet{background:transparent;color:#7a3027;padding:.25rem;text-decoration:underline}.error{color:#8a3025}.banner{padding:.7rem .8rem;background:#fff0ed;border:1px solid #e1b1aa;border-radius:.5rem}@media(max-width:950px){.grid{grid-template-columns:1fr}.inline-form{grid-template-columns:1fr}.page-heading{display:grid}.line{align-items:start;flex-wrap:wrap}dl div{grid-template-columns:1fr;gap:.15rem}}
+	.breadcrumbs{display:flex;gap:.55rem;align-items:center;margin-bottom:1rem;color:#666;font-size:.9rem}.breadcrumbs a{color:inherit;font-weight:650}.page-heading{display:flex;justify-content:space-between;gap:1rem;align-items:start;margin-bottom:1rem}.page-heading h1{margin:.15rem 0 .3rem;font-size:clamp(2rem,5vw,2.8rem);letter-spacing:-.04em}.page-heading p{margin:0;color:#666}.eyebrow{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;font-weight:760;color:#666}.status{padding:.3rem .55rem;border-radius:999px;background:#e4f5e8;color:#285f35;font-size:.76rem;font-weight:760;text-transform:capitalize}.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(20rem,.7fr);gap:1rem;align-items:start}.stack{display:grid;gap:1rem}.panel{background:white;border:1px solid #d9d9d2;border-radius:.8rem;padding:1.1rem}.panel h2{margin:.3rem 0 .8rem}.action-panel{border-color:#b9cbe6}.success{border-color:#b9d7bf}.amendments-panel{border-color:#d8c9ad}.muted{color:#666;line-height:1.5}dl{display:grid;gap:.55rem;margin:.7rem 0}dl div{display:grid;grid-template-columns:8rem 1fr;gap:.6rem}dt{color:#666;font-size:.82rem}dd{margin:0}.lines{display:grid;gap:.45rem}.line{display:flex;gap:.8rem;align-items:center;justify-content:space-between;padding:.65rem;border:1px solid #e3e3dd;border-radius:.5rem}.line span{display:grid;gap:.1rem;min-width:0}.line small{color:#666}.inline-form,form{display:grid;gap:.7rem}.inline-form{margin-top:1rem;padding-top:1rem;border-top:1px solid #ecece7;grid-template-columns:1fr 1.2fr .7fr auto;align-items:end}.amendment-form{margin-top:1rem;padding-top:1rem;border-top:1px solid #ecece7}.amendments{display:grid;gap:.45rem}.amendments a{display:flex;justify-content:space-between;gap:.7rem;padding:.65rem;border:1px solid #e3e3dd;border-radius:.5rem;color:inherit;text-decoration:none}.amendments span{display:grid;gap:.15rem}.amendments small{color:#666}.amendments em{font-style:normal;text-transform:capitalize;font-size:.75rem;font-weight:750}label{display:grid;gap:.3rem;font-weight:650}input,select,textarea{width:100%;box-sizing:border-box;padding:.58rem;border:1px solid #c9c9c2;border-radius:.45rem;background:white;font:inherit}button{width:max-content;padding:.6rem .78rem;border:0;border-radius:.46rem;background:#111;color:white;font:inherit;font-weight:750;cursor:pointer}.quiet{background:transparent;color:#7a3027;padding:.25rem;text-decoration:underline}.error{color:#8a3025}.banner{padding:.7rem .8rem;background:#fff0ed;border:1px solid #e1b1aa;border-radius:.5rem}@media(max-width:950px){.grid{grid-template-columns:1fr}.inline-form{grid-template-columns:1fr}.page-heading{display:grid}.line{align-items:start;flex-wrap:wrap}dl div{grid-template-columns:1fr;gap:.15rem}}
 </style>

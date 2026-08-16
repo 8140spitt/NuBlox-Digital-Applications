@@ -35,21 +35,11 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production migration stream then adds:
+The production migration stream then adds authentication/provisioning and application permission activation through CRM, sales, accepted-quotation project conversion and Package 004 contract workflows. The latest forward migration is:
 
-- `20260815145430_authentication_boundary.sql` — Better Auth infrastructure and explicit auth-to-domain user linking;
-- `20260815151500_account_provisioning.sql` — controlled organisation invitations and intended invitation role assignments;
-- `20260815161900_organisation_administration_permissions.sql` — organisation-administration permissions;
-- `20260815203700_project_workspace_permissions.sql` — project create/view/manage catalogue and initial standard-role grants;
-- `20260815211600_project_participants_team.sql` — project-participation decline semantics and contextual project-role catalogue;
-- `20260815214500_crm_contacts_permissions.sql` — CRM view/manage catalogue and initial standard-role grants;
-- `20260815222500_permission_granularity.sql` — granular project and CRM management permissions and revised Manager defaults;
-- `20260815223800_crm_opportunities_activities.sql` — opportunity/activity permissions plus non-destructive default Sales pipeline provisioning;
-- `20260815231500_estimates_quotations_permissions.sql` — commercial estimate/quotation permissions and aligned standard-role grants;
-- `20260816001000_accepted_quotation_project_conversion.sql` — explicit accepted-quotation conversion permission over the existing Package 003 conversion ledger;
-- `20260816005000_contract_formation_permissions.sql` — explicit Package 004 contract permission catalogue and standard-role grants over the existing normalised contract structures.
+- `20260816015500_contract_amendment_permissions.sql` — granular controlled-amendment delegation under the existing Package 004 `contract.manage` umbrella.
 
-The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The newest CRM/commercial/contract migrations are data/reference-only and activate normalised structures already present in Packages 002–004.
+The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The CRM/commercial/contract migrations are data/reference-only where the required normalised business structures already exist in Packages 002–004.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -134,10 +124,14 @@ contract.manage
     ├─ contract.create
     ├─ contract.draft.manage
     ├─ contract.issue
-    └─ contract.execute
+    ├─ contract.execute
+    ├─ contract.amendment.create
+    ├─ contract.amendment.draft.manage
+    ├─ contract.amendment.issue
+    └─ contract.amendment.decide
 ```
 
-The granular key is resolved first. Its domain umbrella is used only when the granular key has no explicit member/role decision. A granular member deny therefore cannot be bypassed by an umbrella grant. **Permission umbrellas do not cross domain families:** for example, `commercial.manage` does not grant Package 004 contract authority.
+The granular key is resolved first. Its domain umbrella is used only when the granular key has no explicit member/role decision. A granular member deny therefore cannot be bypassed by an umbrella grant. **Permission umbrellas do not cross domain families:** `commercial.manage` does not grant Package 004 contract or amendment authority.
 
 ## Controlled account provisioning and standard roles
 
@@ -145,7 +139,7 @@ NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisi
 
 Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
 
-**Owner and Administrator** receive the broad project/CRM/commercial/contract umbrellas plus the established granular permissions. Their `commercial.manage` + `project.create` authority permits accepted-quotation project conversion unless a granular member exception denies it; their separate Package 004 contract grants permit contract formation, draft management, issue and execution.
+**Owner and Administrator** receive the broad project/CRM/commercial/contract umbrellas plus established granular permissions. `contract.manage` supplies broad Package 004 amendment authority; granular amendment keys support narrower future/custom delegation and explicit member exceptions.
 
 **Manager** receives granular project and CRM party/contact authority without broad project/CRM umbrellas. Manager may have `project.create`, but does not automatically receive sales, commercial conversion or contract authority.
 
@@ -162,11 +156,11 @@ commercial.quotation.response.record
 contract.view
 ```
 
-Finance/Commercial deliberately does **not** receive `commercial.manage`, `commercial.quotation.convert`, `project.create`, `contract.manage`, `contract.create`, `contract.draft.manage`, `contract.issue` or `contract.execute`. Cross-domain conversion and Package 004 contract mutations must be deliberately delegated if an organisation wants that role to perform them.
+Finance/Commercial deliberately does **not** receive `commercial.manage`, `commercial.quotation.convert`, `project.create` or `contract.manage`. Cross-domain conversion and Package 004 mutations must be deliberately delegated.
 
 Member/Professional receives `project.view + crm.view`, Field Worker receives `project.view`, and Read Only receives `project.view + crm.view`.
 
-The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles. Forward migrations for existing organisations and `OrganisationBootstrapService` defaults for future organisations are kept in parity by integration tests.
+The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
 
 ## Organisation administration
 
@@ -195,14 +189,7 @@ crm.opportunity.manage
 crm.activity.manage
 ```
 
-The application includes:
-
-- `/crm` — tenant CRM party directory and party creation;
-- `/crm/[partyPublicId]` — party maintenance, contacts and affiliations;
-- `/crm/opportunities` — opportunity portfolio, filtering and creation;
-- `/crm/opportunities/[opportunityPublicId]` — stage/value/outcome, participants and chronological activity timeline.
-
-Pipeline **stage** represents sales maturity while opportunity `status` represents terminal outcome (`open`, `won`, `lost`, `cancelled`). Existing/future tenants without pipeline configuration receive an audited default Sales pipeline without overwriting custom configuration.
+The application includes `/crm`, party workspaces, opportunities and activity timelines. Pipeline **stage** represents sales maturity while opportunity `status` represents terminal outcome (`open`, `won`, `lost`, `cancelled`).
 
 See [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md).
 
@@ -215,81 +202,34 @@ CRM Opportunity
     ↓
 Estimate
     ↓
-Estimate Version 1 (draft)
-    ↓
-Internal cost build-up + explicit sell rates
-    ↓
 Final Estimate Version
     ↓
 Quotation
     ↓
-Quotation Version 1 (draft)
-    ↓
-Tax + narrative
-    ↓
-Issue lock + customer/contact/address snapshots
-    ↓
-Customer response
-    ↓
-Accepted Quotation Version
+Issued + accepted Quotation Version
     ↓
 Idempotent conversion
     ↓
 Proposed Project / Job
 ```
 
-Protected routes are:
+Protected routes include:
 
-- `/commercial/estimates` — estimate portfolio and opportunity-to-estimate creation;
-- `/commercial/estimates/[estimatePublicId]` — internal estimate lines, cost components, totals and finalisation;
-- `/commercial/quotations` — quotation portfolio and effective status;
-- `/commercial/quotations/[quotationPublicId]` — customer-facing lines, tax snapshots, narrative, issue evidence and response history;
-- `/commercial/quotations/[quotationPublicId]/convert` — exact accepted-version project conversion workspace.
+- `/commercial/estimates`
+- `/commercial/estimates/[estimatePublicId]`
+- `/commercial/quotations`
+- `/commercial/quotations/[quotationPublicId]`
+- `/commercial/quotations/[quotationPublicId]/convert`
 
-The implementation reuses Package 003's normalised estimate/quotation/response/conversion structures and Package 001 project structures. No second customer, estimate, quotation, conversion or project ledger is introduced.
+Authoritative calculation uses scaled `BigInt` decimal arithmetic rather than JavaScript binary floating point. `quotation_project_conversions` is the authoritative conversion idempotency/provenance ledger.
 
-### Commercial calculation boundary
-
-Authoritative calculation uses scaled `BigInt` decimal arithmetic rather than JavaScript binary floating point:
-
-```text
-quantity       → scale 6
-money/rate     → scale 4
-percentage     → scale 4
-money result   → scale 4
-rounding       → half-up when reducing scale
-```
-
-Estimate sell/cost/margin and quotation net/tax/gross totals exclude optional lines until an explicit customer option-selection model exists.
-
-### Version and issue integrity
-
-Estimate version 1 supports `draft → final`; final/superseded versions are immutable through the service. A quotation can be created only from a final estimate version, with exact source provenance retained.
-
-Quotation version 1 supports `draft → issued`. Issue snapshots CRM customer/contact/address facts and locks the version. Tenant tax configuration is snapshotted per line. Responses are permitted only against issued/locked versions; effective quotation status is derived from version/response evidence.
-
-### Accepted quotation → project
-
-Conversion requires:
-
-```text
-commercial.quotation.convert OR commercial.manage
-AND project.create
-AND exact issued + locked quotation version
-AND accepted response for that exact version
-```
-
-`quotation_project_conversions` is the authoritative idempotency/provenance ledger. The transaction locks commercial source evidence, creates exactly one `proposed` project, establishes the owning organisation and converting member's initial project scope, links `quotations.project_id` and exact source `estimates.project_id`, and writes audit evidence. A retry returns the already-created project.
-
-The conversion deliberately does **not** infer the CRM customer as a NuBlox participant, create a project site from a CRM address, activate the project, form a contract or create finance records.
+The conversion deliberately does **not** infer the CRM customer as a NuBlox participant, create a project site, activate the project, form a contract or create finance records.
 
 See [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md).
 
-**Still not claimed implemented in Package 003:** estimate/quotation revision workflows, quotation withdrawal, customer option selection, sales-catalogue/tax administration UI, PDF rendering, production outbound quotation email delivery, inferred customer project participation or automatic project-site creation.
+## Controlled contract formation and execution
 
-## Controlled contract formation
-
-Package 004 is now activated through the first controlled contract-formation slice:
+Package 004 formation is implemented as:
 
 ```text
 Accepted Quotation Version
@@ -311,21 +251,50 @@ Active Contract
 
 Protected routes are:
 
-- `/contracts` — tenant contract portfolio and accepted-work formation queue;
-- `/contracts/new?project=[projectPublicId]` — exact accepted-quotation/project provenance and controlled draft contract creation;
-- `/contracts/[contractPublicId]` — version parties, value components, key dates, issue evidence and execution evidence.
+- `/contracts` — contract portfolio plus accepted-quotation/project formation queues;
+- `/contracts/new?project=[projectPublicId]` — controlled quotation-derived formation;
+- `/contracts/[contractPublicId]` — contract version, party, value, date, issue, execution and amendment history workspace.
 
-Formation reuses the Package 004 `contracts` / `contract_versions` model and retains exact `project_id`, `opportunity_id` and `source_quotation_response_id` provenance. The accepted quotation customer is copied into versioned contract-party evidence using the immutable quotation snapshot where available; the tenant NuBlox organisation is not silently duplicated into CRM as a synthetic self-party.
-
-The initial `base_scope` contract value is derived from the accepted quotation's non-optional net lines using the same fixed-precision Package 003 decimal arithmetic. Formation locks the source project and is idempotent for the exact project + accepted response without introducing a database uniqueness rule that would forbid legitimate future multi-contract projects.
-
-Draft version 1 supports controlled title/reference, value-component and key-date changes. Issue changes `draft → issued`, records lock/recipient evidence and makes the version immutable through normal draft APIs. Execution records one execution event and signatory evidence, changes the version to `executed` and the logical contract to `active`.
-
-Contract execution deliberately does **not** activate the project, infer a customer platform organisation, create a project participant, issue an invoice or create a payment/ledger fact.
+Formation retains exact `project_id`, `opportunity_id` and `source_quotation_response_id` provenance. Version 1 snapshots accepted customer evidence, derives initial `base_scope` from non-optional quotation net lines using fixed-precision arithmetic, and becomes immutable after issue. Execution records one execution event/signatory set and makes the logical contract active without changing project lifecycle.
 
 See [`docs/33-contract-formation.md`](docs/33-contract-formation.md).
 
-**Still not claimed implemented in Package 004:** contract version 2+ revision/supersession, withdrawal, post-execution amendments, multiple contract parties beyond the accepted quotation customer, PDF/document rendering, production outbound contract/e-sign delivery, automatic project activation, invoices, credit notes, payments or allocations.
+## Controlled contract amendments
+
+Package 004 post-execution change is now implemented using the existing normalised amendment model:
+
+```text
+Active + Executed Contract Baseline
+        ↓
+Draft Amendment
+        ├── scope / terms narrative
+        ├── signed value adjustment(s)
+        └── key-date change(s)
+        ↓
+Issue / freeze
+        ↓
+Agreed | Rejected | Withdrawn
+```
+
+The dedicated amendment workspace is:
+
+- `/contracts/[contractPublicId]/amendments/[amendmentPublicId]`
+
+Creation requires an active contract with an executed contract-version baseline. Draft amendments support controlled details, positive/negative fixed-precision value adjustments and replacement key dates. The domain service requires an effective date and substantive change evidence before issue; issued amendments reject ordinary draft mutation.
+
+Only **agreed** amendments affect the derived contractual position:
+
+```text
+Current Contract Value
+= Executed Baseline Value Components
++ Sum(Agreed Amendment Value Adjustments)
+```
+
+Draft, issued, rejected and withdrawn adjustments do not alter current value. Rejected/withdrawn records remain historical evidence. All amendment lifecycle/mutation actions are tenant-scoped and audited; foreign-tenant public IDs are masked.
+
+See [`docs/34-contract-amendments.md`](docs/34-contract-amendments.md).
+
+**Still not claimed implemented in Package 004:** contract version 2+ revision/supersession, PDF/document rendering, production outbound contract/amendment/e-sign delivery, customer portal amendment decisions, automatic project activation, operational invoices, credit notes, payments or allocations.
 
 ## Projects, participants and teams
 
@@ -361,6 +330,6 @@ pnpm check
 pnpm test:integration
 ```
 
-The controlled-contract executable candidate applies **12 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift, passes **15 integration files / 66 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings** on the first executable Package 004 head. The final documentation-synchronised head must prove the same gate before merge.
+The Package 004 amendment release candidate applies **13 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift, passes **16 integration files / 72 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised PR head must prove these exact results before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).

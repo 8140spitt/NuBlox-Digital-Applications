@@ -28,6 +28,8 @@ Issue + immutable issue evidence
 Execution + signatory evidence
     ↓
 Active Contract
+    ↓
+Controlled Contract Amendments (see docs/34-contract-amendments.md)
 ```
 
 Project lifecycle remains independent. Executing a contract does **not** automatically move a project from `proposed` to `active`.
@@ -40,11 +42,11 @@ Project lifecycle remains independent. Executing a contract does **not** automat
 /contracts/[contractPublicId]
 ```
 
-`/contracts` shows tenant contract records and proposed projects created from accepted quotations that are eligible for controlled contract formation.
+`/contracts` shows tenant contract records, accepted quotations still awaiting controlled project conversion, and proposed projects created from accepted quotations that are eligible for controlled contract formation.
 
 `/contracts/new` exposes the exact accepted-quotation/project provenance before creation and creates one draft contract/version from that source.
 
-`/contracts/[contractPublicId]` exposes version parties, baseline value components, key dates, issue evidence and execution evidence. Draft mutation is disabled after issue.
+`/contracts/[contractPublicId]` exposes version parties, baseline value components, key dates, issue evidence and execution evidence. Draft mutation is disabled after issue. Once executed, it also exposes the controlled amendment history and amendment creation entry point defined in `docs/34-contract-amendments.md`.
 
 ## 3. Permission family
 
@@ -52,22 +54,27 @@ Package 004 contract permissions are:
 
 ```text
 contract.view
-contract.manage                  # broad umbrella
+contract.manage                  # broad Package 004 umbrella
 contract.create
 contract.draft.manage
 contract.issue
 contract.execute
+contract.amendment.create
+contract.amendment.draft.manage
+contract.amendment.issue
+contract.amendment.decide
 ```
 
-`contract.manage` is the umbrella fallback for the granular Package 004 contract mutations. Contract authority is deliberately independent from the Package 003 `commercial.*` family; an existing custom role with `commercial.manage` does not silently acquire contract creation, issue or execution rights.
+`contract.manage` is the umbrella fallback for granular Package 004 contract mutations. Contract authority is deliberately independent from the Package 003 `commercial.*` family; an existing custom role with `commercial.manage` does not silently acquire contract creation, issue, execution or amendment rights.
 
-Standard-role defaults are explicit and are kept in parity between the forward migration and future organisation bootstrap:
+Standard-role defaults remain:
 
-- Owner / Administrator receive `contract.view`, `contract.manage` and the four first-slice granular mutation keys;
+- Owner / Administrator receive `contract.view`, `contract.manage` and the first-slice formation granular keys through organisation bootstrap;
+- `contract.manage` also supplies broad amendment authority through the established umbrella semantics;
 - Finance/Commercial receives `contract.view` only;
 - Manager / Member/Professional / Field Worker / Read Only receive no automatic contract authority.
 
-Direct `contract.view`, `contract.manage` and granular contract keys remain available for narrower custom delegation. Within the contract family, granular member decisions are resolved before the `contract.manage` umbrella, so an explicit granular deny cannot be bypassed by the umbrella.
+Granular amendment keys are available for narrower custom delegation. Within the contract family, granular member decisions are resolved before the `contract.manage` umbrella, so an explicit granular deny cannot be bypassed by the umbrella.
 
 Contract formation from a project additionally requires `project.view` and exact active project-member scope because the source project is the controlled formation context.
 
@@ -165,9 +172,11 @@ Execution does not:
 - create a payment/ledger entry;
 - infer another platform organisation from the CRM customer.
 
+Post-execution change is handled by controlled amendment records rather than editing the executed version.
+
 ## 10. Audit actions
 
-The first slice records:
+Formation/execution records:
 
 ```text
 contract.created_from_accepted_quotation
@@ -179,6 +188,8 @@ contract.key_date.removed
 contract.issued
 contract.executed
 ```
+
+Amendment audit actions are specified separately in `docs/34-contract-amendments.md`.
 
 ## 11. Validation contract
 
@@ -192,7 +203,7 @@ real-MySQL integration suite passes
 svelte-check = 0 errors / 0 warnings
 ```
 
-The Package 004 contract suite additionally covers:
+The Package 004 formation suite additionally covers:
 
 - exact accepted-response/project provenance;
 - initial base-scope value from accepted quotation lines;
@@ -204,19 +215,18 @@ The Package 004 contract suite additionally covers:
 - independent project lifecycle;
 - cross-tenant masking.
 
-Standard-role bootstrap parity is covered by the organisation bootstrap integration suite so existing migrated organisations and future organisations receive the same Package 004 defaults.
-
 ## 12. Deliberate exclusions / next increments
 
 Not claimed implemented here:
 
 - contract version 2+ revision/supersession;
 - contract withdrawal;
-- post-execution amendments;
 - multiple contract parties beyond the accepted quotation customer;
 - document/PDF rendering;
 - production contract email/e-sign delivery;
 - automatic project activation;
 - invoices, credit notes, payments or allocations.
 
-The next Package 004 boundary after this slice is controlled **contract amendments and/or operational accounts-receivable invoicing**, selected deliberately rather than coupled to execution as an automatic side effect.
+Controlled post-execution amendments are now implemented in `docs/34-contract-amendments.md`.
+
+The next Package 004 boundary after amendments is **operational accounts receivable**: billing settings, draft invoice, immutable invoice issue, payment receipt and allocation.

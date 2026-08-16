@@ -2,6 +2,7 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { ContractAmendmentService } from '$lib/server/contracts/contract-amendment-service';
 import { ContractService, ContractValidationError } from '$lib/server/contracts/contract-service';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
@@ -37,7 +38,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new ContractService(getDatabase()).getWorkspace(actor, params.contractPublicId);
+		const db = getDatabase();
+		const [workspace, amendments] = await Promise.all([
+			new ContractService(db).getWorkspace(actor, params.contractPublicId),
+			new ContractAmendmentService(db).listForContract(actor, params.contractPublicId)
+		]);
+		return { ...workspace, amendments };
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Contract not found.');
 		if (cause instanceof TenantAccessError) throw httpError(403, 'Contract access is not permitted.');
@@ -46,6 +52,27 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 };
 
 export const actions: Actions = {
+	createAmendment: async ({ request, locals, params }) => {
+		const actor = actorFromLocals(locals);
+		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
+		const data = await request.formData();
+		let amendment;
+		try {
+			amendment = await new ContractAmendmentService(getDatabase()).create(actor, {
+				contractPublicId: params.contractPublicId,
+				typeCode: String(data.get('typeCode') ?? ''),
+				title: String(data.get('title') ?? ''),
+				description: String(data.get('description') ?? ''),
+				effectiveOn: String(data.get('effectiveOn') ?? '')
+			});
+		} catch (cause) {
+			return actionFailure(cause);
+		}
+		throw redirect(
+			303,
+			`/contracts/${encodeURIComponent(params.contractPublicId)}/amendments/${encodeURIComponent(amendment.publicId)}`
+		);
+	},
 	updateDraft: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });

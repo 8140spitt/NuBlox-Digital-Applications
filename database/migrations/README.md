@@ -94,56 +94,26 @@ commercial.quotation.response.record
 
 `commercial.manage` is umbrella fallback for granular commercial mutations.
 
-Standard defaults:
-
-```text
-Owner / Administrator
-    commercial.view
-    commercial.manage
-    commercial.estimate.manage
-    commercial.quotation.manage
-    commercial.quotation.issue
-    commercial.quotation.response.record
-
-Finance/Commercial
-    commercial.view
-    commercial.estimate.manage
-    commercial.quotation.manage
-    commercial.quotation.issue
-    commercial.quotation.response.record
-    # no commercial.manage
-
-Manager / Member/Professional / Field Worker / Read Only
-    no automatic Package 003 commercial grants
-```
-
-The migration is data-only because Baseline v1 already contains the normalised Package 003 estimate, quotation, issue, response and conversion structures.
-
 ### `20260816001000_accepted_quotation_project_conversion.sql`
 
-Activates the existing Package 003 accepted-quotation conversion boundary by adding one stable granular permission:
+Adds the granular cross-domain conversion permission:
 
 ```text
 commercial.quotation.convert
 ```
 
-The migration deliberately adds **no standard-role grant**.
-
-Runtime conversion requires both:
+Runtime conversion requires:
 
 ```text
-commercial.quotation.convert
-    OR commercial.manage umbrella fallback
+commercial.quotation.convert OR commercial.manage
 AND project.create
 ```
 
-This preserves separation between commercial conversion authority and project-creation authority. Owner/Administrator already satisfy the commercial side through `commercial.manage` and the project side through `project.create`. Finance/Commercial, Manager and custom roles require deliberate delegation where an organisation wants them to perform this cross-domain action.
-
-No conversion table is added: Baseline v1 already contains `quotation_project_conversions`, with unique response/project keys and same-tenant foreign keys. The application uses it as the authoritative idempotency/provenance ledger while also setting existing `quotations.project_id` and source `estimates.project_id` links.
+No conversion table is added: Baseline v1 already contains `quotation_project_conversions`, which remains the authoritative idempotency/provenance ledger.
 
 ### `20260816005000_contract_formation_permissions.sql`
 
-Activates the first Package 004 contract-formation application slice through:
+Activates Package 004 controlled contract formation through:
 
 ```text
 contract.view
@@ -154,34 +124,36 @@ contract.issue
 contract.execute
 ```
 
-`contract.manage` is the umbrella fallback for the four granular Package 004 mutations. Package 004 authority is deliberately independent from `commercial.manage`; an older/custom commercial role does not silently receive contract mutation rights.
+`contract.manage` is the Package 004 umbrella fallback. Package 004 authority is deliberately independent from `commercial.manage`.
 
-Standard defaults for existing organisations are seeded explicitly:
+Existing Owner/Administrator roles receive broad and granular first-slice contract authority. Finance/Commercial receives `contract.view` only. Future organisation bootstrap uses equivalent standard-role defaults.
+
+No Package 004 business table is added: Baseline v1 already contains the normalised contract, version, party, value, date, issue, execution, amendment and finance structures.
+
+### `20260816015500_contract_amendment_permissions.sql`
+
+Activates controlled post-execution amendments by adding the granular delegation catalogue:
 
 ```text
-Owner / Administrator
-    contract.view
-    contract.manage
-    contract.create
-    contract.draft.manage
-    contract.issue
-    contract.execute
-
-Finance/Commercial
-    contract.view
-    # no contract mutation permissions
-
-Manager / Member/Professional / Field Worker / Read Only
-    no automatic Package 004 contract grants
+contract.amendment.create
+contract.amendment.draft.manage
+contract.amendment.issue
+contract.amendment.decide
 ```
 
-`OrganisationBootstrapService` carries the same defaults for future organisations, and integration tests enforce migration/bootstrap parity.
+The existing `contract.manage` permission remains the Package 004 umbrella fallback. The migration therefore does not add duplicate standard-role grants: Owner/Administrator already carry `contract.manage`, while narrower custom roles can be delegated individual amendment permissions. An explicit granular member deny still cannot be bypassed by the umbrella.
 
-No Package 004 business table is added: Baseline v1 already contains `contracts`, `contract_versions`, version parties/addresses, value components, key dates, issue evidence, execution evidence and later finance structures. The application activates those normalised records without a parallel contract ledger.
+The migration adds no amendment tables because Package 004 already contains:
 
-The formation service retains exact accepted-quotation provenance through existing `project_id`, `opportunity_id` and `source_quotation_response_id` columns. The first `base_scope` value is derived from accepted quotation lines using the Package 003 fixed-precision decimal module. Project activation and finance records remain separate transactions.
+```text
+contract_amendments
+contract_amendment_value_adjustments
+contract_amendment_key_date_changes
+```
 
-This migration is data-only, so after all **12** current production migrations the application structure remains:
+The application enforces active executed-baseline eligibility, signed fixed-precision value adjustments, key-date changes, immutable issued amendments, effective-date-before-issue, controlled agreement/rejection/withdrawal, audit evidence and tenant isolation.
+
+After all **13** current production migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -189,7 +161,17 @@ This migration is data-only, so after all **12** current production migrations t
 
 ## Current migration validation
 
-The first executable controlled-contract candidate applied all **12** production migrations on MySQL 8.4.11 while preserving **344 / 749 / 429** and zero generated Kysely drift. The complete real-MySQL suite passed **15 integration files / 66 tests**, including Package 004 source provenance, idempotency, permission separation, immutable issue state, execution evidence and tenant masking, and `svelte-check` passed with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same gate before merge.
+The Package 004 amendment candidate is validated through the same MySQL 8.4 gate as every production migration:
+
+```text
+13 production migrations
+344 base tables / 749 foreign keys / 429 CHECK constraints
+zero generated Kysely drift
+16 integration files / 72 real-MySQL tests
+svelte-check: 0 errors / 0 warnings
+```
+
+The final documentation-synchronised PR head must prove these exact results before merge; earlier executable amendment heads already proved the same structural contract and 16-file suite before the effective-date regression test was added.
 
 ## Migration rules
 
