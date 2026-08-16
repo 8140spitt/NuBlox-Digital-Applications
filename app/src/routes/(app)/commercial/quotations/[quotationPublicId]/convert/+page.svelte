@@ -1,7 +1,7 @@
 <script lang="ts">
 	let { data, form } = $props();
-	const quote = data.commercial.quotation;
-	const version = data.commercial.version;
+	let quote = $derived(data.commercial.quotation);
+	let version = $derived(data.commercial.version);
 </script>
 
 <svelte:head><title>Convert {quote.quotationNumber} · NuBlox</title></svelte:head>
