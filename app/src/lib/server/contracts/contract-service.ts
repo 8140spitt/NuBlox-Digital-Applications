@@ -2,13 +2,10 @@ import { randomUUID } from 'node:crypto';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase, type Database } from '$lib/server/db/database';
-import { ContractFormationService } from './contract-formation-service';
-import { ContractLifecycleService } from './contract-lifecycle-service';
 import type {
 	AddContractKeyDateInput,
 	AddContractValueInput,
 	ContractFormationWorkspace,
-	ContractPortfolio,
 	ContractSummary,
 	ContractWorkspace,
 	CreateContractInput,
@@ -16,10 +13,15 @@ import type {
 	IssueContractInput,
 	UpdateContractDraftInput
 } from './contract-common';
+import { ContractEntryService } from './contract-entry-service';
+import { ContractFormationService } from './contract-formation-service';
+import { ContractLifecycleService } from './contract-lifecycle-service';
 
 export * from './contract-common';
+export * from './contract-entry-service';
 
 export class ContractService {
+	private readonly entry: ContractEntryService;
 	private readonly formation: ContractFormationService;
 	private readonly lifecycle: ContractLifecycleService;
 
@@ -28,12 +30,24 @@ export class ContractService {
 		publicIdFactory: () => string = randomUUID,
 		now: () => Date = () => new Date()
 	) {
+		this.entry = new ContractEntryService(db);
 		this.formation = new ContractFormationService(db, publicIdFactory);
 		this.lifecycle = new ContractLifecycleService(db, publicIdFactory, now);
 	}
 
-	listPortfolio(actor: TenantActorContext): Promise<ContractPortfolio> {
-		return this.formation.listPortfolio(actor);
+	async listPortfolio(actor: TenantActorContext) {
+		const portfolio = await this.formation.listPortfolio(actor);
+		if (!portfolio.canView) {
+			return {
+				...portfolio,
+				canConvertAcceptedQuotation: false,
+				acceptedQuotationsAwaitingProject: []
+			};
+		}
+		return {
+			...portfolio,
+			...(await this.entry.listAcceptedQuotationQueue(actor))
+		};
 	}
 
 	getFormationWorkspace(

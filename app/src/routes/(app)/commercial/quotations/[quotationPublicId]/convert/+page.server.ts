@@ -59,13 +59,13 @@ export const actions: Actions = {
 				params.quotationPublicId,
 				positiveInt(data.get('versionNumber'))
 			);
-			throw redirect(303, `/projects/${encodeURIComponent(project.publicId)}`);
+			throw redirect(303, `/contracts/new?project=${encodeURIComponent(project.publicId)}`);
 		} catch (error) {
 			if (error instanceof CommercialValidationError) return fail(400, { actionError: error.message });
 			if (error instanceof RecordNotFoundError) return fail(404, { actionError: 'The quotation or accepted response is unavailable.' });
 			if (error instanceof TenantAccessError) {
 				return fail(403, {
-					actionError: 'Conversion requires both quotation-conversion authority and project.create permission.'
+					actionError: 'Conversion requires quotation-conversion authority and project.create permission.'
 				});
 			}
 			throw error;

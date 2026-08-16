@@ -37,28 +37,52 @@
 			{/if}
 		</section>
 
-		<aside class="panel">
-			<p class="eyebrow">Formation queue</p>
-			<h2>Accepted work awaiting contract</h2>
-			{#if !data.canCreate}
-				<p class="muted">Contract creation authority and active project access are required.</p>
-			{:else if data.eligibleProjects.length === 0}
-				<p class="muted">No proposed projects from accepted quotations are waiting for contract formation.</p>
-			{:else}
-				<div class="queue">
-					{#each data.eligibleProjects as project}
-						<article>
-							<strong>{project.projectNumber} · {project.projectName}</strong>
-							<span>{project.customerDisplayName} · {project.quotationNumber}</span>
-							<a href={`/contracts/new?project=${encodeURIComponent(project.projectPublicId)}`}>Form contract</a>
-						</article>
-					{/each}
-				</div>
-			{/if}
+		<aside class="stack">
+			<section class="panel">
+				<p class="eyebrow">Accepted quotations</p>
+				<h2>Awaiting project conversion</h2>
+				{#if data.acceptedQuotationsAwaitingProject.length === 0}
+					<p class="muted">No accepted quotations are waiting for project conversion.</p>
+				{:else}
+					<div class="queue">
+						{#each data.acceptedQuotationsAwaitingProject as quotation}
+							<article>
+								<strong>{quotation.quotationNumber} · {quotation.quotationTitle}</strong>
+								<span>{quotation.customerDisplayName} · accepted {new Date(quotation.acceptedAt).toLocaleDateString()}</span>
+								{#if data.canConvertAcceptedQuotation}
+									<a href={`/commercial/quotations/${encodeURIComponent(quotation.quotationPublicId)}/convert?version=${quotation.versionNumber}`}>Continue to project &amp; contract</a>
+								{:else}
+									<small class="muted">Quotation conversion, project creation and contract creation authority are required.</small>
+								{/if}
+							</article>
+						{/each}
+					</div>
+				{/if}
+			</section>
+
+			<section class="panel">
+				<p class="eyebrow">Formation queue</p>
+				<h2>Proposed projects awaiting contract</h2>
+				{#if !data.canCreate}
+					<p class="muted">Contract creation authority and active project access are required.</p>
+				{:else if data.eligibleProjects.length === 0}
+					<p class="muted">No proposed projects from accepted quotations are waiting for contract formation.</p>
+				{:else}
+					<div class="queue">
+						{#each data.eligibleProjects as project}
+							<article>
+								<strong>{project.projectNumber} · {project.projectName}</strong>
+								<span>{project.customerDisplayName} · {project.quotationNumber}</span>
+								<a href={`/contracts/new?project=${encodeURIComponent(project.projectPublicId)}`}>Form contract</a>
+							</article>
+						{/each}
+					</div>
+				{/if}
+			</section>
 		</aside>
 	</div>
 {/if}
 
 <style>
-	.page-heading{margin-bottom:1rem}.page-heading h1{margin:.15rem 0 .3rem;font-size:clamp(2rem,5vw,2.8rem);letter-spacing:-.04em}.page-heading p{margin:0;color:#666}.eyebrow{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;font-weight:760;color:#666}.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(20rem,.75fr);gap:1rem;align-items:start}.panel{background:white;border:1px solid #d9d9d2;border-radius:.8rem;padding:1.1rem}.panel h2{margin:.3rem 0 .8rem}.muted{color:#666;line-height:1.5}.records,.queue{display:grid;gap:.55rem}.record{display:grid;grid-template-columns:minmax(9rem,.7fr) minmax(12rem,1fr) auto;gap:.8rem;align-items:center;padding:.75rem;border:1px solid #e3e3dd;border-radius:.55rem;color:inherit;text-decoration:none}.record span:not(.status){display:grid;gap:.15rem}.record small,.queue span{color:#666}.status{padding:.28rem .5rem;border-radius:999px;background:#f0f0eb;font-size:.75rem;font-weight:750;text-transform:capitalize}.queue article{display:grid;gap:.35rem;padding:.75rem;border:1px solid #e3e3dd;border-radius:.55rem}.queue a{font-weight:700}@media(max-width:850px){.grid{grid-template-columns:1fr}.record{grid-template-columns:1fr}}
+	.page-heading{margin-bottom:1rem}.page-heading h1{margin:.15rem 0 .3rem;font-size:clamp(2rem,5vw,2.8rem);letter-spacing:-.04em}.page-heading p{margin:0;color:#666}.eyebrow{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;font-weight:760;color:#666}.grid{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(20rem,.75fr);gap:1rem;align-items:start}.stack{display:grid;gap:1rem}.panel{background:white;border:1px solid #d9d9d2;border-radius:.8rem;padding:1.1rem}.panel h2{margin:.3rem 0 .8rem}.muted{color:#666;line-height:1.5}.records,.queue{display:grid;gap:.55rem}.record{display:grid;grid-template-columns:minmax(9rem,.7fr) minmax(12rem,1fr) auto;gap:.8rem;align-items:center;padding:.75rem;border:1px solid #e3e3dd;border-radius:.55rem;color:inherit;text-decoration:none}.record span:not(.status){display:grid;gap:.15rem}.record small,.queue span{color:#666}.status{padding:.28rem .5rem;border-radius:999px;background:#f0f0eb;font-size:.75rem;font-weight:750;text-transform:capitalize}.queue article{display:grid;gap:.35rem;padding:.75rem;border:1px solid #e3e3dd;border-radius:.55rem}.queue a{font-weight:700}@media(max-width:850px){.grid{grid-template-columns:1fr}.record{grid-template-columns:1fr}}
 </style>

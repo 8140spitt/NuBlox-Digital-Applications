@@ -150,15 +150,23 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
+			const versionNumber = positiveInt(data.get('versionNumber'), 'Version number');
+			const responseType = String(data.get('responseType') ?? '') as QuotationResponseType;
 			await new CommercialService(getDatabase()).recordQuotationResponse(actor, {
 				quotationPublicId: params.quotationPublicId,
-				versionNumber: positiveInt(data.get('versionNumber'), 'Version number'),
-				responseType: String(data.get('responseType') ?? '') as QuotationResponseType,
+				versionNumber,
+				responseType,
 				respondedAt: String(data.get('respondedAt') ?? ''),
 				respondentName: String(data.get('respondentName') ?? ''),
 				respondentEmail: String(data.get('respondentEmail') ?? ''),
 				notes: String(data.get('notes') ?? '')
 			});
+			if (responseType === 'accepted') {
+				throw redirect(
+					303,
+					`/commercial/quotations/${encodeURIComponent(params.quotationPublicId)}/convert?version=${versionNumber}`
+				);
+			}
 			throw redirect(303, `/commercial/quotations/${encodeURIComponent(params.quotationPublicId)}`);
 		} catch (error) {
 			return actionError(error, 'You do not have permission to record quotation responses.');
