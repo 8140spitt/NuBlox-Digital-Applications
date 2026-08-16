@@ -1,0 +1,218 @@
+# 33 — Controlled Contract Formation
+
+## 1. Purpose
+
+This application boundary activates the **contract-formation half of Package 004 — Contracts and Finance** without activating invoicing, payments or later Package 004 finance workflows.
+
+It continues the implemented sales/project chain:
+
+```text
+CRM Opportunity
+    ↓
+Estimate
+    ↓
+Final Estimate Version
+    ↓
+Quotation
+    ↓
+Issued + accepted Quotation Version
+    ↓
+Proposed Project
+    ↓
+Controlled Contract Formation
+    ↓
+Draft Contract Version 1
+    ↓
+Issue + immutable issue evidence
+    ↓
+Execution + signatory evidence
+    ↓
+Active Contract
+```
+
+Project lifecycle remains independent. Executing a contract does **not** automatically move a project from `proposed` to `active`.
+
+## 2. Application surfaces
+
+```text
+/contracts
+/contracts/new?project=[projectPublicId]
+/contracts/[contractPublicId]
+```
+
+`/contracts` shows tenant contract records and proposed projects created from accepted quotations that are eligible for controlled contract formation.
+
+`/contracts/new` exposes the exact accepted-quotation/project provenance before creation and creates one draft contract/version from that source.
+
+`/contracts/[contractPublicId]` exposes version parties, baseline value components, key dates, issue evidence and execution evidence. Draft mutation is disabled after issue.
+
+## 3. Permission family
+
+Package 004 contract permissions are:
+
+```text
+contract.view
+contract.manage                  # broad umbrella
+contract.create
+contract.draft.manage
+contract.issue
+contract.execute
+```
+
+`contract.manage` is umbrella fallback for granular contract mutations. Standard-role compatibility remains non-destructive:
+
+- Owner / Administrator retain effective contract read/mutation through existing `commercial.view + commercial.manage` when no explicit `contract.*` decision exists;
+- Finance/Commercial retains effective contract read through existing `commercial.view`, but receives no automatic contract mutation authority;
+- Manager / Member/Professional / Field Worker / Read Only receive no automatic contract authority.
+
+Direct `contract.view`, `contract.manage` and granular contract keys are available for narrower delegation. An explicit contract-level decision takes precedence over the commercial compatibility fallback.
+
+Contract formation from a project additionally requires `project.view` and exact active project-member scope because the source project is the controlled formation context.
+
+## 4. Source provenance and idempotency
+
+A quotation-derived contract retains:
+
+```text
+contracts.project_id
+contracts.opportunity_id
+contracts.source_quotation_response_id
+```
+
+The source response must be the exact accepted response that produced the project through `quotation_project_conversions`. The referenced quotation version must still be `issued` and locked.
+
+Formation locks the source project row before checking for an existing project + accepted-response contract. That serialises this application path without introducing a database uniqueness rule that would incorrectly prohibit future legitimate multiple-contract projects.
+
+A retry for the same project and accepted response returns the already-created contract.
+
+## 5. Customer identity and snapshots
+
+The customer remains the tenant-owned Package 002 CRM party referenced by the accepted quotation.
+
+Version 1 creates a `client` row in `contract_version_parties`. Its display identity comes from the immutable quotation customer snapshot where available, falling back to the live CRM display name only when the historical snapshot is unavailable.
+
+Quotation customer snapshot addresses are copied into `contract_version_party_addresses` so later CRM edits cannot rewrite the formed contract evidence.
+
+The tenant NuBlox organisation is **not** silently duplicated into CRM as a synthetic self-party. `contracts.organisation_id` remains the authoritative tenant/contract owner. A future explicit legal-entity/self-party design can add the internal contracting party without corrupting CRM identity.
+
+## 6. Initial contract value
+
+Formation creates one `base_scope` value component from the accepted quotation's non-optional net lines:
+
+```text
+accepted included quotation line net
+= quantity × unit_rate
+
+initial contract base scope
+= Σ accepted included quotation line net
+```
+
+The calculation reuses Package 003 scaled-`BigInt` decimal arithmetic. Authoritative money remains four decimal places and does not use JavaScript binary floating point.
+
+This initial value is contract baseline evidence, not an invoice or accounting posting.
+
+## 7. Draft lifecycle
+
+The first application slice creates:
+
+```text
+contracts.lifecycle_status = draft
+contract_versions.version_number = 1
+contract_versions.version_status = draft
+```
+
+While draft and authorised, users may:
+
+- edit version title/customer reference;
+- add/remove contract value components;
+- add/remove key dates.
+
+The accepted customer party and source provenance are not editable through the first slice.
+
+## 8. Issue lifecycle
+
+Issue requires contract issue authority, a draft version, at least one contract party and at least one contract value component.
+
+Issue atomically:
+
+1. locks version 1;
+2. records `locked_by_member_id` and `locked_at`;
+3. changes version status to `issued`;
+4. changes logical contract lifecycle to `under_review`;
+5. creates `contract_issue_events` evidence;
+6. creates recipient evidence;
+7. appends an audit event.
+
+No production outbound email or e-sign provider is claimed. Delivery channels are evidence of the selected issue mechanism only.
+
+Issued versions reject ordinary draft mutation.
+
+## 9. Execution lifecycle
+
+Execution requires contract execution authority, exact version status `issued`, lock evidence, logical contract lifecycle `under_review`, and no prior execution event.
+
+Execution records one `contract_execution_events` row and signatory evidence, changes the exact version to `executed`, and changes the logical contract to `active`.
+
+The execution timestamp must include an explicit timezone before it crosses the server boundary. The UI converts the user's browser-local date/time to an ISO UTC instant.
+
+Execution does not:
+
+- activate the project;
+- create a project participant;
+- create an invoice;
+- create a payment/ledger entry;
+- infer another platform organisation from the CRM customer.
+
+## 10. Audit actions
+
+The first slice records:
+
+```text
+contract.created_from_accepted_quotation
+contract.draft.updated
+contract.value_component.added
+contract.value_component.removed
+contract.key_date.added
+contract.key_date.removed
+contract.issued
+contract.executed
+```
+
+## 11. Validation contract
+
+The permanent CI gate must continue to prove:
+
+```text
+Dbmate production migration stream applies to MySQL 8.4
+application schema = 344 tables / 749 FKs / 429 CHECK constraints
+kysely-codegen produces no uncommitted drift
+real-MySQL integration suite passes
+svelte-check = 0 errors / 0 warnings
+```
+
+The Package 004 contract suite additionally covers:
+
+- exact accepted-response/project provenance;
+- initial base-scope value from accepted quotation lines;
+- copied customer/address evidence;
+- retry idempotency;
+- contract permission separation;
+- immutable issued versions;
+- execution/signatory evidence;
+- independent project lifecycle;
+- cross-tenant masking.
+
+## 12. Deliberate exclusions / next increments
+
+Not claimed implemented here:
+
+- contract version 2+ revision/supersession;
+- contract withdrawal;
+- post-execution amendments;
+- multiple contract parties beyond the accepted quotation customer;
+- document/PDF rendering;
+- production contract email/e-sign delivery;
+- automatic project activation;
+- invoices, credit notes, payments or allocations.
+
+The next Package 004 boundary after this slice is controlled **contract amendments and/or operational accounts-receivable invoicing**, selected deliberately rather than coupled to execution as an automatic side effect.
