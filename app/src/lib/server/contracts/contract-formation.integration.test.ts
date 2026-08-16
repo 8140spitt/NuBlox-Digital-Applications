@@ -344,14 +344,14 @@ beforeAll(async () => {
 	ownerBMemberId = await createMember(organisationBId, ownerBUserId);
 	await assignRole(organisationAId, ownerAMemberId, 'Owner A', [
 		'project.view',
-		'commercial.view',
-		'commercial.manage'
+		'contract.view',
+		'contract.manage'
 	]);
 	await assignRole(organisationAId, readOnlyAMemberId, 'Read A', ['contract.view']);
 	await assignRole(organisationBId, ownerBMemberId, 'Owner B', [
 		'project.view',
-		'commercial.view',
-		'commercial.manage'
+		'contract.view',
+		'contract.manage'
 	]);
 	actorOwnerA = {
 		organisationId: organisationAId,
