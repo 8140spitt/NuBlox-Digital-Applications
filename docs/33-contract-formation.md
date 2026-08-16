@@ -59,13 +59,15 @@ contract.issue
 contract.execute
 ```
 
-`contract.manage` is umbrella fallback for granular contract mutations. Standard-role compatibility remains non-destructive:
+`contract.manage` is the umbrella fallback for the granular Package 004 contract mutations. Contract authority is deliberately independent from the Package 003 `commercial.*` family; an existing custom role with `commercial.manage` does not silently acquire contract creation, issue or execution rights.
 
-- Owner / Administrator retain effective contract read/mutation through existing `commercial.view + commercial.manage` when no explicit `contract.*` decision exists;
-- Finance/Commercial retains effective contract read through existing `commercial.view`, but receives no automatic contract mutation authority;
+Standard-role defaults are explicit and are kept in parity between the forward migration and future organisation bootstrap:
+
+- Owner / Administrator receive `contract.view`, `contract.manage` and the four first-slice granular mutation keys;
+- Finance/Commercial receives `contract.view` only;
 - Manager / Member/Professional / Field Worker / Read Only receive no automatic contract authority.
 
-Direct `contract.view`, `contract.manage` and granular contract keys are available for narrower delegation. An explicit contract-level decision takes precedence over the commercial compatibility fallback.
+Direct `contract.view`, `contract.manage` and granular contract keys remain available for narrower custom delegation. Within the contract family, granular member decisions are resolved before the `contract.manage` umbrella, so an explicit granular deny cannot be bypassed by the umbrella.
 
 Contract formation from a project additionally requires `project.view` and exact active project-member scope because the source project is the controlled formation context.
 
@@ -201,6 +203,8 @@ The Package 004 contract suite additionally covers:
 - execution/signatory evidence;
 - independent project lifecycle;
 - cross-tenant masking.
+
+Standard-role bootstrap parity is covered by the organisation bootstrap integration suite so existing migrated organisations and future organisations receive the same Package 004 defaults.
 
 ## 12. Deliberate exclusions / next increments
 
