@@ -1,10 +1,10 @@
-# 32 — Estimates and Quotations
+# 32 — Estimates, Quotations and Project Conversion
 
 ## 1. Purpose
 
-This increment activates the existing **Package 003 — Sales, Estimates and Quotations** relational model as the first NuBlox customer-pricing workflow.
+This application boundary activates **Package 003 — Sales, Estimates and Quotations** through customer pricing, issue/acceptance evidence and explicit conversion of an accepted quotation into a NuBlox project.
 
-The implemented commercial chain is:
+The implemented chain is:
 
 ```text
 CRM Opportunity
@@ -24,9 +24,15 @@ Quotation Version
 Issue lock + customer/contact snapshot
     ↓
 Customer response
+    ↓
+Accepted Quotation Version
+    ↓
+Idempotent project conversion
+    ↓
+Proposed Project / Job
 ```
 
-The increment deliberately does **not** create parallel customer, opportunity, estimate, quotation, tax or issue tables. Package 002 remains authoritative for private CRM identity and Package 003 remains authoritative for sales-document identity and version history.
+The implementation does **not** create parallel customer, opportunity, estimate, quotation, conversion or project tables. Package 002 remains authoritative for private CRM identity, Package 003 remains authoritative for sales-document/response/conversion provenance, and Package 001 remains authoritative for project identity and participation.
 
 ## 2. Implemented application surfaces
 
@@ -35,59 +41,38 @@ The increment deliberately does **not** create parallel customer, opportunity, e
 /commercial/estimates/[estimatePublicId]
 /commercial/quotations
 /commercial/quotations/[quotationPublicId]
+/commercial/quotations/[quotationPublicId]/convert
 ```
 
-The estimate portfolio creates internal estimates from active/won CRM opportunities and shows the latest version totals.
+The estimate portfolio/workspace supports opportunity-derived estimates, item/cost build-up, derived totals, finalisation and quotation creation.
 
-The estimate workspace exposes:
+The quotation portfolio/workspace supports draft customer-facing content, tax snapshots, narrative, issue evidence and customer responses.
 
-- estimate/version identity;
-- estimate output lines;
-- quantity, unit and sell unit rate;
-- optional-line classification;
-- internal cost components;
-- quantity, unit cost, waste percentage and markup metadata for each cost component;
-- derived sell, cost and margin totals;
-- draft finalisation;
-- creation of a customer quotation from a final estimate version.
-
-The quotation workspace exposes:
-
-- customer and CRM opportunity context;
-- quotation/version identity;
-- title, customer reference and validity date;
-- customer-facing lines copied from the source final estimate and/or added directly to the quotation draft;
-- tenant tax-category selection and issue-time line tax snapshots;
-- commercial narrative blocks for scope, assumptions, exclusions, clarifications, terms and notes;
-- issue lock and recipient evidence;
-- issue history;
-- customer response history.
+Accepted quotations expose a dedicated conversion workspace. That workspace shows the exact accepted version, response evidence, source estimates, independent commercial/project authority and any already-created project before a conversion write occurs.
 
 ## 3. Identity boundaries
 
 ### CRM customer identity
 
-A quotation references the Package 002 CRM party directly:
+A quotation references Package 002 CRM parties directly:
 
 ```text
 quotations.customer_party_id
 quotations.primary_contact_party_id
 ```
 
-The application does not copy a customer into another editable customer master.
-
-At quotation issue, customer/contact identity is additionally written to immutable issue-time snapshot structures:
+At issue, customer/contact facts needed to reproduce what was sent are intentionally snapshotted into:
 
 ```text
 quotation_party_snapshots
 quotation_party_snapshot_addresses
 ```
 
-This is intentional historical duplication: later edits to the CRM party or address must not rewrite what the customer was actually sent.
+A CRM party is **not** inferred to be a NuBlox platform organisation. Project conversion therefore does not automatically invite or create a project participant for the customer.
 
 ### Estimate and quotation identity
 
-Logical document identity and version identity remain distinct:
+Logical document identity and immutable/versioned evidence remain distinct:
 
 ```text
 estimates
@@ -95,9 +80,24 @@ estimates
 
 quotations
   └─ quotation_versions
+       └─ quotation_responses
 ```
 
-Request URLs use logical document `public_id` values. Package 003 child/version tables use internal relational IDs, so request transport resolves versions by version number and line-level operations by document-local line/sort numbers rather than exposing child surrogate IDs.
+Request URLs use logical document `public_id` values. Version and child surrogate IDs remain server-side; request transport uses version numbers and document-local line/sort numbers where Package 003 children do not expose public IDs.
+
+### Project-conversion identity
+
+The baseline already provides the conversion ledger:
+
+```text
+quotation_responses (accepted)
+        ↓
+quotation_project_conversions
+        ↓
+projects
+```
+
+`quotation_project_conversions` is the authoritative one-response-to-one-project provenance record. `quotations.project_id` and source `estimates.project_id` are the direct domain links to the created project.
 
 ## 4. Opportunity → estimate boundary
 
@@ -113,9 +113,7 @@ AND opportunity status is not lost/cancelled
 AND one primary opportunity customer exists
 ```
 
-The estimate stores the opportunity relationship but remains a separate commercial document.
-
-Creating an estimate creates **version 1** in `draft` state.
+Creating an estimate creates version 1 in `draft` state.
 
 ## 5. Estimate calculation model
 
@@ -132,76 +130,54 @@ quantity × unit_cost = base cost
 base cost + waste percentage = cost contribution
 ```
 
-`markup_percent` remains explicit pricing metadata on the internal component. This first increment does not silently recalculate the customer-facing sell rate from cost-component markup; sell rate remains an explicit commercial decision on the estimate item.
+`markup_percent` remains explicit pricing metadata. The service does not silently recalculate the customer sell rate from cost-component markup.
 
-Base estimate totals exclude optional lines until Package 003 gains an explicit option-selection/acceptance model.
+Base totals exclude optional lines until an explicit customer option-selection model exists.
 
 ### Decimal policy
 
-Authoritative calculations do **not** use JavaScript binary floating-point arithmetic.
-
-`commercial-decimal.ts` uses scaled `BigInt` arithmetic:
+Authoritative calculations do **not** use JavaScript binary floating point. `commercial-decimal.ts` uses scaled `BigInt` arithmetic:
 
 ```text
-quantity scale       = 6
+quantity scale        = 6
 money/unit-rate scale = 4
 percentage scale      = 4
 money result scale    = 4
 rounding              = half-up where scale reduction is required
 ```
 
-JavaScript `Number` may be used only in presentation formatting after the authoritative decimal string has already been calculated.
+JavaScript `Number` is presentation-only after authoritative decimal strings have been calculated.
 
 ## 6. Estimate version lifecycle
 
-Current Package 003 application states are:
+Current application flow:
 
 ```text
 draft → final
 ```
 
-The database also supports `superseded` for later revision workflows.
+The schema also supports `superseded` for later revision workflows. Final/superseded versions reject normal application mutation.
 
-A draft can be edited. Final/superseded estimate versions are immutable through the application service.
+Finalisation requires at least one line and records `finalised_by_member_id`, `finalised_at` and `version_status = final`.
 
-Finalisation requires at least one estimate line and records:
-
-```text
-finalised_by_member_id
-finalised_at
-version_status = final
-```
-
-The service also supersedes any earlier final version if later revision support creates a replacement final version.
-
-**Not yet implemented:** user-facing creation of estimate version 2+.
+**Not yet implemented:** user-facing estimate version 2+ creation.
 
 ## 7. Estimate → quotation boundary
 
-A quotation can currently be created only from a **final estimate version**.
+A quotation can currently be created only from a **final estimate version**. The transaction:
 
-The transaction:
+1. verifies the same-tenant estimate/final version;
+2. resolves the CRM opportunity/customer;
+3. creates the logical quotation and draft version 1;
+4. records exact source version provenance in `quotation_version_estimates`;
+5. copies estimate output lines with `source_estimate_item_id` provenance;
+6. appends audit evidence.
 
-1. verifies the same-tenant estimate and final version;
-2. resolves the estimate's CRM opportunity and primary CRM customer;
-3. creates the logical quotation;
-4. creates quotation version 1 in `draft` state;
-5. records the exact source estimate version in `quotation_version_estimates`;
-6. copies estimate output lines to quotation items while retaining `source_estimate_item_id` provenance;
-7. appends audit evidence.
-
-The estimate remains internal pricing evidence. The quotation is a separate customer-facing commercial document.
+Estimate and quotation remain separate internal/customer-facing documents.
 
 ## 8. Quotation tax model
 
-Tax category/rate configuration remains tenant-owned:
-
-```text
-tax_categories
-tax_category_rates
-```
-
-When a tax category is selected for a draft quotation line, the service resolves the effective tenant rate and snapshots:
+Tax configuration remains tenant-owned through `tax_categories` and `tax_category_rates`. Selecting tax for a draft line snapshots:
 
 ```text
 applied_rate_percent
@@ -209,60 +185,33 @@ taxable_amount
 tax_amount
 ```
 
-into `quotation_item_taxes`.
+in `quotation_item_taxes` so historical customer amounts do not depend on later tax-rate changes.
 
-The quotation therefore does not depend on a future mutable tax rate to reconstruct previously calculated customer amounts.
-
-Current document totals exclude optional lines.
+Current totals exclude optional lines:
 
 ```text
 net total   = Σ included line net
- tax total  = Σ included line tax snapshots
+tax total   = Σ included line tax snapshots
 gross total = Σ included line gross
 ```
 
 ## 9. Quotation draft and issue lifecycle
 
-Current user-facing version flow is:
+Current user-facing version flow:
 
 ```text
 draft → issued
 ```
 
-The schema additionally supports `superseded` and `withdrawn` for later quotation-revision/withdrawal workflows.
+The schema additionally supports `superseded` and `withdrawn` for later revision/withdrawal workflows.
 
-While `draft`, authorised users may change:
+Issue requires at least one line and `commercial.quotation.issue` (or `commercial.manage` fallback). The issue transaction validates the draft, snapshots customer/contact/address facts, locks the version, creates issue/recipient evidence and appends audit evidence.
 
-- title;
-- customer reference;
-- valid-until date;
-- quotation lines;
-- line tax treatment;
-- narrative blocks.
-
-Issue requires at least one line and `commercial.quotation.issue` or umbrella authority.
-
-The issue transaction:
-
-1. locks the quotation/version context;
-2. verifies version is still `draft`;
-3. snapshots the CRM customer;
-4. snapshots the primary contact where one exists;
-5. snapshots each party's current primary address where available;
-6. changes the version to `issued` and records `locked_by_member_id` / `locked_at`;
-7. creates `quotation_issue_events` evidence;
-8. creates recipient evidence in `quotation_issue_recipients`;
-9. appends audit evidence including calculated totals.
-
-After issue, the version is immutable through normal application writes.
-
-This increment records the issue channel/evidence. It does **not** claim production email delivery from the quotation service itself; transactional delivery remains a separate provider boundary.
+Issued versions are immutable through normal application writes. Issue evidence does not claim production outbound email delivery.
 
 ## 10. Customer responses
 
-Responses are recorded in `quotation_responses` against an exact issued version and, when available, its latest issue event.
-
-Supported response types:
+Responses are recorded against an exact issued/locked version:
 
 ```text
 accepted
@@ -271,26 +220,71 @@ revision_requested
 withdrawn_by_customer
 ```
 
-Acceptance is permitted only against an issued/locked version. The application rejects a second accepted response and the database remains the final uniqueness/integrity guard.
+The database generated-key uniqueness guard permits at most one accepted response per logical quotation. Effective quotation state is derived from version state, response evidence and validity rather than maintained as another editable ledger.
 
-The UI derives effective quotation status from immutable version state, response evidence and validity date:
+## 11. Accepted quotation → project conversion
+
+Conversion is an explicit **cross-domain transaction**, not a side effect of recording acceptance.
+
+The exact selected quotation version must:
 
 ```text
-draft
-issued
-accepted
-rejected
-revision_requested
-expired
-superseded
-withdrawn
+belong to the active tenant
+AND be version_status = issued
+AND have locked_at evidence
+AND have an accepted quotation_response for that exact version
+AND belong to an active logical quotation
 ```
 
-Effective status is a read interpretation, not a second editable status ledger.
+Runtime authority is conjunctive:
 
-## 11. Permissions
+```text
+commercial.quotation.convert
+    OR commercial.manage umbrella fallback
+AND project.create
+```
 
-Package 003 application permissions are:
+One permission never substitutes for the other. This keeps commercial acceptance/conversion responsibility separate from authority to create project records.
+
+### Transaction and idempotency
+
+`QuotationProjectConversionService` transactionally:
+
+1. verifies active tenant membership;
+2. resolves both permission decisions;
+3. locks the tenant-owned logical quotation;
+4. locks the exact issued/accepted quotation version/response;
+5. checks `quotation_project_conversions` for prior conversion;
+6. if already converted, returns the existing project;
+7. locks exact source estimates from `quotation_version_estimates` and rejects any already linked to another project;
+8. creates one `projects` record in `proposed` state;
+9. creates active owning-organisation participation;
+10. creates the converting member's initial active `project_members` scope;
+11. inserts the conversion ledger row;
+12. sets `quotations.project_id`;
+13. sets `project_id` on exact source estimates;
+14. writes commercial and project audit evidence.
+
+The baseline unique keys on conversion response and conversion project remain final database integrity guards under concurrency.
+
+Project numbers are generated deterministically from the quotation number (`QUO-…` → `PRJ-…`) and must not collide with an unrelated existing project.
+
+### Deliberate conversion non-effects
+
+Conversion does **not**:
+
+- infer a NuBlox platform organisation from the CRM customer;
+- invite the customer to the project;
+- create a project site from a CRM/billing address;
+- activate the project automatically;
+- create a contract;
+- create invoices or financial postings.
+
+Those are separate workflow decisions and transactions.
+
+## 12. Permissions and standard roles
+
+Package 003 permission family is now:
 
 ```text
 commercial.view
@@ -299,13 +293,14 @@ commercial.estimate.manage
 commercial.quotation.manage
 commercial.quotation.issue
 commercial.quotation.response.record
+commercial.quotation.convert
 ```
 
-`commercial.manage` is an umbrella fallback for granular commercial mutation operations. An explicit granular member deny remains stronger than umbrella authority through the existing `PermissionService.decideWithUmbrella()` policy.
+`commercial.manage` is umbrella fallback for granular commercial mutations, including conversion. Explicit granular member deny remains stronger than umbrella authority.
 
-### Standard roles
+Current standard defaults remain:
 
-Owner / Administrator:
+**Owner / Administrator**
 
 ```text
 commercial.view
@@ -314,9 +309,12 @@ commercial.estimate.manage
 commercial.quotation.manage
 commercial.quotation.issue
 commercial.quotation.response.record
+project.create
 ```
 
-Finance/Commercial:
+Their existing `commercial.manage` umbrella means no duplicate standard grant of `commercial.quotation.convert` is required.
+
+**Finance/Commercial**
 
 ```text
 commercial.view
@@ -326,41 +324,32 @@ commercial.quotation.issue
 commercial.quotation.response.record
 ```
 
-Finance/Commercial deliberately does **not** receive the broad `commercial.manage` umbrella.
+Finance/Commercial does **not** automatically receive `commercial.manage`, `commercial.quotation.convert` or `project.create`. If an organisation wants that role to perform conversion, the relevant cross-domain authorities must be deliberately delegated.
 
-Manager and the other standard templates do not automatically receive commercial authority in this increment.
+Manager may have `project.create` but receives no automatic commercial conversion authority. Other standard templates remain unchanged.
 
-The forward migration updates existing organisations and `OrganisationBootstrapService` provides the same role matrix to future organisations.
+## 13. Tenant isolation
 
-## 12. Tenant isolation
+All estimate, quotation, response and conversion queries carry active `organisation_id`. Foreign quotation public IDs are masked as not found. Project creation uses the active organisation as `owning_organisation_id`, and source-estimate/project links use same-tenant composite foreign keys.
 
-Every estimate/quotation repository operation includes the active `organisation_id`.
+The conversion does not turn tenant-private CRM identity into a platform-global identity.
 
-Direct public IDs from another tenant are masked as not found. Opportunity/customer resolution also remains tenant-bounded before an estimate or quotation can be created.
+## 14. Audit evidence
 
-Issue-time party/address snapshots and tax snapshots preserve tenant-safe foreign-key context.
+Commercial audit coverage includes estimate creation/build-up/finalisation, quotation creation/draft/tax/narrative/issue/responses and project conversion.
 
-## 13. Audit evidence
+Conversion adds:
 
-The current service appends audit events for:
+```text
+commercial.quotation.converted_to_project
+project.created_from_quotation
+```
 
-- estimate creation;
-- estimate line creation/removal;
-- estimate cost-component creation;
-- estimate finalisation;
-- quotation creation from estimate;
-- quotation draft changes;
-- quotation line creation/removal;
-- quotation tax changes;
-- quotation narrative creation;
-- quotation issue;
-- customer response recording.
+Both point to the created project context and preserve quotation/response provenance in their change summaries.
 
-Audit events reference the logical estimate/quotation public ID at the subject boundary.
+## 15. Validation contract
 
-## 14. Validation contract
-
-The permanent application CI gate must continue to prove:
+The permanent application CI gate must prove:
 
 ```text
 Dbmate migration stream applies to MySQL 8.4
@@ -370,47 +359,41 @@ real-MySQL integration suite passes
 svelte-check = 0 errors / 0 warnings
 ```
 
-The Package 003 integration suite specifically covers:
+The conversion integration suite additionally covers:
 
-- commercial read vs mutation permission separation;
-- same-tenant opportunity requirement;
-- cross-tenant estimate/quotation masking;
-- fixed-point estimate totals;
-- cost-component persistence;
-- final estimate immutability;
-- quotation creation only from final estimate versions;
-- CRM customer identity reuse;
-- tax rate/amount snapshot arithmetic;
-- issue locking;
-- issue-time party/address snapshotting;
-- post-issue mutation rejection;
-- response-before-issue rejection;
-- single accepted response semantics;
-- accepted effective status.
+- commercial conversion authority and `project.create` are independently required;
+- exact accepted/issued version requirement;
+- one accepted response → one proposed project;
+- quotation and source-estimate project linkage;
+- owner organisation participation and converting-member scope;
+- conversion ledger provenance;
+- audit evidence;
+- retry idempotency;
+- unaccepted-version rejection;
+- cross-tenant quotation masking.
 
-## 15. Deliberate exclusions / next Package 003 increments
+## 16. Deliberate exclusions / next increments
 
-The following are **not** claimed implemented by this first Package 003 application slice:
+Not claimed implemented here:
 
-- estimate revision/version-2 creation workflow;
-- quotation revision/version-2 creation and supersession workflow;
-- quotation withdrawal workflow;
-- customer option selection/acceptance for optional lines;
+- estimate revision/version-2 creation;
+- quotation revision/version-2 creation and supersession;
+- quotation withdrawal;
+- customer optional-line selection/acceptance;
 - sales catalogue administration UI;
 - tax-category/rate administration UI;
 - PDF quotation rendering;
 - production outbound quotation email delivery;
-- automatic accepted-quotation → project/job conversion;
+- inferred customer project participation;
+- project site creation from quotation/CRM addresses;
 - contract formation.
 
-The next commercial transaction should preserve the existing separation:
+The next commercial boundary remains explicit:
 
 ```text
-Accepted Quotation Version
+Proposed Project created from accepted quotation
         ↓
-explicit idempotent conversion transaction
+controlled Contract formation
         ↓
-Project / Job
-        ↓
-later Contract workflow
+later delivery / application / invoicing workflows
 ```
