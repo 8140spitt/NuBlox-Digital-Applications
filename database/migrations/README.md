@@ -141,7 +141,47 @@ This preserves separation between commercial conversion authority and project-cr
 
 No conversion table is added: Baseline v1 already contains `quotation_project_conversions`, with unique response/project keys and same-tenant foreign keys. The application uses it as the authoritative idempotency/provenance ledger while also setting existing `quotations.project_id` and source `estimates.project_id` links.
 
-This migration is data-only, so after all **11** current production migrations the application structure remains:
+### `20260816005000_contract_formation_permissions.sql`
+
+Activates the first Package 004 contract-formation application slice through:
+
+```text
+contract.view
+contract.manage
+contract.create
+contract.draft.manage
+contract.issue
+contract.execute
+```
+
+`contract.manage` is the umbrella fallback for the four granular Package 004 mutations. Package 004 authority is deliberately independent from `commercial.manage`; an older/custom commercial role does not silently receive contract mutation rights.
+
+Standard defaults for existing organisations are seeded explicitly:
+
+```text
+Owner / Administrator
+    contract.view
+    contract.manage
+    contract.create
+    contract.draft.manage
+    contract.issue
+    contract.execute
+
+Finance/Commercial
+    contract.view
+    # no contract mutation permissions
+
+Manager / Member/Professional / Field Worker / Read Only
+    no automatic Package 004 contract grants
+```
+
+`OrganisationBootstrapService` carries the same defaults for future organisations, and integration tests enforce migration/bootstrap parity.
+
+No Package 004 business table is added: Baseline v1 already contains `contracts`, `contract_versions`, version parties/addresses, value components, key dates, issue evidence, execution evidence and later finance structures. The application activates those normalised records without a parallel contract ledger.
+
+The formation service retains exact accepted-quotation provenance through existing `project_id`, `opportunity_id` and `source_quotation_response_id` columns. The first `base_scope` value is derived from accepted quotation lines using the Package 003 fixed-precision decimal module. Project activation and finance records remain separate transactions.
+
+This migration is data-only, so after all **12** current production migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -149,7 +189,7 @@ This migration is data-only, so after all **11** current production migrations t
 
 ## Current migration validation
 
-The accepted-quotation conversion executable candidate applies all **11** production migrations on MySQL 8.4.11 while preserving **344 / 749 / 429** and zero generated Kysely drift. Its real-MySQL conversion suite validates dual authority, exact accepted-version provenance, project creation/linkage, tenant isolation and retry idempotency. The final documentation-synchronised head must pass the complete integration and `svelte-check` gate before merge.
+The first executable controlled-contract candidate applied all **12** production migrations on MySQL 8.4.11 while preserving **344 / 749 / 429** and zero generated Kysely drift. The complete real-MySQL suite passed **15 integration files / 66 tests**, including Package 004 source provenance, idempotency, permission separation, immutable issue state, execution evidence and tenant masking, and `svelte-check` passed with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same gate before merge.
 
 ## Migration rules
 
