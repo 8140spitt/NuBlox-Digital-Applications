@@ -280,6 +280,12 @@ describe('organisation bootstrap and onboarding', () => {
 			'Administrator:commercial.quotation.manage',
 			'Administrator:commercial.quotation.response.record',
 			'Administrator:commercial.view',
+			'Administrator:contract.create',
+			'Administrator:contract.draft.manage',
+			'Administrator:contract.execute',
+			'Administrator:contract.issue',
+			'Administrator:contract.manage',
+			'Administrator:contract.view',
 			'Administrator:crm.contact.manage',
 			'Administrator:crm.manage',
 			'Administrator:crm.party.manage',
@@ -300,6 +306,7 @@ describe('organisation bootstrap and onboarding', () => {
 			'Finance/Commercial:commercial.quotation.manage',
 			'Finance/Commercial:commercial.quotation.response.record',
 			'Finance/Commercial:commercial.view',
+			'Finance/Commercial:contract.view',
 			'Finance/Commercial:crm.view',
 			'Finance/Commercial:project.view',
 			'Manager:crm.contact.manage',
@@ -321,6 +328,12 @@ describe('organisation bootstrap and onboarding', () => {
 			'Owner:commercial.quotation.manage',
 			'Owner:commercial.quotation.response.record',
 			'Owner:commercial.view',
+			'Owner:contract.create',
+			'Owner:contract.draft.manage',
+			'Owner:contract.execute',
+			'Owner:contract.issue',
+			'Owner:contract.manage',
+			'Owner:contract.view',
 			'Owner:crm.contact.manage',
 			'Owner:crm.manage',
 			'Owner:crm.party.manage',
@@ -360,6 +373,9 @@ describe('organisation bootstrap and onboarding', () => {
 		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(
 			permissionService.decideWithUmbrella(ownerActor, 'commercial.quotation.issue', 'commercial.manage')
+		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(
+			permissionService.decideWithUmbrella(ownerActor, 'contract.execute', 'contract.manage')
 		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
 		const auditActions = await db
