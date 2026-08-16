@@ -33,6 +33,7 @@
 			<a class="subnav" href="/commercial/estimates">Estimates</a>
 			<a class="subnav" href="/commercial/quotations">Quotations</a>
 			<a href="/projects">Projects</a>
+			<a href="/contracts">Contracts</a>
 			<a href="/organisation">Organisation</a>
 		</nav>
 	</aside>
