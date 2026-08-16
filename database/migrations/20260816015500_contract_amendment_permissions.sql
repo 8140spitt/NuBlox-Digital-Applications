@@ -43,30 +43,10 @@ ON DUPLICATE KEY UPDATE
     description = VALUES(description),
     is_active = TRUE;
 
--- Package 004 amendment authority remains inside the contract domain. Existing
--- Owner and Administrator roles receive the granular amendment catalogue.
--- contract.manage remains the explicit umbrella for custom broad contract roles.
-INSERT IGNORE INTO role_permissions (
-    organisation_id,
-    organisation_role_id,
-    permission_id
-)
-SELECT
-    role.organisation_id,
-    role.id,
-    permission.id
-FROM organisation_roles AS role
-INNER JOIN permissions AS permission
-    ON permission.permission_key IN (
-        'contract.amendment.create',
-        'contract.amendment.draft.manage',
-        'contract.amendment.issue',
-        'contract.amendment.decide'
-    )
-WHERE role.name IN ('Owner', 'Administrator')
-  AND role.is_active = TRUE
-  AND permission.is_active = TRUE;
+-- contract.manage is the existing broad Package 004 umbrella and remains the
+-- standard Owner/Administrator authority. The new granular keys allow future
+-- custom delegation without changing standard-role bootstrap parity.
 
 -- migrate:down transaction:false
--- Released permission catalogue and standard-role grants are forward-only.
+-- Released permission catalogue is forward-only.
 SELECT 1;
