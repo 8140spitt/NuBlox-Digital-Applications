@@ -334,4 +334,20 @@ describe('controlled Package 004 contract amendments', () => {
 		expect(list.agreedAdjustmentTotal).toBe('200.0000');
 		expect(list.currentContractValue).toBe('1550.0000');
 	});
+
+	it('refuses to issue a draft amendment without an effective date', async () => {
+		const service = new ContractAmendmentService(db, randomUUID, () => new Date('2026-08-16T02:00:00.000Z'));
+		const missingDate = await service.create(actorOwnerA, {
+			contractPublicId: executedContractPublicId,
+			typeCode: 'terms_change',
+			title: 'Missing effective date',
+			description: 'This amendment has content but cannot be issued until its effective date is set.'
+		});
+		await expect(
+			service.issue(actorOwnerA, executedContractPublicId, missingDate.publicId)
+		).rejects.toThrow('Set an effective date before issuing the amendment.');
+		const workspace = await service.getWorkspace(actorOwnerA, executedContractPublicId, missingDate.publicId);
+		expect(workspace.amendment.lifecycleStatus).toBe('draft');
+		await service.withdraw(actorOwnerA, executedContractPublicId, missingDate.publicId);
+	});
 });
