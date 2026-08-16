@@ -280,7 +280,7 @@ Conversion does **not**:
 - create a contract;
 - create invoices or financial postings.
 
-Those are separate workflow decisions and transactions.
+Those are separate workflow decisions and transactions. Controlled contract formation is now implemented as a later Package 004 boundary in [`33-contract-formation.md`](33-contract-formation.md); it remains deliberately separate from the conversion transaction described here.
 
 ## 12. Permissions and standard roles
 
@@ -326,7 +326,7 @@ commercial.quotation.response.record
 
 Finance/Commercial does **not** automatically receive `commercial.manage`, `commercial.quotation.convert` or `project.create`. If an organisation wants that role to perform conversion, the relevant cross-domain authorities must be deliberately delegated.
 
-Manager may have `project.create` but receives no automatic commercial conversion authority. Other standard templates remain unchanged.
+Manager may have `project.create` but receives no automatic commercial conversion authority. Other standard templates remain unchanged for Package 003. Package 004 contract authority is a separate permission family and is documented in [`33-contract-formation.md`](33-contract-formation.md).
 
 ## 13. Tenant isolation
 
@@ -372,9 +372,9 @@ The conversion integration suite additionally covers:
 - unaccepted-version rejection;
 - cross-tenant quotation masking.
 
-## 16. Deliberate exclusions / next increments
+## 16. Deliberate exclusions / downstream boundary
 
-Not claimed implemented here:
+Not claimed implemented in Package 003:
 
 - estimate revision/version-2 creation;
 - quotation revision/version-2 creation and supersession;
@@ -385,15 +385,16 @@ Not claimed implemented here:
 - PDF quotation rendering;
 - production outbound quotation email delivery;
 - inferred customer project participation;
-- project site creation from quotation/CRM addresses;
-- contract formation.
+- project site creation from quotation/CRM addresses.
 
-The next commercial boundary remains explicit:
+The downstream boundary is now explicit:
 
 ```text
 Proposed Project created from accepted quotation
         ↓
-controlled Contract formation
+Package 004 controlled Contract formation      # implemented separately
         ↓
-later delivery / application / invoicing workflows
+contract amendments / delivery / invoicing     # later controlled workflows
 ```
+
+Package 003 remains authoritative for the accepted quotation and project-conversion provenance; Package 004 consumes that provenance without changing the historical sales record.
