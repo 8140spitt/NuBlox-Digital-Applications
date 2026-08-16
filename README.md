@@ -45,9 +45,10 @@ The production migration stream then adds:
 - `20260815214500_crm_contacts_permissions.sql` — CRM view/manage catalogue and initial standard-role grants;
 - `20260815222500_permission_granularity.sql` — granular project and CRM management permissions and revised Manager defaults;
 - `20260815223800_crm_opportunities_activities.sql` — opportunity/activity permissions plus non-destructive default Sales pipeline provisioning;
-- `20260815231500_estimates_quotations_permissions.sql` — commercial estimate/quotation permissions and aligned standard-role grants.
+- `20260815231500_estimates_quotations_permissions.sql` — commercial estimate/quotation permissions and aligned standard-role grants;
+- `20260816001000_accepted_quotation_project_conversion.sql` — explicit accepted-quotation conversion permission over the existing Package 003 conversion ledger.
 
-The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The newest CRM/commercial migrations are data/reference-only and activate normalised relational structures already present in Packages 002 and 003.
+The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The newest CRM/commercial migrations are data/reference-only and activate normalised structures already present in Packages 002 and 003.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -125,7 +126,8 @@ commercial.manage
     ├─ commercial.estimate.manage
     ├─ commercial.quotation.manage
     ├─ commercial.quotation.issue
-    └─ commercial.quotation.response.record
+    ├─ commercial.quotation.response.record
+    └─ commercial.quotation.convert
 ```
 
 The granular key is resolved first. The umbrella is used only when the granular key has no explicit member/role decision. A granular member deny therefore cannot be bypassed by an umbrella grant.
@@ -136,11 +138,11 @@ NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisi
 
 Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
 
-**Owner and Administrator** receive the broad project/CRM/commercial umbrellas plus the implemented granular permissions appropriate to those domains.
+**Owner and Administrator** receive the broad project/CRM/commercial umbrellas plus the established granular permissions. Their `commercial.manage` umbrella and `project.create` authority allow accepted-quotation project conversion unless a granular member exception denies it.
 
-**Manager** receives granular project and CRM party/contact operational authority without the broad project/CRM umbrellas. Manager does not automatically receive the newer opportunity/activity or commercial permissions.
+**Manager** receives granular project and CRM party/contact authority without broad project/CRM umbrellas. Manager may have `project.create`, but does not automatically receive sales/opportunity/commercial conversion authority.
 
-**Finance/Commercial** now receives:
+**Finance/Commercial** receives:
 
 ```text
 project.view
@@ -152,7 +154,7 @@ commercial.quotation.issue
 commercial.quotation.response.record
 ```
 
-Finance/Commercial deliberately does **not** receive `commercial.manage`. This preserves granular delegation and ensures later commercial permission families do not silently expand that role.
+Finance/Commercial deliberately does **not** receive `commercial.manage`, `commercial.quotation.convert` or `project.create`. Accepted-quotation conversion is cross-domain authority and must be deliberately delegated if an organisation wants that role to perform it.
 
 Member/Professional receives `project.view + crm.view`, Field Worker receives `project.view`, and Read Only receives `project.view + crm.view`.
 
@@ -192,13 +194,13 @@ The application includes:
 - `/crm/opportunities` — opportunity portfolio, filtering and creation;
 - `/crm/opportunities/[opportunityPublicId]` — stage/value/outcome, participants and chronological activity timeline.
 
-Pipeline **stage** represents sales maturity while opportunity `status` represents the terminal outcome (`open`, `won`, `lost`, `cancelled`). Existing/future tenants without pipeline configuration receive an audited default Sales pipeline without overwriting custom configuration.
+Pipeline **stage** represents sales maturity while opportunity `status` represents terminal outcome (`open`, `won`, `lost`, `cancelled`). Existing/future tenants without pipeline configuration receive an audited default Sales pipeline without overwriting custom configuration.
 
 See [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md).
 
-## Estimates and quotations
+## Estimates, quotations and project conversion
 
-Package 003 is now activated as the first customer-pricing application slice:
+Package 003 is activated through pricing, issue/response evidence and accepted-quotation conversion:
 
 ```text
 CRM Opportunity
@@ -220,6 +222,12 @@ Tax + narrative
 Issue lock + customer/contact/address snapshots
     ↓
 Customer response
+    ↓
+Accepted Quotation Version
+    ↓
+Idempotent conversion
+    ↓
+Proposed Project / Job
 ```
 
 Protected routes are:
@@ -227,9 +235,10 @@ Protected routes are:
 - `/commercial/estimates` — estimate portfolio and opportunity-to-estimate creation;
 - `/commercial/estimates/[estimatePublicId]` — internal estimate lines, cost components, totals and finalisation;
 - `/commercial/quotations` — quotation portfolio and effective status;
-- `/commercial/quotations/[quotationPublicId]` — customer-facing lines, tax snapshots, narrative, issue evidence and response history.
+- `/commercial/quotations/[quotationPublicId]` — customer-facing lines, tax snapshots, narrative, issue evidence and response history;
+- `/commercial/quotations/[quotationPublicId]/convert` — exact accepted-version project conversion workspace.
 
-The implementation reuses Package 003's existing normalised `estimates`, `estimate_versions`, `estimate_items`, `estimate_item_cost_components`, `quotations`, `quotation_versions`, `quotation_items`, tax, snapshot, issue and response tables. No second customer/estimate/quotation ledger is introduced.
+The implementation reuses Package 003's normalised estimate/quotation/response/conversion structures and Package 001 project structures. No second customer, estimate, quotation, conversion or project ledger is introduced.
 
 ### Commercial calculation boundary
 
@@ -243,19 +252,32 @@ money result   → scale 4
 rounding       → half-up when reducing scale
 ```
 
-Estimate sell/cost/margin and quotation net/tax/gross totals exclude optional lines until an explicit customer option-selection model is implemented. Cost-component `markup_percent` remains visible internal metadata and does not silently rewrite the explicit estimate sell rate.
+Estimate sell/cost/margin and quotation net/tax/gross totals exclude optional lines until an explicit customer option-selection model exists.
 
 ### Version and issue integrity
 
-Estimate version 1 supports `draft → final`; final/superseded versions are immutable through the service. A quotation can be created only from a final estimate version, and the exact source version is retained.
+Estimate version 1 supports `draft → final`; final/superseded versions are immutable through the service. A quotation can be created only from a final estimate version, with exact source provenance retained.
 
-Quotation version 1 supports `draft → issued`. Issue atomically snapshots current CRM customer/contact facts and primary addresses, records recipient/channel evidence, and locks the version. Subsequent CRM edits cannot rewrite what was actually issued.
+Quotation version 1 supports `draft → issued`. Issue snapshots CRM customer/contact/address facts and locks the version. Tenant tax configuration is snapshotted per line. Responses are permitted only against issued/locked versions; effective quotation status is derived from version/response evidence.
 
-Tenant tax configuration is resolved while drafting and snapshotted per quotation line as applied rate, taxable amount and tax amount. Customer responses are recorded only against issued/locked versions. Effective quotation status is derived from immutable version state, response evidence and validity date rather than maintained as another editable status ledger.
+### Accepted quotation → project
+
+Conversion requires:
+
+```text
+commercial.quotation.convert OR commercial.manage
+AND project.create
+AND exact issued + locked quotation version
+AND accepted response for that exact version
+```
+
+`quotation_project_conversions` is the authoritative idempotency/provenance ledger. The transaction locks commercial source evidence, creates exactly one `proposed` project, establishes the owning organisation and converting member's initial project scope, links `quotations.project_id` and exact source `estimates.project_id`, and writes audit evidence. A retry returns the already-created project.
+
+The conversion deliberately does **not** infer the CRM customer as a NuBlox participant, create a project site from a CRM address, activate the project, or form a contract.
 
 See [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md).
 
-**Deliberately not claimed implemented:** estimate version-2 revision UI, quotation version-2/supersession/withdrawal workflow, customer option selection, sales-catalogue/tax administration UI, PDF quotation rendering, production outbound quotation email delivery, accepted-quotation-to-project conversion or contract formation.
+**Still not claimed implemented:** estimate/quotation revision workflows, quotation withdrawal, customer option selection, sales-catalogue/tax administration UI, PDF rendering, production outbound quotation email delivery, inferred customer project participation, automatic project-site creation, or contract formation.
 
 ## Projects, participants and teams
 
@@ -291,6 +313,6 @@ pnpm check
 pnpm test:integration
 ```
 
-The latest executable Package 003 candidate applies **10 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift, passes **13 integration files / 57 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised head must pass the same gate before merge.
+The accepted-quotation conversion executable candidate applies **11 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift and passes **14 integration files / 61 real-MySQL tests**. The final documentation-synchronised head must additionally prove `svelte-check` with **0 errors / 0 warnings** before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
