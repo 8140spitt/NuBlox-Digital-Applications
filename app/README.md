@@ -8,7 +8,7 @@ This app is structured as a modular monolith following `docs/05-system-architect
 - Business rules belong in server-side domain/application modules, not Svelte components.
 - Route handlers are request boundaries for authentication, tenant context, validation, policy checks and service orchestration.
 - Correlation IDs are attached to requests for observability.
-- SQL belongs behind domain repositories; routes/components do not query the database directly.
+- SQL belongs behind domain repositories/services; routes/components do not query the database directly.
 - MySQL SQL migrations are the schema source of truth; generated Kysely types are derivative.
 - Tenant-owned records use explicit verified tenant context rather than surrogate ID alone.
 - Authentication identity does not imply organisation, CRM, commercial, contract or project access.
@@ -79,10 +79,14 @@ contract.manage
     ├─ contract.create
     ├─ contract.draft.manage
     ├─ contract.issue
-    └─ contract.execute
+    ├─ contract.execute
+    ├─ contract.amendment.create
+    ├─ contract.amendment.draft.manage
+    ├─ contract.amendment.issue
+    └─ contract.amendment.decide
 ```
 
-`decideWithUmbrella()` resolves the granular permission first and uses the same-domain umbrella only when the granular key has no explicit member/role decision. An explicit granular member deny cannot be bypassed by its umbrella. Permission umbrellas do not cross domain boundaries; `commercial.manage` does not grant contract authority.
+`decideWithUmbrella()` resolves the granular permission first and uses the same-domain umbrella only when the granular key has no explicit member/role decision. An explicit granular member deny cannot be bypassed by its umbrella. Permission umbrellas do not cross domain boundaries; `commercial.manage` does not grant contract or amendment authority.
 
 ## Controlled account provisioning
 
@@ -94,7 +98,7 @@ Better Auth sign-up remains fail-closed. Exactly one NuBlox provisioning intent 
 
 New organisations receive Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only.
 
-Owner / Administrator receive current broad project, CRM, commercial and contract umbrella authority plus established granular permissions. Their existing `commercial.manage` + `project.create` authority satisfies accepted-quotation project conversion; their separate Package 004 grants satisfy contract creation, draft management, issue and execution.
+Owner / Administrator receive current broad project, CRM, commercial and contract umbrella authority plus established granular permissions. Their existing `commercial.manage` + `project.create` authority satisfies accepted-quotation project conversion. Their independent Package 004 `contract.manage` authority supplies broad contract formation and amendment authority unless a granular member exception denies a specific action.
 
 Manager retains granular project and CRM party/contact operational permissions, including `project.create`, but receives no automatic commercial conversion or contract authority.
 
@@ -111,9 +115,7 @@ commercial.quotation.response.record
 contract.view
 ```
 
-Finance/Commercial deliberately does not receive `commercial.manage`, `commercial.quotation.convert`, `project.create`, `contract.manage`, `contract.create`, `contract.draft.manage`, `contract.issue` or `contract.execute`. Conversion and contract mutation are deliberate cross-domain delegations.
-
-Migration grants for existing organisations and `OrganisationBootstrapService` grants for future organisations are integration-tested for parity.
+Finance/Commercial deliberately does not receive `commercial.manage`, `commercial.quotation.convert`, `project.create` or `contract.manage`. Conversion, contract mutation and amendment mutation are deliberate delegations.
 
 ## Application access
 
@@ -135,9 +137,10 @@ The current UI includes:
 - `/commercial/quotations/[quotationPublicId]/convert` — accepted-version project conversion and provenance status;
 - `/projects` — member-scoped project portfolio, creation and invitation inbox;
 - `/projects/[projectPublicId]` — project workspace, participant/team administration and lifecycle controls;
-- `/contracts` — tenant contract portfolio and accepted-work formation queue;
+- `/contracts` — tenant contract portfolio plus accepted-quotation/project formation queues;
 - `/contracts/new?project=[projectPublicId]` — controlled accepted-quotation/project contract formation;
-- `/contracts/[contractPublicId]` — contract version, party, value, key-date, issue and execution workspace;
+- `/contracts/[contractPublicId]` — contract version, party, value, key-date, issue, execution and amendment history workspace;
+- `/contracts/[contractPublicId]/amendments/[amendmentPublicId]` — controlled amendment draft, value/date changes, issue and decision workspace;
 - `/organisation` — permission-aware organisation administration.
 
 The `(app)` route-group server layout rejects unauthenticated users and redirects authenticated users without a verified tenant to organisation selection.
@@ -175,11 +178,7 @@ AND record.organisation_id = active organisation
 AND document/version lifecycle policy
 ```
 
-### Opportunity → estimate
-
-A new estimate must reference a same-tenant CRM opportunity that is not lost/cancelled and has a primary CRM customer. Estimate creation creates version 1 in `draft` state.
-
-Estimate lines carry explicit sell quantity/rate. Internal cost components retain quantity, unit cost, waste percentage and markup metadata. Sell/cost/margin calculations use scaled `BigInt` arithmetic in `commercial-decimal.ts`.
+Estimate/quotation money uses scaled `BigInt` arithmetic rather than JavaScript binary floating point:
 
 ```text
 quantity        6 decimals
@@ -189,19 +188,7 @@ money result    4 decimals
 rounding        half-up when reducing scale
 ```
 
-Optional lines are excluded from base totals until explicit option selection exists. Finalisation changes draft estimate version 1 to `final`; final/superseded versions are immutable through normal application writes.
-
-### Final estimate → quotation
-
-A quotation can currently be created only from a final estimate version. The transaction creates a separate logical quotation/version, records exact source version provenance in `quotation_version_estimates`, and copies output lines with source-estimate-item provenance. CRM customer identity remains linked rather than copied into another editable master.
-
-Draft quotation version 1 supports header details, customer-facing lines, tenant tax snapshots and narrative blocks.
-
-### Issue and response integrity
-
-Quotation issue snapshots current CRM customer/contact facts and primary addresses, locks the version as `issued`, creates issue/recipient evidence and appends audit history. Later CRM edits do not rewrite issued evidence.
-
-Issued quotation versions are immutable. Responses are recorded only against issued/locked versions. Current response types are `accepted`, `rejected`, `revision_requested` and `withdrawn_by_customer`; a second acceptance is rejected.
+Quotation issue snapshots CRM customer/contact/address facts, locks the exact version and creates issue/recipient evidence. Responses are recorded only against issued/locked versions.
 
 ## Accepted quotation → project conversion
 
@@ -214,31 +201,15 @@ commercial.quotation.convert OR commercial.manage
 AND project.create
 ```
 
-The selected version must be an exact tenant-owned `issued` and locked quotation version with an `accepted` response for that same version.
+The selected version must be the exact tenant-owned issued and locked quotation version with an accepted response for that same version. `quotation_project_conversions` is the authoritative idempotency/provenance ledger.
 
-The conversion transaction:
-
-1. verifies active tenant membership and both permission decisions;
-2. locks the logical quotation, exact version and accepted response;
-3. checks the existing `quotation_project_conversions` ledger;
-4. returns the already-linked project on a retry;
-5. locks source estimates and rejects a source already tied to another project;
-6. creates one project in `proposed` state;
-7. creates active owning-organisation participation;
-8. creates the converting member's first active project scope;
-9. writes `quotation_project_conversions` provenance;
-10. sets `quotations.project_id` and exact source `estimates.project_id`;
-11. appends `commercial.quotation.converted_to_project` and `project.created_from_quotation` audit events.
-
-Project numbering is derived deterministically from the quotation number (`QUO-…` → `PRJ-…`) and must not collide with unrelated project identity.
-
-The conversion deliberately does not infer that a CRM customer is a NuBlox platform organisation. It does not invite the customer, create a project site from a CRM address, activate the project, form a contract or create finance records.
+The conversion creates a `proposed` project, owning-organisation participation and converting-member scope. It does not infer the CRM customer as a NuBlox participant, create a project site, activate the project, form a contract or create finance records.
 
 See `docs/32-estimates-quotations.md`.
 
 ## Controlled contract formation
 
-`src/lib/server/contracts/contract-formation-service.ts`, `contract-lifecycle-service.ts` and `contract-service.ts` activate the contract half of Package 004 without creating a second contract ledger.
+`src/lib/server/contracts/contract-formation-service.ts`, `contract-lifecycle-service.ts` and `contract-service.ts` activate the formation/execution half of Package 004 without creating a second contract ledger.
 
 The contract boundary is:
 
@@ -247,34 +218,51 @@ active NuBlox user
 AND active organisation membership
 AND contract.view for reads
 AND granular contract permission OR contract.manage umbrella for mutations
-AND project.view + exact active project-member scope for quotation-derived formation
+AND project.view + exact active project-member scope where quotation-derived formation requires it
 AND record.organisation_id = active organisation
 AND contract/version lifecycle policy
 ```
 
-Package 003 commercial authority is not a substitute for Package 004 contract authority.
+Formation retains exact accepted quotation/project provenance in the existing Package 004 columns. Version 1 snapshots customer evidence, derives its initial `base_scope` from accepted non-optional quotation net lines, and supports controlled value/key-date maintenance before issue.
 
-### Accepted project → draft contract
-
-Formation requires a proposed project created by the existing accepted-quotation conversion ledger. The service resolves the exact `quotation_project_conversions` row and accepted `quotation_responses` evidence, verifies the source quotation version is issued and locked, then serialises creation under a project-row lock.
-
-The new contract retains `project_id`, `opportunity_id` and exact `source_quotation_response_id`. A retry for the same project and accepted response returns the existing contract. No uniqueness rule is added that would prevent legitimate future multi-contract projects.
-
-Version 1 snapshots the accepted customer into `contract_version_parties`; quotation customer addresses are copied into contract version address evidence. The tenant organisation remains `contracts.organisation_id` and is not synthesised as a tenant CRM self-party.
-
-The first `base_scope` value component is the fixed-precision sum of included accepted quotation line net values.
-
-### Draft → issue → execution
-
-Draft version 1 supports controlled title/customer-reference updates plus value-component and key-date additions/removals.
-
-Issue requires a draft version, at least one party and at least one value component. It changes version state to `issued`, records `locked_by_member_id` / `locked_at`, changes the logical contract to `under_review`, records issue/recipient evidence and writes audit history. Issued versions reject ordinary draft mutation.
-
-Execution requires the exact issued/locked version and `under_review` logical contract, creates one execution event and signatory evidence, changes the version to `executed`, and changes the contract to `active`.
-
-Execution does not activate the project, infer customer project participation, create an invoice or post a payment/ledger fact.
+Issue makes version 1 immutable and records recipient evidence. Execution records one execution event and signatory evidence and changes the logical contract to `active`. Project lifecycle remains independent.
 
 See `docs/33-contract-formation.md`.
+
+## Controlled contract amendments
+
+`src/lib/server/contracts/contract-amendment-service.ts` activates the normalised Package 004 post-execution amendment model:
+
+```text
+Active + executed Contract
+        ↓
+Draft Amendment
+        ├─ narrative / scope / terms change
+        ├─ signed value adjustments
+        └─ key-date changes
+        ↓
+Issue / freeze
+        ↓
+Agreed | Rejected | Withdrawn
+```
+
+Creation requires an active logical contract and an executed contract-version baseline. The service uses existing `contract_amendments`, `contract_amendment_value_adjustments` and `contract_amendment_key_date_changes` tables; it does not create a parallel variation ledger.
+
+Draft amendments may be edited by authorised users. Value adjustments are signed `DECIMAL(19,4)` facts: positive amounts increase value, negative amounts decrease it, zero is rejected. Key-date changes create new amendment facts rather than overwriting executed baseline dates.
+
+Before issue, an amendment must have an effective date and substantive change evidence. Issue freezes ordinary mutation. Only an issued amendment can be agreed or rejected; draft or issued amendments can be withdrawn while remaining preserved as historical evidence.
+
+Current contract value is derived, never independently editable:
+
+```text
+Current Contract Value
+= Executed Baseline Value Components
++ Sum(Agreed Amendment Value Adjustments)
+```
+
+Draft, issued, rejected and withdrawn adjustments do not affect current contract value. All amendment mutations/lifecycle transitions are audited and tenant-scoped; foreign-tenant amendment identity is masked.
+
+See `docs/34-contract-amendments.md`.
 
 ## Project workspace and collaboration
 
@@ -291,8 +279,6 @@ project.participation.manage
 ```
 
 Normal project access requires effective organisation authority plus active participant-organisation scope plus exact-member `project_members` scope. Project contextual roles never grant application permissions.
-
-The accepted-quotation conversion creates only the owning organisation's participation and converting member's initial scope. Customer/external participant creation remains an explicit project invitation workflow.
 
 ## Transactional email boundary
 
@@ -332,6 +318,6 @@ pnpm check
 pnpm test:integration
 ```
 
-The controlled-contract executable candidate applies **12 production migrations** on MySQL 8.4.11, verifies the **344-table / 749-FK / 429-CHECK** structural contract, produces zero generated Kysely drift, passes **15 integration files / 66 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings** on the first executable Package 004 head. The final documentation-synchronised release head must pass the same gate before merge.
+The Package 004 amendment release candidate applies **13 production migrations** on MySQL 8.4.11, verifies the **344-table / 749-FK / 429-CHECK** structural contract, produces zero generated Kysely drift, passes **16 integration files / 72 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised PR head must prove these exact results before merge.
 
-Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, catalogue/tax administration UI, PDF generation, production outbound quotation/contract delivery, inferred customer project participation, project-site inference, contract version 2+, contract amendments, automatic project activation, invoices, credit notes, payments or allocations.
+Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, catalogue/tax administration UI, PDF generation, production outbound quotation/contract/amendment delivery, inferred customer project participation, project-site inference, contract version 2+, automatic project activation, operational invoices, credit notes, payments or allocations.
