@@ -35,11 +35,11 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production migration stream then adds authentication/provisioning and application permission activation through CRM, sales, accepted-quotation project conversion and Package 004 contract workflows. The latest forward migration is:
+The production stream now contains **14 migrations**. The latest application activation is:
 
-- `20260816015500_contract_amendment_permissions.sql` — granular controlled-amendment delegation under the existing Package 004 `contract.manage` umbrella.
+- `20260816113000_accounts_receivable_invoice_permissions.sql` — Package 004 operational accounts-receivable permissions for billing settings and controlled invoices.
 
-The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The CRM/commercial/contract migrations are data/reference-only where the required normalised business structures already exist in Packages 002–004.
+The current application structure remains **344 tables, 749 foreign keys and 429 `CHECK` constraints** because the Package 004B/004C permission migrations activate normalised contract/amendment/finance structures already present in the baseline.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -96,9 +96,9 @@ explicit member deny
     > default deny
 ```
 
-## Granular RBAC and umbrella compatibility
+## Granular RBAC and same-domain umbrellas
 
-NuBlox separates broad management authority into delegable responsibilities while retaining broad permissions inside each domain family:
+NuBlox separates broad management authority into delegable responsibilities while retaining explicit same-domain umbrella compatibility:
 
 ```text
 project.manage
@@ -129,9 +129,17 @@ contract.manage
     ├─ contract.amendment.draft.manage
     ├─ contract.amendment.issue
     └─ contract.amendment.decide
+
+finance.manage
+    ├─ finance.billing.manage
+    ├─ finance.invoice.create
+    ├─ finance.invoice.draft.manage
+    └─ finance.invoice.issue
 ```
 
-The granular key is resolved first. Its domain umbrella is used only when the granular key has no explicit member/role decision. A granular member deny therefore cannot be bypassed by an umbrella grant. **Permission umbrellas do not cross domain families:** `commercial.manage` does not grant Package 004 contract or amendment authority.
+The granular key is resolved first. Its umbrella is used only when the granular key has no explicit member/role decision. An explicit granular member deny therefore cannot be bypassed by an umbrella grant.
+
+**Umbrellas never cross domains.** `commercial.manage` does not grant contract authority; `contract.manage` does not grant finance authority; `finance.manage` does not grant commercial or contract authority.
 
 ## Controlled account provisioning and standard roles
 
@@ -139,11 +147,19 @@ NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisi
 
 Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
 
-**Owner and Administrator** receive the broad project/CRM/commercial/contract umbrellas plus established granular permissions. `contract.manage` supplies broad Package 004 amendment authority; granular amendment keys support narrower future/custom delegation and explicit member exceptions.
+### Owner / Administrator
 
-**Manager** receives granular project and CRM party/contact authority without broad project/CRM umbrellas. Manager may have `project.create`, but does not automatically receive sales, commercial conversion or contract authority.
+Owner and Administrator receive the broad project, CRM, commercial, contract and finance umbrellas plus the currently established granular permissions. Existing organisations receive the same released grants from forward migrations and future organisations receive them from `OrganisationBootstrapService`.
 
-**Finance/Commercial** receives:
+Package 004B amendment granular grants are persisted for Owner/Administrator as well as covered by `contract.manage`; this keeps migration and future-bootstrap role rows aligned rather than merely behaviorally equivalent.
+
+### Manager
+
+Manager receives granular project and CRM party/contact authority without broad project/CRM umbrellas. Manager may have `project.create`, but does not automatically receive commercial, contract or finance authority.
+
+### Finance/Commercial
+
+Finance/Commercial receives:
 
 ```text
 project.view
@@ -154,9 +170,24 @@ commercial.quotation.manage
 commercial.quotation.issue
 commercial.quotation.response.record
 contract.view
+finance.view
+finance.billing.manage
+finance.invoice.create
+finance.invoice.draft.manage
+finance.invoice.issue
 ```
 
-Finance/Commercial deliberately does **not** receive `commercial.manage`, `commercial.quotation.convert`, `project.create` or `contract.manage`. Cross-domain conversion and Package 004 mutations must be deliberately delegated.
+Finance/Commercial deliberately does **not** receive:
+
+```text
+commercial.manage
+commercial.quotation.convert
+project.create
+contract.manage
+finance.manage
+```
+
+That design permits the activated operational AR work without silently granting later payment, credit-note, reversal or wider finance capabilities.
 
 Member/Professional receives `project.view + crm.view`, Field Worker receives `project.view`, and Read Only receives `project.view + crm.view`.
 
@@ -178,18 +209,7 @@ Delegation ceilings, organisation-manager protection, self-mutation restrictions
 
 The protected `/crm` surface is a **private tenant CRM**, not a platform-global directory. CRM party identity is separate from NuBlox platform organisations, auth users, workforce records and project participants.
 
-CRM permissions are:
-
-```text
-crm.view
-crm.manage
-crm.party.manage
-crm.contact.manage
-crm.opportunity.manage
-crm.activity.manage
-```
-
-The application includes `/crm`, party workspaces, opportunities and activity timelines. Pipeline **stage** represents sales maturity while opportunity `status` represents terminal outcome (`open`, `won`, `lost`, `cancelled`).
+The implemented CRM includes party/contact administration, opportunities and activity timelines. Pipeline **stage** represents sales maturity while opportunity `status` represents terminal outcome (`open`, `won`, `lost`, `cancelled`).
 
 See [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md).
 
@@ -251,17 +271,17 @@ Active Contract
 
 Protected routes are:
 
-- `/contracts` — contract portfolio plus accepted-quotation/project formation queues;
-- `/contracts/new?project=[projectPublicId]` — controlled quotation-derived formation;
-- `/contracts/[contractPublicId]` — contract version, party, value, date, issue, execution and amendment history workspace.
+- `/contracts`
+- `/contracts/new?project=[projectPublicId]`
+- `/contracts/[contractPublicId]`
 
-Formation retains exact `project_id`, `opportunity_id` and `source_quotation_response_id` provenance. Version 1 snapshots accepted customer evidence, derives initial `base_scope` from non-optional quotation net lines using fixed-precision arithmetic, and becomes immutable after issue. Execution records one execution event/signatory set and makes the logical contract active without changing project lifecycle.
+Formation retains exact `project_id`, `opportunity_id` and `source_quotation_response_id` provenance. Version 1 snapshots accepted customer evidence, derives initial `base_scope` from accepted quotation net lines using fixed-precision arithmetic, and becomes immutable after issue. Execution records one execution/signatory event and makes the logical contract active without changing project lifecycle.
 
 See [`docs/33-contract-formation.md`](docs/33-contract-formation.md).
 
 ## Controlled contract amendments
 
-Package 004 post-execution change is now implemented using the existing normalised amendment model:
+Package 004 post-execution change is implemented using the existing normalised amendment model:
 
 ```text
 Active + Executed Contract Baseline
@@ -276,11 +296,11 @@ Issue / freeze
 Agreed | Rejected | Withdrawn
 ```
 
-The dedicated amendment workspace is:
+The amendment workspace is:
 
 - `/contracts/[contractPublicId]/amendments/[amendmentPublicId]`
 
-Creation requires an active contract with an executed contract-version baseline. Draft amendments support controlled details, positive/negative fixed-precision value adjustments and replacement key dates. The domain service requires an effective date and substantive change evidence before issue; issued amendments reject ordinary draft mutation.
+Creation requires an active contract with an executed baseline. The domain service requires an effective date and substantive change evidence before issue; issued amendments reject ordinary draft mutation.
 
 Only **agreed** amendments affect the derived contractual position:
 
@@ -290,27 +310,89 @@ Current Contract Value
 + Sum(Agreed Amendment Value Adjustments)
 ```
 
-Draft, issued, rejected and withdrawn adjustments do not alter current value. Rejected/withdrawn records remain historical evidence. All amendment lifecycle/mutation actions are tenant-scoped and audited; foreign-tenant public IDs are masked.
+Rejected and withdrawn records remain historical evidence.
 
 See [`docs/34-contract-amendments.md`](docs/34-contract-amendments.md).
 
-**Still not claimed implemented in Package 004:** contract version 2+ revision/supersession, PDF/document rendering, production outbound contract/amendment/e-sign delivery, customer portal amendment decisions, automatic project activation, operational invoices, credit notes, payments or allocations.
+## Operational accounts receivable
+
+Package 004C now activates customer billing settings and controlled invoice preparation/issue:
+
+```text
+Active Executed Contract
+        ↓
+Customer Billing Defaults
+        ↓
+Draft Invoice
+        ├── payment term / due-date policy
+        ├── customer PO/reference
+        └── fixed-precision lines + provisional tax
+        ↓
+Controlled Issue
+        ├── issue-date tax refresh
+        ├── tenant invoice-number allocation
+        ├── customer/contact/address snapshots
+        ├── issue/recipient evidence
+        └── immutable issued invoice
+```
+
+Protected finance routes are:
+
+- `/finance/billing` — tenant payment terms and customer billing defaults;
+- `/finance/invoices` — invoice portfolio and executed-contract draft creation;
+- `/finance/invoices/[invoicePublicId]` — invoice header, lines/tax, contract-value context, issue controls and immutable evidence.
+
+### Contract-anchored creation
+
+The first invoice slice intentionally creates invoices only from an active contract with an executed contract-version baseline and `client` party. Creation requires `finance.invoice.create OR finance.manage` **and** `contract.view` because the contract is the source context.
+
+The draft inherits customer, billing contact where available, project, contract and contract currency. It does not independently select a different customer or infer platform identity from CRM.
+
+### Drafts are legally unnumbered
+
+A new financial document remains:
+
+```text
+document_kind = invoice
+lifecycle_status = draft
+document_number = NULL
+```
+
+No legal invoice number is consumed when a draft is created. The first tenant-local issue format is `INV-000001`, `INV-000002`, … and allocation occurs only inside the controlled issue transaction. The existing unique document key remains the database guard against duplicate issued identity.
+
+### Fixed-precision line and tax policy
+
+Invoice lines reuse Package 004 `financial_document_items` and tax child rows. Quantity is six-decimal fixed precision; rates/money/tax are four-decimal fixed precision; authoritative arithmetic reuses the Package 003 scaled-`BigInt` module.
+
+Tax selected during draft preparation is provisional. Immediately before issue, each tax fact is recalculated using the tenant tax-category rate effective at the actual issue date/time. The issued rate, taxable amount and tax amount then remain immutable evidence.
+
+### Billing policy and due date
+
+Payment terms support:
+
+```text
+invoice_date  → issue date + days offset
+end_of_month  → end of issue month + days offset
+manual        → explicit due date
+```
+
+If a customer billing profile requires a purchase-order/reference, issue is blocked until the draft carries it.
+
+### Issue evidence and immutability
+
+Issue validates policy, finalises the due date, refreshes tax, snapshots customer/billing-contact/address facts, assigns the document number, records issue/recipient evidence and changes the document to `issued`.
+
+Issued invoices reject ordinary header and line mutation. The issue channel records evidence only; production outbound invoice email/API/portal delivery is not claimed.
+
+The invoice workspace also derives current contract value and previously issued net for the same contract as controls. These are contextual facts rather than a simplistic automatic over-invoicing cap.
+
+See [`docs/35-accounts-receivable-invoices.md`](docs/35-accounts-receivable-invoices.md).
+
+**Still not claimed implemented in Package 004 finance:** credit notes, controlled invoice void/reversal UI, payments, payment allocations, customer statements, aged receivables/dunning, valuation/application-to-invoice automation, configurable statutory number formats, PDF rendering, production outbound invoice delivery, general-ledger posting or bank reconciliation.
 
 ## Projects, participants and teams
 
 The protected application exposes `/projects` and `/projects/[projectPublicId]` for member-scoped portfolios, project creation, invitation response, participant organisations, own-organisation team administration and lifecycle controls.
-
-Project permissions remain:
-
-```text
-project.create
-project.view
-project.manage
-project.lifecycle.manage
-project.participant.manage
-project.team.manage
-project.participation.manage
-```
 
 Normal in-project access requires organisation authority **and** active organisation participation **and** an active `project_members` row for the exact member. Project contextual roles never grant application permissions.
 
@@ -330,6 +412,17 @@ pnpm check
 pnpm test:integration
 ```
 
-The Package 004 amendment release candidate applies **13 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift, passes **16 integration files / 72 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings**. The final documentation-synchronised PR head must prove these exact results before merge.
+The first executable Package 004C AR head on MySQL 8.4.11 proved:
+
+```text
+14 production migrations applied / 0 pending
+344 base tables / 749 foreign keys / 429 CHECK constraints
+zero generated Kysely drift
+17 integration files / 77 real-MySQL tests passed
+finance/invoices.integration.test.ts: 5/5 passed
+svelte-check: 0 errors / 0 warnings
+```
+
+The final documentation-synchronised PR head must prove the same complete gate before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
