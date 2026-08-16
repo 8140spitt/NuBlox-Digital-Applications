@@ -36,11 +36,18 @@ export class ContractService {
 	}
 
 	async listPortfolio(actor: TenantActorContext) {
-		const [portfolio, entryQueue] = await Promise.all([
-			this.formation.listPortfolio(actor),
-			this.entry.listAcceptedQuotationQueue(actor)
-		]);
-		return { ...portfolio, ...entryQueue };
+		const portfolio = await this.formation.listPortfolio(actor);
+		if (!portfolio.canView) {
+			return {
+				...portfolio,
+				canConvertAcceptedQuotation: false,
+				acceptedQuotationsAwaitingProject: []
+			};
+		}
+		return {
+			...portfolio,
+			...(await this.entry.listAcceptedQuotationQueue(actor))
+		};
 	}
 
 	getFormationWorkspace(
