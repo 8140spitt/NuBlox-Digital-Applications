@@ -28,7 +28,13 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'commercial.estimate.manage',
 	'commercial.quotation.manage',
 	'commercial.quotation.issue',
-	'commercial.quotation.response.record'
+	'commercial.quotation.response.record',
+	'contract.view',
+	'contract.manage',
+	'contract.create',
+	'contract.draft.manage',
+	'contract.issue',
+	'contract.execute'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -55,7 +61,13 @@ const STANDARD_ROLES = [
 			'commercial.estimate.manage',
 			'commercial.quotation.manage',
 			'commercial.quotation.issue',
-			'commercial.quotation.response.record'
+			'commercial.quotation.response.record',
+			'contract.view',
+			'contract.manage',
+			'contract.create',
+			'contract.draft.manage',
+			'contract.issue',
+			'contract.execute'
 		]
 	},
 	{
@@ -81,7 +93,13 @@ const STANDARD_ROLES = [
 			'commercial.estimate.manage',
 			'commercial.quotation.manage',
 			'commercial.quotation.issue',
-			'commercial.quotation.response.record'
+			'commercial.quotation.response.record',
+			'contract.view',
+			'contract.manage',
+			'contract.create',
+			'contract.draft.manage',
+			'contract.issue',
+			'contract.execute'
 		]
 	},
 	{
@@ -111,7 +129,8 @@ const STANDARD_ROLES = [
 			'commercial.estimate.manage',
 			'commercial.quotation.manage',
 			'commercial.quotation.issue',
-			'commercial.quotation.response.record'
+			'commercial.quotation.response.record',
+			'contract.view'
 		]
 	},
 	{
@@ -551,7 +570,9 @@ export class OrganisationBootstrapService {
 				status: input.state
 			})
 			.executeTakeFirstOrThrow();
-		if (organisationInsert.insertId === undefined) throw new Error('Organisation insert did not return an ID.');
+		if (organisationInsert.insertId === undefined) {
+			throw new Error('Organisation insert did not return an ID.');
+		}
 		const organisationId = organisationInsert.insertId.toString();
 
 		const memberPublicId = randomUUID();
@@ -566,7 +587,9 @@ export class OrganisationBootstrapService {
 				disabled_at: null
 			})
 			.executeTakeFirstOrThrow();
-		if (memberInsert.insertId === undefined) throw new Error('Organisation member insert did not return an ID.');
+		if (memberInsert.insertId === undefined) {
+			throw new Error('Organisation member insert did not return an ID.');
+		}
 		const memberId = memberInsert.insertId.toString();
 
 		const permissionRows = await executor
@@ -594,7 +617,9 @@ export class OrganisationBootstrapService {
 					is_active: 1
 				})
 				.executeTakeFirstOrThrow();
-			if (roleInsert.insertId === undefined) throw new Error('Organisation role insert did not return an ID.');
+			if (roleInsert.insertId === undefined) {
+				throw new Error('Organisation role insert did not return an ID.');
+			}
 			const roleId = roleInsert.insertId.toString();
 			if (role.name === 'Owner') ownerRoleId = roleId;
 

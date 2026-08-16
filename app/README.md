@@ -11,7 +11,7 @@ This app is structured as a modular monolith following `docs/05-system-architect
 - SQL belongs behind domain repositories; routes/components do not query the database directly.
 - MySQL SQL migrations are the schema source of truth; generated Kysely types are derivative.
 - Tenant-owned records use explicit verified tenant context rather than surrogate ID alone.
-- Authentication identity does not imply organisation, CRM, commercial or project access.
+- Authentication identity does not imply organisation, CRM, commercial, contract or project access.
 
 ## Persistence and authentication stack
 
@@ -74,9 +74,15 @@ commercial.manage
     ├─ commercial.quotation.issue
     ├─ commercial.quotation.response.record
     └─ commercial.quotation.convert
+
+contract.manage
+    ├─ contract.create
+    ├─ contract.draft.manage
+    ├─ contract.issue
+    └─ contract.execute
 ```
 
-`decideWithUmbrella()` resolves the granular permission first and uses the umbrella only when the granular key has no explicit member/role decision. An explicit granular member deny cannot be bypassed by its umbrella.
+`decideWithUmbrella()` resolves the granular permission first and uses the same-domain umbrella only when the granular key has no explicit member/role decision. An explicit granular member deny cannot be bypassed by its umbrella. Permission umbrellas do not cross domain boundaries; `commercial.manage` does not grant contract authority.
 
 ## Controlled account provisioning
 
@@ -88,9 +94,9 @@ Better Auth sign-up remains fail-closed. Exactly one NuBlox provisioning intent 
 
 New organisations receive Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only.
 
-Owner / Administrator receive current broad project, CRM and commercial umbrella authority plus established granular permissions. Their existing `commercial.manage` + `project.create` authority satisfies the accepted-quotation conversion boundary unless a member-level exception overrides it.
+Owner / Administrator receive current broad project, CRM, commercial and contract umbrella authority plus established granular permissions. Their existing `commercial.manage` + `project.create` authority satisfies accepted-quotation project conversion; their separate Package 004 grants satisfy contract creation, draft management, issue and execution.
 
-Manager retains granular project and CRM party/contact operational permissions, including `project.create`, but receives no automatic commercial conversion authority.
+Manager retains granular project and CRM party/contact operational permissions, including `project.create`, but receives no automatic commercial conversion or contract authority.
 
 Finance/Commercial receives:
 
@@ -102,9 +108,12 @@ commercial.estimate.manage
 commercial.quotation.manage
 commercial.quotation.issue
 commercial.quotation.response.record
+contract.view
 ```
 
-Finance/Commercial deliberately does not receive `commercial.manage`, `commercial.quotation.convert` or `project.create`. Conversion is a cross-domain delegation and requires deliberate authority if that role should perform it.
+Finance/Commercial deliberately does not receive `commercial.manage`, `commercial.quotation.convert`, `project.create`, `contract.manage`, `contract.create`, `contract.draft.manage`, `contract.issue` or `contract.execute`. Conversion and contract mutation are deliberate cross-domain delegations.
+
+Migration grants for existing organisations and `OrganisationBootstrapService` grants for future organisations are integration-tested for parity.
 
 ## Application access
 
@@ -126,6 +135,9 @@ The current UI includes:
 - `/commercial/quotations/[quotationPublicId]/convert` — accepted-version project conversion and provenance status;
 - `/projects` — member-scoped project portfolio, creation and invitation inbox;
 - `/projects/[projectPublicId]` — project workspace, participant/team administration and lifecycle controls;
+- `/contracts` — tenant contract portfolio and accepted-work formation queue;
+- `/contracts/new?project=[projectPublicId]` — controlled accepted-quotation/project contract formation;
+- `/contracts/[contractPublicId]` — contract version, party, value, key-date, issue and execution workspace;
 - `/organisation` — permission-aware organisation administration.
 
 The `(app)` route-group server layout rejects unauthenticated users and redirects authenticated users without a verified tenant to organisation selection.
@@ -220,9 +232,49 @@ The conversion transaction:
 
 Project numbering is derived deterministically from the quotation number (`QUO-…` → `PRJ-…`) and must not collide with unrelated project identity.
 
-The conversion deliberately does not infer that a CRM customer is a NuBlox platform organisation. It does not invite the customer, create a project site from a CRM address, activate the project or form a contract.
+The conversion deliberately does not infer that a CRM customer is a NuBlox platform organisation. It does not invite the customer, create a project site from a CRM address, activate the project, form a contract or create finance records.
 
 See `docs/32-estimates-quotations.md`.
+
+## Controlled contract formation
+
+`src/lib/server/contracts/contract-formation-service.ts`, `contract-lifecycle-service.ts` and `contract-service.ts` activate the contract half of Package 004 without creating a second contract ledger.
+
+The contract boundary is:
+
+```text
+active NuBlox user
+AND active organisation membership
+AND contract.view for reads
+AND granular contract permission OR contract.manage umbrella for mutations
+AND project.view + exact active project-member scope for quotation-derived formation
+AND record.organisation_id = active organisation
+AND contract/version lifecycle policy
+```
+
+Package 003 commercial authority is not a substitute for Package 004 contract authority.
+
+### Accepted project → draft contract
+
+Formation requires a proposed project created by the existing accepted-quotation conversion ledger. The service resolves the exact `quotation_project_conversions` row and accepted `quotation_responses` evidence, verifies the source quotation version is issued and locked, then serialises creation under a project-row lock.
+
+The new contract retains `project_id`, `opportunity_id` and exact `source_quotation_response_id`. A retry for the same project and accepted response returns the existing contract. No uniqueness rule is added that would prevent legitimate future multi-contract projects.
+
+Version 1 snapshots the accepted customer into `contract_version_parties`; quotation customer addresses are copied into contract version address evidence. The tenant organisation remains `contracts.organisation_id` and is not synthesised as a tenant CRM self-party.
+
+The first `base_scope` value component is the fixed-precision sum of included accepted quotation line net values.
+
+### Draft → issue → execution
+
+Draft version 1 supports controlled title/customer-reference updates plus value-component and key-date additions/removals.
+
+Issue requires a draft version, at least one party and at least one value component. It changes version state to `issued`, records `locked_by_member_id` / `locked_at`, changes the logical contract to `under_review`, records issue/recipient evidence and writes audit history. Issued versions reject ordinary draft mutation.
+
+Execution requires the exact issued/locked version and `under_review` logical contract, creates one execution event and signatory evidence, changes the version to `executed`, and changes the contract to `active`.
+
+Execution does not activate the project, infer customer project participation, create an invoice or post a payment/ledger fact.
+
+See `docs/33-contract-formation.md`.
 
 ## Project workspace and collaboration
 
@@ -244,7 +296,7 @@ The accepted-quotation conversion creates only the owning organisation's partici
 
 ## Transactional email boundary
 
-`src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral. `EMAIL_DELIVERY_MODE=console` is for development and integration tests only. Package 003 quotation issue records delivery evidence; it does not claim production outbound email delivery.
+`src/lib/server/email/email-delivery.ts` keeps outbound transactional email provider-neutral. `EMAIL_DELIVERY_MODE=console` is for development and integration tests only. Package 003 quotation issue and Package 004 contract issue record delivery evidence; neither claims production outbound email delivery.
 
 ## Run
 
@@ -280,6 +332,6 @@ pnpm check
 pnpm test:integration
 ```
 
-The accepted-quotation conversion executable candidate applies **11 production migrations** on MySQL 8.4.11, verifies the **344-table / 749-FK / 429-CHECK** structural contract, produces zero generated Kysely drift and passes **14 integration files / 61 real-MySQL tests**. The documentation-synchronised release head must pass `svelte-check` with **0 errors / 0 warnings** before merge.
+The controlled-contract executable candidate applies **12 production migrations** on MySQL 8.4.11, verifies the **344-table / 749-FK / 429-CHECK** structural contract, produces zero generated Kysely drift, passes **15 integration files / 66 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings** on the first executable Package 004 head. The final documentation-synchronised release head must pass the same gate before merge.
 
-Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, catalogue/tax administration UI, PDF generation, production outbound quotation email delivery, inferred customer project participation, project-site inference, or contract formation.
+Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, catalogue/tax administration UI, PDF generation, production outbound quotation/contract delivery, inferred customer project participation, project-site inference, contract version 2+, contract amendments, automatic project activation, invoices, credit notes, payments or allocations.

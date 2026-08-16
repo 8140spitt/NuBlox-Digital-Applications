@@ -46,9 +46,10 @@ The production migration stream then adds:
 - `20260815222500_permission_granularity.sql` — granular project and CRM management permissions and revised Manager defaults;
 - `20260815223800_crm_opportunities_activities.sql` — opportunity/activity permissions plus non-destructive default Sales pipeline provisioning;
 - `20260815231500_estimates_quotations_permissions.sql` — commercial estimate/quotation permissions and aligned standard-role grants;
-- `20260816001000_accepted_quotation_project_conversion.sql` — explicit accepted-quotation conversion permission over the existing Package 003 conversion ledger.
+- `20260816001000_accepted_quotation_project_conversion.sql` — explicit accepted-quotation conversion permission over the existing Package 003 conversion ledger;
+- `20260816005000_contract_formation_permissions.sql` — explicit Package 004 contract permission catalogue and standard-role grants over the existing normalised contract structures.
 
-The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The newest CRM/commercial migrations are data/reference-only and activate normalised structures already present in Packages 002 and 003.
+The current application schema remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**. The newest CRM/commercial/contract migrations are data/reference-only and activate normalised structures already present in Packages 002–004.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -107,7 +108,7 @@ explicit member deny
 
 ## Granular RBAC and umbrella compatibility
 
-NuBlox separates broad management authority into delegable responsibilities while retaining broad permissions for compatibility:
+NuBlox separates broad management authority into delegable responsibilities while retaining broad permissions inside each domain family:
 
 ```text
 project.manage
@@ -128,9 +129,15 @@ commercial.manage
     ├─ commercial.quotation.issue
     ├─ commercial.quotation.response.record
     └─ commercial.quotation.convert
+
+contract.manage
+    ├─ contract.create
+    ├─ contract.draft.manage
+    ├─ contract.issue
+    └─ contract.execute
 ```
 
-The granular key is resolved first. The umbrella is used only when the granular key has no explicit member/role decision. A granular member deny therefore cannot be bypassed by an umbrella grant.
+The granular key is resolved first. Its domain umbrella is used only when the granular key has no explicit member/role decision. A granular member deny therefore cannot be bypassed by an umbrella grant. **Permission umbrellas do not cross domain families:** for example, `commercial.manage` does not grant Package 004 contract authority.
 
 ## Controlled account provisioning and standard roles
 
@@ -138,9 +145,9 @@ NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisi
 
 Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
 
-**Owner and Administrator** receive the broad project/CRM/commercial umbrellas plus the established granular permissions. Their `commercial.manage` umbrella and `project.create` authority allow accepted-quotation project conversion unless a granular member exception denies it.
+**Owner and Administrator** receive the broad project/CRM/commercial/contract umbrellas plus the established granular permissions. Their `commercial.manage` + `project.create` authority permits accepted-quotation project conversion unless a granular member exception denies it; their separate Package 004 contract grants permit contract formation, draft management, issue and execution.
 
-**Manager** receives granular project and CRM party/contact authority without broad project/CRM umbrellas. Manager may have `project.create`, but does not automatically receive sales/opportunity/commercial conversion authority.
+**Manager** receives granular project and CRM party/contact authority without broad project/CRM umbrellas. Manager may have `project.create`, but does not automatically receive sales, commercial conversion or contract authority.
 
 **Finance/Commercial** receives:
 
@@ -152,9 +159,10 @@ commercial.estimate.manage
 commercial.quotation.manage
 commercial.quotation.issue
 commercial.quotation.response.record
+contract.view
 ```
 
-Finance/Commercial deliberately does **not** receive `commercial.manage`, `commercial.quotation.convert` or `project.create`. Accepted-quotation conversion is cross-domain authority and must be deliberately delegated if an organisation wants that role to perform it.
+Finance/Commercial deliberately does **not** receive `commercial.manage`, `commercial.quotation.convert`, `project.create`, `contract.manage`, `contract.create`, `contract.draft.manage`, `contract.issue` or `contract.execute`. Cross-domain conversion and Package 004 contract mutations must be deliberately delegated if an organisation wants that role to perform them.
 
 Member/Professional receives `project.view + crm.view`, Field Worker receives `project.view`, and Read Only receives `project.view + crm.view`.
 
@@ -273,11 +281,51 @@ AND accepted response for that exact version
 
 `quotation_project_conversions` is the authoritative idempotency/provenance ledger. The transaction locks commercial source evidence, creates exactly one `proposed` project, establishes the owning organisation and converting member's initial project scope, links `quotations.project_id` and exact source `estimates.project_id`, and writes audit evidence. A retry returns the already-created project.
 
-The conversion deliberately does **not** infer the CRM customer as a NuBlox participant, create a project site from a CRM address, activate the project, or form a contract.
+The conversion deliberately does **not** infer the CRM customer as a NuBlox participant, create a project site from a CRM address, activate the project, form a contract or create finance records.
 
 See [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md).
 
-**Still not claimed implemented:** estimate/quotation revision workflows, quotation withdrawal, customer option selection, sales-catalogue/tax administration UI, PDF rendering, production outbound quotation email delivery, inferred customer project participation, automatic project-site creation, or contract formation.
+**Still not claimed implemented in Package 003:** estimate/quotation revision workflows, quotation withdrawal, customer option selection, sales-catalogue/tax administration UI, PDF rendering, production outbound quotation email delivery, inferred customer project participation or automatic project-site creation.
+
+## Controlled contract formation
+
+Package 004 is now activated through the first controlled contract-formation slice:
+
+```text
+Accepted Quotation Version
+        ↓
+Proposed Project
+        ↓
+Explicit Contract Formation
+        ↓
+Contract Version 1 (draft)
+        ↓
+Value components + key dates
+        ↓
+Issue lock + recipient evidence
+        ↓
+Execution + signatory evidence
+        ↓
+Active Contract
+```
+
+Protected routes are:
+
+- `/contracts` — tenant contract portfolio and accepted-work formation queue;
+- `/contracts/new?project=[projectPublicId]` — exact accepted-quotation/project provenance and controlled draft contract creation;
+- `/contracts/[contractPublicId]` — version parties, value components, key dates, issue evidence and execution evidence.
+
+Formation reuses the Package 004 `contracts` / `contract_versions` model and retains exact `project_id`, `opportunity_id` and `source_quotation_response_id` provenance. The accepted quotation customer is copied into versioned contract-party evidence using the immutable quotation snapshot where available; the tenant NuBlox organisation is not silently duplicated into CRM as a synthetic self-party.
+
+The initial `base_scope` contract value is derived from the accepted quotation's non-optional net lines using the same fixed-precision Package 003 decimal arithmetic. Formation locks the source project and is idempotent for the exact project + accepted response without introducing a database uniqueness rule that would forbid legitimate future multi-contract projects.
+
+Draft version 1 supports controlled title/reference, value-component and key-date changes. Issue changes `draft → issued`, records lock/recipient evidence and makes the version immutable through normal draft APIs. Execution records one execution event and signatory evidence, changes the version to `executed` and the logical contract to `active`.
+
+Contract execution deliberately does **not** activate the project, infer a customer platform organisation, create a project participant, issue an invoice or create a payment/ledger fact.
+
+See [`docs/33-contract-formation.md`](docs/33-contract-formation.md).
+
+**Still not claimed implemented in Package 004:** contract version 2+ revision/supersession, withdrawal, post-execution amendments, multiple contract parties beyond the accepted quotation customer, PDF/document rendering, production outbound contract/e-sign delivery, automatic project activation, invoices, credit notes, payments or allocations.
 
 ## Projects, participants and teams
 
@@ -313,6 +361,6 @@ pnpm check
 pnpm test:integration
 ```
 
-The accepted-quotation conversion executable candidate applies **11 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift and passes **14 integration files / 61 real-MySQL tests**. The final documentation-synchronised head must additionally prove `svelte-check` with **0 errors / 0 warnings** before merge.
+The controlled-contract executable candidate applies **12 production migrations** on MySQL 8.4.11, preserves the **344 / 749 / 429** structural contract, produces zero generated Kysely drift, passes **15 integration files / 66 real-MySQL tests**, and passes `svelte-check` with **0 errors / 0 warnings** on the first executable Package 004 head. The final documentation-synchronised head must prove the same gate before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
