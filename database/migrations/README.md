@@ -17,25 +17,23 @@ pnpm db:status
 
 `20260815140337_baseline_v1.sql` consolidates validated pre-production domain packages 001–010 in their documented order.
 
-The domain baseline is intentionally **irreversible**. Non-production environments rebuild rather than rolling the whole baseline backward.
-
 Validated Baseline v1 structure:
 
 - **337 domain/base tables**
 - **739 foreign keys**
 - **427 `CHECK` constraints**
 
-The numbered files under `database/schema/` remain the design/provenance packages and are not rewritten after the production baseline is frozen.
+The baseline is intentionally irreversible. Non-production environments rebuild rather than rolling the entire baseline backward. Numbered design/provenance files under `database/schema/` remain frozen source material.
 
-## Forward migrations after Baseline v1
+## Forward migrations
 
 ### `20260815145430_authentication_boundary.sql`
 
-Adds Better Auth infrastructure plus the explicit `auth_user_links` bridge to NuBlox domain `users`. Structure becomes **342 / 743 / 427**.
+Adds Better Auth infrastructure and explicit `auth_user_links`. Structure becomes **342 / 743 / 427**.
 
 ### `20260815151500_account_provisioning.sql`
 
-Adds controlled organisation invitations and intended invitation role assignments. Structure becomes **344 / 749 / 429**.
+Adds controlled organisation invitations and intended invitation roles. Structure becomes the current **344 / 749 / 429**.
 
 ### `20260815161900_organisation_administration_permissions.sql`
 
@@ -43,45 +41,27 @@ Seeds `organisation.manage`, `member.invite` and `member.manage`.
 
 ### `20260815203700_project_workspace_permissions.sql`
 
-Seeds `project.create`, `project.view` and broad `project.manage`. Organisation permission never substitutes for project participation/member scope.
+Seeds `project.create`, `project.view` and `project.manage`.
 
 ### `20260815211600_project_participants_team.sql`
 
-Adds declined project-participation state and contextual `project_role_types`. Project roles classify context and never grant application permissions.
+Adds declined project-participation semantics and contextual `project_role_types`. Project roles classify context; they do not grant application permissions.
 
 ### `20260815214500_crm_contacts_permissions.sql`
 
-Seeds original CRM `crm.view` and `crm.manage` identifiers.
+Seeds original `crm.view` and `crm.manage` identifiers.
 
 ### `20260815222500_permission_granularity.sql`
 
-Adds:
-
-```text
-project.lifecycle.manage
-project.participant.manage
-project.team.manage
-project.participation.manage
-crm.party.manage
-crm.contact.manage
-```
-
-`project.manage` and `crm.manage` remain umbrella fallbacks. An explicit granular member deny cannot be bypassed by an umbrella grant.
+Adds granular project and CRM party/contact permissions under the existing same-domain umbrellas.
 
 ### `20260815223800_crm_opportunities_activities.sql`
 
-Seeds:
-
-```text
-crm.opportunity.manage
-crm.activity.manage
-```
-
-and a non-destructive default Sales pipeline for existing tenants with no pipeline configuration. Future tenants receive equivalent audited/idempotent first-use provisioning.
+Adds `crm.opportunity.manage`, `crm.activity.manage` and non-destructive default Sales pipeline provisioning.
 
 ### `20260815231500_estimates_quotations_permissions.sql`
 
-Activates the first Package 003 estimate/quotation application slice through:
+Activates Package 003 sales-document permissions:
 
 ```text
 commercial.view
@@ -92,11 +72,9 @@ commercial.quotation.issue
 commercial.quotation.response.record
 ```
 
-`commercial.manage` is umbrella fallback for granular commercial mutations.
-
 ### `20260816001000_accepted_quotation_project_conversion.sql`
 
-Adds the granular cross-domain conversion permission:
+Adds:
 
 ```text
 commercial.quotation.convert
@@ -109,11 +87,11 @@ commercial.quotation.convert OR commercial.manage
 AND project.create
 ```
 
-No conversion table is added: Baseline v1 already contains `quotation_project_conversions`, which remains the authoritative idempotency/provenance ledger.
+`quotation_project_conversions` remains the authoritative conversion idempotency/provenance ledger.
 
 ### `20260816005000_contract_formation_permissions.sql`
 
-Activates Package 004 controlled contract formation through:
+Activates controlled Package 004 contract formation/execution:
 
 ```text
 contract.view
@@ -124,15 +102,13 @@ contract.issue
 contract.execute
 ```
 
-`contract.manage` is the Package 004 umbrella fallback. Package 004 authority is deliberately independent from `commercial.manage`.
+`contract.manage` is the Package 004 contract umbrella. Package 004 authority is independent from `commercial.manage`.
 
-Existing Owner/Administrator roles receive broad and granular first-slice contract authority. Finance/Commercial receives `contract.view` only. Future organisation bootstrap uses equivalent standard-role defaults.
-
-No Package 004 business table is added: Baseline v1 already contains the normalised contract, version, party, value, date, issue, execution, amendment and finance structures.
+Existing Owner/Administrator roles receive broad and granular contract authority. Finance/Commercial receives `contract.view` only.
 
 ### `20260816015500_contract_amendment_permissions.sql`
 
-Activates controlled post-execution amendments by adding the granular delegation catalogue:
+Adds controlled post-execution amendment delegation:
 
 ```text
 contract.amendment.create
@@ -141,9 +117,9 @@ contract.amendment.issue
 contract.amendment.decide
 ```
 
-The existing `contract.manage` permission remains the Package 004 umbrella fallback. The migration therefore does not add duplicate standard-role grants: Owner/Administrator already carry `contract.manage`, while narrower custom roles can be delegated individual amendment permissions. An explicit granular member deny still cannot be bypassed by the umbrella.
+`contract.manage` remains same-domain umbrella fallback. Existing Owner/Administrator roles receive the granular amendment grants explicitly. Future `OrganisationBootstrapService` now persists the same granular rows as part of Package 004C bootstrap parity, rather than relying only on the behaviorally equivalent umbrella.
 
-The migration adds no amendment tables because Package 004 already contains:
+No amendment business tables are added because Baseline v1 already contains:
 
 ```text
 contract_amendments
@@ -151,9 +127,80 @@ contract_amendment_value_adjustments
 contract_amendment_key_date_changes
 ```
 
-The application enforces active executed-baseline eligibility, signed fixed-precision value adjustments, key-date changes, immutable issued amendments, effective-date-before-issue, controlled agreement/rejection/withdrawal, audit evidence and tenant isolation.
+### `20260816113000_accounts_receivable_invoice_permissions.sql`
 
-After all **13** current production migrations the application structure remains:
+Activates the first Package 004 operational accounts-receivable application slice:
+
+```text
+finance.view
+finance.manage
+finance.billing.manage
+finance.invoice.create
+finance.invoice.draft.manage
+finance.invoice.issue
+```
+
+`finance.manage` is a new same-domain umbrella and does **not** cross into commercial or contract permissions.
+
+Standard defaults for existing organisations are:
+
+```text
+Owner / Administrator
+    finance.view
+    finance.manage
+    finance.billing.manage
+    finance.invoice.create
+    finance.invoice.draft.manage
+    finance.invoice.issue
+
+Finance/Commercial
+    finance.view
+    finance.billing.manage
+    finance.invoice.create
+    finance.invoice.draft.manage
+    finance.invoice.issue
+    # deliberately no finance.manage
+
+Manager / Member/Professional / Field Worker / Read Only
+    no automatic finance grants
+```
+
+`OrganisationBootstrapService` persists the same defaults for future organisations and the bootstrap integration suite asserts the resulting role-permission rows.
+
+The migration is permission/reference-only. No finance business table is added because Baseline v1 already contains the normalised Package 004 accounts-receivable structures, including:
+
+```text
+payment_terms
+party_billing_settings
+financial_documents
+invoices
+financial_document_items
+financial_document_item_taxes
+financial_document_party_snapshots
+financial_document_party_snapshot_addresses
+financial_document_issue_events
+financial_document_issue_recipients
+```
+
+The application boundary activated by this migration provides:
+
+- payment terms and customer billing defaults;
+- contract-anchored draft invoice creation from active executed contracts;
+- legally unnumbered drafts;
+- fixed-precision invoice lines and tax;
+- customer PO/reference enforcement;
+- issue-date tax refresh;
+- due-date calculation from issue date/payment policy;
+- customer/contact/address snapshots;
+- tenant invoice-number allocation at issue;
+- immutable issued invoices;
+- issue/recipient/audit evidence.
+
+Invoice issue deliberately does not create payments, payment allocations or general-ledger facts.
+
+## Current structure
+
+After all **14** production migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -161,27 +208,29 @@ After all **13** current production migrations the application structure remains
 
 ## Current migration validation
 
-The Package 004 amendment candidate is validated through the same MySQL 8.4 gate as every production migration:
+The first executable Package 004C accounts-receivable head passed the complete MySQL 8.4.11 gate:
 
 ```text
-13 production migrations
+14 production migrations applied / 0 pending
 344 base tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-16 integration files / 72 real-MySQL tests
+17 integration files / 77 real-MySQL tests passed
+finance/invoices.integration.test.ts: 5/5 passed
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove these exact results before merge; earlier executable amendment heads already proved the same structural contract and 16-file suite before the effective-date regression test was added.
+The final documentation-synchronised PR head must prove the same gate before merge.
 
 ## Migration rules
 
 - New migrations use Dbmate timestamp filenames.
 - Released migration contents are immutable.
-- All changes are forward migrations.
+- All production changes are forward migrations.
 - MySQL-specific DDL is explicit rather than inferred from an ORM schema.
 - Committed Dbmate SQL remains released migration authority.
 - Destructive production changes use expand/migrate/contract sequencing where required.
-- Every migration change must pass MySQL 8.4 clean-build validation.
-- Database-derived Kysely types must be regenerated after schema changes.
+- Every migration change must pass a clean MySQL 8.4 build.
+- Database-derived Kysely types must be regenerated after structural changes.
 - Authentication-provider infrastructure and NuBlox domain tables remain explicitly separated.
 - Data-only permission/catalogue migrations must pass the full application migration and integration gate.
+- Existing-tenant migration grants and future-organisation bootstrap grants must remain aligned and integration-tested.

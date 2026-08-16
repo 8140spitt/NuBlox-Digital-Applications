@@ -100,21 +100,13 @@ describe('organisation bootstrap and onboarding', () => {
 		const tamperedToken = `${body}x.${signature}`;
 		await expect(
 			auth.api.signUpEmail({
-				headers: new Headers({
-					cookie: `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${tamperedToken}`
-				}),
-				body: {
-					name: `${PREFIX}Tampered`,
-					email,
-					password: PASSWORD
-				}
+				headers: new Headers({ cookie: `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${tamperedToken}` }),
+				body: { name: `${PREFIX}Tampered`, email, password: PASSWORD }
 			})
 		).rejects.toBeDefined();
 
 		await auth.api.signUpEmail({
-			headers: new Headers({
-				cookie: `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${activeToken}`
-			}),
+			headers: new Headers({ cookie: `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${activeToken}` }),
 			body: {
 				name: `${PREFIX}Owner`,
 				email,
@@ -123,38 +115,18 @@ describe('organisation bootstrap and onboarding', () => {
 			}
 		});
 
-		const authUser = await db
-			.selectFrom('auth_users')
-			.select(['id', 'email_verified'])
-			.where('email', '=', email)
-			.executeTakeFirstOrThrow();
+		const authUser = await db.selectFrom('auth_users').select(['id', 'email_verified']).where('email', '=', email).executeTakeFirstOrThrow();
 		authUserId = authUser.id;
 		expect(authUser.email_verified).toBe(0);
-
-		const link = await db
-			.selectFrom('auth_user_links')
-			.select('user_id')
-			.where('auth_user_id', '=', authUserId)
-			.executeTakeFirstOrThrow();
+		const link = await db.selectFrom('auth_user_links').select('user_id').where('auth_user_id', '=', authUserId).executeTakeFirstOrThrow();
 		platformUserId = link.user_id;
-
-		const domainUser = await db
-			.selectFrom('users')
-			.select('status')
-			.where('id', '=', platformUserId)
-			.executeTakeFirstOrThrow();
+		const domainUser = await db.selectFrom('users').select('status').where('id', '=', platformUserId).executeTakeFirstOrThrow();
 		expect(domainUser.status).toBe('pending');
 
 		const pendingOrganisation = await db
 			.selectFrom('organisation_members as member')
 			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
-			.select([
-				'member.id as memberId',
-				'member.status as memberStatus',
-				'organisation.id as organisationId',
-				'organisation.public_id as organisationPublicId',
-				'organisation.status as organisationStatus'
-			])
+			.select(['member.id as memberId', 'member.status as memberStatus', 'organisation.id as organisationId', 'organisation.public_id as organisationPublicId', 'organisation.status as organisationStatus'])
 			.where('member.user_id', '=', platformUserId)
 			.where('organisation.legal_name', '=', `${PREFIX}Organisation`)
 			.executeTakeFirstOrThrow();
@@ -165,95 +137,36 @@ describe('organisation bootstrap and onboarding', () => {
 		expect(pendingOrganisation.memberStatus).toBe('invited');
 		expect(pendingOrganisation.organisationStatus).toBe('pending');
 
-		const domainEmail = await db
-			.selectFrom('user_emails')
-			.select(['is_primary', 'is_verified', 'verified_at'])
-			.where('user_id', '=', platformUserId)
-			.where('email', '=', email)
-			.executeTakeFirstOrThrow();
+		const domainEmail = await db.selectFrom('user_emails').select(['is_primary', 'is_verified', 'verified_at']).where('user_id', '=', platformUserId).where('email', '=', email).executeTakeFirstOrThrow();
 		expect(domainEmail).toMatchObject({ is_primary: 1, is_verified: 0, verified_at: null });
 	});
 
 	it('activates the pending identity, organisation and owner membership only after verified email', async () => {
-		await db
-			.updateTable('auth_users')
-			.set({ email_verified: 1, updated_at: new Date() })
-			.where('id', '=', authUserId)
-			.executeTakeFirstOrThrow();
-
+		await db.updateTable('auth_users').set({ email_verified: 1, updated_at: new Date() }).where('id', '=', authUserId).executeTakeFirstOrThrow();
 		const activated = await new OrganisationBootstrapService(db).activateVerifiedAuthUser({
 			authUserId,
 			email,
 			displayName: `${PREFIX}Owner`,
 			correlationId: `bootstrap-it-${randomUUID()}`
 		});
-		expect(activated).toMatchObject({
-			organisationId,
-			organisationPublicId,
-			memberId,
-			userId: platformUserId
-		});
+		expect(activated).toMatchObject({ organisationId, organisationPublicId, memberId, userId: platformUserId });
 
-		const user = await db
-			.selectFrom('users')
-			.select('status')
-			.where('id', '=', platformUserId)
-			.executeTakeFirstOrThrow();
+		const user = await db.selectFrom('users').select('status').where('id', '=', platformUserId).executeTakeFirstOrThrow();
 		expect(user.status).toBe('active');
-
-		const organisation = await db
-			.selectFrom('organisations')
-			.select(['status', 'trading_name', 'default_timezone', 'default_currency_code'])
-			.where('id', '=', organisationId)
-			.executeTakeFirstOrThrow();
-		expect(organisation).toMatchObject({
-			status: 'active',
-			trading_name: `${PREFIX}Trading`,
-			default_timezone: 'Europe/London',
-			default_currency_code: 'GBP'
-		});
-
-		const membership = await db
-			.selectFrom('organisation_members')
-			.select(['status', 'joined_at'])
-			.where('id', '=', memberId)
-			.where('organisation_id', '=', organisationId)
-			.executeTakeFirstOrThrow();
+		const organisation = await db.selectFrom('organisations').select(['status', 'trading_name', 'default_timezone', 'default_currency_code']).where('id', '=', organisationId).executeTakeFirstOrThrow();
+		expect(organisation).toMatchObject({ status: 'active', trading_name: `${PREFIX}Trading`, default_timezone: 'Europe/London', default_currency_code: 'GBP' });
+		const membership = await db.selectFrom('organisation_members').select(['status', 'joined_at']).where('id', '=', memberId).where('organisation_id', '=', organisationId).executeTakeFirstOrThrow();
 		expect(membership.status).toBe('active');
 		expect(membership.joined_at).not.toBeNull();
-
-		const domainEmail = await db
-			.selectFrom('user_emails')
-			.select(['is_verified', 'verified_at'])
-			.where('user_id', '=', platformUserId)
-			.where('email', '=', email)
-			.executeTakeFirstOrThrow();
+		const domainEmail = await db.selectFrom('user_emails').select(['is_verified', 'verified_at']).where('user_id', '=', platformUserId).where('email', '=', email).executeTakeFirstOrThrow();
 		expect(domainEmail.is_verified).toBe(1);
 		expect(domainEmail.verified_at).not.toBeNull();
 
-		const roles = await db
-			.selectFrom('organisation_roles')
-			.select(['id', 'name'])
-			.where('organisation_id', '=', organisationId)
-			.orderBy('name', 'asc')
-			.execute();
-		expect(roles.map((role) => role.name)).toEqual([
-			'Administrator',
-			'Field Worker',
-			'Finance/Commercial',
-			'Manager',
-			'Member/Professional',
-			'Owner',
-			'Read Only'
-		]);
-
+		const roles = await db.selectFrom('organisation_roles').select(['id', 'name']).where('organisation_id', '=', organisationId).orderBy('name', 'asc').execute();
+		expect(roles.map((role) => role.name)).toEqual(['Administrator', 'Field Worker', 'Finance/Commercial', 'Manager', 'Member/Professional', 'Owner', 'Read Only']);
 		const assignedRoles = await db
 			.selectFrom('member_roles as assignment')
-			.innerJoin('organisation_roles as role', (join) =>
-				join
-					.onRef('role.id', '=', 'assignment.organisation_role_id')
-					.onRef('role.organisation_id', '=', 'assignment.organisation_id')
-			)
+			.innerJoin('organisation_roles as role', (join) => join.onRef('role.id', '=', 'assignment.organisation_role_id').onRef('role.organisation_id', '=', 'assignment.organisation_id'))
 			.select('role.name')
 			.where('assignment.organisation_id', '=', organisationId)
 			.where('assignment.organisation_member_id', '=', memberId)
@@ -262,11 +175,7 @@ describe('organisation bootstrap and onboarding', () => {
 
 		const grants = await db
 			.selectFrom('role_permissions as grant')
-			.innerJoin('organisation_roles as role', (join) =>
-				join
-					.onRef('role.id', '=', 'grant.organisation_role_id')
-					.onRef('role.organisation_id', '=', 'grant.organisation_id')
-			)
+			.innerJoin('organisation_roles as role', (join) => join.onRef('role.id', '=', 'grant.organisation_role_id').onRef('role.organisation_id', '=', 'grant.organisation_id'))
 			.innerJoin('permissions as permission', 'permission.id', 'grant.permission_id')
 			.select(['role.name as roleName', 'permission.permission_key as permissionKey'])
 			.where('grant.organisation_id', '=', organisationId)
@@ -280,6 +189,10 @@ describe('organisation bootstrap and onboarding', () => {
 			'Administrator:commercial.quotation.manage',
 			'Administrator:commercial.quotation.response.record',
 			'Administrator:commercial.view',
+			'Administrator:contract.amendment.create',
+			'Administrator:contract.amendment.decide',
+			'Administrator:contract.amendment.draft.manage',
+			'Administrator:contract.amendment.issue',
 			'Administrator:contract.create',
 			'Administrator:contract.draft.manage',
 			'Administrator:contract.execute',
@@ -290,6 +203,12 @@ describe('organisation bootstrap and onboarding', () => {
 			'Administrator:crm.manage',
 			'Administrator:crm.party.manage',
 			'Administrator:crm.view',
+			'Administrator:finance.billing.manage',
+			'Administrator:finance.invoice.create',
+			'Administrator:finance.invoice.draft.manage',
+			'Administrator:finance.invoice.issue',
+			'Administrator:finance.manage',
+			'Administrator:finance.view',
 			'Administrator:member.invite',
 			'Administrator:member.manage',
 			'Administrator:organisation.manage',
@@ -308,6 +227,11 @@ describe('organisation bootstrap and onboarding', () => {
 			'Finance/Commercial:commercial.view',
 			'Finance/Commercial:contract.view',
 			'Finance/Commercial:crm.view',
+			'Finance/Commercial:finance.billing.manage',
+			'Finance/Commercial:finance.invoice.create',
+			'Finance/Commercial:finance.invoice.draft.manage',
+			'Finance/Commercial:finance.invoice.issue',
+			'Finance/Commercial:finance.view',
 			'Finance/Commercial:project.view',
 			'Manager:crm.contact.manage',
 			'Manager:crm.party.manage',
@@ -328,6 +252,10 @@ describe('organisation bootstrap and onboarding', () => {
 			'Owner:commercial.quotation.manage',
 			'Owner:commercial.quotation.response.record',
 			'Owner:commercial.view',
+			'Owner:contract.amendment.create',
+			'Owner:contract.amendment.decide',
+			'Owner:contract.amendment.draft.manage',
+			'Owner:contract.amendment.issue',
 			'Owner:contract.create',
 			'Owner:contract.draft.manage',
 			'Owner:contract.execute',
@@ -338,6 +266,12 @@ describe('organisation bootstrap and onboarding', () => {
 			'Owner:crm.manage',
 			'Owner:crm.party.manage',
 			'Owner:crm.view',
+			'Owner:finance.billing.manage',
+			'Owner:finance.invoice.create',
+			'Owner:finance.invoice.draft.manage',
+			'Owner:finance.invoice.issue',
+			'Owner:finance.manage',
+			'Owner:finance.view',
 			'Owner:member.invite',
 			'Owner:member.manage',
 			'Owner:organisation.manage',
@@ -353,70 +287,30 @@ describe('organisation bootstrap and onboarding', () => {
 		]);
 
 		const permissionService = new PermissionService(db);
-		const ownerActor = {
-			organisationId,
-			userId: platformUserId,
-			memberId,
-			correlationId: `bootstrap-it-${randomUUID()}`
-		};
-		const ownerDecision = await permissionService.decide(ownerActor, 'organisation.manage');
-		expect(ownerDecision).toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(permissionService.decide(ownerActor, 'project.create')).resolves.toEqual({
-			allowed: true,
-			reason: 'role-grant'
-		});
-		await expect(
-			permissionService.decideWithUmbrella(ownerActor, 'project.team.manage', 'project.manage')
-		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(
-			permissionService.decideWithUmbrella(ownerActor, 'crm.contact.manage', 'crm.manage')
-		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(
-			permissionService.decideWithUmbrella(ownerActor, 'commercial.quotation.issue', 'commercial.manage')
-		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(
-			permissionService.decideWithUmbrella(ownerActor, 'contract.execute', 'contract.manage')
-		).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		const ownerActor = { organisationId, userId: platformUserId, memberId, correlationId: `bootstrap-it-${randomUUID()}` };
+		await expect(permissionService.decide(ownerActor, 'organisation.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decide(ownerActor, 'project.create')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'project.team.manage', 'project.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'crm.contact.manage', 'crm.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'commercial.quotation.issue', 'commercial.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'contract.amendment.issue', 'contract.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.invoice.issue', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
-		const auditActions = await db
-			.selectFrom('audit_events')
-			.select('action_key')
-			.where('acting_organisation_id', '=', organisationId)
-			.where('action_key', 'in', ['organisation.bootstrap.pending', 'organisation.bootstrap.activate'])
-			.orderBy('occurred_at', 'asc')
-			.execute();
-		expect(auditActions.map((row) => row.action_key)).toEqual([
-			'organisation.bootstrap.pending',
-			'organisation.bootstrap.activate'
-		]);
+		const auditActions = await db.selectFrom('audit_events').select('action_key').where('acting_organisation_id', '=', organisationId).where('action_key', 'in', ['organisation.bootstrap.pending', 'organisation.bootstrap.activate']).orderBy('occurred_at', 'asc').execute();
+		expect(auditActions.map((row) => row.action_key)).toEqual(['organisation.bootstrap.pending', 'organisation.bootstrap.activate']);
 	});
 
 	it('lets an existing active NuBlox user create an additional organisation without duplicating identity', async () => {
 		const created = await new OrganisationBootstrapService(db).createForExistingUser(
 			{ userId: platformUserId, correlationId: `bootstrap-existing-${randomUUID()}` },
-			{
-				legalName: `${PREFIX}Second Organisation`,
-				defaultTimezone: 'Europe/London',
-				defaultCurrencyCode: 'GBP'
-			}
+			{ legalName: `${PREFIX}Second Organisation`, defaultTimezone: 'Europe/London', defaultCurrencyCode: 'GBP' }
 		);
 		createdOrganisationIds.push(created.organisationId);
 		expect(created.userId).toBe(platformUserId);
 		expect(created.organisationId).not.toBe(organisationId);
-
-		const user = await db
-			.selectFrom('users')
-			.select('id')
-			.where('id', '=', platformUserId)
-			.execute();
+		const user = await db.selectFrom('users').select('id').where('id', '=', platformUserId).execute();
 		expect(user).toHaveLength(1);
-
-		const membership = await db
-			.selectFrom('organisation_members')
-			.select(['user_id', 'status'])
-			.where('organisation_id', '=', created.organisationId)
-			.where('id', '=', created.memberId)
-			.executeTakeFirstOrThrow();
+		const membership = await db.selectFrom('organisation_members').select(['user_id', 'status']).where('organisation_id', '=', created.organisationId).where('id', '=', created.memberId).executeTakeFirstOrThrow();
 		expect(membership).toMatchObject({ user_id: platformUserId, status: 'active' });
 	});
 });

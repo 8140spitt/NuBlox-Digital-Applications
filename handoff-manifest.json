@@ -1,6 +1,6 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 3,
+  "manifest_version": 4,
   "generated_date": "2026-08-16",
   "product": {
     "career_count": 84,
@@ -64,6 +64,12 @@
         "contract.amendment.draft.manage",
         "contract.amendment.issue",
         "contract.amendment.decide"
+      ],
+      "finance.manage": [
+        "finance.billing.manage",
+        "finance.invoice.create",
+        "finance.invoice.draft.manage",
+        "finance.invoice.issue"
       ]
     }
   },
@@ -78,15 +84,51 @@
       "Read Only"
     ],
     "founding_member_role": "Owner only",
-    "contract_policy": {
-      "Owner": "contract.view + contract.manage + established formation granular grants; broad amendment authority through contract.manage",
-      "Administrator": "contract.view + contract.manage + established formation granular grants; broad amendment authority through contract.manage",
-      "Finance/Commercial": "contract.view only by default",
-      "Manager": "no automatic Package 004 authority",
-      "Member/Professional": "no automatic Package 004 authority",
-      "Field Worker": "no automatic Package 004 authority",
-      "Read Only": "no automatic Package 004 authority"
-    }
+    "Owner": {
+      "broad_umbrellas": [
+        "project.manage",
+        "crm.manage",
+        "commercial.manage",
+        "contract.manage",
+        "finance.manage"
+      ],
+      "package_004_policy": "explicit contract formation/execution/amendment granular grants plus full finance billing/invoice grants"
+    },
+    "Administrator": {
+      "broad_umbrellas": [
+        "project.manage",
+        "crm.manage",
+        "commercial.manage",
+        "contract.manage",
+        "finance.manage"
+      ],
+      "package_004_policy": "explicit contract formation/execution/amendment granular grants plus full finance billing/invoice grants"
+    },
+    "Finance/Commercial": {
+      "grants": [
+        "project.view",
+        "crm.view",
+        "commercial.view",
+        "commercial.estimate.manage",
+        "commercial.quotation.manage",
+        "commercial.quotation.issue",
+        "commercial.quotation.response.record",
+        "contract.view",
+        "finance.view",
+        "finance.billing.manage",
+        "finance.invoice.create",
+        "finance.invoice.draft.manage",
+        "finance.invoice.issue"
+      ],
+      "deliberate_exclusions": [
+        "commercial.manage",
+        "commercial.quotation.convert",
+        "project.create",
+        "contract.manage",
+        "finance.manage"
+      ]
+    },
+    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level; Package 004B amendment granular grants are now persisted for future Owner/Administrator roles"
   },
   "implemented_workflow": [
     "CRM Opportunity",
@@ -103,7 +145,10 @@
     "Active Contract",
     "Controlled Contract Amendment",
     "Amendment Issue and Freeze",
-    "Amendment Agreement, Rejection or Withdrawal"
+    "Amendment Agreement, Rejection or Withdrawal",
+    "Customer Billing Defaults",
+    "Contract-Anchored Draft Invoice",
+    "Controlled Invoice Issue and Immutable Evidence"
   ],
   "commercial_conversion": {
     "service": "app/src/lib/server/commercial/quotation-project-conversion-service.ts",
@@ -115,7 +160,7 @@
       "no inferred customer project participation",
       "no automatic project site",
       "no project activation",
-      "no contract formation inside the conversion transaction",
+      "no contract formation inside conversion transaction",
       "no finance posting"
     ]
   },
@@ -166,24 +211,71 @@
       "issued amendment immutable through ordinary draft APIs"
     ],
     "value_policy": "signed DECIMAL(19,4); positive increases, negative decreases, zero rejected; no JavaScript binary floating point for authoritative arithmetic",
-    "current_value_formula": "executed baseline value components + sum(agreed amendment value adjustments)",
-    "non_value_statuses": [
-      "draft",
-      "issued",
-      "rejected",
-      "withdrawn"
+    "current_value_formula": "executed baseline value components + sum(agreed amendment value adjustments)"
+  },
+  "accounts_receivable_invoices": {
+    "package": "004-contracts-finance",
+    "permission_migration": "database/migrations/20260816113000_accounts_receivable_invoice_permissions.sql",
+    "permissions": [
+      "finance.view",
+      "finance.manage",
+      "finance.billing.manage",
+      "finance.invoice.create",
+      "finance.invoice.draft.manage",
+      "finance.invoice.issue"
+    ],
+    "umbrella": "finance.manage",
+    "services": [
+      "app/src/lib/server/finance/finance-common.ts",
+      "app/src/lib/server/finance/billing-settings-service.ts",
+      "app/src/lib/server/finance/invoice-service.ts"
+    ],
+    "integration_test": "app/src/lib/server/finance/invoices.integration.test.ts",
+    "routes": [
+      "/finance/billing",
+      "/finance/invoices",
+      "/finance/invoices/[invoicePublicId]"
+    ],
+    "spec": "docs/35-accounts-receivable-invoices.md",
+    "tables_activated": [
+      "payment_terms",
+      "party_billing_settings",
+      "financial_documents",
+      "invoices",
+      "financial_document_items",
+      "financial_document_item_taxes",
+      "financial_document_party_snapshots",
+      "financial_document_party_snapshot_addresses",
+      "financial_document_issue_events",
+      "financial_document_issue_recipients"
+    ],
+    "creation_policy": "finance.invoice.create OR finance.manage AND contract.view; source contract must be same-tenant active with executed baseline and client party",
+    "draft_identity": "document_kind=invoice; lifecycle_status=draft; document_number=NULL",
+    "numbering_policy": "first tenant-local issue format INV-000001 etc.; number allocated only inside issue transaction; database unique document key is final uniqueness guard",
+    "line_policy": "quantity DECIMAL(19,6) > 0 and unit rate DECIMAL(19,4) >= 0; fixed-precision scaled BigInt arithmetic",
+    "tax_policy": "draft tax is provisional; effective tenant tax-category rate is resolved and applied again at actual issue time before immutable issue",
+    "billing_policy": "payment terms derive due date at issue; customer PO/reference is mandatory at issue where party billing settings require it",
+    "snapshot_policy": "issue snapshots customer, optional billing contact and billing-address evidence",
+    "immutability_policy": "issued invoice rejects ordinary draft header/line mutation",
+    "context_controls": [
+      "current contract value = executed baseline + agreed amendments",
+      "previously issued contract net = net of other issued invoices for same contract"
+    ],
+    "non_effects": [
+      "no credit note creation",
+      "no payment receipt",
+      "no payment allocation",
+      "no general-ledger posting",
+      "no production outbound invoice delivery"
     ],
     "audit_actions": [
-      "contract.amendment.created",
-      "contract.amendment.draft.updated",
-      "contract.amendment.value.added",
-      "contract.amendment.value.removed",
-      "contract.amendment.key_date.added",
-      "contract.amendment.key_date.removed",
-      "contract.amendment.issued",
-      "contract.amendment.agreed",
-      "contract.amendment.rejected",
-      "contract.amendment.withdrawn"
+      "finance.payment_term.created",
+      "finance.party_billing_settings.updated",
+      "finance.invoice.created_from_contract",
+      "finance.invoice.draft.updated",
+      "finance.invoice.line.added",
+      "finance.invoice.line.removed",
+      "finance.invoice.issued"
     ]
   },
   "schema": {
@@ -198,31 +290,33 @@
       "foreign_keys": 749,
       "check_constraints": 429
     },
-    "production_migration_count": 13,
-    "latest_migration": "database/migrations/20260816015500_contract_amendment_permissions.sql"
+    "production_migration_count": 14,
+    "latest_migration": "database/migrations/20260816113000_accounts_receivable_invoice_permissions.sql"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
     "target_mysql": "8.4.11",
-    "production_migrations": 13,
+    "production_migrations": 14,
+    "pending_migrations": 0,
     "schema_counts": "344 / 749 / 429",
     "generated_kysely_drift": "zero",
-    "integration_files": 16,
-    "real_mysql_tests": 72,
+    "integration_files": 17,
+    "real_mysql_tests": 77,
+    "finance_invoice_tests": 5,
     "svelte_check": "0 errors / 0 warnings",
-    "release_rule": "final documentation-synchronised PR head must prove all values before merge"
+    "status": "first executable Package 004C head validated; final documentation-synchronised PR head must prove the same gate before merge"
   },
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Operational Accounts Receivable",
-    "sequence": [
-      "party billing settings",
-      "draft invoice",
-      "immutable invoice issue",
+    "name": "Receivable Corrections and Cash Application",
+    "recommended_sequence": [
+      "controlled invoice void/reversal and credit-note policy",
       "payment receipt",
-      "payment allocation"
+      "payment allocation",
+      "derived outstanding balances",
+      "customer statements and aged receivables"
     ],
-    "governing_rule": "issued financial documents are immutable commercial facts; corrections create controlled new records rather than editing history"
+    "governing_rule": "issued financial documents are immutable facts; corrections and cash application create controlled new records rather than editing history"
   },
   "key_docs": [
     "README.md",
@@ -235,6 +329,7 @@
     "docs/32-estimates-quotations.md",
     "docs/33-contract-formation.md",
     "docs/34-contract-amendments.md",
+    "docs/35-accounts-receivable-invoices.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]

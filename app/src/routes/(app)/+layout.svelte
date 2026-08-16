@@ -34,6 +34,9 @@
 			<a class="subnav" href="/commercial/quotations">Quotations</a>
 			<a href="/projects">Projects</a>
 			<a href="/contracts">Contracts</a>
+			<a href="/finance/invoices">Finance</a>
+			<a class="subnav" href="/finance/invoices">Invoices</a>
+			<a class="subnav" href="/finance/billing">Billing settings</a>
 			<a href="/organisation">Organisation</a>
 		</nav>
 	</aside>
