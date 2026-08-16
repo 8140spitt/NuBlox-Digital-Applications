@@ -235,15 +235,24 @@ export type ContractSource = {
 export const DELIVERY_CHANNELS = new Set(['email', 'portal', 'manual', 'api', 'esign', 'other']);
 export const EXECUTION_METHODS = new Set(['manual', 'portal', 'esign', 'api', 'other']);
 
-export function cleanText(value: string | null | undefined, maxLength: number, label: string, required = false): string | null {
+export function cleanText(
+	value: string | null | undefined,
+	maxLength: number,
+	label: string,
+	required = false
+): string | null {
 	const text = value?.trim() ?? '';
 	if (required && !text) throw new ContractValidationError(`${label} is required.`);
-	if (text.length > maxLength) throw new ContractValidationError(`${label} must not exceed ${maxLength} characters.`);
+	if (text.length > maxLength) {
+		throw new ContractValidationError(`${label} must not exceed ${maxLength} characters.`);
+	}
 	return text || null;
 }
 
 export function positiveInt(value: number, label: string): number {
-	if (!Number.isSafeInteger(value) || value <= 0) throw new ContractValidationError(`${label} is invalid.`);
+	if (!Number.isSafeInteger(value) || value <= 0) {
+		throw new ContractValidationError(`${label} is invalid.`);
+	}
 	return value;
 }
 
@@ -258,13 +267,17 @@ export function validateCode(value: string, label: string): string {
 export function validateMoney(value: string): string {
 	const parsed = parseScaledDecimal(value, 4, 'Contract value');
 	if (parsed < 0n) throw new ContractValidationError('Contract value must not be negative.');
-	if (parsed > 9_999_999_999_999_999_999n) throw new ContractValidationError('Contract value is too large.');
+	if (parsed > 9_999_999_999_999_999_999n) {
+		throw new ContractValidationError('Contract value is too large.');
+	}
 	return formatScaledDecimal(parsed, 4);
 }
 
 export function validateDate(value: string, label: string): Date {
 	const text = value.trim();
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new ContractValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+		throw new ContractValidationError(`${label} is invalid.`);
+	}
 	const date = new Date(`${text}T00:00:00.000Z`);
 	if (Number.isNaN(date.getTime())) throw new ContractValidationError(`${label} is invalid.`);
 	return date;
@@ -276,7 +289,9 @@ export function validateDateTime(value: string, label: string): Date {
 		throw new ContractValidationError(`${label} must include an explicit timezone.`);
 	}
 	const date = new Date(text);
-	if (!text || Number.isNaN(date.getTime())) throw new ContractValidationError(`${label} is invalid.`);
+	if (!text || Number.isNaN(date.getTime())) {
+		throw new ContractValidationError(`${label} is invalid.`);
+	}
 	return date;
 }
 
@@ -304,10 +319,7 @@ export class ContractAccessPolicy {
 	}
 
 	async viewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const decisions = await new PermissionService(db).decideMany(actor, ['contract.view', 'commercial.view']);
-		const contractDecision = decisions.get('contract.view') ?? { allowed: false, reason: 'default-deny' as const };
-		if (contractDecision.reason !== 'default-deny') return contractDecision;
-		return decisions.get('commercial.view') ?? { allowed: false, reason: 'default-deny' as const };
+		return new PermissionService(db).decide(actor, 'contract.view');
 	}
 
 	async mutationDecision(
@@ -315,12 +327,7 @@ export class ContractAccessPolicy {
 		permissionKey: 'contract.create' | 'contract.draft.manage' | 'contract.issue' | 'contract.execute',
 		db: DatabaseExecutor = this.db
 	) {
-		const decisions = await new PermissionService(db).decideMany(actor, [permissionKey, 'contract.manage', 'commercial.manage']);
-		const granularDecision = decisions.get(permissionKey) ?? { allowed: false, reason: 'default-deny' as const };
-		if (granularDecision.reason !== 'default-deny') return granularDecision;
-		const contractUmbrella = decisions.get('contract.manage') ?? { allowed: false, reason: 'default-deny' as const };
-		if (contractUmbrella.reason !== 'default-deny') return contractUmbrella;
-		return decisions.get('commercial.manage') ?? { allowed: false, reason: 'default-deny' as const };
+		return new PermissionService(db).decideWithUmbrella(actor, permissionKey, 'contract.manage');
 	}
 
 	async assertProjectScope(
@@ -336,8 +343,12 @@ export class ContractAccessPolicy {
 		if (!project || project.owningOrganisationId !== actor.organisationId) {
 			throw new RecordNotFoundError('Project not found in the owning member scope.');
 		}
-		const decision = await new PermissionService(db).decide(actor, 'project.view', { projectId: project.id });
-		if (!decision.allowed) throw new RecordNotFoundError('Project not found in the owning member scope.');
+		const decision = await new PermissionService(db).decide(actor, 'project.view', {
+			projectId: project.id
+		});
+		if (!decision.allowed) {
+			throw new RecordNotFoundError('Project not found in the owning member scope.');
+		}
 		return project;
 	}
 }
