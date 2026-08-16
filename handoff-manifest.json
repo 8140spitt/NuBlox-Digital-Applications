@@ -1,144 +1,40 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 2,
+  "manifest_version": 3,
   "generated_date": "2026-08-16",
-  "career_count": 84,
-  "domain_count": 16,
-  "fixed_stack": [
-    "Svelte 5",
-    "SvelteKit",
-    "MySQL 8.4 / InnoDB"
-  ],
-  "database_tooling": {
+  "product": {
+    "career_count": 84,
+    "professional_domain_count": 16,
+    "governing_security_rule": "Career != Organisation Role != Project Role != Permission"
+  },
+  "stack": {
+    "frontend": "Svelte 5",
+    "framework": "SvelteKit",
+    "database": "MySQL 8.4 / InnoDB",
     "query_builder": "Kysely 0.29.5",
-    "node_driver": "mysql2 3.23.2",
-    "migration_tool": "Dbmate 2.34.1",
-    "type_generator": "kysely-codegen 0.20.0",
-    "schema_authority": "committed MySQL SQL migrations"
+    "driver": "mysql2 3.23.2",
+    "migrations": "Dbmate 2.34.1 plain SQL",
+    "type_generation": "kysely-codegen 0.20.0",
+    "authentication": "Better Auth 1.6.25",
+    "schema_authority": "committed MySQL SQL migrations",
+    "database_design": "3NF by default"
   },
-  "authentication": {
-    "provider_boundary": "Better Auth 1.6.25",
-    "decision": "docs/adr/0002-authentication-session-boundary.md",
-    "server_config": "app/src/lib/server/auth/better-auth.ts",
-    "session_resolution": "app/src/lib/server/auth/session.ts",
-    "auth_domain_link": "auth_user_links",
-    "tenant_authority": "NuBlox users + organisation_members",
-    "signup_policy": "fail-closed; exactly one validated invitation or self-service organisation-bootstrap intent is required"
-  },
-  "organisation_bootstrap": {
-    "service": "app/src/lib/server/organisations/bootstrap-service.ts",
-    "standard_roles": [
-      "Owner",
-      "Administrator",
-      "Manager",
-      "Finance/Commercial",
-      "Member/Professional",
-      "Field Worker",
-      "Read Only"
-    ],
-    "initial_role": "Owner only",
-    "standard_role_grants": {
-      "Owner": [
-        "organisation.manage",
-        "member.invite",
-        "member.manage",
-        "project.create",
-        "project.view",
-        "project.manage",
-        "project.lifecycle.manage",
-        "project.participant.manage",
-        "project.team.manage",
-        "project.participation.manage",
-        "crm.view",
-        "crm.manage",
-        "crm.party.manage",
-        "crm.contact.manage",
-        "commercial.view",
-        "commercial.manage",
-        "commercial.estimate.manage",
-        "commercial.quotation.manage",
-        "commercial.quotation.issue",
-        "commercial.quotation.response.record",
-        "contract.view",
-        "contract.manage",
-        "contract.create",
-        "contract.draft.manage",
-        "contract.issue",
-        "contract.execute"
-      ],
-      "Administrator": [
-        "organisation.manage",
-        "member.invite",
-        "member.manage",
-        "project.create",
-        "project.view",
-        "project.manage",
-        "project.lifecycle.manage",
-        "project.participant.manage",
-        "project.team.manage",
-        "project.participation.manage",
-        "crm.view",
-        "crm.manage",
-        "crm.party.manage",
-        "crm.contact.manage",
-        "commercial.view",
-        "commercial.manage",
-        "commercial.estimate.manage",
-        "commercial.quotation.manage",
-        "commercial.quotation.issue",
-        "commercial.quotation.response.record",
-        "contract.view",
-        "contract.manage",
-        "contract.create",
-        "contract.draft.manage",
-        "contract.issue",
-        "contract.execute"
-      ],
-      "Manager": [
-        "member.invite",
-        "member.manage",
-        "project.create",
-        "project.view",
-        "project.lifecycle.manage",
-        "project.participant.manage",
-        "project.team.manage",
-        "project.participation.manage",
-        "crm.view",
-        "crm.party.manage",
-        "crm.contact.manage"
-      ],
-      "Finance/Commercial": [
-        "project.view",
-        "crm.view",
-        "commercial.view",
-        "commercial.estimate.manage",
-        "commercial.quotation.manage",
-        "commercial.quotation.issue",
-        "commercial.quotation.response.record",
-        "contract.view"
-      ],
-      "Member/Professional": [
-        "project.view",
-        "crm.view"
-      ],
-      "Field Worker": [
-        "project.view"
-      ],
-      "Read Only": [
-        "project.view",
-        "crm.view"
-      ]
-    },
-    "permission_parity_policy": "forward migrations for existing organisations and OrganisationBootstrapService defaults for future organisations are integration-tested for parity"
+  "authentication_and_tenancy": {
+    "identity_bridge": "auth_user_links",
+    "tenant_authority": "active NuBlox user + active organisation_members row",
+    "selected_organisation_cookie": "selection hint only; server revalidates membership",
+    "signup_policy": "fail-closed; exactly one valid invitation or organisation-bootstrap intent",
+    "foreign_record_policy": "tenant-owned foreign public IDs are masked where disclosure would leak tenant identity"
   },
   "permission_model": {
-    "service": "app/src/lib/server/capabilities/permission-service.ts",
     "precedence": [
       "explicit member deny",
       "explicit member allow",
       "active role grant",
       "default deny"
     ],
+    "umbrella_policy": "resolve granular key first; same-domain umbrella applies only when granular has no explicit member/role decision; explicit granular deny cannot be bypassed",
+    "cross_domain_policy": "permission umbrellas never cross domain families",
     "families": {
       "project.manage": [
         "project.lifecycle.manage",
@@ -163,105 +59,72 @@
         "contract.create",
         "contract.draft.manage",
         "contract.issue",
-        "contract.execute"
+        "contract.execute",
+        "contract.amendment.create",
+        "contract.amendment.draft.manage",
+        "contract.amendment.issue",
+        "contract.amendment.decide"
       ]
-    },
-    "same_domain_umbrella_policy": "resolve granular key first and use its umbrella only on granular default-deny; an explicit granular deny cannot be bypassed",
-    "cross_domain_policy": "permission umbrellas never cross domain families; commercial.manage does not grant Package 004 contract authority",
-    "quotation_conversion_policy": "commercial.quotation.convert or commercial.manage AND project.create"
+    }
   },
-  "crm": {
-    "package": "002-crm-parties",
-    "permissions": [
-      "crm.view",
-      "crm.manage",
-      "crm.party.manage",
-      "crm.contact.manage",
-      "crm.opportunity.manage",
-      "crm.activity.manage"
+  "standard_roles": {
+    "names": [
+      "Owner",
+      "Administrator",
+      "Manager",
+      "Finance/Commercial",
+      "Member/Professional",
+      "Field Worker",
+      "Read Only"
     ],
-    "services": [
-      "app/src/lib/server/crm/crm-service.ts",
-      "app/src/lib/server/crm/crm-opportunity-service.ts",
-      "app/src/lib/server/crm/crm-pipeline-provisioning.ts"
-    ],
-    "routes": [
-      "/crm",
-      "/crm/[partyPublicId]",
-      "/crm/opportunities",
-      "/crm/opportunities/[opportunityPublicId]"
-    ],
-    "identity_policy": "tenant-private CRM parties are distinct from platform organisations, users, organisation members, workforce identity and project participation",
-    "tenant_policy": "all CRM reads/writes are scoped by active organisation_id and foreign public IDs are masked where appropriate"
+    "founding_member_role": "Owner only",
+    "contract_policy": {
+      "Owner": "contract.view + contract.manage + established formation granular grants; broad amendment authority through contract.manage",
+      "Administrator": "contract.view + contract.manage + established formation granular grants; broad amendment authority through contract.manage",
+      "Finance/Commercial": "contract.view only by default",
+      "Manager": "no automatic Package 004 authority",
+      "Member/Professional": "no automatic Package 004 authority",
+      "Field Worker": "no automatic Package 004 authority",
+      "Read Only": "no automatic Package 004 authority"
+    }
   },
-  "commercial_sales": {
-    "package": "003-sales-estimates-quotations",
-    "permissions": [
-      "commercial.view",
-      "commercial.manage",
-      "commercial.estimate.manage",
-      "commercial.quotation.manage",
-      "commercial.quotation.issue",
-      "commercial.quotation.response.record",
-      "commercial.quotation.convert"
-    ],
-    "service": "app/src/lib/server/commercial/commercial-service.ts",
-    "conversion_service": "app/src/lib/server/commercial/quotation-project-conversion-service.ts",
-    "decimal_module": "app/src/lib/server/commercial/commercial-decimal.ts",
-    "routes": [
-      "/commercial/estimates",
-      "/commercial/estimates/[estimatePublicId]",
-      "/commercial/quotations",
-      "/commercial/quotations/[quotationPublicId]",
-      "/commercial/quotations/[quotationPublicId]/convert"
-    ],
-    "workflow": "CRM Opportunity -> Estimate -> final Estimate Version -> Quotation -> issued Quotation Version -> accepted response -> idempotent Proposed Project conversion",
-    "conversion_policy": "exact issued+locked accepted quotation version; commercial conversion authority and project.create are independently required; quotation_project_conversions is authoritative idempotency/provenance",
+  "implemented_workflow": [
+    "CRM Opportunity",
+    "Estimate",
+    "Final Estimate Version",
+    "Quotation",
+    "Issued Quotation Version",
+    "Accepted Response",
+    "Idempotent Proposed Project Conversion",
+    "Controlled Contract Formation",
+    "Draft Contract Version 1",
+    "Contract Issue and Lock Evidence",
+    "Contract Execution and Signatory Evidence",
+    "Active Contract",
+    "Controlled Contract Amendment",
+    "Amendment Issue and Freeze",
+    "Amendment Agreement, Rejection or Withdrawal"
+  ],
+  "commercial_conversion": {
+    "service": "app/src/lib/server/commercial/quotation-project-conversion-service.ts",
+    "authority": "commercial.quotation.convert OR commercial.manage, AND project.create",
+    "ledger": "quotation_project_conversions",
+    "project_state": "proposed",
     "non_effects": [
       "no inferred customer platform organisation",
       "no inferred customer project participation",
-      "no project site inference",
-      "no automatic project activation",
-      "no contract formation inside conversion transaction",
+      "no automatic project site",
+      "no project activation",
+      "no contract formation inside the conversion transaction",
       "no finance posting"
     ]
-  },
-  "project_workspace": {
-    "package": "001-platform-kernel",
-    "permissions": [
-      "project.create",
-      "project.view",
-      "project.manage",
-      "project.lifecycle.manage",
-      "project.participant.manage",
-      "project.team.manage",
-      "project.participation.manage"
-    ],
-    "services": [
-      "app/src/lib/server/projects/project-service.ts",
-      "app/src/lib/server/projects/project-workspace-service.ts",
-      "app/src/lib/server/projects/project-team-service.ts"
-    ],
-    "routes": [
-      "/projects",
-      "/projects/[projectPublicId]"
-    ],
-    "read_policy": "project.view plus active participant organisation plus exact active project_members scope",
-    "role_policy": "project contextual roles classify project context and never grant application permissions"
   },
   "contract_formation": {
     "package": "004-contracts-finance",
     "permission_migration": "database/migrations/20260816005000_contract_formation_permissions.sql",
-    "permissions": [
-      "contract.view",
-      "contract.manage",
-      "contract.create",
-      "contract.draft.manage",
-      "contract.issue",
-      "contract.execute"
-    ],
     "services": [
       "app/src/lib/server/contracts/contract-common.ts",
+      "app/src/lib/server/contracts/contract-entry-service.ts",
       "app/src/lib/server/contracts/contract-formation-service.ts",
       "app/src/lib/server/contracts/contract-lifecycle-service.ts",
       "app/src/lib/server/contracts/contract-service.ts"
@@ -271,144 +134,108 @@
       "/contracts/new?project=[projectPublicId]",
       "/contracts/[contractPublicId]"
     ],
-    "implementation_spec": "docs/33-contract-formation.md",
-    "workflow": "accepted quotation -> proposed project -> draft contract version 1 -> issue/lock evidence -> execution/signatory evidence -> active contract",
-    "source_policy": "formation consumes the exact accepted quotation response that created the proposed project and retains contracts.project_id, contracts.opportunity_id and contracts.source_quotation_response_id",
-    "idempotency_policy": "project row is locked and a retry for the exact project+accepted response returns the existing contract without adding a uniqueness rule that would forbid future multi-contract projects",
-    "customer_snapshot_policy": "accepted quotation customer identity/address evidence is copied into version-specific contract party snapshots; the tenant organisation is not synthesised as a CRM self-party",
-    "initial_value_policy": "base_scope value is the fixed-precision sum of non-optional accepted quotation line net values using Package 003 scaled BigInt arithmetic",
-    "lifecycle_policy": {
-      "draft": "version 1 permits controlled title/reference, value-component and key-date changes",
-      "issue": "draft -> issued; lock and recipient evidence; logical contract -> under_review; issued version becomes immutable through normal draft APIs",
-      "execution": "issued -> executed; one execution event and signatory evidence; logical contract -> active"
-    },
-    "project_independence_policy": "contract execution does not activate the project",
-    "not_yet_implemented": [
-      "contract version 2+ revision/supersession",
-      "contract withdrawal",
-      "post-execution amendments",
-      "multiple contract parties beyond accepted quotation customer",
-      "PDF/document rendering",
-      "production outbound contract/e-sign delivery",
-      "automatic project activation",
-      "invoices",
-      "credit notes",
-      "payments",
-      "payment allocations"
+    "spec": "docs/33-contract-formation.md",
+    "provenance": "contracts.project_id + opportunity_id + source_quotation_response_id",
+    "initial_value": "fixed-precision sum of non-optional accepted quotation net lines",
+    "execution_policy": "issued+locked version -> execution/signatory evidence -> version executed + logical contract active; project lifecycle remains independent"
+  },
+  "contract_amendments": {
+    "package": "004-contracts-finance",
+    "permission_migration": "database/migrations/20260816015500_contract_amendment_permissions.sql",
+    "permissions": [
+      "contract.amendment.create",
+      "contract.amendment.draft.manage",
+      "contract.amendment.issue",
+      "contract.amendment.decide"
+    ],
+    "umbrella": "contract.manage",
+    "service": "app/src/lib/server/contracts/contract-amendment-service.ts",
+    "integration_test": "app/src/lib/server/contracts/contract-amendments.integration.test.ts",
+    "route": "/contracts/[contractPublicId]/amendments/[amendmentPublicId]",
+    "spec": "docs/34-contract-amendments.md",
+    "tables": [
+      "contract_amendments",
+      "contract_amendment_value_adjustments",
+      "contract_amendment_key_date_changes"
+    ],
+    "eligibility": "same-tenant active logical contract with executed contract-version baseline",
+    "lifecycle": "draft -> issued -> agreed|rejected; draft|issued -> withdrawn",
+    "issue_invariants": [
+      "effective date required before issue",
+      "substantive narrative and/or value/date change evidence required",
+      "issued amendment immutable through ordinary draft APIs"
+    ],
+    "value_policy": "signed DECIMAL(19,4); positive increases, negative decreases, zero rejected; no JavaScript binary floating point for authoritative arithmetic",
+    "current_value_formula": "executed baseline value components + sum(agreed amendment value adjustments)",
+    "non_value_statuses": [
+      "draft",
+      "issued",
+      "rejected",
+      "withdrawn"
+    ],
+    "audit_actions": [
+      "contract.amendment.created",
+      "contract.amendment.draft.updated",
+      "contract.amendment.value.added",
+      "contract.amendment.value.removed",
+      "contract.amendment.key_date.added",
+      "contract.amendment.key_date.removed",
+      "contract.amendment.issued",
+      "contract.amendment.agreed",
+      "contract.amendment.rejected",
+      "contract.amendment.withdrawn"
     ]
   },
   "schema": {
-    "baseline_package_status": "001-010 complete",
-    "baseline_counts": {
+    "baseline_packages": "001-010 complete",
+    "baseline": {
       "base_tables": 337,
       "foreign_keys": 739,
       "check_constraints": 427
     },
-    "current_application_counts": {
+    "current": {
       "base_tables": 344,
       "foreign_keys": 749,
       "check_constraints": 429
     },
-    "mysql_version": "8.4.11",
-    "migration_count": 12,
-    "migration_ci": ".github/workflows/database-migration-validation.yml",
-    "migrations": [
-      "database/migrations/20260815140337_baseline_v1.sql",
-      "database/migrations/20260815145430_authentication_boundary.sql",
-      "database/migrations/20260815151500_account_provisioning.sql",
-      "database/migrations/20260815161900_organisation_administration_permissions.sql",
-      "database/migrations/20260815203700_project_workspace_permissions.sql",
-      "database/migrations/20260815211600_project_participants_team.sql",
-      "database/migrations/20260815214500_crm_contacts_permissions.sql",
-      "database/migrations/20260815222500_permission_granularity.sql",
-      "database/migrations/20260815223800_crm_opportunities_activities.sql",
-      "database/migrations/20260815231500_estimates_quotations_permissions.sql",
-      "database/migrations/20260816001000_accepted_quotation_project_conversion.sql",
-      "database/migrations/20260816005000_contract_formation_permissions.sql"
-    ]
+    "production_migration_count": 13,
+    "latest_migration": "database/migrations/20260816015500_contract_amendment_permissions.sql"
   },
-  "application_implementation": {
-    "phase": "controlled-contract-formation",
-    "status": "implemented-and-first-executable-head-ci-validated-before-final-documentation-synchronised-release-gate",
-    "integration_test_config": "app/vitest.integration.config.ts",
-    "contract_integration_tests": "app/src/lib/server/contracts/contract-formation.integration.test.ts",
-    "organisation_bootstrap_integration_tests": "app/src/lib/server/organisations/organisation-bootstrap.integration.test.ts",
-    "validation": {
-      "production_migrations": 12,
-      "schema_counts": "344 / 749 / 429",
-      "generated_kysely_drift": "zero",
-      "integration_files": 15,
-      "real_mysql_tests": 66,
-      "svelte_check": "0 errors / 0 warnings",
-      "note": "these results were proven on the first executable Package 004 head; the final documentation-synchronised head must pass the same gate before merge"
-    },
-    "key_validated_behaviours": [
-      "Package 004 contract permissions are independent from commercial authority",
-      "existing and future standard-role contract grants remain aligned",
-      "exact accepted-response/project provenance is retained",
-      "formation retry is idempotent",
-      "customer/address contract snapshots preserve historical evidence",
-      "base contract value uses fixed-point accepted quotation arithmetic",
-      "issued contract versions reject ordinary draft mutation",
-      "execution records signatory evidence",
-      "contract execution does not automatically activate the project",
-      "foreign-tenant contract public IDs are masked"
-    ]
+  "validation": {
+    "workflow": ".github/workflows/database-migration-validation.yml",
+    "target_mysql": "8.4.11",
+    "production_migrations": 13,
+    "schema_counts": "344 / 749 / 429",
+    "generated_kysely_drift": "zero",
+    "integration_files": 16,
+    "real_mysql_tests": 72,
+    "svelte_check": "0 errors / 0 warnings",
+    "release_rule": "final documentation-synchronised PR head must prove all values before merge"
   },
-  "database_packages": [
-    "database/docs/001-platform-kernel.md",
-    "database/docs/002-crm-parties.md",
-    "database/docs/003-sales-estimates-quotations.md",
-    "database/docs/004-contracts-finance.md",
-    "database/docs/005-procurement.md",
-    "database/docs/006-workforce-time-scheduling.md",
-    "database/docs/007-project-information-documents.md",
-    "database/docs/008-site-quality-safety.md",
-    "database/docs/009-commercial-cost-control.md",
-    "database/docs/010-assets-maintenance.md"
-  ],
-  "handoff_docs": [
-    "docs/00-executive-summary.md",
-    "docs/01-product-requirements-document.md",
-    "docs/02-functional-requirements.md",
+  "next_boundary": {
+    "package": "004-contracts-finance",
+    "name": "Operational Accounts Receivable",
+    "sequence": [
+      "party billing settings",
+      "draft invoice",
+      "immutable invoice issue",
+      "payment receipt",
+      "payment allocation"
+    ],
+    "governing_rule": "issued financial documents are immutable commercial facts; corrections create controlled new records rather than editing history"
+  },
+  "key_docs": [
+    "README.md",
+    "app/README.md",
     "docs/03-career-taxonomy.md",
     "docs/04-career-capability-matrix.md",
     "docs/05-system-architecture.md",
-    "docs/06-data-model.md",
     "docs/07-auth-permissions-multitenancy.md",
-    "docs/08-api-integrations.md",
-    "docs/09-ux-information-architecture.md",
-    "docs/10-non-functional-requirements.md",
-    "docs/11-security-privacy-compliance.md",
-    "docs/12-devops-environments-testing.md",
-    "docs/13-delivery-roadmap.md",
-    "docs/14-backlog-acceptance-criteria.md",
-    "docs/15-open-decisions-assumptions.md",
-    "docs/16-glossary.md",
-    "docs/17-sources-and-standards.md",
-    "docs/18-development-company-brief.md",
-    "docs/19-risks-and-dependencies.md",
-    "docs/20-record-lifecycles.md",
     "docs/31-crm-opportunities-activity-timeline.md",
     "docs/32-estimates-quotations.md",
     "docs/33-contract-formation.md",
-    "docs/career-taxonomy-seed.csv",
-    "docs/career-taxonomy-seed.json"
-  ],
-  "brand_docs": [
-    "docs/branding/00-business-entity.md",
-    "docs/branding/01-brand-strategy.md",
-    "docs/branding/02-brand-architecture-and-naming.md",
-    "docs/branding/03-verbal-identity-and-messaging.md",
-    "docs/branding/04-visual-identity-brief.md",
-    "docs/branding/05-logo-concept-directions.md"
-  ],
-  "next_increment": {
-    "boundary": "Package 004 after controlled contract formation",
-    "candidates": [
-      "controlled contract amendments",
-      "operational accounts-receivable invoicing"
-    ],
-    "rule": "select the next boundary deliberately; do not couple project activation, amendments or invoicing automatically to contract execution"
-  }
+    "docs/34-contract-amendments.md",
+    "database/docs/004-contracts-finance.md",
+    "database/migrations/README.md"
+  ]
 }
