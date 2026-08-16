@@ -21,7 +21,7 @@ VALUES
         NULL,
         'contract.manage',
         'Manage contracts',
-        'Broad contract-management umbrella retained for standard administrative roles and compatibility.',
+        'Broad contract-management umbrella retained for administrative and custom organisation roles.',
         TRUE
     ),
     (
@@ -57,12 +57,48 @@ ON DUPLICATE KEY UPDATE
     description = VALUES(description),
     is_active = TRUE;
 
--- Standard-role compatibility is intentionally non-destructive. Existing and future
--- Owner/Administrator templates already hold commercial.manage, and Finance/Commercial
--- already holds commercial.view. The application resolves contract.manage/view first and
--- uses those commercial umbrellas only when no explicit contract decision exists. This
--- keeps bootstrap and migrated tenants in parity while making contract.* available for
--- deliberate narrower delegation.
+-- Contract authority is an explicit Package 004 domain. Do not expand an older
+-- commercial.* umbrella into this permission family. Existing Owner and Administrator
+-- roles receive the full first-slice contract catalogue; Finance/Commercial receives
+-- read access only. Other standard roles receive no automatic contract authority.
+INSERT IGNORE INTO role_permissions (
+    organisation_id,
+    organisation_role_id,
+    permission_id
+)
+SELECT
+    role.organisation_id,
+    role.id,
+    permission.id
+FROM organisation_roles AS role
+INNER JOIN permissions AS permission
+    ON permission.permission_key IN (
+        'contract.view',
+        'contract.manage',
+        'contract.create',
+        'contract.draft.manage',
+        'contract.issue',
+        'contract.execute'
+    )
+WHERE role.name IN ('Owner', 'Administrator')
+  AND role.is_active = TRUE
+  AND permission.is_active = TRUE;
+
+INSERT IGNORE INTO role_permissions (
+    organisation_id,
+    organisation_role_id,
+    permission_id
+)
+SELECT
+    role.organisation_id,
+    role.id,
+    permission.id
+FROM organisation_roles AS role
+INNER JOIN permissions AS permission
+    ON permission.permission_key = 'contract.view'
+WHERE role.name = 'Finance/Commercial'
+  AND role.is_active = TRUE
+  AND permission.is_active = TRUE;
 
 -- migrate:down transaction:false
 -- Released permission catalogue and standard-role grants are forward-only.
