@@ -121,7 +121,12 @@ issued_at
 
 Issued amendments reject ordinary draft mutation.
 
-An amendment must contain substantive change evidence before issue: descriptive change narrative and/or value/date changes.
+Before issue, the domain service requires:
+
+- a non-null effective date; and
+- substantive change evidence through descriptive narrative and/or value/date changes.
+
+Requiring the effective date before issue prevents an immutable issued amendment from entering a state that cannot subsequently satisfy the agreement invariant.
 
 ### Agreement / rejection
 
@@ -135,7 +140,7 @@ decided_at
 lifecycle_status = agreed | rejected
 ```
 
-Agreement requires an amendment effective date, matching the Package 004 database invariant.
+Agreement revalidates the amendment effective date, matching the Package 004 database invariant that an agreed amendment must have one.
 
 ### Withdrawal
 
@@ -222,6 +227,7 @@ The amendment integration suite proves:
 - read-only mutation denial;
 - foreign-tenant identity masking;
 - immutable issued amendments;
+- refusal to issue without an effective date;
 - agreement changes derived current contract value;
 - rejected/withdrawn amendments remain historical evidence without changing current value.
 
