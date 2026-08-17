@@ -143,6 +143,8 @@ finance.payment.reverse
 
 `finance.manage` is the same-domain finance umbrella. Every activated finance mutation also has a granular key so responsibilities may be delegated without broad finance administration authority.
 
+Package 004F adds **no new permission key**. Statements and aging are read-only derivations of the same finance records already protected by `finance.view`.
+
 ## 5. Standard organisation roles
 
 Every organisation receives:
@@ -217,6 +219,8 @@ finance.invoice.void
 
 This role can perform ordinary operational AR work including cash receipt/application and immutable cash corrections. Exceptional issued-invoice void remains Owner/Administrator/custom delegation by default.
 
+Because the role already has `finance.view`, it can use Package 004F reporting without a new grant.
+
 ### Other roles
 
 ```text
@@ -237,6 +241,8 @@ Better Auth signup remains fail-closed. Exactly one provisioning intent must val
 Authentication alone is not tenant authority. Protected requests require active NuBlox user resolution and active organisation membership.
 
 Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations are asserted by integration tests at the persisted role-permission-row level.
+
+Package 004F requires no provisioning change because it reuses `finance.view`.
 
 ## 7. Organisation administration authority
 
@@ -472,7 +478,46 @@ from issued credits and active allocations.
 
 This avoids incorrectly describing a fully credited invoice as “paid.” Draft and void document states remain document-lifecycle states, not settlement states.
 
-## 19. Cross-domain separation
+## 19. Customer-statement and aging access
+
+Package 004F is a read-only finance view, not a new mutation domain.
+
+Access requires:
+
+```text
+active NuBlox user
+AND active organisation membership
+AND finance.view
+AND same-tenant customer/finance records
+```
+
+No `finance.manage` grant is required and no `finance.receivables.view` key is introduced.
+
+An explicit member deny on `finance.view` removes access to the receivables portfolio and statement workspace even if another role grants finance mutation permissions.
+
+### Historical reporting boundary
+
+The statement service derives customer-account movements from authoritative finance-event timestamps:
+
+```text
+invoice issue       → debit
+credit-note issue   → credit
+payment allocation  → credit
+allocation reversal → debit
+invoice void        → credit
+```
+
+A raw/unallocated payment is not treated as a customer receivable credit. It affects the customer account only when allocated to an invoice.
+
+Statement day boundaries use the active tenant's `organisations.default_timezone`.
+
+A historical report uses the state that existed at the selected cutoff. A later allocation reversal therefore does not retroactively remove the allocation from an earlier statement.
+
+Currencies remain separated. Package 004F does not infer FX translation or a reporting currency.
+
+Foreign-tenant customer public IDs are masked as not found.
+
+## 20. Cross-domain separation
 
 ```text
 commercial.manage cannot issue/credit/void/allocate finance records
@@ -484,7 +529,7 @@ finance.manage cannot mutate contracts or quotations
 
 Project roles classify context and never grant application permissions.
 
-## 20. Tenant-isolation rules
+## 21. Tenant-isolation rules
 
 - Trusted tenant context comes from authenticated active membership.
 - Tenant-owned queries include active `organisation_id`.
@@ -495,14 +540,15 @@ Project roles classify context and never grant application permissions.
 - Project roles never grant application permissions.
 - CRM identity is never promoted to platform identity by inference.
 - Customer/document snapshots preserve evidence without creating platform identity.
+- Derived reports must preserve event-time and tenant-timezone semantics rather than caching mutable balances as authority.
 - Caches, search, exports, files and future scheduled jobs must preserve tenant boundaries.
 - Privileged support access must be explicit and auditable.
 
-## 21. Session requirements
+## 22. Session requirements
 
 Production session policy includes secure HttpOnly cookies, Secure transport, appropriate SameSite behavior, revocation/logout, rotation after privilege/authentication changes, idle/absolute expiry and MFA step-up where risk policy requires it.
 
-## 22. Release testing requirements
+## 23. Release testing requirements
 
 The real-MySQL release gate covers, at minimum:
 
@@ -527,15 +573,24 @@ The real-MySQL release gate covers, at minimum:
 - payment reversal automatically reversing active allocations;
 - reversed-payment reallocation rejection;
 - foreign-tenant payment/invoice masking;
+- receivables reporting under `finance.view`;
+- explicit `finance.view` deny removing statement/aging access;
+- currency-separated current aging;
+- historical statement cutoff correctness across later allocation reversals;
+- opening/closing balance reconciliation;
+- invoice-void event treatment in historical statements;
+- tenant-timezone statement periods;
+- foreign-tenant customer-account masking;
 - generated Kysely drift and Svelte/TypeScript diagnostics.
 
-The executable Package 004E head proved on MySQL 8.4.11:
+The executable Package 004F code head proved on MySQL 8.4.11:
 
 ```text
 16 production migrations applied / 0 pending
 344 tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-19 integration files / 88 real-MySQL tests passed
+20 integration files / 93 real-MySQL tests passed
+finance receivables-reporting suite: 5/5 passed
 finance payment-allocation suite: 6/6 passed
 organisation bootstrap suite: 4/4 passed
 svelte-check: 0 errors / 0 warnings
