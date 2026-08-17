@@ -36,6 +36,14 @@ The portfolio exposes customer accounts with at least one currently overdue invo
 
 The customer workspace combines the live Package 004F overdue position with case lifecycle, immutable collection-action evidence, promises to pay and disputes.
 
+Package 004H adds the separate policy/reminder workspace:
+
+```text
+/finance/collections/automation
+```
+
+See `docs/40-collections-automation-policy.md` for that later boundary.
+
 ## 3. Permission family
 
 Package 004G adds:
@@ -77,7 +85,7 @@ explicit granular member deny
 
 ### Standard-role defaults
 
-Owner, Administrator and Finance/Commercial receive all five collections permissions explicitly for both existing organisations and future organisation bootstrap.
+Owner, Administrator and Finance/Commercial receive all five 004G collections permissions explicitly for both existing organisations and future organisation bootstrap.
 
 Owner and Administrator also retain `finance.manage`. Finance/Commercial does not receive that umbrella, so its collections authority remains explicitly delegated and independently revocable.
 
@@ -164,15 +172,15 @@ Case creation requires:
 ```text
 active tenant membership
 AND finance.view
-AND finance.collections.view OR finance.manage
-AND finance.collections.case.manage OR finance.manage
+AND (finance.collections.view OR finance.manage)
+AND (finance.collections.case.manage OR finance.manage)
 AND same-tenant customer account
 AND at least one currently overdue invoice with positive outstanding value
 ```
 
 The service derives overdue status through Package 004F at the time of creation.
 
-The customer party row is locked before checking for an existing active case. This gives one serialisation point for concurrent case starts.
+The customer party and the customer's issued invoice documents are serialised before a new case is inserted, then overdue eligibility is re-derived. This prevents a concurrent payment allocation, credit or invoice void from settling the debt while a stale collection case is being opened.
 
 If an `open` or `paused` case already exists, start is idempotent and returns that case rather than creating another active episode.
 
@@ -215,7 +223,9 @@ AND supported delivery channel when supplied
 AND non-empty message/note evidence
 ```
 
-The application records the action; it does not claim that email, portal or letter delivery happened unless a later provider/delivery boundary actually performs and proves that delivery.
+Package 004G records evidence; by itself it does not claim that email, portal or letter delivery happened.
+
+Package 004H later adds an explicit generated-reminder and delivery-attempt boundary. A successful 004H dispatch appends ordinary 004G `reminder` action evidence only after delivery succeeds.
 
 ## 8. Promise-to-pay policy
 
@@ -247,6 +257,8 @@ open → cancelled
 
 The original amount, currency, due date and invoice link remain preserved.
 
+Package 004H treats an open promise whose due date has not passed as an optional reminder-suppression fact, while due/overdue open promises enter a review queue. It does not automatically mark a promise broken.
+
 ## 9. Dispute policy
 
 Opening a dispute requires:
@@ -270,6 +282,8 @@ open → withdrawn
 
 Resolution evidence is required. The invoice itself is not mutated by the dispute lifecycle.
 
+Package 004H may suppress a configured reminder stage while a dispute remains open, but the dispute still does not change the receivable balance.
+
 ## 10. Tenant isolation
 
 Every case, action, promise and dispute query is scoped by active `organisation_id`.
@@ -286,6 +300,7 @@ Package 004G writes audit evidence for controlled mutations, including:
 finance.collections.case.opened
 finance.collections.case.open
 finance.collections.case.paused
+finance.collections.case.resumed
 finance.collections.case.closed
 finance.collections.action.recorded
 finance.collections.promise.recorded
@@ -309,7 +324,7 @@ Migration:
 20260817124500_controlled_collections.sql
 ```
 
-The expected migrated application shape is:
+The Package 004G release shape was:
 
 ```text
 17 production migrations
@@ -327,14 +342,19 @@ collections.d.ts → receivable_* collections tables only
 
 The runtime database schema is the intersection of those two generated DB interfaces.
 
-## 13. Deliberate exclusions
+Package 004H extends the `receivable_*` generated output with its policy/reminder tables; it does not replace the 004G structures.
 
-Package 004G does not claim:
+## 13. Package 004G exclusions and Package 004H handoff
 
-- scheduled or automatic reminder generation;
+At the 004G boundary, these were deliberately excluded:
+
+- versioned escalating dunning-stage policy;
+- generated reminder snapshots;
+- provider dispatch attempts/retries;
+- promise-due monitoring;
+- background reminder scheduling;
 - automatic email/letter/portal delivery;
-- escalating dunning-stage policy;
-- automatic legal escalation;
+- legal escalation;
 - external debt-collection agency handoff;
 - customer credit-limit or credit-hold policy;
 - late-fee or interest calculation;
@@ -343,13 +363,26 @@ Package 004G does not claim:
 - FX/reporting-currency translation;
 - general-ledger posting.
 
-Those are later controlled boundaries. In particular, any future automation must continue to derive eligibility from the authoritative receivable position and must not manufacture a second editable account balance.
+Package 004H now implements the first four as **policy-driven, explicitly invoked operations**:
 
-## 14. Validation contract
+```text
+versioned policy
+→ derived due candidate
+→ explicit generation
+→ immutable reminder snapshot
+→ explicit dispatch/retry
+→ immutable delivery-attempt evidence
+```
 
-The permanent real-MySQL gate must prove:
+It still does **not** claim a cron scheduler, durable background worker, production delivery provider or automatic legal/credit-control action.
 
-- clean 17-migration build and expected structural counts;
+See `docs/40-collections-automation-policy.md`.
+
+## 14. Package 004G validation contract
+
+The permanent real-MySQL gate proves:
+
+- clean 17-migration Package 004G release build and structural counts;
 - zero drift across both generated Kysely outputs;
 - collections permission availability;
 - existing-organisation and future-bootstrap standard-role parity;
@@ -366,3 +399,5 @@ The permanent real-MySQL gate must prove:
 - collections read requires its explicit read boundary in addition to `finance.view`;
 - foreign-tenant customer identity is masked;
 - Svelte/TypeScript diagnostics remain clean.
+
+Package 004H has its own additional validation contract in `docs/40-collections-automation-policy.md`.
