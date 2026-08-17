@@ -5,8 +5,15 @@
 		return new Intl.NumberFormat('en-GB', { style: 'currency', currency }).format(Number(value));
 	}
 
-	function date(value: Date | string) {
-		return new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(new Date(value));
+	function eventDate(value: Date | string) {
+		return new Intl.DateTimeFormat('en-GB', {
+			dateStyle: 'medium',
+			timeZone: data.period.timezone
+		}).format(new Date(value));
+	}
+
+	function dateOnly(value: Date | string) {
+		return new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium', timeZone: 'UTC' }).format(new Date(value));
 	}
 
 	function movementLabel(kind: string) {
@@ -54,7 +61,7 @@
 						<tbody>
 							{#each statement.movements as movement}
 								<tr>
-									<td>{date(movement.occurredAt)}</td>
+									<td>{eventDate(movement.occurredAt)}</td>
 									<td><span class="movement-kind">{movementLabel(movement.kind)}</span></td>
 									<td>{#if movement.invoicePublicId}<a href={`/finance/invoices/${movement.invoicePublicId}`}>{movement.reference}</a>{:else}{movement.reference}{/if}</td>
 									<td>{movement.description}</td>
@@ -80,18 +87,18 @@
 			{#each data.aging as position}
 				<article class="aging-card">
 					<div class="aging-heading"><div><strong>{position.currencyCode} · {money(position.totalOutstanding, position.currencyCode)}</strong><small>{position.openInvoiceCount} open invoices</small></div></div>
-				<div class="bucket-grid">{#each position.buckets as bucket}<div><span>{bucket.label}</span><strong>{money(bucket.amount, position.currencyCode)}</strong><small>{bucket.invoiceCount} invoice{bucket.invoiceCount === 1 ? '' : 's'}</small></div>{/each}</div>
-				{#if position.invoices.length > 0}
-					<div class="invoice-list">
-						{#each position.invoices as invoice}
-							<a class="invoice-row" href={`/finance/invoices/${invoice.invoicePublicId}`}>
-								<div><strong>{invoice.invoiceNumber}</strong><small>Issued {date(invoice.issuedAt)} · due {invoice.dueDate ? date(invoice.dueDate) : 'not set'} · {invoice.daysOverdue > 0 ? `${invoice.daysOverdue} days overdue` : 'current'}</small></div>
-								<div class="money"><strong>{money(invoice.outstandingAmount, position.currencyCode)}</strong><small>{money(invoice.invoiceGross, position.currencyCode)} gross · {money(invoice.issuedCreditGross, position.currencyCode)} credits · {money(invoice.activeAllocatedAmount, position.currencyCode)} cash</small></div>
-							</a>
-						{/each}
-					</div>
-				{/if}
-			</article>
+					<div class="bucket-grid">{#each position.buckets as bucket}<div><span>{bucket.label}</span><strong>{money(bucket.amount, position.currencyCode)}</strong><small>{bucket.invoiceCount} invoice{bucket.invoiceCount === 1 ? '' : 's'}</small></div>{/each}</div>
+					{#if position.invoices.length > 0}
+						<div class="invoice-list">
+							{#each position.invoices as invoice}
+								<a class="invoice-row" href={`/finance/invoices/${invoice.invoicePublicId}`}>
+									<div><strong>{invoice.invoiceNumber}</strong><small>Issued {eventDate(invoice.issuedAt)} · due {invoice.dueDate ? dateOnly(invoice.dueDate) : 'not set'} · {invoice.daysOverdue > 0 ? `${invoice.daysOverdue} days overdue` : 'current'}</small></div>
+									<div class="money"><strong>{money(invoice.outstandingAmount, position.currencyCode)}</strong><small>{money(invoice.invoiceGross, position.currencyCode)} gross · {money(invoice.issuedCreditGross, position.currencyCode)} credits · {money(invoice.activeAllocatedAmount, position.currencyCode)} cash</small></div>
+								</a>
+							{/each}
+						</div>
+					{/if}
+				</article>
 			{/each}
 		</div>
 	{/if}
