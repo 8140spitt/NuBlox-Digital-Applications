@@ -19,6 +19,7 @@
 		<p>Work overdue customer accounts without changing the invoice, credit-note or payment ledger.</p>
 	</div>
 	<div class="heading-actions">
+		<a class="button secondary" href="/finance/collections/automation">Automation policy</a>
 		<a class="button secondary" href="/finance/receivables">Aged receivables</a>
 		<a class="button secondary" href="/finance/payments">Payments</a>
 	</div>
