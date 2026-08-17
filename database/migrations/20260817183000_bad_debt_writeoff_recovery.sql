@@ -1,4 +1,4 @@
--- migrate:up
+-- migrate:up transaction:false
 
 -- Package 004J — Controlled Bad Debt, Write-off and Recovery
 
@@ -111,3 +111,7 @@ AND r.name IN ('Owner','Administrator','Finance/Commercial')
 AND p.permission_key IN (
 'finance.bad_debt.view','finance.bad_debt.write_off','finance.bad_debt.write_off.reverse',
 'finance.bad_debt.recovery','finance.bad_debt.recovery.reverse');
+
+-- migrate:down transaction:false
+-- Released bad-debt and recovery evidence is forward-only.
+SELECT 1;
