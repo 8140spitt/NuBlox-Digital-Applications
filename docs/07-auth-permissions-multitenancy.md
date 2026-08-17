@@ -8,7 +8,7 @@ NuBlox combines authentication, active tenant membership, organisation RBAC, mem
 
 Careers/job titles configure professional context and feature relevance. They never grant application authority automatically.
 
-CRM people/businesses are also distinct from NuBlox users, organisation members and platform organisations. Commercial, project, contract and finance workflows may reference or snapshot CRM identity without inferring platform identity.
+CRM people/businesses remain distinct from NuBlox users, organisation members and platform organisations. Commercial, project, contract and finance workflows may reference or snapshot CRM identity without inferring platform identity.
 
 ## 2. Trust chain
 
@@ -41,7 +41,7 @@ explicit member deny
     > default deny
 ```
 
-For granular operations with a same-domain umbrella:
+For a granular operation with a same-domain umbrella:
 
 ```text
 granular member deny
@@ -120,8 +120,6 @@ contract.amendment.issue
 contract.amendment.decide
 ```
 
-`contract.manage` is the same-domain contract/amendment umbrella.
-
 ### Package 004 operational finance
 
 ```text
@@ -139,11 +137,18 @@ finance.payment.create
 finance.payment.allocate
 finance.payment.allocation.reverse
 finance.payment.reverse
+finance.collections.view
+finance.collections.case.manage
+finance.collections.action.record
+finance.collections.promise.manage
+finance.collections.dispute.manage
 ```
 
-`finance.manage` is the same-domain finance umbrella. Every activated finance mutation also has a granular key so responsibilities may be delegated without broad finance administration authority.
+`finance.manage` is the same-domain umbrella for finance granular keys. It never crosses into commercial or contract authority.
 
-Package 004F adds **no new permission key**. Statements and aging are read-only derivations of the same finance records already protected by `finance.view`.
+Package 004F adds no separate receivables-reporting key; statements and aging use `finance.view`.
+
+Package 004G adds a separate collections read key because collection-case evidence contains operational contact/commitment/dispute information beyond the underlying receivable report. Collections reads therefore require `finance.view` **and** `finance.collections.view` (or `finance.manage` as same-domain fallback for the collections key).
 
 ## 5. Standard organisation roles
 
@@ -173,7 +178,7 @@ contract.manage
 finance.manage
 ```
 
-They also receive contract-amendment, receivable-correction and payment granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
+They also receive the five collections granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
 
 ### Manager
 
@@ -204,6 +209,11 @@ finance.payment.create
 finance.payment.allocate
 finance.payment.allocation.reverse
 finance.payment.reverse
+finance.collections.view
+finance.collections.case.manage
+finance.collections.action.record
+finance.collections.promise.manage
+finance.collections.dispute.manage
 ```
 
 Finance/Commercial deliberately does **not** receive:
@@ -217,9 +227,7 @@ finance.manage
 finance.invoice.void
 ```
 
-This role can perform ordinary operational AR work including cash receipt/application and immutable cash corrections. Exceptional issued-invoice void remains Owner/Administrator/custom delegation by default.
-
-Because the role already has `finance.view`, it can use Package 004F reporting without a new grant.
+This role can perform ordinary operational AR and collections work while exceptional issued-invoice void remains Owner/Administrator/custom delegation by default.
 
 ### Other roles
 
@@ -240,9 +248,7 @@ Better Auth signup remains fail-closed. Exactly one provisioning intent must val
 
 Authentication alone is not tenant authority. Protected requests require active NuBlox user resolution and active organisation membership.
 
-Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations are asserted by integration tests at the persisted role-permission-row level.
-
-Package 004F requires no provisioning change because it reuses `finance.view`.
+Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations must remain aligned at the persisted role-permission-row level. Package 004G therefore adds the same five collections grants to both migration-time standard roles and future bootstrap templates.
 
 ## 7. Organisation administration authority
 
@@ -276,8 +282,6 @@ AND record-state policy
 
 CRM parties remain separate from platform organisations/users/members/project participation. Foreign public IDs are masked as not found where disclosure would leak tenant information.
 
-`crm.manage` is umbrella fallback for party/contact/opportunity/activity granular operations.
-
 ## 9. Commercial access model
 
 Package 003 reads require active membership + `commercial.view` + same-tenant scope. Mutations additionally require the granular commercial key or `commercial.manage` fallback and valid document/version lifecycle.
@@ -291,7 +295,7 @@ AND exact issued + locked quotation version
 AND accepted response for that exact version
 ```
 
-`quotation_project_conversions` is the authoritative idempotency/provenance ledger. Conversion creates the proposed project and initial owner/member scope but does not infer customer platform identity, form a contract or create finance records.
+`quotation_project_conversions` remains authoritative idempotency/provenance evidence.
 
 ## 10. Package 004 contract access model
 
@@ -301,11 +305,9 @@ Quotation-derived formation additionally requires project visibility, exact acti
 
 Issued/executed contract versions reject ordinary draft mutation. Controlled amendments require an active contract with executed baseline; only agreed amendments affect the derived current contract value.
 
-## 11. Operational accounts-receivable read boundary
+## 11. Operational finance read boundary
 
-Finance records are tenant-owned and use an independent permission family.
-
-Normal reads require:
+Normal finance-record reads require:
 
 ```text
 active NuBlox user
@@ -324,10 +326,6 @@ Foreign finance public IDs are tenant-masked as not found after the caller passe
 
 ```text
 finance.billing.manage OR finance.manage
-    → create tenant payment terms
-    → choose tenant default payment term
-    → maintain customer billing defaults
-    → set customer account reference / PO-required policy
 ```
 
 Customer billing settings are mutable preparation policy. They do not rewrite issued financial-document evidence.
@@ -342,13 +340,11 @@ AND executed contract-version baseline
 AND executed client party exists
 ```
 
-Creation records customer, optional billing contact, contract, project and currency references but leaves the legal number null while draft.
-
 ### Draft management and issue
 
 `finance.invoice.draft.manage OR finance.manage` maintains draft header/lines/tax selection.
 
-`finance.invoice.issue OR finance.manage` requires a valid draft with lines and customer/due-date policy. Issue finalises due date, refreshes tax using the rate effective at actual issue time, snapshots customer/contact/address evidence, allocates the legal invoice number and freezes ordinary mutation.
+`finance.invoice.issue OR finance.manage` requires valid draft/customer/due-date policy. Issue finalises due date, refreshes issue-date tax, snapshots customer/contact/address evidence, allocates the legal invoice number and freezes ordinary mutation.
 
 ## 13. Receivable-correction authority
 
@@ -360,11 +356,7 @@ AND same-tenant issued invoice
 AND positive remaining creditable value
 ```
 
-`finance.credit_note.draft.manage OR finance.manage` maintains source-linked credit lines and correction reason.
-
-Every credit line links to an exact invoice line. Positive correction magnitudes are used and original invoice applied-tax evidence is preserved.
-
-`finance.credit_note.issue OR finance.manage` revalidates cumulative credited source quantities under an original-invoice lock, copies historic invoice party/address evidence, allocates the credit-note number and freezes the correction.
+Draft management and issue use their own granular keys with `finance.manage` fallback. Credit issue preserves source-line provenance and original applied-tax evidence and prevents cumulative over-crediting.
 
 ### Exceptional invoice void
 
@@ -376,9 +368,11 @@ AND no non-void credit-note history
 AND no unreversed payment allocation
 ```
 
-Void is stronger authority because it changes the lifecycle of an already-issued legal document. Finance/Commercial does not receive it by default.
+Void is stronger authority because it changes an already-issued legal document lifecycle. Finance/Commercial does not receive it by default.
 
-## 14. Payment receipt authority
+## 14. Payment receipt and allocation authority
+
+Payment receipt:
 
 ```text
 finance.payment.create OR finance.manage
@@ -387,20 +381,12 @@ AND positive amount
 AND valid currency
 ```
 
-A payment is an immutable receipt fact. Recording it creates no automatic invoice allocation.
-
-The payer CRM party is optional. If the actor selects a payer, `crm.view` is additionally required because the service traverses a separate domain. The selected payer must be active and same-tenant.
-
-A finance-only user may still record an unidentified receipt without CRM traversal.
-
-## 15. Payment allocation authority
+Allocation:
 
 ```text
 finance.payment.allocate OR finance.manage
-AND same-tenant payment
-AND payment not reversed
-AND same-tenant invoice
-AND invoice status = issued
+AND same-tenant non-reversed payment
+AND same-tenant issued invoice
 AND payment currency = invoice currency
 AND allocation > 0
 AND allocation <= usable payment
@@ -420,67 +406,13 @@ Invoice Outstanding
 − Active Payment Allocations
 ```
 
-Allocation locks the payment and target invoice before recomputing both limits. This prevents concurrent allocation attempts from independently consuming the same payment or invoice balance.
+Allocation locks the payment and target invoice before recomputing both limits.
 
-No FX conversion is performed. Currency mismatch is rejected.
+Allocation reversal and payment reversal each use dedicated granular keys under `finance.manage` and append correction evidence rather than rewriting/deleting original facts.
 
-A payment payer may differ from the invoice customer; the UI surfaces that mismatch but does not treat it as an access grant or automatic rejection because legitimate third-party payments exist.
+## 15. Customer-statement and aging access
 
-## 16. Allocation-reversal authority
-
-```text
-finance.payment.allocation.reverse OR finance.manage
-AND same-tenant payment/allocation
-AND payment not reversed
-AND allocation has no existing reversal
-AND explicit reason
-```
-
-The original allocation is immutable. Reversal creates one `payment_allocation_reversals` record with actor, timestamp and reason. The reversed allocation then ceases to reduce payment availability or invoice outstanding.
-
-## 17. Payment-reversal authority
-
-```text
-finance.payment.reverse OR finance.manage
-AND same-tenant payment
-AND no existing payment reversal
-AND explicit reason
-```
-
-Payment reversal does not edit/delete the receipt.
-
-The transaction must:
-
-1. lock the payment;
-2. lock all payment allocations;
-3. create allocation-reversal rows for every still-active allocation;
-4. create the payment-reversal row;
-5. append audit evidence;
-6. commit atomically.
-
-This enforces the Package 004 invariant that a reversed payment cannot retain active allocations.
-
-A reversed payment has zero usable balance and cannot be allocated again.
-
-## 18. Derived settlement position
-
-The legal invoice lifecycle remains independent from operational settlement.
-
-For issued invoices the application derives:
-
-```text
-open
-part_settled
-settled
-```
-
-from issued credits and active allocations.
-
-This avoids incorrectly describing a fully credited invoice as “paid.” Draft and void document states remain document-lifecycle states, not settlement states.
-
-## 19. Customer-statement and aging access
-
-Package 004F is a read-only finance view, not a new mutation domain.
+Package 004F is a read-only finance view.
 
 Access requires:
 
@@ -490,12 +422,6 @@ AND active organisation membership
 AND finance.view
 AND same-tenant customer/finance records
 ```
-
-No `finance.manage` grant is required and no `finance.receivables.view` key is introduced.
-
-An explicit member deny on `finance.view` removes access to the receivables portfolio and statement workspace even if another role grants finance mutation permissions.
-
-### Historical reporting boundary
 
 The statement service derives customer-account movements from authoritative finance-event timestamps:
 
@@ -507,48 +433,140 @@ allocation reversal → debit
 invoice void        → credit
 ```
 
-A raw/unallocated payment is not treated as a customer receivable credit. It affects the customer account only when allocated to an invoice.
+A raw/unallocated payment is not treated as a customer receivable credit. Historical reports use the event state that existed at the selected cutoff. Statement day boundaries use the active tenant timezone. Currencies remain separated until an explicit FX/reporting-currency policy exists.
 
-Statement day boundaries use the active tenant's `organisations.default_timezone`.
+## 16. Collections read authority
 
-A historical report uses the state that existed at the selected cutoff. A later allocation reversal therefore does not retroactively remove the allocation from an earlier statement.
-
-Currencies remain separated. Package 004F does not infer FX translation or a reporting currency.
-
-Foreign-tenant customer public IDs are masked as not found.
-
-## 20. Cross-domain separation
+Collection-case evidence is protected by a conjunctive read boundary:
 
 ```text
-commercial.manage cannot issue/credit/void/allocate finance records
-contract.manage cannot issue/credit/void/allocate finance records
+active NuBlox user
+AND active organisation membership
+AND finance.view
+AND (finance.collections.view OR finance.manage)
+AND same-tenant customer/case scope
+```
+
+`finance.view` alone is insufficient for collection-case actions, promises or disputes.
+
+An explicit member deny on `finance.collections.view` cannot be bypassed by the `finance.manage` umbrella because the granular key is resolved first.
+
+## 17. Collection-case authority
+
+Opening, pausing, resuming and closing cases requires:
+
+```text
+finance.collections.case.manage OR finance.manage
+```
+
+Opening also requires a currently overdue positive receivable derived from Package 004F.
+
+The service locks the same-tenant customer party before checking for an existing active case. If an `open` or `paused` case already exists, case start is idempotent and returns that case.
+
+Lifecycle:
+
+```text
+open ↔ paused → closed
+```
+
+Closing requires an explicit reason and is blocked while any promise or dispute remains open. Closed cases reject further ordinary mutation.
+
+## 18. Collection-action authority
+
+```text
+finance.collections.action.record OR finance.manage
+AND active same-tenant collection case
+```
+
+Normal user-recordable evidence types are:
+
+```text
+reminder
+phone_call
+note
+```
+
+The first 004G boundary records evidence only. Selecting an email/portal/letter channel does not claim actual outbound delivery unless a later provider workflow performs and proves delivery.
+
+## 19. Promise-to-pay authority
+
+```text
+finance.collections.promise.manage OR finance.manage
+AND active same-tenant collection case
+AND promised amount > 0
+AND valid currency
+AND due date
+```
+
+If an invoice is linked:
+
+```text
+invoice organisation = active tenant
+AND invoice customer = case customer
+AND promise currency = invoice currency
+```
+
+Promise lifecycle:
+
+```text
+open → kept
+open → broken
+open → cancelled
+```
+
+A promise is operational evidence only. It does not create a payment, allocation or settlement.
+
+## 20. Receivable-dispute authority
+
+```text
+finance.collections.dispute.manage OR finance.manage
+AND active same-tenant collection case
+AND reason
+```
+
+A disputed amount is optional; when supplied it must be positive and paired with a currency. An invoice link must belong to the same tenant and case customer, and a supplied currency must match the invoice currency.
+
+Dispute lifecycle:
+
+```text
+open → resolved
+open → withdrawn
+```
+
+A dispute does not alter invoice lifecycle, tax, outstanding balance or settlement state. Financial correction still requires the normal credit-note/void/payment workflow.
+
+## 21. Cross-domain separation
+
+```text
+commercial.manage cannot issue/credit/void/allocate/collect finance records
+contract.manage cannot issue/credit/void/allocate/collect finance records
 finance.manage cannot mutate contracts or quotations
 ```
 
-`crm.view` is needed only for the explicit payer-selection traversal. It does not grant payment mutation authority.
+`crm.view` is needed only for explicit cross-domain CRM traversals such as payer selection. Project roles classify context and never grant application permissions.
 
-Project roles classify context and never grant application permissions.
-
-## 21. Tenant-isolation rules
+## 22. Tenant-isolation rules
 
 - Trusted tenant context comes from authenticated active membership.
 - Tenant-owned queries include active `organisation_id`.
 - CRM, commercial, contract, amendment and finance reads/writes are tenant-bounded.
 - Matching surrogate/public IDs are never proof of access by themselves.
 - Foreign tenant record identities are masked where appropriate.
+- Collections invoice links are additionally constrained to the collection-case customer.
 - Project reads require exact-member project scope.
 - Project roles never grant application permissions.
 - CRM identity is never promoted to platform identity by inference.
 - Customer/document snapshots preserve evidence without creating platform identity.
-- Derived reports must preserve event-time and tenant-timezone semantics rather than caching mutable balances as authority.
+- Derived reports preserve event-time and tenant-timezone semantics rather than caching mutable balances as authority.
+- Collections facts cannot become a shadow receivable ledger.
 - Caches, search, exports, files and future scheduled jobs must preserve tenant boundaries.
 - Privileged support access must be explicit and auditable.
 
-## 22. Session requirements
+## 23. Session requirements
 
 Production session policy includes secure HttpOnly cookies, Secure transport, appropriate SameSite behavior, revocation/logout, rotation after privilege/authentication changes, idle/absolute expiry and MFA step-up where risk policy requires it.
 
-## 23. Release testing requirements
+## 24. Release testing requirements
 
 The real-MySQL release gate covers, at minimum:
 
@@ -556,44 +574,41 @@ The real-MySQL release gate covers, at minimum:
 - explicit deny precedence and same-domain umbrella behavior;
 - organisation bootstrap/invitation controls and standard-role parity;
 - CRM tenant isolation and granular authority;
-- sales quotation conversion and project scope;
+- quotation conversion and project scope;
 - contract formation/execution/amendment integrity;
-- billing-settings and invoice issue policy;
-- invoice immutability and historical tax/customer evidence;
-- source-linked credit-note provenance and over-credit prevention;
-- credit-note original-tax preservation and issue immutability;
-- exceptional invoice-void authority/history guards;
-- payment receipt creation and optional payer traversal;
-- credit-aware/active-allocation-aware invoice outstanding;
-- payment usable-balance derivation;
-- payment and invoice over-allocation prevention;
-- payment/invoice currency mismatch rejection;
-- explicit `finance.payment.allocate` deny overriding `finance.manage`;
-- immutable allocation reversal and duplicate-reversal rejection;
-- payment reversal automatically reversing active allocations;
-- reversed-payment reallocation rejection;
-- foreign-tenant payment/invoice masking;
+- billing/invoice issue policy;
+- credit-note provenance, original-tax preservation and over-credit prevention;
+- exceptional invoice-void guards;
+- payment receipt, allocation, reversal and over-allocation prevention;
+- currency mismatch rejection;
 - receivables reporting under `finance.view`;
-- explicit `finance.view` deny removing statement/aging access;
-- currency-separated current aging;
-- historical statement cutoff correctness across later allocation reversals;
-- opening/closing balance reconciliation;
-- invoice-void event treatment in historical statements;
-- tenant-timezone statement periods;
-- foreign-tenant customer-account masking;
-- generated Kysely drift and Svelte/TypeScript diagnostics.
+- currency-separated aging and historical statement cutoff correctness;
+- tenant-timezone statement periods and foreign-customer masking;
+- collections read requiring both finance and collections read authority;
+- only currently overdue accounts entering collections eligibility;
+- idempotent active-case opening;
+- immutable collection action evidence;
+- same-customer invoice scoping for promises/disputes;
+- promises/disputes leaving the receivable ledger unchanged;
+- case closure blockers for unresolved commitments/disputes;
+- closed-case immutability;
+- explicit collections granular deny overriding `finance.manage`;
+- foreign-tenant collection/customer masking;
+- zero generated drift across both Kysely outputs;
+- Svelte/TypeScript diagnostics.
 
-The executable Package 004F code head proved on MySQL 8.4.11:
+The Package 004G release gate is:
 
 ```text
-16 production migrations applied / 0 pending
-344 tables / 749 foreign keys / 429 CHECK constraints
-zero generated Kysely drift
-20 integration files / 93 real-MySQL tests passed
+17 production migrations applied / 0 pending
+348 tables / 767 foreign keys / 439 CHECK constraints
+zero generated Kysely drift across database.d.ts + collections.d.ts
+21 integration files / 100 real-MySQL tests passed
+finance collections suite: 7/7 passed
 finance receivables-reporting suite: 5/5 passed
 finance payment-allocation suite: 6/6 passed
 organisation bootstrap suite: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove the same complete gate before merge.
+The final documentation-synchronised PR head must prove this complete gate before merge.
