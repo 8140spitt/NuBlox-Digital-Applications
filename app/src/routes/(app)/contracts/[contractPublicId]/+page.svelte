@@ -145,15 +145,17 @@
 					<p>This contract cannot become an executed commitment unless the credit condition is cleared or an authorised override is recorded.</p>
 					<ul>
 						{#if data.creditControl.hasActiveHold}<li>Active customer credit hold</li>{/if}
-						{#if data.creditControl.limitExhausted}<li>Customer credit limit exhausted</li>{/if}
+						{#if data.creditControl.limitExhausted}<li>Executing this contract would exceed the customer credit limit</li>{/if}
 					</ul>
 				{:else}
-					<p class="muted">No active credit hold or exhausted limit currently blocks execution.</p>
+					<p class="muted">No active credit hold or projected credit-limit breach currently blocks execution.</p>
 				{/if}
 				{#if data.creditControl.detailsVisible}
 					<dl>
 						<div><dt>Currency</dt><dd>{data.creditControl.currencyCode}</dd></div>
-						<div><dt>Outstanding</dt><dd>{data.creditControl.outstandingAmount ?? '—'}</dd></div>
+						<div><dt>Receivable</dt><dd>{data.creditControl.outstandingAmount ?? '—'}</dd></div>
+						<div><dt>Contract value</dt><dd>{data.creditControl.commitmentAmount ?? '—'}</dd></div>
+						<div><dt>Projected</dt><dd>{data.creditControl.projectedExposureAmount ?? '—'}</dd></div>
 						<div><dt>Credit limit</dt><dd>{data.creditControl.creditLimitAmount ?? 'No enabled limit'}</dd></div>
 					</dl>
 				{/if}
