@@ -5,7 +5,7 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { FinanceAccessPolicy } from './finance-common';
 
-export type ReceivablePositionStatus = 'draft' | 'void' | 'open' | 'part_paid' | 'paid';
+export type ReceivablePositionStatus = 'draft' | 'void' | 'open' | 'part_settled' | 'settled';
 
 export type InvoiceReceivablePosition = {
 	invoicePublicId: string;
@@ -121,7 +121,9 @@ export class ReceivablePositionService {
 		]);
 		const outstandingAmount = subtractMoney(subtractMoney(invoiceGross, issuedCreditGross), activeAllocatedAmount);
 		const outstanding = parseScaledDecimal(outstandingAmount, 4, 'Outstanding amount', true);
-		const activeAllocated = parseScaledDecimal(activeAllocatedAmount, 4, 'Allocated amount', true);
+		const hasSettlement =
+			parseScaledDecimal(activeAllocatedAmount, 4, 'Allocated amount', true) > 0n ||
+			parseScaledDecimal(issuedCreditGross, 4) > 0n;
 		return {
 			invoicePublicId: invoice.publicId,
 			currencyCode: invoice.currencyCode,
@@ -130,7 +132,7 @@ export class ReceivablePositionService {
 			issuedCreditGross,
 			activeAllocatedAmount,
 			outstandingAmount,
-			status: outstanding <= 0n ? 'paid' : activeAllocated > 0n || parseScaledDecimal(issuedCreditGross, 4) > 0n ? 'part_paid' : 'open'
+			status: outstanding <= 0n ? 'settled' : hasSettlement ? 'part_settled' : 'open'
 		};
 	}
 }
