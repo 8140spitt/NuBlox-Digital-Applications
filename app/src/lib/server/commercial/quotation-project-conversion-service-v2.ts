@@ -10,6 +10,7 @@ import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/error
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectRepository } from '$lib/server/projects/project-repository';
 import { CommercialService, CommercialValidationError, type QuotationWorkspace } from './commercial-service';
+import { quotationCommitmentAmount } from './quotation-credit-exposure';
 
 export type ConvertedProject = {
 	id: string;
@@ -182,11 +183,12 @@ export class QuotationProjectConversionService {
 		const acceptedVersionNumber = await this.findAcceptedVersionNumber(actor, quotationPublicId);
 		const selectedVersionNumber = requestedVersionNumber ?? acceptedVersionNumber ?? undefined;
 		const commercial = await new CommercialService(this.db).getQuotation(actor, quotationPublicId, selectedVersionNumber);
+		const commitmentAmount = await quotationCommitmentAmount(this.db, actor.organisationId, commercial.version.id);
 		const [acceptedResponse, permissions, sourceEstimates, creditControl] = await Promise.all([
 			this.findAcceptedResponse(this.db, actor.organisationId, commercial.quotation.id, commercial.version.id),
 			this.permissionState(actor),
 			this.listSourceEstimates(this.db, actor.organisationId, commercial.version.id),
-			new CreditControlService(this.db, this.publicIdFactory, this.now).commitmentPreview(actor, commercial.quotation.customerPartyId, commercial.version.currencyCode)
+			new CreditControlService(this.db, this.publicIdFactory, this.now).commitmentPreview(actor, commercial.quotation.customerPartyId, commercial.version.currencyCode, commitmentAmount)
 		]);
 		const project = acceptedResponse ? await this.findConvertedProject(this.db, actor.organisationId, acceptedResponse.id) : null;
 		const baseEligible = permissions.canConvert && Boolean(acceptedResponse) && !project && commercial.version.versionStatus === 'issued' && Boolean(commercial.version.lockedAt) && commercial.quotation.lifecycleStatus === 'active' && sourceEstimates.every((estimate) => estimate.projectId === null);
@@ -245,6 +247,7 @@ export class QuotationProjectConversionService {
 			const sourceEstimates = await this.listSourceEstimates(trx, actor.organisationId, version.id, true);
 			const conflictingEstimate = sourceEstimates.find((estimate) => estimate.projectId !== null);
 			if (conflictingEstimate) throw new CommercialValidationError(`Source estimate ${conflictingEstimate.estimateNumber} is already linked to another project.`);
+			const commitmentAmount = await quotationCommitmentAmount(trx, actor.organisationId, version.id);
 
 			try {
 				await new CreditControlService(this.db, this.publicIdFactory, this.now).enforceCommitment(actor, {
@@ -252,6 +255,7 @@ export class QuotationProjectConversionService {
 					currencyCode: version.currencyCode,
 					workflowType: 'quotation_conversion',
 					subjectPublicId: quotation.publicId,
+					commitmentAmount,
 					overrideReason: creditOverrideReasonInput
 				}, trx);
 			} catch (cause) {
@@ -274,7 +278,7 @@ export class QuotationProjectConversionService {
 			if (sourceEstimates.length > 0) await trx.updateTable('estimates').set({ project_id: projectId }).where('organisation_id', '=', actor.organisationId).where('id', 'in', sourceEstimates.map((estimate) => estimate.id)).where('project_id', 'is', null).execute();
 
 			const audit = new AuditRepository(trx);
-			await audit.append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId, actionKey: 'commercial.quotation.converted_to_project', subjectType: 'quotation', subjectPublicId: quotation.publicId, correlationId: actor.correlationId, changeSummary: { quotationNumber: quotation.quotationNumber, versionNumber, acceptedResponsePublicId: acceptedResponse.publicId, projectPublicId, projectNumber, sourceEstimateCount: sourceEstimates.length, creditControlOverrideRequested: Boolean(creditOverrideReasonInput?.trim()) } });
+			await audit.append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId, actionKey: 'commercial.quotation.converted_to_project', subjectType: 'quotation', subjectPublicId: quotation.publicId, correlationId: actor.correlationId, changeSummary: { quotationNumber: quotation.quotationNumber, versionNumber, acceptedResponsePublicId: acceptedResponse.publicId, projectPublicId, projectNumber, sourceEstimateCount: sourceEstimates.length, commitmentAmount, creditControlOverrideRequested: Boolean(creditOverrideReasonInput?.trim()) } });
 			await audit.append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId, actionKey: 'project.created_from_quotation', subjectType: 'project', subjectPublicId: projectPublicId, correlationId: actor.correlationId, changeSummary: { quotationPublicId: quotation.publicId, quotationNumber: quotation.quotationNumber, quotationVersionNumber: versionNumber, acceptedResponsePublicId: acceptedResponse.publicId } });
 
 			return { id: projectId, publicId: projectPublicId, projectNumber, name: version.title, status: 'proposed' };
