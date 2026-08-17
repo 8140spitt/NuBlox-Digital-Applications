@@ -11,28 +11,51 @@ This directory contains the working corporate and master-brand definition for Nu
 5. [`04-visual-identity-brief.md`](04-visual-identity-brief.md) — design requirements for logo, typography, colour and product-system integration.
 6. [`05-logo-concept-directions.md`](05-logo-concept-directions.md) — first-round visual identity territories.
 7. [`06-logo-concept-evaluation.md`](06-logo-concept-evaluation.md) — first-round evaluation and selected refinement direction.
+8. [`07-selected-identity-direction.md`](07-selected-identity-direction.md) — selected Modular N identity system, wordmark principles, colour shortlist and second-round design requirements.
 
 ## Current identity direction
 
-The preferred second-round identity direction is:
+The selected second-round identity direction is:
 
-> **A proprietary modular `N` symbol paired with a precise custom NuBlox wordmark.**
+> **Modular N + precision NuBlox wordmark + restrained technical-blue visual system.**
 
 The modular symbol should express connected operating capability without becoming a literal block/cube logo. The wordmark should remain mature, highly legible and suitable for serious B2B software.
 
-The current first-round visual artwork remains exploratory. No generated concept image is a production logo asset.
+The current generated concept artwork remains exploratory. No generated concept image is a production logo asset.
 
-## Next branding deliverable
+## Current lead colour territory
 
-`07-selected-identity-direction.md`
+The second-round application tests use a working Technical Blue palette:
 
-This should define:
+- **NuBlox Ink:** `#07182E`
+- **NuBlox Blue:** `#146EF5`
+- **NuBlox Cyan:** `#20B8D8`
+- **Cloud:** `#F7F9FC`
+- **White:** `#FFFFFF`
 
-- refined modular-symbol geometry;
-- wordmark construction principles;
-- monochrome and small-size behaviour;
-- initial colour shortlist;
-- product lockup structure;
-- application icon/favicon behaviour;
-- practical UI and website application tests; and
-- requirements for vector reconstruction and similarity/trademark review.
+These are concept values only and are not yet production design tokens.
+
+## Next visual gate
+
+The next round should compare three executions of the selected modular-N strategy:
+
+1. **Continuous Modular N** — strongest simplicity and small-size clarity;
+2. **Negative-space Modular N** — strongest proprietary silhouette; and
+3. **Interlocking Modular N** — strongest visible expression of modular connection.
+
+Each should be presented in monochrome, horizontal lockup, app-icon, favicon, `NuBlox Projects` lockup, application-header and website-header contexts.
+
+The objective is to select the final symbol construction before final logo geometry, colour and production assets are approved.
+
+## Brand governance
+
+Before public adoption, the final identity must be:
+
+- rebuilt as controlled vector geometry;
+- tested in monochrome;
+- tested at favicon/application-icon sizes;
+- tested in product and website contexts;
+- reviewed for accessibility;
+- reviewed for visual similarity and ownability;
+- subject to appropriate trademark/legal clearance; and
+- exported through a controlled asset pipeline.
