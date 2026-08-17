@@ -14,6 +14,7 @@ import {
 	validateDateTime,
 	type ExecuteContractInput
 } from './contract-common';
+import { contractVersionCommitmentAmount } from './contract-credit-exposure';
 
 export type CreditControlledExecuteContractInput = ExecuteContractInput & {
 	creditOverrideReason?: string | null;
@@ -98,6 +99,7 @@ export class ContractExecutionService {
 				.where('role.code', '=', 'client')
 				.orderBy('party.sort_order')
 				.executeTakeFirst();
+			const commitmentAmount = await contractVersionCommitmentAmount(trx, actor.organisationId, version.id);
 
 			if (clientParty?.sourcePartyId) {
 				try {
@@ -108,6 +110,7 @@ export class ContractExecutionService {
 							currencyCode: contract.currencyCode,
 							workflowType: 'contract_execution',
 							subjectPublicId: contract.publicId,
+							commitmentAmount,
 							overrideReason: creditOverrideReason
 						},
 						trx
@@ -176,6 +179,7 @@ export class ContractExecutionService {
 					executionMethod,
 					executedAt: executedAt.toISOString(),
 					signatoryName,
+					commitmentAmount,
 					creditControlOverrideRequested: Boolean(creditOverrideReason)
 				}
 			});
