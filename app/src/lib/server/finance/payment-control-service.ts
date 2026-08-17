@@ -80,7 +80,7 @@ export class PaymentControlService {
 			]);
 			const available = subtractMoney(subtractMoney(payment.amount, allocatedAmount), recoveryAmount);
 			if (parseScaledDecimal(amount, 4) > parseScaledDecimal(available, 4, 'Available payment', true)) throw new FinanceValidationError(`Allocation exceeds the remaining ${positiveOrZero(available)} available on the payment.`);
-			const position = await issuedInvoiceOutstanding(trx, actor.organisationId, invoice.id);
+			const position = await issuedInvoiceOutstanding(trx, actor.organisationId, invoice.id, true);
 			if (parseScaledDecimal(position.outstandingAmount, 4, 'Invoice outstanding', true) <= 0n) throw new FinanceValidationError('The invoice has no remaining outstanding balance.');
 			if (parseScaledDecimal(amount, 4) > parseScaledDecimal(position.outstandingAmount, 4, 'Invoice outstanding', true)) throw new FinanceValidationError(`Allocation exceeds the invoice outstanding balance of ${position.outstandingAmount}.`);
 			const allocationId = insertedId(await trx.insertInto('payment_allocations').values({ organisation_id: actor.organisationId, payment_id: payment.id, invoice_document_id: invoice.id, allocated_amount: amount, allocated_by_member_id: membership.id, allocated_at: this.now() }).executeTakeFirstOrThrow());
