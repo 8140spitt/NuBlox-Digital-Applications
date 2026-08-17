@@ -6,8 +6,6 @@ It combines a shared business-management core, a built-environment project/site/
 
 ## Business and brand foundation
 
-Corporate and brand strategy documentation is maintained separately from the product specification:
-
 - [NuBlox business entity](docs/branding/00-business-entity.md)
 - [NuBlox brand strategy](docs/branding/01-brand-strategy.md)
 - [NuBlox brand architecture and naming](docs/branding/02-brand-architecture-and-naming.md)
@@ -23,7 +21,7 @@ Corporate and brand strategy documentation is maintained separately from the pro
 - **Primary persistence:** MySQL 8.4 / InnoDB
 - **Runtime query layer:** Kysely + mysql2
 - **Production migrations:** Dbmate plain SQL
-- **Database type generation:** kysely-codegen from the migrated MySQL schema
+- **Database type generation:** kysely-codegen from migrated MySQL
 - **Architecture:** modular monolith first, explicit domain boundaries
 - **Database design:** normalised relational model, targeting 3NF by default
 - **Schema authority:** committed MySQL SQL migrations; generated TypeScript types are derivative
@@ -33,15 +31,19 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 ## Database implementation
 
-The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
+The validated 001–010 relational baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **18 migrations**. The latest migration is:
+The production stream now contains **19 migrations**. The latest migration is:
 
-- `20260817144000_collections_automation_policy.sql` — Package 004H versioned collections policy, policy stages, immutable generated reminder snapshots, delivery-attempt evidence and automation permissions.
+- `20260817150000_credit_control_limits_holds.sql` — Package 004I controlled customer credit limits, credit-hold lifecycle, projected-exposure enforcement and reasoned override evidence.
 
-Package 004F remained migration-free and derived statements/aging from existing finance facts. Package 004G added collection-case/action/promise/dispute facts. Package 004H adds four policy/reminder evidence tables without adding a scheduler or any editable receivable balance.
+The current validated Package 004I target is:
 
-The migrated application structure is now **352 tables, 778 foreign keys and 450 `CHECK` constraints**.
+```text
+356 base tables
+789 foreign keys
+459 CHECK constraints
+```
 
 Implementation-level database material is grouped under `/database`:
 
@@ -67,14 +69,14 @@ SvelteKit action / endpoint
       MySQL 8.4
 ```
 
-Routes/components do not issue SQL directly. Tenant context and authorisation are mandatory server-domain concerns.
+Routes/components do not issue SQL directly. Tenant context, authorisation, record lifecycle and cross-domain policy are mandatory server-domain concerns.
 
 ## Authentication and tenant trust boundary
 
 ```text
 Better Auth session
         ↓
-Explicit auth_user_links mapping
+auth_user_links
         ↓
 Active NuBlox user
         ↓
@@ -84,10 +86,10 @@ Organisation roles / member overrides
         ↓
 Project membership scope where required
         ↓
-Record / lifecycle business policy
+Record / lifecycle / cross-domain policy
 ```
 
-The selected organisation cookie is only a selection hint. The server revalidates membership before constructing trusted tenant context.
+The selected organisation cookie is a selection hint only. The server revalidates active membership before trusted tenant context is constructed.
 
 Within one permission key:
 
@@ -98,104 +100,60 @@ explicit member deny
     > default deny
 ```
 
-For a granular permission with a same-domain umbrella, the granular key is resolved first and the umbrella is considered only when the granular key has no explicit member/role decision.
+For a granular permission with a same-domain umbrella, the granular key is resolved first and the umbrella applies only when the granular key has no explicit member/role decision. An explicit granular deny therefore cannot be bypassed.
 
-## Granular RBAC and same-domain umbrellas
+## Same-domain permission umbrellas
 
 ```text
 project.manage
-    ├─ project.lifecycle.manage
-    ├─ project.participant.manage
-    ├─ project.team.manage
-    └─ project.participation.manage
-
 crm.manage
-    ├─ crm.party.manage
-    ├─ crm.contact.manage
-    ├─ crm.opportunity.manage
-    └─ crm.activity.manage
-
 commercial.manage
-    ├─ commercial.estimate.manage
-    ├─ commercial.quotation.manage
-    ├─ commercial.quotation.issue
-    ├─ commercial.quotation.response.record
-    └─ commercial.quotation.convert
-
 contract.manage
-    ├─ contract.create
-    ├─ contract.draft.manage
-    ├─ contract.issue
-    ├─ contract.execute
-    ├─ contract.amendment.create
-    ├─ contract.amendment.draft.manage
-    ├─ contract.amendment.issue
-    └─ contract.amendment.decide
-
 finance.manage
-    ├─ finance.billing.manage
-    ├─ finance.invoice.create
-    ├─ finance.invoice.draft.manage
-    ├─ finance.invoice.issue
-    ├─ finance.invoice.void
-    ├─ finance.credit_note.create
-    ├─ finance.credit_note.draft.manage
-    ├─ finance.credit_note.issue
-    ├─ finance.payment.create
-    ├─ finance.payment.allocate
-    ├─ finance.payment.allocation.reverse
-    ├─ finance.payment.reverse
-    ├─ finance.collections.view
-    ├─ finance.collections.case.manage
-    ├─ finance.collections.action.record
-    ├─ finance.collections.promise.manage
-    ├─ finance.collections.dispute.manage
-    ├─ finance.collections.policy.manage
-    ├─ finance.collections.reminder.generate
-    └─ finance.collections.reminder.dispatch
 ```
 
-**Umbrellas never cross domains.** Commercial authority does not grant contract authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
+**Umbrellas never cross domains.** Commercial authority does not grant contract or finance authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
 
-Package 004F reporting reuses `finance.view`. Package 004G/004H collection evidence additionally requires `finance.collections.view` or the `finance.manage` fallback. 004H then separates authority to manage policy, generate a message snapshot and trigger external dispatch.
-
-## Controlled account provisioning and standard roles
-
-NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisioning intent: an existing-organisation invitation or a self-service organisation bootstrap. Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
-
-### Owner / Administrator
-
-Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus all released granular Package 004 operational permissions. Existing organisations receive forward-migration grants and future organisations receive equivalent persisted grants from `OrganisationBootstrapService`.
-
-### Finance/Commercial
-
-Finance/Commercial receives ordinary commercial, operational AR and collections responsibilities, including:
+The Package 004 operational finance family now includes billing, invoice, receivable correction, payment/allocation, collections automation and credit-control permissions. Package 004I adds:
 
 ```text
-finance.view
-finance.billing.manage
-finance.invoice.create
-finance.invoice.draft.manage
-finance.invoice.issue
-finance.credit_note.create
-finance.credit_note.draft.manage
-finance.credit_note.issue
-finance.payment.create
-finance.payment.allocate
-finance.payment.allocation.reverse
-finance.payment.reverse
-finance.collections.view
-finance.collections.case.manage
-finance.collections.action.record
-finance.collections.promise.manage
-finance.collections.dispute.manage
-finance.collections.reminder.generate
-finance.collections.reminder.dispatch
+finance.credit_control.view
+finance.credit_control.policy.manage
+finance.credit_control.hold.manage
+finance.credit_control.override
 ```
 
-It deliberately does **not** receive `finance.manage`, `finance.invoice.void` or `finance.collections.policy.manage`. Invoice void remains stronger issued-document authority; policy authoring remains stronger customer-escalation authority.
+All four use `finance.manage` only as same-domain fallback.
 
-Manager, Member/Professional, Field Worker and Read Only do not receive automatic finance mutation or collection-case authority. The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
+## Standard organisation roles
+
+Every organisation receives:
+
+```text
+Owner
+Administrator
+Manager
+Finance/Commercial
+Member/Professional
+Field Worker
+Read Only
+```
+
+The founding member receives **Owner only**. Careers/job titles remain separate from security roles.
+
+Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions.
+
+Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities but does not receive `finance.manage`, `finance.invoice.void` or `finance.credit_control.override` by default.
+
+For Package 004I its defaults are:
+
+```text
+finance.credit_control.view
+finance.credit_control.policy.manage
+finance.credit_control.hold.manage
+```
+
+The exceptional override remains Owner/Administrator/custom delegation by default. Existing-tenant migration grants and future `OrganisationBootstrapService` grants are persisted and integration-tested for parity.
 
 ## Implemented business chain
 
@@ -210,47 +168,38 @@ Quotation
     ↓
 Issued + Accepted Quotation
     ↓
+Credit-Control Commitment Gate
+    ↓
 Proposed Project
     ↓
 Controlled Contract Formation
     ↓
-Issued / Executed Contract
+Issued Contract
+    ↓
+Credit-Control Commitment Gate
+    ↓
+Executed Contract
     ↓
 Controlled Contract Amendments
     ↓
 Customer Billing Defaults
     ↓
-Draft Invoice
-    ↓
-Issued Invoice
+Draft / Issued Invoice
     ↓
 Controlled Credit Note / Exceptional Invoice Void
     ↓
-Payment Receipt
+Payment Receipt + Controlled Allocation/Reversal
     ↓
-Controlled Payment Allocation
-    ↓
-Allocation / Payment Reversal
-    ↓
-Derived Outstanding Receivable
+Derived Customer Receivable
     ↓
 Customer Statement + Aged Receivables
     ↓
 Controlled Collections Case
-    ├── Reminder / Call / Note Evidence
-    ├── Promise to Pay
-    └── Receivable Dispute
     ↓
-Versioned Collections Policy
-    ↓
-Derived Due Reminder Candidate
-    ↓
-Explicit Reminder Generation
-    ↓
-Explicit Dispatch / Retry Evidence
+Versioned Dunning Policy + Reminder Evidence
 ```
 
-See:
+Detailed business specifications:
 
 - [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md)
 - [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md)
@@ -262,171 +211,116 @@ See:
 - [`docs/38-customer-statements-aged-receivables.md`](docs/38-customer-statements-aged-receivables.md)
 - [`docs/39-controlled-collections-dunning.md`](docs/39-controlled-collections-dunning.md)
 - [`docs/40-collections-automation-policy.md`](docs/40-collections-automation-policy.md)
+- [`docs/41-controlled-credit-limits-holds.md`](docs/41-controlled-credit-limits-holds.md)
 
 ## Operational accounts receivable
 
-### Package 004C — Billing settings and invoices
-
-Protected routes:
-
-- `/finance/billing`
-- `/finance/invoices`
-- `/finance/invoices/[invoicePublicId]`
-
-Draft invoices are contract-anchored, tenant-scoped and legally unnumbered. Issue finalises due date, refreshes issue-date tax, snapshots customer/contact/address evidence, allocates the tenant invoice number, records issue/recipient/audit evidence and freezes ordinary mutation.
-
-### Package 004D — Receivable corrections
-
-Protected routes:
-
-- `/finance/credit-notes`
-- `/finance/credit-notes/[creditNotePublicId]`
-
-Credit notes retain exact source-invoice-line provenance, positive correction magnitudes, original applied tax evidence, issue-time over-credit revalidation and original invoice party/address evidence. Exceptional invoice void is separately authorised and cannot bypass credit-note or active allocation history.
-
-### Package 004E — Payment receipt and controlled allocation
-
-Protected routes:
-
-- `/finance/payments`
-- `/finance/payments/[paymentPublicId]`
-
-A payment is recorded as an immutable positive cash receipt with method, received date, currency, optional CRM payer and reference. Receipt creation does **not** imply an allocation.
-
-Cash application is bounded by:
+The authoritative receivable is derived from immutable/controlled finance facts:
 
 ```text
-Usable Payment
-= Payment Amount
-− Active Allocations
-
-Outstanding Receivable
+Invoice Outstanding
 = Issued Invoice Gross
 − Issued Credit Note Gross
 − Active Payment Allocations
 ```
 
-Allocation locks the payment and invoice before recomputing both limits. It requires same-tenant, same-currency, issued invoice context and rejects either payment over-allocation or invoice over-allocation.
+Package 004F statements/aging and Packages 004G–004I reuse that finance authority rather than creating parallel editable balances.
 
-Allocation correction creates a `payment_allocation_reversals` row; the original allocation remains immutable. Payment reversal first creates reversal evidence for every still-active allocation in the same transaction and only then records the `payment_reversals` row.
+### Package 004G — controlled collections
 
-### Package 004F — Customer statements and aged receivables
-
-Protected routes:
-
-- `/finance/receivables`
-- `/finance/receivables/[customerPartyPublicId]`
-
-Package 004F creates no new balance ledger. It reconstructs the customer account from immutable event timestamps:
+Collection cases persist operational evidence only:
 
 ```text
-Issued invoice           → debit
-Issued credit note       → credit
-Payment allocation       → credit
-Allocation reversal      → debit
-Exceptional invoice void → credit
-```
-
-Statements derive opening balance, period movements, running balance and closing balance independently per currency. Aging is calculated from positive outstanding issued invoices as at the selected date:
-
-```text
-Current | 1–30 | 31–60 | 61–90 | 91+
-```
-
-Currencies are never combined without an explicit FX/reporting-currency policy.
-
-### Package 004G — Controlled collections and dunning
-
-Protected routes:
-
-- `/finance/collections`
-- `/finance/collections/[customerPartyPublicId]`
-
-The collections portfolio is derived from the live 004F overdue position. A collection case can start only when the customer has at least one positive outstanding invoice past its due date.
-
-Package 004G persists operational evidence, not accounting balances:
-
-```text
-Customer Account
-      ↓
 Collection Case
     ├── immutable reminder/call/note actions
     ├── promise to pay
     └── receivable dispute
 ```
 
-Starting a case is idempotent while an `open` or `paused` case already exists. Case creation serialises the customer and issued invoice documents and revalidates the live overdue position before insertion. Case closure requires an explicit reason and is blocked while promises or disputes remain open.
+Promises do not create cash. Disputes do not alter invoice balances. Any financial correction still uses payment allocation, credit note or exceptional invoice-void authority.
 
-Promises and disputes may reference an invoice only when it belongs to the same tenant and same customer account. A promise does not create cash; a dispute does not change an invoice balance. Any settlement/correction still goes through payment allocation, credit note or exceptional invoice-void authority.
+### Package 004H — collections automation policy
 
-### Package 004H — Collections automation policy
+The protected `/finance/collections/automation` workspace provides versioned dunning policy, derived due-reminder candidates, explicit reminder generation, separately authorised dispatch, immutable delivery-attempt evidence and promise-due review.
+
+It does not claim a background scheduler or production provider adapter.
+
+### Package 004I — controlled credit limits and holds
 
 Protected route:
 
-- `/finance/collections/automation`
-
-Package 004H adds four normalised policy/reminder evidence tables:
-
 ```text
-receivable_collection_policies
-receivable_collection_policy_stages
-receivable_collection_reminders
-receivable_collection_reminder_deliveries
+/finance/credit-control
 ```
 
-An activated policy version is immutable. Draft stages define strictly increasing days-overdue thresholds, email templates and optional suppression for open disputes/current promises.
+Credit policy is evidence, not a second ledger:
 
-A due reminder candidate is **derived**, not a scheduled job. The candidate requires an open collection case, active policy, currently overdue positive receivable and stage threshold not already generated for that case.
+```text
+Current Receivable
+= authoritative issued finance facts
 
-Generation:
+Projected Exposure
+= Current Receivable
++ Proposed Commitment
+```
 
-- requires reminder-generation authority;
-- additionally requires `crm.view` for recipient identity traversal;
-- snapshots recipient email, rendered subject/body, policy/stage/customer/case provenance and as-of date;
-- is idempotent per case + stage;
-- sends nothing and creates no collection-contact evidence.
+An enabled currency-specific limit blocks only when:
 
-Dispatch:
+```text
+Projected Exposure > Credit Limit
+```
 
-- uses a separate permission;
-- revalidates case/open receivable/stage/suppression immediately before the side effect;
-- records every success/failure attempt immutably;
-- leaves failures pending for controlled retry;
-- appends 004G reminder action evidence only on success;
-- reuses the reminder public ID as the external delivery idempotency key.
+Exact equality is permitted by the limit. A customer-wide active credit hold blocks regardless of amount.
 
-The workspace also surfaces open promises whose due date has arrived/passed. It never auto-marks them broken.
+Commitment values are derived from the transaction itself:
 
-Package 004H does **not** claim a background scheduler, durable worker or production provider adapter.
+```text
+Accepted quotation conversion
+→ non-optional accepted quotation gross including stored tax evidence
 
-### Deliberate finance exclusions
+Contract execution
+→ sum of issued contract-version value components
+```
+
+Named enforcement boundaries:
+
+```text
+Quotation issue                 allowed — offer/pre-commitment
+Accepted quotation conversion   CREDIT GATE
+Contract draft/issue            allowed — preparation/pre-execution
+Contract execution               CREDIT GATE
+Invoice issue                    allowed — bill existing work
+Credit/payment/collections       allowed — reduce/manage exposure
+```
+
+Exceptional continuation requires `finance.credit_control.override` (or `finance.manage` fallback) **and an explicit reason**. The override snapshots current receivable, proposed commitment, projected exposure, applicable limit/hold, actor and time, and is inserted in the same transaction as the project conversion or contract execution.
+
+Credit checks serialize on the customer and all invoice documents for the same customer/currency before re-deriving the issued receivable. This prevents a concurrent draft→issued invoice transition from racing past the commitment check.
+
+## Deliberate finance exclusions
 
 Still not claimed implemented:
 
-- FX conversion / cross-currency allocation or reporting translation;
+- FX conversion / cross-currency allocation or credit aggregation;
 - refunds / outbound customer payments;
-- automated bank-feed or payment-gateway ingestion;
+- bank-feed/payment-gateway ingestion and bank reconciliation;
 - automated remittance matching;
-- bank reconciliation;
 - general-ledger posting;
 - credit-note void/reversal;
-- persisted/issued statement documents, PDFs or outbound delivery;
-- automatic statement schedules;
-- cron/background reminder generation or dispatch;
-- production email/SMS/postal/portal reminder provider adapters;
+- persisted/issued statement documents and automatic statement delivery;
+- durable background scheduler/worker-driven collections execution;
+- production outbound email/SMS/postal/portal reminder providers;
 - automatic promise-breaking decisions;
-- customer credit limits / credit-hold policy and cross-workflow enforcement;
+- automatic credit-scoring/bureau integration or automatic limit changes;
+- parent/group/guarantee/insurance credit limits;
+- automatic hold placement/release;
 - late-fee / interest calculation;
 - legal/agency escalation;
-- bad-debt/write-off processing;
-- configurable settlement/write-off policy;
-- production outbound invoice/credit-note delivery.
+- bad-debt/write-off processing.
 
 ## Projects, participants and teams
 
-The protected application exposes `/projects` and `/projects/[projectPublicId]` for member-scoped portfolios, project creation, invitation response, participant organisations, own-organisation team administration and lifecycle controls.
-
-Normal in-project access requires organisation authority **and** active organisation participation **and** an active `project_members` row for the exact member. Project contextual roles never grant application permissions.
+Normal in-project access requires organisation authority **and** active organisation participation **and** an active `project_members` row for the exact member. Project contextual roles classify context and never grant application permissions.
 
 ## Governing product rule
 
@@ -446,21 +340,20 @@ pnpm test:integration
 pnpm check
 ```
 
-The Package 004H executable code gate has proved:
+Package 004I release target:
 
 ```text
-18 production migrations applied / 0 pending
-352 base tables / 778 foreign keys / 450 CHECK constraints
+19 production migrations applied / 0 pending
+356 base tables / 789 foreign keys / 459 CHECK constraints
 zero generated Kysely drift across core + collections outputs
-22 integration files / 108 real-MySQL tests passed
-finance/collections-automation.integration.test.ts: 8/8 passed
-finance/collections.integration.test.ts: 7/7 passed
-finance/receivables-reporting.integration.test.ts: 5/5 passed
-finance/payment-allocation.integration.test.ts: 6/6 passed
-organisation-bootstrap.integration.test.ts: 4/4 passed
+26 integration files / 117 real-MySQL tests
+credit-control suite: 6 tests
+credit-control concurrency suite: 1 test
+credit-control projected-exposure suite: 1 test
+credit-control bootstrap parity suite: 1 test
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove this complete gate before merge.
+The final documentation-synchronised PR head must prove the complete gate before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
