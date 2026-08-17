@@ -385,20 +385,41 @@ The permanent real-MySQL gate must prove:
 - zero generated Kysely drift;
 - Svelte/TypeScript diagnostics.
 
-## 17. Deliberate exclusions / next boundary
+## 17. Boundary handoff
 
-Not claimed implemented by Package 004E:
+Package 004E deliberately stopped after authoritative receipt/allocation/reversal facts and per-invoice outstanding receivable.
 
-- FX conversion or cross-currency allocation;
+Package 004F now consumes those facts for **derived customer statements and aged receivables** without adding another balance ledger:
+
+```text
+Issued invoices
++ issued credits
++ allocations
++ allocation reversals
++ invoice void events
+        ↓
+Customer account movements
+        ↓
+Opening / closing balances
+        ↓
+Currency-separated aging
+```
+
+See [`docs/38-customer-statements-aged-receivables.md`](38-customer-statements-aged-receivables.md).
+
+Still not claimed by either boundary:
+
+- FX conversion or cross-currency allocation/reporting translation;
 - refunds / outbound customer payments;
 - automated bank-feed ingestion;
 - automated remittance matching;
 - bank reconciliation;
 - general-ledger posting;
 - credit-note void/reversal;
-- customer statements;
-- aged receivables / dunning;
+- persisted/issued statement documents or PDFs;
+- production outbound statement delivery;
+- dunning/reminder/collections workflows;
 - configurable settlement/write-off policy;
 - payment-gateway settlement processing.
 
-The next Package 004 finance boundary should use the now-authoritative receivable position for **customer statements and aged receivables**, with dunning/reminder policy kept explicitly separate from the immutable cash and document facts.
+The next finance boundary after 004F is controlled **collections and dunning policy** over the derived overdue position, with workflow/communication state kept separate from the immutable finance facts.
