@@ -32,7 +32,10 @@ export type FinanceMutationPermission =
 	| 'finance.collections.dispute.manage'
 	| 'finance.collections.policy.manage'
 	| 'finance.collections.reminder.generate'
-	| 'finance.collections.reminder.dispatch';
+	| 'finance.collections.reminder.dispatch'
+	| 'finance.credit_control.policy.manage'
+	| 'finance.credit_control.hold.manage'
+	| 'finance.credit_control.override';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
@@ -143,6 +146,10 @@ export class FinanceAccessPolicy {
 
 	async collectionsViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
 		return new PermissionService(db).decideWithUmbrella(actor, 'finance.collections.view', 'finance.manage');
+	}
+
+	async creditControlViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
+		return new PermissionService(db).decideWithUmbrella(actor, 'finance.credit_control.view', 'finance.manage');
 	}
 
 	async mutationDecision(
