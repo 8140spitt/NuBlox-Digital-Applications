@@ -105,7 +105,7 @@ beforeAll(async () => {
 	await db.insertInto('financial_document_items').values({ organisation_id: organisationAId, financial_document_id: invoiceId, source_quotation_item_id: null, sales_item_type_id: salesItemTypeId, sales_catalog_item_id: null, unit_of_measure_id: null, line_number: 1, description: 'Bad debt test invoice', quantity: '1.000000', unit_rate: '100.0000' }).executeTakeFirstOrThrow();
 	await db.insertInto('financial_document_issue_events').values({ organisation_id: organisationAId, financial_document_id: invoiceId, issue_sequence: 1, issued_by_member_id: ownerAMemberId, delivery_channel: 'manual', issued_at: new Date('2026-08-01T09:00:00.000Z'), note: null }).executeTakeFirstOrThrow();
 	paymentPublicId = randomUUID();
-	await db.insertInto('payments').values({ organisation_id: organisationAId, public_id: paymentPublicId, payer_party_id: customerId, payment_method_id: paymentMethodId, received_at: NOW, amount: '50.0000', currency_code: 'GBP', payment_reference: 'RECOVERY-CASH', recorded_by_member_id: financeAMemberId }).executeTakeFirstOrThrow();
+	await db.insertInto('payments').values({ organisation_id: organisationAId, public_id: paymentPublicId, payer_party_id: customerId, payment_method_id: paymentMethodId, received_at: NOW, amount: '50.0000', currency_code: 'GBP', payment_reference: 'RECOVERY-CASH', created_by_member_id: financeAMemberId }).executeTakeFirstOrThrow();
 });
 
 afterAll(async () => { await cleanup(); await closeDatabase(); });
