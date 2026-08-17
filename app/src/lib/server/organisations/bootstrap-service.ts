@@ -64,7 +64,12 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'finance.credit_control.view',
 	'finance.credit_control.policy.manage',
 	'finance.credit_control.hold.manage',
-	'finance.credit_control.override'
+	'finance.credit_control.override',
+	'finance.bad_debt.view',
+	'finance.bad_debt.write_off',
+	'finance.bad_debt.write_off.reverse',
+	'finance.bad_debt.recovery',
+	'finance.bad_debt.recovery.reverse'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -127,7 +132,12 @@ const STANDARD_ROLES = [
 			'finance.credit_control.view',
 			'finance.credit_control.policy.manage',
 			'finance.credit_control.hold.manage',
-			'finance.credit_control.override'
+			'finance.credit_control.override',
+			'finance.bad_debt.view',
+			'finance.bad_debt.write_off',
+			'finance.bad_debt.write_off.reverse',
+			'finance.bad_debt.recovery',
+			'finance.bad_debt.recovery.reverse'
 		]
 	},
 	{
@@ -189,7 +199,12 @@ const STANDARD_ROLES = [
 			'finance.credit_control.view',
 			'finance.credit_control.policy.manage',
 			'finance.credit_control.hold.manage',
-			'finance.credit_control.override'
+			'finance.credit_control.override',
+			'finance.bad_debt.view',
+			'finance.bad_debt.write_off',
+			'finance.bad_debt.write_off.reverse',
+			'finance.bad_debt.recovery',
+			'finance.bad_debt.recovery.reverse'
 		]
 	},
 	{
@@ -242,7 +257,12 @@ const STANDARD_ROLES = [
 			'finance.collections.reminder.dispatch',
 			'finance.credit_control.view',
 			'finance.credit_control.policy.manage',
-			'finance.credit_control.hold.manage'
+			'finance.credit_control.hold.manage',
+			'finance.bad_debt.view',
+			'finance.bad_debt.write_off',
+			'finance.bad_debt.write_off.reverse',
+			'finance.bad_debt.recovery',
+			'finance.bad_debt.recovery.reverse'
 		]
 	},
 	{
