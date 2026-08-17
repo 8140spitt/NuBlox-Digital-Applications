@@ -59,15 +59,17 @@
 					<p>This accepted quotation cannot create a new project unless the credit condition is cleared or an authorised override is recorded.</p>
 					<ul>
 						{#if data.creditControl.hasActiveHold}<li>Active customer credit hold</li>{/if}
-						{#if data.creditControl.limitExhausted}<li>Customer credit limit exhausted</li>{/if}
+						{#if data.creditControl.limitExhausted}<li>This quotation would exceed the customer credit limit</li>{/if}
 					</ul>
 				{:else}
-					<p class="muted">No active credit hold or exhausted limit currently blocks this commitment.</p>
+					<p class="muted">No active credit hold or projected credit-limit breach currently blocks this commitment.</p>
 				{/if}
 				{#if data.creditControl.detailsVisible}
 					<dl class="compact">
 						<div><dt>Currency</dt><dd>{data.creditControl.currencyCode}</dd></div>
-						<div><dt>Outstanding</dt><dd>{data.creditControl.outstandingAmount ?? '—'}</dd></div>
+						<div><dt>Receivable</dt><dd>{data.creditControl.outstandingAmount ?? '—'}</dd></div>
+						<div><dt>Quotation</dt><dd>{data.creditControl.commitmentAmount ?? '—'}</dd></div>
+						<div><dt>Projected</dt><dd>{data.creditControl.projectedExposureAmount ?? '—'}</dd></div>
 						<div><dt>Credit limit</dt><dd>{data.creditControl.creditLimitAmount ?? 'No enabled limit'}</dd></div>
 					</dl>
 				{/if}
