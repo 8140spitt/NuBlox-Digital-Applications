@@ -246,6 +246,21 @@ describe('organisation bootstrap and onboarding', () => {
 			expect(administratorPermissions).toContain(collectionPermission);
 			expect(financePermissions).toContain(collectionPermission);
 		}
+		for (const automationPermission of [
+			'finance.collections.policy.manage',
+			'finance.collections.reminder.generate',
+			'finance.collections.reminder.dispatch'
+		]) {
+			expect(ownerPermissions).toContain(automationPermission);
+			expect(administratorPermissions).toContain(automationPermission);
+		}
+		for (const delegatedAutomationPermission of [
+			'finance.collections.reminder.generate',
+			'finance.collections.reminder.dispatch'
+		]) {
+			expect(financePermissions).toContain(delegatedAutomationPermission);
+		}
+		expect(financePermissions).not.toContain('finance.collections.policy.manage');
 		for (const financeOperationalPermission of [
 			'finance.view',
 			'finance.billing.manage',
@@ -275,6 +290,7 @@ describe('organisation bootstrap and onboarding', () => {
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.invoice.void', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.payment.reverse', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.collections.case.manage', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.collections.policy.manage', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
 		const auditActions = await db
 			.selectFrom('audit_events')
