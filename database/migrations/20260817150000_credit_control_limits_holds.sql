@@ -136,6 +136,8 @@ CREATE TABLE receivable_credit_control_overrides (
     subject_public_id VARCHAR(64) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     currency_code CHAR(3) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     outstanding_amount DECIMAL(19,4) NOT NULL,
+    commitment_amount DECIMAL(19,4) NOT NULL,
+    projected_exposure_amount DECIMAL(19,4) NOT NULL,
     credit_limit_amount DECIMAL(19,4) NULL,
     reason VARCHAR(1000) NOT NULL,
     authorised_by_member_id BIGINT UNSIGNED NOT NULL,
@@ -173,7 +175,12 @@ CREATE TABLE receivable_credit_control_overrides (
     CONSTRAINT ck_receivable_credit_control_overrides_currency
         CHECK (currency_code REGEXP '^[A-Z]{3}$'),
     CONSTRAINT ck_receivable_credit_control_overrides_amounts
-        CHECK (outstanding_amount >= 0 AND (credit_limit_amount IS NULL OR credit_limit_amount > 0)),
+        CHECK (
+            outstanding_amount >= 0
+            AND commitment_amount >= 0
+            AND projected_exposure_amount >= outstanding_amount
+            AND (credit_limit_amount IS NULL OR credit_limit_amount > 0)
+        ),
     CONSTRAINT ck_receivable_credit_control_overrides_evidence
         CHECK (credit_policy_id IS NOT NULL OR credit_hold_id IS NOT NULL)
 ) ENGINE=InnoDB
@@ -191,7 +198,7 @@ VALUES
     (NULL, 'finance.credit_control.view', 'View credit control', 'View customer credit limits, derived utilisation, active credit holds and override evidence.', TRUE),
     (NULL, 'finance.credit_control.policy.manage', 'Manage credit limits', 'Create, revise and disable customer credit-limit policy by currency.', TRUE),
     (NULL, 'finance.credit_control.hold.manage', 'Manage credit holds', 'Place and release explicit customer stop-trading credit holds with reasoned evidence.', TRUE),
-    (NULL, 'finance.credit_control.override', 'Override credit control', 'Override an active credit hold or exhausted customer credit limit at a named commitment boundary with an explicit reason.', TRUE)
+    (NULL, 'finance.credit_control.override', 'Override credit control', 'Override an active credit hold or projected customer credit-limit breach at a named commitment boundary with an explicit reason.', TRUE)
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     description = VALUES(description),
