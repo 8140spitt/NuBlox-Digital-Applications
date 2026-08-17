@@ -249,9 +249,6 @@ export class ReceivablesReportingService {
 		if (!(await policy.viewDecision(actor)).allowed) {
 			throw new TenantAccessError('Accounts-receivable viewing is not permitted.');
 		}
-		if (!(await policy.reportingDecision(actor, 'finance.receivables.view')).allowed) {
-			throw new TenantAccessError('Receivables reporting is not permitted.');
-		}
 	}
 
 	private async tenantTimezone(actor: TenantActorContext): Promise<string> {
