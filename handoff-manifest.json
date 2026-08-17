@@ -1,6 +1,6 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 6,
+  "manifest_version": 7,
   "generated_date": "2026-08-17",
   "product": {
     "career_count": 84,
@@ -79,7 +79,8 @@
         "finance.payment.allocation.reverse",
         "finance.payment.reverse"
       ]
-    }
+    },
+    "receivables_reporting_read_policy": "Package 004F adds no new permission key; customer statements and aging are read-only derivations protected by active membership + finance.view + same-tenant scope"
   },
   "standard_roles": {
     "names": [
@@ -142,9 +143,10 @@
         "contract.manage",
         "finance.manage",
         "finance.invoice.void"
-      ]
+      ],
+      "receivables_reporting": "available through existing finance.view; Package 004F requires no new role grant"
     },
-    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level, including Package 004E payment grants and stronger invoice-void exclusion from Finance/Commercial"
+    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level; Package 004F adds no permission/bootstrap change"
   },
   "implemented_workflow": [
     "CRM Opportunity",
@@ -172,7 +174,9 @@
     "Controlled Payment Allocation",
     "Allocation Reversal",
     "Payment Reversal with Active Allocation Reversal",
-    "Derived Invoice Outstanding Receivable"
+    "Derived Invoice Outstanding Receivable",
+    "Derived Customer Account Statement",
+    "Currency-Separated Aged Receivables"
   ],
   "commercial_conversion": {
     "service": "app/src/lib/server/commercial/quotation-project-conversion-service.ts",
@@ -299,7 +303,6 @@
     ],
     "deliberate_exclusions": [
       "no credit-note void/reversal",
-      "no customer statements/aged receivables",
       "no general-ledger posting",
       "no production outbound credit-note delivery"
     ]
@@ -353,8 +356,52 @@
       "no automated bank-feed/payment-gateway ingestion",
       "no automated remittance matching",
       "no bank reconciliation",
-      "no general-ledger posting",
-      "no customer statements or aged receivables"
+      "no general-ledger posting"
+    ]
+  },
+  "customer_statements_aged_receivables": {
+    "package": "004-contracts-finance",
+    "permission_migration": null,
+    "read_authority": "active membership + finance.view + same-tenant scope",
+    "service": "app/src/lib/server/finance/receivables-reporting-service.ts",
+    "integration_test": "app/src/lib/server/finance/receivables-reporting.integration.test.ts",
+    "routes": [
+      "/finance/receivables",
+      "/finance/receivables/[customerPartyPublicId]"
+    ],
+    "spec": "docs/38-customer-statements-aged-receivables.md",
+    "persistence_policy": "no statement/balance/aging business tables; all positions are derived from existing immutable finance facts",
+    "movement_model": {
+      "invoice_issue": "debit",
+      "credit_note_issue": "credit",
+      "payment_allocation": "credit",
+      "allocation_reversal": "debit",
+      "invoice_void": "credit"
+    },
+    "unallocated_payment_policy": "raw payment receipts do not alter a customer receivable statement until allocated to an invoice",
+    "historical_policy": "as-of reporting uses event timestamps; a later reversal never retroactively rewrites an earlier statement cutoff",
+    "timezone_policy": "statement calendar-day boundaries use organisations.default_timezone",
+    "statement_policy": "per-currency opening balance + period movements + running balance + closing balance; default month-to-date; bounded date range",
+    "aging_formula": "issued invoice gross - issued credit-note gross as of date - active payment allocations as of date",
+    "aging_buckets": [
+      "current",
+      "1_30",
+      "31_60",
+      "61_90",
+      "91_plus"
+    ],
+    "currency_policy": "currencies remain separate; no FX/reporting-currency translation or unlike-currency aggregation",
+    "tenant_policy": "foreign customer account public IDs are masked as not found",
+    "non_effects": [
+      "no persisted or issued statement document",
+      "no statement PDF",
+      "no production outbound statement delivery",
+      "no automatic statement schedule",
+      "no dunning/reminder workflow",
+      "no collections promises/notes",
+      "no bad-debt/write-off processing",
+      "no FX/reporting-currency translation",
+      "no general-ledger posting"
     ]
   },
   "schema": {
@@ -370,7 +417,8 @@
       "check_constraints": 429
     },
     "production_migration_count": 16,
-    "latest_migration": "database/migrations/20260817103000_payment_allocation_permissions.sql"
+    "latest_migration": "database/migrations/20260817103000_payment_allocation_permissions.sql",
+    "package_004f_schema_change": "none"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
@@ -379,26 +427,27 @@
     "pending_migrations": 0,
     "schema_counts": "344 / 749 / 429",
     "generated_kysely_drift": "zero",
-    "integration_files": 19,
-    "real_mysql_tests": 88,
+    "integration_files": 20,
+    "real_mysql_tests": 93,
+    "finance_receivables_reporting_tests": 5,
     "finance_payment_allocation_tests": 6,
     "finance_credit_note_tests": 5,
     "finance_invoice_tests": 5,
     "organisation_bootstrap_tests": 4,
     "svelte_check": "0 errors / 0 warnings",
-    "status": "executable Package 004E head validated; final documentation-synchronised PR head must prove the same gate before merge"
+    "status": "executable Package 004F code head validated; final documentation-synchronised PR head must prove the same gate before merge"
   },
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Customer Statements and Aged Receivables",
+    "name": "Controlled Collections and Dunning",
     "recommended_sequence": [
-      "derived customer account positions from issued invoices, issued credits and active allocations",
-      "statement period and opening/closing position presentation",
-      "aging buckets from invoice due dates and outstanding receivable",
-      "overdue classification",
-      "separate dunning/reminder policy and communication evidence"
+      "derive overdue candidates from Package 004F aging",
+      "define tenant-configurable reminder/dunning policy separately from finance facts",
+      "record collections actions and communication evidence without mutating invoices or balances",
+      "support promises-to-pay / dispute flags only as explicit workflow state",
+      "add escalation/hold policy with separate permissions where authority differs from finance viewing"
     ],
-    "governing_rule": "statements and aging derive from immutable issued documents, issued credits, active allocations and due dates rather than editable stored balances"
+    "governing_rule": "collections workflow may react to overdue receivables but must never become the source of truth for invoice, credit, cash or account balances"
   },
   "key_docs": [
     "README.md",
@@ -414,6 +463,7 @@
     "docs/35-accounts-receivable-invoices.md",
     "docs/36-receivable-corrections.md",
     "docs/37-payment-receipt-allocation.md",
+    "docs/38-customer-statements-aged-receivables.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]
