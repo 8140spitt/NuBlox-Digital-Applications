@@ -57,7 +57,10 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'finance.collections.case.manage',
 	'finance.collections.action.record',
 	'finance.collections.promise.manage',
-	'finance.collections.dispute.manage'
+	'finance.collections.dispute.manage',
+	'finance.collections.policy.manage',
+	'finance.collections.reminder.generate',
+	'finance.collections.reminder.dispatch'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -113,7 +116,10 @@ const STANDARD_ROLES = [
 			'finance.collections.case.manage',
 			'finance.collections.action.record',
 			'finance.collections.promise.manage',
-			'finance.collections.dispute.manage'
+			'finance.collections.dispute.manage',
+			'finance.collections.policy.manage',
+			'finance.collections.reminder.generate',
+			'finance.collections.reminder.dispatch'
 		]
 	},
 	{
@@ -168,7 +174,10 @@ const STANDARD_ROLES = [
 			'finance.collections.case.manage',
 			'finance.collections.action.record',
 			'finance.collections.promise.manage',
-			'finance.collections.dispute.manage'
+			'finance.collections.dispute.manage',
+			'finance.collections.policy.manage',
+			'finance.collections.reminder.generate',
+			'finance.collections.reminder.dispatch'
 		]
 	},
 	{
@@ -216,7 +225,9 @@ const STANDARD_ROLES = [
 			'finance.collections.case.manage',
 			'finance.collections.action.record',
 			'finance.collections.promise.manage',
-			'finance.collections.dispute.manage'
+			'finance.collections.dispute.manage',
+			'finance.collections.reminder.generate',
+			'finance.collections.reminder.dispatch'
 		]
 	},
 	{

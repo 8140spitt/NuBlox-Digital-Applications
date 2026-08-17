@@ -12,7 +12,8 @@ This app is a modular monolith following `docs/05-system-architecture.md`.
 - Authentication identity never implies organisation, CRM, commercial, contract, finance or project authority.
 - Tenant-owned records are resolved through active tenant context rather than public/surrogate ID alone.
 - Reporting derives from authoritative domain facts rather than creating parallel editable balance stores.
-- Collections evidence can react to receivables but cannot mutate the receivable ledger.
+- Collections and automation policy may react to receivables but cannot mutate the receivable ledger.
+- External delivery evidence is separated from message generation; no scheduler or provider capability is implied unless actually implemented.
 
 ## Stack
 
@@ -82,12 +83,15 @@ finance.manage
     ├─ finance.collections.case.manage
     ├─ finance.collections.action.record
     ├─ finance.collections.promise.manage
-    └─ finance.collections.dispute.manage
+    ├─ finance.collections.dispute.manage
+    ├─ finance.collections.policy.manage
+    ├─ finance.collections.reminder.generate
+    └─ finance.collections.reminder.dispatch
 ```
 
 Umbrellas never cross domains.
 
-Package 004F statement/aging reads use `finance.view`. Package 004G collections reads require `finance.view` **and** `finance.collections.view` (with `finance.manage` available only as same-domain fallback for the collections key).
+Package 004F statement/aging reads use `finance.view`. Package 004G/004H collections reads require `finance.view` **and** `finance.collections.view` (with `finance.manage` available only as same-domain fallback for the collections key).
 
 ## Standard organisation roles
 
@@ -95,7 +99,7 @@ New organisations receive Owner, Administrator, Manager, Finance/Commercial, Mem
 
 Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions. Existing-tenant migrations and future `OrganisationBootstrapService` defaults are maintained with equivalent persisted grants.
 
-Finance/Commercial receives ordinary operational AR and collections responsibilities, including all four payment permissions and all five collections permissions, but deliberately does not receive `finance.manage` or the stronger `finance.invoice.void` capability.
+Finance/Commercial receives ordinary operational AR and collections responsibilities, including all four payment permissions, all five 004G collections permissions, and 004H reminder generation/dispatch. It deliberately does not receive `finance.manage`, `finance.invoice.void` or `finance.collections.policy.manage`.
 
 ## Protected application surfaces
 
@@ -128,6 +132,7 @@ Current protected routes include:
 - `/finance/receivables/[customerPartyPublicId]`
 - `/finance/collections`
 - `/finance/collections/[customerPartyPublicId]`
+- `/finance/collections/automation`
 - `/organisation`
 
 The `(app)` server layout rejects unauthenticated requests and redirects authenticated users without a verified tenant to organisation selection.
@@ -145,6 +150,7 @@ src/lib/server/finance/payment-service.ts
 src/lib/server/finance/receivable-position-service.ts
 src/lib/server/finance/receivables-reporting-service.ts
 src/lib/server/finance/collections-service.ts
+src/lib/server/finance/collections-automation-service.ts
 ```
 
 ### Invoice / credit / cash authority
@@ -195,35 +201,9 @@ Collection Case
     └── receivable dispute
 ```
 
-Case creation requires a currently overdue positive receivable. The customer party is locked before checking for an existing `open`/`paused` case, making concurrent starts serialize on one customer record and normal retries idempotent.
+Case creation requires a currently overdue positive receivable. The customer and issued invoice documents are serialised before the final overdue revalidation and case insertion. An existing `open`/`paused` case makes case start idempotent.
 
 A collection case does **not** store outstanding, overdue or settlement balances.
-
-Normal direct actions are:
-
-```text
-reminder
-phone_call
-note
-```
-
-Promise-to-pay policy:
-
-- positive fixed-precision amount;
-- exact currency;
-- due date;
-- optional invoice link restricted to the same tenant and customer;
-- invoice-linked promise currency must match invoice currency;
-- `open → kept | broken | cancelled`;
-- no cash or allocation is created by the promise.
-
-Dispute policy:
-
-- required reason;
-- optional positive amount + currency pair;
-- optional invoice link restricted to the same tenant and customer;
-- `open → resolved | withdrawn`;
-- no invoice, credit or outstanding balance is changed by dispute status.
 
 Case lifecycle:
 
@@ -235,16 +215,60 @@ Closing requires an explicit reason and is blocked while any promise or dispute 
 
 See `docs/39-controlled-collections-dunning.md`.
 
+### Collections automation policy
+
+`CollectionsAutomationService` adds versioned dunning policy and controlled message evidence without introducing a scheduler or a shadow receivable ledger.
+
+```text
+Active Policy Version
+      +
+Open Collection Case
+      +
+Live Aged Receivable
+      ↓
+Due Reminder Candidate
+      ↓
+Explicit Generation
+      ↓
+Immutable Reminder Snapshot
+      ↓
+Explicit Dispatch / Retry
+      ↓
+Immutable Delivery Attempt Evidence
+```
+
+Policy versions use `draft → active → retired`. Draft stages define increasing days-overdue thresholds, an email subject/body template, and optional suppression for open disputes or current promises to pay. Activated policy versions reject ordinary editing.
+
+Supported first-slice template placeholders are:
+
+```text
+{{customer_name}}
+{{account_reference}}
+{{days_overdue}}
+{{invoice_count}}
+{{as_of_date}}
+```
+
+Generation requires reminder-generation authority plus `crm.view` because it resolves same-tenant customer/contact recipient identity. It snapshots recipient, subject, body, policy/stage provenance and receivable as-of date. Generation sends nothing and is idempotent for the same case + stage.
+
+Dispatch is a separate authority and external-side-effect boundary. Before each attempt it revalidates that the case remains open, the receivable remains overdue, the stage remains due and configured dispute/promise suppression does not apply. Failed attempts are immutable evidence and keep the reminder pending; a successful attempt marks the reminder sent and appends ordinary 004G reminder action evidence.
+
+The automation workspace also surfaces open promises whose due date has arrived or passed. It never auto-marks a promise broken.
+
+Package 004H deliberately does **not** claim a cron scheduler, durable background worker, production provider adapter, credit-limit/hold enforcement or legal escalation.
+
+See `docs/40-collections-automation-policy.md`.
+
 ## Generated database types
 
-Package 004G adds persistent `receivable_*` business facts. Kysely generation remains fully derivative of migrated MySQL and is split into two generated outputs:
+Persistent `receivable_*` business facts remain fully derivative of migrated MySQL. Kysely generation is split into two generated outputs:
 
 ```text
 src/lib/server/db/generated/database.d.ts
     core schema, excluding receivable_*
 
 src/lib/server/db/generated/collections.d.ts
-    receivable_* collections schema
+    receivable_* collections/policy/reminder schema
 ```
 
 `DatabaseSchema` composes the two generated `DB` interfaces and both `Database` and `DatabaseExecutor` use that same composed schema. This keeps normal handles and Kysely transactions type-equivalent.
@@ -255,7 +279,9 @@ Normal project access requires effective organisation permission plus active `pr
 
 ## Transactional delivery boundary
 
-`src/lib/server/email/email-delivery.ts` remains provider-neutral. Development/integration uses `EMAIL_DELIVERY_MODE=console`. Recorded collection reminder evidence does not claim actual outbound delivery unless a later provider workflow performs and proves that delivery.
+`src/lib/server/email/email-delivery.ts` remains provider-neutral. Development/integration uses `EMAIL_DELIVERY_MODE=console`.
+
+Package 004H adds an optional stable business-message `idempotencyKey`; reminder dispatch uses the immutable reminder public ID. A future production adapter should pass that key to a provider supporting idempotent send semantics. This narrows duplicate-send risk without claiming mathematically exact-once delivery across MySQL and an external email service.
 
 ## Run
 
@@ -286,13 +312,14 @@ pnpm test:integration
 pnpm check
 ```
 
-The Package 004G release gate is:
+The Package 004H executable code gate has proved:
 
 ```text
-17 production migrations applied / 0 pending
-348 tables / 767 foreign keys / 439 CHECK constraints
+18 production migrations applied / 0 pending
+352 tables / 778 foreign keys / 450 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts
-21 integration files / 100 real-MySQL tests passed
+22 integration files / 108 real-MySQL tests passed
+finance/collections-automation.integration.test.ts: 8/8 passed
 finance/collections.integration.test.ts: 7/7 passed
 finance/receivables-reporting.integration.test.ts: 5/5 passed
 finance/payment-allocation.integration.test.ts: 6/6 passed
@@ -302,4 +329,4 @@ svelte-check: 0 errors / 0 warnings
 
 The final documentation-synchronised PR head must pass this complete gate before merge.
 
-Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, production document rendering/delivery, contract version 2+, automatic project activation, credit-note void/reversal, FX allocation/reporting translation, refunds, bank-feed/payment-gateway ingestion, automated remittance matching, persisted/issued customer statements, automatic statement delivery, automatic reminder delivery/scheduling, dunning-stage escalation, credit limits/holds, late fees/interest, legal/agency escalation, bad-debt/write-off processing, general-ledger posting or bank reconciliation.
+Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, production document rendering/delivery, contract version 2+, automatic project activation, credit-note void/reversal, FX allocation/reporting translation, refunds, bank-feed/payment-gateway ingestion, automated remittance matching, persisted/issued customer statements, automatic statement delivery, background collections scheduling, production reminder provider delivery, SMS/postal/portal reminders, credit limits/holds and their cross-workflow enforcement, late fees/interest, legal/agency escalation, bad-debt/write-off processing, general-ledger posting or bank reconciliation.

@@ -46,6 +46,71 @@ export interface ReceivableCollectionCases {
   updated_at: Generated<Date>;
 }
 
+export interface ReceivableCollectionPolicies {
+  activated_at: Date | null;
+  activated_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  name: string;
+  organisation_id: string;
+  public_id: string;
+  retired_at: Date | null;
+  status: Generated<string>;
+  version_number: number;
+}
+
+export interface ReceivableCollectionPolicyStages {
+  body_template: string;
+  collection_policy_id: string;
+  created_at: Generated<Date>;
+  delivery_channel: Generated<string>;
+  id: Generated<string>;
+  name: string;
+  organisation_id: string;
+  public_id: string;
+  sequence_number: number;
+  subject_template: string;
+  suppress_on_current_promise: Generated<number>;
+  suppress_on_open_dispute: Generated<number>;
+  trigger_days_overdue: number;
+  updated_at: Generated<Date>;
+}
+
+export interface ReceivableCollectionReminderDeliveries {
+  attempt_number: number;
+  attempted_at: Generated<Date>;
+  attempted_by_member_id: string;
+  created_at: Generated<Date>;
+  error_message: string | null;
+  id: Generated<string>;
+  organisation_id: string;
+  outcome: string;
+  public_id: string;
+  reminder_id: string;
+}
+
+export interface ReceivableCollectionReminders {
+  as_of_date: Date;
+  collection_case_id: string;
+  collection_policy_id: string;
+  created_at: Generated<Date>;
+  customer_party_id: string;
+  generated_at: Generated<Date>;
+  generated_by_member_id: string;
+  id: Generated<string>;
+  message_body: string;
+  organisation_id: string;
+  policy_stage_id: string;
+  public_id: string;
+  recipient_email: string;
+  recipient_party_id: string | null;
+  sent_at: Date | null;
+  status: Generated<string>;
+  subject: string;
+  updated_at: Generated<Date>;
+}
+
 export interface ReceivableDisputes {
   collection_case_id: string;
   created_at: Generated<Date>;
@@ -87,6 +152,10 @@ export interface ReceivablePromisesToPay {
 export interface DB {
   receivable_collection_actions: ReceivableCollectionActions;
   receivable_collection_cases: ReceivableCollectionCases;
+  receivable_collection_policies: ReceivableCollectionPolicies;
+  receivable_collection_policy_stages: ReceivableCollectionPolicyStages;
+  receivable_collection_reminder_deliveries: ReceivableCollectionReminderDeliveries;
+  receivable_collection_reminders: ReceivableCollectionReminders;
   receivable_disputes: ReceivableDisputes;
   receivable_promises_to_pay: ReceivablePromisesToPay;
 }

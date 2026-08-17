@@ -111,9 +111,7 @@ Package 004F derives historical customer positions from existing invoice issue, 
 
 ## `20260817124500_controlled_collections.sql` — Package 004G
 
-Package 004G is a genuine forward-schema increment because the frozen Package 004 baseline contains no collections-case, promise-to-pay, receivable-dispute or dunning-evidence structures.
-
-The migration adds:
+Package 004G introduces controlled collection-case evidence:
 
 ```text
 receivable_collection_cases
@@ -151,29 +149,84 @@ Mutation permissions use `finance.manage` as same-domain umbrella fallback. Coll
 
 Existing Owner, Administrator and Finance/Commercial roles receive all five collections keys. `OrganisationBootstrapService` persists equivalent grants for future organisations.
 
-The first collections boundary deliberately does **not** create automatic reminder schedules/delivery, legal escalation, credit-limit/hold policy, late-fee/interest calculation, bad-debt/write-off or general-ledger posting.
+## `20260817144000_collections_automation_policy.sql` — Package 004H
+
+Package 004H adds versioned dunning-policy and communication-attempt facts without creating a scheduler or a second balance ledger:
+
+```text
+receivable_collection_policies
+receivable_collection_policy_stages
+receivable_collection_reminders
+receivable_collection_reminder_deliveries
+```
+
+The initial policy model is:
+
+```text
+Draft Policy Version
+       ↓
+Ordered Days-Overdue Stages
+       ↓
+Explicit Activation
+       ↓
+Derived Due Reminder Candidate
+       ↓
+Explicit Reminder Generation
+       ↓
+Immutable Reminder Snapshot
+       ↓
+Explicit Dispatch / Retry
+       ↓
+Immutable Delivery Attempt Evidence
+```
+
+Policy versions use `draft → active → retired`. Activated versions are immutable through ordinary APIs. Stages carry an ordered positive days-overdue trigger, email subject/body templates, and optional suppression for an open dispute or a current promise to pay.
+
+The migration adds:
+
+```text
+finance.collections.policy.manage
+finance.collections.reminder.generate
+finance.collections.reminder.dispatch
+```
+
+All three use `finance.manage` as same-domain umbrella fallback.
+
+Default delegation is deliberately split:
+
+- Owner / Administrator: policy management + generation + dispatch;
+- Finance/Commercial: generation + dispatch only;
+- Finance/Commercial does not receive `finance.collections.policy.manage` or `finance.manage`.
+
+Existing-role migration grants and future `OrganisationBootstrapService` grants are integration-tested for persisted parity.
+
+Reminder generation stores recipient/template/policy evidence but sends nothing. Dispatch is separately authorised, revalidates the live overdue/suppression state before the external side effect, records immutable success/failure attempts, and leaves failed reminders pending for retry.
+
+Package 004H does **not** claim a background scheduler, queue worker or production email provider. Due actions are derived when the automation workspace is evaluated, and generation/dispatch remain explicit operations.
 
 ## Current structure
 
-After all **17** production migrations the validated target application structure is:
+After all **18** production migrations the validated target application structure is:
 
-- **348 base tables**
-- **767 foreign keys**
-- **439 `CHECK` constraints**
+- **352 base tables**
+- **778 foreign keys**
+- **450 `CHECK` constraints**
 
-The Package 004G executable MySQL gate is authoritative for these counts.
+The Package 004H clean MySQL gate is authoritative for these counts.
 
 ## Current migration validation
 
-The executable Package 004G branch has already proved the migration, structural and generated-type stages on MySQL 8.4.11:
+The executable Package 004H code head has proved on MySQL 8.4.11:
 
 ```text
-17 production migrations applied / 0 pending
-348 base tables / 767 foreign keys / 439 CHECK constraints
+18 production migrations applied / 0 pending
+352 base tables / 778 foreign keys / 450 CHECK constraints
 zero drift across core + collections generated Kysely outputs
+22 integration files / 108 real-MySQL tests reached the green integration gate
+collections automation suite: 8/8 passed
 ```
 
-The permanent 004G integration suite and the final documentation-synchronised PR head must pass the complete real-MySQL and Svelte gate before merge.
+The final documentation-synchronised PR head must pass the same migration/schema/codegen/integration gate plus `svelte-check: 0 errors / 0 warnings` before merge.
 
 ## Migration rules
 
