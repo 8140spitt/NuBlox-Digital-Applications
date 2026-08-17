@@ -22,9 +22,7 @@ let customerPartyPublicId = '';
 let foreignCustomerPublicId = '';
 let salesItemTypeId = 0;
 let paymentMethodId = 0;
-let invoiceOneId = '';
 let invoiceOnePublicId = '';
-let invoiceTwoId = '';
 let actorOwnerA: TenantActorContext;
 let actorFinanceA: TenantActorContext;
 let actorOwnerB: TenantActorContext;
@@ -277,7 +275,7 @@ beforeAll(async () => {
 	financeAMemberId = await createMember(organisationAId, financeAUserId);
 	ownerBMemberId = await createMember(organisationBId, ownerBUserId);
 	await assignRole(organisationAId, ownerAMemberId, 'Owner A', ['finance.view', 'finance.manage']);
-	await assignRole(organisationAId, financeAMemberId, 'Finance A', ['finance.view', 'finance.receivables.view']);
+	await assignRole(organisationAId, financeAMemberId, 'Finance A', ['finance.view']);
 	await assignRole(organisationBId, ownerBMemberId, 'Owner B', ['finance.view', 'finance.manage']);
 	actorOwnerA = { organisationId: organisationAId, userId: ownerAUserId, memberId: ownerAMemberId, correlationId: randomUUID() };
 	actorFinanceA = { organisationId: organisationAId, userId: financeAUserId, memberId: financeAMemberId, correlationId: randomUUID() };
@@ -289,12 +287,10 @@ beforeAll(async () => {
 	salesItemTypeId = (await db.selectFrom('sales_item_types').select('id').where('is_active', '=', 1).orderBy('id', 'asc').executeTakeFirstOrThrow()).id;
 	paymentMethodId = (await db.selectFrom('payment_methods').select('id').where('is_active', '=', 1).orderBy('id', 'asc').executeTakeFirstOrThrow()).id;
 	const invoiceOne = await createInvoice({ number: 'INV-AR-001', currency: 'GBP', amount: '100.0000', issuedAt: '2026-05-01T09:00:00.000Z', dueOn: '2026-05-15' });
-	invoiceOneId = invoiceOne.id;
 	invoiceOnePublicId = invoiceOne.publicId;
 	await createCredit(invoiceOne.id, invoiceOne.itemId, '20.0000', '2026-06-01T10:00:00.000Z');
 	await createAllocation({ invoiceId: invoiceOne.id, amount: '30.0000', allocatedAt: '2026-06-15T10:00:00.000Z', reference: 'PAY-AR-001', reversedAt: '2026-08-10T08:00:00.000Z' });
 	const invoiceTwo = await createInvoice({ number: 'INV-AR-002', currency: 'GBP', amount: '200.0000', issuedAt: '2026-08-10T09:00:00.000Z', dueOn: '2026-08-31' });
-	invoiceTwoId = invoiceTwo.id;
 	await createAllocation({ invoiceId: invoiceTwo.id, amount: '50.0000', allocatedAt: '2026-08-12T11:00:00.000Z', reference: 'PAY-AR-002' });
 	await createInvoice({ number: 'INV-AR-EUR', currency: 'EUR', amount: '100.0000', issuedAt: '2026-07-01T09:00:00.000Z', dueOn: '2026-07-15' });
 	await createInvoice({ number: 'INV-AR-VOID', currency: 'GBP', amount: '60.0000', issuedAt: '2026-05-05T09:00:00.000Z', dueOn: '2026-05-20', voidedAt: '2026-06-20T10:00:00.000Z', voidReason: 'Duplicate invoice' });
@@ -346,8 +342,8 @@ describe('Package 004F customer statements and aged receivables', () => {
 		expect(workspace.aging.find((position) => position.currencyCode === 'GBP')?.totalOutstanding).toBe('230.0000');
 	});
 
-	it('lets an explicit receivables deny override finance.manage umbrella fallback', async () => {
-		const permission = await db.selectFrom('permissions').select('id').where('permission_key', '=', 'finance.receivables.view').executeTakeFirstOrThrow();
+	it('lets an explicit finance.view deny remove reporting access even when finance.manage is granted', async () => {
+		const permission = await db.selectFrom('permissions').select('id').where('permission_key', '=', 'finance.view').executeTakeFirstOrThrow();
 		await db.insertInto('member_permission_overrides').values({
 			organisation_id: organisationAId,
 			organisation_member_id: ownerAMemberId,
