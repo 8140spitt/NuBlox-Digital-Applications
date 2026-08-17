@@ -5,6 +5,7 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
 import { InvoiceService } from '$lib/server/finance/invoice-service';
+import { ReceivablePositionService } from '$lib/server/finance/receivable-position-service';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -38,7 +39,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new InvoiceService(getDatabase()).getWorkspace(actor, params.invoicePublicId);
+		const db = getDatabase();
+		const [workspace, receivablePosition] = await Promise.all([
+			new InvoiceService(db).getWorkspace(actor, params.invoicePublicId),
+			new ReceivablePositionService(db).getInvoicePosition(actor, params.invoicePublicId)
+		]);
+		return { ...workspace, receivablePosition };
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Invoice not found.');
 		if (cause instanceof TenantAccessError) throw httpError(403, 'Accounts-receivable access is not permitted.');
