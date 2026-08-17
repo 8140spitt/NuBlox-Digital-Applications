@@ -48,7 +48,11 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'finance.invoice.void',
 	'finance.credit_note.create',
 	'finance.credit_note.draft.manage',
-	'finance.credit_note.issue'
+	'finance.credit_note.issue',
+	'finance.payment.create',
+	'finance.payment.allocate',
+	'finance.payment.allocation.reverse',
+	'finance.payment.reverse'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -95,7 +99,11 @@ const STANDARD_ROLES = [
 			'finance.invoice.void',
 			'finance.credit_note.create',
 			'finance.credit_note.draft.manage',
-			'finance.credit_note.issue'
+			'finance.credit_note.issue',
+			'finance.payment.create',
+			'finance.payment.allocate',
+			'finance.payment.allocation.reverse',
+			'finance.payment.reverse'
 		]
 	},
 	{
@@ -141,7 +149,11 @@ const STANDARD_ROLES = [
 			'finance.invoice.void',
 			'finance.credit_note.create',
 			'finance.credit_note.draft.manage',
-			'finance.credit_note.issue'
+			'finance.credit_note.issue',
+			'finance.payment.create',
+			'finance.payment.allocate',
+			'finance.payment.allocation.reverse',
+			'finance.payment.reverse'
 		]
 	},
 	{
@@ -180,7 +192,11 @@ const STANDARD_ROLES = [
 			'finance.invoice.issue',
 			'finance.credit_note.create',
 			'finance.credit_note.draft.manage',
-			'finance.credit_note.issue'
+			'finance.credit_note.issue',
+			'finance.payment.create',
+			'finance.payment.allocate',
+			'finance.payment.allocation.reverse',
+			'finance.payment.reverse'
 		]
 	},
 	{

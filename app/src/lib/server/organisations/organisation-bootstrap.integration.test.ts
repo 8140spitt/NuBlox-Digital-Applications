@@ -159,7 +159,7 @@ describe('organisation bootstrap and onboarding', () => {
 		expect(pendingOrganisation.organisationStatus).toBe('pending');
 	});
 
-	it('activates the identity and persists standard-role correction grants with deliberate delegation boundaries', async () => {
+	it('activates the identity and persists standard-role finance grants with deliberate delegation boundaries', async () => {
 		await db.updateTable('auth_users').set({ email_verified: 1, updated_at: new Date() }).where('id', '=', authUserId).executeTakeFirstOrThrow();
 		const activated = await new OrganisationBootstrapService(db).activateVerifiedAuthUser({
 			authUserId,
@@ -225,6 +225,15 @@ describe('organisation bootstrap and onboarding', () => {
 			expect(ownerPermissions).toContain(correctionPermission);
 			expect(administratorPermissions).toContain(correctionPermission);
 		}
+		for (const paymentPermission of [
+			'finance.payment.create',
+			'finance.payment.allocate',
+			'finance.payment.allocation.reverse',
+			'finance.payment.reverse'
+		]) {
+			expect(ownerPermissions).toContain(paymentPermission);
+			expect(administratorPermissions).toContain(paymentPermission);
+		}
 		for (const financeOperationalPermission of [
 			'finance.view',
 			'finance.billing.manage',
@@ -233,7 +242,11 @@ describe('organisation bootstrap and onboarding', () => {
 			'finance.invoice.issue',
 			'finance.credit_note.create',
 			'finance.credit_note.draft.manage',
-			'finance.credit_note.issue'
+			'finance.credit_note.issue',
+			'finance.payment.create',
+			'finance.payment.allocate',
+			'finance.payment.allocation.reverse',
+			'finance.payment.reverse'
 		]) {
 			expect(financePermissions).toContain(financeOperationalPermission);
 		}
@@ -248,6 +261,7 @@ describe('organisation bootstrap and onboarding', () => {
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'contract.amendment.issue', 'contract.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.credit_note.issue', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.invoice.void', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.payment.reverse', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
 		const auditActions = await db
 			.selectFrom('audit_events')

@@ -1,6 +1,6 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 5,
+  "manifest_version": 6,
   "generated_date": "2026-08-17",
   "product": {
     "career_count": 84,
@@ -73,7 +73,11 @@
         "finance.invoice.void",
         "finance.credit_note.create",
         "finance.credit_note.draft.manage",
-        "finance.credit_note.issue"
+        "finance.credit_note.issue",
+        "finance.payment.create",
+        "finance.payment.allocate",
+        "finance.payment.allocation.reverse",
+        "finance.payment.reverse"
       ]
     }
   },
@@ -96,7 +100,7 @@
         "contract.manage",
         "finance.manage"
       ],
-      "package_004_policy": "explicit contract formation/execution/amendment and finance invoice/credit-note/void granular grants plus finance.manage"
+      "package_004_policy": "explicit contract formation/execution/amendment plus finance invoice/credit-note/void/payment granular grants and finance.manage"
     },
     "Administrator": {
       "broad_umbrellas": [
@@ -106,7 +110,7 @@
         "contract.manage",
         "finance.manage"
       ],
-      "package_004_policy": "explicit contract formation/execution/amendment and finance invoice/credit-note/void granular grants plus finance.manage"
+      "package_004_policy": "explicit contract formation/execution/amendment plus finance invoice/credit-note/void/payment granular grants and finance.manage"
     },
     "Finance/Commercial": {
       "grants": [
@@ -125,7 +129,11 @@
         "finance.invoice.issue",
         "finance.credit_note.create",
         "finance.credit_note.draft.manage",
-        "finance.credit_note.issue"
+        "finance.credit_note.issue",
+        "finance.payment.create",
+        "finance.payment.allocate",
+        "finance.payment.allocation.reverse",
+        "finance.payment.reverse"
       ],
       "deliberate_exclusions": [
         "commercial.manage",
@@ -136,7 +144,7 @@
         "finance.invoice.void"
       ]
     },
-    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level, including stronger invoice-void exclusion from Finance/Commercial"
+    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level, including Package 004E payment grants and stronger invoice-void exclusion from Finance/Commercial"
   },
   "implemented_workflow": [
     "CRM Opportunity",
@@ -159,7 +167,12 @@
     "Controlled Invoice Issue and Immutable Evidence",
     "Source-Linked Draft Credit Note",
     "Controlled Credit-Note Issue and Immutable Evidence",
-    "Exceptional Issued-Invoice Void"
+    "Exceptional Issued-Invoice Void",
+    "Immutable Payment Receipt",
+    "Controlled Payment Allocation",
+    "Allocation Reversal",
+    "Payment Reversal with Active Allocation Reversal",
+    "Derived Invoice Outstanding Receivable"
   ],
   "commercial_conversion": {
     "service": "app/src/lib/server/commercial/quotation-project-conversion-service.ts",
@@ -267,19 +280,6 @@
       "/finance/credit-notes/[creditNotePublicId]"
     ],
     "spec": "docs/36-receivable-corrections.md",
-    "tables_activated": [
-      "financial_documents",
-      "credit_notes",
-      "financial_document_items",
-      "financial_document_item_taxes",
-      "credit_note_item_sources",
-      "financial_document_party_snapshots",
-      "financial_document_party_snapshot_addresses",
-      "financial_document_issue_events",
-      "financial_document_issue_recipients",
-      "payment_allocations",
-      "payment_allocation_reversals"
-    ],
     "source_policy": "credit-note source must be a same-tenant issued numbered invoice with positive remaining creditable value",
     "provenance_policy": "each credit-note item maps to exactly one original invoice item through credit_note_item_sources",
     "magnitude_policy": "credit quantities and amounts are positive; document_kind=credit_note supplies the receivable sign",
@@ -299,13 +299,62 @@
     ],
     "deliberate_exclusions": [
       "no credit-note void/reversal",
-      "no payment receipt application service/UI",
-      "no payment allocation application service/UI",
-      "no payment/allocation reversal application service/UI",
-      "no final outstanding-balance service",
       "no customer statements/aged receivables",
       "no general-ledger posting",
       "no production outbound credit-note delivery"
+    ]
+  },
+  "payment_receipt_allocation": {
+    "package": "004-contracts-finance",
+    "permission_migration": "database/migrations/20260817103000_payment_allocation_permissions.sql",
+    "permissions": [
+      "finance.payment.create",
+      "finance.payment.allocate",
+      "finance.payment.allocation.reverse",
+      "finance.payment.reverse"
+    ],
+    "umbrella": "finance.manage",
+    "services": [
+      "app/src/lib/server/finance/payment-service.ts",
+      "app/src/lib/server/finance/receivable-position-service.ts"
+    ],
+    "integration_test": "app/src/lib/server/finance/payment-allocation.integration.test.ts",
+    "routes": [
+      "/finance/payments",
+      "/finance/payments/[paymentPublicId]",
+      "/finance/invoices/[invoicePublicId]"
+    ],
+    "spec": "docs/37-payment-receipt-allocation.md",
+    "tables_activated": [
+      "payment_methods",
+      "payments",
+      "payment_allocations",
+      "payment_allocation_reversals",
+      "payment_reversals"
+    ],
+    "receipt_policy": "finance.payment.create OR finance.manage; immutable positive receipt fact with method/date/currency/reference and optional same-tenant CRM payer; recording cash does not imply allocation",
+    "payer_policy": "selecting a payer requires crm.view; payer may differ from invoice customer and is surfaced for review rather than hard-blocked",
+    "payment_balance_formula": "payment amount - active allocations",
+    "invoice_outstanding_formula": "issued invoice gross - issued credit-note gross - active payment allocations",
+    "allocation_policy": "finance.payment.allocate OR finance.manage; same tenant; non-reversed payment; issued invoice; exact currency match; positive amount; no payment or invoice over-allocation",
+    "locking_policy": "allocation locks payment then target invoice and recomputes both authoritative balances before insert",
+    "allocation_reversal_policy": "immutable payment_allocation_reversals row with actor/timestamp/reason; original allocation remains visible",
+    "payment_reversal_policy": "payment reversal transaction first reverses every still-active allocation, then inserts immutable payment_reversals evidence; reversed payment cannot be reallocated",
+    "settlement_policy": "invoice legal lifecycle is separate from derived open/part_settled/settled receivable position",
+    "audit_actions": [
+      "finance.payment.recorded",
+      "finance.payment.allocated",
+      "finance.payment.allocation.reversed",
+      "finance.payment.reversed"
+    ],
+    "non_effects": [
+      "no FX conversion or cross-currency allocation",
+      "no refunds or outbound customer payments",
+      "no automated bank-feed/payment-gateway ingestion",
+      "no automated remittance matching",
+      "no bank reconciliation",
+      "no general-ledger posting",
+      "no customer statements or aged receivables"
     ]
   },
   "schema": {
@@ -320,35 +369,36 @@
       "foreign_keys": 749,
       "check_constraints": 429
     },
-    "production_migration_count": 15,
-    "latest_migration": "database/migrations/20260817090000_receivable_correction_permissions.sql"
+    "production_migration_count": 16,
+    "latest_migration": "database/migrations/20260817103000_payment_allocation_permissions.sql"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
     "target_mysql": "8.4.11",
-    "production_migrations": 15,
+    "production_migrations": 16,
     "pending_migrations": 0,
     "schema_counts": "344 / 749 / 429",
     "generated_kysely_drift": "zero",
-    "integration_files": 18,
-    "real_mysql_tests": 82,
+    "integration_files": 19,
+    "real_mysql_tests": 88,
+    "finance_payment_allocation_tests": 6,
     "finance_credit_note_tests": 5,
     "finance_invoice_tests": 5,
     "organisation_bootstrap_tests": 4,
     "svelte_check": "0 errors / 0 warnings",
-    "status": "executable Package 004D head validated; final documentation-synchronised PR head must prove the same gate before merge"
+    "status": "executable Package 004E head validated; final documentation-synchronised PR head must prove the same gate before merge"
   },
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Payment Receipt and Allocation",
+    "name": "Customer Statements and Aged Receivables",
     "recommended_sequence": [
-      "payment receipt",
-      "controlled payment allocation",
-      "payment/allocation reversal application boundary",
-      "derived outstanding receivable",
-      "customer statements and aged receivables"
+      "derived customer account positions from issued invoices, issued credits and active allocations",
+      "statement period and opening/closing position presentation",
+      "aging buckets from invoice due dates and outstanding receivable",
+      "overdue classification",
+      "separate dunning/reminder policy and communication evidence"
     ],
-    "governing_rule": "issued financial documents remain immutable; cash application and reversals create explicit receipt/allocation/reversal facts rather than editing document history"
+    "governing_rule": "statements and aging derive from immutable issued documents, issued credits, active allocations and due dates rather than editable stored balances"
   },
   "key_docs": [
     "README.md",
@@ -363,6 +413,7 @@
     "docs/34-contract-amendments.md",
     "docs/35-accounts-receivable-invoices.md",
     "docs/36-receivable-corrections.md",
+    "docs/37-payment-receipt-allocation.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]
