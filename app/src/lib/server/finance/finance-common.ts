@@ -21,7 +21,11 @@ export type FinanceMutationPermission =
 	| 'finance.invoice.void'
 	| 'finance.credit_note.create'
 	| 'finance.credit_note.draft.manage'
-	| 'finance.credit_note.issue';
+	| 'finance.credit_note.issue'
+	| 'finance.payment.create'
+	| 'finance.payment.allocate'
+	| 'finance.payment.allocation.reverse'
+	| 'finance.payment.reverse';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
@@ -84,6 +88,17 @@ export function validateUnitRate(value: string): string {
 		throw new FinanceValidationError(cause instanceof Error ? cause.message : 'Unit rate is invalid.');
 	}
 	if (parsed < 0n) throw new FinanceValidationError('Unit rate must not be negative.');
+	return formatScaledDecimal(parsed, 4);
+}
+
+export function validateMoneyAmount(value: string, label = 'Amount'): string {
+	let parsed: bigint;
+	try {
+		parsed = parseScaledDecimal(value, 4, label);
+	} catch (cause) {
+		throw new FinanceValidationError(cause instanceof Error ? cause.message : `${label} is invalid.`);
+	}
+	if (parsed <= 0n) throw new FinanceValidationError(`${label} must be greater than zero.`);
 	return formatScaledDecimal(parsed, 4);
 }
 
