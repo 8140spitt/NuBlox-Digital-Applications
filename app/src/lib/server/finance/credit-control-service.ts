@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 
 import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
-import { parseScaledDecimal, subtractMoney } from '$lib/server/commercial/commercial-decimal';
+import { formatScaledDecimal, parseScaledDecimal, subtractMoney, sumMoney } from '$lib/server/commercial/commercial-decimal';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
@@ -31,8 +31,8 @@ export type CreditHoldSummary = {
 };
 export type CreditOverrideSummary = {
 	publicId: string; customerPartyPublicId: string; customerDisplayName: string; workflowType: CreditControlWorkflow;
-	subjectPublicId: string; currencyCode: string; outstandingAmount: string; creditLimitAmount: string | null;
-	reason: string; authorisedAt: Date;
+	subjectPublicId: string; currencyCode: string; outstandingAmount: string; commitmentAmount: string;
+	projectedExposureAmount: string; creditLimitAmount: string | null; reason: string; authorisedAt: Date;
 };
 export type CreditControlWorkspace = {
 	customers: CreditControlCustomer[]; policies: CreditPolicySummary[]; holds: CreditHoldSummary[]; overrides: CreditOverrideSummary[];
@@ -40,7 +40,8 @@ export type CreditControlWorkspace = {
 };
 export type CreditCommitmentPreview = {
 	blocked: boolean; hasActiveHold: boolean; limitExhausted: boolean; canOverride: boolean; detailsVisible: boolean;
-	outstandingAmount: string | null; creditLimitAmount: string | null; currencyCode: string;
+	outstandingAmount: string | null; commitmentAmount: string | null; projectedExposureAmount: string | null;
+	creditLimitAmount: string | null; currencyCode: string;
 };
 
 type CreditPolicyState = {
@@ -62,6 +63,16 @@ function cleanCustomerPublicId(value: string): string {
 	const result = value.trim();
 	if (!result || result.length > 64) throw new RecordNotFoundError('Customer not found.');
 	return result;
+}
+function normaliseCommitmentAmount(value: string | null | undefined): string {
+	let amount: bigint;
+	try {
+		amount = parseScaledDecimal(value?.trim() || '0', 4, 'Commitment amount', true);
+	} catch (cause) {
+		throw new FinanceValidationError(cause instanceof Error ? cause.message : 'Commitment amount is invalid.');
+	}
+	if (amount < 0n) throw new FinanceValidationError('Commitment amount must not be negative.');
+	return formatScaledDecimal(amount, 4);
 }
 
 export class CreditControlService {
@@ -104,14 +115,16 @@ export class CreditControlService {
 		if (lock) query = query.forUpdate();
 		return (await query.executeTakeFirst()) ?? null;
 	}
-	private async rawState(db: DatabaseExecutor, organisationId: string, customerPartyId: string, currencyCode: string, lock = false) {
+	private async rawState(db: DatabaseExecutor, organisationId: string, customerPartyId: string, currencyCode: string, commitmentAmountInput: string | null | undefined = '0.0000', lock = false) {
 		if (lock) {
 			await this.customerById(db, organisationId, customerPartyId, true);
 			await db.selectFrom('financial_documents').select('id').where('organisation_id', '=', organisationId).where('document_kind', '=', 'invoice').where('customer_party_id', '=', customerPartyId).where('currency_code', '=', currencyCode).forUpdate().execute();
 		}
+		const commitmentAmount = normaliseCommitmentAmount(commitmentAmountInput);
 		const [policy, hold, outstandingAmount] = await Promise.all([this.policyState(db, organisationId, customerPartyId, currencyCode, lock), this.activeHold(db, organisationId, customerPartyId, lock), customerOutstandingByCurrency(db, organisationId, customerPartyId, currencyCode)]);
-		const limitExhausted = Boolean(policy?.isEnabled && policy.creditLimitAmount !== null && parseScaledDecimal(outstandingAmount, 4, 'Outstanding amount', true) >= parseScaledDecimal(policy.creditLimitAmount, 4, 'Credit limit', true));
-		return { policy, hold, outstandingAmount, limitExhausted };
+		const projectedExposureAmount = sumMoney([outstandingAmount, commitmentAmount]);
+		const limitExhausted = Boolean(policy?.isEnabled && policy.creditLimitAmount !== null && parseScaledDecimal(projectedExposureAmount, 4, 'Projected exposure', true) > parseScaledDecimal(policy.creditLimitAmount, 4, 'Credit limit', true));
+		return { policy, hold, outstandingAmount, commitmentAmount, projectedExposureAmount, limitExhausted };
 	}
 
 	async getWorkspace(actor: TenantActorContext): Promise<CreditControlWorkspace> {
@@ -122,7 +135,7 @@ export class CreditControlService {
 			this.customers(this.db, actor.organisationId),
 			this.db.selectFrom('receivable_credit_policies').select(['id', 'public_id as publicId', 'customer_party_id as customerPartyId', 'currency_code as currencyCode']).where('organisation_id', '=', actor.organisationId).orderBy('id', 'asc').execute(),
 			this.db.selectFrom('receivable_credit_holds').select(['id', 'public_id as publicId', 'customer_party_id as customerPartyId', 'status', 'placed_reason as placedReason', 'placed_at as placedAt', 'released_reason as releasedReason', 'released_at as releasedAt']).where('organisation_id', '=', actor.organisationId).orderBy('placed_at', 'desc').limit(100).execute(),
-			this.db.selectFrom('receivable_credit_control_overrides').select(['public_id as publicId', 'customer_party_id as customerPartyId', 'workflow_type as workflowType', 'subject_public_id as subjectPublicId', 'currency_code as currencyCode', 'outstanding_amount as outstandingAmount', 'credit_limit_amount as creditLimitAmount', 'reason', 'authorised_at as authorisedAt']).where('organisation_id', '=', actor.organisationId).orderBy('authorised_at', 'desc').limit(50).execute(),
+			this.db.selectFrom('receivable_credit_control_overrides').select(['public_id as publicId', 'customer_party_id as customerPartyId', 'workflow_type as workflowType', 'subject_public_id as subjectPublicId', 'currency_code as currencyCode', 'outstanding_amount as outstandingAmount', 'commitment_amount as commitmentAmount', 'projected_exposure_amount as projectedExposureAmount', 'credit_limit_amount as creditLimitAmount', 'reason', 'authorised_at as authorisedAt']).where('organisation_id', '=', actor.organisationId).orderBy('authorised_at', 'desc').limit(50).execute(),
 			access.mutationDecision(actor, 'finance.credit_control.policy.manage'), access.mutationDecision(actor, 'finance.credit_control.hold.manage'), access.mutationDecision(actor, 'finance.credit_control.override')
 		]);
 		const byId = new Map(customers.map((customer) => [customer.id, customer])); const policies: CreditPolicySummary[] = [];
@@ -136,7 +149,7 @@ export class CreditControlService {
 		return {
 			customers, policies,
 			holds: holdRows.map((row) => { const customer = byId.get(row.customerPartyId); return { id: row.id, publicId: row.publicId, customerPartyId: row.customerPartyId, customerPartyPublicId: customer?.publicId ?? '', customerDisplayName: customer?.displayName ?? 'Unavailable customer', status: row.status, placedReason: row.placedReason, placedAt: row.placedAt, releasedReason: row.releasedReason, releasedAt: row.releasedAt }; }),
-			overrides: overrideRows.map((row) => { const customer = byId.get(row.customerPartyId); return { publicId: row.publicId, customerPartyPublicId: customer?.publicId ?? '', customerDisplayName: customer?.displayName ?? 'Unavailable customer', workflowType: row.workflowType as CreditControlWorkflow, subjectPublicId: row.subjectPublicId, currencyCode: row.currencyCode, outstandingAmount: row.outstandingAmount, creditLimitAmount: row.creditLimitAmount, reason: row.reason, authorisedAt: row.authorisedAt }; }),
+			overrides: overrideRows.map((row) => { const customer = byId.get(row.customerPartyId); return { publicId: row.publicId, customerPartyPublicId: customer?.publicId ?? '', customerDisplayName: customer?.displayName ?? 'Unavailable customer', workflowType: row.workflowType as CreditControlWorkflow, subjectPublicId: row.subjectPublicId, currencyCode: row.currencyCode, outstandingAmount: row.outstandingAmount, commitmentAmount: row.commitmentAmount, projectedExposureAmount: row.projectedExposureAmount, creditLimitAmount: row.creditLimitAmount, reason: row.reason, authorisedAt: row.authorisedAt }; }),
 			canManagePolicies: policyManage.allowed, canManageHolds: holdManage.allowed, canOverride: overrideDecision.allowed
 		};
 	}
@@ -188,17 +201,17 @@ export class CreditControlService {
 		});
 	}
 
-	async commitmentPreview(actor: TenantActorContext, customerPartyId: string, currencyCodeInput: string): Promise<CreditCommitmentPreview> {
+	async commitmentPreview(actor: TenantActorContext, customerPartyId: string, currencyCodeInput: string, commitmentAmountInput: string | null | undefined = '0.0000'): Promise<CreditCommitmentPreview> {
 		const currencyCode = validateCurrencyCode(currencyCodeInput, 'Credit-control currency'); if (!currencyCode) throw new FinanceValidationError('Credit-control currency is required.'); const access = new FinanceAccessPolicy(this.db); await access.assertActiveActor(actor); const customer = await this.customerById(this.db, actor.organisationId, customerPartyId); if (!customer) throw new RecordNotFoundError('Customer not found.');
-		const [state, overrideDecision, financeView, creditView] = await Promise.all([this.rawState(this.db, actor.organisationId, customerPartyId, currencyCode), access.mutationDecision(actor, 'finance.credit_control.override'), access.viewDecision(actor), access.creditControlViewDecision(actor)]); const detailsVisible = financeView.allowed && creditView.allowed;
-		return { blocked: Boolean(state.hold) || state.limitExhausted, hasActiveHold: Boolean(state.hold), limitExhausted: state.limitExhausted, canOverride: overrideDecision.allowed, detailsVisible, outstandingAmount: detailsVisible ? state.outstandingAmount : null, creditLimitAmount: detailsVisible && state.policy?.isEnabled ? state.policy.creditLimitAmount : null, currencyCode };
+		const [state, overrideDecision, financeView, creditView] = await Promise.all([this.rawState(this.db, actor.organisationId, customerPartyId, currencyCode, commitmentAmountInput), access.mutationDecision(actor, 'finance.credit_control.override'), access.viewDecision(actor), access.creditControlViewDecision(actor)]); const detailsVisible = financeView.allowed && creditView.allowed;
+		return { blocked: Boolean(state.hold) || state.limitExhausted, hasActiveHold: Boolean(state.hold), limitExhausted: state.limitExhausted, canOverride: overrideDecision.allowed, detailsVisible, outstandingAmount: detailsVisible ? state.outstandingAmount : null, commitmentAmount: detailsVisible ? state.commitmentAmount : null, projectedExposureAmount: detailsVisible ? state.projectedExposureAmount : null, creditLimitAmount: detailsVisible && state.policy?.isEnabled ? state.policy.creditLimitAmount : null, currencyCode };
 	}
 
-	async enforceCommitment(actor: TenantActorContext, input: { customerPartyId: string; currencyCode: string; workflowType: CreditControlWorkflow; subjectPublicId: string; overrideReason?: string | null }, db: DatabaseExecutor): Promise<void> {
-		const currencyCode = validateCurrencyCode(input.currencyCode, 'Credit-control currency'); if (!currencyCode) throw new FinanceValidationError('Credit-control currency is required.'); const subjectPublicId = cleanFinanceText(input.subjectPublicId, 64, 'Credit-control subject', true)!; const access = new FinanceAccessPolicy(db); const membership = await access.assertActiveActor(actor, db); const customer = await this.customerById(db, actor.organisationId, input.customerPartyId, true); if (!customer) throw new RecordNotFoundError('Customer not found.'); const state = await this.rawState(db, actor.organisationId, customer.id, currencyCode, true); if (!state.hold && !state.limitExhausted) return;
-		const blockMessage = state.hold && state.limitExhausted ? 'Credit control blocks new commitment because the customer has an active credit hold and the credit limit is exhausted.' : state.hold ? 'Credit control blocks new commitment because the customer has an active credit hold.' : 'Credit control blocks new commitment because the customer credit limit is exhausted.';
+	async enforceCommitment(actor: TenantActorContext, input: { customerPartyId: string; currencyCode: string; workflowType: CreditControlWorkflow; subjectPublicId: string; commitmentAmount?: string | null; overrideReason?: string | null }, db: DatabaseExecutor): Promise<void> {
+		const currencyCode = validateCurrencyCode(input.currencyCode, 'Credit-control currency'); if (!currencyCode) throw new FinanceValidationError('Credit-control currency is required.'); const subjectPublicId = cleanFinanceText(input.subjectPublicId, 64, 'Credit-control subject', true)!; const access = new FinanceAccessPolicy(db); const membership = await access.assertActiveActor(actor, db); const customer = await this.customerById(db, actor.organisationId, input.customerPartyId, true); if (!customer) throw new RecordNotFoundError('Customer not found.'); const state = await this.rawState(db, actor.organisationId, customer.id, currencyCode, input.commitmentAmount, true); if (!state.hold && !state.limitExhausted) return;
+		const blockMessage = state.hold && state.limitExhausted ? 'Credit control blocks new commitment because the customer has an active credit hold and the projected exposure exceeds the credit limit.' : state.hold ? 'Credit control blocks new commitment because the customer has an active credit hold.' : 'Credit control blocks new commitment because the projected exposure exceeds the customer credit limit.';
 		const overrideReason = cleanFinanceText(input.overrideReason, 1000, 'Credit-control override reason'); if (!overrideReason) throw new CreditControlBlockedError(`${blockMessage} A reasoned credit-control override is required to continue.`); const overrideDecision = await access.mutationDecision(actor, 'finance.credit_control.override', db); if (!overrideDecision.allowed) throw new CreditControlBlockedError(`${blockMessage} Credit-control override authority is required.`);
-		const overridePublicId = this.publicIdFactory(); await db.insertInto('receivable_credit_control_overrides').values({ organisation_id: actor.organisationId, public_id: overridePublicId, customer_party_id: customer.id, credit_policy_id: state.limitExhausted ? state.policy?.policyId ?? null : null, credit_hold_id: state.hold?.id ?? null, workflow_type: input.workflowType, subject_public_id: subjectPublicId, currency_code: currencyCode, outstanding_amount: state.outstandingAmount, credit_limit_amount: state.limitExhausted ? state.policy?.creditLimitAmount ?? null : null, reason: overrideReason, authorised_by_member_id: membership.id, authorised_at: this.now() }).executeTakeFirstOrThrow();
-		await new AuditRepository(db).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, actionKey: 'finance.credit_control.override.authorised', subjectType: input.workflowType, subjectPublicId, correlationId: actor.correlationId, changeSummary: { overridePublicId, customerPartyPublicId: customer.publicId, currencyCode, outstandingAmount: state.outstandingAmount, creditLimitAmount: state.limitExhausted ? state.policy?.creditLimitAmount ?? null : null, holdPublicId: state.hold?.publicId ?? null, reason: overrideReason } });
+		const overridePublicId = this.publicIdFactory(); await db.insertInto('receivable_credit_control_overrides').values({ organisation_id: actor.organisationId, public_id: overridePublicId, customer_party_id: customer.id, credit_policy_id: state.limitExhausted ? state.policy?.policyId ?? null : null, credit_hold_id: state.hold?.id ?? null, workflow_type: input.workflowType, subject_public_id: subjectPublicId, currency_code: currencyCode, outstanding_amount: state.outstandingAmount, commitment_amount: state.commitmentAmount, projected_exposure_amount: state.projectedExposureAmount, credit_limit_amount: state.limitExhausted ? state.policy?.creditLimitAmount ?? null : null, reason: overrideReason, authorised_by_member_id: membership.id, authorised_at: this.now() }).executeTakeFirstOrThrow();
+		await new AuditRepository(db).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, actionKey: 'finance.credit_control.override.authorised', subjectType: input.workflowType, subjectPublicId, correlationId: actor.correlationId, changeSummary: { overridePublicId, customerPartyPublicId: customer.publicId, currencyCode, outstandingAmount: state.outstandingAmount, commitmentAmount: state.commitmentAmount, projectedExposureAmount: state.projectedExposureAmount, creditLimitAmount: state.limitExhausted ? state.policy?.creditLimitAmount ?? null : null, holdPublicId: state.hold?.publicId ?? null, reason: overrideReason } });
 	}
 }
