@@ -48,181 +48,116 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 20260817124500_controlled_collections.sql
 20260817144000_collections_automation_policy.sql
 20260817150000_credit_control_limits_holds.sql
+20260817161500_bad_debt_writeoff_recovery.sql
 ```
 
-Including Baseline v1, the production stream contains **19 migrations**.
+Including Baseline v1, the production stream contains **20 migrations**.
 
 ## Package 004F — migration-free reporting activation
 
-Customer statements and aged receivables require no new persistent balance tables. Package 004F derives historical customer positions from invoice issue, credit-note issue, payment allocation, allocation reversal and void facts.
+Customer statements and aged receivables require no new persistent balance tables. Package 004F derives historical customer positions from immutable finance-event evidence.
 
-## Package 004G — `20260817124500_controlled_collections.sql`
+## Packages 004G–004I
 
-Adds:
+- `20260817124500_controlled_collections.sql` adds collection cases/actions/promises/disputes.
+- `20260817144000_collections_automation_policy.sql` adds versioned dunning policy/reminder/delivery evidence.
+- `20260817150000_credit_control_limits_holds.sql` adds versioned credit limits, customer holds and projected-exposure override evidence.
 
-```text
-receivable_collection_cases
-receivable_collection_actions
-receivable_promises_to_pay
-receivable_disputes
-```
+None of those packages creates a mutable receivable balance.
 
-and the first collections permission family. Collections facts do not store current receivable or aging balances.
+## Package 004J — `20260817161500_bad_debt_writeoff_recovery.sql`
 
-## Package 004H — `20260817144000_collections_automation_policy.sql`
-
-Adds:
+Package 004J adds six additive evidence tables:
 
 ```text
-receivable_collection_policies
-receivable_collection_policy_stages
-receivable_collection_reminders
-receivable_collection_reminder_deliveries
+receivable_bad_debt_cases
+receivable_bad_debt_recommendations
+receivable_write_offs
+receivable_write_off_reversals
+receivable_write_off_recoveries
+receivable_write_off_recovery_reversals
 ```
 
-and:
+### Bad-debt assessment
+
+A bad-debt case is tenant/customer/invoice scoped and stores no receivable amount. One open case is enforced per tenant/invoice. Recommendations are immutable positive assessment facts and do not change the receivable.
+
+### Write-off evidence
+
+A write-off references one exact recommendation, case and invoice. It records a positive amount, authorising member/time/reason and explicit tax-treatment policy:
 
 ```text
-finance.collections.policy.manage
-finance.collections.reminder.generate
-finance.collections.reminder.dispatch
+no_tax_adjustment
+separate_tax_adjustment_required
 ```
 
-The package provides versioned dunning policy, explicit reminder generation/dispatch and immutable delivery-attempt evidence without claiming a scheduler or production provider.
+The migration does not post tax or general-ledger entries. A write-off reversal is additive one-to-one evidence; the original write-off remains immutable.
 
-## Package 004I — `20260817150000_credit_control_limits_holds.sql`
+### Recovery evidence
 
-Package 004I adds normalised credit policy and stop-new-trade evidence:
+A recovery references one exact write-off and one existing payment receipt. It consumes available payment capacity but does not reopen the already-written-off customer receivable. A recovery reversal restores payment capacity only.
 
-```text
-receivable_credit_policies
-receivable_credit_policy_revisions
-receivable_credit_holds
-receivable_credit_control_overrides
-```
-
-Relationships remain tenant-contextual and normalised. No table stores a mutable used-credit/current-balance field.
-
-### Credit-limit policy
-
-A `receivable_credit_policies` identity is unique per:
-
-```text
-organisation + customer + currency
-```
-
-`receivable_credit_policy_revisions` is append-evidenced. Enabled revisions require a positive limit; disabling appends a new revision with no limit amount rather than overwriting prior history.
-
-### Credit holds
-
-`receivable_credit_holds` is customer-wide and uses a generated active-customer key to enforce one active hold per tenant/customer while retaining released history.
-
-Lifecycle:
-
-```text
-active → released
-```
-
-Placement and release require actor/time/reason evidence.
-
-### Override evidence
-
-`receivable_credit_control_overrides` records one exceptional decision at a named commitment boundary and snapshots:
-
-```text
-customer
-workflow + subject
-currency
-current outstanding receivable
-proposed commitment amount
-projected exposure amount
-applicable credit limit
-applicable active hold
-reason
-authorising member/time
-```
-
-The database requires at least a policy or hold reference for an override.
-
-Application policy inserts the override in the **same transaction** as the business commitment, so failed conversion/execution cannot leave orphan authorisation evidence.
-
-### Permission family
-
-The migration adds:
-
-```text
-finance.credit_control.view
-finance.credit_control.policy.manage
-finance.credit_control.hold.manage
-finance.credit_control.override
-```
-
-All use `finance.manage` as same-domain fallback.
-
-Default persisted delegation:
-
-```text
-Owner / Administrator
-    → view
-    → policy manage
-    → hold manage
-    → override
-
-Finance/Commercial
-    → view
-    → policy manage
-    → hold manage
-    ✕ override
-```
-
-`OrganisationBootstrapService` persists the equivalent split for future organisations and a dedicated integration suite verifies the stored role-permission rows.
-
-### Exposure rule
-
-Current receivable remains derived from authoritative finance facts:
+### Receivable and payment rules
 
 ```text
 Invoice Outstanding
 = Issued Invoice Gross
 − Issued Credit Note Gross
 − Active Payment Allocations
+− Active Write-offs
 ```
-
-At a named commitment boundary:
 
 ```text
-Projected Exposure
-= Current Receivable
-+ Proposed Commitment
+Available Payment
+= Payment Amount
+− Active Invoice Allocations
+− Active Bad-Debt Recoveries
 ```
 
-A currency-specific enabled limit blocks when:
+An active recovery must be reversed before either its write-off or source payment can be reversed.
+
+### Permission family
+
+The migration adds:
 
 ```text
-Projected Exposure > Credit Limit
+finance.bad_debt.view
+finance.bad_debt.case.manage
+finance.bad_debt.recommend
+finance.bad_debt.write_off.authorise
+finance.bad_debt.write_off.reverse
+finance.bad_debt.recovery.record
+finance.bad_debt.recovery.reverse
 ```
 
-Exact equality is allowed. A customer-wide active hold blocks regardless of amount.
+All granular keys use `finance.manage` only as same-domain fallback.
 
-The package does not create a shadow receivable, reserved-headroom or open-order balance table.
-
-### Named enforcement boundaries
+Default persisted delegation:
 
 ```text
-Accepted quotation conversion → credit gate
-Contract execution            → credit gate
+Owner / Administrator
+    → all seven keys
+
+Finance/Commercial
+    → view
+    → case manage
+    → recommend
+    → recovery record
+    → recovery reverse
+    ✕ write-off authorise
+    ✕ write-off reverse
 ```
 
-Quotation issue and contract issue remain pre-commitment. Invoice issue, credit, payment and collections workflows remain available to bill, reduce or manage existing exposure.
+`OrganisationBootstrapService` persists the equivalent split for future organisations and a dedicated integration suite verifies those stored role-permission rows.
 
 ## Current structure
 
-After all **19** production migrations the Package 004I target application structure is:
+After all **20** production migrations the Package 004J target application structure is:
 
 ```text
-356 base tables
-789 foreign keys
-459 CHECK constraints
+362 base tables
+804 foreign keys
+465 CHECK constraints
 ```
 
 The clean MySQL gate is authoritative for these counts.
@@ -230,14 +165,14 @@ The clean MySQL gate is authoritative for these counts.
 ## Current migration validation target
 
 ```text
-19 production migrations applied / 0 pending
-356 base tables / 789 foreign keys / 459 CHECK constraints
+20 production migrations applied / 0 pending
+362 base tables / 804 foreign keys / 465 CHECK constraints
 zero drift across core + collections generated Kysely outputs
-26 integration files / 117 real-MySQL tests
+full real-MySQL integration suite
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove this complete gate before merge.
+The exact final test-file/test totals are recorded after the documentation-synchronised release head passes the complete gate.
 
 ## Migration rules
 
