@@ -26,7 +26,7 @@
 
 <section class="boundary">
 	<strong>Credit utilisation is derived, not stored.</strong>
-	<span>Issued invoice gross − issued credit notes − active payment allocations. Limits are currency-specific; holds are customer-wide.</span>
+	<span>Current receivable is issued invoice gross − issued credit notes − active payment allocations. Commitment gates add the accepted quotation or contract value to that live position before comparing it with the currency-specific limit. Holds are customer-wide.</span>
 </section>
 
 <div class="layout">
@@ -98,7 +98,9 @@
 						<article class="record">
 							<div class="record-head"><span><strong>{override.customerDisplayName}</strong><small>{override.workflowType.replaceAll('_', ' ')} · {new Date(override.authorisedAt).toLocaleString()}</small></span><em>Override</em></div>
 							<dl>
-								<div><dt>Outstanding</dt><dd>{money(override.outstandingAmount, override.currencyCode)}</dd></div>
+								<div><dt>Receivable</dt><dd>{money(override.outstandingAmount, override.currencyCode)}</dd></div>
+								<div><dt>Commitment</dt><dd>{money(override.commitmentAmount, override.currencyCode)}</dd></div>
+								<div><dt>Projected</dt><dd>{money(override.projectedExposureAmount, override.currencyCode)}</dd></div>
 								<div><dt>Limit</dt><dd>{money(override.creditLimitAmount, override.currencyCode)}</dd></div>
 								<div><dt>Subject</dt><dd>{override.subjectPublicId}</dd></div>
 								<div><dt>Reason</dt><dd>{override.reason}</dd></div>
@@ -140,8 +142,8 @@
 		<section class="panel">
 			<p class="eyebrow">Enforcement</p><h2>Named commitment boundaries</h2>
 			<ul>
-				<li><strong>Accepted quotation → proposed project:</strong> credit gate.</li>
-				<li><strong>Contract execution:</strong> credit gate.</li>
+				<li><strong>Accepted quotation → proposed project:</strong> current receivable + accepted non-optional quotation gross is checked.</li>
+				<li><strong>Contract execution:</strong> current receivable + contract version value is checked.</li>
 				<li>Quotation issue and contract issue remain pre-commitment.</li>
 				<li>Invoice issue remains available so completed work can still be billed.</li>
 				<li>Credits, payments and collections remain available to reduce/manage exposure.</li>
