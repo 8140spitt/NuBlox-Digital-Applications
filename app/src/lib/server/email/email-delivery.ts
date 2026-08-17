@@ -4,6 +4,8 @@ export type TransactionalEmail = {
 	to: string;
 	subject: string;
 	text: string;
+	/** Stable business-message key that production adapters should pass to providers supporting idempotent send semantics. */
+	idempotencyKey?: string;
 };
 
 export type EmailDelivery = {
@@ -15,7 +17,8 @@ class ConsoleEmailDelivery implements EmailDelivery {
 		console.info('[NuBlox email]', {
 			to: message.to,
 			subject: message.subject,
-			text: message.text
+			text: message.text,
+			idempotencyKey: message.idempotencyKey ?? null
 		});
 	}
 }
@@ -27,6 +30,11 @@ class ConsoleEmailDelivery implements EmailDelivery {
  * Production must select and configure a real provider adapter in a later ADR.
  * Unsupported/unconfigured modes fail at service construction so invitation state
  * is never committed before discovering that delivery is unavailable.
+ *
+ * Callers that may retry an externally visible business message should supply a
+ * stable `idempotencyKey`. A production adapter must use that key when its provider
+ * supports idempotent delivery; this narrows duplicate-send risk around process or
+ * transaction failure without claiming impossible exactly-once email semantics.
  */
 export function getEmailDelivery(): EmailDelivery {
 	const mode = env.EMAIL_DELIVERY_MODE?.trim().toLowerCase();
