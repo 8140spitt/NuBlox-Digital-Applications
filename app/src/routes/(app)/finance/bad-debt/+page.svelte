@@ -26,7 +26,7 @@
 					{#if data.canStartCase}
 						<form method="POST" action="?/start" class="action-form">
 							<input type="hidden" name="invoicePublicId" value={invoice.invoicePublicId} />
-							<label>Assessment reason<textarea name="reason" maxlength="1000" required placeholder="Why is this receivable being assessed as doubtful?" /></label>
+							<label>Assessment reason<textarea name="reason" maxlength="1000" required placeholder="Why is this receivable being assessed as doubtful?"></textarea></label>
 							<button type="submit">Open bad-debt case</button>
 						</form>
 					{/if}
