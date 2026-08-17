@@ -4,7 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
-import { PaymentService } from '$lib/server/finance/payment-service';
+import { PaymentControlService } from '$lib/server/finance/payment-control-service';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -28,7 +28,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new PaymentService(getDatabase()).getWorkspace(actor, params.paymentPublicId);
+		return await new PaymentControlService(getDatabase()).getWorkspace(actor, params.paymentPublicId);
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Payment not found.');
 		if (cause instanceof TenantAccessError) throw httpError(403, 'Payment access is not permitted.');
@@ -42,7 +42,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new PaymentService(getDatabase()).allocate(actor, {
+			await new PaymentControlService(getDatabase()).allocate(actor, {
 				paymentPublicId: params.paymentPublicId,
 				invoicePublicId: String(data.get('invoicePublicId') ?? ''),
 				amount: String(data.get('amount') ?? '')
@@ -57,7 +57,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new PaymentService(getDatabase()).reverseAllocation(actor, {
+			await new PaymentControlService(getDatabase()).reverseAllocation(actor, {
 				paymentPublicId: params.paymentPublicId,
 				allocationId: String(data.get('allocationId') ?? ''),
 				reason: String(data.get('reason') ?? '')
@@ -72,7 +72,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new PaymentService(getDatabase()).reversePayment(actor, {
+			await new PaymentControlService(getDatabase()).reversePayment(actor, {
 				paymentPublicId: params.paymentPublicId,
 				reason: String(data.get('reason') ?? '')
 			});
