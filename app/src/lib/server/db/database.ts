@@ -1,10 +1,12 @@
 import { Kysely, MysqlDialect } from 'kysely';
 import { createPool } from 'mysql2';
 
-import type { DB } from './generated/database.js';
+import type { DB as CoreDB } from './generated/database.js';
+import type { DB as CollectionsDB } from './generated/collections.js';
 import { getDatabaseRuntimeConfig } from './config.js';
 
-export type Database = Kysely<DB>;
+export type DatabaseSchema = CoreDB & CollectionsDB;
+export type Database = Kysely<DatabaseSchema>;
 
 type DatabaseGlobal = typeof globalThis & {
 	__nubloxDatabase?: Database;
@@ -36,7 +38,7 @@ function createDatabase(): Database {
 		connection.query("SET time_zone = '+00:00'");
 	});
 
-	return new Kysely<DB>({
+	return new Kysely<DatabaseSchema>({
 		dialect: new MysqlDialect({ pool })
 	});
 }
