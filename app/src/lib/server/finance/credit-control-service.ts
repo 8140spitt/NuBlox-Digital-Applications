@@ -117,12 +117,12 @@ export class CreditControlService {
 	}
 	private async rawState(db: DatabaseExecutor, organisationId: string, customerPartyId: string, currencyCode: string, commitmentAmountInput: string | null | undefined = '0.0000', lock = false) {
 		if (lock) {
-			// Invoice issue already owns the invoice row before MySQL may need a parent-party FK lock.
-			// Lock invoice rows first so the credit gate waits for that issue transaction without
-			// holding the customer row and creating an invoice/customer AB-BA deadlock.
-			await db.selectFrom('financial_documents').select('id').where('organisation_id', '=', organisationId).where('document_kind', '=', 'invoice').where('customer_party_id', '=', customerPartyId).where('currency_code', '=', currencyCode).forUpdate().execute();
+			// Customer is the canonical first lock for invoice mutation and credit-control enforcement.
+			// Once both workflows share this hierarchy, the invoice range lock cannot deadlock an
+			// issuer that already owns a child row while waiting for the customer parent row.
 			const customer = await this.customerById(db, organisationId, customerPartyId, true);
 			if (!customer) throw new RecordNotFoundError('Customer not found.');
+			await db.selectFrom('financial_documents').select('id').where('organisation_id', '=', organisationId).where('document_kind', '=', 'invoice').where('customer_party_id', '=', customerPartyId).where('currency_code', '=', currencyCode).forUpdate().execute();
 		}
 		const commitmentAmount = normaliseCommitmentAmount(commitmentAmountInput);
 		const [policy, hold, outstandingAmount] = await Promise.all([this.policyState(db, organisationId, customerPartyId, currencyCode, lock), this.activeHold(db, organisationId, customerPartyId, lock), customerOutstandingByCurrency(db, organisationId, customerPartyId, currencyCode)]);
@@ -179,7 +179,7 @@ export class CreditControlService {
 		const publicId = cleanCustomerPublicId(input.customerPartyPublicId); const currencyCode = validateCurrencyCode(input.currencyCode, 'Credit-limit currency'); if (!currencyCode) throw new FinanceValidationError('Credit-limit currency is required.'); const reason = cleanFinanceText(input.reason, 1000, 'Credit-limit reason', true)!;
 		await this.db.transaction().execute(async (trx) => {
 			const access = new FinanceAccessPolicy(trx); const membership = await access.assertActiveActor(actor, trx); if (!(await access.mutationDecision(actor, 'finance.credit_control.policy.manage', trx)).allowed) throw new TenantAccessError('Credit-limit management is not permitted.');
-			const customer = await this.customerByPublicId(trx, actor.organisationId, publicId, true); if (!customer) throw new RecordNotFoundError('Customer not found.'); const state = await this.policyState(trx, actor.organisationId, customer.id, currencyCode, true); if (!state) throw new RecordNotFoundError('Credit-limit policy not found.'); if (!state.isEnabled) return;
+			const customer = await this.customerByPublicId(trx, actor.organisationId, publicId, true); if (!customer) throw new RecordNotFoundError('Credit-limit policy not found.'); const state = await this.policyState(trx, actor.organisationId, customer.id, currencyCode, true); if (!state) throw new RecordNotFoundError('Credit-limit policy not found.'); if (!state.isEnabled) return;
 			const versionNumber = state.versionNumber + 1; await trx.insertInto('receivable_credit_policy_revisions').values({ organisation_id: actor.organisationId, public_id: this.publicIdFactory(), credit_policy_id: state.policyId, version_number: versionNumber, is_enabled: 0, credit_limit_amount: null, reason, created_by_member_id: membership.id }).executeTakeFirstOrThrow();
 			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, actionKey: 'finance.credit_control.limit.disabled', subjectType: 'customer_credit_policy', subjectPublicId: state.policyPublicId, correlationId: actor.correlationId, changeSummary: { customerPartyPublicId: customer.publicId, currencyCode, versionNumber, reason } });
 		});
