@@ -5,6 +5,7 @@ export type IssuedInvoiceOutstanding = {
 	invoiceGross: string;
 	issuedCreditGross: string;
 	activeAllocatedAmount: string;
+	activeWriteOffAmount: string;
 	outstandingAmount: string;
 };
 
@@ -75,21 +76,66 @@ export async function activeAllocatedAmountForInvoice(
 	return sumMoney(rows.map((row) => row.allocatedAmount));
 }
 
+export async function activeWriteOffAmountForInvoice(
+	db: DatabaseExecutor,
+	organisationId: string,
+	invoiceDocumentId: string
+): Promise<string> {
+	const rows = await db
+		.selectFrom('receivable_write_offs as writeOff')
+		.leftJoin('receivable_write_off_reversals as reversal', (join) =>
+			join
+				.onRef('reversal.write_off_id', '=', 'writeOff.id')
+				.onRef('reversal.organisation_id', '=', 'writeOff.organisation_id')
+		)
+		.select('writeOff.write_off_amount as amount')
+		.where('writeOff.organisation_id', '=', organisationId)
+		.where('writeOff.invoice_document_id', '=', invoiceDocumentId)
+		.where('reversal.write_off_id', 'is', null)
+		.execute();
+	return sumMoney(rows.map((row) => row.amount));
+}
+
+export async function activeRecoveryAmountForPayment(
+	db: DatabaseExecutor,
+	organisationId: string,
+	paymentId: string
+): Promise<string> {
+	const rows = await db
+		.selectFrom('receivable_write_off_recoveries as recovery')
+		.leftJoin('receivable_write_off_recovery_reversals as reversal', (join) =>
+			join
+				.onRef('reversal.recovery_id', '=', 'recovery.id')
+				.onRef('reversal.organisation_id', '=', 'recovery.organisation_id')
+		)
+		.select('recovery.recovered_amount as amount')
+		.where('recovery.organisation_id', '=', organisationId)
+		.where('recovery.payment_id', '=', paymentId)
+		.where('reversal.recovery_id', 'is', null)
+		.execute();
+	return sumMoney(rows.map((row) => row.amount));
+}
+
 export async function issuedInvoiceOutstanding(
 	db: DatabaseExecutor,
 	organisationId: string,
 	invoiceDocumentId: string
 ): Promise<IssuedInvoiceOutstanding> {
 	const invoiceGross = await financialDocumentGross(db, organisationId, invoiceDocumentId);
-	const [issuedCreditGross, activeAllocatedAmount] = await Promise.all([
+	const [issuedCreditGross, activeAllocatedAmount, activeWriteOffAmount] = await Promise.all([
 		issuedCreditGrossForInvoice(db, organisationId, invoiceDocumentId),
-		activeAllocatedAmountForInvoice(db, organisationId, invoiceDocumentId)
+		activeAllocatedAmountForInvoice(db, organisationId, invoiceDocumentId),
+		activeWriteOffAmountForInvoice(db, organisationId, invoiceDocumentId)
 	]);
 	return {
 		invoiceGross,
 		issuedCreditGross,
 		activeAllocatedAmount,
-		outstandingAmount: subtractMoney(subtractMoney(invoiceGross, issuedCreditGross), activeAllocatedAmount)
+		activeWriteOffAmount,
+		outstandingAmount: subtractMoney(
+			subtractMoney(subtractMoney(invoiceGross, issuedCreditGross), activeAllocatedAmount),
+			activeWriteOffAmount
+		)
 	};
 }
 
