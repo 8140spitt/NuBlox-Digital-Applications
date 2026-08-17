@@ -35,11 +35,11 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **16 migrations**. The latest activation is:
+The production stream remains at **16 migrations**. The latest migration remains:
 
 - `20260817103000_payment_allocation_permissions.sql` — Package 004E payment receipt, allocation and immutable reversal permissions.
 
-The application structure remains **344 tables, 749 foreign keys and 429 `CHECK` constraints** because Packages 004C–004E activate normalised finance structures already present in the baseline.
+Package 004F adds no migration or duplicate receivables-reporting tables. It derives statements and aging from the normalised finance facts already present in the baseline. The application structure therefore remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -147,6 +147,8 @@ finance.manage
 
 **Umbrellas never cross domains.** Commercial authority does not grant contract authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
 
+Package 004F reporting deliberately reuses `finance.view`; it does not create a parallel reporting permission for the same underlying finance facts.
+
 ## Controlled account provisioning and standard roles
 
 NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisioning intent: an existing-organisation invitation or a self-service organisation bootstrap. Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
@@ -175,6 +177,8 @@ finance.payment.reverse
 ```
 
 It deliberately does **not** receive `finance.manage` or `finance.invoice.void`. Invoice void remains the stronger exceptional issued-document lifecycle authority.
+
+Package 004F statements and aging are available to any active tenant member with `finance.view`; no role-template change is required.
 
 Manager, Member/Professional, Field Worker and Read Only do not receive automatic finance mutation authority. The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
 
@@ -214,6 +218,8 @@ Controlled Payment Allocation
 Allocation / Payment Reversal
     ↓
 Derived Outstanding Receivable
+    ↓
+Customer Statement + Aged Receivables
 ```
 
 See:
@@ -225,6 +231,7 @@ See:
 - [`docs/35-accounts-receivable-invoices.md`](docs/35-accounts-receivable-invoices.md)
 - [`docs/36-receivable-corrections.md`](docs/36-receivable-corrections.md)
 - [`docs/37-payment-receipt-allocation.md`](docs/37-payment-receipt-allocation.md)
+- [`docs/38-customer-statements-aged-receivables.md`](docs/38-customer-statements-aged-receivables.md)
 
 ## Operational accounts receivable
 
@@ -273,23 +280,53 @@ Allocation locks the payment and invoice before recomputing both limits. It requ
 
 Allocation correction creates a `payment_allocation_reversals` row; the original allocation remains immutable. Payment reversal first creates reversal evidence for every still-active allocation in the same transaction and only then records the `payment_reversals` row.
 
-The invoice detail workspace now displays issued credits, active cash and operational outstanding together. Settlement uses derived `open / part settled / settled` states without changing the legal invoice lifecycle.
+The invoice detail workspace displays issued credits, active cash and operational outstanding together. Settlement uses derived `open / part settled / settled` states without changing the legal invoice lifecycle.
+
+### Package 004F — Customer statements and aged receivables
+
+Protected routes:
+
+- `/finance/receivables`
+- `/finance/receivables/[customerPartyPublicId]`
+
+Package 004F adds no new balance ledger. It reconstructs the customer account from immutable event timestamps:
+
+```text
+Issued invoice          → debit
+Issued credit note      → credit
+Payment allocation      → credit
+Allocation reversal     → debit
+Exceptional invoice void→ credit
+```
+
+Statements derive opening balance, period movements, running balance and closing balance independently per currency. The selected period uses the tenant's configured timezone, and historical reports use the event state that actually existed at the selected cutoff—for example, a June allocation reversed in August still reduces a July statement.
+
+Aging is calculated from positive outstanding issued invoices as at the selected date:
+
+```text
+Current | 1–30 | 31–60 | 61–90 | 91+
+```
+
+Currencies are never combined without an explicit FX/reporting-currency policy.
 
 ### Deliberate finance exclusions
 
 Still not claimed implemented:
 
-- FX conversion / cross-currency allocation;
+- FX conversion / cross-currency allocation or reporting translation;
 - refunds / outbound customer payments;
 - automated bank-feed or payment-gateway ingestion;
 - automated remittance matching;
 - bank reconciliation;
 - general-ledger posting;
 - credit-note void/reversal;
-- customer statements;
-- aged receivables / dunning;
+- persisted/issued statement documents, PDFs or outbound delivery;
+- automatic statement schedules;
+- dunning/reminder/collections workflows;
+- customer credit limits / hold policy;
+- bad-debt/write-off processing;
 - configurable settlement/write-off policy;
-- PDF rendering or production outbound invoice/credit-note delivery.
+- production outbound invoice/credit-note delivery.
 
 ## Projects, participants and teams
 
@@ -315,13 +352,14 @@ pnpm test:integration
 pnpm check
 ```
 
-The executable Package 004E head is required to prove:
+The executable Package 004F code head proved on MySQL 8.4.11:
 
 ```text
 16 production migrations applied / 0 pending
 344 base tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-19 integration files / 88 real-MySQL tests passed
+20 integration files / 93 real-MySQL tests passed
+finance/receivables-reporting.integration.test.ts: 5/5 passed
 finance/payment-allocation.integration.test.ts: 6/6 passed
 organisation-bootstrap.integration.test.ts: 4/4 passed
 svelte-check: 0 errors / 0 warnings
