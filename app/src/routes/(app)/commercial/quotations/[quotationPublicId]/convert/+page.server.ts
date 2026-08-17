@@ -57,7 +57,8 @@ export const actions: Actions = {
 			const project = await new QuotationProjectConversionService(getDatabase()).convert(
 				actor,
 				params.quotationPublicId,
-				positiveInt(data.get('versionNumber'))
+				positiveInt(data.get('versionNumber')),
+				String(data.get('creditOverrideReason') ?? '')
 			);
 			throw redirect(303, `/contracts/new?project=${encodeURIComponent(project.publicId)}`);
 		} catch (error) {
