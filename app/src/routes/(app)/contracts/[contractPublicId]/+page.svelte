@@ -116,7 +116,7 @@
 		{#if data.canIssue}
 			<section class="panel action-panel">
 				<p class="eyebrow">Issue</p><h2>Lock and issue version {data.version.versionNumber}</h2>
-				<p class="muted">Issue makes this version immutable through ordinary draft APIs.</p>
+				<p class="muted">Issue makes this version immutable through ordinary draft APIs. Credit control does not block contract issue because issue is pre-commitment.</p>
 				<form method="POST" action="?/issue">
 					<input type="hidden" name="versionNumber" value={data.version.versionNumber}/>
 					<label>Delivery channel<select name="deliveryChannel"><option value="manual">Manual</option><option value="email">Email evidence only</option><option value="portal">Portal evidence</option><option value="esign">E-sign evidence</option><option value="api">API evidence</option><option value="other">Other</option></select></label>
@@ -137,22 +137,53 @@
 			</section>
 		{/if}
 
+		{#if data.creditControl && data.issueEvents.length > 0 && !data.execution}
+			<section class:warning={data.creditControl.blocked} class="panel">
+				<p class="eyebrow">Credit control</p>
+				<h2>{data.creditControl.blocked ? 'Execution is blocked' : 'Execution credit check clear'}</h2>
+				{#if data.creditControl.blocked}
+					<p>This contract cannot become an executed commitment unless the credit condition is cleared or an authorised override is recorded.</p>
+					<ul>
+						{#if data.creditControl.hasActiveHold}<li>Active customer credit hold</li>{/if}
+						{#if data.creditControl.limitExhausted}<li>Customer credit limit exhausted</li>{/if}
+					</ul>
+				{:else}
+					<p class="muted">No active credit hold or exhausted limit currently blocks execution.</p>
+				{/if}
+				{#if data.creditControl.detailsVisible}
+					<dl>
+						<div><dt>Currency</dt><dd>{data.creditControl.currencyCode}</dd></div>
+						<div><dt>Outstanding</dt><dd>{data.creditControl.outstandingAmount ?? '—'}</dd></div>
+						<div><dt>Credit limit</dt><dd>{data.creditControl.creditLimitAmount ?? 'No enabled limit'}</dd></div>
+					</dl>
+				{/if}
+				{#if data.creditControl.blocked && !data.creditControl.canOverride}<p class="error">Credit-control override authority is required to execute while this block remains active.</p>{/if}
+			</section>
+		{/if}
+
 		{#if data.canExecute}
 			<section class="panel action-panel">
 				<p class="eyebrow">Execution</p><h2>Record executed agreement</h2>
-				<p class="muted">This records execution evidence only. It does not automatically activate the project or create invoices.</p>
-				<form method="POST" action="?/execute">
-					<input type="hidden" name="versionNumber" value={data.version.versionNumber}/>
-					<input type="hidden" name="executedAt" value={executionIso}/>
-					<label>Method<select name="executionMethod"><option value="manual">Manual</option><option value="esign">E-sign</option><option value="portal">Portal</option><option value="api">API</option><option value="other">Other</option></select></label>
-					<label>Executed at<input type="datetime-local" required oninput={captureExecutionTime}/></label>
-					<label>Signatory name<input name="signatoryName" maxlength="255" required/></label>
-					<label>Signatory email<input type="email" name="signatoryEmail" maxlength="320"/></label>
-					<label>Signing role<input name="signingRole" maxlength="160"/></label>
-					<label>External transaction reference<input name="externalTransactionReference" maxlength="255"/></label>
-					<label>Note<textarea name="note" rows="3" maxlength="1000"></textarea></label>
-					<button type="submit">Record execution</button>
-				</form>
+				<p class="muted">Execution is the commitment boundary. It does not automatically activate the project or create invoices.</p>
+				{#if data.creditControl?.blocked && !data.creditControl.canOverride}
+					<p class="error">Execution is unavailable until the credit block is released or an authorised credit-control user performs the override.</p>
+				{:else}
+					<form method="POST" action="?/execute">
+						<input type="hidden" name="versionNumber" value={data.version.versionNumber}/>
+						<input type="hidden" name="executedAt" value={executionIso}/>
+						<label>Method<select name="executionMethod"><option value="manual">Manual</option><option value="esign">E-sign</option><option value="portal">Portal</option><option value="api">API</option><option value="other">Other</option></select></label>
+						<label>Executed at<input type="datetime-local" required oninput={captureExecutionTime}/></label>
+						<label>Signatory name<input name="signatoryName" maxlength="255" required/></label>
+						<label>Signatory email<input type="email" name="signatoryEmail" maxlength="320"/></label>
+						<label>Signing role<input name="signingRole" maxlength="160"/></label>
+						<label>External transaction reference<input name="externalTransactionReference" maxlength="255"/></label>
+						<label>Note<textarea name="note" rows="3" maxlength="1000"></textarea></label>
+						{#if data.creditControl?.blocked}
+							<label>Credit-control override reason<textarea name="creditOverrideReason" rows="4" maxlength="1000" required placeholder="Record why execution is authorised despite the current credit block."></textarea></label>
+						{/if}
+						<button type="submit">Record execution</button>
+					</form>
+				{/if}
 			</section>
 		{/if}
 
@@ -204,5 +235,5 @@
 </div>
 
 <style>
-	.breadcrumbs{display:flex;gap:.55rem;align-items:center;margin-bottom:1rem;color:#666;font-size:.9rem}.breadcrumbs a{color:inherit;font-weight:650}.page-heading{display:flex;justify-content:space-between;gap:1rem;align-items:start;margin-bottom:1rem}.page-heading h1{margin:.15rem 0 .3rem;font-size:clamp(2rem,5vw,2.8rem);letter-spacing:-.04em}.page-heading p{margin:0;color:#666}.eyebrow{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;font-weight:760;color:#666}.status{padding:.3rem .55rem;border-radius:999px;background:#e4f5e8;color:#285f35;font-size:.76rem;font-weight:760;text-transform:capitalize}.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(20rem,.7fr);gap:1rem;align-items:start}.stack{display:grid;gap:1rem}.panel{background:white;border:1px solid #d9d9d2;border-radius:.8rem;padding:1.1rem}.panel h2{margin:.3rem 0 .8rem}.action-panel{border-color:#b9cbe6}.success{border-color:#b9d7bf}.amendments-panel{border-color:#d8c9ad}.muted{color:#666;line-height:1.5}dl{display:grid;gap:.55rem;margin:.7rem 0}dl div{display:grid;grid-template-columns:8rem 1fr;gap:.6rem}dt{color:#666;font-size:.82rem}dd{margin:0}.lines{display:grid;gap:.45rem}.line{display:flex;gap:.8rem;align-items:center;justify-content:space-between;padding:.65rem;border:1px solid #e3e3dd;border-radius:.5rem}.line span{display:grid;gap:.1rem;min-width:0}.line small{color:#666}.inline-form,form{display:grid;gap:.7rem}.inline-form{margin-top:1rem;padding-top:1rem;border-top:1px solid #ecece7;grid-template-columns:1fr 1.2fr .7fr auto;align-items:end}.amendment-form{margin-top:1rem;padding-top:1rem;border-top:1px solid #ecece7}.amendments{display:grid;gap:.45rem}.amendments a{display:flex;justify-content:space-between;gap:.7rem;padding:.65rem;border:1px solid #e3e3dd;border-radius:.5rem;color:inherit;text-decoration:none}.amendments span{display:grid;gap:.15rem}.amendments small{color:#666}.amendments em{font-style:normal;text-transform:capitalize;font-size:.75rem;font-weight:750}label{display:grid;gap:.3rem;font-weight:650}input,select,textarea{width:100%;box-sizing:border-box;padding:.58rem;border:1px solid #c9c9c2;border-radius:.45rem;background:white;font:inherit}button{width:max-content;padding:.6rem .78rem;border:0;border-radius:.46rem;background:#111;color:white;font:inherit;font-weight:750;cursor:pointer}.quiet{background:transparent;color:#7a3027;padding:.25rem;text-decoration:underline}.error{color:#8a3025}.banner{padding:.7rem .8rem;background:#fff0ed;border:1px solid #e1b1aa;border-radius:.5rem}@media(max-width:950px){.grid{grid-template-columns:1fr}.inline-form{grid-template-columns:1fr}.page-heading{display:grid}.line{align-items:start;flex-wrap:wrap}dl div{grid-template-columns:1fr;gap:.15rem}}
+	.breadcrumbs{display:flex;gap:.55rem;align-items:center;margin-bottom:1rem;color:#666;font-size:.9rem}.breadcrumbs a{color:inherit;font-weight:650}.page-heading{display:flex;justify-content:space-between;gap:1rem;align-items:start;margin-bottom:1rem}.page-heading h1{margin:.15rem 0 .3rem;font-size:clamp(2rem,5vw,2.8rem);letter-spacing:-.04em}.page-heading p{margin:0;color:#666}.eyebrow{margin:0;text-transform:uppercase;letter-spacing:.1em;font-size:.72rem;font-weight:760;color:#666}.status{padding:.3rem .55rem;border-radius:999px;background:#e4f5e8;color:#285f35;font-size:.76rem;font-weight:760;text-transform:capitalize}.grid{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(20rem,.7fr);gap:1rem;align-items:start}.stack{display:grid;gap:1rem}.panel{background:white;border:1px solid #d9d9d2;border-radius:.8rem;padding:1.1rem}.panel.warning{border-color:#dfb36a;background:#fffaf0}.panel h2{margin:.3rem 0 .8rem}.action-panel{border-color:#b9cbe6}.success{border-color:#b9d7bf}.amendments-panel{border-color:#d8c9ad}.muted{color:#666;line-height:1.5}dl{display:grid;gap:.55rem;margin:.7rem 0}dl div{display:grid;grid-template-columns:8rem 1fr;gap:.6rem}dt{color:#666;font-size:.82rem}dd{margin:0}.lines{display:grid;gap:.45rem}.line{display:flex;gap:.8rem;align-items:center;justify-content:space-between;padding:.65rem;border:1px solid #e3e3dd;border-radius:.5rem}.line span{display:grid;gap:.1rem;min-width:0}.line small{color:#666}.inline-form,form{display:grid;gap:.7rem}.inline-form{margin-top:1rem;padding-top:1rem;border-top:1px solid #ecece7;grid-template-columns:1fr 1.2fr .7fr auto;align-items:end}.amendment-form{margin-top:1rem;padding-top:1rem;border-top:1px solid #ecece7}.amendments{display:grid;gap:.45rem}.amendments a{display:flex;justify-content:space-between;gap:.7rem;padding:.65rem;border:1px solid #e3e3dd;border-radius:.5rem;color:inherit;text-decoration:none}.amendments span{display:grid;gap:.15rem}.amendments small{color:#666}.amendments em{font-style:normal;text-transform:capitalize;font-size:.75rem;font-weight:750}label{display:grid;gap:.3rem;font-weight:650}input,select,textarea{width:100%;box-sizing:border-box;padding:.58rem;border:1px solid #c9c9c2;border-radius:.45rem;background:white;font:inherit}button{width:max-content;padding:.6rem .78rem;border:0;border-radius:.46rem;background:#111;color:white;font:inherit;font-weight:750;cursor:pointer}.quiet{background:transparent;color:#7a3027;padding:.25rem;text-decoration:underline}.error{color:#8a3025}.banner{padding:.7rem .8rem;background:#fff0ed;border:1px solid #e1b1aa;border-radius:.5rem}ul{padding-left:1.2rem}@media(max-width:950px){.grid{grid-template-columns:1fr}.inline-form{grid-template-columns:1fr}.page-heading{display:grid}.line{align-items:start;flex-wrap:wrap}dl div{grid-template-columns:1fr;gap:.15rem}}
 </style>
