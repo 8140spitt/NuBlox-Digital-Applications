@@ -31,7 +31,7 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 Adds Better Auth infrastructure and explicit `auth_user_links`. Structure becomes **342 / 743 / 427**.
 
 ### `20260815151500_account_provisioning.sql`
-Adds controlled organisation invitations and intended invitation roles. Structure becomes the current **344 / 749 / 429**.
+Adds controlled organisation invitations and intended invitation roles. Structure becomes **344 / 749 / 429**.
 
 ### `20260815161900_organisation_administration_permissions.sql`
 Seeds `organisation.manage`, `member.invite` and `member.manage`.
@@ -90,8 +90,6 @@ finance.invoice.void
 
 All four use `finance.manage` as fallback. Finance/Commercial receives the three ordinary credit-note permissions but not `finance.invoice.void` or `finance.manage`; Owner/Administrator receive all four.
 
-The migration is permission-only because Baseline v1 already contains the credit-note/source, issue, payment and reversal structures.
-
 ### `20260817103000_payment_allocation_permissions.sql`
 
 Activates Package 004E payment receipt and controlled cash application:
@@ -103,87 +101,79 @@ finance.payment.allocation.reverse
 finance.payment.reverse
 ```
 
-All four use `finance.manage` as same-domain fallback.
-
-Existing standard-role grants are:
-
-```text
-Owner / Administrator
-    finance.payment.create
-    finance.payment.allocate
-    finance.payment.allocation.reverse
-    finance.payment.reverse
-    + existing finance.manage
-
-Finance/Commercial
-    finance.payment.create
-    finance.payment.allocate
-    finance.payment.allocation.reverse
-    finance.payment.reverse
-    # deliberately no finance.manage
-```
-
-Payment reversal is an immutable cash correction, not an issued-legal-document void, so it belongs within the ordinary delegated Finance/Commercial workflow.
-
-The migration adds **no business tables**. Baseline v1 already contains:
-
-```text
-payment_methods
-payments
-payment_allocations
-payment_allocation_reversals
-payment_reversals
-```
-
-The activated application boundary enforces immutable receipt/allocation/reversal facts, same-currency application, row-locked over-allocation prevention and derived invoice settlement independently from legal invoice lifecycle.
+All four use `finance.manage` as same-domain fallback. Payment receipt/allocation/reversal uses the normalised structures already present in Baseline v1.
 
 ## Package 004F — migration-free reporting activation
 
 Customer statements and aged receivables require **no new production migration**.
 
-Package 004F uses the established `finance.view` read authority and derives reporting from existing normalised facts:
+Package 004F derives historical customer positions from existing invoice issue, credit-note issue, payment allocation, allocation reversal and void facts. It introduces no statement-line or aging-balance tables and does not duplicate receivable balances.
+
+## `20260817124500_controlled_collections.sql` — Package 004G
+
+Package 004G is a genuine forward-schema increment because the frozen Package 004 baseline contains no collections-case, promise-to-pay, receivable-dispute or dunning-evidence structures.
+
+The migration adds:
 
 ```text
-financial_documents
-invoices
-credit_notes
-financial_document_issue_events
-payments
-payment_allocations
-payment_allocation_reversals
-party_billing_settings
+receivable_collection_cases
+receivable_collection_actions
+receivable_promises_to_pay
+receivable_disputes
 ```
 
-No `customer_statements`, `statement_lines`, `aging_balances` or other duplicate balance tables are introduced.
+The relationships remain tenant-contextual and normalised:
 
-The production stream therefore remains at **16 migrations**, with `20260817103000_payment_allocation_permissions.sql` still the latest migration.
+```text
+Customer Party
+    ↓
+Collection Case
+    ├── immutable Collection Actions
+    ├── Promises to Pay
+    └── Receivable Disputes
+```
 
-The application derives historical account positions from issue/allocation/reversal/void timestamps and keeps unlike currencies separated instead of storing mutable report balances.
+Promises and disputes may optionally reference an invoice, but application policy requires that invoice to belong to the same tenant and collection-case customer.
+
+No collection table stores current overdue, outstanding, settlement or aging balances. Those remain derived through Package 004F from immutable finance facts.
+
+The migration also adds:
+
+```text
+finance.collections.view
+finance.collections.case.manage
+finance.collections.action.record
+finance.collections.promise.manage
+finance.collections.dispute.manage
+```
+
+Mutation permissions use `finance.manage` as same-domain umbrella fallback. Collections reads require `finance.view` plus `finance.collections.view` (or the `finance.manage` fallback for the collections-read key).
+
+Existing Owner, Administrator and Finance/Commercial roles receive all five collections keys. `OrganisationBootstrapService` persists equivalent grants for future organisations.
+
+The first collections boundary deliberately does **not** create automatic reminder schedules/delivery, legal escalation, credit-limit/hold policy, late-fee/interest calculation, bad-debt/write-off or general-ledger posting.
 
 ## Current structure
 
-After all **16** production migrations the application structure remains:
+After all **17** production migrations the validated target application structure is:
 
-- **344 base tables**
-- **749 foreign keys**
-- **429 `CHECK` constraints**
+- **348 base tables**
+- **767 foreign keys**
+- **439 `CHECK` constraints**
+
+The Package 004G executable MySQL gate is authoritative for these counts.
 
 ## Current migration validation
 
-The executable Package 004F code head passed the complete MySQL 8.4.11 gate:
+The executable Package 004G branch has already proved the migration, structural and generated-type stages on MySQL 8.4.11:
 
 ```text
-16 production migrations applied / 0 pending
-344 base tables / 749 foreign keys / 429 CHECK constraints
-zero generated Kysely drift
-20 integration files / 93 real-MySQL tests passed
-finance/receivables-reporting.integration.test.ts: 5/5 passed
-finance/payment-allocation.integration.test.ts: 6/6 passed
-organisation-bootstrap.integration.test.ts: 4/4 passed
-svelte-check: 0 errors / 0 warnings
+17 production migrations applied / 0 pending
+348 base tables / 767 foreign keys / 439 CHECK constraints
+zero drift across core + collections generated Kysely outputs
 ```
 
-The final documentation-synchronised PR head must prove the same gate before merge.
+The permanent 004G integration suite and the final documentation-synchronised PR head must pass the complete real-MySQL and Svelte gate before merge.
 
 ## Migration rules
 
@@ -191,6 +181,7 @@ The final documentation-synchronised PR head must prove the same gate before mer
 - Released migration contents are immutable.
 - All production changes are forward migrations.
 - A new product surface does not require a migration when existing normalised structures and existing authority correctly support it.
+- A new persistent business fact requires a normalised forward migration rather than an application-only shadow store.
 - MySQL-specific DDL is explicit rather than inferred from an ORM schema.
 - Committed Dbmate SQL remains released migration authority.
 - Destructive production changes use expand/migrate/contract sequencing where required.

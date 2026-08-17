@@ -52,7 +52,12 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'finance.payment.create',
 	'finance.payment.allocate',
 	'finance.payment.allocation.reverse',
-	'finance.payment.reverse'
+	'finance.payment.reverse',
+	'finance.collections.view',
+	'finance.collections.case.manage',
+	'finance.collections.action.record',
+	'finance.collections.promise.manage',
+	'finance.collections.dispute.manage'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -103,7 +108,12 @@ const STANDARD_ROLES = [
 			'finance.payment.create',
 			'finance.payment.allocate',
 			'finance.payment.allocation.reverse',
-			'finance.payment.reverse'
+			'finance.payment.reverse',
+			'finance.collections.view',
+			'finance.collections.case.manage',
+			'finance.collections.action.record',
+			'finance.collections.promise.manage',
+			'finance.collections.dispute.manage'
 		]
 	},
 	{
@@ -153,7 +163,12 @@ const STANDARD_ROLES = [
 			'finance.payment.create',
 			'finance.payment.allocate',
 			'finance.payment.allocation.reverse',
-			'finance.payment.reverse'
+			'finance.payment.reverse',
+			'finance.collections.view',
+			'finance.collections.case.manage',
+			'finance.collections.action.record',
+			'finance.collections.promise.manage',
+			'finance.collections.dispute.manage'
 		]
 	},
 	{
@@ -196,7 +211,12 @@ const STANDARD_ROLES = [
 			'finance.payment.create',
 			'finance.payment.allocate',
 			'finance.payment.allocation.reverse',
-			'finance.payment.reverse'
+			'finance.payment.reverse',
+			'finance.collections.view',
+			'finance.collections.case.manage',
+			'finance.collections.action.record',
+			'finance.collections.promise.manage',
+			'finance.collections.dispute.manage'
 		]
 	},
 	{
@@ -573,6 +593,7 @@ export class OrganisationBootstrapService {
 				actingOrganisationId: target.organisationId,
 				actorUserId: link.user_id,
 				actorMemberId: target.memberId,
+				projectId: null,
 				actionKey: 'organisation.bootstrap.activate',
 				subjectType: 'organisation',
 				subjectPublicId: target.organisationPublicId,

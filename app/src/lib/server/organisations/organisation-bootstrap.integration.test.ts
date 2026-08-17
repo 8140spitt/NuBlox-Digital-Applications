@@ -234,6 +234,18 @@ describe('organisation bootstrap and onboarding', () => {
 			expect(ownerPermissions).toContain(paymentPermission);
 			expect(administratorPermissions).toContain(paymentPermission);
 		}
+		const collectionPermissions = [
+			'finance.collections.view',
+			'finance.collections.case.manage',
+			'finance.collections.action.record',
+			'finance.collections.promise.manage',
+			'finance.collections.dispute.manage'
+		];
+		for (const collectionPermission of collectionPermissions) {
+			expect(ownerPermissions).toContain(collectionPermission);
+			expect(administratorPermissions).toContain(collectionPermission);
+			expect(financePermissions).toContain(collectionPermission);
+		}
 		for (const financeOperationalPermission of [
 			'finance.view',
 			'finance.billing.manage',
@@ -262,6 +274,7 @@ describe('organisation bootstrap and onboarding', () => {
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.credit_note.issue', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.invoice.void', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.payment.reverse', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.collections.case.manage', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
 		const auditActions = await db
 			.selectFrom('audit_events')
