@@ -80,7 +80,7 @@
 
 <section class="panel">
 	<div class="section-heading"><div><p class="eyebrow">As at {data.period.to}</p><h2>Aged outstanding invoices</h2></div></div>
-	{#if data.aging.length === 0 || data.aging.every((position) => position.openInvoiceCount === 0)}
+	{#if data.aging.length === 0 || data.aging.every((position: { openInvoiceCount: number }) => position.openInvoiceCount === 0)}
 		<p class="muted">No outstanding invoices remain at the statement end date.</p>
 	{:else}
 		<div class="aging-list">
@@ -93,7 +93,7 @@
 							{#each position.invoices as invoice}
 								<a class="invoice-row" href={`/finance/invoices/${invoice.invoicePublicId}`}>
 									<div><strong>{invoice.invoiceNumber}</strong><small>Issued {eventDate(invoice.issuedAt)} · due {invoice.dueDate ? dateOnly(invoice.dueDate) : 'not set'} · {invoice.daysOverdue > 0 ? `${invoice.daysOverdue} days overdue` : 'current'}</small></div>
-									<div class="money"><strong>{money(invoice.outstandingAmount, position.currencyCode)}</strong><small>{money(invoice.invoiceGross, position.currencyCode)} gross · {money(invoice.issuedCreditGross, position.currencyCode)} credits · {money(invoice.activeAllocatedAmount, position.currencyCode)} cash</small></div>
+									<div class="money"><strong>{money(invoice.outstandingAmount, position.currencyCode)}</strong><small>{money(invoice.invoiceGross, position.currencyCode)} gross · {money(invoice.issuedCreditGross, position.currencyCode)} credits · {money(invoice.activeAllocatedAmount, position.currencyCode)} cash · {money(invoice.activeWriteOffAmount ?? '0.0000', position.currencyCode)} write-off</small></div>
 								</a>
 							{/each}
 						</div>

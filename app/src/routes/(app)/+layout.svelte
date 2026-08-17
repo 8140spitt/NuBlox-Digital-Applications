@@ -40,6 +40,7 @@
 			<a class="subnav" href="/finance/payments">Payments</a>
 			<a class="subnav" href="/finance/receivables">Receivables</a>
 			<a class="subnav" href="/finance/collections">Collections</a>
+			<a class="subnav" href="/finance/bad-debt">Bad debt</a>
 			<a class="subnav" href="/finance/billing">Billing settings</a>
 			<a class="subnav" href="/finance/tax">Tax settings</a>
 			<a href="/organisation">Organisation</a>
@@ -52,23 +53,8 @@
 </div>
 
 <style>
-	.app-shell {
-		min-height: 100vh;
-		display: grid;
-		grid-template-columns: 15rem 1fr;
-		grid-template-rows: auto 1fr;
-		background: #f5f5f2;
-		color: #151515;
-	}
-	.topbar {
-		grid-column: 1 / -1;
-		display: grid;
-		grid-template-columns: 15rem 1fr auto;
-		align-items: center;
-		min-height: 4rem;
-		border-bottom: 1px solid #d9d9d2;
-		background: white;
-	}
+	.app-shell { min-height: 100vh; display: grid; grid-template-columns: 15rem 1fr; grid-template-rows: auto 1fr; background: #f5f5f2; color: #151515; }
+	.topbar { grid-column: 1 / -1; display: grid; grid-template-columns: 15rem 1fr auto; align-items: center; min-height: 4rem; border-bottom: 1px solid #d9d9d2; background: white; }
 	.brand { padding: 0 1.25rem; font-weight: 850; text-decoration: none; color: inherit; }
 	.tenant, .account { display: flex; align-items: center; gap: 0.8rem; padding: 0 1.25rem; }
 	.tenant span, .account span { font-weight: 650; }
