@@ -29,7 +29,10 @@ export type FinanceMutationPermission =
 	| 'finance.collections.case.manage'
 	| 'finance.collections.action.record'
 	| 'finance.collections.promise.manage'
-	| 'finance.collections.dispute.manage';
+	| 'finance.collections.dispute.manage'
+	| 'finance.collections.policy.manage'
+	| 'finance.collections.reminder.generate'
+	| 'finance.collections.reminder.dispatch';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
