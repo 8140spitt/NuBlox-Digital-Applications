@@ -82,9 +82,9 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '348'
-          test "$fk_count" = '767'
-          test "$check_count" = '439'
+          test "$table_count" = '352'
+          test "$fk_count" = '778'
+          test "$check_count" = '450'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
