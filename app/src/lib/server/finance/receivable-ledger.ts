@@ -98,7 +98,7 @@ export async function customerOutstandingByCurrency(
 	organisationId: string,
 	customerPartyId: string,
 	currencyCode: string,
-	currentRead = false
+	currentRead = true
 ): Promise<string> {
 	let invoiceQuery = db
 		.selectFrom('financial_documents')
