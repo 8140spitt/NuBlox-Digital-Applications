@@ -107,7 +107,7 @@ export class CreditControlService {
 	private async rawState(db: DatabaseExecutor, organisationId: string, customerPartyId: string, currencyCode: string, lock = false) {
 		if (lock) {
 			await this.customerById(db, organisationId, customerPartyId, true);
-			await db.selectFrom('financial_documents').select('id').where('organisation_id', '=', organisationId).where('document_kind', '=', 'invoice').where('lifecycle_status', '=', 'issued').where('customer_party_id', '=', customerPartyId).where('currency_code', '=', currencyCode).forUpdate().execute();
+			await db.selectFrom('financial_documents').select('id').where('organisation_id', '=', organisationId).where('document_kind', '=', 'invoice').where('customer_party_id', '=', customerPartyId).where('currency_code', '=', currencyCode).forUpdate().execute();
 		}
 		const [policy, hold, outstandingAmount] = await Promise.all([this.policyState(db, organisationId, customerPartyId, currencyCode, lock), this.activeHold(db, organisationId, customerPartyId, lock), customerOutstandingByCurrency(db, organisationId, customerPartyId, currencyCode)]);
 		const limitExhausted = Boolean(policy?.isEnabled && policy.creditLimitAmount !== null && parseScaledDecimal(outstandingAmount, 4, 'Outstanding amount', true) >= parseScaledDecimal(policy.creditLimitAmount, 4, 'Credit limit', true));
