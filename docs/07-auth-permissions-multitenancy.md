@@ -28,7 +28,7 @@ project membership scope where required
 tenant-record + lifecycle/business policy
 ```
 
-The selected-organisation cookie is only a selection hint. Membership is revalidated before trusted tenant context is constructed.
+The selected-organisation cookie is a selection hint only. Membership is revalidated before trusted tenant context is constructed.
 
 ## 3. Permission precedence
 
@@ -120,7 +120,7 @@ contract.amendment.issue
 contract.amendment.decide
 ```
 
-### Package 004 operational finance
+### Package 004 finance
 
 ```text
 finance.view
@@ -145,15 +145,19 @@ finance.collections.dispute.manage
 finance.collections.policy.manage
 finance.collections.reminder.generate
 finance.collections.reminder.dispatch
+finance.credit_control.view
+finance.credit_control.policy.manage
+finance.credit_control.hold.manage
+finance.credit_control.override
 ```
 
 `finance.manage` is the same-domain umbrella for finance granular keys. It never crosses into commercial or contract authority.
 
-Package 004F adds no separate receivables-reporting key; statements and aging use `finance.view`.
+Package 004F statement/aging reads use `finance.view`.
 
-Package 004G adds a separate collections read key because collection-case evidence contains operational contact/commitment/dispute information beyond the underlying receivable report. Collections reads therefore require `finance.view` **and** `finance.collections.view` (or `finance.manage` as same-domain fallback for the collections key).
+Package 004G+ collections evidence additionally requires `finance.collections.view` or `finance.manage` fallback.
 
-Package 004H adds three independently delegable automation keys: policy management, reminder generation and reminder dispatch. Their explicit separation prevents authority to perform routine collections operations from automatically becoming authority to redefine escalation thresholds/templates or trigger an external delivery side effect.
+Package 004I credit-control workspace/details require `finance.view` plus `finance.credit_control.view` or `finance.manage` fallback. A commercial/contract actor may receive a masked blocked/clear decision without receiving finance values.
 
 ## 5. Standard organisation roles
 
@@ -169,6 +173,8 @@ Field Worker
 Read Only
 ```
 
+The founding member receives Owner only.
+
 ### Owner / Administrator
 
 Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular operational permissions.
@@ -183,7 +189,7 @@ contract.manage
 finance.manage
 ```
 
-They also receive all released 004G collections and 004H automation granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
+For Package 004I they also receive all four granular credit-control keys explicitly.
 
 ### Manager
 
@@ -191,51 +197,27 @@ Manager receives delegated member, project and CRM party/contact authority, incl
 
 ### Finance/Commercial
 
-Default grants include:
+Default finance/credit responsibilities include ordinary billing, invoice preparation/issue, credit notes, payment/allocation, collections and:
 
 ```text
-project.view
-crm.view
-commercial.view
-commercial.estimate.manage
-commercial.quotation.manage
-commercial.quotation.issue
-commercial.quotation.response.record
-contract.view
-finance.view
-finance.billing.manage
-finance.invoice.create
-finance.invoice.draft.manage
-finance.invoice.issue
-finance.credit_note.create
-finance.credit_note.draft.manage
-finance.credit_note.issue
-finance.payment.create
-finance.payment.allocate
-finance.payment.allocation.reverse
-finance.payment.reverse
-finance.collections.view
-finance.collections.case.manage
-finance.collections.action.record
-finance.collections.promise.manage
-finance.collections.dispute.manage
-finance.collections.reminder.generate
-finance.collections.reminder.dispatch
+finance.credit_control.view
+finance.credit_control.policy.manage
+finance.credit_control.hold.manage
 ```
 
 Finance/Commercial deliberately does **not** receive:
 
 ```text
+finance.manage
+finance.invoice.void
+finance.credit_control.override
 commercial.manage
 commercial.quotation.convert
 project.create
 contract.manage
-finance.manage
-finance.invoice.void
-finance.collections.policy.manage
 ```
 
-This role can perform ordinary AR/collections work and generate/dispatch controlled reminders, but cannot redefine collections policy by default. Exceptional invoice void and policy authoring remain Owner/Administrator/custom delegation boundaries.
+The role may maintain limit policy and place/release stop-trading holds but cannot bypass those controls by default.
 
 ### Other roles
 
@@ -244,8 +226,6 @@ Member/Professional → project.view + crm.view
 Field Worker        → project.view
 Read Only           → project.view + crm.view
 ```
-
-The founding member receives Owner only.
 
 ## 6. Controlled account provisioning
 
@@ -256,7 +236,14 @@ Better Auth signup remains fail-closed. Exactly one provisioning intent must val
 
 Authentication alone is not tenant authority. Protected requests require active NuBlox user resolution and active organisation membership.
 
-Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations must remain aligned at the persisted role-permission-row level. Package 004G keeps the five collections grants in parity; Package 004H additionally keeps Owner/Administrator policy+generation+dispatch and Finance/Commercial generation+dispatch in parity.
+Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations must remain aligned at the persisted role-permission-row level.
+
+Package 004I therefore persists this exact split for both existing and future organisations:
+
+```text
+Owner/Admin         → view + policy manage + hold manage + override
+Finance/Commercial → view + policy manage + hold manage
+```
 
 ## 7. Organisation administration authority
 
@@ -276,46 +263,78 @@ organisation.manage
 
 Administrative services enforce delegation ceilings, self-mutation restrictions, manager protection, cross-tenant rejection and final-manager lockout protection.
 
-## 8. CRM access model
+## 8. Domain access principles
 
-The CRM is tenant-private:
+Normal CRM, commercial, contract and finance reads require active membership, the relevant read permission and same-tenant record ownership. Mutations additionally require operation-specific granular authority or the same-domain umbrella plus lifecycle/business policy.
 
-```text
-active user
-AND active organisation membership
-AND effective CRM permission
-AND record.organisation_id = active tenant
-AND record-state policy
-```
+Foreign public IDs are tenant-masked where disclosure would leak another organisation's record identity.
 
-CRM parties remain separate from platform organisations/users/members/project participation. Foreign public IDs are masked as not found where disclosure would leak tenant information.
+Project contextual roles classify context and never grant application authority.
 
-## 9. Commercial access model
+## 9. Accepted quotation → project conversion
 
-Package 003 reads require active membership + `commercial.view` + same-tenant scope. Mutations additionally require the granular commercial key or `commercial.manage` fallback and valid document/version lifecycle.
-
-Accepted quotation → project conversion is conjunctive:
+Conversion requires:
 
 ```text
-commercial.quotation.convert OR commercial.manage
+(commercial.quotation.convert OR commercial.manage)
 AND project.create
 AND exact issued + locked quotation version
 AND accepted response for that exact version
+AND source-estimate/project provenance policy
+AND Package 004I credit-control decision
 ```
 
 `quotation_project_conversions` remains authoritative idempotency/provenance evidence.
 
-## 10. Package 004 contract access model
+### Package 004I credit gate
 
-Normal contract reads require active membership, `contract.view` and same-tenant contract ownership. Mutations require the operation-specific granular key or `contract.manage` fallback plus lifecycle policy.
+The service derives:
 
-Quotation-derived formation additionally requires project visibility, exact active project-member scope and accepted quotation-conversion provenance.
+```text
+Current Receivable
+= issued invoice gross
+− issued credit-note gross
+− active payment allocations
 
-Issued/executed contract versions reject ordinary draft mutation. Controlled amendments require an active contract with executed baseline; only agreed amendments affect the derived current contract value.
+Quotation Commitment
+= accepted non-optional line gross
++ stored quotation-item tax amounts
 
-## 11. Operational finance read boundary
+Projected Exposure
+= Current Receivable + Quotation Commitment
+```
 
-Normal finance-record reads require:
+Conversion is blocked when:
+
+```text
+active customer credit hold
+OR
+projected exposure > enabled currency credit limit
+```
+
+An already-converted accepted response is returned idempotently before a fresh credit gate so retry cannot create duplicate override evidence.
+
+## 10. Contract access and execution
+
+Normal contract reads require active membership, `contract.view` and same-tenant contract ownership. Mutations require the granular contract key or `contract.manage` fallback plus lifecycle policy.
+
+Contract draft management and issue remain available under a credit hold because they are pre-execution preparation/evidence boundaries.
+
+Contract **execution** additionally passes Package 004I credit control when an executed client CRM party is available:
+
+```text
+Contract Commitment
+= Σ issued contract-version value components
+
+Projected Exposure
+= Current Receivable + Contract Commitment
+```
+
+Execution is blocked by the same active-hold / projected-limit policy before execution/signatory evidence is inserted and before the contract becomes active.
+
+## 11. Finance read and mutation boundary
+
+Normal finance reads require:
 
 ```text
 active NuBlox user
@@ -324,365 +343,207 @@ AND finance.view
 AND finance record organisation_id = active tenant
 ```
 
-Mutations require the granular finance permission or `finance.manage` fallback plus record/lifecycle policy.
+Finance mutations require the granular finance permission or `finance.manage` fallback plus record/lifecycle/business policy.
 
-Foreign finance public IDs are tenant-masked as not found after the caller passes the relevant finance permission boundary.
+Foreign finance public IDs are tenant-masked after the caller passes the relevant permission boundary.
 
-## 12. Billing and invoice authority
+## 12. Authoritative receivable model
 
-### Billing settings
+NuBlox does not persist a second editable current balance for reporting, collections or credit control.
 
-```text
-finance.billing.manage OR finance.manage
-```
-
-Customer billing settings are mutable preparation policy. They do not rewrite issued financial-document evidence.
-
-### Invoice creation
+For one issued invoice:
 
 ```text
-finance.invoice.create OR finance.manage
-AND contract.view
-AND same-tenant active contract
-AND executed contract-version baseline
-AND executed client party exists
-```
-
-### Draft management and issue
-
-`finance.invoice.draft.manage OR finance.manage` maintains draft header/lines/tax selection.
-
-`finance.invoice.issue OR finance.manage` requires valid draft/customer/due-date policy. Issue finalises due date, refreshes issue-date tax, snapshots customer/contact/address evidence, allocates the legal invoice number and freezes ordinary mutation.
-
-## 13. Receivable-correction authority
-
-### Credit notes
-
-```text
-finance.credit_note.create OR finance.manage
-AND same-tenant issued invoice
-AND positive remaining creditable value
-```
-
-Draft management and issue use their own granular keys with `finance.manage` fallback. Credit issue preserves source-line provenance and original applied-tax evidence and prevents cumulative over-crediting.
-
-### Exceptional invoice void
-
-```text
-finance.invoice.void OR finance.manage
-AND invoice status = issued
-AND explicit void reason
-AND no non-void credit-note history
-AND no unreversed payment allocation
-```
-
-Void is stronger authority because it changes an already-issued legal document lifecycle. Finance/Commercial does not receive it by default.
-
-## 14. Payment receipt and allocation authority
-
-Payment receipt:
-
-```text
-finance.payment.create OR finance.manage
-AND active payment method
-AND positive amount
-AND valid currency
-```
-
-Allocation:
-
-```text
-finance.payment.allocate OR finance.manage
-AND same-tenant non-reversed payment
-AND same-tenant issued invoice
-AND payment currency = invoice currency
-AND allocation > 0
-AND allocation <= usable payment
-AND allocation <= invoice outstanding
-```
-
-Authoritative balances are derived:
-
-```text
-Usable Payment
-= Payment Amount
-− Active Allocations
-
 Invoice Outstanding
 = Issued Invoice Gross
 − Issued Credit Note Gross
 − Active Payment Allocations
 ```
 
-Allocation locks the payment and target invoice before recomputing both limits.
+Customer/currency receivable is the sum of positive issued invoice outstanding positions. Voided invoices contribute no exposure. Unallocated cash does not reduce customer receivable until allocated.
 
-Allocation reversal and payment reversal each use dedicated granular keys under `finance.manage` and append correction evidence rather than rewriting/deleting original facts.
+`receivable-ledger.ts` is shared by invoice-position and credit-control services.
 
-## 15. Customer-statement and aging access
+## 13. Credit-control read authority
 
-Package 004F is a read-only finance view.
-
-Access requires:
+The full credit-control workspace/details require:
 
 ```text
-active NuBlox user
-AND active organisation membership
+active membership
 AND finance.view
-AND same-tenant customer/finance records
+AND (finance.credit_control.view OR finance.manage)
+AND same-tenant customer scope
 ```
 
-The statement service derives customer-account movements from authoritative finance-event timestamps:
+A user with commercial/project/contract authority but without this finance read boundary may see:
 
 ```text
-invoice issue       → debit
-credit-note issue   → credit
-payment allocation  → credit
-allocation reversal → debit
-invoice void        → credit
+blocked / clear
+active-hold reason category
+limit-breach reason category
+whether that actor may override
 ```
 
-A raw/unallocated payment is not treated as a customer receivable credit. Historical reports use the event state that existed at the selected cutoff. Statement day boundaries use the active tenant timezone. Currencies remain separated until an explicit FX/reporting-currency policy exists.
+but current receivable, commitment, projected exposure and limit amounts remain masked.
 
-## 16. Collections read authority
-
-Collection-case evidence is protected by a conjunctive read boundary:
+## 14. Credit-limit policy authority
 
 ```text
-active NuBlox user
-AND active organisation membership
-AND finance.view
-AND (finance.collections.view OR finance.manage)
-AND same-tenant customer/case scope
-```
-
-`finance.view` alone is insufficient for collection-case actions, promises or disputes.
-
-An explicit member deny on `finance.collections.view` cannot be bypassed by the `finance.manage` umbrella because the granular key is resolved first.
-
-## 17. Collection-case authority
-
-Opening, pausing, resuming and closing cases requires:
-
-```text
-finance.collections.case.manage OR finance.manage
-```
-
-Opening additionally requires a currently overdue positive receivable derived from Package 004F.
-
-The service serialises the same-tenant customer and issued invoice documents before the final overdue revalidation and insertion. If an `open` or `paused` case already exists, case start is idempotent and returns that case.
-
-Lifecycle:
-
-```text
-open ↔ paused → closed
-```
-
-Closing requires an explicit reason and is blocked while any promise or dispute remains open. Closed cases reject further ordinary mutation.
-
-## 18. Collection-action authority
-
-```text
-finance.collections.action.record OR finance.manage
-AND active same-tenant collection case
-```
-
-Normal user-recordable evidence types are:
-
-```text
-reminder
-phone_call
-note
-```
-
-Package 004G's manual evidence action does not itself prove outbound delivery. Package 004H successful reminder dispatch appends `reminder` action evidence only after the delivery boundary succeeds.
-
-## 19. Promise-to-pay authority
-
-```text
-finance.collections.promise.manage OR finance.manage
-AND active same-tenant collection case
-AND promised amount > 0
+finance.credit_control.policy.manage OR finance.manage
+AND active same-tenant customer
 AND valid currency
-AND due date
+AND positive enabled limit
+AND explicit reason
 ```
 
-If an invoice is linked:
+Each set/revise/disable action creates a new `receivable_credit_policy_revisions` row. Past policy is not overwritten.
+
+A policy identity is unique per tenant + customer + currency.
+
+## 15. Credit-hold authority
 
 ```text
-invoice organisation = active tenant
-AND invoice customer = case customer
-AND promise currency = invoice currency
+finance.credit_control.hold.manage OR finance.manage
+AND active same-tenant customer/hold
+AND explicit reason
 ```
 
-Promise lifecycle:
+Hold lifecycle:
 
 ```text
-open → kept
-open → broken
-open → cancelled
+active → released
 ```
 
-A promise is operational evidence only. It does not create a payment, allocation or settlement.
+One active hold is permitted per customer. Repeated placement while active is idempotent. Release retains the original placement evidence and adds release actor/time/reason.
 
-## 20. Receivable-dispute authority
+A hold is customer-wide and blocks the named new-commitment boundaries regardless of currency.
+
+## 16. Credit-control override authority
+
+Exceptional continuation requires:
 
 ```text
-finance.collections.dispute.manage OR finance.manage
-AND active same-tenant collection case
-AND reason
+finance.credit_control.override OR finance.manage
+AND an actual active hold or projected limit breach
+AND explicit non-empty override reason
 ```
 
-A disputed amount is optional; when supplied it must be positive and paired with a currency. An invoice link must belong to the same tenant and case customer, and a supplied currency must match the invoice currency.
-
-Dispute lifecycle:
+Permission precedence is critical:
 
 ```text
-open → resolved
-open → withdrawn
+explicit member deny on finance.credit_control.override
+    > finance.manage fallback
 ```
 
-A dispute does not alter invoice lifecycle, tax, outstanding balance or settlement state. Financial correction still requires the normal credit-note/void/payment workflow.
+Therefore broad finance authority cannot bypass a deliberate member-level override prohibition.
 
-## 21. Collections policy authority
-
-Policy authoring requires:
+Override evidence snapshots:
 
 ```text
-finance.collections.policy.manage OR finance.manage
+customer
+workflow + subject
+currency
+current receivable
+proposed commitment
+projected exposure
+applicable limit/hold
+reason
+authorising member/time
 ```
 
-Policy versions use:
+Override evidence is created **inside the same transaction** as quotation conversion or contract execution. If the business transaction fails, the override rolls back.
+
+## 17. Credit-control concurrency policy
+
+A new commitment must not race an invoice becoming issued.
+
+At enforcement the service serializes on:
 
 ```text
-draft → active → retired
+customer party
++
+all invoice financial_documents for that customer/currency
 ```
 
-Draft stages may be edited by an authorised policy manager. Activated versions are immutable through ordinary APIs. Activation requires at least one stage, contiguous stage sequence beginning at 1 and strictly increasing positive days-overdue triggers.
+It then re-derives exposure from issued invoices only.
 
-A new policy version does not rewrite a generated reminder from an earlier version.
+This gives a deterministic order between invoice issue and the new-commitment gate without making invoice issue itself forbidden by the hold.
 
-## 22. Reminder generation and dispatch authority
+## 18. Operations deliberately allowed under a hold
 
-### Generation
+A credit hold is stop-**new-trade** policy, not a freeze on receivable administration.
+
+Therefore Package 004I continues to allow the appropriately authorised workflows for:
 
 ```text
-finance.collections.reminder.generate OR finance.manage
-AND collections read boundary
-AND crm.view
-AND open same-tenant collection case
-AND active policy stage currently due
-AND no configured suppression
-AND resolvable same-tenant recipient email
+invoice issue for existing work
+credit notes / exceptional correction
+payment receipt
+payment allocation/reversal
+collections actions/reminders
 ```
 
-`crm.view` is required because generation explicitly traverses CRM party/contact identity to select a recipient. It does not grant finance mutation authority by itself.
+These actions bill, correct, settle or manage existing exposure rather than create a new customer commitment.
 
-Generation creates an immutable pending reminder snapshot and sends nothing. Generation is idempotent for the same collection case + policy stage.
-
-### Dispatch
+## 19. Cross-domain separation
 
 ```text
-finance.collections.reminder.dispatch OR finance.manage
-AND collections read boundary
-AND same-tenant pending reminder
-AND collection case still open
-AND receivable still overdue
-AND stage still due
-AND no configured suppression
+commercial.manage cannot set/release/override finance credit control
+contract.manage cannot set/release/override finance credit control
+finance.manage cannot mutate contracts or quotations by itself
 ```
 
-Dispatch revalidates the live receivable/suppression state before the external side effect. A failed delivery attempt is immutable evidence and leaves the reminder pending for retry; success marks the reminder sent and appends collection-action evidence.
+The underlying commercial/contract permission remains required for the business action. Credit override authority only removes the additional finance stop; it does not grant project creation, quotation conversion or contract execution authority.
 
-An explicit member deny on `finance.collections.reminder.dispatch` overrides the `finance.manage` fallback.
-
-Package 004H does not claim a background scheduler. Generation and dispatch remain explicit operations in the current boundary.
-
-## 23. Cross-domain separation
-
-```text
-commercial.manage cannot issue/credit/void/allocate/collect finance records
-contract.manage cannot issue/credit/void/allocate/collect finance records
-finance.manage cannot mutate contracts or quotations
-```
-
-`crm.view` is required only for explicit CRM traversal such as payer/collections-recipient resolution. It never grants finance mutation authority. Project roles classify context and never grant application permissions.
-
-## 24. Tenant-isolation rules
+## 20. Tenant-isolation rules
 
 - Trusted tenant context comes from authenticated active membership.
 - Tenant-owned queries include active `organisation_id`.
-- CRM, commercial, contract, amendment and finance reads/writes are tenant-bounded.
-- Matching surrogate/public IDs are never proof of access by themselves.
-- Foreign tenant record identities are masked where appropriate.
-- Collections invoice links are additionally constrained to the collection-case customer.
-- Reminder policy, generated reminder and delivery-attempt facts are organisation-scoped.
-- Reminder recipient resolution uses same-tenant CRM party/contact relationships.
-- Project reads require exact-member project scope.
-- Project roles never grant application permissions.
+- CRM, commercial, contract and finance reads/writes remain tenant-bounded.
+- Matching public/surrogate IDs are never proof of access.
+- Foreign tenant identities are masked where appropriate.
+- Project reads require exact member scope.
 - CRM identity is never promoted to platform identity by inference.
-- Customer/document/reminder snapshots preserve evidence without creating platform identity.
-- Derived reports preserve event-time and tenant-timezone semantics rather than caching mutable balances as authority.
-- Collections/policy/reminder facts cannot become a shadow receivable ledger.
-- Caches, search, exports, files and future scheduled jobs must preserve tenant boundaries.
-- Privileged support access must be explicit and auditable.
+- Derived reports and credit utilisation preserve authoritative finance-event semantics rather than caching mutable balances.
+- Caches, exports, files and future jobs must preserve tenant boundaries.
 
-## 25. Session requirements
-
-Production session policy includes secure HttpOnly cookies, Secure transport, appropriate SameSite behavior, revocation/logout, rotation after privilege/authentication changes, idle/absolute expiry and MFA step-up where risk policy requires it.
-
-## 26. Release testing requirements
+## 21. Release testing requirements
 
 The real-MySQL release gate covers, at minimum:
 
 - authentication and active-tenant resolution;
 - explicit deny precedence and same-domain umbrella behavior;
 - organisation bootstrap/invitation controls and standard-role parity;
-- CRM tenant isolation and granular authority;
-- quotation conversion and project scope;
+- CRM/commercial/project/contract tenant isolation;
+- quotation conversion and project provenance;
 - contract formation/execution/amendment integrity;
-- billing/invoice issue policy;
-- credit-note provenance, original-tax preservation and over-credit prevention;
-- exceptional invoice-void guards;
-- payment receipt, allocation, reversal and over-allocation prevention;
-- currency mismatch rejection;
-- receivables reporting under `finance.view`;
-- currency-separated aging and historical statement cutoff correctness;
-- tenant-timezone statement periods and foreign-customer masking;
-- collections read requiring both finance and collections read authority;
-- only currently overdue accounts entering collections eligibility;
-- idempotent/serialised active-case opening;
-- immutable collection action evidence;
-- same-customer invoice scoping for promises/disputes;
-- promises/disputes leaving the receivable ledger unchanged;
-- case closure blockers and closed-case immutability;
-- collections automation role delegation and bootstrap parity;
-- immutable active policy versions and sequential/increasing stage validation;
-- reminder generation idempotency and immutable recipient/template snapshots;
-- reminder generation creating no ledger/contact-delivery side effect;
-- explicit reminder-dispatch deny overriding `finance.manage`;
-- immutable failed-attempt evidence and controlled retry;
-- stable message idempotency key across retries;
-- current-promise/dispute suppression;
-- overdue promise review;
-- paused/closed case dispatch rejection;
-- live receivable revalidation before dispatch;
-- foreign-tenant collection/reminder masking;
-- zero generated drift across both Kysely outputs;
+- invoice/credit/payment/allocation receivable integrity;
+- receivable reporting and collections controls;
+- Package 004H dunning policy/reminder evidence;
+- Package 004I four-permission availability;
+- Owner/Admin vs Finance/Commercial persisted role parity for existing and future organisations;
+- append-only credit-limit revision history;
+- idempotent hold placement and controlled release;
+- authoritative utilisation with no used-credit balance;
+- exact-limit projection allowed;
+- below-limit current balance + over-limit proposed commitment blocked;
+- quotation conversion hold/limit enforcement and masked finance details;
+- contract issue allowed while execution remains gated;
+- reasoned override evidence and transactional rollback;
+- explicit override deny precedence over `finance.manage`;
+- serialization against concurrent draft→issued invoice changes;
+- foreign-tenant credit-control masking;
+- zero generated Kysely drift;
 - Svelte/TypeScript diagnostics.
 
-The Package 004H executable code gate has proved:
+Package 004I release target:
 
 ```text
-18 production migrations applied / 0 pending
-352 tables / 778 foreign keys / 450 CHECK constraints
+19 production migrations applied / 0 pending
+356 tables / 789 foreign keys / 459 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts
-22 integration files / 108 real-MySQL tests passed
-finance collections automation suite: 8/8 passed
-finance collections suite: 7/7 passed
-finance receivables-reporting suite: 5/5 passed
-finance payment-allocation suite: 6/6 passed
-organisation bootstrap suite: 4/4 passed
+26 integration files / 117 real-MySQL tests
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove the same complete gate before merge.
+The final documentation-synchronised PR head must prove this complete gate before merge.
