@@ -33,11 +33,11 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **19 migrations**. The latest migration is:
+The production stream now contains **20 migrations**. The latest migration is:
 
-- `20260817150000_credit_control_limits_holds.sql` — Package 004I controlled customer credit limits, credit-hold lifecycle, projected-exposure enforcement and reasoned override evidence.
+- `20260817180500_default_uk_tax_categories.sql` — data-only invoice-tax configuration hotfix that seeds a UK starter tax catalogue for existing organisations while preserving matching tenant-owned categories and rate history.
 
-The current validated Package 004I target is:
+The current validated application structure remains:
 
 ```text
 356 base tables
@@ -125,6 +125,8 @@ finance.credit_control.override
 
 All four use `finance.manage` only as same-domain fallback.
 
+Tax configuration reuses the existing finance boundary: `finance.view` reads tax settings and `finance.billing.manage` controls tenant tax-category/rate mutations. The invoice line itself still requires the ordinary `finance.invoice.draft.manage` authority.
+
 ## Standard organisation roles
 
 Every organisation receives:
@@ -184,6 +186,8 @@ Controlled Contract Amendments
     ↓
 Customer Billing Defaults
     ↓
+Tenant Tax Configuration
+    ↓
 Draft / Issued Invoice
     ↓
 Controlled Credit Note / Exceptional Invoice Void
@@ -212,6 +216,7 @@ Detailed business specifications:
 - [`docs/39-controlled-collections-dunning.md`](docs/39-controlled-collections-dunning.md)
 - [`docs/40-collections-automation-policy.md`](docs/40-collections-automation-policy.md)
 - [`docs/41-controlled-credit-limits-holds.md`](docs/41-controlled-credit-limits-holds.md)
+- [`docs/42-invoice-tax-settings.md`](docs/42-invoice-tax-settings.md)
 
 ## Operational accounts receivable
 
@@ -225,6 +230,30 @@ Invoice Outstanding
 ```
 
 Package 004F statements/aging and Packages 004G–004I reuse that finance authority rather than creating parallel editable balances.
+
+### Invoice tax configuration
+
+Protected route:
+
+```text
+/finance/tax
+```
+
+Tax categories are organisation-owned reference data with effective-dated rates. Existing organisations receive a starter UK catalogue through the data migration; future/fresh tenants self-provision the same starter set when invoice/tax settings are first used. Matching tenant-owned categories and any existing rate history are never overwritten.
+
+Starter categories are:
+
+```text
+VAT_STANDARD   taxable       20%
+VAT_REDUCED    taxable        5%
+VAT_ZERO       zero           0%
+VAT_EXEMPT     exempt         no percentage rate
+OUTSIDE_SCOPE  outside_scope  no percentage rate
+```
+
+Invoice lines require an explicit tax selection. Draft tax is provisional and issue refreshes the selected category against the rate effective at issue time. Effective-rate changes append a new period rather than rewriting historical issued tax evidence.
+
+Construction domestic reverse charge is deliberately not modelled as an ordinary 0% category; it requires a separate invoice-treatment workflow before NuBlox can claim support for it.
 
 ### Package 004G — controlled collections
 
@@ -301,6 +330,7 @@ Credit checks serialize on the customer and all invoice documents for the same c
 
 Still not claimed implemented:
 
+- construction domestic reverse-charge invoice treatment;
 - FX conversion / cross-currency allocation or credit aggregation;
 - refunds / outbound customer payments;
 - bank-feed/payment-gateway ingestion and bank reconciliation;
@@ -340,17 +370,14 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004I release target:
+Invoice-tax hotfix validation target:
 
 ```text
-19 production migrations applied / 0 pending
+20 production migrations applied / 0 pending
 356 base tables / 789 foreign keys / 459 CHECK constraints
 zero generated Kysely drift across core + collections outputs
-26 integration files / 117 real-MySQL tests
-credit-control suite: 6 tests
-credit-control concurrency suite: 1 test
-credit-control projected-exposure suite: 1 test
-credit-control bootstrap parity suite: 1 test
+27 integration files / 121 real-MySQL tests
+tax-settings suite: 4 tests
 svelte-check: 0 errors / 0 warnings
 ```
 
