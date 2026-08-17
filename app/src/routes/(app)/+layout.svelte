@@ -40,6 +40,8 @@
 			<a class="subnav" href="/finance/payments">Payments</a>
 			<a class="subnav" href="/finance/receivables">Receivables</a>
 			<a class="subnav" href="/finance/collections">Collections</a>
+			<a class="subnav" href="/finance/credit-control">Credit control</a>
+			<a class="subnav" href="/finance/bad-debt">Bad debt</a>
 			<a class="subnav" href="/finance/billing">Billing settings</a>
 			<a href="/organisation">Organisation</a>
 		</nav>
