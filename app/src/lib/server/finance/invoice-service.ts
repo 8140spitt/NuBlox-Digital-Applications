@@ -657,8 +657,29 @@ export class InvoiceService {
 	}
 
 	private async lockDraft(trx: DatabaseExecutor, actor: TenantActorContext, invoicePublicId: string) {
+		const identity = await trx
+			.selectFrom('financial_documents')
+			.select(['id', 'customer_party_id as customerPartyId'])
+			.where('organisation_id', '=', actor.organisationId)
+			.where('public_id', '=', invoicePublicId)
+			.where('document_kind', '=', 'invoice')
+			.executeTakeFirst();
+		if (!identity) throw new RecordNotFoundError('Invoice not found.');
+
+		const customer = await trx
+			.selectFrom('parties')
+			.select('id')
+			.where('organisation_id', '=', actor.organisationId)
+			.where('id', '=', identity.customerPartyId)
+			.forUpdate()
+			.executeTakeFirst();
+		if (!customer) throw new RecordNotFoundError('Invoice customer not found.');
+
 		const record = await this.invoiceRecord(trx, actor.organisationId, invoicePublicId, true);
 		if (!record) throw new RecordNotFoundError('Invoice not found.');
+		if (record.customerPartyId !== identity.customerPartyId) {
+			throw new Error('Invoice customer changed while acquiring the draft lock.');
+		}
 		if (record.lifecycleStatus !== 'draft') throw new FinanceValidationError('Issued invoices are immutable through draft APIs.');
 		return record;
 	}

@@ -153,6 +153,12 @@ describe.sequential('Package 004I credit-control serialization', () => {
 		const invoiceLockedPromise = new Promise<void>((resolve) => { invoiceLocked = resolve; });
 
 		const issuingTransaction = db.transaction().execute(async (trx) => {
+			await trx.selectFrom('parties')
+				.select('id')
+				.where('organisation_id', '=', organisationId)
+				.where('id', '=', customerId)
+				.forUpdate()
+				.executeTakeFirstOrThrow();
 			await trx.selectFrom('financial_documents')
 				.select('id')
 				.where('organisation_id', '=', organisationId)

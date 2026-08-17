@@ -97,9 +97,10 @@ export async function customerOutstandingByCurrency(
 	db: DatabaseExecutor,
 	organisationId: string,
 	customerPartyId: string,
-	currencyCode: string
+	currencyCode: string,
+	currentRead = true
 ): Promise<string> {
-	const invoices = await db
+	let invoiceQuery = db
 		.selectFrom('financial_documents')
 		.select('id')
 		.where('organisation_id', '=', organisationId)
@@ -107,8 +108,9 @@ export async function customerOutstandingByCurrency(
 		.where('lifecycle_status', '=', 'issued')
 		.where('customer_party_id', '=', customerPartyId)
 		.where('currency_code', '=', currencyCode)
-		.orderBy('id', 'asc')
-		.execute();
+		.orderBy('id', 'asc');
+	if (currentRead) invoiceQuery = invoiceQuery.forUpdate();
+	const invoices = await invoiceQuery.execute();
 	const outstanding: string[] = [];
 	for (const invoice of invoices) {
 		const position = await issuedInvoiceOutstanding(db, organisationId, invoice.id);
