@@ -11,6 +11,37 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface ReceivableBadDebtCases {
+  active_invoice_document_id: string | null;
+  close_reason: string | null;
+  closed_at: Date | null;
+  closed_by_member_id: string | null;
+  created_at: Generated<Date>;
+  customer_party_id: string;
+  id: Generated<string>;
+  invoice_document_id: string;
+  opened_at: Generated<Date>;
+  opened_by_member_id: string;
+  opening_reason: string;
+  organisation_id: string;
+  public_id: string;
+  status: Generated<string>;
+  updated_at: Generated<Date>;
+}
+
+export interface ReceivableBadDebtRecommendations {
+  bad_debt_case_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  invoice_document_id: string;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  recommended_amount: Decimal;
+  recommended_at: Generated<Date>;
+  recommended_by_member_id: string;
+}
+
 export interface ReceivableCollectionActions {
   action_type: string;
   collection_case_id: string;
@@ -209,7 +240,55 @@ export interface ReceivablePromisesToPay {
   updated_at: Generated<Date>;
 }
 
+export interface ReceivableWriteOffRecoveries {
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  payment_id: string;
+  public_id: string;
+  reason: string;
+  recorded_by_member_id: string;
+  recovered_amount: Decimal;
+  recovered_at: Generated<Date>;
+  write_off_id: string;
+}
+
+export interface ReceivableWriteOffRecoveryReversals {
+  created_at: Generated<Date>;
+  organisation_id: string;
+  reason: string;
+  recovery_id: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+}
+
+export interface ReceivableWriteOffReversals {
+  created_at: Generated<Date>;
+  organisation_id: string;
+  reason: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+  write_off_id: string;
+}
+
+export interface ReceivableWriteOffs {
+  authorised_at: Generated<Date>;
+  authorised_by_member_id: string;
+  bad_debt_case_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  invoice_document_id: string;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  recommendation_id: string;
+  tax_treatment_policy: string;
+  write_off_amount: Decimal;
+}
+
 export interface DB {
+  receivable_bad_debt_cases: ReceivableBadDebtCases;
+  receivable_bad_debt_recommendations: ReceivableBadDebtRecommendations;
   receivable_collection_actions: ReceivableCollectionActions;
   receivable_collection_cases: ReceivableCollectionCases;
   receivable_collection_policies: ReceivableCollectionPolicies;
@@ -222,4 +301,8 @@ export interface DB {
   receivable_credit_policy_revisions: ReceivableCreditPolicyRevisions;
   receivable_disputes: ReceivableDisputes;
   receivable_promises_to_pay: ReceivablePromisesToPay;
+  receivable_write_off_recoveries: ReceivableWriteOffRecoveries;
+  receivable_write_off_recovery_reversals: ReceivableWriteOffRecoveryReversals;
+  receivable_write_off_reversals: ReceivableWriteOffReversals;
+  receivable_write_offs: ReceivableWriteOffs;
 }
