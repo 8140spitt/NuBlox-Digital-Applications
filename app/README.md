@@ -11,6 +11,7 @@ This app is a modular monolith following `docs/05-system-architecture.md`.
 - MySQL SQL migrations are authoritative; generated Kysely types are derivative.
 - Authentication identity never implies organisation, CRM, commercial, contract, finance or project authority.
 - Tenant-owned records are resolved through active tenant context rather than public/surrogate ID alone.
+- Reporting derives from authoritative domain facts rather than creating parallel editable balance stores.
 
 ## Stack
 
@@ -60,7 +61,7 @@ contract.manage
 finance.manage
 ```
 
-The activated finance family is:
+The activated finance mutation family is:
 
 ```text
 finance.manage
@@ -78,7 +79,7 @@ finance.manage
     └─ finance.payment.reverse
 ```
 
-Umbrellas never cross domains.
+Umbrellas never cross domains. Package 004F reporting uses the established `finance.view` read boundary and adds no duplicate reporting permission.
 
 ## Standard organisation roles
 
@@ -87,6 +88,8 @@ New organisations receive Owner, Administrator, Manager, Finance/Commercial, Mem
 Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions. Existing-tenant migrations and future `OrganisationBootstrapService` defaults are integration-tested for persisted grant parity.
 
 Finance/Commercial receives ordinary operational AR responsibilities including invoice, credit-note and payment receipt/allocation/reversal permissions, but deliberately does not receive `finance.manage` or the stronger `finance.invoice.void` capability.
+
+Any active member with `finance.view` can use the derived statement/aging surfaces; Package 004F does not change standard role templates.
 
 ## Protected application surfaces
 
@@ -115,6 +118,8 @@ Current protected routes include:
 - `/finance/credit-notes/[creditNotePublicId]`
 - `/finance/payments`
 - `/finance/payments/[paymentPublicId]`
+- `/finance/receivables`
+- `/finance/receivables/[customerPartyPublicId]`
 - `/organisation`
 
 The `(app)` server layout rejects unauthenticated requests and redirects authenticated users without a verified tenant to organisation selection.
@@ -138,6 +143,7 @@ src/lib/server/finance/invoice-service.ts
 src/lib/server/finance/credit-note-service.ts
 src/lib/server/finance/payment-service.ts
 src/lib/server/finance/receivable-position-service.ts
+src/lib/server/finance/receivables-reporting-service.ts
 ```
 
 Normal finance access is:
@@ -145,7 +151,7 @@ Normal finance access is:
 ```text
 active NuBlox user
 AND active organisation membership
-AND finance.view for reads
+AND finance.view for reads/reporting
 AND granular finance permission OR finance.manage for mutations
 AND same-tenant record scope
 AND document/cash lifecycle policy
@@ -211,15 +217,11 @@ The allocation transaction locks the payment first and target invoice second, th
 
 A payer/customer mismatch is surfaced for review but not automatically rejected because valid third-party payments are possible.
 
-### Allocation reversal
+### Allocation and payment reversal
 
 An allocation is immutable. `finance.payment.allocation.reverse OR finance.manage` creates one `payment_allocation_reversals` record with actor, timestamp and explicit reason. The original allocation remains visible and the amount becomes usable on the payment and outstanding on the invoice again.
 
-### Payment reversal
-
-A payment receipt is immutable. `finance.payment.reverse OR finance.manage` creates a `payment_reversals` record.
-
-Before the payment reversal is inserted, the transaction locks every allocation for that payment and creates reversal rows for every still-active allocation. This preserves the Package 004 invariant that a reversed payment cannot retain active allocations.
+A payment receipt is immutable. `finance.payment.reverse OR finance.manage` creates a `payment_reversals` record only after the same transaction has created reversal evidence for every still-active allocation.
 
 ### Derived invoice position
 
@@ -234,6 +236,34 @@ settled
 The invoice detail UI displays issued credits, active cash and outstanding receivable together. A fully credited invoice may therefore be `settled` without being incorrectly described as paid.
 
 See `docs/37-payment-receipt-allocation.md`.
+
+### Customer statements and aged receivables
+
+`ReceivablesReportingService` creates no new balance ledger. It derives customer account movements from immutable event timestamps:
+
+```text
+invoice issue       → debit
+credit-note issue   → credit
+payment allocation  → credit
+allocation reversal → debit
+invoice void        → credit
+```
+
+The service provides:
+
+- current tenant receivable totals grouped by currency;
+- customer account positions grouped by currency;
+- Current / 1–30 / 31–60 / 61–90 / 91+ aging;
+- tenant-timezone-aware statement periods;
+- opening, running and closing balances;
+- historical as-of aging that honours when later reversals actually occurred;
+- foreign-tenant customer masking.
+
+A raw payment receipt does not enter the customer statement until it is allocated to an invoice. This keeps the account balance reconciled to invoice receivable rather than treating unidentified/unallocated cash as customer credit.
+
+Package 004F does not persist statement totals or perform FX aggregation. GBP/EUR positions remain separate.
+
+See `docs/38-customer-statements-aged-receivables.md`.
 
 ## Project collaboration
 
@@ -272,13 +302,14 @@ pnpm test:integration
 pnpm check
 ```
 
-The executable Package 004E head on MySQL 8.4.11 proved:
+The executable Package 004F code head on MySQL 8.4.11 proved:
 
 ```text
 16 production migrations applied / 0 pending
 344 tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-19 integration files / 88 real-MySQL tests passed
+20 integration files / 93 real-MySQL tests passed
+finance/receivables-reporting.integration.test.ts: 5/5 passed
 finance/payment-allocation.integration.test.ts: 6/6 passed
 organisation-bootstrap.integration.test.ts: 4/4 passed
 svelte-check: 0 errors / 0 warnings
@@ -286,4 +317,4 @@ svelte-check: 0 errors / 0 warnings
 
 The final documentation-synchronised PR head must pass the same complete gate before merge.
 
-Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, production document rendering/delivery, contract version 2+, automatic project activation, credit-note void/reversal, FX allocation, refunds, bank-feed/payment-gateway ingestion, automated remittance matching, customer statements/aged receivables, general-ledger posting or bank reconciliation.
+Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, production document rendering/delivery, contract version 2+, automatic project activation, credit-note void/reversal, FX allocation/reporting translation, refunds, bank-feed/payment-gateway ingestion, automated remittance matching, persisted/issued customer statements, automatic statement delivery, dunning/collections policy, bad-debt/write-off processing, general-ledger posting or bank reconciliation.
