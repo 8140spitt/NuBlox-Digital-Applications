@@ -1,4 +1,5 @@
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { contractVersionCommitmentAmount } from '$lib/server/contracts/contract-credit-exposure';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import { RecordNotFoundError } from '$lib/server/kernel/errors';
 import { CreditControlService, type CreditCommitmentPreview } from './credit-control-service';
@@ -35,5 +36,6 @@ export async function contractCreditControlPreview(
 		.orderBy('party.sort_order')
 		.executeTakeFirst();
 	if (!clientParty?.sourcePartyId) return null;
-	return new CreditControlService(db).commitmentPreview(actor, clientParty.sourcePartyId, contract.currencyCode);
+	const commitmentAmount = await contractVersionCommitmentAmount(db, actor.organisationId, version.id);
+	return new CreditControlService(db).commitmentPreview(actor, clientParty.sourcePartyId, contract.currencyCode, commitmentAmount);
 }
