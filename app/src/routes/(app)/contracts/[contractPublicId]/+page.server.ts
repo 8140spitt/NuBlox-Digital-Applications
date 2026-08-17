@@ -5,6 +5,7 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { ContractAmendmentService } from '$lib/server/contracts/contract-amendment-service';
 import { ContractService, ContractValidationError } from '$lib/server/contracts/contract-service';
 import { getDatabase } from '$lib/server/db/database';
+import { contractCreditControlPreview } from '$lib/server/finance/credit-control-context';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -39,11 +40,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
 		const db = getDatabase();
-		const [workspace, amendments] = await Promise.all([
-			new ContractService(db).getWorkspace(actor, params.contractPublicId),
-			new ContractAmendmentService(db).listForContract(actor, params.contractPublicId)
+		const workspace = await new ContractService(db).getWorkspace(actor, params.contractPublicId);
+		const [amendments, creditControl] = await Promise.all([
+			new ContractAmendmentService(db).listForContract(actor, params.contractPublicId),
+			contractCreditControlPreview(actor, params.contractPublicId, db)
 		]);
-		return { ...workspace, amendments };
+		return { ...workspace, amendments, creditControl };
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Contract not found.');
 		if (cause instanceof TenantAccessError) throw httpError(403, 'Contract access is not permitted.');
@@ -187,7 +189,8 @@ export const actions: Actions = {
 				signatoryEmail: String(data.get('signatoryEmail') ?? ''),
 				signingRole: String(data.get('signingRole') ?? ''),
 				externalTransactionReference: String(data.get('externalTransactionReference') ?? ''),
-				note: String(data.get('note') ?? '')
+				note: String(data.get('note') ?? ''),
+				creditOverrideReason: String(data.get('creditOverrideReason') ?? '')
 			});
 		} catch (cause) {
 			return actionFailure(cause);
