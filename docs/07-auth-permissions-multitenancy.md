@@ -142,6 +142,9 @@ finance.collections.case.manage
 finance.collections.action.record
 finance.collections.promise.manage
 finance.collections.dispute.manage
+finance.collections.policy.manage
+finance.collections.reminder.generate
+finance.collections.reminder.dispatch
 ```
 
 `finance.manage` is the same-domain umbrella for finance granular keys. It never crosses into commercial or contract authority.
@@ -149,6 +152,8 @@ finance.collections.dispute.manage
 Package 004F adds no separate receivables-reporting key; statements and aging use `finance.view`.
 
 Package 004G adds a separate collections read key because collection-case evidence contains operational contact/commitment/dispute information beyond the underlying receivable report. Collections reads therefore require `finance.view` **and** `finance.collections.view` (or `finance.manage` as same-domain fallback for the collections key).
+
+Package 004H adds three independently delegable automation keys: policy management, reminder generation and reminder dispatch. Their explicit separation prevents authority to perform routine collections operations from automatically becoming authority to redefine escalation thresholds/templates or trigger an external delivery side effect.
 
 ## 5. Standard organisation roles
 
@@ -178,7 +183,7 @@ contract.manage
 finance.manage
 ```
 
-They also receive the five collections granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
+They also receive all released 004G collections and 004H automation granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
 
 ### Manager
 
@@ -214,6 +219,8 @@ finance.collections.case.manage
 finance.collections.action.record
 finance.collections.promise.manage
 finance.collections.dispute.manage
+finance.collections.reminder.generate
+finance.collections.reminder.dispatch
 ```
 
 Finance/Commercial deliberately does **not** receive:
@@ -225,9 +232,10 @@ project.create
 contract.manage
 finance.manage
 finance.invoice.void
+finance.collections.policy.manage
 ```
 
-This role can perform ordinary operational AR and collections work while exceptional issued-invoice void remains Owner/Administrator/custom delegation by default.
+This role can perform ordinary AR/collections work and generate/dispatch controlled reminders, but cannot redefine collections policy by default. Exceptional invoice void and policy authoring remain Owner/Administrator/custom delegation boundaries.
 
 ### Other roles
 
@@ -248,7 +256,7 @@ Better Auth signup remains fail-closed. Exactly one provisioning intent must val
 
 Authentication alone is not tenant authority. Protected requests require active NuBlox user resolution and active organisation membership.
 
-Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations must remain aligned at the persisted role-permission-row level. Package 004G therefore adds the same five collections grants to both migration-time standard roles and future bootstrap templates.
+Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations must remain aligned at the persisted role-permission-row level. Package 004G keeps the five collections grants in parity; Package 004H additionally keeps Owner/Administrator policy+generation+dispatch and Finance/Commercial generation+dispatch in parity.
 
 ## 7. Organisation administration authority
 
@@ -459,9 +467,9 @@ Opening, pausing, resuming and closing cases requires:
 finance.collections.case.manage OR finance.manage
 ```
 
-Opening also requires a currently overdue positive receivable derived from Package 004F.
+Opening additionally requires a currently overdue positive receivable derived from Package 004F.
 
-The service locks the same-tenant customer party before checking for an existing active case. If an `open` or `paused` case already exists, case start is idempotent and returns that case.
+The service serialises the same-tenant customer and issued invoice documents before the final overdue revalidation and insertion. If an `open` or `paused` case already exists, case start is idempotent and returns that case.
 
 Lifecycle:
 
@@ -486,7 +494,7 @@ phone_call
 note
 ```
 
-The first 004G boundary records evidence only. Selecting an email/portal/letter channel does not claim actual outbound delivery unless a later provider workflow performs and proves delivery.
+Package 004G's manual evidence action does not itself prove outbound delivery. Package 004H successful reminder dispatch appends `reminder` action evidence only after the delivery boundary succeeds.
 
 ## 19. Promise-to-pay authority
 
@@ -535,7 +543,61 @@ open → withdrawn
 
 A dispute does not alter invoice lifecycle, tax, outstanding balance or settlement state. Financial correction still requires the normal credit-note/void/payment workflow.
 
-## 21. Cross-domain separation
+## 21. Collections policy authority
+
+Policy authoring requires:
+
+```text
+finance.collections.policy.manage OR finance.manage
+```
+
+Policy versions use:
+
+```text
+draft → active → retired
+```
+
+Draft stages may be edited by an authorised policy manager. Activated versions are immutable through ordinary APIs. Activation requires at least one stage, contiguous stage sequence beginning at 1 and strictly increasing positive days-overdue triggers.
+
+A new policy version does not rewrite a generated reminder from an earlier version.
+
+## 22. Reminder generation and dispatch authority
+
+### Generation
+
+```text
+finance.collections.reminder.generate OR finance.manage
+AND collections read boundary
+AND crm.view
+AND open same-tenant collection case
+AND active policy stage currently due
+AND no configured suppression
+AND resolvable same-tenant recipient email
+```
+
+`crm.view` is required because generation explicitly traverses CRM party/contact identity to select a recipient. It does not grant finance mutation authority by itself.
+
+Generation creates an immutable pending reminder snapshot and sends nothing. Generation is idempotent for the same collection case + policy stage.
+
+### Dispatch
+
+```text
+finance.collections.reminder.dispatch OR finance.manage
+AND collections read boundary
+AND same-tenant pending reminder
+AND collection case still open
+AND receivable still overdue
+AND stage still due
+AND no configured suppression
+```
+
+Dispatch revalidates the live receivable/suppression state before the external side effect. A failed delivery attempt is immutable evidence and leaves the reminder pending for retry; success marks the reminder sent and appends collection-action evidence.
+
+An explicit member deny on `finance.collections.reminder.dispatch` overrides the `finance.manage` fallback.
+
+Package 004H does not claim a background scheduler. Generation and dispatch remain explicit operations in the current boundary.
+
+## 23. Cross-domain separation
 
 ```text
 commercial.manage cannot issue/credit/void/allocate/collect finance records
@@ -543,9 +605,9 @@ contract.manage cannot issue/credit/void/allocate/collect finance records
 finance.manage cannot mutate contracts or quotations
 ```
 
-`crm.view` is needed only for explicit cross-domain CRM traversals such as payer selection. Project roles classify context and never grant application permissions.
+`crm.view` is required only for explicit CRM traversal such as payer/collections-recipient resolution. It never grants finance mutation authority. Project roles classify context and never grant application permissions.
 
-## 22. Tenant-isolation rules
+## 24. Tenant-isolation rules
 
 - Trusted tenant context comes from authenticated active membership.
 - Tenant-owned queries include active `organisation_id`.
@@ -553,20 +615,22 @@ finance.manage cannot mutate contracts or quotations
 - Matching surrogate/public IDs are never proof of access by themselves.
 - Foreign tenant record identities are masked where appropriate.
 - Collections invoice links are additionally constrained to the collection-case customer.
+- Reminder policy, generated reminder and delivery-attempt facts are organisation-scoped.
+- Reminder recipient resolution uses same-tenant CRM party/contact relationships.
 - Project reads require exact-member project scope.
 - Project roles never grant application permissions.
 - CRM identity is never promoted to platform identity by inference.
-- Customer/document snapshots preserve evidence without creating platform identity.
+- Customer/document/reminder snapshots preserve evidence without creating platform identity.
 - Derived reports preserve event-time and tenant-timezone semantics rather than caching mutable balances as authority.
-- Collections facts cannot become a shadow receivable ledger.
+- Collections/policy/reminder facts cannot become a shadow receivable ledger.
 - Caches, search, exports, files and future scheduled jobs must preserve tenant boundaries.
 - Privileged support access must be explicit and auditable.
 
-## 23. Session requirements
+## 25. Session requirements
 
 Production session policy includes secure HttpOnly cookies, Secure transport, appropriate SameSite behavior, revocation/logout, rotation after privilege/authentication changes, idle/absolute expiry and MFA step-up where risk policy requires it.
 
-## 24. Release testing requirements
+## 26. Release testing requirements
 
 The real-MySQL release gate covers, at minimum:
 
@@ -586,24 +650,34 @@ The real-MySQL release gate covers, at minimum:
 - tenant-timezone statement periods and foreign-customer masking;
 - collections read requiring both finance and collections read authority;
 - only currently overdue accounts entering collections eligibility;
-- idempotent active-case opening;
+- idempotent/serialised active-case opening;
 - immutable collection action evidence;
 - same-customer invoice scoping for promises/disputes;
 - promises/disputes leaving the receivable ledger unchanged;
-- case closure blockers for unresolved commitments/disputes;
-- closed-case immutability;
-- explicit collections granular deny overriding `finance.manage`;
-- foreign-tenant collection/customer masking;
+- case closure blockers and closed-case immutability;
+- collections automation role delegation and bootstrap parity;
+- immutable active policy versions and sequential/increasing stage validation;
+- reminder generation idempotency and immutable recipient/template snapshots;
+- reminder generation creating no ledger/contact-delivery side effect;
+- explicit reminder-dispatch deny overriding `finance.manage`;
+- immutable failed-attempt evidence and controlled retry;
+- stable message idempotency key across retries;
+- current-promise/dispute suppression;
+- overdue promise review;
+- paused/closed case dispatch rejection;
+- live receivable revalidation before dispatch;
+- foreign-tenant collection/reminder masking;
 - zero generated drift across both Kysely outputs;
 - Svelte/TypeScript diagnostics.
 
-The Package 004G release gate is:
+The Package 004H executable code gate has proved:
 
 ```text
-17 production migrations applied / 0 pending
-348 tables / 767 foreign keys / 439 CHECK constraints
+18 production migrations applied / 0 pending
+352 tables / 778 foreign keys / 450 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts
-21 integration files / 100 real-MySQL tests passed
+22 integration files / 108 real-MySQL tests passed
+finance collections automation suite: 8/8 passed
 finance collections suite: 7/7 passed
 finance receivables-reporting suite: 5/5 passed
 finance payment-allocation suite: 6/6 passed
@@ -611,4 +685,4 @@ organisation bootstrap suite: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove this complete gate before merge.
+The final documentation-synchronised PR head must prove the same complete gate before merge.
