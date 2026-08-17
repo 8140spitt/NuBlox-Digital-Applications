@@ -33,7 +33,7 @@ let recommendationPublicId = '';
 let writeOffPublicId = '';
 let recoveryPublicId = '';
 let salesItemTypeId = 0;
-let paymentMethodId = '';
+let paymentMethodId = 0;
 
 function insertedId(result: { insertId?: bigint }): string {
 	if (result.insertId === undefined) throw new Error('Expected AUTO_INCREMENT ID.');
