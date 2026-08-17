@@ -1,0 +1,28 @@
+import { error as httpError } from '@sveltejs/kit';
+import type { PageServerLoad } from './$types';
+
+import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { getDatabase } from '$lib/server/db/database';
+import { ReceivablesReportingService } from '$lib/server/finance/receivables-reporting-service';
+import { TenantAccessError } from '$lib/server/kernel/errors';
+
+function actorFromLocals(locals: App.Locals): TenantActorContext | null {
+	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
+	return {
+		organisationId: locals.tenant.organisationId,
+		userId: locals.actor.userId,
+		memberId: locals.tenant.memberId,
+		correlationId: locals.correlationId
+	};
+}
+
+export const load: PageServerLoad = async ({ locals }) => {
+	const actor = actorFromLocals(locals);
+	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
+	try {
+		return await new ReceivablesReportingService(getDatabase()).getPortfolio(actor);
+	} catch (cause) {
+		if (cause instanceof TenantAccessError) throw httpError(403, 'Receivables reporting is not permitted.');
+		throw cause;
+	}
+};
