@@ -27,6 +27,8 @@ export type FinanceMutationPermission =
 	| 'finance.payment.allocation.reverse'
 	| 'finance.payment.reverse';
 
+export type FinanceReportingPermission = 'finance.receivables.view';
+
 export const INVOICE_TYPES = new Set([
 	'standard',
 	'deposit',
@@ -132,6 +134,14 @@ export class FinanceAccessPolicy {
 
 	async viewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
 		return new PermissionService(db).decide(actor, 'finance.view');
+	}
+
+	async reportingDecision(
+		actor: TenantActorContext,
+		permissionKey: FinanceReportingPermission,
+		db: DatabaseExecutor = this.db
+	) {
+		return new PermissionService(db).decideWithUmbrella(actor, permissionKey, 'finance.manage');
 	}
 
 	async mutationDecision(
