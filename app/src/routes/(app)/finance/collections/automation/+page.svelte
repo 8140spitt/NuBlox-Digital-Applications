@@ -1,5 +1,12 @@
 <script lang="ts">
 	let { data, form } = $props();
+	const defaultSubjectTemplate = 'Payment reminder for {{customer_name}}';
+	const defaultBodyTemplate = `Hello {{customer_name}},
+
+Our records show {{invoice_count}} invoice(s) are overdue, with the oldest now {{days_overdue}} days overdue as at {{as_of_date}}.
+
+Please contact us if you need to discuss the account.`;
+	const placeholderExamples = ['{{customer_name}}', '{{account_reference}}', '{{days_overdue}}', '{{invoice_count}}', '{{as_of_date}}'];
 
 	function date(value: Date | string | null) {
 		if (!value) return '—';
@@ -69,18 +76,14 @@
 					<label>Sequence<input type="number" name="sequenceNumber" min="1" max="100" value={data.draftPolicy.stages.length + 1} required/></label>
 					<label>Stage name<input name="name" maxlength="160" placeholder="First reminder" required/></label>
 					<label>Days overdue<input type="number" name="triggerDaysOverdue" min="1" max="3650" value="7" required/></label>
-					<label class="wide">Subject template<input name="subjectTemplate" maxlength="255" value="Payment reminder for {{customer_name}}" required/></label>
-					<label class="wide">Body template<textarea name="bodyTemplate" rows="5" required>Hello {{customer_name}},
-
-Our records show {{invoice_count}} invoice(s) are overdue, with the oldest now {{days_overdue}} days overdue as at {{as_of_date}}.
-
-Please contact us if you need to discuss the account.</textarea></label>
+					<label class="wide">Subject template<input name="subjectTemplate" maxlength="255" value={defaultSubjectTemplate} required/></label>
+					<label class="wide">Body template<textarea name="bodyTemplate" rows="5" required>{defaultBodyTemplate}</textarea></label>
 					<label class="check"><input type="checkbox" name="suppressOnOpenDispute" checked/> Suppress on open dispute</label>
 					<label class="check"><input type="checkbox" name="suppressOnCurrentPromise" checked/> Suppress on current promise</label>
 					<div class="wide"><button type="submit">Add stage</button></div>
 				</form>
 			</div>
-			<p class="muted template-help">Supported placeholders: <code>{{customer_name}}</code>, <code>{{account_reference}}</code>, <code>{{days_overdue}}</code>, <code>{{invoice_count}}</code>, <code>{{as_of_date}}</code>.</p>
+			<p class="muted template-help">Supported placeholders: {#each placeholderExamples as placeholder}<code>{placeholder}</code>{/each}</p>
 			<form method="POST" action="?/activatePolicy"><input type="hidden" name="policyPublicId" value={data.draftPolicy.publicId}/><button type="submit">Activate draft policy</button></form>
 		{/if}
 	</section>
@@ -121,5 +124,5 @@ Please contact us if you need to discuss the account.</textarea></label>
 </section>
 
 <style>
-	.breadcrumbs{display:flex;gap:.45rem;margin-bottom:1rem;font-size:.85rem}.page-heading,.section-heading{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}.page-heading{margin-bottom:1.2rem}.page-heading h1,.panel h2{margin:.15rem 0}.eyebrow{text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;font-weight:700;color:var(--muted,#667085);margin:0}.panel{border:1px solid var(--border,#d0d5dd);border-radius:14px;background:var(--surface,#fff);padding:1rem;margin-bottom:1rem}.grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.stage-list,.stack{display:grid;gap:.65rem;margin-top:.8rem}.stage-row,.record{border:1px solid var(--border,#e4e7ec);border-radius:10px;padding:.8rem;display:grid;gap:.35rem}.draft-grid{display:grid;gap:1rem;margin:1rem 0}.stage-form{display:grid;grid-template-columns:100px 1fr 160px;gap:.7rem;padding:1rem;border:1px solid var(--border,#e4e7ec);border-radius:12px}.stage-form label,.inline-form label{display:grid;gap:.3rem;font-size:.84rem;font-weight:650}.stage-form input,.stage-form textarea,.inline-form input{font:inherit;padding:.6rem;border:1px solid var(--border,#d0d5dd);border-radius:8px;background:white}.wide{grid-column:1/-1}.check{display:flex!important;grid-auto-flow:column;justify-content:start;align-items:center}.check input{width:auto}.form-actions,.inline-form{display:flex;gap:.6rem;align-items:end;flex-wrap:wrap}.inline-form label{min-width:280px}.new-stage{background:var(--surface-subtle,#f8fafc)}.record ul{margin:.3rem 0;padding-left:1.2rem;color:#b54708}.reminder-record{grid-template-columns:minmax(0,1fr) auto;align-items:start}.link-record{text-decoration:none;color:inherit;grid-template-columns:minmax(0,1fr) auto}.status{justify-self:start;text-transform:uppercase;font-size:.72rem;border:1px solid var(--border,#d0d5dd);border-radius:999px;padding:.25rem .5rem}.active{background:#ecfdf3;color:#027a48;border-color:#abefc6}.muted,small{color:var(--muted,#667085)}small{display:block}.template-help code{white-space:nowrap}.button,button{font:inherit;font-weight:700;padding:.62rem .82rem;border-radius:9px;border:0;background:#1d2939;color:white;text-decoration:none;cursor:pointer}.secondary{background:transparent;color:inherit;border:1px solid var(--border,#d0d5dd)}.danger{background:#b42318}.banner{padding:.75rem 1rem;border-radius:9px}.error{color:#b42318;background:#fef3f2}.warning{color:#b54708;background:#fffaeb;padding:.7rem;border-radius:8px}@media(max-width:800px){.page-heading{display:grid}.grid-two{grid-template-columns:1fr}.stage-form{grid-template-columns:1fr}.wide{grid-column:auto}.reminder-record{grid-template-columns:1fr}}
+	.breadcrumbs{display:flex;gap:.45rem;margin-bottom:1rem;font-size:.85rem}.page-heading,.section-heading{display:flex;justify-content:space-between;gap:1rem;align-items:flex-start}.page-heading{margin-bottom:1.2rem}.page-heading h1,.panel h2{margin:.15rem 0}.eyebrow{text-transform:uppercase;letter-spacing:.08em;font-size:.72rem;font-weight:700;color:var(--muted,#667085);margin:0}.panel{border:1px solid var(--border,#d0d5dd);border-radius:14px;background:var(--surface,#fff);padding:1rem;margin-bottom:1rem}.grid-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.stage-list,.stack{display:grid;gap:.65rem;margin-top:.8rem}.stage-row,.record{border:1px solid var(--border,#e4e7ec);border-radius:10px;padding:.8rem;display:grid;gap:.35rem}.draft-grid{display:grid;gap:1rem;margin:1rem 0}.stage-form{display:grid;grid-template-columns:100px 1fr 160px;gap:.7rem;padding:1rem;border:1px solid var(--border,#e4e7ec);border-radius:12px}.stage-form label,.inline-form label{display:grid;gap:.3rem;font-size:.84rem;font-weight:650}.stage-form input,.stage-form textarea,.inline-form input{font:inherit;padding:.6rem;border:1px solid var(--border,#d0d5dd);border-radius:8px;background:white}.wide{grid-column:1/-1}.check{display:flex!important;grid-auto-flow:column;justify-content:start;align-items:center}.check input{width:auto}.form-actions,.inline-form{display:flex;gap:.6rem;align-items:end;flex-wrap:wrap}.inline-form label{min-width:280px}.new-stage{background:var(--surface-subtle,#f8fafc)}.record ul{margin:.3rem 0;padding-left:1.2rem;color:#b54708}.reminder-record{grid-template-columns:minmax(0,1fr) auto;align-items:start}.link-record{text-decoration:none;color:inherit;grid-template-columns:minmax(0,1fr) auto}.status{justify-self:start;text-transform:uppercase;font-size:.72rem;border:1px solid var(--border,#d0d5dd);border-radius:999px;padding:.25rem .5rem}.active{background:#ecfdf3;color:#027a48;border-color:#abefc6}.muted,small{color:var(--muted,#667085)}small{display:block}.template-help{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center}.template-help code{white-space:nowrap}.button,button{font:inherit;font-weight:700;padding:.62rem .82rem;border-radius:9px;border:0;background:#1d2939;color:white;text-decoration:none;cursor:pointer}.secondary{background:transparent;color:inherit;border:1px solid var(--border,#d0d5dd)}.danger{background:#b42318}.banner{padding:.75rem 1rem;border-radius:9px}.error{color:#b42318;background:#fef3f2}.warning{color:#b54708;background:#fffaeb;padding:.7rem;border-radius:8px}@media(max-width:800px){.page-heading{display:grid}.grid-two{grid-template-columns:1fr}.stage-form{grid-template-columns:1fr}.wide{grid-column:auto}.reminder-record{grid-template-columns:1fr}}
 </style>
