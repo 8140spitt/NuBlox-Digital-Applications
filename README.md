@@ -35,11 +35,11 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream remains at **16 migrations**. The latest migration remains:
+The production stream now contains **17 migrations**. The latest migration is:
 
-- `20260817103000_payment_allocation_permissions.sql` — Package 004E payment receipt, allocation and immutable reversal permissions.
+- `20260817124500_controlled_collections.sql` — Package 004G controlled collections cases, immutable action evidence, promises to pay, receivable disputes and collections permissions.
 
-Package 004F adds no migration or duplicate receivables-reporting tables. It derives statements and aging from the normalised finance facts already present in the baseline. The application structure therefore remains **344 tables, 749 foreign keys and 429 `CHECK` constraints**.
+Package 004F remained migration-free and derived statements/aging from existing finance facts. Package 004G introduces four genuinely new persistent operational facts, so the migrated application structure is now **348 tables, 767 foreign keys and 439 `CHECK` constraints**.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -142,12 +142,17 @@ finance.manage
     ├─ finance.payment.create
     ├─ finance.payment.allocate
     ├─ finance.payment.allocation.reverse
-    └─ finance.payment.reverse
+    ├─ finance.payment.reverse
+    ├─ finance.collections.view
+    ├─ finance.collections.case.manage
+    ├─ finance.collections.action.record
+    ├─ finance.collections.promise.manage
+    └─ finance.collections.dispute.manage
 ```
 
 **Umbrellas never cross domains.** Commercial authority does not grant contract authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
 
-Package 004F reporting deliberately reuses `finance.view`; it does not create a parallel reporting permission for the same underlying finance facts.
+Package 004F reporting reuses `finance.view`. Package 004G collection-case evidence is more operationally sensitive, so collection reads additionally require `finance.collections.view` or the `finance.manage` fallback.
 
 ## Controlled account provisioning and standard roles
 
@@ -159,7 +164,7 @@ Owner and Administrator receive broad project, CRM, commercial, contract and fin
 
 ### Finance/Commercial
 
-Finance/Commercial receives ordinary commercial and operational AR responsibilities, including:
+Finance/Commercial receives ordinary commercial, operational AR and collections responsibilities, including:
 
 ```text
 finance.view
@@ -174,13 +179,16 @@ finance.payment.create
 finance.payment.allocate
 finance.payment.allocation.reverse
 finance.payment.reverse
+finance.collections.view
+finance.collections.case.manage
+finance.collections.action.record
+finance.collections.promise.manage
+finance.collections.dispute.manage
 ```
 
 It deliberately does **not** receive `finance.manage` or `finance.invoice.void`. Invoice void remains the stronger exceptional issued-document lifecycle authority.
 
-Package 004F statements and aging are available to any active tenant member with `finance.view`; no role-template change is required.
-
-Manager, Member/Professional, Field Worker and Read Only do not receive automatic finance mutation authority. The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
+Manager, Member/Professional, Field Worker and Read Only do not receive automatic finance mutation or collection-case authority. The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
 
 ## Implemented business chain
 
@@ -220,6 +228,11 @@ Allocation / Payment Reversal
 Derived Outstanding Receivable
     ↓
 Customer Statement + Aged Receivables
+    ↓
+Controlled Collections Case
+    ├── Reminder / Call / Note Evidence
+    ├── Promise to Pay
+    └── Receivable Dispute
 ```
 
 See:
@@ -232,6 +245,7 @@ See:
 - [`docs/36-receivable-corrections.md`](docs/36-receivable-corrections.md)
 - [`docs/37-payment-receipt-allocation.md`](docs/37-payment-receipt-allocation.md)
 - [`docs/38-customer-statements-aged-receivables.md`](docs/38-customer-statements-aged-receivables.md)
+- [`docs/39-controlled-collections-dunning.md`](docs/39-controlled-collections-dunning.md)
 
 ## Operational accounts receivable
 
@@ -280,8 +294,6 @@ Allocation locks the payment and invoice before recomputing both limits. It requ
 
 Allocation correction creates a `payment_allocation_reversals` row; the original allocation remains immutable. Payment reversal first creates reversal evidence for every still-active allocation in the same transaction and only then records the `payment_reversals` row.
 
-The invoice detail workspace displays issued credits, active cash and operational outstanding together. Settlement uses derived `open / part settled / settled` states without changing the legal invoice lifecycle.
-
 ### Package 004F — Customer statements and aged receivables
 
 Protected routes:
@@ -289,25 +301,49 @@ Protected routes:
 - `/finance/receivables`
 - `/finance/receivables/[customerPartyPublicId]`
 
-Package 004F adds no new balance ledger. It reconstructs the customer account from immutable event timestamps:
+Package 004F creates no new balance ledger. It reconstructs the customer account from immutable event timestamps:
 
 ```text
-Issued invoice          → debit
-Issued credit note      → credit
-Payment allocation      → credit
-Allocation reversal     → debit
-Exceptional invoice void→ credit
+Issued invoice           → debit
+Issued credit note       → credit
+Payment allocation       → credit
+Allocation reversal      → debit
+Exceptional invoice void → credit
 ```
 
-Statements derive opening balance, period movements, running balance and closing balance independently per currency. The selected period uses the tenant's configured timezone, and historical reports use the event state that actually existed at the selected cutoff—for example, a June allocation reversed in August still reduces a July statement.
-
-Aging is calculated from positive outstanding issued invoices as at the selected date:
+Statements derive opening balance, period movements, running balance and closing balance independently per currency. Aging is calculated from positive outstanding issued invoices as at the selected date:
 
 ```text
 Current | 1–30 | 31–60 | 61–90 | 91+
 ```
 
 Currencies are never combined without an explicit FX/reporting-currency policy.
+
+### Package 004G — Controlled collections and dunning
+
+Protected routes:
+
+- `/finance/collections`
+- `/finance/collections/[customerPartyPublicId]`
+
+The collections portfolio is derived from the live 004F overdue position. A collection case can start only when the customer has at least one positive outstanding invoice past its due date.
+
+Package 004G persists operational evidence, not accounting balances:
+
+```text
+Customer Account
+      ↓
+Collection Case
+    ├── immutable reminder/call/note actions
+    ├── promise to pay
+    └── receivable dispute
+```
+
+Starting a case is idempotent while an `open` or `paused` case already exists. Case closure requires an explicit reason and is blocked while promises or disputes remain open. A closed case rejects further ordinary mutation.
+
+Promises and disputes may reference an invoice only when it belongs to the same tenant and the same customer account. A promise does not create cash; a dispute does not change an invoice balance. Any settlement/correction still goes through payment allocation, credit note or exceptional invoice-void authority.
+
+Collection actions preserve business-facing evidence; platform mutations also append `audit_events` evidence.
 
 ### Deliberate finance exclusions
 
@@ -322,8 +358,11 @@ Still not claimed implemented:
 - credit-note void/reversal;
 - persisted/issued statement documents, PDFs or outbound delivery;
 - automatic statement schedules;
-- dunning/reminder/collections workflows;
-- customer credit limits / hold policy;
+- automatic reminder generation or delivery;
+- configurable dunning-stage escalation;
+- automatic legal escalation / debt-collection agency handoff;
+- customer credit limits / credit-hold policy;
+- late-fee / interest calculation;
 - bad-debt/write-off processing;
 - configurable settlement/write-off policy;
 - production outbound invoice/credit-note delivery.
@@ -352,19 +391,20 @@ pnpm test:integration
 pnpm check
 ```
 
-The executable Package 004F code head proved on MySQL 8.4.11:
+The Package 004G release gate is:
 
 ```text
-16 production migrations applied / 0 pending
-344 base tables / 749 foreign keys / 429 CHECK constraints
-zero generated Kysely drift
-20 integration files / 93 real-MySQL tests passed
+17 production migrations applied / 0 pending
+348 base tables / 767 foreign keys / 439 CHECK constraints
+zero generated Kysely drift across core + collections outputs
+21 integration files / 100 real-MySQL tests passed
+finance/collections.integration.test.ts: 7/7 passed
 finance/receivables-reporting.integration.test.ts: 5/5 passed
 finance/payment-allocation.integration.test.ts: 6/6 passed
 organisation-bootstrap.integration.test.ts: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove the same complete gate before merge.
+The final documentation-synchronised PR head must prove this complete gate before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
