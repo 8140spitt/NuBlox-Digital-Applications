@@ -35,11 +35,11 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **15 migrations**. The latest application activation is:
+The production stream now contains **16 migrations**. The latest activation is:
 
-- `20260817090000_receivable_correction_permissions.sql` — Package 004D controlled credit-note and exceptional invoice-void permissions.
+- `20260817103000_payment_allocation_permissions.sql` — Package 004E payment receipt, allocation and immutable reversal permissions.
 
-The current application structure remains **344 tables, 749 foreign keys and 429 `CHECK` constraints** because Package 004D activates normalised finance structures already present in the baseline.
+The application structure remains **344 tables, 749 foreign keys and 429 `CHECK` constraints** because Packages 004C–004E activate normalised finance structures already present in the baseline.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -56,7 +56,7 @@ SvelteKit action / endpoint
           ↓
      Domain service
           ↓
-       Repository
+       Repository / query boundary
           ↓
         Kysely
           ↓
@@ -65,7 +65,7 @@ SvelteKit action / endpoint
       MySQL 8.4
 ```
 
-Routes/components do not issue SQL directly. Tenant context and authorisation are mandatory domain/repository concerns.
+Routes/components do not issue SQL directly. Tenant context and authorisation are mandatory server-domain concerns.
 
 ## Authentication and tenant trust boundary
 
@@ -87,7 +87,7 @@ Record / lifecycle business policy
 
 The selected organisation cookie is only a selection hint. The server revalidates membership before constructing trusted tenant context.
 
-Within one permission key, effective organisation permission precedence is:
+Within one permission key:
 
 ```text
 explicit member deny
@@ -96,9 +96,9 @@ explicit member deny
     > default deny
 ```
 
-## Granular RBAC and same-domain umbrellas
+For a granular permission with a same-domain umbrella, the granular key is resolved first and the umbrella is considered only when the granular key has no explicit member/role decision.
 
-NuBlox resolves a granular permission first and uses its umbrella only when the granular key has no explicit member/role decision. Explicit granular deny therefore cannot be bypassed.
+## Granular RBAC and same-domain umbrellas
 
 ```text
 project.manage
@@ -138,38 +138,28 @@ finance.manage
     ├─ finance.invoice.void
     ├─ finance.credit_note.create
     ├─ finance.credit_note.draft.manage
-    └─ finance.credit_note.issue
+    ├─ finance.credit_note.issue
+    ├─ finance.payment.create
+    ├─ finance.payment.allocate
+    ├─ finance.payment.allocation.reverse
+    └─ finance.payment.reverse
 ```
 
-**Umbrellas never cross domains.** `commercial.manage` does not grant contract authority; `contract.manage` does not grant finance authority; `finance.manage` does not grant commercial or contract authority.
+**Umbrellas never cross domains.** Commercial authority does not grant contract authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
 
 ## Controlled account provisioning and standard roles
 
-NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisioning intent: an existing-organisation invitation or a self-service organisation bootstrap. The `/start` flow creates the first or an additional organisation through the normalised user/organisation/member/role model; pending identities cannot enter the protected application.
-
-Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
+NuBlox sign-up is fail-closed. Better Auth accepts exactly one validated provisioning intent: an existing-organisation invitation or a self-service organisation bootstrap. Every new organisation receives Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only templates.
 
 ### Owner / Administrator
 
-Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions. Existing organisations receive forward-migration grants and future organisations receive equivalent persisted grants from `OrganisationBootstrapService`.
-
-### Manager
-
-Manager receives granular project and CRM party/contact authority without broad project/CRM umbrellas. Manager may have `project.create`, but does not automatically receive commercial, contract or finance authority.
+Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus all released granular Package 004 operational permissions. Existing organisations receive forward-migration grants and future organisations receive equivalent persisted grants from `OrganisationBootstrapService`.
 
 ### Finance/Commercial
 
-Finance/Commercial currently receives:
+Finance/Commercial receives ordinary commercial and operational AR responsibilities, including:
 
 ```text
-project.view
-crm.view
-commercial.view
-commercial.estimate.manage
-commercial.quotation.manage
-commercial.quotation.issue
-commercial.quotation.response.record
-contract.view
 finance.view
 finance.billing.manage
 finance.invoice.create
@@ -178,24 +168,15 @@ finance.invoice.issue
 finance.credit_note.create
 finance.credit_note.draft.manage
 finance.credit_note.issue
+finance.payment.create
+finance.payment.allocate
+finance.payment.allocation.reverse
+finance.payment.reverse
 ```
 
-Finance/Commercial deliberately does **not** receive:
+It deliberately does **not** receive `finance.manage` or `finance.invoice.void`. Invoice void remains the stronger exceptional issued-document lifecycle authority.
 
-```text
-commercial.manage
-commercial.quotation.convert
-project.create
-contract.manage
-finance.manage
-finance.invoice.void
-```
-
-This permits ordinary commercial AR work while keeping the stronger issued-invoice void capability and future payment/reversal authority deliberate.
-
-Member/Professional receives `project.view + crm.view`, Field Worker receives `project.view`, and Read Only receives `project.view + crm.view`.
-
-The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
+Manager, Member/Professional, Field Worker and Read Only do not receive automatic finance mutation authority. The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
 
 ## Implemented business chain
 
@@ -225,6 +206,14 @@ Draft Invoice
 Issued Invoice
     ↓
 Controlled Credit Note / Exceptional Invoice Void
+    ↓
+Payment Receipt
+    ↓
+Controlled Payment Allocation
+    ↓
+Allocation / Payment Reversal
+    ↓
+Derived Outstanding Receivable
 ```
 
 See:
@@ -235,10 +224,11 @@ See:
 - [`docs/34-contract-amendments.md`](docs/34-contract-amendments.md)
 - [`docs/35-accounts-receivable-invoices.md`](docs/35-accounts-receivable-invoices.md)
 - [`docs/36-receivable-corrections.md`](docs/36-receivable-corrections.md)
+- [`docs/37-payment-receipt-allocation.md`](docs/37-payment-receipt-allocation.md)
 
 ## Operational accounts receivable
 
-### Billing settings and invoices — Package 004C
+### Package 004C — Billing settings and invoices
 
 Protected routes:
 
@@ -246,51 +236,60 @@ Protected routes:
 - `/finance/invoices`
 - `/finance/invoices/[invoicePublicId]`
 
-Draft invoices are contract-anchored, tenant-scoped and legally unnumbered. Issue finalises due date, refreshes tax using the rate effective at the actual invoice issue date, snapshots customer/contact/address evidence, allocates `INV-000001…`, records issue/recipient/audit evidence and freezes ordinary mutation.
+Draft invoices are contract-anchored, tenant-scoped and legally unnumbered. Issue finalises due date, refreshes issue-date tax, snapshots customer/contact/address evidence, allocates the tenant invoice number, records issue/recipient/audit evidence and freezes ordinary mutation.
 
-### Receivable corrections — Package 004D
+### Package 004D — Receivable corrections
 
 Protected routes:
 
 - `/finance/credit-notes`
 - `/finance/credit-notes/[creditNotePublicId]`
 
-The normal correction path is a **source-linked credit note**, not editing the invoice:
+Credit notes retain exact source-invoice-line provenance, positive correction magnitudes, original applied tax evidence, issue-time over-credit revalidation and original invoice party/address evidence. Exceptional invoice void is separately authorised and cannot bypass credit-note or active allocation history.
+
+### Package 004E — Payment receipt and controlled allocation
+
+Protected routes:
+
+- `/finance/payments`
+- `/finance/payments/[paymentPublicId]`
+
+A payment is recorded as an immutable positive cash receipt with method, received date, currency, optional CRM payer and reference. Receipt creation does **not** imply an allocation.
+
+Cash application is bounded by:
 
 ```text
-Issued Invoice
-    ↓
-Draft Credit Note
-    ├─ exact original invoice line
-    ├─ partial/full original quantity
-    ├─ original unit rate
-    └─ original applied tax rate
-    ↓
-Issue-time source-quantity revalidation
-    ↓
-CN-000001… allocation
-    ↓
-Original invoice customer/address evidence copied
-    ↓
-Immutable Issued Credit Note
+Usable Payment
+= Payment Amount
+− Active Allocations
+
+Outstanding Receivable
+= Issued Invoice Gross
+− Issued Credit Note Gross
+− Active Payment Allocations
 ```
 
-Credit-note values remain positive magnitudes; `document_kind = credit_note` supplies correction semantics. Issue locks the original invoice and rejects cumulative credits greater than the original line quantity.
+Allocation locks the payment and invoice before recomputing both limits. It requires same-tenant, same-currency, issued invoice context and rejects either payment over-allocation or invoice over-allocation.
 
-A credit note uses the **original invoice's applied tax evidence**, not today's tax rate. This is intentionally different from invoice issue, which refreshes a draft using the tax rate effective when the invoice itself is issued.
+Allocation correction creates a `payment_allocation_reversals` row; the original allocation remains immutable. Payment reversal first creates reversal evidence for every still-active allocation in the same transaction and only then records the `payment_reversals` row.
 
-### Exceptional invoice void
+The invoice detail workspace now displays issued credits, active cash and operational outstanding together. Settlement uses derived `open / part settled / settled` states without changing the legal invoice lifecycle.
 
-`finance.invoice.void` is stronger authority and is not granted to Finance/Commercial by default.
+### Deliberate finance exclusions
 
-Void is reserved for an invalid issued document such as a duplicate. It requires an explicit reason and is blocked when:
+Still not claimed implemented:
 
-- a draft or issued credit note already references the invoice; or
-- an unreversed payment allocation exists.
-
-A successful void preserves the invoice number, lines, tax, customer snapshots and issue evidence while recording `voided_by_member_id`, `voided_at` and `void_reason`.
-
-**Still not claimed implemented:** credit-note void/reversal, payment receipt/application UI, payment allocation/application UI, payment/allocation reversal UI, authoritative post-cash outstanding balances, statements/aged receivables, general-ledger posting, bank reconciliation, PDF rendering or production outbound invoice/credit-note delivery.
+- FX conversion / cross-currency allocation;
+- refunds / outbound customer payments;
+- automated bank-feed or payment-gateway ingestion;
+- automated remittance matching;
+- bank reconciliation;
+- general-ledger posting;
+- credit-note void/reversal;
+- customer statements;
+- aged receivables / dunning;
+- configurable settlement/write-off policy;
+- PDF rendering or production outbound invoice/credit-note delivery.
 
 ## Projects, participants and teams
 
@@ -316,15 +315,14 @@ pnpm test:integration
 pnpm check
 ```
 
-The executable Package 004D head on MySQL 8.4.11 proved:
+The executable Package 004E head is required to prove:
 
 ```text
-15 production migrations applied / 0 pending
+16 production migrations applied / 0 pending
 344 base tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-18 integration files / 82 real-MySQL tests passed
-finance/credit-notes.integration.test.ts: 5/5 passed
-finance/invoices.integration.test.ts: 5/5 passed
+19 integration files / 88 real-MySQL tests passed
+finance/payment-allocation.integration.test.ts: 6/6 passed
 organisation-bootstrap.integration.test.ts: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
