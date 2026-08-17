@@ -60,67 +60,7 @@ contract.manage   ≠ finance authority
 finance.manage    ≠ commercial or contract authority
 ```
 
-## 4. Current permission catalogue
-
-### Organisation administration
-
-```text
-organisation.manage
-member.invite
-member.manage
-```
-
-### Projects
-
-```text
-project.create
-project.view
-project.manage
-project.lifecycle.manage
-project.participant.manage
-project.team.manage
-project.participation.manage
-```
-
-### CRM
-
-```text
-crm.view
-crm.manage
-crm.party.manage
-crm.contact.manage
-crm.opportunity.manage
-crm.activity.manage
-```
-
-### Commercial sales
-
-```text
-commercial.view
-commercial.manage
-commercial.estimate.manage
-commercial.quotation.manage
-commercial.quotation.issue
-commercial.quotation.response.record
-commercial.quotation.convert
-```
-
-### Package 004 contracts
-
-```text
-contract.view
-contract.manage
-contract.create
-contract.draft.manage
-contract.issue
-contract.execute
-contract.amendment.create
-contract.amendment.draft.manage
-contract.amendment.issue
-contract.amendment.decide
-```
-
-### Package 004 finance
+## 4. Current finance permission catalogue
 
 ```text
 finance.view
@@ -149,15 +89,31 @@ finance.credit_control.view
 finance.credit_control.policy.manage
 finance.credit_control.hold.manage
 finance.credit_control.override
+finance.bad_debt.view
+finance.bad_debt.case.manage
+finance.bad_debt.recommend
+finance.bad_debt.write_off.authorise
+finance.bad_debt.write_off.reverse
+finance.bad_debt.recovery.record
+finance.bad_debt.recovery.reverse
 ```
 
-`finance.manage` is the same-domain umbrella for finance granular keys. It never crosses into commercial or contract authority.
+`finance.manage` is the same-domain umbrella for finance granular keys. It never grants commercial or contract authority.
 
 Package 004F statement/aging reads use `finance.view`.
 
-Package 004G+ collections evidence additionally requires `finance.collections.view` or `finance.manage` fallback.
+Collections require the relevant collections read/mutation keys or `finance.manage` fallback.
 
-Package 004I credit-control workspace/details require `finance.view` plus `finance.credit_control.view` or `finance.manage` fallback. A commercial/contract actor may receive a masked blocked/clear decision without receiving finance values.
+Credit-control workspace/details require `finance.view` plus `finance.credit_control.view` or `finance.manage` fallback.
+
+Bad-debt workspace/details require:
+
+```text
+active membership
+AND finance.view
+AND (finance.bad_debt.view OR finance.manage)
+AND same-tenant finance record scope
+```
 
 ## 5. Standard organisation roles
 
@@ -179,45 +135,33 @@ The founding member receives Owner only.
 
 Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular operational permissions.
 
-Relevant broad authority includes:
-
-```text
-project.manage
-crm.manage
-commercial.manage
-contract.manage
-finance.manage
-```
-
-For Package 004I they also receive all four granular credit-control keys explicitly.
-
-### Manager
-
-Manager receives delegated member, project and CRM party/contact authority, including `project.create`, but does not automatically receive commercial, contract or finance authority.
+For Package 004J they receive all seven bad-debt keys explicitly.
 
 ### Finance/Commercial
 
-Default finance/credit responsibilities include ordinary billing, invoice preparation/issue, credit notes, payment/allocation, collections and:
+Finance/Commercial receives ordinary billing, invoice, credit-note, payment/allocation, collections, credit-control administration and delegated bad-debt operations.
+
+Package 004J defaults:
 
 ```text
-finance.credit_control.view
-finance.credit_control.policy.manage
-finance.credit_control.hold.manage
+finance.bad_debt.view
+finance.bad_debt.case.manage
+finance.bad_debt.recommend
+finance.bad_debt.recovery.record
+finance.bad_debt.recovery.reverse
 ```
 
-Finance/Commercial deliberately does **not** receive:
+It deliberately does **not** receive:
 
 ```text
 finance.manage
 finance.invoice.void
 finance.credit_control.override
-commercial.manage
-commercial.quotation.convert
-project.create
-contract.manage
+finance.bad_debt.write_off.authorise
+finance.bad_debt.write_off.reverse
 ```
 
-The role may maintain limit policy and place/release stop-trading holds but cannot bypass those controls by default.
+This separates doubtful-debt assessment and later recovery operations from actual loss recognition/reversal.
 
 ### Other roles
 
@@ -238,32 +182,25 @@ Authentication alone is not tenant authority. Protected requests require active 
 
 Forward migration grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations must remain aligned at the persisted role-permission-row level.
 
-Package 004I therefore persists this exact split for both existing and future organisations:
+Package 004J persists:
 
 ```text
-Owner/Admin         → view + policy manage + hold manage + override
-Finance/Commercial → view + policy manage + hold manage
+Owner/Admin
+    → all seven bad-debt keys
+
+Finance/Commercial
+    → view
+    → case manage
+    → recommend
+    → recovery record
+    → recovery reverse
+    ✕ write-off authorise
+    ✕ write-off reverse
 ```
 
-## 7. Organisation administration authority
+A dedicated real-MySQL bootstrap test verifies this split for newly created organisations.
 
-```text
-member.invite
-    → invitation lifecycle
-
-member.manage
-    → member lifecycle
-    → member-to-role assignments
-
-organisation.manage
-    → role definitions
-    → role-to-permission grants
-    → full organisation administration
-```
-
-Administrative services enforce delegation ceilings, self-mutation restrictions, manager protection, cross-tenant rejection and final-manager lockout protection.
-
-## 8. Domain access principles
+## 7. Domain access principles
 
 Normal CRM, commercial, contract and finance reads require active membership, the relevant read permission and same-tenant record ownership. Mutations additionally require operation-specific granular authority or the same-domain umbrella plus lifecycle/business policy.
 
@@ -271,68 +208,21 @@ Foreign public IDs are tenant-masked where disclosure would leak another organis
 
 Project contextual roles classify context and never grant application authority.
 
-## 9. Accepted quotation → project conversion
+## 8. Accepted quotation and contract credit gates
 
-Conversion requires:
-
-```text
-(commercial.quotation.convert OR commercial.manage)
-AND project.create
-AND exact issued + locked quotation version
-AND accepted response for that exact version
-AND source-estimate/project provenance policy
-AND Package 004I credit-control decision
-```
-
-`quotation_project_conversions` remains authoritative idempotency/provenance evidence.
-
-### Package 004I credit gate
-
-The service derives:
+Accepted quotation conversion requires ordinary commercial/project authority plus the Package 004I credit-control decision. Contract execution requires ordinary contract authority plus the same finance gate where a client party is available.
 
 ```text
-Current Receivable
-= issued invoice gross
-− issued credit-note gross
-− active payment allocations
-
-Quotation Commitment
-= accepted non-optional line gross
-+ stored quotation-item tax amounts
-
 Projected Exposure
-= Current Receivable + Quotation Commitment
+= Current Receivable
++ Proposed Commitment
 ```
 
-Conversion is blocked when:
+An active hold or projected exposure greater than an enabled currency limit blocks the new commitment unless a separately authorised, reasoned override is recorded in the same business transaction.
 
-```text
-active customer credit hold
-OR
-projected exposure > enabled currency credit limit
-```
+Credit-control and invoice mutation use a canonical customer-first lock hierarchy and current/locking receivable reads.
 
-An already-converted accepted response is returned idempotently before a fresh credit gate so retry cannot create duplicate override evidence.
-
-## 10. Contract access and execution
-
-Normal contract reads require active membership, `contract.view` and same-tenant contract ownership. Mutations require the granular contract key or `contract.manage` fallback plus lifecycle policy.
-
-Contract draft management and issue remain available under a credit hold because they are pre-execution preparation/evidence boundaries.
-
-Contract **execution** additionally passes Package 004I credit control when an executed client CRM party is available:
-
-```text
-Contract Commitment
-= Σ issued contract-version value components
-
-Projected Exposure
-= Current Receivable + Contract Commitment
-```
-
-Execution is blocked by the same active-hold / projected-limit policy before execution/signatory evidence is inserted and before the contract becomes active.
-
-## 11. Finance read and mutation boundary
+## 9. Finance read and mutation boundary
 
 Normal finance reads require:
 
@@ -347,9 +237,9 @@ Finance mutations require the granular finance permission or `finance.manage` fa
 
 Foreign finance public IDs are tenant-masked after the caller passes the relevant permission boundary.
 
-## 12. Authoritative receivable model
+## 10. Authoritative receivable model
 
-NuBlox does not persist a second editable current balance for reporting, collections or credit control.
+NuBlox does not persist a second editable current balance for reporting, collections, credit control or bad-debt processing.
 
 For one issued invoice:
 
@@ -358,142 +248,144 @@ Invoice Outstanding
 = Issued Invoice Gross
 − Issued Credit Note Gross
 − Active Payment Allocations
+− Active Write-offs
 ```
 
-Customer/currency receivable is the sum of positive issued invoice outstanding positions. Voided invoices contribute no exposure. Unallocated cash does not reduce customer receivable until allocated.
+Customer/currency receivable is the sum of positive issued-invoice outstanding positions. Voided invoices contribute no exposure. Unallocated cash does not reduce customer receivable until allocated.
 
-`receivable-ledger.ts` is shared by invoice-position and credit-control services.
+`receivable-ledger.ts` is the shared calculation boundary used across invoice position, payment allocation, receivable reporting and credit control.
 
-## 13. Credit-control read authority
+## 11. Package 004J bad-debt read authority
 
-The full credit-control workspace/details require:
+Full bad-debt workspace access requires:
 
 ```text
-active membership
-AND finance.view
-AND (finance.credit_control.view OR finance.manage)
-AND same-tenant customer scope
+finance.view
+AND (finance.bad_debt.view OR finance.manage)
+AND same-tenant case / invoice / payment evidence
 ```
 
-A user with commercial/project/contract authority but without this finance read boundary may see:
+A caller who lacks the read boundary does not receive case, recommendation, write-off, recovery or payment-capacity details.
+
+## 12. Bad-debt case authority
 
 ```text
-blocked / clear
-active-hold reason category
-limit-breach reason category
-whether that actor may override
+finance.bad_debt.case.manage OR finance.manage
+AND issued same-tenant invoice
+AND positive receivable remaining
 ```
 
-but current receivable, commitment, projected exposure and limit amounts remain masked.
+One open bad-debt case is allowed per tenant/invoice. Repeated case creation for the same currently open invoice assessment is idempotent.
 
-## 14. Credit-limit policy authority
+Opening a case does **not** alter receivable.
+
+## 13. Write-off recommendation authority
 
 ```text
-finance.credit_control.policy.manage OR finance.manage
-AND active same-tenant customer
-AND valid currency
-AND positive enabled limit
+finance.bad_debt.recommend OR finance.manage
+AND open same-tenant bad-debt case
+AND recommendation amount > 0
+AND recommendation amount <= current invoice outstanding
+```
+
+Recommendation evidence is immutable and does not change receivable.
+
+The service locks customer then invoice and re-derives current receivable before recording the recommendation.
+
+## 14. Write-off authorisation authority
+
+```text
+finance.bad_debt.write_off.authorise OR finance.manage
+AND open case
+AND exact unused recommendation
+AND recommendation <= current invoice outstanding
+AND explicit authorisation reason
+AND explicit tax-treatment policy
+```
+
+Supported Package 004J tax-treatment evidence:
+
+```text
+no_tax_adjustment
+separate_tax_adjustment_required
+```
+
+Authorisation creates an additive `receivable_write_offs` fact. The invoice, credit-note and payment evidence remain unchanged.
+
+An active write-off reduces operational receivable immediately through the shared derivation.
+
+Explicit member deny on `finance.bad_debt.write_off.authorise` overrides `finance.manage` fallback.
+
+## 15. Write-off reversal authority
+
+```text
+finance.bad_debt.write_off.reverse OR finance.manage
+AND active write-off
+AND no active recovery against that write-off
+AND explicit reversal reason
+```
+
+Reversal inserts additive `receivable_write_off_reversals` evidence. The original write-off is never deleted or edited.
+
+A reversal restores the written-off amount to customer receivable.
+
+## 16. Bad-debt recovery authority
+
+```text
+finance.bad_debt.recovery.record OR finance.manage
+AND active write-off
+AND existing non-reversed payment receipt
+AND matching currency
+AND recovery <= remaining write-off recovery capacity
+AND recovery <= remaining payment capacity
 AND explicit reason
 ```
 
-Each set/revise/disable action creates a new `receivable_credit_policy_revisions` row. Past policy is not overwritten.
-
-A policy identity is unique per tenant + customer + currency.
-
-## 15. Credit-hold authority
+Available payment is authoritative:
 
 ```text
-finance.credit_control.hold.manage OR finance.manage
-AND active same-tenant customer/hold
+Available Payment
+= Payment Amount
+− Active Invoice Allocations
+− Active Bad-Debt Recoveries
+```
+
+Recovery consumes existing cash capacity. It does **not** reopen or settle customer receivable because the debt was already removed by the write-off.
+
+Ordinary payment reversal is blocked while active recovery usage exists.
+
+## 17. Recovery reversal authority
+
+```text
+finance.bad_debt.recovery.reverse OR finance.manage
+AND active recovery
 AND explicit reason
 ```
 
-Hold lifecycle:
+Recovery reversal inserts additive evidence and restores payment capacity. It does not change customer receivable.
+
+## 18. Reporting semantics
+
+Historical receivable reporting is event-correct:
 
 ```text
-active → released
+write-off authorised → statement credit
+write-off reversed   → statement debit
+recovery             → no customer-receivable movement
+recovery reversed    → no customer-receivable movement
 ```
 
-One active hold is permitted per customer. Repeated placement while active is idempotent. Release retains the original placement evidence and adds release actor/time/reason.
-
-A hold is customer-wide and blocks the named new-commitment boundaries regardless of currency.
-
-## 16. Credit-control override authority
-
-Exceptional continuation requires:
-
-```text
-finance.credit_control.override OR finance.manage
-AND an actual active hold or projected limit breach
-AND explicit non-empty override reason
-```
-
-Permission precedence is critical:
-
-```text
-explicit member deny on finance.credit_control.override
-    > finance.manage fallback
-```
-
-Therefore broad finance authority cannot bypass a deliberate member-level override prohibition.
-
-Override evidence snapshots:
-
-```text
-customer
-workflow + subject
-currency
-current receivable
-proposed commitment
-projected exposure
-applicable limit/hold
-reason
-authorising member/time
-```
-
-Override evidence is created **inside the same transaction** as quotation conversion or contract execution. If the business transaction fails, the override rolls back.
-
-## 17. Credit-control concurrency policy
-
-A new commitment must not race an invoice becoming issued.
-
-At enforcement the service serializes on:
-
-```text
-customer party
-+
-all invoice financial_documents for that customer/currency
-```
-
-It then re-derives exposure from issued invoices only.
-
-This gives a deterministic order between invoice issue and the new-commitment gate without making invoice issue itself forbidden by the hold.
-
-## 18. Operations deliberately allowed under a hold
-
-A credit hold is stop-**new-trade** policy, not a freeze on receivable administration.
-
-Therefore Package 004I continues to allow the appropriately authorised workflows for:
-
-```text
-invoice issue for existing work
-credit notes / exceptional correction
-payment receipt
-payment allocation/reversal
-collections actions/reminders
-```
-
-These actions bill, correct, settle or manage existing exposure rather than create a new customer commitment.
+Aging subtracts write-offs active at the selected reporting cutoff. A later write-off reversal therefore does not rewrite an earlier historical statement.
 
 ## 19. Cross-domain separation
 
 ```text
-commercial.manage cannot set/release/override finance credit control
-contract.manage cannot set/release/override finance credit control
+commercial.manage cannot authorise finance write-off
+contract.manage cannot authorise finance write-off
 finance.manage cannot mutate contracts or quotations by itself
 ```
 
-The underlying commercial/contract permission remains required for the business action. Credit override authority only removes the additional finance stop; it does not grant project creation, quotation conversion or contract execution authority.
+Bad-debt authority never grants invoice issue, credit-note, payment, contract or commercial authority outside the relevant finance/business permission family.
 
 ## 20. Tenant-isolation rules
 
@@ -515,34 +407,32 @@ The real-MySQL release gate covers, at minimum:
 - explicit deny precedence and same-domain umbrella behavior;
 - organisation bootstrap/invitation controls and standard-role parity;
 - CRM/commercial/project/contract tenant isolation;
-- quotation conversion and project provenance;
+- quotation conversion and contract credit-control gating;
 - contract formation/execution/amendment integrity;
 - invoice/credit/payment/allocation receivable integrity;
 - receivable reporting and collections controls;
-- Package 004H dunning policy/reminder evidence;
-- Package 004I four-permission availability;
-- Owner/Admin vs Finance/Commercial persisted role parity for existing and future organisations;
-- append-only credit-limit revision history;
-- idempotent hold placement and controlled release;
-- authoritative utilisation with no used-credit balance;
-- exact-limit projection allowed;
-- below-limit current balance + over-limit proposed commitment blocked;
-- quotation conversion hold/limit enforcement and masked finance details;
-- contract issue allowed while execution remains gated;
-- reasoned override evidence and transactional rollback;
-- explicit override deny precedence over `finance.manage`;
-- serialization against concurrent draft→issued invoice changes;
-- foreign-tenant credit-control masking;
+- dunning policy/reminder evidence;
+- credit-control policy/hold/override and concurrency behavior;
+- Package 004J seven-permission availability;
+- Package 004J Owner/Admin vs Finance/Commercial persisted-role parity;
+- idempotent bad-debt case opening;
+- recommendation amount revalidation;
+- partial write-off reducing authoritative receivable;
+- stronger write-off authorisation separation;
+- recovery reducing available payment without reopening receivable;
+- recovery/write-off/payment reversal ordering;
+- explicit write-off-authority deny precedence over `finance.manage`;
+- foreign-tenant bad-debt case masking;
 - zero generated Kysely drift;
 - Svelte/TypeScript diagnostics.
 
-Package 004I release target:
+Package 004J release contract:
 
 ```text
-19 production migrations applied / 0 pending
-356 tables / 789 foreign keys / 459 CHECK constraints
+20 production migrations applied / 0 pending
+362 tables / 804 foreign keys / 465 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts
-26 integration files / 117 real-MySQL tests
+full real-MySQL integration suite
 svelte-check: 0 errors / 0 warnings
 ```
 
