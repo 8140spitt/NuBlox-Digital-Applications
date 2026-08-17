@@ -25,7 +25,11 @@ export type FinanceMutationPermission =
 	| 'finance.payment.create'
 	| 'finance.payment.allocate'
 	| 'finance.payment.allocation.reverse'
-	| 'finance.payment.reverse';
+	| 'finance.payment.reverse'
+	| 'finance.collections.case.manage'
+	| 'finance.collections.action.record'
+	| 'finance.collections.promise.manage'
+	| 'finance.collections.dispute.manage';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
@@ -132,6 +136,10 @@ export class FinanceAccessPolicy {
 
 	async viewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
 		return new PermissionService(db).decide(actor, 'finance.view');
+	}
+
+	async collectionsViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
+		return new PermissionService(db).decideWithUmbrella(actor, 'finance.collections.view', 'finance.manage');
 	}
 
 	async mutationDecision(
