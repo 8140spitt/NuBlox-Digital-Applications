@@ -6,6 +6,7 @@ import { getDatabase } from '$lib/server/db/database';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
 import { InvoiceService } from '$lib/server/finance/invoice-service';
 import { ReceivablePositionService } from '$lib/server/finance/receivable-position-service';
+import { TaxSettingsService } from '$lib/server/finance/tax-settings-service';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -40,6 +41,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
 		const db = getDatabase();
+		await new TaxSettingsService(db).ensureDefaults(actor);
 		const [workspace, receivablePosition] = await Promise.all([
 			new InvoiceService(db).getWorkspace(actor, params.invoicePublicId),
 			new ReceivablePositionService(db).getInvoicePosition(actor, params.invoicePublicId)
