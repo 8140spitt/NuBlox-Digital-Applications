@@ -5,7 +5,6 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import {
 	formatScaledDecimal,
-	lineAmount,
 	parseScaledDecimal,
 	subtractMoney,
 	sumMoney
@@ -23,6 +22,7 @@ import {
 	validateFinanceDate,
 	validateMoneyAmount
 } from './finance-common';
+import { issuedInvoiceOutstanding } from './receivable-ledger';
 
 export type PaymentMethodOption = {
 	code: string;
@@ -48,6 +48,7 @@ export type PaymentSummary = {
 	currencyCode: string;
 	paymentReference: string | null;
 	allocatedAmount: string;
+	recoveredAmount: string;
 	unallocatedAmount: string;
 	isReversed: boolean;
 	reversedAt: Date | null;
@@ -118,58 +119,6 @@ export class PaymentService {
 		private readonly now: () => Date = () => new Date()
 	) {}
 
-	private async documentTotals(
-		db: DatabaseExecutor,
-		organisationId: string,
-		documentId: string
-	): Promise<{ net: string; tax: string; gross: string }> {
-		const items = await db
-			.selectFrom('financial_document_items')
-			.select(['id', 'quantity', 'unit_rate as unitRate'])
-			.where('organisation_id', '=', organisationId)
-			.where('financial_document_id', '=', documentId)
-			.execute();
-		const nets: string[] = [];
-		const taxes: string[] = [];
-		for (const item of items) {
-			nets.push(lineAmount(item.quantity, item.unitRate));
-			const taxRows = await db
-				.selectFrom('financial_document_item_taxes')
-				.select('tax_amount as taxAmount')
-				.where('organisation_id', '=', organisationId)
-				.where('financial_document_item_id', '=', item.id)
-				.execute();
-			taxes.push(...taxRows.map((row) => row.taxAmount));
-		}
-		const net = sumMoney(nets);
-		const tax = sumMoney(taxes);
-		return { net, tax, gross: sumMoney([net, tax]) };
-	}
-
-	private async issuedCreditGross(
-		db: DatabaseExecutor,
-		organisationId: string,
-		invoiceDocumentId: string
-	): Promise<string> {
-		const rows = await db
-			.selectFrom('credit_notes as creditNote')
-			.innerJoin('financial_documents as document', (join) =>
-				join
-					.onRef('document.id', '=', 'creditNote.financial_document_id')
-					.onRef('document.organisation_id', '=', 'creditNote.organisation_id')
-			)
-			.select('document.id')
-			.where('creditNote.organisation_id', '=', organisationId)
-			.where('creditNote.original_invoice_document_id', '=', invoiceDocumentId)
-			.where('document.lifecycle_status', '=', 'issued')
-			.execute();
-		const gross: string[] = [];
-		for (const row of rows) {
-			gross.push((await this.documentTotals(db, organisationId, row.id)).gross);
-		}
-		return sumMoney(gross);
-	}
-
 	private async activeAllocatedAmountForPayment(
 		db: DatabaseExecutor,
 		organisationId: string,
@@ -190,24 +139,24 @@ export class PaymentService {
 		return sumMoney(rows.map((row) => row.allocatedAmount));
 	}
 
-	private async activeAllocatedAmountForInvoice(
+	private async activeRecoveryAmountForPayment(
 		db: DatabaseExecutor,
 		organisationId: string,
-		invoiceDocumentId: string
+		paymentId: string
 	): Promise<string> {
 		const rows = await db
-			.selectFrom('payment_allocations as allocation')
-			.leftJoin('payment_allocation_reversals as reversal', (join) =>
+			.selectFrom('receivable_recoveries as recovery')
+			.leftJoin('receivable_recovery_reversals as reversal', (join) =>
 				join
-					.onRef('reversal.payment_allocation_id', '=', 'allocation.id')
-					.onRef('reversal.organisation_id', '=', 'allocation.organisation_id')
+					.onRef('reversal.recovery_id', '=', 'recovery.id')
+					.onRef('reversal.organisation_id', '=', 'recovery.organisation_id')
 			)
-			.select('allocation.allocated_amount as allocatedAmount')
-			.where('allocation.organisation_id', '=', organisationId)
-			.where('allocation.invoice_document_id', '=', invoiceDocumentId)
-			.where('reversal.payment_allocation_id', 'is', null)
+			.select('recovery.amount as amount')
+			.where('recovery.organisation_id', '=', organisationId)
+			.where('recovery.payment_id', '=', paymentId)
+			.where('reversal.recovery_id', 'is', null)
 			.execute();
-		return sumMoney(rows.map((row) => row.allocatedAmount));
+		return sumMoney(rows.map((row) => row.amount));
 	}
 
 	private async paymentRecord(
@@ -263,14 +212,15 @@ export class PaymentService {
 	): Promise<PaymentSummary | null> {
 		const record = await this.paymentRecord(db, organisationId, publicId);
 		if (!record) return null;
-		const [allocatedAmount, reversal, payer] = await Promise.all([
+		const [allocatedAmount, recoveredAmount, reversal, payer] = await Promise.all([
 			this.activeAllocatedAmountForPayment(db, organisationId, record.id),
+			this.activeRecoveryAmountForPayment(db, organisationId, record.id),
 			this.paymentReversal(db, organisationId, record.id),
 			record.payerPartyPublicId
 				? new CrmRepository(db).findPartyByPublicId(organisationId, record.payerPartyPublicId)
 				: Promise.resolve(null)
 		]);
-		const rawUnallocated = subtractMoney(record.amount, allocatedAmount);
+		const rawUnallocated = subtractMoney(subtractMoney(record.amount, allocatedAmount), recoveredAmount);
 		return {
 			id: record.id,
 			publicId: record.publicId,
@@ -284,6 +234,7 @@ export class PaymentService {
 			currencyCode: record.currencyCode,
 			paymentReference: record.paymentReference,
 			allocatedAmount,
+			recoveredAmount,
 			unallocatedAmount: reversal ? '0.0000' : positiveOrZeroMoney(rawUnallocated),
 			isReversed: Boolean(reversal),
 			reversedAt: reversal?.reversedAt ?? null,
@@ -336,15 +287,7 @@ export class PaymentService {
 		payerPartyId: string | null
 	): Promise<PaymentInvoiceCandidate | null> {
 		if (!invoice || invoice.lifecycleStatus !== 'issued' || !invoice.documentNumber) return null;
-		const [totals, issuedCreditGross, activeAllocatedAmount] = await Promise.all([
-			this.documentTotals(db, organisationId, invoice.id),
-			this.issuedCreditGross(db, organisationId, invoice.id),
-			this.activeAllocatedAmountForInvoice(db, organisationId, invoice.id)
-		]);
-		const outstandingAmount = subtractMoney(
-			subtractMoney(totals.gross, issuedCreditGross),
-			activeAllocatedAmount
-		);
+		const position = await issuedInvoiceOutstanding(db, organisationId, invoice.id);
 		return {
 			invoicePublicId: invoice.publicId,
 			invoiceNumber: invoice.documentNumber,
@@ -352,10 +295,10 @@ export class PaymentService {
 			customerDisplayName: invoice.customerDisplayName ?? 'Customer',
 			currencyCode: invoice.currencyCode,
 			dueDate: invoice.dueDate,
-			invoiceGross: totals.gross,
-			issuedCreditGross,
-			activeAllocatedAmount,
-			outstandingAmount,
+			invoiceGross: position.invoiceGross,
+			issuedCreditGross: position.issuedCreditGross,
+			activeAllocatedAmount: position.activeAllocatedAmount,
+			outstandingAmount: position.outstandingAmount,
 			payerMatches: payerPartyId ? invoice.customerPartyId === payerPartyId : null
 		};
 	}
@@ -600,7 +543,7 @@ export class PaymentService {
 			invoiceCandidates,
 			canAllocate: allocateDecision.allowed && !payment.isReversed && parseScaledDecimal(payment.unallocatedAmount, 4) > 0n,
 			canReverseAllocation: allocationReverseDecision.allowed && !payment.isReversed,
-			canReversePayment: paymentReverseDecision.allowed && !payment.isReversed
+			canReversePayment: paymentReverseDecision.allowed && !payment.isReversed && parseScaledDecimal(payment.recoveredAmount, 4, 'Recovered amount', true) === 0n
 		};
 	}
 
@@ -630,8 +573,11 @@ export class PaymentService {
 				throw new FinanceValidationError('Payment and invoice currency must match.');
 			}
 
-			const activePaymentAllocations = await this.activeAllocatedAmountForPayment(trx, actor.organisationId, payment.id);
-			const paymentAvailable = subtractMoney(payment.amount, activePaymentAllocations);
+			const [activePaymentAllocations, activeRecoveries] = await Promise.all([
+				this.activeAllocatedAmountForPayment(trx, actor.organisationId, payment.id),
+				this.activeRecoveryAmountForPayment(trx, actor.organisationId, payment.id)
+			]);
+			const paymentAvailable = subtractMoney(subtractMoney(payment.amount, activePaymentAllocations), activeRecoveries);
 			if (parseScaledDecimal(amount, 4) > parseScaledDecimal(paymentAvailable, 4, 'Available payment', true)) {
 				throw new FinanceValidationError(`Allocation exceeds the remaining ${positiveOrZeroMoney(paymentAvailable)} available on the payment.`);
 			}
@@ -659,22 +605,10 @@ export class PaymentService {
 					.executeTakeFirstOrThrow()
 			);
 			await new AuditRepository(trx).append({
-				eventPublicId: this.publicIdFactory(),
-				actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId,
-				actorMemberId: membership.id,
-				projectId: null,
-				actionKey: 'finance.payment.allocated',
-				subjectType: 'payment',
-				subjectPublicId: payment.publicId,
-				correlationId: actor.correlationId,
-				changeSummary: {
-					allocationId,
-					invoicePublicId: invoice.publicId,
-					invoiceNumber: invoice.documentNumber,
-					amount,
-					currencyCode: payment.currencyCode
-				}
+				eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId,
+				actorMemberId: membership.id, projectId: null, actionKey: 'finance.payment.allocated', subjectType: 'payment',
+				subjectPublicId: payment.publicId, correlationId: actor.correlationId,
+				changeSummary: { allocationId, invoicePublicId: invoice.publicId, invoiceNumber: invoice.documentNumber, amount, currencyCode: payment.currencyCode }
 			});
 		});
 	}
@@ -687,154 +621,48 @@ export class PaymentService {
 		const allocationId = validateAllocationId(input.allocationId);
 		const reason = cleanFinanceText(input.reason, 1000, 'Allocation reversal reason', true)!;
 		await this.db.transaction().execute(async (trx) => {
-			const policy = new FinanceAccessPolicy(trx);
-			const membership = await policy.assertActiveActor(actor, trx);
-			const decision = await policy.mutationDecision(actor, 'finance.payment.allocation.reverse', trx);
-			if (!decision.allowed) throw new TenantAccessError('Payment-allocation reversal is not permitted.');
-			const payment = await this.paymentRecord(trx, actor.organisationId, paymentPublicId, true);
-			if (!payment) throw new RecordNotFoundError('Payment not found.');
-			if (await this.paymentReversal(trx, actor.organisationId, payment.id)) {
-				throw new FinanceValidationError('The payment is already reversed.');
-			}
-			const allocation = await trx
-				.selectFrom('payment_allocations as allocation')
-				.innerJoin('financial_documents as invoiceDocument', (join) =>
-					join
-						.onRef('invoiceDocument.id', '=', 'allocation.invoice_document_id')
-						.onRef('invoiceDocument.organisation_id', '=', 'allocation.organisation_id')
-				)
-				.select([
-					'allocation.id',
-					'allocation.allocated_amount as allocatedAmount',
-					'invoiceDocument.public_id as invoicePublicId',
-					'invoiceDocument.document_number as invoiceNumber'
-				])
-				.where('allocation.organisation_id', '=', actor.organisationId)
-				.where('allocation.payment_id', '=', payment.id)
-				.where('allocation.id', '=', allocationId)
-				.forUpdate()
-				.executeTakeFirst();
+			const policy = new FinanceAccessPolicy(trx); const membership = await policy.assertActiveActor(actor, trx);
+			if (!(await policy.mutationDecision(actor, 'finance.payment.allocation.reverse', trx)).allowed) throw new TenantAccessError('Payment-allocation reversal is not permitted.');
+			const payment = await this.paymentRecord(trx, actor.organisationId, paymentPublicId, true); if (!payment) throw new RecordNotFoundError('Payment not found.');
+			if (await this.paymentReversal(trx, actor.organisationId, payment.id)) throw new FinanceValidationError('The payment is already reversed.');
+			const allocation = await trx.selectFrom('payment_allocations as allocation')
+				.innerJoin('financial_documents as invoiceDocument', (join) => join.onRef('invoiceDocument.id', '=', 'allocation.invoice_document_id').onRef('invoiceDocument.organisation_id', '=', 'allocation.organisation_id'))
+				.select(['allocation.id','allocation.allocated_amount as allocatedAmount','invoiceDocument.public_id as invoicePublicId','invoiceDocument.document_number as invoiceNumber'])
+				.where('allocation.organisation_id', '=', actor.organisationId).where('allocation.payment_id', '=', payment.id).where('allocation.id', '=', allocationId).forUpdate().executeTakeFirst();
 			if (!allocation) throw new RecordNotFoundError('Payment allocation not found.');
-			const existing = await trx
-				.selectFrom('payment_allocation_reversals')
-				.select('payment_allocation_id')
-				.where('organisation_id', '=', actor.organisationId)
-				.where('payment_allocation_id', '=', allocation.id)
-				.executeTakeFirst();
-			if (existing) throw new FinanceValidationError('The payment allocation is already reversed.');
+			if (await trx.selectFrom('payment_allocation_reversals').select('payment_allocation_id').where('organisation_id', '=', actor.organisationId).where('payment_allocation_id', '=', allocation.id).executeTakeFirst()) throw new FinanceValidationError('The payment allocation is already reversed.');
 			const reversedAt = this.now();
-			await trx
-				.insertInto('payment_allocation_reversals')
-				.values({
-					payment_allocation_id: allocation.id,
-					organisation_id: actor.organisationId,
-					reversed_by_member_id: membership.id,
-					reversed_at: reversedAt,
-					reason
-				})
-				.executeTakeFirstOrThrow();
-			await new AuditRepository(trx).append({
-				eventPublicId: this.publicIdFactory(),
-				actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId,
-				actorMemberId: membership.id,
-				projectId: null,
-				actionKey: 'finance.payment.allocation.reversed',
-				subjectType: 'payment',
-				subjectPublicId: payment.publicId,
-				correlationId: actor.correlationId,
-				changeSummary: {
-					allocationId: allocation.id,
-					invoicePublicId: allocation.invoicePublicId,
-					invoiceNumber: allocation.invoiceNumber,
-					amount: allocation.allocatedAmount,
-					reason,
-					reversedAt
-				}
-			});
+			await trx.insertInto('payment_allocation_reversals').values({ payment_allocation_id: allocation.id, organisation_id: actor.organisationId, reversed_by_member_id: membership.id, reversed_at: reversedAt, reason }).executeTakeFirstOrThrow();
+			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: null, actionKey: 'finance.payment.allocation.reversed', subjectType: 'payment', subjectPublicId: payment.publicId, correlationId: actor.correlationId, changeSummary: { allocationId: allocation.id, invoicePublicId: allocation.invoicePublicId, invoiceNumber: allocation.invoiceNumber, amount: allocation.allocatedAmount, reason, reversedAt } });
 		});
 	}
 
-	async reversePayment(
-		actor: TenantActorContext,
-		input: { paymentPublicId: string; reason: string }
-	): Promise<void> {
+	async reversePayment(actor: TenantActorContext, input: { paymentPublicId: string; reason: string }): Promise<void> {
 		const paymentPublicId = cleanFinanceText(input.paymentPublicId, 64, 'Payment ID', true)!;
 		const reason = cleanFinanceText(input.reason, 1000, 'Payment reversal reason', true)!;
 		await this.db.transaction().execute(async (trx) => {
-			const policy = new FinanceAccessPolicy(trx);
-			const membership = await policy.assertActiveActor(actor, trx);
-			const decision = await policy.mutationDecision(actor, 'finance.payment.reverse', trx);
-			if (!decision.allowed) throw new TenantAccessError('Payment reversal is not permitted.');
-			const payment = await this.paymentRecord(trx, actor.organisationId, paymentPublicId, true);
-			if (!payment) throw new RecordNotFoundError('Payment not found.');
-			if (await this.paymentReversal(trx, actor.organisationId, payment.id)) {
-				throw new FinanceValidationError('The payment is already reversed.');
-			}
+			const policy = new FinanceAccessPolicy(trx); const membership = await policy.assertActiveActor(actor, trx);
+			if (!(await policy.mutationDecision(actor, 'finance.payment.reverse', trx)).allowed) throw new TenantAccessError('Payment reversal is not permitted.');
+			const payment = await this.paymentRecord(trx, actor.organisationId, paymentPublicId, true); if (!payment) throw new RecordNotFoundError('Payment not found.');
+			if (await this.paymentReversal(trx, actor.organisationId, payment.id)) throw new FinanceValidationError('The payment is already reversed.');
+			const activeRecoveries = await this.activeRecoveryAmountForPayment(trx, actor.organisationId, payment.id);
+			if (parseScaledDecimal(activeRecoveries, 4, 'Recovered amount', true) > 0n) throw new FinanceValidationError('Reverse active bad-debt recovery evidence before reversing this payment.');
 
-			const allocations = await trx
-				.selectFrom('payment_allocations')
-				.select(['id', 'allocated_amount as allocatedAmount'])
-				.where('organisation_id', '=', actor.organisationId)
-				.where('payment_id', '=', payment.id)
-				.forUpdate()
-				.execute();
+			const allocations = await trx.selectFrom('payment_allocations').select(['id', 'allocated_amount as allocatedAmount']).where('organisation_id', '=', actor.organisationId).where('payment_id', '=', payment.id).forUpdate().execute();
 			let reversedAllocationCount = 0;
 			if (allocations.length > 0) {
-				const reversalRows = await trx
-					.selectFrom('payment_allocation_reversals')
-					.select('payment_allocation_id as paymentAllocationId')
-					.where('organisation_id', '=', actor.organisationId)
-					.where('payment_allocation_id', 'in', allocations.map((allocation) => allocation.id))
-					.execute();
+				const reversalRows = await trx.selectFrom('payment_allocation_reversals').select('payment_allocation_id as paymentAllocationId').where('organisation_id', '=', actor.organisationId).where('payment_allocation_id', 'in', allocations.map((allocation) => allocation.id)).execute();
 				const reversedIds = new Set(reversalRows.map((row) => row.paymentAllocationId));
 				const activeAllocations = allocations.filter((allocation) => !reversedIds.has(allocation.id));
 				if (activeAllocations.length > 0) {
 					const reversedAt = this.now();
-					await trx
-						.insertInto('payment_allocation_reversals')
-						.values(
-							activeAllocations.map((allocation) => ({
-								payment_allocation_id: allocation.id,
-								organisation_id: actor.organisationId,
-								reversed_by_member_id: membership.id,
-								reversed_at: reversedAt,
-								reason
-							}))
-						)
-						.execute();
+					await trx.insertInto('payment_allocation_reversals').values(activeAllocations.map((allocation) => ({ payment_allocation_id: allocation.id, organisation_id: actor.organisationId, reversed_by_member_id: membership.id, reversed_at: reversedAt, reason }))).execute();
 					reversedAllocationCount = activeAllocations.length;
 				}
 			}
 			const reversedAt = this.now();
-			await trx
-				.insertInto('payment_reversals')
-				.values({
-					payment_id: payment.id,
-					organisation_id: actor.organisationId,
-					reversed_by_member_id: membership.id,
-					reversed_at: reversedAt,
-					reason
-				})
-				.executeTakeFirstOrThrow();
-			await new AuditRepository(trx).append({
-				eventPublicId: this.publicIdFactory(),
-				actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId,
-				actorMemberId: membership.id,
-				projectId: null,
-				actionKey: 'finance.payment.reversed',
-				subjectType: 'payment',
-				subjectPublicId: payment.publicId,
-				correlationId: actor.correlationId,
-				changeSummary: {
-					amount: payment.amount,
-					currencyCode: payment.currencyCode,
-					reversedAllocationCount,
-					reason,
-					reversedAt
-				}
-			});
+			await trx.insertInto('payment_reversals').values({ payment_id: payment.id, organisation_id: actor.organisationId, reversed_by_member_id: membership.id, reversed_at: reversedAt, reason }).executeTakeFirstOrThrow();
+			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: null, actionKey: 'finance.payment.reversed', subjectType: 'payment', subjectPublicId: payment.publicId, correlationId: actor.correlationId, changeSummary: { amount: payment.amount, currencyCode: payment.currencyCode, reversedAllocationCount, reason, reversedAt } });
 		});
 	}
 }
