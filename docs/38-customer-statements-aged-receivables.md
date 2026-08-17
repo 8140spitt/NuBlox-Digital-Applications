@@ -297,21 +297,20 @@ The permanent real-MySQL suite must prove:
 - no generated Kysely drift occurs;
 - Svelte/TypeScript diagnostics remain clean.
 
-## 18. Deliberate exclusions / next boundary
+## 18. Package boundary and later work
 
-Not claimed implemented by Package 004F:
+Package 004F itself does not implement:
 
 - persisted/issued customer statement documents;
 - PDF statement rendering;
 - production outbound statement delivery;
 - automatic statement schedules;
-- dunning/reminder workflows;
-- collections notes / promises-to-pay;
 - customer credit limits / hold policy;
 - bad-debt/write-off processing;
-- dispute management;
 - FX/reporting-currency translation;
 - general-ledger posting;
 - bank reconciliation.
 
-The next finance boundary should be **controlled collections and dunning policy** over the derived overdue receivable position, while keeping communication/workflow state separate from immutable invoices, credits and cash facts.
+**Package 004G now implements the controlled collections case, action-evidence, promise-to-pay and receivable-dispute layer over this derived overdue position.** See `docs/39-controlled-collections-dunning.md`.
+
+The next finance boundary should focus on **collections automation and credit-control policy**—for example configurable dunning stages, reminder scheduling/delivery evidence, promise-due monitoring and later credit-limit/hold rules—while preserving the 004F rule that authoritative receivable value remains derived from immutable invoice, credit and cash facts.
