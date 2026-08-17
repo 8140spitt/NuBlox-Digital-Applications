@@ -90,30 +90,52 @@ export async function badDebtCaseByPublicId(
 	return (await query.executeTakeFirst()) ?? null;
 }
 
-export async function activeRecoveryAmountForWriteOff(db: DatabaseExecutor, organisationId: string, writeOffId: string): Promise<string> {
-	const rows = await db.selectFrom('receivable_write_off_recoveries as recovery')
+export async function activeRecoveryAmountForWriteOff(
+	db: DatabaseExecutor,
+	organisationId: string,
+	writeOffId: string,
+	currentRead = false
+): Promise<string> {
+	let query = db.selectFrom('receivable_write_off_recoveries as recovery')
 		.leftJoin('receivable_write_off_recovery_reversals as reversal', (join) => join.onRef('reversal.recovery_id', '=', 'recovery.id').onRef('reversal.organisation_id', '=', 'recovery.organisation_id'))
 		.select('recovery.recovered_amount as amount')
-		.where('recovery.organisation_id', '=', organisationId).where('recovery.write_off_id', '=', writeOffId).where('reversal.recovery_id', 'is', null).execute();
+		.where('recovery.organisation_id', '=', organisationId).where('recovery.write_off_id', '=', writeOffId).where('reversal.recovery_id', 'is', null);
+	if (currentRead) query = query.forUpdate();
+	const rows = await query.execute();
 	return sumMoney(rows.map((row) => row.amount));
 }
 
-export async function activeAllocatedAmountForPayment(db: DatabaseExecutor, organisationId: string, paymentId: string): Promise<string> {
-	const rows = await db.selectFrom('payment_allocations as allocation')
+export async function activeAllocatedAmountForPayment(
+	db: DatabaseExecutor,
+	organisationId: string,
+	paymentId: string,
+	currentRead = false
+): Promise<string> {
+	let query = db.selectFrom('payment_allocations as allocation')
 		.leftJoin('payment_allocation_reversals as reversal', (join) => join.onRef('reversal.payment_allocation_id', '=', 'allocation.id').onRef('reversal.organisation_id', '=', 'allocation.organisation_id'))
 		.select('allocation.allocated_amount as amount')
-		.where('allocation.organisation_id', '=', organisationId).where('allocation.payment_id', '=', paymentId).where('reversal.payment_allocation_id', 'is', null).execute();
+		.where('allocation.organisation_id', '=', organisationId).where('allocation.payment_id', '=', paymentId).where('reversal.payment_allocation_id', 'is', null);
+	if (currentRead) query = query.forUpdate();
+	const rows = await query.execute();
 	return sumMoney(rows.map((row) => row.amount));
 }
 
-export async function paymentIsReversed(db: DatabaseExecutor, organisationId: string, paymentId: string): Promise<boolean> {
-	return Boolean(await db.selectFrom('payment_reversals').select('payment_id').where('organisation_id', '=', organisationId).where('payment_id', '=', paymentId).executeTakeFirst());
+export async function paymentIsReversed(db: DatabaseExecutor, organisationId: string, paymentId: string, currentRead = false): Promise<boolean> {
+	let query = db.selectFrom('payment_reversals').select('payment_id').where('organisation_id', '=', organisationId).where('payment_id', '=', paymentId);
+	if (currentRead) query = query.forUpdate();
+	return Boolean(await query.executeTakeFirst());
 }
 
-export async function availablePaymentAmount(db: DatabaseExecutor, organisationId: string, paymentId: string, paymentAmount: string): Promise<{ activeAllocatedAmount: string; activeRecoveryAmount: string; availableAmount: string }> {
+export async function availablePaymentAmount(
+	db: DatabaseExecutor,
+	organisationId: string,
+	paymentId: string,
+	paymentAmount: string,
+	currentRead = false
+): Promise<{ activeAllocatedAmount: string; activeRecoveryAmount: string; availableAmount: string }> {
 	const [activeAllocatedAmount, activeRecoveryAmount] = await Promise.all([
-		activeAllocatedAmountForPayment(db, organisationId, paymentId),
-		activeRecoveryAmountForPayment(db, organisationId, paymentId)
+		activeAllocatedAmountForPayment(db, organisationId, paymentId, currentRead),
+		activeRecoveryAmountForPayment(db, organisationId, paymentId, currentRead)
 	]);
 	return { activeAllocatedAmount, activeRecoveryAmount, availableAmount: subtractMoney(subtractMoney(paymentAmount, activeAllocatedAmount), activeRecoveryAmount) };
 }
