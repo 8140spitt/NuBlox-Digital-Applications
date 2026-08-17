@@ -89,7 +89,8 @@ WHERE NOT EXISTS (
 );
 
 -- Current UK rates for the 2026/27 tax year. Effective dating keeps later rate
--- changes additive rather than rewriting historical tax evidence.
+-- changes additive rather than rewriting historical tax evidence. If a tenant
+-- already owns rate history for one of these codes, that history is left alone.
 INSERT INTO tax_category_rates (
     organisation_id,
     tax_category_id,
@@ -105,7 +106,6 @@ WHERE category.code = 'VAT_STANDARD'
       FROM tax_category_rates AS rate
       WHERE rate.organisation_id = category.organisation_id
         AND rate.tax_category_id = category.id
-        AND rate.valid_from = '2026-04-01'
   );
 
 INSERT INTO tax_category_rates (
@@ -123,7 +123,6 @@ WHERE category.code = 'VAT_REDUCED'
       FROM tax_category_rates AS rate
       WHERE rate.organisation_id = category.organisation_id
         AND rate.tax_category_id = category.id
-        AND rate.valid_from = '2026-04-01'
   );
 
 INSERT INTO tax_category_rates (
@@ -141,7 +140,6 @@ WHERE category.code = 'VAT_ZERO'
       FROM tax_category_rates AS rate
       WHERE rate.organisation_id = category.organisation_id
         AND rate.tax_category_id = category.id
-        AND rate.valid_from = '2026-04-01'
   );
 
 -- migrate:down transaction:false
