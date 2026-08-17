@@ -35,7 +35,11 @@ export type FinanceMutationPermission =
 	| 'finance.collections.reminder.dispatch'
 	| 'finance.credit_control.policy.manage'
 	| 'finance.credit_control.hold.manage'
-	| 'finance.credit_control.override';
+	| 'finance.credit_control.override'
+	| 'finance.bad_debt.write_off'
+	| 'finance.bad_debt.write_off.reverse'
+	| 'finance.bad_debt.recovery'
+	| 'finance.bad_debt.recovery.reverse';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
@@ -150,6 +154,10 @@ export class FinanceAccessPolicy {
 
 	async creditControlViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
 		return new PermissionService(db).decideWithUmbrella(actor, 'finance.credit_control.view', 'finance.manage');
+	}
+
+	async badDebtViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
+		return new PermissionService(db).decideWithUmbrella(actor, 'finance.bad_debt.view', 'finance.manage');
 	}
 
 	async mutationDecision(
