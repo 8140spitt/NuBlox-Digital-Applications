@@ -39,7 +39,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { createError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { createError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		const rawKind = String(data.get('kind') ?? '');
 		if (rawKind !== 'person' && rawKind !== 'organisation') {

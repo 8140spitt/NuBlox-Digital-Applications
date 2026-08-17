@@ -17,7 +17,10 @@
 	<div>
 		<p class="eyebrow">Relationships</p>
 		<h1>CRM</h1>
-		<p>Private organisations and people known to this NuBlox organisation. CRM records are not a public NuBlox directory.</p>
+		<p>
+			Private organisations and people known to this NuBlox organisation. CRM records are not a
+			public NuBlox directory.
+		</p>
 	</div>
 	{#if data.canManage}<a class="header-action" href="#new-party">Add CRM record</a>{/if}
 </section>
@@ -38,7 +41,9 @@
 				<span>Type</span>
 				<select name="kind">
 					<option value="">All</option>
-					<option value="organisation" selected={data.filters.kind === 'organisation'}>Organisations</option>
+					<option value="organisation" selected={data.filters.kind === 'organisation'}
+						>Organisations</option
+					>
 					<option value="person" selected={data.filters.kind === 'person'}>People</option>
 				</select>
 			</label>
@@ -89,7 +94,9 @@
 							{#if party.primaryEmail}<span>{party.primaryEmail}</span>{/if}
 							{#if party.primaryPhone}<span>{party.primaryPhone}</span>{/if}
 						</div>
-						<span class={`status status-${party.status}`}>{statusLabels[party.status] ?? party.status}</span>
+						<span class={`status status-${party.status}`}
+							>{statusLabels[party.status] ?? party.status}</span
+						>
 					</a>
 				{/each}
 			</div>
@@ -103,8 +110,8 @@
 			<p class="eyebrow">New record</p>
 			<h2>Add an organisation or person</h2>
 			<p>
-				A real-world party is stored once in this tenant and can hold several business roles. Client, supplier,
-				subcontractor and consultant are classifications of the same party record.
+				A real-world party is stored once in this tenant and can hold several business roles.
+				Client, supplier, subcontractor and consultant are classifications of the same party record.
 			</p>
 		</div>
 
@@ -158,7 +165,10 @@
 				<legend>Business roles</legend>
 				<div class="role-options">
 					{#each data.roleTypes as role}
-						<label><input type="checkbox" name="roleCode" value={role.code} /> <span>{role.name}</span></label>
+						<label
+							><input type="checkbox" name="roleCode" value={role.code} />
+							<span>{role.name}</span></label
+						>
 					{/each}
 				</div>
 			</fieldset>
@@ -170,54 +180,246 @@
 {/if}
 
 <style>
-	.page-header { display: flex; justify-content: space-between; align-items: end; gap: 1.5rem; margin-bottom: 1.4rem; }
-	.page-header > div { max-width: 60rem; }
-	.page-header p:last-child, .create-copy p { color: #5d5d57; line-height: 1.6; }
-	.eyebrow { margin: 0 0 0.3rem; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; font-weight: 760; color: #666; }
-	h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.1rem); letter-spacing: -0.045em; }
-	h2 { margin: 0; }
-	.panel, .notice { background: white; border: 1px solid #d9d9d2; border-radius: 0.8rem; padding: 1.2rem; margin-bottom: 1rem; }
-	.header-action, button { font: inherit; font-weight: 750; border: 1px solid #111; border-radius: 0.5rem; padding: 0.68rem 0.9rem; background: #111; color: white; text-decoration: none; cursor: pointer; }
-	.secondary { color: #333; font-weight: 650; }
-	.filters form { display: grid; grid-template-columns: minmax(16rem, 1fr) 11rem 11rem auto auto; gap: 0.75rem; align-items: end; }
-	.filters label, .party-form label { display: grid; gap: 0.35rem; font-size: 0.84rem; font-weight: 650; }
-	input, select { min-width: 0; font: inherit; border: 1px solid #b9b9b1; border-radius: 0.45rem; padding: 0.64rem; background: white; }
-	.panel-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 0.9rem; }
-	.count { min-width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 999px; background: #f0f0eb; font-weight: 750; }
-	.party-list { display: grid; gap: 0.5rem; }
-	.party-row { display: grid; grid-template-columns: minmax(13rem, 1.2fr) minmax(12rem, 1fr) minmax(12rem, 1fr) auto; gap: 1rem; align-items: center; padding: 0.8rem; border: 1px solid #e1e1db; border-radius: 0.55rem; color: inherit; text-decoration: none; }
-	.party-row:hover, .party-row:focus-visible { border-color: #898982; }
-	.identity, .contact { display: grid; gap: 0.16rem; }
-	.identity span, .contact span, .roles em { color: #6b6b65; font-size: 0.8rem; font-style: normal; }
-	.roles { display: flex; flex-wrap: wrap; gap: 0.3rem; }
-	.roles > span { padding: 0.2rem 0.42rem; border-radius: 999px; background: #f1f1ec; font-size: 0.75rem; }
-	.status { font-size: 0.72rem; font-weight: 750; padding: 0.28rem 0.48rem; border-radius: 999px; background: #ecece6; }
-	.status-active { background: #e4f5e8; }
-	.status-inactive { background: #fff1cd; }
-	.status-archived { color: #666; }
-	.empty-state { padding: 1rem; background: #fafaf7; border-radius: 0.55rem; }
-	.empty-state h3 { margin-top: 0; }
-	.create-panel { display: grid; grid-template-columns: minmax(14rem, 0.7fr) minmax(24rem, 1.3fr); gap: 2rem; align-items: start; }
-	.party-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.9rem; }
-	.party-form small { color: #777; font-weight: 500; }
-	.wide { grid-column: 1 / -1; }
-	.role-fieldset { border: 1px solid #d7d7d0; border-radius: 0.55rem; padding: 0.8rem; }
-	.role-fieldset legend { padding: 0 0.3rem; font-weight: 700; font-size: 0.85rem; }
-	.role-options { display: flex; flex-wrap: wrap; gap: 0.45rem 0.8rem; }
-	.role-options label { display: flex; grid-template-columns: none; flex-direction: row; align-items: center; gap: 0.35rem; font-weight: 550; }
-	.error { color: #9b1c1c; margin: 0; }
-	.party-form button { justify-self: start; }
+	.page-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: end;
+		gap: 1.5rem;
+		margin-bottom: 1.4rem;
+	}
+	.page-header > div {
+		max-width: 60rem;
+	}
+	.page-header p:last-child,
+	.create-copy p {
+		color: #5d5d57;
+		line-height: 1.6;
+	}
+	.eyebrow {
+		margin: 0 0 0.3rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		font-size: 0.72rem;
+		font-weight: 760;
+		color: #666;
+	}
+	h1 {
+		margin: 0;
+		font-size: clamp(2rem, 5vw, 3.1rem);
+		letter-spacing: -0.045em;
+	}
+	h2 {
+		margin: 0;
+	}
+	.panel,
+	.notice {
+		background: white;
+		border: 1px solid #d9d9d2;
+		border-radius: 0.8rem;
+		padding: 1.2rem;
+		margin-bottom: 1rem;
+	}
+	.header-action,
+	button {
+		font: inherit;
+		font-weight: 750;
+		border: 1px solid #111;
+		border-radius: 0.5rem;
+		padding: 0.68rem 0.9rem;
+		background: #111;
+		color: white;
+		text-decoration: none;
+		cursor: pointer;
+	}
+	.secondary {
+		color: #333;
+		font-weight: 650;
+	}
+	.filters form {
+		display: grid;
+		grid-template-columns: minmax(16rem, 1fr) 11rem 11rem auto auto;
+		gap: 0.75rem;
+		align-items: end;
+	}
+	.filters label,
+	.party-form label {
+		display: grid;
+		gap: 0.35rem;
+		font-size: 0.84rem;
+		font-weight: 650;
+	}
+	input,
+	select {
+		min-width: 0;
+		font: inherit;
+		border: 1px solid #b9b9b1;
+		border-radius: 0.45rem;
+		padding: 0.64rem;
+		background: white;
+	}
+	.panel-heading {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: start;
+		margin-bottom: 0.9rem;
+	}
+	.count {
+		min-width: 2rem;
+		height: 2rem;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: #f0f0eb;
+		font-weight: 750;
+	}
+	.party-list {
+		display: grid;
+		gap: 0.5rem;
+	}
+	.party-row {
+		display: grid;
+		grid-template-columns: minmax(13rem, 1.2fr) minmax(12rem, 1fr) minmax(12rem, 1fr) auto;
+		gap: 1rem;
+		align-items: center;
+		padding: 0.8rem;
+		border: 1px solid #e1e1db;
+		border-radius: 0.55rem;
+		color: inherit;
+		text-decoration: none;
+	}
+	.party-row:hover,
+	.party-row:focus-visible {
+		border-color: #898982;
+	}
+	.identity,
+	.contact {
+		display: grid;
+		gap: 0.16rem;
+	}
+	.identity span,
+	.contact span,
+	.roles em {
+		color: #6b6b65;
+		font-size: 0.8rem;
+		font-style: normal;
+	}
+	.roles {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+	}
+	.roles > span {
+		padding: 0.2rem 0.42rem;
+		border-radius: 999px;
+		background: #f1f1ec;
+		font-size: 0.75rem;
+	}
+	.status {
+		font-size: 0.72rem;
+		font-weight: 750;
+		padding: 0.28rem 0.48rem;
+		border-radius: 999px;
+		background: #ecece6;
+	}
+	.status-active {
+		background: #e4f5e8;
+	}
+	.status-inactive {
+		background: #fff1cd;
+	}
+	.status-archived {
+		color: #666;
+	}
+	.empty-state {
+		padding: 1rem;
+		background: #fafaf7;
+		border-radius: 0.55rem;
+	}
+	.empty-state h3 {
+		margin-top: 0;
+	}
+	.create-panel {
+		display: grid;
+		grid-template-columns: minmax(14rem, 0.7fr) minmax(24rem, 1.3fr);
+		gap: 2rem;
+		align-items: start;
+	}
+	.party-form {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.9rem;
+	}
+	.party-form small {
+		color: #777;
+		font-weight: 500;
+	}
+	.wide {
+		grid-column: 1 / -1;
+	}
+	.role-fieldset {
+		border: 1px solid #d7d7d0;
+		border-radius: 0.55rem;
+		padding: 0.8rem;
+	}
+	.role-fieldset legend {
+		padding: 0 0.3rem;
+		font-weight: 700;
+		font-size: 0.85rem;
+	}
+	.role-options {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem 0.8rem;
+	}
+	.role-options label {
+		display: flex;
+		grid-template-columns: none;
+		flex-direction: row;
+		align-items: center;
+		gap: 0.35rem;
+		font-weight: 550;
+	}
+	.error {
+		color: #9b1c1c;
+		margin: 0;
+	}
+	.party-form button {
+		justify-self: start;
+	}
 	@media (max-width: 1000px) {
-		.filters form { grid-template-columns: 1fr 1fr; }
-		.search-field { grid-column: 1 / -1; }
-		.party-row { grid-template-columns: 1fr auto; }
-		.roles, .contact { grid-column: 1 / -1; }
+		.filters form {
+			grid-template-columns: 1fr 1fr;
+		}
+		.search-field {
+			grid-column: 1 / -1;
+		}
+		.party-row {
+			grid-template-columns: 1fr auto;
+		}
+		.roles,
+		.contact {
+			grid-column: 1 / -1;
+		}
 	}
 	@media (max-width: 760px) {
-		.page-header { display: block; }
-		.header-action { display: inline-block; margin-top: 0.6rem; }
-		.create-panel { grid-template-columns: 1fr; }
-		.party-form, .filters form { grid-template-columns: 1fr; }
-		.wide, .search-field { grid-column: auto; }
+		.page-header {
+			display: block;
+		}
+		.header-action {
+			display: inline-block;
+			margin-top: 0.6rem;
+		}
+		.create-panel {
+			grid-template-columns: 1fr;
+		}
+		.party-form,
+		.filters form {
+			grid-template-columns: 1fr;
+		}
+		.wide,
+		.search-field {
+			grid-column: auto;
+		}
 	}
 </style>
