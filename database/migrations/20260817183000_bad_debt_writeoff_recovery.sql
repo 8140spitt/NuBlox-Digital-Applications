@@ -1,3 +1,5 @@
+-- migrate:up
+
 -- Package 004J — Controlled Bad Debt, Write-off and Recovery
 
 INSERT INTO permissions (public_id, permission_key, name, description, is_active)
