@@ -129,7 +129,8 @@ async function createCustomer(): Promise<void> {
 	customerPartyId = insertedId(await db.insertInto('parties').values({ organisation_id: organisationAId, public_id: customerPartyPublicId, party_kind: 'organisation', account_owner_member_id: ownerAMemberId, status: 'active' }).executeTakeFirstOrThrow());
 	await db.insertInto('party_organisations').values({ party_id: customerPartyId, organisation_id: organisationAId, legal_name: `${PREFIX}Client Ltd`, trading_name: null }).executeTakeFirstOrThrow();
 	await db.insertInto('party_billing_settings').values({ party_id: customerPartyId, organisation_id: organisationAId, default_payment_term_id: null, default_currency_code: 'GBP', customer_account_reference: 'AUT-001', purchase_order_required: 0 }).executeTakeFirstOrThrow();
-	await db.insertInto('party_email_addresses').values({ party_id: customerPartyId, organisation_id: organisationAId, email: 'accounts@example.test', label: 'Accounts', is_primary: 1, is_verified: 1, primary_party_id: null }).executeTakeFirstOrThrow();
+	// `primary_party_id` is a MySQL generated column; kysely-codegen does not currently model that expression as Generated.
+	await db.insertInto('party_email_addresses').values({ party_id: customerPartyId, organisation_id: organisationAId, email: 'accounts@example.test', label: 'Accounts', is_primary: 1, is_verified: 1 } as never).executeTakeFirstOrThrow();
 }
 
 async function createIssuedInvoice(): Promise<void> {
