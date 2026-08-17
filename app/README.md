@@ -13,6 +13,7 @@ This app is a modular monolith following `docs/05-system-architecture.md`.
 - Tenant-owned records are resolved through active tenant context rather than public/surrogate ID alone.
 - Reporting derives from authoritative domain facts rather than parallel editable balance stores.
 - Collections and credit control react to authoritative receivables but cannot become a second receivable ledger.
+- Tax rates are effective-dated reference facts; later rate changes never rewrite issued-document tax evidence.
 
 ## Stack
 
@@ -73,6 +74,14 @@ finance.credit_control.override
 
 Umbrellas never cross domains.
 
+Tax settings reuse released finance authority:
+
+```text
+finance.view             → read tax settings
+finance.billing.manage   → create tax categories / append effective rates
+finance.invoice.draft.manage → select tax and add invoice lines
+```
+
 ## Standard organisation roles
 
 New organisations receive Owner, Administrator, Manager, Finance/Commercial, Member/Professional, Field Worker and Read Only.
@@ -95,6 +104,7 @@ Key protected routes include:
 /contracts
 /contracts/[contractPublicId]
 /finance/billing
+/finance/tax
 /finance/invoices
 /finance/credit-notes
 /finance/payments
@@ -114,6 +124,7 @@ Current server-domain modules include:
 ```text
 src/lib/server/finance/finance-common.ts
 src/lib/server/finance/billing-settings-service.ts
+src/lib/server/finance/tax-settings-service.ts
 src/lib/server/finance/invoice-service.ts
 src/lib/server/finance/credit-note-service.ts
 src/lib/server/finance/payment-service.ts
@@ -125,6 +136,26 @@ src/lib/server/finance/collections-automation-service.ts
 src/lib/server/finance/credit-control-service.ts
 src/lib/server/finance/credit-control-context.ts
 ```
+
+Starter tax provisioning is isolated in:
+
+```text
+src/lib/server/tax/tax-defaults.ts
+```
+
+### Invoice tax configuration
+
+`/finance/tax` lists organisation-owned tax categories and their effective-dated percentage-rate history.
+
+The starter UK catalogue contains standard 20%, reduced 5%, zero 0%, exempt and outside-scope categories. The helper is idempotent: a matching tenant category is preserved, and any existing rate history prevents a starter rate from being added over it.
+
+Invoice draft line entry requires the user to choose a tax explicitly. If no active categories are available, the invoice workspace presents a Tax settings recovery path instead of an unusable required selector.
+
+At invoice issue, `InvoiceService` refreshes the selected category against the rate effective at the issue date and persists the applied rate/tax evidence with the financial-document line. Later rate changes therefore do not rewrite an issued invoice.
+
+Construction domestic reverse-charge treatment is not represented as a normal 0% category and remains a separate future workflow.
+
+See `docs/42-invoice-tax-settings.md`.
 
 ### Authoritative receivable
 
@@ -237,17 +268,14 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004I release target:
+Current invoice-tax hotfix target:
 
 ```text
-19 production migrations applied / 0 pending
+20 production migrations applied / 0 pending
 356 tables / 789 foreign keys / 459 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts
-26 integration files / 117 real-MySQL tests
-credit-control core: 6 tests
-credit-control concurrency: 1 test
-credit-control projected exposure: 1 test
-credit-control bootstrap parity: 1 test
+27 integration files / 121 real-MySQL tests
+tax-settings: 4 tests
 svelte-check: 0 errors / 0 warnings
 ```
 
