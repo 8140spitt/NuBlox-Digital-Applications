@@ -111,6 +111,64 @@ export interface ReceivableCollectionReminders {
   updated_at: Generated<Date>;
 }
 
+export interface ReceivableCreditControlOverrides {
+  authorised_at: Generated<Date>;
+  authorised_by_member_id: string;
+  created_at: Generated<Date>;
+  credit_hold_id: string | null;
+  credit_limit_amount: Decimal | null;
+  credit_policy_id: string | null;
+  currency_code: string;
+  customer_party_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  outstanding_amount: Decimal;
+  public_id: string;
+  reason: string;
+  subject_public_id: string;
+  workflow_type: string;
+}
+
+export interface ReceivableCreditHolds {
+  active_customer_party_id: Generated<string | null>;
+  created_at: Generated<Date>;
+  customer_party_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  placed_at: Generated<Date>;
+  placed_by_member_id: string;
+  placed_reason: string;
+  public_id: string;
+  released_at: Date | null;
+  released_by_member_id: string | null;
+  released_reason: string | null;
+  status: Generated<string>;
+  updated_at: Generated<Date>;
+}
+
+export interface ReceivableCreditPolicies {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  currency_code: string;
+  customer_party_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+}
+
+export interface ReceivableCreditPolicyRevisions {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  credit_limit_amount: Decimal | null;
+  credit_policy_id: string;
+  id: Generated<string>;
+  is_enabled: Generated<number>;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  version_number: number;
+}
+
 export interface ReceivableDisputes {
   collection_case_id: string;
   created_at: Generated<Date>;
@@ -156,6 +214,10 @@ export interface DB {
   receivable_collection_policy_stages: ReceivableCollectionPolicyStages;
   receivable_collection_reminder_deliveries: ReceivableCollectionReminderDeliveries;
   receivable_collection_reminders: ReceivableCollectionReminders;
+  receivable_credit_control_overrides: ReceivableCreditControlOverrides;
+  receivable_credit_holds: ReceivableCreditHolds;
+  receivable_credit_policies: ReceivableCreditPolicies;
+  receivable_credit_policy_revisions: ReceivableCreditPolicyRevisions;
   receivable_disputes: ReceivableDisputes;
   receivable_promises_to_pay: ReceivablePromisesToPay;
 }
