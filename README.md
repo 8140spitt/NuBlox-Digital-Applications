@@ -35,11 +35,13 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **17 migrations**. The latest migration is:
+The production stream now contains **18 migrations**. The latest migration is:
 
-- `20260817124500_controlled_collections.sql` — Package 004G controlled collections cases, immutable action evidence, promises to pay, receivable disputes and collections permissions.
+- `20260817144000_collections_automation_policy.sql` — Package 004H versioned collections policy, policy stages, immutable generated reminder snapshots, delivery-attempt evidence and automation permissions.
 
-Package 004F remained migration-free and derived statements/aging from existing finance facts. Package 004G introduces four genuinely new persistent operational facts, so the migrated application structure is now **348 tables, 767 foreign keys and 439 `CHECK` constraints**.
+Package 004F remained migration-free and derived statements/aging from existing finance facts. Package 004G added collection-case/action/promise/dispute facts. Package 004H adds four policy/reminder evidence tables without adding a scheduler or any editable receivable balance.
+
+The migrated application structure is now **352 tables, 778 foreign keys and 450 `CHECK` constraints**.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -147,12 +149,15 @@ finance.manage
     ├─ finance.collections.case.manage
     ├─ finance.collections.action.record
     ├─ finance.collections.promise.manage
-    └─ finance.collections.dispute.manage
+    ├─ finance.collections.dispute.manage
+    ├─ finance.collections.policy.manage
+    ├─ finance.collections.reminder.generate
+    └─ finance.collections.reminder.dispatch
 ```
 
 **Umbrellas never cross domains.** Commercial authority does not grant contract authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
 
-Package 004F reporting reuses `finance.view`. Package 004G collection-case evidence is more operationally sensitive, so collection reads additionally require `finance.collections.view` or the `finance.manage` fallback.
+Package 004F reporting reuses `finance.view`. Package 004G/004H collection evidence additionally requires `finance.collections.view` or the `finance.manage` fallback. 004H then separates authority to manage policy, generate a message snapshot and trigger external dispatch.
 
 ## Controlled account provisioning and standard roles
 
@@ -184,9 +189,11 @@ finance.collections.case.manage
 finance.collections.action.record
 finance.collections.promise.manage
 finance.collections.dispute.manage
+finance.collections.reminder.generate
+finance.collections.reminder.dispatch
 ```
 
-It deliberately does **not** receive `finance.manage` or `finance.invoice.void`. Invoice void remains the stronger exceptional issued-document lifecycle authority.
+It deliberately does **not** receive `finance.manage`, `finance.invoice.void` or `finance.collections.policy.manage`. Invoice void remains stronger issued-document authority; policy authoring remains stronger customer-escalation authority.
 
 Manager, Member/Professional, Field Worker and Read Only do not receive automatic finance mutation or collection-case authority. The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
 
@@ -233,6 +240,14 @@ Controlled Collections Case
     ├── Reminder / Call / Note Evidence
     ├── Promise to Pay
     └── Receivable Dispute
+    ↓
+Versioned Collections Policy
+    ↓
+Derived Due Reminder Candidate
+    ↓
+Explicit Reminder Generation
+    ↓
+Explicit Dispatch / Retry Evidence
 ```
 
 See:
@@ -246,6 +261,7 @@ See:
 - [`docs/37-payment-receipt-allocation.md`](docs/37-payment-receipt-allocation.md)
 - [`docs/38-customer-statements-aged-receivables.md`](docs/38-customer-statements-aged-receivables.md)
 - [`docs/39-controlled-collections-dunning.md`](docs/39-controlled-collections-dunning.md)
+- [`docs/40-collections-automation-policy.md`](docs/40-collections-automation-policy.md)
 
 ## Operational accounts receivable
 
@@ -339,11 +355,49 @@ Collection Case
     └── receivable dispute
 ```
 
-Starting a case is idempotent while an `open` or `paused` case already exists. Case closure requires an explicit reason and is blocked while promises or disputes remain open. A closed case rejects further ordinary mutation.
+Starting a case is idempotent while an `open` or `paused` case already exists. Case creation serialises the customer and issued invoice documents and revalidates the live overdue position before insertion. Case closure requires an explicit reason and is blocked while promises or disputes remain open.
 
-Promises and disputes may reference an invoice only when it belongs to the same tenant and the same customer account. A promise does not create cash; a dispute does not change an invoice balance. Any settlement/correction still goes through payment allocation, credit note or exceptional invoice-void authority.
+Promises and disputes may reference an invoice only when it belongs to the same tenant and same customer account. A promise does not create cash; a dispute does not change an invoice balance. Any settlement/correction still goes through payment allocation, credit note or exceptional invoice-void authority.
 
-Collection actions preserve business-facing evidence; platform mutations also append `audit_events` evidence.
+### Package 004H — Collections automation policy
+
+Protected route:
+
+- `/finance/collections/automation`
+
+Package 004H adds four normalised policy/reminder evidence tables:
+
+```text
+receivable_collection_policies
+receivable_collection_policy_stages
+receivable_collection_reminders
+receivable_collection_reminder_deliveries
+```
+
+An activated policy version is immutable. Draft stages define strictly increasing days-overdue thresholds, email templates and optional suppression for open disputes/current promises.
+
+A due reminder candidate is **derived**, not a scheduled job. The candidate requires an open collection case, active policy, currently overdue positive receivable and stage threshold not already generated for that case.
+
+Generation:
+
+- requires reminder-generation authority;
+- additionally requires `crm.view` for recipient identity traversal;
+- snapshots recipient email, rendered subject/body, policy/stage/customer/case provenance and as-of date;
+- is idempotent per case + stage;
+- sends nothing and creates no collection-contact evidence.
+
+Dispatch:
+
+- uses a separate permission;
+- revalidates case/open receivable/stage/suppression immediately before the side effect;
+- records every success/failure attempt immutably;
+- leaves failures pending for controlled retry;
+- appends 004G reminder action evidence only on success;
+- reuses the reminder public ID as the external delivery idempotency key.
+
+The workspace also surfaces open promises whose due date has arrived/passed. It never auto-marks them broken.
+
+Package 004H does **not** claim a background scheduler, durable worker or production provider adapter.
 
 ### Deliberate finance exclusions
 
@@ -358,11 +412,12 @@ Still not claimed implemented:
 - credit-note void/reversal;
 - persisted/issued statement documents, PDFs or outbound delivery;
 - automatic statement schedules;
-- automatic reminder generation or delivery;
-- configurable dunning-stage escalation;
-- automatic legal escalation / debt-collection agency handoff;
-- customer credit limits / credit-hold policy;
+- cron/background reminder generation or dispatch;
+- production email/SMS/postal/portal reminder provider adapters;
+- automatic promise-breaking decisions;
+- customer credit limits / credit-hold policy and cross-workflow enforcement;
 - late-fee / interest calculation;
+- legal/agency escalation;
 - bad-debt/write-off processing;
 - configurable settlement/write-off policy;
 - production outbound invoice/credit-note delivery.
@@ -391,13 +446,14 @@ pnpm test:integration
 pnpm check
 ```
 
-The Package 004G release gate is:
+The Package 004H executable code gate has proved:
 
 ```text
-17 production migrations applied / 0 pending
-348 base tables / 767 foreign keys / 439 CHECK constraints
+18 production migrations applied / 0 pending
+352 base tables / 778 foreign keys / 450 CHECK constraints
 zero generated Kysely drift across core + collections outputs
-21 integration files / 100 real-MySQL tests passed
+22 integration files / 108 real-MySQL tests passed
+finance/collections-automation.integration.test.ts: 8/8 passed
 finance/collections.integration.test.ts: 7/7 passed
 finance/receivables-reporting.integration.test.ts: 5/5 passed
 finance/payment-allocation.integration.test.ts: 6/6 passed
