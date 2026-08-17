@@ -114,6 +114,7 @@ export interface ReceivableCollectionReminders {
 export interface ReceivableCreditControlOverrides {
   authorised_at: Generated<Date>;
   authorised_by_member_id: string;
+  commitment_amount: Decimal;
   created_at: Generated<Date>;
   credit_hold_id: string | null;
   credit_limit_amount: Decimal | null;
@@ -123,6 +124,7 @@ export interface ReceivableCreditControlOverrides {
   id: Generated<string>;
   organisation_id: string;
   outstanding_amount: Decimal;
+  projected_exposure_amount: Decimal;
   public_id: string;
   reason: string;
   subject_public_id: string;
