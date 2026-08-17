@@ -204,6 +204,28 @@ export class CollectionsService {
 		return query.executeTakeFirst();
 	}
 
+	private async lockCustomerIssuedInvoices(
+		db: DatabaseExecutor,
+		organisationId: string,
+		customerPartyId: string
+	): Promise<void> {
+		await db
+			.selectFrom('financial_documents as document')
+			.innerJoin('invoices as invoice', (join) =>
+				join
+					.onRef('invoice.financial_document_id', '=', 'document.id')
+					.onRef('invoice.organisation_id', '=', 'document.organisation_id')
+			)
+			.select('document.id')
+			.where('document.organisation_id', '=', organisationId)
+			.where('document.customer_party_id', '=', customerPartyId)
+			.where('document.document_kind', '=', 'invoice')
+			.where('document.lifecycle_status', '=', 'issued')
+			.orderBy('document.id', 'asc')
+			.forUpdate()
+			.execute();
+	}
+
 	private publicCase(row: Awaited<ReturnType<CollectionsService['activeCase']>>): CollectionCaseSummary | null {
 		if (!row) return null;
 		return {
@@ -404,6 +426,11 @@ export class CollectionsService {
 			const customer = await this.customerId(trx, actor, customerPartyPublicId, true);
 			const existing = await this.activeCase(trx, actor.organisationId, customer.id, true);
 			if (existing) return { publicId: existing.public_id };
+			await this.lockCustomerIssuedInvoices(trx, actor.organisationId, customer.id);
+			const currentReceivable = await new ReceivablesReportingService(this.db, this.now).getCustomerStatement(actor, customerPartyPublicId);
+			if (!currentReceivable.aging.some((position) => position.invoices.some((invoice) => invoice.daysOverdue > 0))) {
+				throw new FinanceValidationError('Collections can only start when the customer has an overdue receivable.');
+			}
 			const publicId = this.publicIdFactory();
 			const caseId = insertedId(await trx.insertInto('receivable_collection_cases').values({
 				organisation_id: actor.organisationId,
