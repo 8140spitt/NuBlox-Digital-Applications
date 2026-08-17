@@ -11,9 +11,8 @@ This app is a modular monolith following `docs/05-system-architecture.md`.
 - MySQL SQL migrations are authoritative; generated Kysely types are derivative.
 - Authentication identity never implies organisation, CRM, commercial, contract, finance or project authority.
 - Tenant-owned records are resolved through active tenant context rather than public/surrogate ID alone.
-- Reporting derives from authoritative domain facts rather than creating parallel editable balance stores.
-- Collections and automation policy may react to receivables but cannot mutate the receivable ledger.
-- External delivery evidence is separated from message generation; no scheduler or provider capability is implied unless actually implemented.
+- Reporting derives from authoritative domain facts rather than parallel editable balance stores.
+- Collections and credit control react to authoritative receivables but cannot become a second receivable ledger.
 
 ## Stack
 
@@ -51,7 +50,7 @@ explicit member deny
     > default deny
 ```
 
-For granular permissions, `decideWithUmbrella()` resolves the granular key first and uses the same-domain umbrella only if the granular key has no explicit member/role decision. Explicit granular deny therefore cannot be bypassed.
+For granular permissions, `decideWithUmbrella()` resolves the granular key first and uses the same-domain umbrella only when the granular key has no explicit member/role decision. Explicit granular deny therefore cannot be bypassed.
 
 Current umbrella families:
 
@@ -63,35 +62,16 @@ contract.manage
 finance.manage
 ```
 
-The active finance family includes:
+Package 004I adds under `finance.manage`:
 
 ```text
-finance.manage
-    ├─ finance.billing.manage
-    ├─ finance.invoice.create
-    ├─ finance.invoice.draft.manage
-    ├─ finance.invoice.issue
-    ├─ finance.invoice.void
-    ├─ finance.credit_note.create
-    ├─ finance.credit_note.draft.manage
-    ├─ finance.credit_note.issue
-    ├─ finance.payment.create
-    ├─ finance.payment.allocate
-    ├─ finance.payment.allocation.reverse
-    ├─ finance.payment.reverse
-    ├─ finance.collections.view
-    ├─ finance.collections.case.manage
-    ├─ finance.collections.action.record
-    ├─ finance.collections.promise.manage
-    ├─ finance.collections.dispute.manage
-    ├─ finance.collections.policy.manage
-    ├─ finance.collections.reminder.generate
-    └─ finance.collections.reminder.dispatch
+finance.credit_control.view
+finance.credit_control.policy.manage
+finance.credit_control.hold.manage
+finance.credit_control.override
 ```
 
 Umbrellas never cross domains.
-
-Package 004F statement/aging reads use `finance.view`. Package 004G/004H collections reads require `finance.view` **and** `finance.collections.view` (with `finance.manage` available only as same-domain fallback for the collections key).
 
 ## Standard organisation roles
 
@@ -99,47 +79,37 @@ New organisations receive Owner, Administrator, Manager, Finance/Commercial, Mem
 
 Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions. Existing-tenant migrations and future `OrganisationBootstrapService` defaults are maintained with equivalent persisted grants.
 
-Finance/Commercial receives ordinary operational AR and collections responsibilities, including all four payment permissions, all five 004G collections permissions, and 004H reminder generation/dispatch. It deliberately does not receive `finance.manage`, `finance.invoice.void` or `finance.collections.policy.manage`.
+Finance/Commercial receives ordinary AR, collections and credit-control responsibilities. For Package 004I it receives view + limit management + hold management, but deliberately not `finance.credit_control.override` or `finance.manage`.
 
 ## Protected application surfaces
 
-Current protected routes include:
+Key protected routes include:
 
-- `/dashboard`
-- `/crm`
-- `/crm/[partyPublicId]`
-- `/crm/opportunities`
-- `/crm/opportunities/[opportunityPublicId]`
-- `/commercial/estimates`
-- `/commercial/estimates/[estimatePublicId]`
-- `/commercial/quotations`
-- `/commercial/quotations/[quotationPublicId]`
-- `/commercial/quotations/[quotationPublicId]/convert`
-- `/projects`
-- `/projects/[projectPublicId]`
-- `/contracts`
-- `/contracts/new?project=[projectPublicId]`
-- `/contracts/[contractPublicId]`
-- `/contracts/[contractPublicId]/amendments/[amendmentPublicId]`
-- `/finance/billing`
-- `/finance/invoices`
-- `/finance/invoices/[invoicePublicId]`
-- `/finance/credit-notes`
-- `/finance/credit-notes/[creditNotePublicId]`
-- `/finance/payments`
-- `/finance/payments/[paymentPublicId]`
-- `/finance/receivables`
-- `/finance/receivables/[customerPartyPublicId]`
-- `/finance/collections`
-- `/finance/collections/[customerPartyPublicId]`
-- `/finance/collections/automation`
-- `/organisation`
+```text
+/dashboard
+/crm
+/commercial/estimates
+/commercial/quotations
+/commercial/quotations/[quotationPublicId]/convert
+/projects
+/contracts
+/contracts/[contractPublicId]
+/finance/billing
+/finance/invoices
+/finance/credit-notes
+/finance/payments
+/finance/receivables
+/finance/collections
+/finance/collections/automation
+/finance/credit-control
+/organisation
+```
 
-The `(app)` server layout rejects unauthenticated requests and redirects authenticated users without a verified tenant to organisation selection.
+The `(app)` server layout rejects unauthenticated requests and redirects authenticated users without verified tenant context to organisation selection.
 
 ## Operational accounts receivable
 
-The finance implementation includes:
+Current server-domain modules include:
 
 ```text
 src/lib/server/finance/finance-common.ts
@@ -147,141 +117,96 @@ src/lib/server/finance/billing-settings-service.ts
 src/lib/server/finance/invoice-service.ts
 src/lib/server/finance/credit-note-service.ts
 src/lib/server/finance/payment-service.ts
+src/lib/server/finance/receivable-ledger.ts
 src/lib/server/finance/receivable-position-service.ts
 src/lib/server/finance/receivables-reporting-service.ts
 src/lib/server/finance/collections-service.ts
 src/lib/server/finance/collections-automation-service.ts
+src/lib/server/finance/credit-control-service.ts
+src/lib/server/finance/credit-control-context.ts
 ```
 
-### Invoice / credit / cash authority
-
-The legal receivable remains derived from issued-document and cash-application facts:
+### Authoritative receivable
 
 ```text
-Outstanding Receivable
+Invoice Outstanding
 = Issued Invoice Gross
 − Issued Credit Note Gross
 − Active Payment Allocations
 ```
 
-Payment receipts, allocations and reversals are immutable/corrective facts. A fully credited invoice may be operationally `settled` without being described as paid.
+`receivable-ledger.ts` is the shared calculation boundary for invoice position and Package 004I credit utilisation. No editable used-credit balance exists.
 
-See:
+### Collections
 
-- `docs/35-accounts-receivable-invoices.md`
-- `docs/36-receivable-corrections.md`
-- `docs/37-payment-receipt-allocation.md`
+Package 004G stores case/action/promise/dispute evidence. Package 004H adds versioned dunning policy, due-reminder derivation, immutable generated reminder snapshots, separately authorised dispatch/retry evidence and promise-due review.
 
-### Customer statements and aging
+Collections automation still does not claim a background scheduler or production provider adapter.
 
-`ReceivablesReportingService` derives customer account movements from immutable event timestamps:
+### Package 004I credit control
 
-```text
-invoice issue       → debit
-credit-note issue   → credit
-payment allocation  → credit
-allocation reversal → debit
-invoice void        → credit
-```
-
-It provides currency-separated current aging, tenant-timezone-aware statement periods, opening/running/closing balances and historical as-of reconstruction. Unallocated cash does not enter a customer receivable statement until invoice allocation occurs.
-
-See `docs/38-customer-statements-aged-receivables.md`.
-
-### Controlled collections
-
-`CollectionsService` is an operational workflow over the live 004F position.
+`CreditControlService` implements:
 
 ```text
-Overdue customer account
-        ↓
-Collection Case
-    ├── immutable action evidence
-    ├── promise to pay
-    └── receivable dispute
+append-only currency-specific credit-limit revisions
+customer-wide active/released credit holds
+live customer utilisation
+projected-exposure commitment checks
+reasoned exceptional override evidence
 ```
 
-Case creation requires a currently overdue positive receivable. The customer and issued invoice documents are serialised before the final overdue revalidation and case insertion. An existing `open`/`paused` case makes case start idempotent.
-
-A collection case does **not** store outstanding, overdue or settlement balances.
-
-Case lifecycle:
+Projected exposure is:
 
 ```text
-open ↔ paused → closed
+Current Receivable + Proposed Commitment
 ```
 
-Closing requires an explicit reason and is blocked while any promise or dispute remains open. Closed cases reject ordinary mutation.
+The enabled limit blocks only when projected exposure is **greater than** the limit. Exact equality is allowed. A customer-wide active hold blocks regardless of amount.
 
-See `docs/39-controlled-collections-dunning.md`.
-
-### Collections automation policy
-
-`CollectionsAutomationService` adds versioned dunning policy and controlled message evidence without introducing a scheduler or a shadow receivable ledger.
+Commitment adapters are explicit:
 
 ```text
-Active Policy Version
-      +
-Open Collection Case
-      +
-Live Aged Receivable
-      ↓
-Due Reminder Candidate
-      ↓
-Explicit Generation
-      ↓
-Immutable Reminder Snapshot
-      ↓
-Explicit Dispatch / Retry
-      ↓
-Immutable Delivery Attempt Evidence
+commercial/quotation-credit-exposure.ts
+    → accepted non-optional quotation gross including stored tax evidence
+
+contracts/contract-credit-exposure.ts
+    → issued contract-version value components
 ```
 
-Policy versions use `draft → active → retired`. Draft stages define increasing days-overdue thresholds, an email subject/body template, and optional suppression for open disputes or current promises to pay. Activated policy versions reject ordinary editing.
-
-Supported first-slice template placeholders are:
+Enforcement is deliberately placed at:
 
 ```text
-{{customer_name}}
-{{account_reference}}
-{{days_overdue}}
-{{invoice_count}}
-{{as_of_date}}
+accepted quotation → proposed project conversion
+contract execution
 ```
 
-Generation requires reminder-generation authority plus `crm.view` because it resolves same-tenant customer/contact recipient identity. It snapshots recipient, subject, body, policy/stage provenance and receivable as-of date. Generation sends nothing and is idempotent for the same case + stage.
+Quotation issue and contract issue remain pre-commitment. Invoice issue, credits, payments and collections remain available so existing work can be billed and exposure can be reduced/managed.
 
-Dispatch is a separate authority and external-side-effect boundary. Before each attempt it revalidates that the case remains open, the receivable remains overdue, the stage remains due and configured dispute/promise suppression does not apply. Failed attempts are immutable evidence and keep the reminder pending; a successful attempt marks the reminder sent and appends ordinary 004G reminder action evidence.
+At enforcement, the service locks the customer plus all invoice documents for that customer/currency, then re-derives issued receivable exposure. This serializes a new commitment against a concurrent draft→issued invoice transition.
 
-The automation workspace also surfaces open promises whose due date has arrived or passed. It never auto-marks a promise broken.
+An override requires `finance.credit_control.override` or `finance.manage` fallback plus a non-empty reason. Override evidence includes current receivable, proposed commitment, projected exposure, limit/hold references, actor and time and is committed in the same transaction as the business commitment.
 
-Package 004H deliberately does **not** claim a cron scheduler, durable background worker, production provider adapter, credit-limit/hold enforcement or legal escalation.
+Commercial/contract pages may show that credit control blocks a transaction, but finance amounts are masked unless the actor also passes `finance.view` plus the credit-control read permission/fallback.
 
-See `docs/40-collections-automation-policy.md`.
+See `docs/41-controlled-credit-limits-holds.md`.
 
 ## Generated database types
 
-Persistent `receivable_*` business facts remain fully derivative of migrated MySQL. Kysely generation is split into two generated outputs:
+Kysely generation remains fully derivative of migrated MySQL and is split into:
 
 ```text
 src/lib/server/db/generated/database.d.ts
     core schema, excluding receivable_*
 
 src/lib/server/db/generated/collections.d.ts
-    receivable_* collections/policy/reminder schema
+    receivable_* collections + credit-control schema
 ```
 
-`DatabaseSchema` composes the two generated `DB` interfaces and both `Database` and `DatabaseExecutor` use that same composed schema. This keeps normal handles and Kysely transactions type-equivalent.
-
-## Project collaboration
-
-Normal project access requires effective organisation permission plus active `project_organisations` participation and exact active `project_members` scope. Project contextual roles classify context and never grant application authority.
+`DatabaseSchema` composes the two generated `DB` interfaces so normal handles and transactions share one type authority.
 
 ## Transactional delivery boundary
 
-`src/lib/server/email/email-delivery.ts` remains provider-neutral. Development/integration uses `EMAIL_DELIVERY_MODE=console`.
-
-Package 004H adds an optional stable business-message `idempotencyKey`; reminder dispatch uses the immutable reminder public ID. A future production adapter should pass that key to a provider supporting idempotent send semantics. This narrows duplicate-send risk without claiming mathematically exact-once delivery across MySQL and an external email service.
+`src/lib/server/email/email-delivery.ts` remains provider-neutral. Development/integration uses `EMAIL_DELIVERY_MODE=console`. A communication record never claims provider delivery unless a provider boundary actually performs and records that outcome.
 
 ## Run
 
@@ -312,21 +237,18 @@ pnpm test:integration
 pnpm check
 ```
 
-The Package 004H executable code gate has proved:
+Package 004I release target:
 
 ```text
-18 production migrations applied / 0 pending
-352 tables / 778 foreign keys / 450 CHECK constraints
+19 production migrations applied / 0 pending
+356 tables / 789 foreign keys / 459 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts
-22 integration files / 108 real-MySQL tests passed
-finance/collections-automation.integration.test.ts: 8/8 passed
-finance/collections.integration.test.ts: 7/7 passed
-finance/receivables-reporting.integration.test.ts: 5/5 passed
-finance/payment-allocation.integration.test.ts: 6/6 passed
-organisation-bootstrap.integration.test.ts: 4/4 passed
+26 integration files / 117 real-MySQL tests
+credit-control core: 6 tests
+credit-control concurrency: 1 test
+credit-control projected exposure: 1 test
+credit-control bootstrap parity: 1 test
 svelte-check: 0 errors / 0 warnings
 ```
 
 The final documentation-synchronised PR head must pass this complete gate before merge.
-
-Not yet implemented: estimate/quotation revision workflows, quotation withdrawal, customer option selection, production document rendering/delivery, contract version 2+, automatic project activation, credit-note void/reversal, FX allocation/reporting translation, refunds, bank-feed/payment-gateway ingestion, automated remittance matching, persisted/issued customer statements, automatic statement delivery, background collections scheduling, production reminder provider delivery, SMS/postal/portal reminders, credit limits/holds and their cross-workflow enforcement, late fees/interest, legal/agency escalation, bad-debt/write-off processing, general-ledger posting or bank reconciliation.
