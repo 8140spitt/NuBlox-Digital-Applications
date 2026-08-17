@@ -1,6 +1,6 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 9,
+  "manifest_version": 10,
   "generated_date": "2026-08-17",
   "product": {
     "career_count": 84,
@@ -36,61 +36,21 @@
     ],
     "umbrella_policy": "resolve granular key first; same-domain umbrella applies only when granular has no explicit member/role decision; explicit granular deny cannot be bypassed",
     "cross_domain_policy": "permission umbrellas never cross domain families",
-    "families": {
-      "project.manage": [
-        "project.lifecycle.manage",
-        "project.participant.manage",
-        "project.team.manage",
-        "project.participation.manage"
-      ],
-      "crm.manage": [
-        "crm.party.manage",
-        "crm.contact.manage",
-        "crm.opportunity.manage",
-        "crm.activity.manage"
-      ],
-      "commercial.manage": [
-        "commercial.estimate.manage",
-        "commercial.quotation.manage",
-        "commercial.quotation.issue",
-        "commercial.quotation.response.record",
-        "commercial.quotation.convert"
-      ],
-      "contract.manage": [
-        "contract.create",
-        "contract.draft.manage",
-        "contract.issue",
-        "contract.execute",
-        "contract.amendment.create",
-        "contract.amendment.draft.manage",
-        "contract.amendment.issue",
-        "contract.amendment.decide"
-      ],
-      "finance.manage": [
-        "finance.billing.manage",
-        "finance.invoice.create",
-        "finance.invoice.draft.manage",
-        "finance.invoice.issue",
-        "finance.invoice.void",
-        "finance.credit_note.create",
-        "finance.credit_note.draft.manage",
-        "finance.credit_note.issue",
-        "finance.payment.create",
-        "finance.payment.allocate",
-        "finance.payment.allocation.reverse",
-        "finance.payment.reverse",
-        "finance.collections.view",
-        "finance.collections.case.manage",
-        "finance.collections.action.record",
-        "finance.collections.promise.manage",
-        "finance.collections.dispute.manage",
-        "finance.collections.policy.manage",
-        "finance.collections.reminder.generate",
-        "finance.collections.reminder.dispatch"
-      ]
-    },
-    "reporting_policy": "Package 004F statements and aging use finance.view; Package 004G/004H collections evidence additionally requires finance.collections.view or finance.manage fallback",
-    "automation_policy": "policy management, reminder generation and reminder dispatch are separately delegable; dispatch is the external-side-effect authority"
+    "umbrerellas": [
+      "project.manage",
+      "crm.manage",
+      "commercial.manage",
+      "contract.manage",
+      "finance.manage"
+    ],
+    "credit_control_permissions": [
+      "finance.credit_control.view",
+      "finance.credit_control.policy.manage",
+      "finance.credit_control.hold.manage",
+      "finance.credit_control.override"
+    ],
+    "credit_control_read_policy": "full finance amounts require finance.view AND (finance.credit_control.view OR finance.manage fallback); commercial/contract workflow users may receive a masked blocked/clear decision without finance amounts",
+    "credit_control_override_policy": "override is separately delegable; explicit granular deny beats finance.manage; override removes only the credit-control stop and never grants the underlying commercial/project/contract action"
   },
   "standard_roles": {
     "names": [
@@ -103,59 +63,31 @@
       "Read Only"
     ],
     "founding_member_role": "Owner only",
-    "Owner": {
-      "broad_umbrellas": [
-        "project.manage",
-        "crm.manage",
-        "commercial.manage",
-        "contract.manage",
-        "finance.manage"
+    "credit_control_defaults": {
+      "Owner": [
+        "finance.credit_control.view",
+        "finance.credit_control.policy.manage",
+        "finance.credit_control.hold.manage",
+        "finance.credit_control.override"
       ],
-      "collections_policy": "all five Package 004G collections permissions plus all three Package 004H automation permissions explicitly granted, in addition to finance.manage"
-    },
-    "Administrator": {
-      "broad_umbrellas": [
-        "project.manage",
-        "crm.manage",
-        "commercial.manage",
-        "contract.manage",
-        "finance.manage"
+      "Administrator": [
+        "finance.credit_control.view",
+        "finance.credit_control.policy.manage",
+        "finance.credit_control.hold.manage",
+        "finance.credit_control.override"
       ],
-      "collections_policy": "all five Package 004G collections permissions plus all three Package 004H automation permissions explicitly granted, in addition to finance.manage"
-    },
-    "Finance/Commercial": {
-      "finance_grants": [
-        "finance.view",
-        "finance.billing.manage",
-        "finance.invoice.create",
-        "finance.invoice.draft.manage",
-        "finance.invoice.issue",
-        "finance.credit_note.create",
-        "finance.credit_note.draft.manage",
-        "finance.credit_note.issue",
-        "finance.payment.create",
-        "finance.payment.allocate",
-        "finance.payment.allocation.reverse",
-        "finance.payment.reverse",
-        "finance.collections.view",
-        "finance.collections.case.manage",
-        "finance.collections.action.record",
-        "finance.collections.promise.manage",
-        "finance.collections.dispute.manage",
-        "finance.collections.reminder.generate",
-        "finance.collections.reminder.dispatch"
-      ],
-      "deliberate_exclusions": [
-        "finance.manage",
-        "finance.invoice.void",
-        "finance.collections.policy.manage",
-        "commercial.manage",
-        "commercial.quotation.convert",
-        "project.create",
-        "contract.manage"
+      "Finance/Commercial": [
+        "finance.credit_control.view",
+        "finance.credit_control.policy.manage",
+        "finance.credit_control.hold.manage"
       ]
     },
-    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are integration-tested for released permission parity, including the Package 004H Owner/Admin vs Finance/Commercial policy-authoring split"
+    "finance_commercial_credit_exclusions": [
+      "finance.manage",
+      "finance.invoice.void",
+      "finance.credit_control.override"
+    ],
+    "bootstrap_parity": "existing-tenant forward-migration grants and future OrganisationBootstrapService grants are integration-tested for the Package 004I Owner/Admin vs Finance/Commercial split"
   },
   "implemented_workflow": [
     "CRM Opportunity",
@@ -164,9 +96,12 @@
     "Quotation",
     "Issued Quotation Version",
     "Accepted Response",
+    "Credit-Control Quotation Commitment Gate",
     "Idempotent Proposed Project Conversion",
     "Controlled Contract Formation",
-    "Contract Issue and Execution",
+    "Contract Issue",
+    "Credit-Control Contract Execution Gate",
+    "Contract Execution",
     "Controlled Contract Amendment",
     "Customer Billing Defaults",
     "Contract-Anchored Draft Invoice",
@@ -179,128 +114,99 @@
     "Derived Invoice Outstanding Receivable",
     "Customer Statement and Aged Receivables",
     "Controlled Collection Case",
-    "Collection Action Evidence",
     "Promise to Pay",
     "Receivable Dispute",
     "Versioned Collections Policy",
     "Derived Due Reminder Candidate",
     "Explicit Reminder Generation",
     "Controlled Reminder Dispatch and Retry Evidence",
-    "Promise Due Review"
+    "Promise Due Review",
+    "Versioned Customer Credit Limit",
+    "Customer-Wide Credit Hold",
+    "Projected Exposure Commitment Check",
+    "Reasoned Credit-Control Override Evidence"
   ],
   "accounts_receivable": {
-    "invoices": {
-      "spec": "docs/35-accounts-receivable-invoices.md",
-      "service": "app/src/lib/server/finance/invoice-service.ts",
-      "routes": [
-        "/finance/invoices",
-        "/finance/invoices/[invoicePublicId]"
-      ]
-    },
-    "corrections": {
-      "spec": "docs/36-receivable-corrections.md",
-      "service": "app/src/lib/server/finance/credit-note-service.ts",
-      "invoice_void_permission": "finance.invoice.void"
-    },
-    "cash_application": {
-      "spec": "docs/37-payment-receipt-allocation.md",
-      "service": "app/src/lib/server/finance/payment-service.ts",
-      "invoice_outstanding_formula": "issued invoice gross - issued credit-note gross - active payment allocations"
+    "authoritative_position": {
+      "shared_service": "app/src/lib/server/finance/receivable-ledger.ts",
+      "invoice_outstanding_formula": "issued invoice gross - issued credit-note gross - active payment allocations",
+      "customer_position": "sum positive outstanding issued invoices per customer/currency",
+      "void_policy": "voided invoices contribute no receivable exposure",
+      "unallocated_cash_policy": "unallocated cash does not reduce customer receivable until allocated"
     },
     "receivables_reporting": {
       "spec": "docs/38-customer-statements-aged-receivables.md",
       "service": "app/src/lib/server/finance/receivables-reporting-service.ts",
-      "routes": [
-        "/finance/receivables",
-        "/finance/receivables/[customerPartyPublicId]"
-      ],
-      "authority": "finance.view",
-      "persistence_policy": "no customer-statement, statement-line, aging-balance or editable balance tables",
-      "movement_model": [
-        "invoice issue debit",
-        "credit-note issue credit",
-        "payment allocation credit",
-        "allocation reversal debit",
-        "invoice void credit"
-      ],
-      "aging_buckets": [
-        "current",
-        "1_30",
-        "31_60",
-        "61_90",
-        "91_plus"
-      ],
-      "currency_policy": "positions remain separated by currency; no implicit FX aggregation"
+      "persistence_policy": "no customer-statement, statement-line, aging-balance or editable balance tables"
     },
     "controlled_collections": {
-      "package": "004-contracts-finance",
-      "migration": "database/migrations/20260817124500_controlled_collections.sql",
-      "permissions": [
-        "finance.collections.view",
-        "finance.collections.case.manage",
-        "finance.collections.action.record",
-        "finance.collections.promise.manage",
-        "finance.collections.dispute.manage"
-      ],
-      "umbrella": "finance.manage",
-      "read_authority": "finance.view AND (finance.collections.view OR finance.manage fallback)",
-      "service": "app/src/lib/server/finance/collections-service.ts",
-      "integration_test": "app/src/lib/server/finance/collections.integration.test.ts",
-      "routes": [
-        "/finance/collections",
-        "/finance/collections/[customerPartyPublicId]"
-      ],
       "spec": "docs/39-controlled-collections-dunning.md",
-      "tables": [
-        "receivable_collection_cases",
-        "receivable_collection_actions",
-        "receivable_promises_to_pay",
-        "receivable_disputes"
-      ],
-      "case_policy": "one application-level active episode per customer; open/paused start is idempotent; customer and issued invoice documents are serialised before final overdue revalidation; closed cases are immutable",
-      "eligibility": "customer must have at least one currently overdue positive outstanding invoice derived by Package 004F",
-      "action_policy": "reminder/phone_call/note are immutable operational evidence; manual channel selection alone does not prove external delivery",
-      "promise_policy": "positive amount, currency and due date; optional same-tenant same-customer invoice; invoice-linked currency must match; open -> kept|broken|cancelled; never creates cash/allocation",
-      "dispute_policy": "reason required; optional positive amount+currency; optional same-tenant same-customer invoice; open -> resolved|withdrawn; never changes invoice/outstanding balance",
-      "closure_policy": "explicit reason required; blocked while any promise or dispute is open",
-      "accounting_boundary": "collections records never become a receivable, settlement or aging ledger"
+      "service": "app/src/lib/server/finance/collections-service.ts",
+      "accounting_boundary": "collection cases/actions/promises/disputes never become a receivable, settlement or aging ledger"
     },
     "collections_automation": {
-      "package": "004-contracts-finance",
-      "migration": "database/migrations/20260817144000_collections_automation_policy.sql",
-      "permissions": [
-        "finance.collections.policy.manage",
-        "finance.collections.reminder.generate",
-        "finance.collections.reminder.dispatch"
-      ],
-      "umbrella": "finance.manage",
-      "service": "app/src/lib/server/finance/collections-automation-service.ts",
-      "integration_test": "app/src/lib/server/finance/collections-automation.integration.test.ts",
-      "route": "/finance/collections/automation",
       "spec": "docs/40-collections-automation-policy.md",
-      "tables": [
-        "receivable_collection_policies",
-        "receivable_collection_policy_stages",
-        "receivable_collection_reminders",
-        "receivable_collection_reminder_deliveries"
-      ],
-      "policy_lifecycle": "draft -> active -> retired; activated versions reject ordinary editing; activation requires contiguous sequence starting at 1 and strictly increasing positive days-overdue triggers",
-      "template_placeholders": [
-        "customer_name",
-        "account_reference",
-        "days_overdue",
-        "invoice_count",
-        "as_of_date"
-      ],
-      "candidate_policy": "candidate is derived when the automation workspace is evaluated; open case + active policy + live overdue receivable + due stage + no existing case/stage reminder",
-      "recipient_policy": "generation requires crm.view; prefer active customer primary email, otherwise active primary organisation contact primary email",
-      "generation_policy": "immutable pending snapshot; idempotent per case+stage; no provider call and no collection contact evidence",
-      "dispatch_policy": "separately authorised; revalidates open case, live overdue receivable, stage threshold and configured suppression before delivery; immutable success/failure attempts; success appends collection reminder action evidence",
-      "retry_policy": "failed attempt leaves reminder pending; each retry creates a new immutable attempt row",
-      "delivery_idempotency_key": "reminder public_id; production adapters should pass it to providers supporting idempotent send semantics",
-      "promise_monitoring": "open promise with due_on <= collections as-of date enters review queue; no automatic broken transition",
-      "scheduler_policy": "no cron scheduler, durable worker or background automatic generation/dispatch is claimed in Package 004H",
+      "service": "app/src/lib/server/finance/collections-automation-service.ts",
+      "route": "/finance/collections/automation",
+      "scheduler_policy": "no cron scheduler, durable worker or background automatic generation/dispatch is claimed",
       "accounting_boundary": "policy/reminder/delivery records never become a receivable, settlement or aging ledger"
+    },
+    "credit_control": {
+      "package": "004-contracts-finance",
+      "migration": "database/migrations/20260817150000_credit_control_limits_holds.sql",
+      "spec": "docs/41-controlled-credit-limits-holds.md",
+      "service": "app/src/lib/server/finance/credit-control-service.ts",
+      "route": "/finance/credit-control",
+      "permissions": [
+        "finance.credit_control.view",
+        "finance.credit_control.policy.manage",
+        "finance.credit_control.hold.manage",
+        "finance.credit_control.override"
+      ],
+      "tables": [
+        "receivable_credit_policies",
+        "receivable_credit_policy_revisions",
+        "receivable_credit_holds",
+        "receivable_credit_control_overrides"
+      ],
+      "limit_identity": "one policy identity per tenant + customer + currency",
+      "limit_revision_policy": "set/revise/disable creates a new immutable revision; enabled revision requires positive limit; disabled revision stores no limit amount",
+      "hold_policy": "customer-wide stop-new-trade control; one active hold per tenant/customer; repeated placement while active is idempotent; active -> released with explicit reason/actor/time",
+      "current_receivable_formula": "sum positive issued invoice outstanding where outstanding = issued invoice gross - issued credit-note gross - active payment allocations",
+      "projected_exposure_formula": "current receivable + proposed commitment",
+      "limit_block_rule": "projected exposure > enabled credit limit; exact equality is allowed",
+      "hold_block_rule": "active customer hold blocks named new-commitment boundaries regardless of currency/amount",
+      "quotation_commitment": "accepted non-optional quotation line gross including stored quotation-item tax amounts",
+      "contract_commitment": "sum value components on the issued contract version being executed",
+      "enforcement_boundaries": [
+        "accepted quotation -> proposed project conversion",
+        "contract execution"
+      ],
+      "allowed_under_hold": [
+        "quotation issue",
+        "contract draft/issue",
+        "invoice issue for existing work",
+        "credit-note/correction workflows",
+        "payment receipt/allocation/reversal",
+        "collections workflows"
+      ],
+      "override_policy": "requires finance.credit_control.override or finance.manage fallback plus explicit reason; evidence is inserted in the same transaction as the business commitment",
+      "override_snapshot": [
+        "customer",
+        "workflow + subject public ID",
+        "currency",
+        "current outstanding receivable",
+        "proposed commitment amount",
+        "projected exposure amount",
+        "applicable credit limit",
+        "applicable active hold",
+        "reason",
+        "authorising member/time"
+      ],
+      "conversion_idempotency": "existing quotation_project_conversions evidence is returned before a fresh credit gate, preventing duplicate override evidence on retry",
+      "serialization": "enforcement locks the customer plus all invoice financial_documents for the same customer/currency, then re-derives issued receivable exposure so draft->issued invoice changes cannot race the commitment check",
+      "privacy": "commercial/contract actors without finance credit-control read authority receive masked decision state rather than receivable/limit amounts",
+      "persistence_policy": "no mutable used-credit, available-credit, reserved-headroom or shadow receivable balance"
     }
   },
   "database_types": {
@@ -318,74 +224,70 @@
       "check_constraints": 427
     },
     "current": {
-      "base_tables": 352,
-      "foreign_keys": 778,
-      "check_constraints": 450
+      "base_tables": 356,
+      "foreign_keys": 789,
+      "check_constraints": 459
     },
-    "production_migration_count": 18,
-    "latest_migration": "database/migrations/20260817144000_collections_automation_policy.sql"
+    "production_migration_count": 19,
+    "latest_migration": "database/migrations/20260817150000_credit_control_limits_holds.sql"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
     "target_mysql": "8.4.11",
-    "production_migrations": 18,
+    "production_migrations": 19,
     "pending_migrations": 0,
-    "schema_counts": "352 / 778 / 450",
-    "generated_kysely_drift": "zero across core + collections outputs",
-    "expected_integration_files": 22,
-    "expected_real_mysql_tests": 108,
-    "finance_collections_automation_tests": 8,
-    "finance_collections_tests": 7,
-    "finance_receivables_reporting_tests": 5,
-    "finance_payment_allocation_tests": 6,
-    "organisation_bootstrap_tests": 4,
+    "schema_counts": "356 / 789 / 459",
+    "generated_kysely_drift": "zero across core + collections outputs required",
+    "expected_integration_files": 26,
+    "expected_real_mysql_tests": 117,
+    "finance_credit_control_tests": 6,
+    "finance_credit_control_concurrency_tests": 1,
+    "finance_credit_control_projection_tests": 1,
+    "credit_control_bootstrap_parity_tests": 1,
     "required_svelte_check": "0 errors / 0 warnings",
-    "status": "Package 004H executable code head proved 18/352/778/450, zero codegen drift, 22/108 MySQL tests and Svelte 0/0; final documentation-synchronised head must prove the same complete gate before merge"
+    "status": "final documentation-synchronised Package 004I head must prove the complete gate before merge"
   },
   "deliberate_exclusions": [
+    "cross-currency or group credit aggregation",
+    "credit bureau/scoring integration",
+    "automatic risk-driven limit changes",
+    "parent-company, guarantee or insurance limit structures",
+    "persistent editable used-credit or reserved-headroom balance",
+    "automatic hold placement or release",
     "background scheduler or worker-driven collections execution",
-    "automatic cron-driven reminder generation or dispatch",
-    "production outbound email provider adapter",
-    "SMS, postal or portal reminder provider adapters",
-    "automatic promise-breaking decisions",
-    "customer credit-limit or credit-hold policy",
-    "cross-workflow credit-hold enforcement",
+    "production outbound reminder provider adapters",
     "late-fee or interest calculation",
     "automatic legal escalation",
     "external debt-collection agency handoff",
     "bad-debt/write-off processing",
-    "settlement/write-off mutation through collections",
     "FX/reporting-currency translation",
     "general-ledger posting",
     "bank reconciliation"
   ],
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Controlled Credit Limits and Credit Holds",
+    "name": "Controlled Bad Debt, Write-off and Recovery",
     "recommended_sequence": [
-      "define tenant/customer credit-limit policy facts and explicit currency semantics",
-      "define authorised hold placement/release lifecycle with reason and audit evidence",
-      "derive limit utilisation from authoritative receivable/exposure facts rather than editable balance",
-      "define exactly which quotation/contract/invoice transitions a hold blocks",
-      "implement cross-workflow enforcement at those service boundaries",
-      "define override authority separately from ordinary finance/commercial authority"
+      "define explicit bad-debt case/recommendation evidence separately from receivable settlement",
+      "define write-off authority stronger than ordinary collections/credit-control operations",
+      "preserve original invoice/credit/payment facts and represent write-off through additive correction evidence",
+      "define partial/full write-off and later recovery semantics before any GL integration",
+      "keep tax/legal correction policy explicit rather than inferring it from collections status",
+      "add ledger/reporting treatment only after the accounting fact model is fixed"
     ],
-    "governing_rule": "a credit hold must be an explicit auditable policy decision enforced at named workflow boundaries; it must not be a decorative CRM flag or a shadow receivable balance"
+    "governing_rule": "bad-debt classification, write-off and later recovery must be explicit auditable facts; they must not delete or rewrite original receivable history"
   },
   "key_docs": [
     "README.md",
     "app/README.md",
     "docs/07-auth-permissions-multitenancy.md",
-    "docs/31-crm-opportunities-activity-timeline.md",
-    "docs/32-estimates-quotations.md",
-    "docs/33-contract-formation.md",
-    "docs/34-contract-amendments.md",
     "docs/35-accounts-receivable-invoices.md",
     "docs/36-receivable-corrections.md",
     "docs/37-payment-receipt-allocation.md",
     "docs/38-customer-statements-aged-receivables.md",
     "docs/39-controlled-collections-dunning.md",
     "docs/40-collections-automation-policy.md",
+    "docs/41-controlled-credit-limits-holds.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]
