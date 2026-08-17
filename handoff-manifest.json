@@ -49,6 +49,7 @@
       "finance.credit_control.hold.manage",
       "finance.credit_control.override"
     ],
+    "tax_settings_authority": "finance.view reads tenant tax settings; finance.billing.manage controls tax-category and effective-rate mutation; invoice-line mutation still requires finance.invoice.draft.manage or finance.manage fallback",
     "credit_control_read_policy": "full finance amounts require finance.view AND (finance.credit_control.view OR finance.manage fallback); commercial/contract workflow users may receive a masked blocked/clear decision without finance amounts",
     "credit_control_override_policy": "override is separately delegable; explicit granular deny beats finance.manage; override removes only the credit-control stop and never grants the underlying commercial/project/contract action"
   },
@@ -104,6 +105,7 @@
     "Contract Execution",
     "Controlled Contract Amendment",
     "Customer Billing Defaults",
+    "Tenant Tax Configuration",
     "Contract-Anchored Draft Invoice",
     "Controlled Invoice Issue",
     "Source-Linked Credit Note",
@@ -133,6 +135,28 @@
       "customer_position": "sum positive outstanding issued invoices per customer/currency",
       "void_policy": "voided invoices contribute no receivable exposure",
       "unallocated_cash_policy": "unallocated cash does not reduce customer receivable until allocated"
+    },
+    "invoice_tax_configuration": {
+      "migration": "database/migrations/20260817180500_default_uk_tax_categories.sql",
+      "spec": "docs/42-invoice-tax-settings.md",
+      "service": "app/src/lib/server/finance/tax-settings-service.ts",
+      "defaults_helper": "app/src/lib/server/tax/tax-defaults.ts",
+      "route": "/finance/tax",
+      "read_authority": "finance.view",
+      "manage_authority": "finance.billing.manage or finance.manage fallback",
+      "starter_categories": [
+        "VAT_STANDARD taxable 20.0000%",
+        "VAT_REDUCED taxable 5.0000%",
+        "VAT_ZERO zero 0.0000%",
+        "VAT_EXEMPT exempt",
+        "OUTSIDE_SCOPE outside_scope"
+      ],
+      "existing_tenant_policy": "data migration adds missing starter categories but preserves matching tenant-owned category definitions and never adds a starter rate when any matching category rate history exists",
+      "future_tenant_policy": "invoice/tax-settings access idempotently ensures the same starter catalogue without overwriting tenant-owned category/rate history",
+      "invoice_line_policy": "draft line entry requires an explicit tax-category choice; zero-category state presents a Tax settings recovery path rather than an unusable required select",
+      "rate_history_policy": "new rates append effective periods and close an existing open latest period; issued financial-document tax evidence is never rewritten",
+      "issue_policy": "controlled invoice issue refreshes selected tax category against the rate effective at issue time",
+      "reverse_charge_policy": "construction domestic reverse charge is not represented as an ordinary zero-rate category and remains a deliberate future workflow"
     },
     "receivables_reporting": {
       "spec": "docs/38-customer-statements-aged-receivables.md",
@@ -228,26 +252,28 @@
       "foreign_keys": 789,
       "check_constraints": 459
     },
-    "production_migration_count": 19,
-    "latest_migration": "database/migrations/20260817150000_credit_control_limits_holds.sql"
+    "production_migration_count": 20,
+    "latest_migration": "database/migrations/20260817180500_default_uk_tax_categories.sql"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
     "target_mysql": "8.4.11",
-    "production_migrations": 19,
+    "production_migrations": 20,
     "pending_migrations": 0,
     "schema_counts": "356 / 789 / 459",
     "generated_kysely_drift": "zero across core + collections outputs required",
-    "expected_integration_files": 26,
-    "expected_real_mysql_tests": 117,
+    "expected_integration_files": 27,
+    "expected_real_mysql_tests": 121,
+    "invoice_tax_settings_tests": 4,
     "finance_credit_control_tests": 6,
     "finance_credit_control_concurrency_tests": 1,
     "finance_credit_control_projection_tests": 1,
     "credit_control_bootstrap_parity_tests": 1,
     "required_svelte_check": "0 errors / 0 warnings",
-    "status": "final documentation-synchronised Package 004I head must prove the complete gate before merge"
+    "status": "final documentation-synchronised invoice-tax hotfix head must prove the complete gate before merge"
   },
   "deliberate_exclusions": [
+    "construction domestic reverse-charge invoice treatment",
     "cross-currency or group credit aggregation",
     "credit bureau/scoring integration",
     "automatic risk-driven limit changes",
@@ -288,6 +314,7 @@
     "docs/39-controlled-collections-dunning.md",
     "docs/40-collections-automation-policy.md",
     "docs/41-controlled-credit-limits-holds.md",
+    "docs/42-invoice-tax-settings.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]
