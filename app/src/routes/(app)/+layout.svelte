@@ -41,6 +41,7 @@
 			<a class="subnav" href="/finance/receivables">Receivables</a>
 			<a class="subnav" href="/finance/collections">Collections</a>
 			<a class="subnav" href="/finance/billing">Billing settings</a>
+			<a class="subnav" href="/finance/tax">Tax settings</a>
 			<a href="/organisation">Organisation</a>
 		</nav>
 	</aside>
