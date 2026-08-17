@@ -135,23 +135,30 @@ payment_allocation_reversals
 payment_reversals
 ```
 
-The activated application boundary enforces:
+The activated application boundary enforces immutable receipt/allocation/reversal facts, same-currency application, row-locked over-allocation prevention and derived invoice settlement independently from legal invoice lifecycle.
 
-- immutable positive payment receipt facts;
-- optional same-tenant CRM payer selection;
-- no automatic allocation at receipt creation;
-- same-tenant issued-invoice allocation only;
-- exact payment/invoice currency match until an FX workflow exists;
-- fixed-precision positive allocation amounts;
-- payment availability = receipt amount less active allocations;
-- invoice outstanding = issued gross less issued credit gross less active allocations;
-- payment and invoice row locks before authoritative allocation revalidation;
-- no allocation above payment availability;
-- no allocation above invoice outstanding;
-- immutable allocation reversal evidence rather than allocation edits/deletes;
-- payment reversal that first creates reversal rows for every still-active allocation in the same transaction;
-- zero usable value and no further allocation after payment reversal;
-- derived invoice settlement state independently from legal invoice lifecycle.
+## Package 004F — migration-free reporting activation
+
+Customer statements and aged receivables require **no new production migration**.
+
+Package 004F uses the established `finance.view` read authority and derives reporting from existing normalised facts:
+
+```text
+financial_documents
+invoices
+credit_notes
+financial_document_issue_events
+payments
+payment_allocations
+payment_allocation_reversals
+party_billing_settings
+```
+
+No `customer_statements`, `statement_lines`, `aging_balances` or other duplicate balance tables are introduced.
+
+The production stream therefore remains at **16 migrations**, with `20260817103000_payment_allocation_permissions.sql` still the latest migration.
+
+The application derives historical account positions from issue/allocation/reversal/void timestamps and keeps unlike currencies separated instead of storing mutable report balances.
 
 ## Current structure
 
@@ -163,13 +170,14 @@ After all **16** production migrations the application structure remains:
 
 ## Current migration validation
 
-The executable Package 004E head passed the complete MySQL 8.4.11 gate:
+The executable Package 004F code head passed the complete MySQL 8.4.11 gate:
 
 ```text
 16 production migrations applied / 0 pending
 344 base tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-19 integration files / 88 real-MySQL tests passed
+20 integration files / 93 real-MySQL tests passed
+finance/receivables-reporting.integration.test.ts: 5/5 passed
 finance/payment-allocation.integration.test.ts: 6/6 passed
 organisation-bootstrap.integration.test.ts: 4/4 passed
 svelte-check: 0 errors / 0 warnings
@@ -182,6 +190,7 @@ The final documentation-synchronised PR head must prove the same gate before mer
 - New migrations use Dbmate timestamp filenames.
 - Released migration contents are immutable.
 - All production changes are forward migrations.
+- A new product surface does not require a migration when existing normalised structures and existing authority correctly support it.
 - MySQL-specific DDL is explicit rather than inferred from an ORM schema.
 - Committed Dbmate SQL remains released migration authority.
 - Destructive production changes use expand/migrate/contract sequencing where required.
