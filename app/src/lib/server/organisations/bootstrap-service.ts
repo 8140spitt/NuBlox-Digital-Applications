@@ -44,7 +44,11 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'finance.billing.manage',
 	'finance.invoice.create',
 	'finance.invoice.draft.manage',
-	'finance.invoice.issue'
+	'finance.invoice.issue',
+	'finance.invoice.void',
+	'finance.credit_note.create',
+	'finance.credit_note.draft.manage',
+	'finance.credit_note.issue'
 ] as const;
 
 const STANDARD_ROLES = [
@@ -87,7 +91,11 @@ const STANDARD_ROLES = [
 			'finance.billing.manage',
 			'finance.invoice.create',
 			'finance.invoice.draft.manage',
-			'finance.invoice.issue'
+			'finance.invoice.issue',
+			'finance.invoice.void',
+			'finance.credit_note.create',
+			'finance.credit_note.draft.manage',
+			'finance.credit_note.issue'
 		]
 	},
 	{
@@ -129,7 +137,11 @@ const STANDARD_ROLES = [
 			'finance.billing.manage',
 			'finance.invoice.create',
 			'finance.invoice.draft.manage',
-			'finance.invoice.issue'
+			'finance.invoice.issue',
+			'finance.invoice.void',
+			'finance.credit_note.create',
+			'finance.credit_note.draft.manage',
+			'finance.credit_note.issue'
 		]
 	},
 	{
@@ -165,7 +177,10 @@ const STANDARD_ROLES = [
 			'finance.billing.manage',
 			'finance.invoice.create',
 			'finance.invoice.draft.manage',
-			'finance.invoice.issue'
+			'finance.invoice.issue',
+			'finance.credit_note.create',
+			'finance.credit_note.draft.manage',
+			'finance.credit_note.issue'
 		]
 	},
 	{
