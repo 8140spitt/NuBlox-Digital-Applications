@@ -14,6 +14,7 @@ export type InvoiceReceivablePosition = {
 	invoiceGross: string;
 	issuedCreditGross: string;
 	activeAllocatedAmount: string;
+	activeWriteOffAmount: string;
 	outstandingAmount: string | null;
 	status: ReceivablePositionStatus;
 };
@@ -37,40 +38,17 @@ export class ReceivablePositionService {
 		if (!invoice) throw new RecordNotFoundError('Invoice not found.');
 		const invoiceGross = await financialDocumentGross(this.db, actor.organisationId, invoice.id);
 		if (invoice.lifecycleStatus === 'draft') {
-			return {
-				invoicePublicId: invoice.publicId,
-				currencyCode: invoice.currencyCode,
-				lifecycleStatus: invoice.lifecycleStatus,
-				invoiceGross,
-				issuedCreditGross: '0.0000',
-				activeAllocatedAmount: '0.0000',
-				outstandingAmount: null,
-				status: 'draft'
-			};
+			return { invoicePublicId: invoice.publicId, currencyCode: invoice.currencyCode, lifecycleStatus: invoice.lifecycleStatus, invoiceGross, issuedCreditGross: '0.0000', activeAllocatedAmount: '0.0000', activeWriteOffAmount: '0.0000', outstandingAmount: null, status: 'draft' };
 		}
 		if (invoice.lifecycleStatus === 'void') {
-			return {
-				invoicePublicId: invoice.publicId,
-				currencyCode: invoice.currencyCode,
-				lifecycleStatus: invoice.lifecycleStatus,
-				invoiceGross,
-				issuedCreditGross: '0.0000',
-				activeAllocatedAmount: '0.0000',
-				outstandingAmount: '0.0000',
-				status: 'void'
-			};
+			return { invoicePublicId: invoice.publicId, currencyCode: invoice.currencyCode, lifecycleStatus: invoice.lifecycleStatus, invoiceGross, issuedCreditGross: '0.0000', activeAllocatedAmount: '0.0000', activeWriteOffAmount: '0.0000', outstandingAmount: '0.0000', status: 'void' };
 		}
 		const position = await issuedInvoiceOutstanding(this.db, actor.organisationId, invoice.id);
 		const outstanding = parseScaledDecimal(position.outstandingAmount, 4, 'Outstanding amount', true);
 		const hasSettlement =
 			parseScaledDecimal(position.activeAllocatedAmount, 4, 'Allocated amount', true) > 0n ||
-			parseScaledDecimal(position.issuedCreditGross, 4) > 0n;
-		return {
-			invoicePublicId: invoice.publicId,
-			currencyCode: invoice.currencyCode,
-			lifecycleStatus: invoice.lifecycleStatus,
-			...position,
-			status: outstanding <= 0n ? 'settled' : hasSettlement ? 'part_settled' : 'open'
-		};
+			parseScaledDecimal(position.issuedCreditGross, 4) > 0n ||
+			parseScaledDecimal(position.activeWriteOffAmount, 4, 'Write-off amount', true) > 0n;
+		return { invoicePublicId: invoice.publicId, currencyCode: invoice.currencyCode, lifecycleStatus: invoice.lifecycleStatus, ...position, status: outstanding <= 0n ? 'settled' : hasSettlement ? 'part_settled' : 'open' };
 	}
 }
