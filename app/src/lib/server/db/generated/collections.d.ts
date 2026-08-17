@@ -209,6 +209,55 @@ export interface ReceivablePromisesToPay {
   updated_at: Generated<Date>;
 }
 
+export interface ReceivableRecoveries {
+  amount: Decimal;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  payment_id: string;
+  public_id: string;
+  reason: string;
+  recorded_by_member_id: string;
+  recovered_at: Date;
+  write_off_id: string;
+}
+
+export interface ReceivableRecoveryReversals {
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  recovery_id: string;
+  reversed_at: Date;
+  reversed_by_member_id: string;
+}
+
+export interface ReceivableWriteOffReversals {
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  reversed_at: Date;
+  reversed_by_member_id: string;
+  write_off_id: string;
+}
+
+export interface ReceivableWriteOffs {
+  amount: Decimal;
+  authorised_by_member_id: string;
+  created_at: Generated<Date>;
+  currency_code: string;
+  customer_party_id: string;
+  id: Generated<string>;
+  invoice_document_id: string;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  written_off_at: Date;
+}
+
 export interface DB {
   receivable_collection_actions: ReceivableCollectionActions;
   receivable_collection_cases: ReceivableCollectionCases;
@@ -222,4 +271,8 @@ export interface DB {
   receivable_credit_policy_revisions: ReceivableCreditPolicyRevisions;
   receivable_disputes: ReceivableDisputes;
   receivable_promises_to_pay: ReceivablePromisesToPay;
+  receivable_recoveries: ReceivableRecoveries;
+  receivable_recovery_reversals: ReceivableRecoveryReversals;
+  receivable_write_off_reversals: ReceivableWriteOffReversals;
+  receivable_write_offs: ReceivableWriteOffs;
 }
