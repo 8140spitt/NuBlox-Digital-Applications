@@ -130,7 +130,7 @@ export interface ReceivableCreditControlOverrides {
 }
 
 export interface ReceivableCreditHolds {
-  active_customer_party_id: Generated<string | null>;
+  active_customer_party_id: string | null;
   created_at: Generated<Date>;
   customer_party_id: string;
   id: Generated<string>;
