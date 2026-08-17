@@ -33,16 +33,16 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **19 migrations**. The latest migration is:
+The production stream now contains **20 migrations**. The latest migration is:
 
-- `20260817150000_credit_control_limits_holds.sql` — Package 004I controlled customer credit limits, credit-hold lifecycle, projected-exposure enforcement and reasoned override evidence.
+- `20260817161500_bad_debt_writeoff_recovery.sql` — Package 004J invoice-specific bad-debt assessment, write-off/reversal evidence and payment-linked recovery/reversal evidence.
 
-The current validated Package 004I target is:
+The Package 004J application structure is:
 
 ```text
-356 base tables
-789 foreign keys
-459 CHECK constraints
+362 base tables
+804 foreign keys
+465 CHECK constraints
 ```
 
 Implementation-level database material is grouped under `/database`:
@@ -114,17 +114,6 @@ finance.manage
 
 **Umbrellas never cross domains.** Commercial authority does not grant contract or finance authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
 
-The Package 004 operational finance family now includes billing, invoice, receivable correction, payment/allocation, collections automation and credit-control permissions. Package 004I adds:
-
-```text
-finance.credit_control.view
-finance.credit_control.policy.manage
-finance.credit_control.hold.manage
-finance.credit_control.override
-```
-
-All four use `finance.manage` only as same-domain fallback.
-
 ## Standard organisation roles
 
 Every organisation receives:
@@ -143,17 +132,7 @@ The founding member receives **Owner only**. Careers/job titles remain separate 
 
 Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions.
 
-Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities but does not receive `finance.manage`, `finance.invoice.void` or `finance.credit_control.override` by default.
-
-For Package 004I its defaults are:
-
-```text
-finance.credit_control.view
-finance.credit_control.policy.manage
-finance.credit_control.hold.manage
-```
-
-The exceptional override remains Owner/Administrator/custom delegation by default. Existing-tenant migration grants and future `OrganisationBootstrapService` grants are persisted and integration-tested for parity.
+Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities but does not receive `finance.manage`, `finance.invoice.void` or exceptional credit/write-off authority by default.
 
 ## Implemented business chain
 
@@ -197,6 +176,12 @@ Customer Statement + Aged Receivables
 Controlled Collections Case
     ↓
 Versioned Dunning Policy + Reminder Evidence
+    ↓
+Controlled Bad-Debt Assessment
+    ↓
+Recommendation → Write-off / Reversal
+    ↓
+Optional Payment-linked Recovery / Reversal
 ```
 
 Detailed business specifications:
@@ -212,38 +197,29 @@ Detailed business specifications:
 - [`docs/39-controlled-collections-dunning.md`](docs/39-controlled-collections-dunning.md)
 - [`docs/40-collections-automation-policy.md`](docs/40-collections-automation-policy.md)
 - [`docs/41-controlled-credit-limits-holds.md`](docs/41-controlled-credit-limits-holds.md)
+- [`docs/42-controlled-bad-debt-writeoff-recovery.md`](docs/42-controlled-bad-debt-writeoff-recovery.md)
 
 ## Operational accounts receivable
 
-The authoritative receivable is derived from immutable/controlled finance facts:
+The authoritative invoice receivable is derived from controlled finance facts:
 
 ```text
 Invoice Outstanding
 = Issued Invoice Gross
 − Issued Credit Note Gross
 − Active Payment Allocations
+− Active Write-offs
 ```
 
-Package 004F statements/aging and Packages 004G–004I reuse that finance authority rather than creating parallel editable balances.
+No Package 004 workflow stores a mutable duplicate outstanding-balance field.
 
 ### Package 004G — controlled collections
 
-Collection cases persist operational evidence only:
-
-```text
-Collection Case
-    ├── immutable reminder/call/note actions
-    ├── promise to pay
-    └── receivable dispute
-```
-
-Promises do not create cash. Disputes do not alter invoice balances. Any financial correction still uses payment allocation, credit note or exceptional invoice-void authority.
+Collection cases persist operational evidence only. Promises do not create cash and disputes do not alter invoice balances.
 
 ### Package 004H — collections automation policy
 
-The protected `/finance/collections/automation` workspace provides versioned dunning policy, derived due-reminder candidates, explicit reminder generation, separately authorised dispatch, immutable delivery-attempt evidence and promise-due review.
-
-It does not claim a background scheduler or production provider adapter.
+The protected `/finance/collections/automation` workspace provides versioned dunning policy, derived due-reminder candidates, explicit reminder generation, separately authorised dispatch, immutable delivery-attempt evidence and promise-due review. It does not claim a durable background scheduler or production provider adapter.
 
 ### Package 004I — controlled credit limits and holds
 
@@ -253,59 +229,85 @@ Protected route:
 /finance/credit-control
 ```
 
-Credit policy is evidence, not a second ledger:
-
 ```text
-Current Receivable
-= authoritative issued finance facts
-
 Projected Exposure
 = Current Receivable
 + Proposed Commitment
 ```
 
-An enabled currency-specific limit blocks only when:
+An enabled currency-specific limit blocks when projected exposure exceeds the limit. An active customer-wide credit hold blocks regardless of amount. Accepted-quotation project conversion and contract execution are the named commitment gates. Invoice issue remains available to bill existing work.
+
+Exceptional continuation requires `finance.credit_control.override` or its `finance.manage` fallback plus a reason. Override evidence commits in the same transaction as the business transition.
+
+Credit checks and invoice mutations use a canonical customer-first locking hierarchy plus current/locking receivable reads so a concurrent invoice issue cannot race past the commitment gate.
+
+### Package 004J — controlled bad debt, write-off and recovery
+
+Protected routes:
 
 ```text
-Projected Exposure > Credit Limit
+/finance/bad-debt
+/finance/bad-debt/[casePublicId]
 ```
 
-Exact equality is permitted by the limit. A customer-wide active credit hold blocks regardless of amount.
-
-Commitment values are derived from the transaction itself:
+Package 004J separates doubtful-debt assessment from loss recognition:
 
 ```text
-Accepted quotation conversion
-→ non-optional accepted quotation gross including stored tax evidence
-
-Contract execution
-→ sum of issued contract-version value components
+Open invoice receivable
+    ↓
+Bad-debt case
+    ↓
+Immutable recommendation
+    ↓
+Separate write-off authorisation
+    ↓
+Active partial/full write-off
+    ├── additive reversal
+    └── later recovery from an existing payment receipt
+            └── additive recovery reversal
 ```
 
-Named enforcement boundaries:
+A recommendation never changes the receivable. An active write-off does. A write-off reversal restores the receivable.
+
+Recovery consumes existing payment capacity but **does not reopen customer receivable**:
 
 ```text
-Quotation issue                 allowed — offer/pre-commitment
-Accepted quotation conversion   CREDIT GATE
-Contract draft/issue            allowed — preparation/pre-execution
-Contract execution               CREDIT GATE
-Invoice issue                    allowed — bill existing work
-Credit/payment/collections       allowed — reduce/manage exposure
+Available Payment
+= Payment Amount
+− Active Invoice Allocations
+− Active Bad-Debt Recoveries
 ```
 
-Exceptional continuation requires `finance.credit_control.override` (or `finance.manage` fallback) **and an explicit reason**. The override snapshots current receivable, proposed commitment, projected exposure, applicable limit/hold, actor and time, and is inserted in the same transaction as the project conversion or contract execution.
+A payment with active recovery evidence cannot be reversed until that recovery is explicitly reversed. Likewise an active write-off with active recovery cannot be reversed first.
 
-Credit checks serialize on the customer and all invoice documents for the same customer/currency before re-deriving the issued receivable. This prevents a concurrent draft→issued invoice transition from racing past the commitment check.
+Write-off tax treatment is captured explicitly as either `no_tax_adjustment` or `separate_tax_adjustment_required`; Package 004J does not silently post VAT/tax or general-ledger entries.
+
+New permissions:
+
+```text
+finance.bad_debt.view
+finance.bad_debt.case.manage
+finance.bad_debt.recommend
+finance.bad_debt.write_off.authorise
+finance.bad_debt.write_off.reverse
+finance.bad_debt.recovery.record
+finance.bad_debt.recovery.reverse
+```
+
+Owner / Administrator receive all seven. Finance/Commercial receives view, case management, recommendation and recovery/recovery-reversal authority, but not write-off authorisation/reversal by default. All granular keys use `finance.manage` only as same-domain fallback and explicit granular deny still wins.
+
+Current and historical receivable reporting is write-off aware: customer statements show write-off credits and reversal debits at their actual event times, aged receivables subtract write-offs active at the selected cutoff, and later recovery is not misrepresented as a customer receivable movement.
 
 ## Deliberate finance exclusions
 
 Still not claimed implemented:
 
-- FX conversion / cross-currency allocation or credit aggregation;
+- FX conversion / cross-currency allocation, recovery or credit aggregation;
 - refunds / outbound customer payments;
 - bank-feed/payment-gateway ingestion and bank reconciliation;
 - automated remittance matching;
-- general-ledger posting;
+- statutory general-ledger posting;
+- VAT/tax bad-debt relief posting;
 - credit-note void/reversal;
 - persisted/issued statement documents and automatic statement delivery;
 - durable background scheduler/worker-driven collections execution;
@@ -316,7 +318,7 @@ Still not claimed implemented:
 - automatic hold placement/release;
 - late-fee / interest calculation;
 - legal/agency escalation;
-- bad-debt/write-off processing.
+- expected-credit-loss/provisioning accounting or debt-sale assignment.
 
 ## Projects, participants and teams
 
@@ -340,20 +342,16 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004I release target:
+Package 004J release contract:
 
 ```text
-19 production migrations applied / 0 pending
-356 base tables / 789 foreign keys / 459 CHECK constraints
+20 production migrations applied / 0 pending
+362 base tables / 804 foreign keys / 465 CHECK constraints
 zero generated Kysely drift across core + collections outputs
-26 integration files / 117 real-MySQL tests
-credit-control suite: 6 tests
-credit-control concurrency suite: 1 test
-credit-control projected-exposure suite: 1 test
-credit-control bootstrap parity suite: 1 test
+full real-MySQL integration suite
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove the complete gate before merge.
+The exact test-file/test totals are recorded after the final documentation-synchronised PR head proves the complete gate.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
