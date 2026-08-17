@@ -9,21 +9,23 @@ import type {
 	ContractSummary,
 	ContractWorkspace,
 	CreateContractInput,
-	ExecuteContractInput,
 	IssueContractInput,
 	UpdateContractDraftInput
 } from './contract-common';
 import { ContractEntryService } from './contract-entry-service';
+import { ContractExecutionService, type CreditControlledExecuteContractInput } from './contract-execution-service';
 import { ContractFormationService } from './contract-formation-service';
 import { ContractLifecycleService } from './contract-lifecycle-service';
 
 export * from './contract-common';
 export * from './contract-entry-service';
+export * from './contract-execution-service';
 
 export class ContractService {
 	private readonly entry: ContractEntryService;
 	private readonly formation: ContractFormationService;
 	private readonly lifecycle: ContractLifecycleService;
+	private readonly execution: ContractExecutionService;
 
 	constructor(
 		db: Database = getDatabase(),
@@ -33,6 +35,7 @@ export class ContractService {
 		this.entry = new ContractEntryService(db);
 		this.formation = new ContractFormationService(db, publicIdFactory);
 		this.lifecycle = new ContractLifecycleService(db, publicIdFactory, now);
+		this.execution = new ContractExecutionService(db, publicIdFactory, now);
 	}
 
 	async listPortfolio(actor: TenantActorContext) {
@@ -99,7 +102,7 @@ export class ContractService {
 		return this.lifecycle.issue(actor, input);
 	}
 
-	execute(actor: TenantActorContext, input: ExecuteContractInput): Promise<void> {
-		return this.lifecycle.execute(actor, input);
+	execute(actor: TenantActorContext, input: CreditControlledExecuteContractInput): Promise<void> {
+		return this.execution.execute(actor, input);
 	}
 }
