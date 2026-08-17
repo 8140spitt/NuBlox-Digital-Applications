@@ -37,6 +37,7 @@
 			<a href="/finance/invoices">Finance</a>
 			<a class="subnav" href="/finance/invoices">Invoices</a>
 			<a class="subnav" href="/finance/credit-notes">Credit notes</a>
+			<a class="subnav" href="/finance/payments">Payments</a>
 			<a class="subnav" href="/finance/billing">Billing settings</a>
 			<a href="/organisation">Organisation</a>
 		</nav>
