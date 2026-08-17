@@ -33,16 +33,16 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **20 migrations**. The latest migration is:
+The production stream now contains **21 migrations**. The latest migration is:
 
-- `20260817180500_default_uk_tax_categories.sql` — data-only invoice-tax configuration hotfix that seeds a UK starter tax catalogue for existing organisations while preserving matching tenant-owned categories and rate history.
+- `20260817190000_bad_debt_writeoff_recovery.sql` — Package 004J invoice-specific bad-debt assessment, immutable recommendation, separately authorised write-off/reversal and payment-linked recovery/reversal evidence.
 
-The current validated application structure remains:
+The current validated Package 004J structure is:
 
 ```text
-356 base tables
-789 foreign keys
-459 CHECK constraints
+362 base tables
+804 foreign keys
+465 CHECK constraints
 ```
 
 Implementation-level database material is grouped under `/database`:
@@ -89,8 +89,6 @@ Project membership scope where required
 Record / lifecycle / cross-domain policy
 ```
 
-The selected organisation cookie is a selection hint only. The server revalidates active membership before trusted tenant context is constructed.
-
 Within one permission key:
 
 ```text
@@ -100,7 +98,7 @@ explicit member deny
     > default deny
 ```
 
-For a granular permission with a same-domain umbrella, the granular key is resolved first and the umbrella applies only when the granular key has no explicit member/role decision. An explicit granular deny therefore cannot be bypassed.
+A granular permission is resolved before its same-domain umbrella. The umbrella applies only on granular default-deny, so an explicit granular member deny cannot be bypassed.
 
 ## Same-domain permission umbrellas
 
@@ -113,19 +111,6 @@ finance.manage
 ```
 
 **Umbrellas never cross domains.** Commercial authority does not grant contract or finance authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
-
-The Package 004 operational finance family now includes billing, invoice, receivable correction, payment/allocation, collections automation and credit-control permissions. Package 004I adds:
-
-```text
-finance.credit_control.view
-finance.credit_control.policy.manage
-finance.credit_control.hold.manage
-finance.credit_control.override
-```
-
-All four use `finance.manage` only as same-domain fallback.
-
-Tax configuration reuses the existing finance boundary: `finance.view` reads tax settings and `finance.billing.manage` controls tenant tax-category/rate mutations. The invoice line itself still requires the ordinary `finance.invoice.draft.manage` authority.
 
 ## Standard organisation roles
 
@@ -145,17 +130,7 @@ The founding member receives **Owner only**. Careers/job titles remain separate 
 
 Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions.
 
-Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities but does not receive `finance.manage`, `finance.invoice.void` or `finance.credit_control.override` by default.
-
-For Package 004I its defaults are:
-
-```text
-finance.credit_control.view
-finance.credit_control.policy.manage
-finance.credit_control.hold.manage
-```
-
-The exceptional override remains Owner/Administrator/custom delegation by default. Existing-tenant migration grants and future `OrganisationBootstrapService` grants are persisted and integration-tested for parity.
+Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities but does not receive `finance.manage`, `finance.invoice.void`, `finance.credit_control.override` or Package 004J write-off authorisation/reversal by default.
 
 ## Implemented business chain
 
@@ -184,9 +159,7 @@ Executed Contract
     ↓
 Controlled Contract Amendments
     ↓
-Customer Billing Defaults
-    ↓
-Tenant Tax Configuration
+Customer Billing Defaults + Tenant Tax Configuration
     ↓
 Draft / Issued Invoice
     ↓
@@ -198,9 +171,15 @@ Derived Customer Receivable
     ↓
 Customer Statement + Aged Receivables
     ↓
-Controlled Collections Case
+Controlled Collections + Credit Control
     ↓
-Versioned Dunning Policy + Reminder Evidence
+Bad-Debt Assessment Case
+    ↓
+Immutable Recommendation
+    ↓
+Separate Write-off Authorisation / Reversal
+    ↓
+Optional Payment-linked Recovery / Reversal
 ```
 
 Detailed business specifications:
@@ -217,19 +196,21 @@ Detailed business specifications:
 - [`docs/40-collections-automation-policy.md`](docs/40-collections-automation-policy.md)
 - [`docs/41-controlled-credit-limits-holds.md`](docs/41-controlled-credit-limits-holds.md)
 - [`docs/42-invoice-tax-settings.md`](docs/42-invoice-tax-settings.md)
+- [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md)
 
 ## Operational accounts receivable
 
-The authoritative receivable is derived from immutable/controlled finance facts:
+The authoritative invoice receivable is derived from controlled finance facts:
 
 ```text
 Invoice Outstanding
 = Issued Invoice Gross
 − Issued Credit Note Gross
 − Active Payment Allocations
+− Active Write-offs
 ```
 
-Package 004F statements/aging and Packages 004G–004I reuse that finance authority rather than creating parallel editable balances.
+No Package 004 workflow stores a mutable duplicate outstanding-balance field.
 
 ### Invoice tax configuration
 
@@ -239,103 +220,82 @@ Protected route:
 /finance/tax
 ```
 
-Tax categories are organisation-owned reference data with effective-dated rates. Existing organisations receive a starter UK catalogue through the data migration; future/fresh tenants self-provision the same starter set when invoice/tax settings are first used. Matching tenant-owned categories and any existing rate history are never overwritten.
+Tax categories are organisation-owned reference data with effective-dated rates. Existing organisations receive a starter UK catalogue through the data migration, while the application can idempotently provision the same starter set for a tenant that reaches invoice/tax settings without categories. Matching tenant-owned categories and existing rate history are preserved.
 
-Starter categories are:
+Starter categories are standard 20%, reduced 5%, zero 0%, exempt and outside-scope. Invoice lines require an explicit tax selection. Issue refreshes the selected category against the rate effective at the issue date and persists applied tax evidence. Construction domestic reverse-charge treatment remains a separate, unimplemented workflow rather than being represented as ordinary 0% tax.
 
-```text
-VAT_STANDARD   taxable       20%
-VAT_REDUCED    taxable        5%
-VAT_ZERO       zero           0%
-VAT_EXEMPT     exempt         no percentage rate
-OUTSIDE_SCOPE  outside_scope  no percentage rate
-```
+See [`docs/42-invoice-tax-settings.md`](docs/42-invoice-tax-settings.md).
 
-Invoice lines require an explicit tax selection. Draft tax is provisional and issue refreshes the selected category against the rate effective at issue time. Effective-rate changes append a new period rather than rewriting historical issued tax evidence.
+### Package 004J — controlled bad debt, write-off and recovery
 
-Construction domestic reverse charge is deliberately not modelled as an ordinary 0% category; it requires a separate invoice-treatment workflow before NuBlox can claim support for it.
-
-### Package 004G — controlled collections
-
-Collection cases persist operational evidence only:
+Protected routes:
 
 ```text
-Collection Case
-    ├── immutable reminder/call/note actions
-    ├── promise to pay
-    └── receivable dispute
+/finance/bad-debt
+/finance/bad-debt/[casePublicId]
 ```
 
-Promises do not create cash. Disputes do not alter invoice balances. Any financial correction still uses payment allocation, credit note or exceptional invoice-void authority.
-
-### Package 004H — collections automation policy
-
-The protected `/finance/collections/automation` workspace provides versioned dunning policy, derived due-reminder candidates, explicit reminder generation, separately authorised dispatch, immutable delivery-attempt evidence and promise-due review.
-
-It does not claim a background scheduler or production provider adapter.
-
-### Package 004I — controlled credit limits and holds
-
-Protected route:
+Package 004J separates doubtful-debt assessment from loss recognition:
 
 ```text
-/finance/credit-control
+Open invoice receivable
+    ↓
+Bad-debt assessment case
+    ↓
+Immutable recommendation
+    ↓
+Separate write-off authorisation
+    ↓
+Active partial/full write-off
+    ├── additive reversal
+    └── later recovery from an existing payment receipt
+            └── additive recovery reversal
 ```
 
-Credit policy is evidence, not a second ledger:
+A recommendation never changes receivable. An active write-off does. A write-off reversal restores receivable. Write-off authorisation revalidates the recommendation against the **current** outstanding balance under the canonical customer → invoice locking hierarchy.
+
+Recovery consumes payment capacity but does **not** reopen or reduce customer receivable again:
 
 ```text
-Current Receivable
-= authoritative issued finance facts
-
-Projected Exposure
-= Current Receivable
-+ Proposed Commitment
+Available Payment
+= Payment Amount
+− Active Invoice Allocations
+− Active Bad-Debt Recoveries
 ```
 
-An enabled currency-specific limit blocks only when:
+A payment with active recovery evidence cannot be reversed until that recovery is explicitly reversed. An active write-off with active recovery cannot be reversed first.
+
+Write-off tax treatment is captured explicitly as either `no_tax_adjustment` or `separate_tax_adjustment_required`. Package 004J does not post VAT/tax relief or general-ledger facts.
+
+New permissions:
 
 ```text
-Projected Exposure > Credit Limit
+finance.bad_debt.view
+finance.bad_debt.case.manage
+finance.bad_debt.recommend
+finance.bad_debt.write_off.authorise
+finance.bad_debt.write_off.reverse
+finance.bad_debt.recovery.record
+finance.bad_debt.recovery.reverse
 ```
 
-Exact equality is permitted by the limit. A customer-wide active credit hold blocks regardless of amount.
+Owner / Administrator receive all seven. Finance/Commercial receives view, case management, recommendation and recovery/recovery-reversal authority, but not write-off authorisation/reversal by default. All granular keys use `finance.manage` only as same-domain fallback and explicit granular deny still wins.
 
-Commitment values are derived from the transaction itself:
+Current and historical receivable reporting is write-off aware: statements show write-off credits and reversal debits at their actual event times; aging subtracts write-offs active at the selected cutoff; recovery is not misrepresented as a customer receivable movement.
 
-```text
-Accepted quotation conversion
-→ non-optional accepted quotation gross including stored tax evidence
-
-Contract execution
-→ sum of issued contract-version value components
-```
-
-Named enforcement boundaries:
-
-```text
-Quotation issue                 allowed — offer/pre-commitment
-Accepted quotation conversion   CREDIT GATE
-Contract draft/issue            allowed — preparation/pre-execution
-Contract execution               CREDIT GATE
-Invoice issue                    allowed — bill existing work
-Credit/payment/collections       allowed — reduce/manage exposure
-```
-
-Exceptional continuation requires `finance.credit_control.override` (or `finance.manage` fallback) **and an explicit reason**. The override snapshots current receivable, proposed commitment, projected exposure, applicable limit/hold, actor and time, and is inserted in the same transaction as the project conversion or contract execution.
-
-Credit checks serialize on the customer and all invoice documents for the same customer/currency before re-deriving the issued receivable. This prevents a concurrent draft→issued invoice transition from racing past the commitment check.
+See [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md).
 
 ## Deliberate finance exclusions
 
 Still not claimed implemented:
 
 - construction domestic reverse-charge invoice treatment;
-- FX conversion / cross-currency allocation or credit aggregation;
+- FX conversion / cross-currency allocation, recovery or credit aggregation;
 - refunds / outbound customer payments;
 - bank-feed/payment-gateway ingestion and bank reconciliation;
 - automated remittance matching;
-- general-ledger posting;
+- statutory general-ledger posting;
+- VAT/tax bad-debt relief posting;
 - credit-note void/reversal;
 - persisted/issued statement documents and automatic statement delivery;
 - durable background scheduler/worker-driven collections execution;
@@ -346,7 +306,7 @@ Still not claimed implemented:
 - automatic hold placement/release;
 - late-fee / interest calculation;
 - legal/agency escalation;
-- bad-debt/write-off processing.
+- expected-credit-loss/provisioning accounting or debt-sale assignment.
 
 ## Projects, participants and teams
 
@@ -370,17 +330,20 @@ pnpm test:integration
 pnpm check
 ```
 
-Invoice-tax hotfix validation target:
+Package 004J release contract:
 
 ```text
-20 production migrations applied / 0 pending
-356 base tables / 789 foreign keys / 459 CHECK constraints
+21 production migrations applied / 0 pending
+362 base tables / 804 foreign keys / 465 CHECK constraints
 zero generated Kysely drift across core + collections outputs
-27 integration files / 121 real-MySQL tests
-tax-settings suite: 4 tests
+30 integration files / 129 real-MySQL tests
+bad-debt core: 6 tests
+bad-debt concurrency: 1 test
+bad-debt bootstrap parity: 1 test
+tax settings: 4 tests
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove the complete gate before merge.
+The final documentation-synchronised PR head must prove this complete gate before merge.
 
 For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
