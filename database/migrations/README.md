@@ -74,13 +74,7 @@ commercial.quotation.response.record
 
 ### `20260816001000_accepted_quotation_project_conversion.sql`
 
-Adds:
-
-```text
-commercial.quotation.convert
-```
-
-Runtime conversion requires:
+Adds `commercial.quotation.convert`. Runtime conversion requires:
 
 ```text
 commercial.quotation.convert OR commercial.manage
@@ -104,8 +98,6 @@ contract.execute
 
 `contract.manage` is the Package 004 contract umbrella. Package 004 authority is independent from `commercial.manage`.
 
-Existing Owner/Administrator roles receive broad and granular contract authority. Finance/Commercial receives `contract.view` only.
-
 ### `20260816015500_contract_amendment_permissions.sql`
 
 Adds controlled post-execution amendment delegation:
@@ -117,19 +109,13 @@ contract.amendment.issue
 contract.amendment.decide
 ```
 
-`contract.manage` remains same-domain umbrella fallback. Existing Owner/Administrator roles receive the granular amendment grants explicitly. Future `OrganisationBootstrapService` now persists the same granular rows as part of Package 004C bootstrap parity, rather than relying only on the behaviorally equivalent umbrella.
+`contract.manage` remains same-domain umbrella fallback. Existing Owner/Administrator roles and future bootstrapped Owner/Administrator roles persist equivalent granular rows.
 
-No amendment business tables are added because Baseline v1 already contains:
-
-```text
-contract_amendments
-contract_amendment_value_adjustments
-contract_amendment_key_date_changes
-```
+No amendment business tables are added because Baseline v1 already contains `contract_amendments`, `contract_amendment_value_adjustments` and `contract_amendment_key_date_changes`.
 
 ### `20260816113000_accounts_receivable_invoice_permissions.sql`
 
-Activates the first Package 004 operational accounts-receivable application slice:
+Activates Package 004C billing settings and controlled invoice preparation/issue:
 
 ```text
 finance.view
@@ -140,9 +126,9 @@ finance.invoice.draft.manage
 finance.invoice.issue
 ```
 
-`finance.manage` is a new same-domain umbrella and does **not** cross into commercial or contract permissions.
+`finance.manage` is the independent same-domain finance umbrella and does not cross into commercial or contract authority.
 
-Standard defaults for existing organisations are:
+Existing/future standard defaults are:
 
 ```text
 Owner / Administrator
@@ -159,48 +145,81 @@ Finance/Commercial
     finance.invoice.create
     finance.invoice.draft.manage
     finance.invoice.issue
-    # deliberately no finance.manage
-
-Manager / Member/Professional / Field Worker / Read Only
-    no automatic finance grants
+    # no finance.manage
 ```
 
-`OrganisationBootstrapService` persists the same defaults for future organisations and the bootstrap integration suite asserts the resulting role-permission rows.
+The migration is permission/reference-only. Baseline v1 already contains the normalised billing/invoice tables.
 
-The migration is permission/reference-only. No finance business table is added because Baseline v1 already contains the normalised Package 004 accounts-receivable structures, including:
+### `20260817090000_receivable_correction_permissions.sql`
+
+Activates Package 004D controlled receivable corrections:
 
 ```text
-payment_terms
-party_billing_settings
+finance.credit_note.create
+finance.credit_note.draft.manage
+finance.credit_note.issue
+finance.invoice.void
+```
+
+All four use `finance.manage` as same-domain fallback.
+
+Standard defaults are deliberately asymmetric:
+
+```text
+Owner / Administrator
+    finance.credit_note.create
+    finance.credit_note.draft.manage
+    finance.credit_note.issue
+    finance.invoice.void
+    + existing finance.manage
+
+Finance/Commercial
+    finance.credit_note.create
+    finance.credit_note.draft.manage
+    finance.credit_note.issue
+    # no finance.invoice.void
+    # no finance.manage
+```
+
+This keeps normal credit-note correction within the Finance/Commercial role while treating void of an already-issued legal invoice as stronger authority.
+
+The migration adds **no new business tables**. Package 004 already contains:
+
+```text
 financial_documents
-invoices
+credit_notes
 financial_document_items
 financial_document_item_taxes
+credit_note_item_sources
 financial_document_party_snapshots
 financial_document_party_snapshot_addresses
 financial_document_issue_events
 financial_document_issue_recipients
+payments
+payment_allocations
+payment_allocation_reversals
 ```
 
-The application boundary activated by this migration provides:
+The activated application boundary enforces:
 
-- payment terms and customer billing defaults;
-- contract-anchored draft invoice creation from active executed contracts;
-- legally unnumbered drafts;
-- fixed-precision invoice lines and tax;
-- customer PO/reference enforcement;
-- issue-date tax refresh;
-- due-date calculation from issue date/payment policy;
-- customer/contact/address snapshots;
-- tenant invoice-number allocation at issue;
-- immutable issued invoices;
-- issue/recipient/audit evidence.
+- same-tenant issued-invoice source eligibility;
+- legally unnumbered credit-note drafts;
+- exact original invoice-item provenance for every credit line;
+- positive credit quantities/values with credit semantics supplied by `document_kind`;
+- partial/full source quantities;
+- original invoice applied tax-rate preservation rather than current-rate recomputation;
+- original invoice party/address snapshot copying;
+- issue-time source-quantity revalidation under the original-invoice lock;
+- tenant `CN-xxxxxx` allocation only at issue;
+- immutable issued credit notes through ordinary draft APIs;
+- exceptional invoice void with explicit evidence;
+- invoice-void rejection when credit-note history or unreversed payment-allocation history exists.
 
-Invoice issue deliberately does not create payments, payment allocations or general-ledger facts.
+Package 004D does not activate payment receipt/allocation application services or general-ledger posting.
 
 ## Current structure
 
-After all **14** production migrations the application structure remains:
+After all **15** production migrations the application structure remains:
 
 - **344 base tables**
 - **749 foreign keys**
@@ -208,14 +227,16 @@ After all **14** production migrations the application structure remains:
 
 ## Current migration validation
 
-The first executable Package 004C accounts-receivable head passed the complete MySQL 8.4.11 gate:
+The executable Package 004D head passed the complete MySQL 8.4.11 gate:
 
 ```text
-14 production migrations applied / 0 pending
+15 production migrations applied / 0 pending
 344 base tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-17 integration files / 77 real-MySQL tests passed
+18 integration files / 82 real-MySQL tests passed
+finance/credit-notes.integration.test.ts: 5/5 passed
 finance/invoices.integration.test.ts: 5/5 passed
+organisation-bootstrap.integration.test.ts: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
 

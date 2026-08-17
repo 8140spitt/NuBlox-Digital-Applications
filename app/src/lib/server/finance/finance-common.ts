@@ -17,7 +17,11 @@ export type FinanceMutationPermission =
 	| 'finance.billing.manage'
 	| 'finance.invoice.create'
 	| 'finance.invoice.draft.manage'
-	| 'finance.invoice.issue';
+	| 'finance.invoice.issue'
+	| 'finance.invoice.void'
+	| 'finance.credit_note.create'
+	| 'finance.credit_note.draft.manage'
+	| 'finance.credit_note.issue';
 
 export const INVOICE_TYPES = new Set([
 	'standard',

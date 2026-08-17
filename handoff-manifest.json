@@ -1,7 +1,7 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 4,
-  "generated_date": "2026-08-16",
+  "manifest_version": 5,
+  "generated_date": "2026-08-17",
   "product": {
     "career_count": 84,
     "professional_domain_count": 16,
@@ -69,7 +69,11 @@
         "finance.billing.manage",
         "finance.invoice.create",
         "finance.invoice.draft.manage",
-        "finance.invoice.issue"
+        "finance.invoice.issue",
+        "finance.invoice.void",
+        "finance.credit_note.create",
+        "finance.credit_note.draft.manage",
+        "finance.credit_note.issue"
       ]
     }
   },
@@ -92,7 +96,7 @@
         "contract.manage",
         "finance.manage"
       ],
-      "package_004_policy": "explicit contract formation/execution/amendment granular grants plus full finance billing/invoice grants"
+      "package_004_policy": "explicit contract formation/execution/amendment and finance invoice/credit-note/void granular grants plus finance.manage"
     },
     "Administrator": {
       "broad_umbrellas": [
@@ -102,7 +106,7 @@
         "contract.manage",
         "finance.manage"
       ],
-      "package_004_policy": "explicit contract formation/execution/amendment granular grants plus full finance billing/invoice grants"
+      "package_004_policy": "explicit contract formation/execution/amendment and finance invoice/credit-note/void granular grants plus finance.manage"
     },
     "Finance/Commercial": {
       "grants": [
@@ -118,17 +122,21 @@
         "finance.billing.manage",
         "finance.invoice.create",
         "finance.invoice.draft.manage",
-        "finance.invoice.issue"
+        "finance.invoice.issue",
+        "finance.credit_note.create",
+        "finance.credit_note.draft.manage",
+        "finance.credit_note.issue"
       ],
       "deliberate_exclusions": [
         "commercial.manage",
         "commercial.quotation.convert",
         "project.create",
         "contract.manage",
-        "finance.manage"
+        "finance.manage",
+        "finance.invoice.void"
       ]
     },
-    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level; Package 004B amendment granular grants are now persisted for future Owner/Administrator roles"
+    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level, including stronger invoice-void exclusion from Finance/Commercial"
   },
   "implemented_workflow": [
     "CRM Opportunity",
@@ -148,7 +156,10 @@
     "Amendment Agreement, Rejection or Withdrawal",
     "Customer Billing Defaults",
     "Contract-Anchored Draft Invoice",
-    "Controlled Invoice Issue and Immutable Evidence"
+    "Controlled Invoice Issue and Immutable Evidence",
+    "Source-Linked Draft Credit Note",
+    "Controlled Credit-Note Issue and Immutable Evidence",
+    "Exceptional Issued-Invoice Void"
   ],
   "commercial_conversion": {
     "service": "app/src/lib/server/commercial/quotation-project-conversion-service.ts",
@@ -205,11 +216,6 @@
     ],
     "eligibility": "same-tenant active logical contract with executed contract-version baseline",
     "lifecycle": "draft -> issued -> agreed|rejected; draft|issued -> withdrawn",
-    "issue_invariants": [
-      "effective date required before issue",
-      "substantive narrative and/or value/date change evidence required",
-      "issued amendment immutable through ordinary draft APIs"
-    ],
     "value_policy": "signed DECIMAL(19,4); positive increases, negative decreases, zero rejected; no JavaScript binary floating point for authoritative arithmetic",
     "current_value_formula": "executed baseline value components + sum(agreed amendment value adjustments)"
   },
@@ -237,45 +243,69 @@
       "/finance/invoices/[invoicePublicId]"
     ],
     "spec": "docs/35-accounts-receivable-invoices.md",
+    "creation_policy": "finance.invoice.create OR finance.manage AND contract.view; source contract must be same-tenant active with executed baseline and client party",
+    "draft_identity": "document_kind=invoice; lifecycle_status=draft; document_number=NULL",
+    "numbering_policy": "tenant-local INV-000001 etc.; number allocated only inside issue transaction",
+    "tax_policy": "draft tax is provisional; effective tenant rate is resolved again at actual invoice issue time",
+    "snapshot_policy": "issue snapshots customer, optional billing contact and billing-address evidence",
+    "immutability_policy": "issued invoice rejects ordinary draft header/line mutation"
+  },
+  "receivable_corrections": {
+    "package": "004-contracts-finance",
+    "permission_migration": "database/migrations/20260817090000_receivable_correction_permissions.sql",
+    "permissions": [
+      "finance.credit_note.create",
+      "finance.credit_note.draft.manage",
+      "finance.credit_note.issue",
+      "finance.invoice.void"
+    ],
+    "umbrella": "finance.manage",
+    "service": "app/src/lib/server/finance/credit-note-service.ts",
+    "integration_test": "app/src/lib/server/finance/credit-notes.integration.test.ts",
+    "routes": [
+      "/finance/credit-notes",
+      "/finance/credit-notes/[creditNotePublicId]"
+    ],
+    "spec": "docs/36-receivable-corrections.md",
     "tables_activated": [
-      "payment_terms",
-      "party_billing_settings",
       "financial_documents",
-      "invoices",
+      "credit_notes",
       "financial_document_items",
       "financial_document_item_taxes",
+      "credit_note_item_sources",
       "financial_document_party_snapshots",
       "financial_document_party_snapshot_addresses",
       "financial_document_issue_events",
-      "financial_document_issue_recipients"
+      "financial_document_issue_recipients",
+      "payment_allocations",
+      "payment_allocation_reversals"
     ],
-    "creation_policy": "finance.invoice.create OR finance.manage AND contract.view; source contract must be same-tenant active with executed baseline and client party",
-    "draft_identity": "document_kind=invoice; lifecycle_status=draft; document_number=NULL",
-    "numbering_policy": "first tenant-local issue format INV-000001 etc.; number allocated only inside issue transaction; database unique document key is final uniqueness guard",
-    "line_policy": "quantity DECIMAL(19,6) > 0 and unit rate DECIMAL(19,4) >= 0; fixed-precision scaled BigInt arithmetic",
-    "tax_policy": "draft tax is provisional; effective tenant tax-category rate is resolved and applied again at actual issue time before immutable issue",
-    "billing_policy": "payment terms derive due date at issue; customer PO/reference is mandatory at issue where party billing settings require it",
-    "snapshot_policy": "issue snapshots customer, optional billing contact and billing-address evidence",
-    "immutability_policy": "issued invoice rejects ordinary draft header/line mutation",
-    "context_controls": [
-      "current contract value = executed baseline + agreed amendments",
-      "previously issued contract net = net of other issued invoices for same contract"
-    ],
-    "non_effects": [
-      "no credit note creation",
-      "no payment receipt",
-      "no payment allocation",
-      "no general-ledger posting",
-      "no production outbound invoice delivery"
-    ],
+    "source_policy": "credit-note source must be a same-tenant issued numbered invoice with positive remaining creditable value",
+    "provenance_policy": "each credit-note item maps to exactly one original invoice item through credit_note_item_sources",
+    "magnitude_policy": "credit quantities and amounts are positive; document_kind=credit_note supplies the receivable sign",
+    "tax_policy": "credit tax uses the original invoice item's persisted applied_rate_percent, not the tax rate current on the credit-note date",
+    "overcredit_policy": "credit-note issue locks the original invoice and rejects cumulative issued+current quantities above the source invoice quantity",
+    "snapshot_policy": "issued credit note copies the original invoice party/address snapshots rather than current CRM facts",
+    "numbering_policy": "tenant-local CN-000001 etc.; number allocated only at issue",
+    "immutability_policy": "issued credit note rejects ordinary draft reason/line mutation",
+    "invoice_void_policy": "finance.invoice.void OR finance.manage; issued invoice + explicit reason; blocked by non-void credit-note history or unreversed payment allocation; preserves legal evidence",
     "audit_actions": [
-      "finance.payment_term.created",
-      "finance.party_billing_settings.updated",
-      "finance.invoice.created_from_contract",
-      "finance.invoice.draft.updated",
-      "finance.invoice.line.added",
-      "finance.invoice.line.removed",
-      "finance.invoice.issued"
+      "finance.credit_note.created",
+      "finance.credit_note.draft.updated",
+      "finance.credit_note.line.added",
+      "finance.credit_note.line.removed",
+      "finance.credit_note.issued",
+      "finance.invoice.voided"
+    ],
+    "deliberate_exclusions": [
+      "no credit-note void/reversal",
+      "no payment receipt application service/UI",
+      "no payment allocation application service/UI",
+      "no payment/allocation reversal application service/UI",
+      "no final outstanding-balance service",
+      "no customer statements/aged receivables",
+      "no general-ledger posting",
+      "no production outbound credit-note delivery"
     ]
   },
   "schema": {
@@ -290,33 +320,35 @@
       "foreign_keys": 749,
       "check_constraints": 429
     },
-    "production_migration_count": 14,
-    "latest_migration": "database/migrations/20260816113000_accounts_receivable_invoice_permissions.sql"
+    "production_migration_count": 15,
+    "latest_migration": "database/migrations/20260817090000_receivable_correction_permissions.sql"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
     "target_mysql": "8.4.11",
-    "production_migrations": 14,
+    "production_migrations": 15,
     "pending_migrations": 0,
     "schema_counts": "344 / 749 / 429",
     "generated_kysely_drift": "zero",
-    "integration_files": 17,
-    "real_mysql_tests": 77,
+    "integration_files": 18,
+    "real_mysql_tests": 82,
+    "finance_credit_note_tests": 5,
     "finance_invoice_tests": 5,
+    "organisation_bootstrap_tests": 4,
     "svelte_check": "0 errors / 0 warnings",
-    "status": "first executable Package 004C head validated; final documentation-synchronised PR head must prove the same gate before merge"
+    "status": "executable Package 004D head validated; final documentation-synchronised PR head must prove the same gate before merge"
   },
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Receivable Corrections and Cash Application",
+    "name": "Payment Receipt and Allocation",
     "recommended_sequence": [
-      "controlled invoice void/reversal and credit-note policy",
       "payment receipt",
-      "payment allocation",
-      "derived outstanding balances",
+      "controlled payment allocation",
+      "payment/allocation reversal application boundary",
+      "derived outstanding receivable",
       "customer statements and aged receivables"
     ],
-    "governing_rule": "issued financial documents are immutable facts; corrections and cash application create controlled new records rather than editing history"
+    "governing_rule": "issued financial documents remain immutable; cash application and reversals create explicit receipt/allocation/reversal facts rather than editing document history"
   },
   "key_docs": [
     "README.md",
@@ -330,6 +362,7 @@
     "docs/33-contract-formation.md",
     "docs/34-contract-amendments.md",
     "docs/35-accounts-receivable-invoices.md",
+    "docs/36-receivable-corrections.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]

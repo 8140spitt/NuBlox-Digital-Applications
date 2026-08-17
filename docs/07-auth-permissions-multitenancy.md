@@ -52,7 +52,7 @@ granular member deny
 
 The umbrella is considered only when the granular key has no explicit member/role decision. An explicit granular deny cannot be bypassed.
 
-Permission umbrellas never cross domains. In particular:
+Permission umbrellas never cross domains:
 
 ```text
 commercial.manage ≠ contract authority
@@ -131,9 +131,13 @@ finance.billing.manage
 finance.invoice.create
 finance.invoice.draft.manage
 finance.invoice.issue
+finance.invoice.void
+finance.credit_note.create
+finance.credit_note.draft.manage
+finance.credit_note.issue
 ```
 
-`finance.manage` is the same-domain finance umbrella. The first activated finance operations are billing settings and invoice preparation/issue only. Credit notes, payments, allocations and ledger operations require future explicit permissions rather than inheriting authority implicitly.
+`finance.manage` is the same-domain finance umbrella. Payment receipt/allocation and their reversal operations remain future explicit capabilities rather than inheriting authority implicitly.
 
 ## 5. Standard organisation roles
 
@@ -151,7 +155,7 @@ Read Only
 
 ### Owner / Administrator
 
-Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus the released granular operational permissions.
+Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular operational permissions.
 
 Relevant broad authority includes:
 
@@ -163,9 +167,7 @@ contract.manage
 finance.manage
 ```
 
-They also receive the Package 004 amendment granular keys explicitly. Existing organisations receive those rows from forward migration and future organisations receive matching rows from bootstrap, preserving persistent grant parity as well as effective authority.
-
-Their `commercial.manage + project.create` authority permits accepted-quotation project conversion unless a granular member exception denies conversion.
+They also receive the contract-amendment and receivable-correction granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
 
 ### Manager
 
@@ -189,6 +191,9 @@ finance.billing.manage
 finance.invoice.create
 finance.invoice.draft.manage
 finance.invoice.issue
+finance.credit_note.create
+finance.credit_note.draft.manage
+finance.credit_note.issue
 ```
 
 Finance/Commercial deliberately does **not** receive:
@@ -199,9 +204,10 @@ commercial.quotation.convert
 project.create
 contract.manage
 finance.manage
+finance.invoice.void
 ```
 
-This role can perform the currently activated operational AR tasks while future finance capabilities remain deliberate grants.
+This role can perform ordinary commercial AR preparation, invoice issue and source-linked credit-note correction while the stronger issued-invoice void capability remains Owner/Administrator/custom delegation by default.
 
 ### Other roles
 
@@ -262,9 +268,7 @@ CRM parties remain separate from platform organisations/users/members/project pa
 
 Package 003 reads require active membership + `commercial.view` + same-tenant scope. Mutations additionally require the granular commercial key or `commercial.manage` fallback and valid document/version lifecycle.
 
-### Accepted quotation → project conversion
-
-Conversion is conjunctive:
+Accepted quotation → project conversion is conjunctive:
 
 ```text
 commercial.quotation.convert OR commercial.manage
@@ -338,13 +342,7 @@ AND executed contract-version baseline
 
 Draft maintenance requires `contract.amendment.draft.manage OR contract.manage`.
 
-Issue requires `contract.amendment.issue OR contract.manage` and:
-
-```text
-status = draft
-effective_on present
-substantive narrative and/or value/date evidence present
-```
+Issue requires `contract.amendment.issue OR contract.manage`, a draft amendment, an effective date and substantive narrative/value/date evidence.
 
 Decision/withdrawal requires `contract.amendment.decide OR contract.manage`.
 
@@ -387,18 +385,15 @@ Customer billing settings are mutable preparation policy. They do not rewrite is
 
 ### Invoice creation
 
-The first invoice slice is deliberately contract-anchored:
+Invoice creation is contract-anchored:
 
 ```text
 finance.invoice.create OR finance.manage
 AND contract.view
-AND same-tenant contract
-AND contract.lifecycle_status = active
+AND same-tenant active contract
 AND executed contract-version baseline
 AND executed client party exists
 ```
-
-`contract.view` is required because the contract is the cross-domain source context. Finance authority cannot substitute for contract visibility.
 
 Creation records customer, optional billing contact, contract, project and currency references but leaves:
 
@@ -407,9 +402,7 @@ document_number = NULL
 lifecycle_status = draft
 ```
 
-Draft creation therefore does not consume a legal invoice number.
-
-### Draft management
+### Invoice draft management
 
 ```text
 finance.invoice.draft.manage OR finance.manage
@@ -417,8 +410,6 @@ finance.invoice.draft.manage OR finance.manage
     → add/remove fixed-precision invoice lines
     → select provisional tax category
 ```
-
-Draft invoice calculations reuse the scaled-`BigInt` commercial decimal module.
 
 ### Invoice issue
 
@@ -430,35 +421,115 @@ AND customer PO/reference present when policy requires it
 AND valid due-date/payment-term policy
 ```
 
-Issue atomically:
-
-1. finalises due date from the actual issue date;
-2. re-resolves the effective tenant tax rate and refreshes tax facts;
-3. snapshots customer identity;
-4. snapshots billing contact where present;
-5. copies billing-address evidence;
-6. serialises tenant invoice-number allocation;
-7. changes the document to `issued`;
-8. records issue/recipient evidence;
-9. appends audit history.
+Issue atomically finalises due date, refreshes tax using the tenant rate effective at the actual invoice issue time, snapshots customer/contact/address evidence, allocates a tenant invoice number, freezes the document, records issue/recipient evidence and appends audit history.
 
 Issued invoices reject ordinary draft header/line mutation.
 
-The issue channel is evidence of the selected delivery mechanism only. No production outbound email/API/portal delivery is claimed.
+## 13. Receivable-correction access model
+
+Package 004D corrects an issued receivable without reopening invoice mutation.
+
+### Credit-note creation
+
+```text
+finance.credit_note.create OR finance.manage
+AND same-tenant source invoice
+AND source invoice lifecycle = issued
+AND source invoice has legal number
+AND positive remaining creditable value
+```
+
+The source is the issued invoice itself. Credit-note creation therefore does not require a fresh `contract.view` traversal.
+
+Draft identity is:
+
+```text
+document_kind = credit_note
+lifecycle_status = draft
+document_number = NULL
+```
+
+### Credit-note line provenance
+
+```text
+finance.credit_note.draft.manage OR finance.manage
+    → add/remove source-linked correction lines
+    → maintain correction reason
+```
+
+Every credit line links to one exact original invoice line through `credit_note_item_sources`.
+
+The service copies source classification, description and unit rate; the user supplies the partial/full quantity to credit. Positive quantity/value magnitudes are used; `document_kind = credit_note` supplies correction semantics.
+
+### Original tax and customer evidence
+
+A credit note corrects the historic invoice transaction. It therefore uses the original invoice line's persisted `applied_rate_percent`, not the tax rate current on the credit-note date.
+
+At credit-note issue, tax rows are rebuilt from the original invoice tax evidence again.
+
+The issued credit note also copies the original invoice's immutable party/address snapshots rather than today's CRM values.
+
+### Over-credit prevention
+
+Draft composition checks the currently remaining source quantity. Issue is authoritative:
+
+```text
+lock original invoice
+AND resolve all issued credit quantities per source item
+AND add current draft credit quantity
+AND reject if cumulative quantity > original invoice quantity
+```
+
+This prevents competing credit-note drafts from over-crediting the same source line.
+
+### Credit-note issue
+
+```text
+finance.credit_note.issue OR finance.manage
+AND credit-note status = draft
+AND original invoice still = issued
+AND at least one source-linked correction line
+AND source quantities remain valid under lock
+```
+
+Issue copies/revalidates original evidence, allocates `CN-xxxxxx`, freezes the document and records issue/recipient/audit evidence.
+
+Issued credit notes reject ordinary reason/line mutation.
+
+### Exceptional invoice void
+
+```text
+finance.invoice.void OR finance.manage
+AND invoice status = issued
+AND explicit void reason
+AND no non-void credit-note history
+AND no unreversed payment allocation
+```
+
+Void is a stronger correction reserved for an invalid issued document such as a duplicate. Finance/Commercial does not receive `finance.invoice.void` by default.
+
+A successful void preserves the legal number, lines, tax, party snapshots and issue evidence while recording:
+
+```text
+lifecycle_status = void
+voided_by_member_id
+voided_at
+void_reason
+```
+
+The allocation guard is active before payment-allocation UI exists so later cash application cannot invalidate the correction invariant.
 
 ### Cross-domain separation
 
 ```text
-commercial.manage cannot issue invoices
-contract.manage cannot issue invoices
+commercial.manage cannot issue/credit/void finance documents
+contract.manage cannot issue/credit/void finance documents
 finance.manage cannot mutate contracts or quotations
 ```
 
-The first finance slice also does not create payment, allocation or general-ledger records when an invoice is issued.
+Foreign invoice and credit-note public IDs are tenant-masked as not found after the caller passes the relevant finance authority boundary.
 
-Foreign invoice public IDs are tenant-masked as not found after the caller passes the finance read boundary.
-
-## 13. Project access and collaboration
+## 14. Project access and collaboration
 
 Normal project access requires:
 
@@ -474,7 +545,7 @@ Project contextual roles classify context and never grant application permission
 
 Accepted-quotation conversion establishes the creator's first project scope atomically. Contract formation occurs after project creation and therefore requires exact project-member scope.
 
-## 14. Tenant-isolation rules
+## 15. Tenant-isolation rules
 
 - Trusted tenant context comes from authenticated active membership.
 - Tenant-owned queries include active `organisation_id`.
@@ -488,11 +559,11 @@ Accepted-quotation conversion establishes the creator's first project scope atom
 - Caches, search, exports, files and future scheduled jobs must preserve tenant boundaries.
 - Privileged support access must be explicit and auditable.
 
-## 15. Session requirements
+## 16. Session requirements
 
 Production session policy includes secure HttpOnly cookies, Secure transport, appropriate SameSite behavior, revocation/logout, rotation after privilege/authentication changes, idle/absolute expiry and MFA step-up where risk policy requires it.
 
-## 16. Release testing requirements
+## 17. Release testing requirements
 
 The real-MySQL release gate covers, at minimum:
 
@@ -508,26 +579,34 @@ The real-MySQL release gate covers, at minimum:
 - amendment agreement/rejection/withdrawal semantics;
 - finance billing-settings authority;
 - executed-contract invoice eligibility;
-- legally unnumbered drafts;
+- legally unnumbered invoice drafts;
 - fixed-precision invoice line/tax arithmetic;
 - customer PO/reference issue enforcement;
-- issue-date tax refresh;
+- invoice issue-date tax refresh;
 - due-date calculation;
 - customer/contact/address invoice snapshots;
-- invoice number progression;
+- invoice-number progression;
 - immutable issued invoices;
-- explicit `finance.invoice.issue` deny overriding `finance.manage`;
-- foreign-tenant invoice masking;
+- source-linked credit-note provenance;
+- partial credit quantities and over-credit prevention;
+- original invoice tax-rate preservation on credit notes;
+- original invoice customer/address evidence copied to credit notes;
+- credit-note issue-only numbering and immutability;
+- Finance/Commercial inability to void invoices by default;
+- credit-history and active-allocation invoice-void guards;
+- foreign-tenant invoice/credit-note masking;
 - generated Kysely drift and Svelte/TypeScript diagnostics.
 
-The first executable Package 004C AR head proved:
+The executable Package 004D head proved:
 
 ```text
-14 production migrations applied / 0 pending
+15 production migrations applied / 0 pending
 344 tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-17 integration files / 77 real-MySQL tests passed
+18 integration files / 82 real-MySQL tests passed
+finance credit-note suite: 5/5 passed
 finance invoice suite: 5/5 passed
+organisation bootstrap suite: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
 

@@ -4,7 +4,7 @@
 
 This boundary activates the first operational accounts-receivable structures already present in **Package 004 — Contracts and Finance**.
 
-It deliberately separates invoice preparation/issue from later cash and accounting workflows:
+It deliberately separates invoice preparation/issue from later correction, cash and accounting workflows:
 
 ```text
 Active Executed Contract
@@ -26,6 +26,8 @@ Controlled Issue
 
 No payment, allocation or general-ledger fact is created by invoice issue.
 
+Issued-invoice corrections are now implemented separately by Package 004D; see [`36 — Receivable Corrections`](36-receivable-corrections.md).
+
 ## 2. Application surfaces
 
 ```text
@@ -40,22 +42,38 @@ No payment, allocation or general-ledger fact is created by invoice issue.
 
 `/finance/invoices/[invoicePublicId]` exposes invoice header policy, charge lines, tax, contract-value context, issue controls, immutable issue evidence and customer snapshots.
 
+Receivable correction surfaces are intentionally separate:
+
+```text
+/finance/credit-notes
+/finance/credit-notes/[creditNotePublicId]
+```
+
 ## 3. Permission family
 
-The first operational AR permission family is:
+The invoice/billing permission family is:
 
 ```text
 finance.view
-finance.manage                     # broad AR umbrella
+finance.manage                     # broad finance umbrella
 finance.billing.manage
 finance.invoice.create
 finance.invoice.draft.manage
 finance.invoice.issue
 ```
 
-`finance.manage` is the same-domain umbrella fallback for the granular Package 004 finance mutations. It is independent from both `commercial.manage` and `contract.manage`.
+Package 004D extends the same finance family with:
 
-Standard defaults are:
+```text
+finance.credit_note.create
+finance.credit_note.draft.manage
+finance.credit_note.issue
+finance.invoice.void
+```
+
+`finance.manage` is the same-domain umbrella fallback for granular Package 004 finance mutations. It is independent from both `commercial.manage` and `contract.manage`.
+
+Standard invoice defaults are:
 
 ```text
 Owner / Administrator
@@ -78,17 +96,15 @@ Manager / Member/Professional / Field Worker / Read Only
     no automatic finance grants
 ```
 
-Finance/Commercial deliberately receives only the activated AR responsibilities. The absence of `finance.manage` prevents later payment, credit-note, reversal or wider finance capabilities from flowing to that role merely because they share the finance namespace.
+Package 004D additionally gives Finance/Commercial ordinary credit-note preparation/issue authority while keeping `finance.invoice.void` as a stronger Owner/Administrator/custom delegation by default.
 
 As with other NuBlox umbrella families, explicit granular member deny outranks a granular role grant and the `finance.manage` fallback.
 
 ## 4. Bootstrap parity
 
-The forward permission migration seeds the standard-role grants for existing organisations.
+Forward permission migrations seed standard-role grants for existing organisations.
 
-`OrganisationBootstrapService` carries equivalent grants for future organisations. This increment also closes a prior Package 004B parity gap by persisting the contract-amendment granular permissions for newly bootstrapped Owner/Administrator roles rather than relying only on behaviorally equivalent `contract.manage` fallback.
-
-Bootstrap integration coverage asserts the actual persisted role-permission rows.
+`OrganisationBootstrapService` carries equivalent grants for future organisations. Bootstrap integration coverage asserts the persisted role-permission boundaries, including the distinction between Finance/Commercial credit-note authority and stronger invoice-void authority.
 
 ## 5. Billing configuration
 
@@ -217,6 +233,8 @@ Taxable categories require an effective rate. Zero/exempt/outside-scope categori
 
 The resulting applied rate, taxable amount and tax amount remain stored with the issued line tax evidence so later tax-table changes do not rewrite historical invoices.
 
+Package 004D credit notes deliberately follow a different rule: a correcting credit line uses the **original invoice's applied tax evidence**, not today's rate. This preserves the exact historic transaction being reversed.
+
 ## 10. Customer PO/reference policy
 
 If `party_billing_settings.purchase_order_required = TRUE`, issue is rejected until `invoices.customer_purchase_order_reference` is populated.
@@ -255,6 +273,8 @@ The issue channel is evidence of the chosen mechanism. This slice does not claim
 
 After issue, ordinary invoice draft APIs reject header and line mutation.
 
+Corrections do not reopen that mutation boundary. A valid issued invoice is corrected with a source-linked credit note; an invalid issued invoice may be explicitly voided only under the stronger Package 004D policy.
+
 ## 13. Customer and address snapshots
 
 Issue uses the existing normalised snapshot structures:
@@ -267,6 +287,8 @@ financial_document_party_snapshot_addresses
 The customer snapshot may carry the configured customer account reference. Billing-contact identity is separately snapshotted where present.
 
 A later CRM edit therefore does not rewrite the customer name, contact details or address evidence associated with the issued invoice.
+
+Package 004D copies these immutable invoice snapshots to the issued credit note so the correction remains tied to the historic customer/address evidence rather than current CRM data.
 
 ## 14. Contract-value context
 
@@ -285,11 +307,11 @@ Previously Issued Contract Net
 = Sum(net invoice lines on other issued invoices for this contract)
 ```
 
-These figures are contextual controls only. This first slice does not automatically prevent over-invoicing because later valuations, applications, retention and credit-note rules need a deliberate commercial policy rather than a simplistic cap.
+These figures are contextual controls only. Automatic valuation, application, retention and over-invoicing policy remain later commercial increments.
 
 ## 15. Audit actions
 
-The slice writes:
+The invoice/billing slice writes:
 
 ```text
 finance.payment_term.created
@@ -301,7 +323,9 @@ finance.invoice.line.removed
 finance.invoice.issued
 ```
 
-Audit events include active tenant, actor user/member, correlation ID and project context where the contract has a project.
+Package 004D adds correction audit actions documented in `docs/36-receivable-corrections.md`.
+
+Audit events include active tenant, actor user/member, correlation ID and project context where the financial document carries one.
 
 ## 16. Tenant and security boundary
 
@@ -313,6 +337,8 @@ Cross-domain contract sourcing requires `contract.view`; finance authority canno
 
 Conversely, `contract.manage` and `commercial.manage` cannot substitute for finance mutation authority.
 
+Credit-note creation is invoice-anchored and therefore does not perform a fresh contract traversal or require contract authority.
+
 ## 17. Validation contract
 
 The permanent release gate must prove:
@@ -323,35 +349,52 @@ The permanent release gate must prove:
 - standard-role migration/bootstrap parity;
 - payment-term and customer-default mutation policy;
 - pre-execution contract rejection;
-- legally unnumbered drafts;
+- legally unnumbered invoice drafts;
 - fixed-precision line totals;
 - customer PO enforcement;
-- issue-date tax refresh;
+- invoice issue-date tax refresh;
 - due-date calculation;
-- customer/contact/address snapshots;
-- immutable issued documents;
+- customer/contact/address invoice snapshots;
+- immutable issued invoices;
 - sequential tenant invoice numbering;
 - explicit granular deny overriding `finance.manage`;
 - read-vs-mutation separation;
 - foreign-tenant masking;
+- correction provenance and over-credit controls from Package 004D;
 - SvelteKit type/diagnostic gate.
+
+The executable Package 004D head proved:
+
+```text
+15 production migrations applied / 0 pending
+344 base tables / 749 foreign keys / 429 CHECK constraints
+zero generated Kysely drift
+18 integration files / 82 real-MySQL tests passed
+finance/credit-notes.integration.test.ts: 5/5 passed
+finance/invoices.integration.test.ts: 5/5 passed
+organisation-bootstrap.integration.test.ts: 4/4 passed
+svelte-check: 0 errors / 0 warnings
+```
+
+The final documentation-synchronised PR head must prove the same complete gate before merge.
 
 ## 18. Deliberate exclusions / next increments
 
-Not claimed implemented here:
+Not claimed implemented after Package 004D:
 
-- credit notes;
-- invoice void/reversal UI and policy;
-- payments;
-- payment allocations;
+- credit-note void/reversal;
+- payment receipt application service/UI;
+- payment allocation application service/UI;
+- payment/allocation reversal application service/UI;
+- final outstanding-balance service;
 - customer statements;
 - aged receivables / dunning;
 - valuation/application-to-invoice automation;
 - retention release automation;
-- configurable statutory invoice-number formats;
+- configurable statutory document-number formats;
 - PDF/document rendering;
-- production outbound invoice delivery;
+- production outbound invoice/credit-note delivery;
 - general-ledger posting;
 - bank reconciliation.
 
-The next Package 004 finance boundary should be **payment receipt and allocation**, preceded or accompanied by controlled credit-note/void policy so receivable balances can be corrected without mutating issued invoices.
+The next Package 004 finance boundary is **payment receipt and controlled payment allocation**, followed by derived outstanding balances and receivables reporting.

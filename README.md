@@ -35,11 +35,11 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational domain baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **14 migrations**. The latest application activation is:
+The production stream now contains **15 migrations**. The latest application activation is:
 
-- `20260816113000_accounts_receivable_invoice_permissions.sql` — Package 004 operational accounts-receivable permissions for billing settings and controlled invoices.
+- `20260817090000_receivable_correction_permissions.sql` — Package 004D controlled credit-note and exceptional invoice-void permissions.
 
-The current application structure remains **344 tables, 749 foreign keys and 429 `CHECK` constraints** because the Package 004B/004C permission migrations activate normalised contract/amendment/finance structures already present in the baseline.
+The current application structure remains **344 tables, 749 foreign keys and 429 `CHECK` constraints** because Package 004D activates normalised finance structures already present in the baseline.
 
 Implementation-level database material is grouped under `/database`:
 
@@ -98,7 +98,7 @@ explicit member deny
 
 ## Granular RBAC and same-domain umbrellas
 
-NuBlox separates broad management authority into delegable responsibilities while retaining explicit same-domain umbrella compatibility:
+NuBlox resolves a granular permission first and uses its umbrella only when the granular key has no explicit member/role decision. Explicit granular deny therefore cannot be bypassed.
 
 ```text
 project.manage
@@ -134,10 +134,12 @@ finance.manage
     ├─ finance.billing.manage
     ├─ finance.invoice.create
     ├─ finance.invoice.draft.manage
-    └─ finance.invoice.issue
+    ├─ finance.invoice.issue
+    ├─ finance.invoice.void
+    ├─ finance.credit_note.create
+    ├─ finance.credit_note.draft.manage
+    └─ finance.credit_note.issue
 ```
-
-The granular key is resolved first. Its umbrella is used only when the granular key has no explicit member/role decision. An explicit granular member deny therefore cannot be bypassed by an umbrella grant.
 
 **Umbrellas never cross domains.** `commercial.manage` does not grant contract authority; `contract.manage` does not grant finance authority; `finance.manage` does not grant commercial or contract authority.
 
@@ -149,9 +151,7 @@ Every new organisation receives Owner, Administrator, Manager, Finance/Commercia
 
 ### Owner / Administrator
 
-Owner and Administrator receive the broad project, CRM, commercial, contract and finance umbrellas plus the currently established granular permissions. Existing organisations receive the same released grants from forward migrations and future organisations receive them from `OrganisationBootstrapService`.
-
-Package 004B amendment granular grants are persisted for Owner/Administrator as well as covered by `contract.manage`; this keeps migration and future-bootstrap role rows aligned rather than merely behaviorally equivalent.
+Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions. Existing organisations receive forward-migration grants and future organisations receive equivalent persisted grants from `OrganisationBootstrapService`.
 
 ### Manager
 
@@ -159,7 +159,7 @@ Manager receives granular project and CRM party/contact authority without broad 
 
 ### Finance/Commercial
 
-Finance/Commercial receives:
+Finance/Commercial currently receives:
 
 ```text
 project.view
@@ -175,6 +175,9 @@ finance.billing.manage
 finance.invoice.create
 finance.invoice.draft.manage
 finance.invoice.issue
+finance.credit_note.create
+finance.credit_note.draft.manage
+finance.credit_note.issue
 ```
 
 Finance/Commercial deliberately does **not** receive:
@@ -185,37 +188,16 @@ commercial.quotation.convert
 project.create
 contract.manage
 finance.manage
+finance.invoice.void
 ```
 
-That design permits the activated operational AR work without silently granting later payment, credit-note, reversal or wider finance capabilities.
+This permits ordinary commercial AR work while keeping the stronger issued-invoice void capability and future payment/reversal authority deliberate.
 
 Member/Professional receives `project.view + crm.view`, Field Worker receives `project.view`, and Read Only receives `project.view + crm.view`.
 
 The founding member is assigned **Owner only**. Careers/job titles remain separate from security roles.
 
-## Organisation administration
-
-The protected `/organisation` workspace provides member lifecycle, member-to-role assignment, invitation management, role management and permission grants.
-
-```text
-member.invite       → invitation lifecycle
-member.manage       → member status + member role assignment
-organisation.manage → role definitions + permission grants + full organisation admin
-```
-
-Delegation ceilings, organisation-manager protection, self-mutation restrictions, cross-tenant rejection and final-manager lockout prevention are enforced in the domain layer.
-
-## CRM parties, contacts, opportunities and activities
-
-The protected `/crm` surface is a **private tenant CRM**, not a platform-global directory. CRM party identity is separate from NuBlox platform organisations, auth users, workforce records and project participants.
-
-The implemented CRM includes party/contact administration, opportunities and activity timelines. Pipeline **stage** represents sales maturity while opportunity `status` represents terminal outcome (`open`, `won`, `lost`, `cancelled`).
-
-See [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md).
-
-## Estimates, quotations and project conversion
-
-Package 003 is activated through pricing, issue/response evidence and accepted-quotation conversion:
+## Implemented business chain
 
 ```text
 CRM Opportunity
@@ -226,169 +208,89 @@ Final Estimate Version
     ↓
 Quotation
     ↓
-Issued + accepted Quotation Version
+Issued + Accepted Quotation
     ↓
-Idempotent conversion
-    ↓
-Proposed Project / Job
-```
-
-Protected routes include:
-
-- `/commercial/estimates`
-- `/commercial/estimates/[estimatePublicId]`
-- `/commercial/quotations`
-- `/commercial/quotations/[quotationPublicId]`
-- `/commercial/quotations/[quotationPublicId]/convert`
-
-Authoritative calculation uses scaled `BigInt` decimal arithmetic rather than JavaScript binary floating point. `quotation_project_conversions` is the authoritative conversion idempotency/provenance ledger.
-
-The conversion deliberately does **not** infer the CRM customer as a NuBlox participant, create a project site, activate the project, form a contract or create finance records.
-
-See [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md).
-
-## Controlled contract formation and execution
-
-Package 004 formation is implemented as:
-
-```text
-Accepted Quotation Version
-        ↓
 Proposed Project
-        ↓
-Explicit Contract Formation
-        ↓
-Contract Version 1 (draft)
-        ↓
-Value components + key dates
-        ↓
-Issue lock + recipient evidence
-        ↓
-Execution + signatory evidence
-        ↓
-Active Contract
+    ↓
+Controlled Contract Formation
+    ↓
+Issued / Executed Contract
+    ↓
+Controlled Contract Amendments
+    ↓
+Customer Billing Defaults
+    ↓
+Draft Invoice
+    ↓
+Issued Invoice
+    ↓
+Controlled Credit Note / Exceptional Invoice Void
 ```
 
-Protected routes are:
+See:
 
-- `/contracts`
-- `/contracts/new?project=[projectPublicId]`
-- `/contracts/[contractPublicId]`
-
-Formation retains exact `project_id`, `opportunity_id` and `source_quotation_response_id` provenance. Version 1 snapshots accepted customer evidence, derives initial `base_scope` from accepted quotation net lines using fixed-precision arithmetic, and becomes immutable after issue. Execution records one execution/signatory event and makes the logical contract active without changing project lifecycle.
-
-See [`docs/33-contract-formation.md`](docs/33-contract-formation.md).
-
-## Controlled contract amendments
-
-Package 004 post-execution change is implemented using the existing normalised amendment model:
-
-```text
-Active + Executed Contract Baseline
-        ↓
-Draft Amendment
-        ├── scope / terms narrative
-        ├── signed value adjustment(s)
-        └── key-date change(s)
-        ↓
-Issue / freeze
-        ↓
-Agreed | Rejected | Withdrawn
-```
-
-The amendment workspace is:
-
-- `/contracts/[contractPublicId]/amendments/[amendmentPublicId]`
-
-Creation requires an active contract with an executed baseline. The domain service requires an effective date and substantive change evidence before issue; issued amendments reject ordinary draft mutation.
-
-Only **agreed** amendments affect the derived contractual position:
-
-```text
-Current Contract Value
-= Executed Baseline Value Components
-+ Sum(Agreed Amendment Value Adjustments)
-```
-
-Rejected and withdrawn records remain historical evidence.
-
-See [`docs/34-contract-amendments.md`](docs/34-contract-amendments.md).
+- [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md)
+- [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md)
+- [`docs/33-contract-formation.md`](docs/33-contract-formation.md)
+- [`docs/34-contract-amendments.md`](docs/34-contract-amendments.md)
+- [`docs/35-accounts-receivable-invoices.md`](docs/35-accounts-receivable-invoices.md)
+- [`docs/36-receivable-corrections.md`](docs/36-receivable-corrections.md)
 
 ## Operational accounts receivable
 
-Package 004C now activates customer billing settings and controlled invoice preparation/issue:
+### Billing settings and invoices — Package 004C
+
+Protected routes:
+
+- `/finance/billing`
+- `/finance/invoices`
+- `/finance/invoices/[invoicePublicId]`
+
+Draft invoices are contract-anchored, tenant-scoped and legally unnumbered. Issue finalises due date, refreshes tax using the rate effective at the actual invoice issue date, snapshots customer/contact/address evidence, allocates `INV-000001…`, records issue/recipient/audit evidence and freezes ordinary mutation.
+
+### Receivable corrections — Package 004D
+
+Protected routes:
+
+- `/finance/credit-notes`
+- `/finance/credit-notes/[creditNotePublicId]`
+
+The normal correction path is a **source-linked credit note**, not editing the invoice:
 
 ```text
-Active Executed Contract
-        ↓
-Customer Billing Defaults
-        ↓
-Draft Invoice
-        ├── payment term / due-date policy
-        ├── customer PO/reference
-        └── fixed-precision lines + provisional tax
-        ↓
-Controlled Issue
-        ├── issue-date tax refresh
-        ├── tenant invoice-number allocation
-        ├── customer/contact/address snapshots
-        ├── issue/recipient evidence
-        └── immutable issued invoice
+Issued Invoice
+    ↓
+Draft Credit Note
+    ├─ exact original invoice line
+    ├─ partial/full original quantity
+    ├─ original unit rate
+    └─ original applied tax rate
+    ↓
+Issue-time source-quantity revalidation
+    ↓
+CN-000001… allocation
+    ↓
+Original invoice customer/address evidence copied
+    ↓
+Immutable Issued Credit Note
 ```
 
-Protected finance routes are:
+Credit-note values remain positive magnitudes; `document_kind = credit_note` supplies correction semantics. Issue locks the original invoice and rejects cumulative credits greater than the original line quantity.
 
-- `/finance/billing` — tenant payment terms and customer billing defaults;
-- `/finance/invoices` — invoice portfolio and executed-contract draft creation;
-- `/finance/invoices/[invoicePublicId]` — invoice header, lines/tax, contract-value context, issue controls and immutable evidence.
+A credit note uses the **original invoice's applied tax evidence**, not today's tax rate. This is intentionally different from invoice issue, which refreshes a draft using the tax rate effective when the invoice itself is issued.
 
-### Contract-anchored creation
+### Exceptional invoice void
 
-The first invoice slice intentionally creates invoices only from an active contract with an executed contract-version baseline and `client` party. Creation requires `finance.invoice.create OR finance.manage` **and** `contract.view` because the contract is the source context.
+`finance.invoice.void` is stronger authority and is not granted to Finance/Commercial by default.
 
-The draft inherits customer, billing contact where available, project, contract and contract currency. It does not independently select a different customer or infer platform identity from CRM.
+Void is reserved for an invalid issued document such as a duplicate. It requires an explicit reason and is blocked when:
 
-### Drafts are legally unnumbered
+- a draft or issued credit note already references the invoice; or
+- an unreversed payment allocation exists.
 
-A new financial document remains:
+A successful void preserves the invoice number, lines, tax, customer snapshots and issue evidence while recording `voided_by_member_id`, `voided_at` and `void_reason`.
 
-```text
-document_kind = invoice
-lifecycle_status = draft
-document_number = NULL
-```
-
-No legal invoice number is consumed when a draft is created. The first tenant-local issue format is `INV-000001`, `INV-000002`, … and allocation occurs only inside the controlled issue transaction. The existing unique document key remains the database guard against duplicate issued identity.
-
-### Fixed-precision line and tax policy
-
-Invoice lines reuse Package 004 `financial_document_items` and tax child rows. Quantity is six-decimal fixed precision; rates/money/tax are four-decimal fixed precision; authoritative arithmetic reuses the Package 003 scaled-`BigInt` module.
-
-Tax selected during draft preparation is provisional. Immediately before issue, each tax fact is recalculated using the tenant tax-category rate effective at the actual issue date/time. The issued rate, taxable amount and tax amount then remain immutable evidence.
-
-### Billing policy and due date
-
-Payment terms support:
-
-```text
-invoice_date  → issue date + days offset
-end_of_month  → end of issue month + days offset
-manual        → explicit due date
-```
-
-If a customer billing profile requires a purchase-order/reference, issue is blocked until the draft carries it.
-
-### Issue evidence and immutability
-
-Issue validates policy, finalises the due date, refreshes tax, snapshots customer/billing-contact/address facts, assigns the document number, records issue/recipient evidence and changes the document to `issued`.
-
-Issued invoices reject ordinary header and line mutation. The issue channel records evidence only; production outbound invoice email/API/portal delivery is not claimed.
-
-The invoice workspace also derives current contract value and previously issued net for the same contract as controls. These are contextual facts rather than a simplistic automatic over-invoicing cap.
-
-See [`docs/35-accounts-receivable-invoices.md`](docs/35-accounts-receivable-invoices.md).
-
-**Still not claimed implemented in Package 004 finance:** credit notes, controlled invoice void/reversal UI, payments, payment allocations, customer statements, aged receivables/dunning, valuation/application-to-invoice automation, configurable statutory number formats, PDF rendering, production outbound invoice delivery, general-ledger posting or bank reconciliation.
+**Still not claimed implemented:** credit-note void/reversal, payment receipt/application UI, payment allocation/application UI, payment/allocation reversal UI, authoritative post-cash outstanding balances, statements/aged receivables, general-ledger posting, bank reconciliation, PDF rendering or production outbound invoice/credit-note delivery.
 
 ## Projects, participants and teams
 
@@ -408,18 +310,22 @@ From `app/`:
 
 ```bash
 pnpm db:migrate
-pnpm check
+pnpm db:status
+pnpm db:types
 pnpm test:integration
+pnpm check
 ```
 
-The first executable Package 004C AR head on MySQL 8.4.11 proved:
+The executable Package 004D head on MySQL 8.4.11 proved:
 
 ```text
-14 production migrations applied / 0 pending
+15 production migrations applied / 0 pending
 344 base tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-17 integration files / 77 real-MySQL tests passed
+18 integration files / 82 real-MySQL tests passed
+finance/credit-notes.integration.test.ts: 5/5 passed
 finance/invoices.integration.test.ts: 5/5 passed
+organisation-bootstrap.integration.test.ts: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
 

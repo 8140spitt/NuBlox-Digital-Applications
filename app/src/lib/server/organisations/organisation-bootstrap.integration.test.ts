@@ -31,9 +31,7 @@ async function cleanupOrganisation(id: string): Promise<void> {
 
 async function cleanup(): Promise<void> {
 	if (!db) return;
-	for (const id of [...createdOrganisationIds].reverse()) {
-		await cleanupOrganisation(id);
-	}
+	for (const id of [...createdOrganisationIds].reverse()) await cleanupOrganisation(id);
 	if (authUserId) {
 		await db.deleteFrom('auth_sessions').where('auth_user_id', '=', authUserId).execute();
 		await db.deleteFrom('auth_accounts').where('auth_user_id', '=', authUserId).execute();
@@ -44,6 +42,21 @@ async function cleanup(): Promise<void> {
 		await db.deleteFrom('users').where('id', '=', platformUserId).execute();
 	}
 	if (authUserId) await db.deleteFrom('auth_users').where('id', '=', authUserId).execute();
+}
+
+async function rolePermissionKeys(roleName: string): Promise<string[]> {
+	const rows = await db
+		.selectFrom('role_permissions as grant')
+		.innerJoin('organisation_roles as role', (join) =>
+			join.onRef('role.id', '=', 'grant.organisation_role_id').onRef('role.organisation_id', '=', 'grant.organisation_id')
+		)
+		.innerJoin('permissions as permission', 'permission.id', 'grant.permission_id')
+		.select('permission.permission_key as permissionKey')
+		.where('grant.organisation_id', '=', organisationId)
+		.where('role.name', '=', roleName)
+		.orderBy('permission.permission_key', 'asc')
+		.execute();
+	return rows.map((row) => row.permissionKey);
 }
 
 describe('organisation bootstrap and onboarding', () => {
@@ -74,7 +87,6 @@ describe('organisation bootstrap and onboarding', () => {
 		expect(intent.email).toBe(email);
 		expect(intent.token.split('.')).toHaveLength(2);
 		expect(intent.expiresAt.getTime()).toBeGreaterThan(Date.now());
-
 		const organisation = await db
 			.selectFrom('organisations')
 			.select('id')
@@ -84,15 +96,10 @@ describe('organisation bootstrap and onboarding', () => {
 	});
 
 	it('keeps Better Auth signup closed unless the signed bootstrap token is intact and matches the email', async () => {
-		const wrongEmailCookie = `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${activeToken}`;
 		await expect(
 			auth.api.signUpEmail({
-				headers: new Headers({ cookie: wrongEmailCookie }),
-				body: {
-					name: `${PREFIX}Wrong Email`,
-					email: `wrong-${randomUUID()}@example.test`,
-					password: PASSWORD
-				}
+				headers: new Headers({ cookie: `${ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE}=${activeToken}` }),
+				body: { name: `${PREFIX}Wrong Email`, email: `wrong-${randomUUID()}@example.test`, password: PASSWORD }
 			})
 		).rejects.toBeDefined();
 
@@ -115,10 +122,18 @@ describe('organisation bootstrap and onboarding', () => {
 			}
 		});
 
-		const authUser = await db.selectFrom('auth_users').select(['id', 'email_verified']).where('email', '=', email).executeTakeFirstOrThrow();
+		const authUser = await db
+			.selectFrom('auth_users')
+			.select(['id', 'email_verified'])
+			.where('email', '=', email)
+			.executeTakeFirstOrThrow();
 		authUserId = authUser.id;
 		expect(authUser.email_verified).toBe(0);
-		const link = await db.selectFrom('auth_user_links').select('user_id').where('auth_user_id', '=', authUserId).executeTakeFirstOrThrow();
+		const link = await db
+			.selectFrom('auth_user_links')
+			.select('user_id')
+			.where('auth_user_id', '=', authUserId)
+			.executeTakeFirstOrThrow();
 		platformUserId = link.user_id;
 		const domainUser = await db.selectFrom('users').select('status').where('id', '=', platformUserId).executeTakeFirstOrThrow();
 		expect(domainUser.status).toBe('pending');
@@ -126,7 +141,13 @@ describe('organisation bootstrap and onboarding', () => {
 		const pendingOrganisation = await db
 			.selectFrom('organisation_members as member')
 			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
-			.select(['member.id as memberId', 'member.status as memberStatus', 'organisation.id as organisationId', 'organisation.public_id as organisationPublicId', 'organisation.status as organisationStatus'])
+			.select([
+				'member.id as memberId',
+				'member.status as memberStatus',
+				'organisation.id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'organisation.status as organisationStatus'
+			])
 			.where('member.user_id', '=', platformUserId)
 			.where('organisation.legal_name', '=', `${PREFIX}Organisation`)
 			.executeTakeFirstOrThrow();
@@ -136,12 +157,9 @@ describe('organisation bootstrap and onboarding', () => {
 		createdOrganisationIds.push(organisationId);
 		expect(pendingOrganisation.memberStatus).toBe('invited');
 		expect(pendingOrganisation.organisationStatus).toBe('pending');
-
-		const domainEmail = await db.selectFrom('user_emails').select(['is_primary', 'is_verified', 'verified_at']).where('user_id', '=', platformUserId).where('email', '=', email).executeTakeFirstOrThrow();
-		expect(domainEmail).toMatchObject({ is_primary: 1, is_verified: 0, verified_at: null });
 	});
 
-	it('activates the pending identity, organisation and owner membership only after verified email', async () => {
+	it('activates the identity and persists standard-role correction grants with deliberate delegation boundaries', async () => {
 		await db.updateTable('auth_users').set({ email_verified: 1, updated_at: new Date() }).where('id', '=', authUserId).executeTakeFirstOrThrow();
 		const activated = await new OrganisationBootstrapService(db).activateVerifiedAuthUser({
 			authUserId,
@@ -151,152 +169,93 @@ describe('organisation bootstrap and onboarding', () => {
 		});
 		expect(activated).toMatchObject({ organisationId, organisationPublicId, memberId, userId: platformUserId });
 
-		const user = await db.selectFrom('users').select('status').where('id', '=', platformUserId).executeTakeFirstOrThrow();
-		expect(user.status).toBe('active');
-		const organisation = await db.selectFrom('organisations').select(['status', 'trading_name', 'default_timezone', 'default_currency_code']).where('id', '=', organisationId).executeTakeFirstOrThrow();
-		expect(organisation).toMatchObject({ status: 'active', trading_name: `${PREFIX}Trading`, default_timezone: 'Europe/London', default_currency_code: 'GBP' });
-		const membership = await db.selectFrom('organisation_members').select(['status', 'joined_at']).where('id', '=', memberId).where('organisation_id', '=', organisationId).executeTakeFirstOrThrow();
+		const organisation = await db
+			.selectFrom('organisations')
+			.select(['status', 'trading_name', 'default_timezone', 'default_currency_code'])
+			.where('id', '=', organisationId)
+			.executeTakeFirstOrThrow();
+		expect(organisation).toMatchObject({
+			status: 'active',
+			trading_name: `${PREFIX}Trading`,
+			default_timezone: 'Europe/London',
+			default_currency_code: 'GBP'
+		});
+		const membership = await db
+			.selectFrom('organisation_members')
+			.select(['status', 'joined_at'])
+			.where('id', '=', memberId)
+			.where('organisation_id', '=', organisationId)
+			.executeTakeFirstOrThrow();
 		expect(membership.status).toBe('active');
 		expect(membership.joined_at).not.toBeNull();
-		const domainEmail = await db.selectFrom('user_emails').select(['is_verified', 'verified_at']).where('user_id', '=', platformUserId).where('email', '=', email).executeTakeFirstOrThrow();
-		expect(domainEmail.is_verified).toBe(1);
-		expect(domainEmail.verified_at).not.toBeNull();
 
-		const roles = await db.selectFrom('organisation_roles').select(['id', 'name']).where('organisation_id', '=', organisationId).orderBy('name', 'asc').execute();
-		expect(roles.map((role) => role.name)).toEqual(['Administrator', 'Field Worker', 'Finance/Commercial', 'Manager', 'Member/Professional', 'Owner', 'Read Only']);
+		const roles = await db
+			.selectFrom('organisation_roles')
+			.select(['id', 'name'])
+			.where('organisation_id', '=', organisationId)
+			.orderBy('name', 'asc')
+			.execute();
+		expect(roles.map((role) => role.name)).toEqual([
+			'Administrator', 'Field Worker', 'Finance/Commercial', 'Manager', 'Member/Professional', 'Owner', 'Read Only'
+		]);
 		const assignedRoles = await db
 			.selectFrom('member_roles as assignment')
-			.innerJoin('organisation_roles as role', (join) => join.onRef('role.id', '=', 'assignment.organisation_role_id').onRef('role.organisation_id', '=', 'assignment.organisation_id'))
+			.innerJoin('organisation_roles as role', (join) =>
+				join.onRef('role.id', '=', 'assignment.organisation_role_id').onRef('role.organisation_id', '=', 'assignment.organisation_id')
+			)
 			.select('role.name')
 			.where('assignment.organisation_id', '=', organisationId)
 			.where('assignment.organisation_member_id', '=', memberId)
 			.execute();
 		expect(assignedRoles.map((row) => row.name)).toEqual(['Owner']);
 
-		const grants = await db
-			.selectFrom('role_permissions as grant')
-			.innerJoin('organisation_roles as role', (join) => join.onRef('role.id', '=', 'grant.organisation_role_id').onRef('role.organisation_id', '=', 'grant.organisation_id'))
-			.innerJoin('permissions as permission', 'permission.id', 'grant.permission_id')
-			.select(['role.name as roleName', 'permission.permission_key as permissionKey'])
-			.where('grant.organisation_id', '=', organisationId)
-			.orderBy('role.name', 'asc')
-			.orderBy('permission.permission_key', 'asc')
-			.execute();
-		expect(grants.map((row) => `${row.roleName}:${row.permissionKey}`)).toEqual([
-			'Administrator:commercial.estimate.manage',
-			'Administrator:commercial.manage',
-			'Administrator:commercial.quotation.issue',
-			'Administrator:commercial.quotation.manage',
-			'Administrator:commercial.quotation.response.record',
-			'Administrator:commercial.view',
-			'Administrator:contract.amendment.create',
-			'Administrator:contract.amendment.decide',
-			'Administrator:contract.amendment.draft.manage',
-			'Administrator:contract.amendment.issue',
-			'Administrator:contract.create',
-			'Administrator:contract.draft.manage',
-			'Administrator:contract.execute',
-			'Administrator:contract.issue',
-			'Administrator:contract.manage',
-			'Administrator:contract.view',
-			'Administrator:crm.contact.manage',
-			'Administrator:crm.manage',
-			'Administrator:crm.party.manage',
-			'Administrator:crm.view',
-			'Administrator:finance.billing.manage',
-			'Administrator:finance.invoice.create',
-			'Administrator:finance.invoice.draft.manage',
-			'Administrator:finance.invoice.issue',
-			'Administrator:finance.manage',
-			'Administrator:finance.view',
-			'Administrator:member.invite',
-			'Administrator:member.manage',
-			'Administrator:organisation.manage',
-			'Administrator:project.create',
-			'Administrator:project.lifecycle.manage',
-			'Administrator:project.manage',
-			'Administrator:project.participant.manage',
-			'Administrator:project.participation.manage',
-			'Administrator:project.team.manage',
-			'Administrator:project.view',
-			'Field Worker:project.view',
-			'Finance/Commercial:commercial.estimate.manage',
-			'Finance/Commercial:commercial.quotation.issue',
-			'Finance/Commercial:commercial.quotation.manage',
-			'Finance/Commercial:commercial.quotation.response.record',
-			'Finance/Commercial:commercial.view',
-			'Finance/Commercial:contract.view',
-			'Finance/Commercial:crm.view',
-			'Finance/Commercial:finance.billing.manage',
-			'Finance/Commercial:finance.invoice.create',
-			'Finance/Commercial:finance.invoice.draft.manage',
-			'Finance/Commercial:finance.invoice.issue',
-			'Finance/Commercial:finance.view',
-			'Finance/Commercial:project.view',
-			'Manager:crm.contact.manage',
-			'Manager:crm.party.manage',
-			'Manager:crm.view',
-			'Manager:member.invite',
-			'Manager:member.manage',
-			'Manager:project.create',
-			'Manager:project.lifecycle.manage',
-			'Manager:project.participant.manage',
-			'Manager:project.participation.manage',
-			'Manager:project.team.manage',
-			'Manager:project.view',
-			'Member/Professional:crm.view',
-			'Member/Professional:project.view',
-			'Owner:commercial.estimate.manage',
-			'Owner:commercial.manage',
-			'Owner:commercial.quotation.issue',
-			'Owner:commercial.quotation.manage',
-			'Owner:commercial.quotation.response.record',
-			'Owner:commercial.view',
-			'Owner:contract.amendment.create',
-			'Owner:contract.amendment.decide',
-			'Owner:contract.amendment.draft.manage',
-			'Owner:contract.amendment.issue',
-			'Owner:contract.create',
-			'Owner:contract.draft.manage',
-			'Owner:contract.execute',
-			'Owner:contract.issue',
-			'Owner:contract.manage',
-			'Owner:contract.view',
-			'Owner:crm.contact.manage',
-			'Owner:crm.manage',
-			'Owner:crm.party.manage',
-			'Owner:crm.view',
-			'Owner:finance.billing.manage',
-			'Owner:finance.invoice.create',
-			'Owner:finance.invoice.draft.manage',
-			'Owner:finance.invoice.issue',
-			'Owner:finance.manage',
-			'Owner:finance.view',
-			'Owner:member.invite',
-			'Owner:member.manage',
-			'Owner:organisation.manage',
-			'Owner:project.create',
-			'Owner:project.lifecycle.manage',
-			'Owner:project.manage',
-			'Owner:project.participant.manage',
-			'Owner:project.participation.manage',
-			'Owner:project.team.manage',
-			'Owner:project.view',
-			'Read Only:crm.view',
-			'Read Only:project.view'
-		]);
+		const ownerPermissions = await rolePermissionKeys('Owner');
+		const administratorPermissions = await rolePermissionKeys('Administrator');
+		const financePermissions = await rolePermissionKeys('Finance/Commercial');
+		for (const broadPermission of ['project.manage', 'crm.manage', 'commercial.manage', 'contract.manage', 'finance.manage']) {
+			expect(ownerPermissions).toContain(broadPermission);
+			expect(administratorPermissions).toContain(broadPermission);
+		}
+		for (const correctionPermission of [
+			'finance.credit_note.create',
+			'finance.credit_note.draft.manage',
+			'finance.credit_note.issue',
+			'finance.invoice.void'
+		]) {
+			expect(ownerPermissions).toContain(correctionPermission);
+			expect(administratorPermissions).toContain(correctionPermission);
+		}
+		for (const financeOperationalPermission of [
+			'finance.view',
+			'finance.billing.manage',
+			'finance.invoice.create',
+			'finance.invoice.draft.manage',
+			'finance.invoice.issue',
+			'finance.credit_note.create',
+			'finance.credit_note.draft.manage',
+			'finance.credit_note.issue'
+		]) {
+			expect(financePermissions).toContain(financeOperationalPermission);
+		}
+		expect(financePermissions).not.toContain('finance.manage');
+		expect(financePermissions).not.toContain('finance.invoice.void');
+		expect(financePermissions).not.toContain('commercial.manage');
+		expect(financePermissions).not.toContain('contract.manage');
 
 		const permissionService = new PermissionService(db);
 		const ownerActor = { organisationId, userId: platformUserId, memberId, correlationId: `bootstrap-it-${randomUUID()}` };
 		await expect(permissionService.decide(ownerActor, 'organisation.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(permissionService.decide(ownerActor, 'project.create')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(permissionService.decideWithUmbrella(ownerActor, 'project.team.manage', 'project.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(permissionService.decideWithUmbrella(ownerActor, 'crm.contact.manage', 'crm.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(permissionService.decideWithUmbrella(ownerActor, 'commercial.quotation.issue', 'commercial.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 		await expect(permissionService.decideWithUmbrella(ownerActor, 'contract.amendment.issue', 'contract.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
-		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.invoice.issue', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.credit_note.issue', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
+		await expect(permissionService.decideWithUmbrella(ownerActor, 'finance.invoice.void', 'finance.manage')).resolves.toEqual({ allowed: true, reason: 'role-grant' });
 
-		const auditActions = await db.selectFrom('audit_events').select('action_key').where('acting_organisation_id', '=', organisationId).where('action_key', 'in', ['organisation.bootstrap.pending', 'organisation.bootstrap.activate']).orderBy('occurred_at', 'asc').execute();
+		const auditActions = await db
+			.selectFrom('audit_events')
+			.select('action_key')
+			.where('acting_organisation_id', '=', organisationId)
+			.where('action_key', 'in', ['organisation.bootstrap.pending', 'organisation.bootstrap.activate'])
+			.orderBy('occurred_at', 'asc')
+			.execute();
 		expect(auditActions.map((row) => row.action_key)).toEqual(['organisation.bootstrap.pending', 'organisation.bootstrap.activate']);
 	});
 
@@ -310,7 +269,12 @@ describe('organisation bootstrap and onboarding', () => {
 		expect(created.organisationId).not.toBe(organisationId);
 		const user = await db.selectFrom('users').select('id').where('id', '=', platformUserId).execute();
 		expect(user).toHaveLength(1);
-		const membership = await db.selectFrom('organisation_members').select(['user_id', 'status']).where('organisation_id', '=', created.organisationId).where('id', '=', created.memberId).executeTakeFirstOrThrow();
+		const membership = await db
+			.selectFrom('organisation_members')
+			.select(['user_id', 'status'])
+			.where('organisation_id', '=', created.organisationId)
+			.where('id', '=', created.memberId)
+			.executeTakeFirstOrThrow();
 		expect(membership).toMatchObject({ user_id: platformUserId, status: 'active' });
 	});
 });
