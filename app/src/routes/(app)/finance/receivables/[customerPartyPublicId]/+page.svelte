@@ -80,7 +80,7 @@
 
 <section class="panel">
 	<div class="section-heading"><div><p class="eyebrow">As at {data.period.to}</p><h2>Aged outstanding invoices</h2></div></div>
-	{#if data.aging.length === 0 || data.aging.every((position) => position.openInvoiceCount === 0)}
+	{#if data.aging.length === 0 || data.aging.every((position: { openInvoiceCount: number }) => position.openInvoiceCount === 0)}
 		<p class="muted">No outstanding invoices remain at the statement end date.</p>
 	{:else}
 		<div class="aging-list">
