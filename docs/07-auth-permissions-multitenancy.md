@@ -135,9 +135,13 @@ finance.invoice.void
 finance.credit_note.create
 finance.credit_note.draft.manage
 finance.credit_note.issue
+finance.payment.create
+finance.payment.allocate
+finance.payment.allocation.reverse
+finance.payment.reverse
 ```
 
-`finance.manage` is the same-domain finance umbrella. Payment receipt/allocation and their reversal operations remain future explicit capabilities rather than inheriting authority implicitly.
+`finance.manage` is the same-domain finance umbrella. Every activated finance mutation also has a granular key so responsibilities may be delegated without broad finance administration authority.
 
 ## 5. Standard organisation roles
 
@@ -167,7 +171,7 @@ contract.manage
 finance.manage
 ```
 
-They also receive the contract-amendment and receivable-correction granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
+They also receive contract-amendment, receivable-correction and payment granular keys explicitly. Existing organisations receive forward-migration rows and future organisations receive equivalent bootstrap rows.
 
 ### Manager
 
@@ -175,7 +179,7 @@ Manager receives delegated member, project and CRM party/contact authority, incl
 
 ### Finance/Commercial
 
-Default grants are:
+Default grants include:
 
 ```text
 project.view
@@ -194,6 +198,10 @@ finance.invoice.issue
 finance.credit_note.create
 finance.credit_note.draft.manage
 finance.credit_note.issue
+finance.payment.create
+finance.payment.allocate
+finance.payment.allocation.reverse
+finance.payment.reverse
 ```
 
 Finance/Commercial deliberately does **not** receive:
@@ -207,7 +215,7 @@ finance.manage
 finance.invoice.void
 ```
 
-This role can perform ordinary commercial AR preparation, invoice issue and source-linked credit-note correction while the stronger issued-invoice void capability remains Owner/Administrator/custom delegation by default.
+This role can perform ordinary operational AR work including cash receipt/application and immutable cash corrections. Exceptional issued-invoice void remains Owner/Administrator/custom delegation by default.
 
 ### Other roles
 
@@ -281,82 +289,13 @@ AND accepted response for that exact version
 
 ## 10. Package 004 contract access model
 
-Normal contract reads require:
+Normal contract reads require active membership, `contract.view` and same-tenant contract ownership. Mutations require the operation-specific granular key or `contract.manage` fallback plus lifecycle policy.
 
-```text
-active NuBlox user
-AND active organisation membership
-AND contract.view
-AND contract.organisation_id = active tenant
-```
+Quotation-derived formation additionally requires project visibility, exact active project-member scope and accepted quotation-conversion provenance.
 
-Mutations require the operation-specific granular key or `contract.manage` fallback plus same-tenant/lifecycle policy.
+Issued/executed contract versions reject ordinary draft mutation. Controlled amendments require an active contract with executed baseline; only agreed amendments affect the derived current contract value.
 
-### Formation
-
-Quotation-derived formation requires:
-
-```text
-contract.create OR contract.manage
-AND project.view
-AND active owning project participation
-AND active project_members scope for the exact member
-AND project status = proposed
-AND accepted quotation-conversion provenance
-```
-
-Formation retains exact project/opportunity/accepted-response provenance and snapshots customer evidence.
-
-### Draft / issue / execution
-
-```text
-contract.draft.manage
-    → maintain draft title/reference/value/key dates
-
-contract.issue
-    → validate draft evidence
-    → lock exact version
-    → record issue/recipient evidence
-    → logical contract -> under_review
-
-contract.execute
-    → require issued + locked version
-    → record execution/signatory evidence
-    → version -> executed
-    → logical contract -> active
-```
-
-Issued/executed versions reject ordinary draft mutation. Contract execution does not activate the project or create finance postings.
-
-## 11. Controlled contract amendment access model
-
-Creation requires:
-
-```text
-contract.amendment.create OR contract.manage
-AND contract.view
-AND same-tenant contract
-AND contract.lifecycle_status = active
-AND executed contract-version baseline
-```
-
-Draft maintenance requires `contract.amendment.draft.manage OR contract.manage`.
-
-Issue requires `contract.amendment.issue OR contract.manage`, a draft amendment, an effective date and substantive narrative/value/date evidence.
-
-Decision/withdrawal requires `contract.amendment.decide OR contract.manage`.
-
-Only agreed amendments affect derived contract value:
-
-```text
-Current Contract Value
-= Executed Baseline Value Components
-+ Sum(Agreed Amendment Value Adjustments)
-```
-
-Rejected/withdrawn amendments remain historical evidence.
-
-## 12. Operational accounts-receivable access model
+## 11. Operational accounts-receivable read boundary
 
 Finance records are tenant-owned and use an independent permission family.
 
@@ -369,7 +308,11 @@ AND finance.view
 AND finance record organisation_id = active tenant
 ```
 
-Mutations require the granular finance permission or `finance.manage` fallback plus lifecycle policy.
+Mutations require the granular finance permission or `finance.manage` fallback plus record/lifecycle policy.
+
+Foreign finance public IDs are tenant-masked as not found after the caller passes the relevant finance permission boundary.
+
+## 12. Billing and invoice authority
 
 ### Billing settings
 
@@ -385,8 +328,6 @@ Customer billing settings are mutable preparation policy. They do not rewrite is
 
 ### Invoice creation
 
-Invoice creation is contract-anchored:
-
 ```text
 finance.invoice.create OR finance.manage
 AND contract.view
@@ -395,106 +336,29 @@ AND executed contract-version baseline
 AND executed client party exists
 ```
 
-Creation records customer, optional billing contact, contract, project and currency references but leaves:
+Creation records customer, optional billing contact, contract, project and currency references but leaves the legal number null while draft.
 
-```text
-document_number = NULL
-lifecycle_status = draft
-```
+### Draft management and issue
 
-### Invoice draft management
+`finance.invoice.draft.manage OR finance.manage` maintains draft header/lines/tax selection.
 
-```text
-finance.invoice.draft.manage OR finance.manage
-    → maintain invoice type/payment term/due date/PO reference
-    → add/remove fixed-precision invoice lines
-    → select provisional tax category
-```
+`finance.invoice.issue OR finance.manage` requires a valid draft with lines and customer/due-date policy. Issue finalises due date, refreshes tax using the rate effective at actual issue time, snapshots customer/contact/address evidence, allocates the legal invoice number and freezes ordinary mutation.
 
-### Invoice issue
+## 13. Receivable-correction authority
 
-```text
-finance.invoice.issue OR finance.manage
-AND status = draft
-AND at least one charge line
-AND customer PO/reference present when policy requires it
-AND valid due-date/payment-term policy
-```
-
-Issue atomically finalises due date, refreshes tax using the tenant rate effective at the actual invoice issue time, snapshots customer/contact/address evidence, allocates a tenant invoice number, freezes the document, records issue/recipient evidence and appends audit history.
-
-Issued invoices reject ordinary draft header/line mutation.
-
-## 13. Receivable-correction access model
-
-Package 004D corrects an issued receivable without reopening invoice mutation.
-
-### Credit-note creation
+### Credit notes
 
 ```text
 finance.credit_note.create OR finance.manage
-AND same-tenant source invoice
-AND source invoice lifecycle = issued
-AND source invoice has legal number
+AND same-tenant issued invoice
 AND positive remaining creditable value
 ```
 
-The source is the issued invoice itself. Credit-note creation therefore does not require a fresh `contract.view` traversal.
+`finance.credit_note.draft.manage OR finance.manage` maintains source-linked credit lines and correction reason.
 
-Draft identity is:
+Every credit line links to an exact invoice line. Positive correction magnitudes are used and original invoice applied-tax evidence is preserved.
 
-```text
-document_kind = credit_note
-lifecycle_status = draft
-document_number = NULL
-```
-
-### Credit-note line provenance
-
-```text
-finance.credit_note.draft.manage OR finance.manage
-    → add/remove source-linked correction lines
-    → maintain correction reason
-```
-
-Every credit line links to one exact original invoice line through `credit_note_item_sources`.
-
-The service copies source classification, description and unit rate; the user supplies the partial/full quantity to credit. Positive quantity/value magnitudes are used; `document_kind = credit_note` supplies correction semantics.
-
-### Original tax and customer evidence
-
-A credit note corrects the historic invoice transaction. It therefore uses the original invoice line's persisted `applied_rate_percent`, not the tax rate current on the credit-note date.
-
-At credit-note issue, tax rows are rebuilt from the original invoice tax evidence again.
-
-The issued credit note also copies the original invoice's immutable party/address snapshots rather than today's CRM values.
-
-### Over-credit prevention
-
-Draft composition checks the currently remaining source quantity. Issue is authoritative:
-
-```text
-lock original invoice
-AND resolve all issued credit quantities per source item
-AND add current draft credit quantity
-AND reject if cumulative quantity > original invoice quantity
-```
-
-This prevents competing credit-note drafts from over-crediting the same source line.
-
-### Credit-note issue
-
-```text
-finance.credit_note.issue OR finance.manage
-AND credit-note status = draft
-AND original invoice still = issued
-AND at least one source-linked correction line
-AND source quantities remain valid under lock
-```
-
-Issue copies/revalidates original evidence, allocates `CN-xxxxxx`, freezes the document and records issue/recipient/audit evidence.
-
-Issued credit notes reject ordinary reason/line mutation.
+`finance.credit_note.issue OR finance.manage` revalidates cumulative credited source quantities under an original-invoice lock, copies historic invoice party/address evidence, allocates the credit-note number and freezes the correction.
 
 ### Exceptional invoice void
 
@@ -506,46 +370,121 @@ AND no non-void credit-note history
 AND no unreversed payment allocation
 ```
 
-Void is a stronger correction reserved for an invalid issued document such as a duplicate. Finance/Commercial does not receive `finance.invoice.void` by default.
+Void is stronger authority because it changes the lifecycle of an already-issued legal document. Finance/Commercial does not receive it by default.
 
-A successful void preserves the legal number, lines, tax, party snapshots and issue evidence while recording:
+## 14. Payment receipt authority
 
 ```text
-lifecycle_status = void
-voided_by_member_id
-voided_at
-void_reason
+finance.payment.create OR finance.manage
+AND active payment method
+AND positive amount
+AND valid currency
 ```
 
-The allocation guard is active before payment-allocation UI exists so later cash application cannot invalidate the correction invariant.
+A payment is an immutable receipt fact. Recording it creates no automatic invoice allocation.
 
-### Cross-domain separation
+The payer CRM party is optional. If the actor selects a payer, `crm.view` is additionally required because the service traverses a separate domain. The selected payer must be active and same-tenant.
+
+A finance-only user may still record an unidentified receipt without CRM traversal.
+
+## 15. Payment allocation authority
 
 ```text
-commercial.manage cannot issue/credit/void finance documents
-contract.manage cannot issue/credit/void finance documents
+finance.payment.allocate OR finance.manage
+AND same-tenant payment
+AND payment not reversed
+AND same-tenant invoice
+AND invoice status = issued
+AND payment currency = invoice currency
+AND allocation > 0
+AND allocation <= usable payment
+AND allocation <= invoice outstanding
+```
+
+Authoritative balances are derived:
+
+```text
+Usable Payment
+= Payment Amount
+− Active Allocations
+
+Invoice Outstanding
+= Issued Invoice Gross
+− Issued Credit Note Gross
+− Active Payment Allocations
+```
+
+Allocation locks the payment and target invoice before recomputing both limits. This prevents concurrent allocation attempts from independently consuming the same payment or invoice balance.
+
+No FX conversion is performed. Currency mismatch is rejected.
+
+A payment payer may differ from the invoice customer; the UI surfaces that mismatch but does not treat it as an access grant or automatic rejection because legitimate third-party payments exist.
+
+## 16. Allocation-reversal authority
+
+```text
+finance.payment.allocation.reverse OR finance.manage
+AND same-tenant payment/allocation
+AND payment not reversed
+AND allocation has no existing reversal
+AND explicit reason
+```
+
+The original allocation is immutable. Reversal creates one `payment_allocation_reversals` record with actor, timestamp and reason. The reversed allocation then ceases to reduce payment availability or invoice outstanding.
+
+## 17. Payment-reversal authority
+
+```text
+finance.payment.reverse OR finance.manage
+AND same-tenant payment
+AND no existing payment reversal
+AND explicit reason
+```
+
+Payment reversal does not edit/delete the receipt.
+
+The transaction must:
+
+1. lock the payment;
+2. lock all payment allocations;
+3. create allocation-reversal rows for every still-active allocation;
+4. create the payment-reversal row;
+5. append audit evidence;
+6. commit atomically.
+
+This enforces the Package 004 invariant that a reversed payment cannot retain active allocations.
+
+A reversed payment has zero usable balance and cannot be allocated again.
+
+## 18. Derived settlement position
+
+The legal invoice lifecycle remains independent from operational settlement.
+
+For issued invoices the application derives:
+
+```text
+open
+part_settled
+settled
+```
+
+from issued credits and active allocations.
+
+This avoids incorrectly describing a fully credited invoice as “paid.” Draft and void document states remain document-lifecycle states, not settlement states.
+
+## 19. Cross-domain separation
+
+```text
+commercial.manage cannot issue/credit/void/allocate finance records
+contract.manage cannot issue/credit/void/allocate finance records
 finance.manage cannot mutate contracts or quotations
 ```
 
-Foreign invoice and credit-note public IDs are tenant-masked as not found after the caller passes the relevant finance authority boundary.
+`crm.view` is needed only for the explicit payer-selection traversal. It does not grant payment mutation authority.
 
-## 14. Project access and collaboration
+Project roles classify context and never grant application permissions.
 
-Normal project access requires:
-
-```text
-active user
-AND active organisation membership
-AND effective project permission
-AND active project_organisations participation
-AND active project_members row for the exact member
-```
-
-Project contextual roles classify context and never grant application permissions.
-
-Accepted-quotation conversion establishes the creator's first project scope atomically. Contract formation occurs after project creation and therefore requires exact project-member scope.
-
-## 15. Tenant-isolation rules
+## 20. Tenant-isolation rules
 
 - Trusted tenant context comes from authenticated active membership.
 - Tenant-owned queries include active `organisation_id`.
@@ -555,15 +494,15 @@ Accepted-quotation conversion establishes the creator's first project scope atom
 - Project reads require exact-member project scope.
 - Project roles never grant application permissions.
 - CRM identity is never promoted to platform identity by inference.
-- Customer snapshots preserve evidence without creating platform identity.
+- Customer/document snapshots preserve evidence without creating platform identity.
 - Caches, search, exports, files and future scheduled jobs must preserve tenant boundaries.
 - Privileged support access must be explicit and auditable.
 
-## 16. Session requirements
+## 21. Session requirements
 
 Production session policy includes secure HttpOnly cookies, Secure transport, appropriate SameSite behavior, revocation/logout, rotation after privilege/authentication changes, idle/absolute expiry and MFA step-up where risk policy requires it.
 
-## 17. Release testing requirements
+## 22. Release testing requirements
 
 The real-MySQL release gate covers, at minimum:
 
@@ -571,41 +510,33 @@ The real-MySQL release gate covers, at minimum:
 - explicit deny precedence and same-domain umbrella behavior;
 - organisation bootstrap/invitation controls and standard-role parity;
 - CRM tenant isolation and granular authority;
-- estimate/quotation issue/response integrity;
-- accepted-quotation conversion and project scope creation;
-- contract formation provenance/idempotency;
-- immutable contract issue/execution evidence;
-- amendment baseline eligibility, signed values and effective-date issue guard;
-- amendment agreement/rejection/withdrawal semantics;
-- finance billing-settings authority;
-- executed-contract invoice eligibility;
-- legally unnumbered invoice drafts;
-- fixed-precision invoice line/tax arithmetic;
-- customer PO/reference issue enforcement;
-- invoice issue-date tax refresh;
-- due-date calculation;
-- customer/contact/address invoice snapshots;
-- invoice-number progression;
-- immutable issued invoices;
-- source-linked credit-note provenance;
-- partial credit quantities and over-credit prevention;
-- original invoice tax-rate preservation on credit notes;
-- original invoice customer/address evidence copied to credit notes;
-- credit-note issue-only numbering and immutability;
-- Finance/Commercial inability to void invoices by default;
-- credit-history and active-allocation invoice-void guards;
-- foreign-tenant invoice/credit-note masking;
+- sales quotation conversion and project scope;
+- contract formation/execution/amendment integrity;
+- billing-settings and invoice issue policy;
+- invoice immutability and historical tax/customer evidence;
+- source-linked credit-note provenance and over-credit prevention;
+- credit-note original-tax preservation and issue immutability;
+- exceptional invoice-void authority/history guards;
+- payment receipt creation and optional payer traversal;
+- credit-aware/active-allocation-aware invoice outstanding;
+- payment usable-balance derivation;
+- payment and invoice over-allocation prevention;
+- payment/invoice currency mismatch rejection;
+- explicit `finance.payment.allocate` deny overriding `finance.manage`;
+- immutable allocation reversal and duplicate-reversal rejection;
+- payment reversal automatically reversing active allocations;
+- reversed-payment reallocation rejection;
+- foreign-tenant payment/invoice masking;
 - generated Kysely drift and Svelte/TypeScript diagnostics.
 
-The executable Package 004D head proved:
+The executable Package 004E head proved on MySQL 8.4.11:
 
 ```text
-15 production migrations applied / 0 pending
+16 production migrations applied / 0 pending
 344 tables / 749 foreign keys / 429 CHECK constraints
 zero generated Kysely drift
-18 integration files / 82 real-MySQL tests passed
-finance credit-note suite: 5/5 passed
-finance invoice suite: 5/5 passed
+19 integration files / 88 real-MySQL tests passed
+finance payment-allocation suite: 6/6 passed
 organisation bootstrap suite: 4/4 passed
 svelte-check: 0 errors / 0 warnings
 ```
