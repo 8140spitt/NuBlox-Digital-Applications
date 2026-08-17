@@ -1,11 +1,13 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 7,
+  "manifest_version": 8,
   "generated_date": "2026-08-17",
   "product": {
     "career_count": 84,
     "professional_domain_count": 16,
-    "governing_security_rule": "Career != Organisation Role != Project Role != Permission"
+    "governing_security_rule": "Career != Organisation Role != Project Role != Permission",
+    "architecture": "modular monolith",
+    "database_design": "3NF by default"
   },
   "stack": {
     "frontend": "Svelte 5",
@@ -16,8 +18,7 @@
     "migrations": "Dbmate 2.34.1 plain SQL",
     "type_generation": "kysely-codegen 0.20.0",
     "authentication": "Better Auth 1.6.25",
-    "schema_authority": "committed MySQL SQL migrations",
-    "database_design": "3NF by default"
+    "schema_authority": "committed MySQL SQL migrations"
   },
   "authentication_and_tenancy": {
     "identity_bridge": "auth_user_links",
@@ -77,10 +78,15 @@
         "finance.payment.create",
         "finance.payment.allocate",
         "finance.payment.allocation.reverse",
-        "finance.payment.reverse"
+        "finance.payment.reverse",
+        "finance.collections.view",
+        "finance.collections.case.manage",
+        "finance.collections.action.record",
+        "finance.collections.promise.manage",
+        "finance.collections.dispute.manage"
       ]
     },
-    "receivables_reporting_read_policy": "Package 004F adds no new permission key; customer statements and aging are read-only derivations protected by active membership + finance.view + same-tenant scope"
+    "reporting_policy": "Package 004F statements and aging use finance.view; Package 004G collection-case evidence additionally requires finance.collections.view or finance.manage fallback"
   },
   "standard_roles": {
     "names": [
@@ -101,7 +107,7 @@
         "contract.manage",
         "finance.manage"
       ],
-      "package_004_policy": "explicit contract formation/execution/amendment plus finance invoice/credit-note/void/payment granular grants and finance.manage"
+      "collections_policy": "all five collections permissions explicitly granted plus finance.manage"
     },
     "Administrator": {
       "broad_umbrellas": [
@@ -111,18 +117,10 @@
         "contract.manage",
         "finance.manage"
       ],
-      "package_004_policy": "explicit contract formation/execution/amendment plus finance invoice/credit-note/void/payment granular grants and finance.manage"
+      "collections_policy": "all five collections permissions explicitly granted plus finance.manage"
     },
     "Finance/Commercial": {
-      "grants": [
-        "project.view",
-        "crm.view",
-        "commercial.view",
-        "commercial.estimate.manage",
-        "commercial.quotation.manage",
-        "commercial.quotation.issue",
-        "commercial.quotation.response.record",
-        "contract.view",
+      "finance_grants": [
         "finance.view",
         "finance.billing.manage",
         "finance.invoice.create",
@@ -134,19 +132,23 @@
         "finance.payment.create",
         "finance.payment.allocate",
         "finance.payment.allocation.reverse",
-        "finance.payment.reverse"
+        "finance.payment.reverse",
+        "finance.collections.view",
+        "finance.collections.case.manage",
+        "finance.collections.action.record",
+        "finance.collections.promise.manage",
+        "finance.collections.dispute.manage"
       ],
       "deliberate_exclusions": [
+        "finance.manage",
+        "finance.invoice.void",
         "commercial.manage",
         "commercial.quotation.convert",
         "project.create",
-        "contract.manage",
-        "finance.manage",
-        "finance.invoice.void"
-      ],
-      "receivables_reporting": "available through existing finance.view; Package 004F requires no new role grant"
+        "contract.manage"
+      ]
     },
-    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are asserted at persisted role-permission-row level; Package 004F adds no permission/bootstrap change"
+    "bootstrap_parity": "existing-tenant forward migration grants and future OrganisationBootstrapService grants are kept equivalent for released permissions, including Package 004G collections grants"
   },
   "implemented_workflow": [
     "CRM Opportunity",
@@ -157,252 +159,121 @@
     "Accepted Response",
     "Idempotent Proposed Project Conversion",
     "Controlled Contract Formation",
-    "Draft Contract Version 1",
-    "Contract Issue and Lock Evidence",
-    "Contract Execution and Signatory Evidence",
-    "Active Contract",
+    "Contract Issue and Execution",
     "Controlled Contract Amendment",
-    "Amendment Issue and Freeze",
-    "Amendment Agreement, Rejection or Withdrawal",
     "Customer Billing Defaults",
     "Contract-Anchored Draft Invoice",
-    "Controlled Invoice Issue and Immutable Evidence",
-    "Source-Linked Draft Credit Note",
-    "Controlled Credit-Note Issue and Immutable Evidence",
+    "Controlled Invoice Issue",
+    "Source-Linked Credit Note",
     "Exceptional Issued-Invoice Void",
     "Immutable Payment Receipt",
     "Controlled Payment Allocation",
-    "Allocation Reversal",
-    "Payment Reversal with Active Allocation Reversal",
+    "Allocation and Payment Reversal",
     "Derived Invoice Outstanding Receivable",
-    "Derived Customer Account Statement",
-    "Currency-Separated Aged Receivables"
+    "Customer Statement and Aged Receivables",
+    "Controlled Collection Case",
+    "Collection Action Evidence",
+    "Promise to Pay",
+    "Receivable Dispute"
   ],
-  "commercial_conversion": {
-    "service": "app/src/lib/server/commercial/quotation-project-conversion-service.ts",
-    "authority": "commercial.quotation.convert OR commercial.manage, AND project.create",
-    "ledger": "quotation_project_conversions",
-    "project_state": "proposed",
-    "non_effects": [
-      "no inferred customer platform organisation",
-      "no inferred customer project participation",
-      "no automatic project site",
-      "no project activation",
-      "no contract formation inside conversion transaction",
-      "no finance posting"
-    ]
-  },
-  "contract_formation": {
-    "package": "004-contracts-finance",
-    "permission_migration": "database/migrations/20260816005000_contract_formation_permissions.sql",
-    "services": [
-      "app/src/lib/server/contracts/contract-common.ts",
-      "app/src/lib/server/contracts/contract-entry-service.ts",
-      "app/src/lib/server/contracts/contract-formation-service.ts",
-      "app/src/lib/server/contracts/contract-lifecycle-service.ts",
-      "app/src/lib/server/contracts/contract-service.ts"
-    ],
-    "routes": [
-      "/contracts",
-      "/contracts/new?project=[projectPublicId]",
-      "/contracts/[contractPublicId]"
-    ],
-    "spec": "docs/33-contract-formation.md",
-    "provenance": "contracts.project_id + opportunity_id + source_quotation_response_id",
-    "initial_value": "fixed-precision sum of non-optional accepted quotation net lines",
-    "execution_policy": "issued+locked version -> execution/signatory evidence -> version executed + logical contract active; project lifecycle remains independent"
-  },
-  "contract_amendments": {
-    "package": "004-contracts-finance",
-    "permission_migration": "database/migrations/20260816015500_contract_amendment_permissions.sql",
-    "permissions": [
-      "contract.amendment.create",
-      "contract.amendment.draft.manage",
-      "contract.amendment.issue",
-      "contract.amendment.decide"
-    ],
-    "umbrella": "contract.manage",
-    "service": "app/src/lib/server/contracts/contract-amendment-service.ts",
-    "integration_test": "app/src/lib/server/contracts/contract-amendments.integration.test.ts",
-    "route": "/contracts/[contractPublicId]/amendments/[amendmentPublicId]",
-    "spec": "docs/34-contract-amendments.md",
-    "tables": [
-      "contract_amendments",
-      "contract_amendment_value_adjustments",
-      "contract_amendment_key_date_changes"
-    ],
-    "eligibility": "same-tenant active logical contract with executed contract-version baseline",
-    "lifecycle": "draft -> issued -> agreed|rejected; draft|issued -> withdrawn",
-    "value_policy": "signed DECIMAL(19,4); positive increases, negative decreases, zero rejected; no JavaScript binary floating point for authoritative arithmetic",
-    "current_value_formula": "executed baseline value components + sum(agreed amendment value adjustments)"
-  },
-  "accounts_receivable_invoices": {
-    "package": "004-contracts-finance",
-    "permission_migration": "database/migrations/20260816113000_accounts_receivable_invoice_permissions.sql",
-    "permissions": [
-      "finance.view",
-      "finance.manage",
-      "finance.billing.manage",
-      "finance.invoice.create",
-      "finance.invoice.draft.manage",
-      "finance.invoice.issue"
-    ],
-    "umbrella": "finance.manage",
-    "services": [
-      "app/src/lib/server/finance/finance-common.ts",
-      "app/src/lib/server/finance/billing-settings-service.ts",
-      "app/src/lib/server/finance/invoice-service.ts"
-    ],
-    "integration_test": "app/src/lib/server/finance/invoices.integration.test.ts",
-    "routes": [
-      "/finance/billing",
-      "/finance/invoices",
-      "/finance/invoices/[invoicePublicId]"
-    ],
-    "spec": "docs/35-accounts-receivable-invoices.md",
-    "creation_policy": "finance.invoice.create OR finance.manage AND contract.view; source contract must be same-tenant active with executed baseline and client party",
-    "draft_identity": "document_kind=invoice; lifecycle_status=draft; document_number=NULL",
-    "numbering_policy": "tenant-local INV-000001 etc.; number allocated only inside issue transaction",
-    "tax_policy": "draft tax is provisional; effective tenant rate is resolved again at actual invoice issue time",
-    "snapshot_policy": "issue snapshots customer, optional billing contact and billing-address evidence",
-    "immutability_policy": "issued invoice rejects ordinary draft header/line mutation"
-  },
-  "receivable_corrections": {
-    "package": "004-contracts-finance",
-    "permission_migration": "database/migrations/20260817090000_receivable_correction_permissions.sql",
-    "permissions": [
-      "finance.credit_note.create",
-      "finance.credit_note.draft.manage",
-      "finance.credit_note.issue",
-      "finance.invoice.void"
-    ],
-    "umbrella": "finance.manage",
-    "service": "app/src/lib/server/finance/credit-note-service.ts",
-    "integration_test": "app/src/lib/server/finance/credit-notes.integration.test.ts",
-    "routes": [
-      "/finance/credit-notes",
-      "/finance/credit-notes/[creditNotePublicId]"
-    ],
-    "spec": "docs/36-receivable-corrections.md",
-    "source_policy": "credit-note source must be a same-tenant issued numbered invoice with positive remaining creditable value",
-    "provenance_policy": "each credit-note item maps to exactly one original invoice item through credit_note_item_sources",
-    "magnitude_policy": "credit quantities and amounts are positive; document_kind=credit_note supplies the receivable sign",
-    "tax_policy": "credit tax uses the original invoice item's persisted applied_rate_percent, not the tax rate current on the credit-note date",
-    "overcredit_policy": "credit-note issue locks the original invoice and rejects cumulative issued+current quantities above the source invoice quantity",
-    "snapshot_policy": "issued credit note copies the original invoice party/address snapshots rather than current CRM facts",
-    "numbering_policy": "tenant-local CN-000001 etc.; number allocated only at issue",
-    "immutability_policy": "issued credit note rejects ordinary draft reason/line mutation",
-    "invoice_void_policy": "finance.invoice.void OR finance.manage; issued invoice + explicit reason; blocked by non-void credit-note history or unreversed payment allocation; preserves legal evidence",
-    "audit_actions": [
-      "finance.credit_note.created",
-      "finance.credit_note.draft.updated",
-      "finance.credit_note.line.added",
-      "finance.credit_note.line.removed",
-      "finance.credit_note.issued",
-      "finance.invoice.voided"
-    ],
-    "deliberate_exclusions": [
-      "no credit-note void/reversal",
-      "no general-ledger posting",
-      "no production outbound credit-note delivery"
-    ]
-  },
-  "payment_receipt_allocation": {
-    "package": "004-contracts-finance",
-    "permission_migration": "database/migrations/20260817103000_payment_allocation_permissions.sql",
-    "permissions": [
-      "finance.payment.create",
-      "finance.payment.allocate",
-      "finance.payment.allocation.reverse",
-      "finance.payment.reverse"
-    ],
-    "umbrella": "finance.manage",
-    "services": [
-      "app/src/lib/server/finance/payment-service.ts",
-      "app/src/lib/server/finance/receivable-position-service.ts"
-    ],
-    "integration_test": "app/src/lib/server/finance/payment-allocation.integration.test.ts",
-    "routes": [
-      "/finance/payments",
-      "/finance/payments/[paymentPublicId]",
-      "/finance/invoices/[invoicePublicId]"
-    ],
-    "spec": "docs/37-payment-receipt-allocation.md",
-    "tables_activated": [
-      "payment_methods",
-      "payments",
-      "payment_allocations",
-      "payment_allocation_reversals",
-      "payment_reversals"
-    ],
-    "receipt_policy": "finance.payment.create OR finance.manage; immutable positive receipt fact with method/date/currency/reference and optional same-tenant CRM payer; recording cash does not imply allocation",
-    "payer_policy": "selecting a payer requires crm.view; payer may differ from invoice customer and is surfaced for review rather than hard-blocked",
-    "payment_balance_formula": "payment amount - active allocations",
-    "invoice_outstanding_formula": "issued invoice gross - issued credit-note gross - active payment allocations",
-    "allocation_policy": "finance.payment.allocate OR finance.manage; same tenant; non-reversed payment; issued invoice; exact currency match; positive amount; no payment or invoice over-allocation",
-    "locking_policy": "allocation locks payment then target invoice and recomputes both authoritative balances before insert",
-    "allocation_reversal_policy": "immutable payment_allocation_reversals row with actor/timestamp/reason; original allocation remains visible",
-    "payment_reversal_policy": "payment reversal transaction first reverses every still-active allocation, then inserts immutable payment_reversals evidence; reversed payment cannot be reallocated",
-    "settlement_policy": "invoice legal lifecycle is separate from derived open/part_settled/settled receivable position",
-    "audit_actions": [
-      "finance.payment.recorded",
-      "finance.payment.allocated",
-      "finance.payment.allocation.reversed",
-      "finance.payment.reversed"
-    ],
-    "non_effects": [
-      "no FX conversion or cross-currency allocation",
-      "no refunds or outbound customer payments",
-      "no automated bank-feed/payment-gateway ingestion",
-      "no automated remittance matching",
-      "no bank reconciliation",
-      "no general-ledger posting"
-    ]
-  },
-  "customer_statements_aged_receivables": {
-    "package": "004-contracts-finance",
-    "permission_migration": null,
-    "read_authority": "active membership + finance.view + same-tenant scope",
-    "service": "app/src/lib/server/finance/receivables-reporting-service.ts",
-    "integration_test": "app/src/lib/server/finance/receivables-reporting.integration.test.ts",
-    "routes": [
-      "/finance/receivables",
-      "/finance/receivables/[customerPartyPublicId]"
-    ],
-    "spec": "docs/38-customer-statements-aged-receivables.md",
-    "persistence_policy": "no statement/balance/aging business tables; all positions are derived from existing immutable finance facts",
-    "movement_model": {
-      "invoice_issue": "debit",
-      "credit_note_issue": "credit",
-      "payment_allocation": "credit",
-      "allocation_reversal": "debit",
-      "invoice_void": "credit"
+  "accounts_receivable": {
+    "invoices": {
+      "spec": "docs/35-accounts-receivable-invoices.md",
+      "service": "app/src/lib/server/finance/invoice-service.ts",
+      "routes": [
+        "/finance/invoices",
+        "/finance/invoices/[invoicePublicId]"
+      ]
     },
-    "unallocated_payment_policy": "raw payment receipts do not alter a customer receivable statement until allocated to an invoice",
-    "historical_policy": "as-of reporting uses event timestamps; a later reversal never retroactively rewrites an earlier statement cutoff",
-    "timezone_policy": "statement calendar-day boundaries use organisations.default_timezone",
-    "statement_policy": "per-currency opening balance + period movements + running balance + closing balance; default month-to-date; bounded date range",
-    "aging_formula": "issued invoice gross - issued credit-note gross as of date - active payment allocations as of date",
-    "aging_buckets": [
-      "current",
-      "1_30",
-      "31_60",
-      "61_90",
-      "91_plus"
-    ],
-    "currency_policy": "currencies remain separate; no FX/reporting-currency translation or unlike-currency aggregation",
-    "tenant_policy": "foreign customer account public IDs are masked as not found",
-    "non_effects": [
-      "no persisted or issued statement document",
-      "no statement PDF",
-      "no production outbound statement delivery",
-      "no automatic statement schedule",
-      "no dunning/reminder workflow",
-      "no collections promises/notes",
-      "no bad-debt/write-off processing",
-      "no FX/reporting-currency translation",
-      "no general-ledger posting"
-    ]
+    "corrections": {
+      "spec": "docs/36-receivable-corrections.md",
+      "service": "app/src/lib/server/finance/credit-note-service.ts",
+      "invoice_void_permission": "finance.invoice.void"
+    },
+    "cash_application": {
+      "spec": "docs/37-payment-receipt-allocation.md",
+      "service": "app/src/lib/server/finance/payment-service.ts",
+      "invoice_outstanding_formula": "issued invoice gross - issued credit-note gross - active payment allocations"
+    },
+    "receivables_reporting": {
+      "spec": "docs/38-customer-statements-aged-receivables.md",
+      "service": "app/src/lib/server/finance/receivables-reporting-service.ts",
+      "routes": [
+        "/finance/receivables",
+        "/finance/receivables/[customerPartyPublicId]"
+      ],
+      "authority": "finance.view",
+      "persistence_policy": "no customer-statement, statement-line, aging-balance or editable balance tables",
+      "movement_model": [
+        "invoice issue debit",
+        "credit-note issue credit",
+        "payment allocation credit",
+        "allocation reversal debit",
+        "invoice void credit"
+      ],
+      "aging_buckets": [
+        "current",
+        "1_30",
+        "31_60",
+        "61_90",
+        "91_plus"
+      ],
+      "currency_policy": "positions remain separated by currency; no implicit FX aggregation"
+    },
+    "controlled_collections": {
+      "package": "004-contracts-finance",
+      "migration": "database/migrations/20260817124500_controlled_collections.sql",
+      "permissions": [
+        "finance.collections.view",
+        "finance.collections.case.manage",
+        "finance.collections.action.record",
+        "finance.collections.promise.manage",
+        "finance.collections.dispute.manage"
+      ],
+      "umbrella": "finance.manage",
+      "read_authority": "finance.view AND (finance.collections.view OR finance.manage fallback)",
+      "service": "app/src/lib/server/finance/collections-service.ts",
+      "integration_test": "app/src/lib/server/finance/collections.integration.test.ts",
+      "routes": [
+        "/finance/collections",
+        "/finance/collections/[customerPartyPublicId]"
+      ],
+      "spec": "docs/39-controlled-collections-dunning.md",
+      "tables": [
+        "receivable_collection_cases",
+        "receivable_collection_actions",
+        "receivable_promises_to_pay",
+        "receivable_disputes"
+      ],
+      "case_policy": "one application-level active episode per customer; open/paused start is idempotent; customer party is locked before active-case recheck; closed cases are immutable",
+      "eligibility": "customer must have at least one currently overdue positive outstanding invoice derived by Package 004F",
+      "action_policy": "reminder/phone_call/note are immutable operational evidence; channel selection does not prove external delivery",
+      "promise_policy": "positive amount, currency and due date; optional same-tenant same-customer invoice; invoice-linked currency must match; open -> kept|broken|cancelled; never creates cash/allocation",
+      "dispute_policy": "reason required; optional positive amount+currency; optional same-tenant same-customer invoice; open -> resolved|withdrawn; never changes invoice/outstanding balance",
+      "closure_policy": "explicit reason required; blocked while any promise or dispute is open",
+      "accounting_boundary": "collections records never become a receivable, settlement or aging ledger",
+      "audit_actions": [
+        "finance.collections.case.opened",
+        "finance.collections.case.open",
+        "finance.collections.case.paused",
+        "finance.collections.case.closed",
+        "finance.collections.action.recorded",
+        "finance.collections.promise.recorded",
+        "finance.collections.promise.kept",
+        "finance.collections.promise.broken",
+        "finance.collections.promise.cancelled",
+        "finance.collections.dispute.opened",
+        "finance.collections.dispute.resolved",
+        "finance.collections.dispute.withdrawn"
+      ]
+    }
+  },
+  "database_types": {
+    "core_config": "app/.kysely-codegenrc.json",
+    "collections_config": "app/.kysely-collections-codegenrc.json",
+    "core_output": "app/src/lib/server/db/generated/database.d.ts",
+    "collections_output": "app/src/lib/server/db/generated/collections.d.ts",
+    "composition": "DatabaseSchema = CoreDB & CollectionsDB; Database and DatabaseExecutor both use DatabaseSchema"
   },
   "schema": {
     "baseline_packages": "001-010 complete",
@@ -412,49 +283,59 @@
       "check_constraints": 427
     },
     "current": {
-      "base_tables": 344,
-      "foreign_keys": 749,
-      "check_constraints": 429
+      "base_tables": 348,
+      "foreign_keys": 767,
+      "check_constraints": 439
     },
-    "production_migration_count": 16,
-    "latest_migration": "database/migrations/20260817103000_payment_allocation_permissions.sql",
-    "package_004f_schema_change": "none"
+    "production_migration_count": 17,
+    "latest_migration": "database/migrations/20260817124500_controlled_collections.sql"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
     "target_mysql": "8.4.11",
-    "production_migrations": 16,
+    "production_migrations": 17,
     "pending_migrations": 0,
-    "schema_counts": "344 / 749 / 429",
-    "generated_kysely_drift": "zero",
-    "integration_files": 20,
-    "real_mysql_tests": 93,
+    "schema_counts": "348 / 767 / 439",
+    "generated_kysely_drift": "zero across core + collections outputs",
+    "expected_integration_files": 21,
+    "expected_real_mysql_tests": 100,
+    "finance_collections_tests": 7,
     "finance_receivables_reporting_tests": 5,
     "finance_payment_allocation_tests": 6,
-    "finance_credit_note_tests": 5,
-    "finance_invoice_tests": 5,
     "organisation_bootstrap_tests": 4,
-    "svelte_check": "0 errors / 0 warnings",
-    "status": "executable Package 004F code head validated; final documentation-synchronised PR head must prove the same gate before merge"
+    "required_svelte_check": "0 errors / 0 warnings",
+    "status": "Package 004G migration/schema/codegen/integration boundaries validated on executable heads; final documentation-synchronised head must prove the complete gate before merge"
   },
+  "deliberate_exclusions": [
+    "automatic reminder generation or scheduling",
+    "production outbound reminder delivery",
+    "configurable dunning-stage escalation",
+    "automatic legal escalation",
+    "external debt-collection agency handoff",
+    "customer credit-limit or credit-hold policy",
+    "late-fee or interest calculation",
+    "bad-debt/write-off processing",
+    "settlement/write-off mutation through collections",
+    "FX/reporting-currency translation",
+    "general-ledger posting",
+    "bank reconciliation"
+  ],
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Controlled Collections and Dunning",
+    "name": "Collections Automation and Credit Control Policy",
     "recommended_sequence": [
-      "derive overdue candidates from Package 004F aging",
-      "define tenant-configurable reminder/dunning policy separately from finance facts",
-      "record collections actions and communication evidence without mutating invoices or balances",
-      "support promises-to-pay / dispute flags only as explicit workflow state",
-      "add escalation/hold policy with separate permissions where authority differs from finance viewing"
+      "configurable collection/dunning stages and timing policy",
+      "controlled reminder generation separated from provider delivery",
+      "delivery evidence and retry/failure semantics",
+      "promise-due monitoring and overdue promise review",
+      "credit-limit/hold policy only after explicit business rules are modelled",
+      "legal/agency escalation as a separately authorised workflow"
     ],
-    "governing_rule": "collections workflow may react to overdue receivables but must never become the source of truth for invoice, credit, cash or account balances"
+    "governing_rule": "automation may trigger from authoritative aged receivables and collection facts, but it must not create or edit a shadow receivable balance"
   },
   "key_docs": [
     "README.md",
     "app/README.md",
-    "docs/03-career-taxonomy.md",
-    "docs/04-career-capability-matrix.md",
-    "docs/05-system-architecture.md",
     "docs/07-auth-permissions-multitenancy.md",
     "docs/31-crm-opportunities-activity-timeline.md",
     "docs/32-estimates-quotations.md",
@@ -464,6 +345,7 @@
     "docs/36-receivable-corrections.md",
     "docs/37-payment-receipt-allocation.md",
     "docs/38-customer-statements-aged-receivables.md",
+    "docs/39-controlled-collections-dunning.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]
