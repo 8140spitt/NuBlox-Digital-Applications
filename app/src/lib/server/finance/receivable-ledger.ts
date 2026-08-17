@@ -105,9 +105,10 @@ export async function activeWriteOffAmountForInvoice(
 export async function activeRecoveryAmountForPayment(
 	db: DatabaseExecutor,
 	organisationId: string,
-	paymentId: string
+	paymentId: string,
+	currentRead = false
 ): Promise<string> {
-	const rows = await db
+	let query = db
 		.selectFrom('receivable_write_off_recoveries as recovery')
 		.leftJoin('receivable_write_off_recovery_reversals as reversal', (join) =>
 			join
@@ -117,8 +118,9 @@ export async function activeRecoveryAmountForPayment(
 		.select('recovery.recovered_amount as amount')
 		.where('recovery.organisation_id', '=', organisationId)
 		.where('recovery.payment_id', '=', paymentId)
-		.where('reversal.recovery_id', 'is', null)
-		.execute();
+		.where('reversal.recovery_id', 'is', null);
+	if (currentRead) query = query.forUpdate();
+	const rows = await query.execute();
 	return sumMoney(rows.map((row) => row.amount));
 }
 
