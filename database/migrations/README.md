@@ -48,9 +48,10 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 20260817124500_controlled_collections.sql
 20260817144000_collections_automation_policy.sql
 20260817150000_credit_control_limits_holds.sql
+20260817180500_default_uk_tax_categories.sql
 ```
 
-Including Baseline v1, the production stream contains **19 migrations**.
+Including Baseline v1, the production stream contains **20 migrations**.
 
 ## Package 004F — migration-free reporting activation
 
@@ -215,9 +216,29 @@ Contract execution            → credit gate
 
 Quotation issue and contract issue remain pre-commitment. Invoice issue, credit, payment and collections workflows remain available to bill, reduce or manage existing exposure.
 
+## Invoice tax catalogue hotfix — `20260817180500_default_uk_tax_categories.sql`
+
+This data-only migration fixes a tenant-provisioning gap: invoice lines require a tax category, but an organisation could previously exist with no selectable tax reference data.
+
+For existing organisations it idempotently adds missing starter categories:
+
+```text
+VAT_STANDARD   taxable       20.0000%
+VAT_REDUCED    taxable        5.0000%
+VAT_ZERO       zero           0.0000%
+VAT_EXEMPT     exempt         no percentage rate
+OUTSIDE_SCOPE  outside_scope  no percentage rate
+```
+
+Matching tenant-owned category codes are preserved. If a matching category already has any effective-dated rate history, the migration does not add or replace a rate. This prevents a data hotfix from creating overlapping tenant tax periods.
+
+The application uses the same idempotent starter helper for fresh/future tenants entering invoice or tax settings before a later organisation-bootstrap enhancement is required.
+
+The migration adds no business tables, foreign keys or checks.
+
 ## Current structure
 
-After all **19** production migrations the Package 004I target application structure is:
+After all **20** production migrations the validated application structure is:
 
 ```text
 356 base tables
@@ -230,10 +251,11 @@ The clean MySQL gate is authoritative for these counts.
 ## Current migration validation target
 
 ```text
-19 production migrations applied / 0 pending
+20 production migrations applied / 0 pending
 356 base tables / 789 foreign keys / 459 CHECK constraints
 zero drift across core + collections generated Kysely outputs
-26 integration files / 117 real-MySQL tests
+27 integration files / 121 real-MySQL tests
+tax-settings suite: 4 tests
 svelte-check: 0 errors / 0 warnings
 ```
 
