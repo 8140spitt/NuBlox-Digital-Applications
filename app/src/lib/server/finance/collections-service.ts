@@ -378,7 +378,7 @@ export class CollectionsService {
 		const hasOverdue = receivable.aging.some((position) => position.invoices.some((invoice) => invoice.daysOverdue > 0));
 		return {
 			receivable,
-			case: this.publicCase(caseRow ?? null),
+			case: this.publicCase(caseRow),
 			actions,
 			promises,
 			disputes,
