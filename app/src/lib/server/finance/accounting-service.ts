@@ -88,12 +88,12 @@ function nextNumber(prefix: string, rows: string[]): string {
 }
 
 async function nextJournalNumber(db: DatabaseExecutor, organisationId: string): Promise<string> {
-	const rows = await db.selectFrom('accounting_journal_entries').select('journal_number as number').where('organisation_id', '=', organisationId).execute();
+	const rows = await db.selectFrom('accounting_journal_entries').select('journal_number as number').where('organisation_id', '=', organisationId).forUpdate().execute();
 	return nextNumber('JRN', rows.map((row) => row.number));
 }
 
 async function nextExportNumber(db: DatabaseExecutor, organisationId: string): Promise<string> {
-	const rows = await db.selectFrom('accounting_export_batches').select('export_number as number').where('organisation_id', '=', organisationId).execute();
+	const rows = await db.selectFrom('accounting_export_batches').select('export_number as number').where('organisation_id', '=', organisationId).forUpdate().execute();
 	return nextNumber('AEX', rows.map((row) => row.number));
 }
 
@@ -108,6 +108,7 @@ async function activeJournalForSource(db: DatabaseExecutor, organisationId: stri
 		.where('journal.source_type', '=', sourceType)
 		.where('journal.source_public_id', '=', sourcePublicId)
 		.where('reversal.journal_entry_id', 'is', null)
+		.forUpdate()
 		.executeTakeFirst();
 }
 
