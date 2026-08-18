@@ -95,6 +95,7 @@ CREATE TABLE accounting_period_state_events (
     PRIMARY KEY (id),
     UNIQUE KEY uq_accounting_period_state_events_public (organisation_id, public_id),
     UNIQUE KEY uq_accounting_period_state_events_version (organisation_id, accounting_period_id, state_version),
+    UNIQUE KEY uq_accounting_period_state_events_id_organisation (id, organisation_id),
     KEY idx_accounting_period_state_events_period (accounting_period_id, organisation_id, acted_at),
 
     CONSTRAINT fk_accounting_period_state_events_period
