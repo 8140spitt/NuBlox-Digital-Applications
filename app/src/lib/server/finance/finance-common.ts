@@ -53,7 +53,10 @@ export type FinanceMutationPermission =
 	| 'finance.accounting.post'
 	| 'finance.accounting.reverse'
 	| 'finance.accounting.export'
-	| 'finance.accounting.export.reverse';
+	| 'finance.accounting.export.reverse'
+	| 'finance.accounting.period.configure'
+	| 'finance.accounting.period.close'
+	| 'finance.accounting.period.reopen';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
