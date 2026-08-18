@@ -15,14 +15,16 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'finance.view','finance.manage','finance.billing.manage','finance.invoice.create','finance.invoice.draft.manage','finance.invoice.issue','finance.invoice.void','finance.credit_note.create','finance.credit_note.draft.manage','finance.credit_note.issue','finance.payment.create','finance.payment.allocate','finance.payment.allocation.reverse','finance.payment.reverse',
 	'finance.collections.view','finance.collections.case.manage','finance.collections.action.record','finance.collections.promise.manage','finance.collections.dispute.manage','finance.collections.policy.manage','finance.collections.reminder.generate','finance.collections.reminder.dispatch',
 	'finance.credit_control.view','finance.credit_control.policy.manage','finance.credit_control.hold.manage','finance.credit_control.override',
-	'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.write_off.authorise','finance.bad_debt.write_off.reverse','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse'
+	'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.write_off.authorise','finance.bad_debt.write_off.reverse','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse',
+	'finance.tax_relief.view','finance.tax_relief.prepare','finance.tax_relief.authorise','finance.tax_relief.reverse','finance.tax_relief.repayment.record','finance.tax_relief.repayment.reverse','finance.tax_relief.post','finance.tax_relief.post.reverse'
 ] as const;
 
 const OWNER_FINANCE_KEYS = [
 	'finance.view','finance.manage','finance.billing.manage','finance.invoice.create','finance.invoice.draft.manage','finance.invoice.issue','finance.invoice.void','finance.credit_note.create','finance.credit_note.draft.manage','finance.credit_note.issue','finance.payment.create','finance.payment.allocate','finance.payment.allocation.reverse','finance.payment.reverse',
 	'finance.collections.view','finance.collections.case.manage','finance.collections.action.record','finance.collections.promise.manage','finance.collections.dispute.manage','finance.collections.policy.manage','finance.collections.reminder.generate','finance.collections.reminder.dispatch',
 	'finance.credit_control.view','finance.credit_control.policy.manage','finance.credit_control.hold.manage','finance.credit_control.override',
-	'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.write_off.authorise','finance.bad_debt.write_off.reverse','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse'
+	'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.write_off.authorise','finance.bad_debt.write_off.reverse','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse',
+	'finance.tax_relief.view','finance.tax_relief.prepare','finance.tax_relief.authorise','finance.tax_relief.reverse','finance.tax_relief.repayment.record','finance.tax_relief.repayment.reverse','finance.tax_relief.post','finance.tax_relief.post.reverse'
 ] as const;
 const OWNER_CORE_KEYS = [
 	'organisation.manage','member.invite','member.manage','project.create','project.view','project.manage','project.lifecycle.manage','project.participant.manage','project.team.manage','project.participation.manage','crm.view','crm.manage','crm.party.manage','crm.contact.manage','commercial.view','commercial.manage','commercial.estimate.manage','commercial.quotation.manage','commercial.quotation.issue','commercial.quotation.response.record','contract.view','contract.manage','contract.create','contract.draft.manage','contract.issue','contract.execute','contract.amendment.create','contract.amendment.draft.manage','contract.amendment.issue','contract.amendment.decide'
@@ -37,7 +39,8 @@ const STANDARD_ROLES = [
 		'finance.view','finance.billing.manage','finance.invoice.create','finance.invoice.draft.manage','finance.invoice.issue','finance.credit_note.create','finance.credit_note.draft.manage','finance.credit_note.issue','finance.payment.create','finance.payment.allocate','finance.payment.allocation.reverse','finance.payment.reverse',
 		'finance.collections.view','finance.collections.case.manage','finance.collections.action.record','finance.collections.promise.manage','finance.collections.dispute.manage','finance.collections.reminder.generate','finance.collections.reminder.dispatch',
 		'finance.credit_control.view','finance.credit_control.policy.manage','finance.credit_control.hold.manage',
-		'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse'
+		'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse',
+		'finance.tax_relief.view','finance.tax_relief.prepare'
 	] },
 	{ name: 'Member/Professional', description: 'General professional member role template.', permissionKeys: ['project.view','crm.view'] },
 	{ name: 'Field Worker', description: 'Site and field workforce role template.', permissionKeys: ['project.view'] },
