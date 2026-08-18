@@ -76,7 +76,7 @@ beforeAll(async () => {
 	organisationId = insertedId(await db.insertInto('organisations').values({ public_id: randomUUID(), legal_name: `${PREFIX}Tenant`, default_currency_code: 'GBP', default_timezone: 'Europe/London', status: 'active' }).executeTakeFirstOrThrow());
 	preparerMemberId = await createMember(preparerUserId);
 	authoriserMemberId = await createMember(authoriserUserId);
-	await assignRole(preparerMemberId, 'Preparer role', ['finance.view', 'finance.accounting.view', 'finance.accounting.configure', 'finance.accounting.year_end.prepare']);
+	await assignRole(preparerMemberId, 'Preparer role', ['finance.view', 'finance.accounting.view', 'finance.accounting.configure', 'finance.accounting.year_end.prepare', 'finance.accounting.year_end.authorise']);
 	await assignRole(authoriserMemberId, 'Authoriser role', ['finance.view', 'finance.accounting.view', 'finance.accounting.year_end.authorise', 'finance.accounting.year_end.reverse']);
 	actorPreparer = { organisationId, userId: preparerUserId, memberId: preparerMemberId, correlationId: randomUUID() };
 	actorAuthoriser = { organisationId, userId: authoriserUserId, memberId: authoriserMemberId, correlationId: randomUUID() };
