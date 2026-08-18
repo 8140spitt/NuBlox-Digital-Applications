@@ -7,7 +7,7 @@ import { QuotationProjectConversionService } from '$lib/server/commercial/quotat
 import { ContractService, ContractValidationError } from '$lib/server/contracts/contract-service';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { RecordNotFoundError } from '$lib/server/kernel/errors';
-import { CreditControlBlockedError, CreditControlService } from './credit-control-service';
+import { CreditControlService } from './credit-control-service';
 
 const PREFIX = 'Credit Control Integration ';
 const NOW = new Date('2026-08-17T15:30:00.000Z');

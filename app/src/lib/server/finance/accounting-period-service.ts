@@ -9,7 +9,6 @@ import {
 	FinanceAccessPolicy,
 	FinanceValidationError,
 	cleanFinanceText,
-	insertedId,
 	validateFinanceDate
 } from './finance-common';
 

@@ -33,7 +33,8 @@ export type AccountingMappingKey =
 	| 'cash_receipts'
 	| 'customer_unapplied_cash'
 	| 'bad_debt_expense'
-	| 'bad_debt_recovery_income';
+	| 'bad_debt_recovery_income'
+	| 'retained_earnings';
 
 export type AccountingCandidateLine = {
 	mappingKey: AccountingMappingKey;

@@ -4,8 +4,6 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import { ReceivablesReportingService } from './receivables-reporting-service';
 import { issuedInvoiceOutstanding } from './receivable-ledger';
 
-const DAY_MS = 24 * 60 * 60 * 1000;
-
 function money(value: bigint): string {
 	return formatScaledDecimal(value, 4);
 }

@@ -558,7 +558,7 @@ describe('Package 004 operational accounts receivable invoices', () => {
 			unitRate: '500.0000',
 			taxCategoryPublicId
 		});
-		let draft = await draftService.getWorkspace(actorOwnerA, firstInvoicePublicId);
+		const draft = await draftService.getWorkspace(actorOwnerA, firstInvoicePublicId);
 		expect(draft.lines[0]).toMatchObject({
 			netAmount: '500.0000',
 			taxAmount: '100.0000',

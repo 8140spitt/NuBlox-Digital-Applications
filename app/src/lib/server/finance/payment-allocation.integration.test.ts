@@ -24,8 +24,6 @@ let customerPartyPublicId = '';
 let salesItemTypeId = 0;
 let taxCategoryId = '';
 let firstInvoicePublicId = '';
-let firstInvoiceDocumentId = '';
-let firstInvoiceItemId = '';
 let secondInvoicePublicId = '';
 let euroInvoicePublicId = '';
 let paymentPublicId = '';
@@ -439,8 +437,6 @@ beforeAll(async () => {
 	const second = await createIssuedInvoice('INV-PAY-002', 'GBP', '1.000000', '150.0000');
 	const euro = await createIssuedInvoice('INV-PAY-EUR', 'EUR', '1.000000', '100.0000');
 	firstInvoicePublicId = first.publicId;
-	firstInvoiceDocumentId = first.documentId;
-	firstInvoiceItemId = first.itemId;
 	secondInvoicePublicId = second.publicId;
 	euroInvoicePublicId = euro.publicId;
 	await createIssuedCredit(first.documentId, first.itemId, '0.500000', '100.0000');

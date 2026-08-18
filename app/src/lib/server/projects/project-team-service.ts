@@ -17,7 +17,6 @@ import {
 	type ProjectInvitationSummary,
 	type ProjectMemberAdmin,
 	type ProjectParticipantAdmin,
-	type ProjectParticipationStatus,
 	type ProjectRoleTypeSummary
 } from './project-team-repository';
 

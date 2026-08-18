@@ -6,11 +6,7 @@ import { formatScaledDecimal, parseScaledDecimal } from '$lib/server/commercial/
 import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
-import {
-	activeRecoveryAmountForWriteOff,
-	badDebtInvoiceById,
-	paymentIsReversed
-} from './bad-debt-common';
+import { activeRecoveryAmountForWriteOff, badDebtInvoiceById } from './bad-debt-common';
 import {
 	FinanceAccessPolicy,
 	FinanceValidationError,
@@ -1445,8 +1441,8 @@ export class TaxReliefService {
 				throw new TenantAccessError('VAT return posting evidence is not permitted.');
 			let claimId: string | null = null;
 			let repaymentId: string | null = null;
-			let amount = 0n;
-			let vatReturnBox = 0;
+			let amount: bigint;
+			let vatReturnBox: number;
 			if (input.sourceKind === 'relief_claim') {
 				const claim = await trx
 					.selectFrom('receivable_vat_bad_debt_claims')

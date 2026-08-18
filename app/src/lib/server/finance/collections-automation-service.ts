@@ -8,12 +8,7 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { getEmailDelivery, type EmailDelivery } from '$lib/server/email/email-delivery';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { CollectionsService } from './collections-service';
-import {
-	cleanFinanceText,
-	FinanceAccessPolicy,
-	FinanceValidationError,
-	insertedId
-} from './finance-common';
+import { cleanFinanceText, FinanceAccessPolicy, FinanceValidationError } from './finance-common';
 
 export type CollectionPolicyStatus = 'draft' | 'active' | 'retired';
 export type CollectionReminderStatus = 'pending' | 'sent';

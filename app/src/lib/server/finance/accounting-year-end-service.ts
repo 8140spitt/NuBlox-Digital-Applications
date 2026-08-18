@@ -43,10 +43,6 @@ function moneyText(value: bigint): string {
 	return formatScaledDecimal(value, 4);
 }
 
-function abs(value: bigint): bigint {
-	return value < 0n ? -value : value;
-}
-
 async function lockOrganisation(db: DatabaseExecutor, organisationId: string): Promise<void> {
 	await db
 		.selectFrom('organisations')

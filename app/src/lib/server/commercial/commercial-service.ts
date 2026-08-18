@@ -229,25 +229,6 @@ function decimal(
 	return text;
 }
 
-function percentage(value: string | null | undefined, label: string): string {
-	const text = value?.trim() || '0';
-	const parsed = decimal(text, 3, 4, label);
-	if (
-		compareMoney(
-			`${parsed.includes('.') ? parsed : `${parsed}.0`}`.padEnd(
-				parsed.includes('.') ? parsed.length : parsed.length + 2,
-				'0'
-			),
-			'100.0000'
-		) > 0
-	) {
-		// compareMoney is a money-scale comparison; the preceding normalisation is only
-		// used to guard the common 0..100 percentage range without binary floats.
-		throw new CommercialValidationError(`${label} must not exceed 100%.`);
-	}
-	return parsed;
-}
-
 function dateValue(value: string | null | undefined, label: string): Date | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;

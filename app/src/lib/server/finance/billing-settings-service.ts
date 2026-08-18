@@ -10,7 +10,6 @@ import {
 	FinanceValidationError,
 	PAYMENT_TERM_BASES,
 	cleanFinanceText,
-	insertedId,
 	validateCurrencyCode
 } from './finance-common';
 

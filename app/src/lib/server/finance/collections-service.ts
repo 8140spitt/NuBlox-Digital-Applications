@@ -2,7 +2,6 @@ import { randomUUID } from 'node:crypto';
 
 import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
-import { PermissionService } from '$lib/server/capabilities/permission-service';
 import type { Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';

@@ -25,7 +25,6 @@ let actorOwnerB: TenantActorContext;
 let yearPublicId = '';
 let periodPublicId = '';
 let invoicePublicId = '';
-let journalPublicId = '';
 let exportPublicId = '';
 
 function insertedId(result: { insertId?: bigint }): string {
@@ -393,7 +392,7 @@ describe.sequential('Package 004M controlled accounting periods and close govern
 			sourcePublicId: invoicePublicId,
 			accountingDate: '2026-08-18'
 		});
-		journalPublicId = posted.publicId;
+		expect(posted.publicId).toBeTruthy();
 		expect(posted.journalNumber).toBe('JRN-000001');
 	});
 

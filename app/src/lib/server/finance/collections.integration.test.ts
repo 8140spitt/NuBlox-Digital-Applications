@@ -23,7 +23,6 @@ let ownerBMemberId = '';
 let customerPartyId = '';
 let customerPartyPublicId = '';
 let secondCustomerPartyId = '';
-let secondCustomerPublicId = '';
 let futureCustomerPublicId = '';
 let foreignCustomerPublicId = '';
 let invoicePublicId = '';
@@ -339,7 +338,6 @@ beforeAll(async () => {
 	customerPartyPublicId = customer.publicId;
 	const secondCustomer = await createCustomer(organisationAId, ownerAMemberId, 'Other Client Ltd');
 	secondCustomerPartyId = secondCustomer.id;
-	secondCustomerPublicId = secondCustomer.publicId;
 	futureCustomerPublicId = (
 		await createCustomer(organisationAId, ownerAMemberId, 'Future Due Client Ltd')
 	).publicId;

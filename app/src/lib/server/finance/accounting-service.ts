@@ -2,7 +2,6 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
-import { formatScaledDecimal, parseScaledDecimal } from '$lib/server/commercial/commercial-decimal';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
@@ -35,7 +34,8 @@ const MAPPING_KEYS = new Set<AccountingMappingKey>([
 	'cash_receipts',
 	'customer_unapplied_cash',
 	'bad_debt_expense',
-	'bad_debt_recovery_income'
+	'bad_debt_recovery_income',
+	'retained_earnings'
 ]);
 const EXPECTED_MAPPING_ACCOUNT_TYPES: Record<AccountingMappingKey, string> = {
 	accounts_receivable: 'asset',
@@ -44,16 +44,9 @@ const EXPECTED_MAPPING_ACCOUNT_TYPES: Record<AccountingMappingKey, string> = {
 	cash_receipts: 'asset',
 	customer_unapplied_cash: 'liability',
 	bad_debt_expense: 'expense',
-	bad_debt_recovery_income: 'revenue'
+	bad_debt_recovery_income: 'revenue',
+	retained_earnings: 'equity'
 };
-
-function money(value: string): bigint {
-	return parseScaledDecimal(value, 4, 'Accounting amount', true);
-}
-
-function moneyText(value: bigint): string {
-	return formatScaledDecimal(value, 4);
-}
 
 function cleanSourceType(value: string): AccountingSourceType {
 	if (!ACCOUNTING_SOURCE_TYPES.includes(value as AccountingSourceType)) {

@@ -293,18 +293,20 @@ export const actions: Actions = {
 				401,
 				actionFailure({ teamError: 'Authentication is required.', teamAction: marker })
 			);
-		let removedSelf = false;
+		let removalResult: { removedSelf: boolean };
 		try {
-			({ removedSelf } = await new ProjectTeamService(getDatabase()).removeMember(actor, {
+			removalResult = await new ProjectTeamService(getDatabase()).removeMember(actor, {
 				projectPublicId: params.projectPublicId,
 				memberPublicId
-			}));
+			});
 		} catch (cause) {
 			return teamFailure(cause, marker);
 		}
 		throw redirect(
 			303,
-			removedSelf ? '/projects' : `/projects/${encodeURIComponent(params.projectPublicId)}`
+			removalResult.removedSelf
+				? '/projects'
+				: `/projects/${encodeURIComponent(params.projectPublicId)}`
 		);
 	},
 
