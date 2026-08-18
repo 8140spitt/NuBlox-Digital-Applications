@@ -17,15 +17,13 @@ pnpm db:status
 
 `20260815140337_baseline_v1.sql` consolidates validated pre-production domain packages 001–010.
 
-Validated baseline structure:
-
 ```text
 337 base tables
 739 foreign keys
 427 CHECK constraints
 ```
 
-The baseline is intentionally irreversible. Non-production environments rebuild rather than rolling the entire baseline backward. Numbered design/provenance files under `database/schema/` remain frozen source material.
+The baseline is intentionally irreversible. Non-production environments rebuild rather than rolling the whole baseline backward.
 
 ## Forward migration stream
 
@@ -51,52 +49,30 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 20260817180500_default_uk_tax_categories.sql
 20260817190000_bad_debt_writeoff_recovery.sql
 20260818080000_vat_bad_debt_relief.sql
+20260818100000_accounting_posting_export.sql
 ```
 
-Including Baseline v1, the production stream contains **22 migrations**.
+Including Baseline v1, Package 004L contains **23 production migrations**.
 
 ## Package 004F — migration-free reporting activation
 
-Customer statements and aged receivables require no new persistent balance tables. Package 004F derives historical customer positions from immutable finance-event evidence.
+Customer statements and aged receivables derive historical customer positions from immutable finance-event evidence and therefore add no duplicate balance tables.
 
 ## Packages 004G–004I
 
-- `20260817124500_controlled_collections.sql` adds collection cases/actions/promises/disputes.
-- `20260817144000_collections_automation_policy.sql` adds versioned dunning policy/reminder/delivery evidence.
-- `20260817150000_credit_control_limits_holds.sql` adds versioned credit limits, customer holds and projected-exposure override evidence.
+- `20260817124500_controlled_collections.sql` — collection cases/actions/promises/disputes.
+- `20260817144000_collections_automation_policy.sql` — versioned dunning policy/reminder/delivery evidence.
+- `20260817150000_credit_control_limits_holds.sql` — credit-limit versions, holds and projected-exposure override evidence.
 
-None of those packages creates a mutable receivable balance.
+## Invoice tax configuration
 
-## Invoice-tax configuration — `20260817180500_default_uk_tax_categories.sql`
+`20260817180500_default_uk_tax_categories.sql` is a data-only migration that provisions the starter UK tax catalogue for existing organisations while preserving matching tenant categories and existing rate history.
 
-This is a **data-only** migration. It seeds a starter UK tax catalogue for existing organisations while preserving matching tenant-owned categories and any existing rate history:
+See `docs/42-invoice-tax-settings.md`.
 
-```text
-VAT_STANDARD   taxable        20%
-VAT_REDUCED    taxable         5%
-VAT_ZERO       zero            0%
-VAT_EXEMPT     exempt          no percentage rate required
-OUTSIDE_SCOPE  outside_scope   no percentage rate required
-```
+## Package 004J — bad debt
 
-The migration adds no business tables and therefore does not change the structural schema counts. Application-level tax management and effective-dated rates are documented in `docs/42-invoice-tax-settings.md`.
-
-Construction domestic reverse-charge invoice treatment is not represented by this catalogue and remains a separate application/accounting boundary.
-
-## Package 004J — `20260817190000_bad_debt_writeoff_recovery.sql`
-
-Package 004J adds six additive evidence tables:
-
-```text
-receivable_bad_debt_cases
-receivable_bad_debt_recommendations
-receivable_write_offs
-receivable_write_off_reversals
-receivable_write_off_recoveries
-receivable_write_off_recovery_reversals
-```
-
-Bad-debt assessment, recommendations, write-offs, write-off reversal and later payment-linked recovery remain operational accounts-receivable facts. The original invoice, credit-note and payment facts are immutable.
+`20260817190000_bad_debt_writeoff_recovery.sql` adds six additive evidence tables for invoice-specific bad-debt assessment, immutable recommendation, write-off/reversal and payment-linked recovery/reversal.
 
 ```text
 Invoice Outstanding
@@ -113,140 +89,140 @@ Available Payment
 − Active Bad-Debt Recoveries
 ```
 
-The write-off records one of:
+Package 004J does not itself post tax relief or general-ledger entries.
+
+See `docs/43-controlled-bad-debt-writeoff-recovery.md`.
+
+## Package 004K — VAT bad-debt relief
+
+`20260818080000_vat_bad_debt_relief.sql` adds eight additive VAT-relief evidence tables covering source-tax-linked claim preparation, separate authorisation/reversal, recovery-linked VAT repayment/reversal and VAT-return Box 4/Box 1 posting evidence/reversal.
+
+Package 004K records tax-domain evidence only. It does not submit VAT returns or create a general ledger.
+
+See `docs/44-controlled-vat-bad-debt-relief.md`.
+
+## Package 004L — controlled accounting posting and export
+
+`20260818100000_accounting_posting_export.sql` adds eight tenant-scoped accounting tables:
 
 ```text
-no_tax_adjustment
-separate_tax_adjustment_required
+accounting_accounts
+accounting_account_mappings
+accounting_journal_entries
+accounting_journal_lines
+accounting_journal_entry_reversals
+accounting_export_batches
+accounting_export_batch_entries
+accounting_export_reversals
 ```
 
-Package 004J itself does not post VAT/tax or general-ledger entries. See `docs/43-controlled-bad-debt-writeoff-recovery.md`.
+### Chart of accounts and mappings
 
-## Package 004K — `20260818080000_vat_bad_debt_relief.sql`
-
-Package 004K adds eight additive VAT bad-debt-relief evidence tables:
+Tenant-owned accounts are mapped to semantic finance roles:
 
 ```text
-receivable_vat_bad_debt_claims
-receivable_vat_bad_debt_claim_lines
-receivable_vat_bad_debt_claim_authorisations
-receivable_vat_bad_debt_claim_reversals
-receivable_vat_bad_debt_repayments
-receivable_vat_bad_debt_repayment_reversals
-receivable_vat_return_postings
-receivable_vat_return_posting_reversals
+accounts_receivable
+sales_revenue
+vat_control
+cash_receipts
+customer_unapplied_cash
+bad_debt_expense
+bad_debt_recovery_income
 ```
 
-It also adds composite context keys on existing 004J write-off/recovery tables so tenant/provenance foreign keys remain explicit.
+Historical journal lines retain exact account foreign keys, so later remapping cannot rewrite posted history.
 
-### Claim preparation and authorisation
+### Journal facts
 
-A candidate must be an active Package 004J write-off marked `separate_tax_adjustment_required`.
+A journal is derived from a supported immutable source event and stores:
 
-Preparation stores exact invoice/write-off provenance, eligibility dates/attestations and source invoice tax-snapshot lines. VAT amounts are calculated from `financial_document_item_taxes`; the operator does not type a VAT rate or relief amount.
-
-Authorisation is a separate additive fact and revalidates the active write-off, current capacity, eligibility window and immutable source-tax evidence.
-
-### Recovery repayment
-
-Later repayment evidence references an exact authorised VAT relief claim and exact active Package 004J recovery from the same write-off.
+- tenant-local `JRN-...` number;
+- source type/public ID/timestamp;
+- source amount/currency;
+- SHA-256 source fingerprint;
+- accounting date;
+- posting member/time;
+- exact balanced debit/credit lines.
 
 ```text
-VAT Repayment
-= Authorised Claim VAT
-  × Recovered Consideration
-  ÷ Authorised Claim Consideration
+sum(debits) = sum(credits) = source amount
 ```
 
-The repayment is additive and separately reversible.
+There is no freehand journal creation path in this package.
 
-### VAT-return posting evidence
+Correction creates an additive reversal journal and reversal-link fact. The source journal is not edited or deleted.
 
-```text
-relief_claim     → VAT Return Box 4
-relief_repayment → VAT Return Box 1
-```
+### Concurrency
 
-Box and amount are service-derived. Posting stores the VAT-period reference/start/end, optional external reference, reason/member/time and has additive reversal evidence.
+Posting uses an organisation accounting mutex plus locking/current reads for active-source detection and sequence allocation. This prevents MySQL `REPEATABLE READ` from using a stale pre-wait snapshot after a competing poster commits.
 
-For recovery repayment the VAT period must contain the actual `recovered_at` receipt date.
+At most one active non-reversed journal may exist for one source type/public ID.
 
-This is evidence that an amount was included in a VAT return; the migration does not implement a VAT-return submission engine or general ledger.
+### Export facts
+
+`generic_csv` export batches retain exact journal membership, period, row count, SHA-256 content checksum, creator/time/reason and optional additive reversal evidence.
+
+The application regenerates exported content from the persisted links and rejects download if the checksum no longer matches.
 
 ### Permission family
 
 ```text
-finance.tax_relief.view
-finance.tax_relief.prepare
-finance.tax_relief.authorise
-finance.tax_relief.reverse
-finance.tax_relief.repayment.record
-finance.tax_relief.repayment.reverse
-finance.tax_relief.post
-finance.tax_relief.post.reverse
+finance.accounting.view
+finance.accounting.configure
+finance.accounting.post
+finance.accounting.reverse
+finance.accounting.export
+finance.accounting.export.reverse
 ```
 
-All granular keys use `finance.manage` only as same-domain fallback.
+All use `finance.manage` only as same-domain fallback.
 
-Default persisted delegation:
+Default persisted grants:
 
 ```text
-Owner / Administrator
-    → all eight keys
-
-Finance/Commercial
-    → view
-    → prepare
-    ✕ authorise/reverse
-    ✕ repayment record/reverse
-    ✕ VAT-return posting/reverse
+Owner / Administrator → all six
+Finance/Commercial    → finance.accounting.view only
 ```
 
-`OrganisationBootstrapService` persists the equivalent split for future organisations and integration coverage verifies those stored grants.
+The migration and `OrganisationBootstrapService` persist the same split for existing and future organisations.
 
-Detailed application/regulatory evidence rules are documented in `docs/44-controlled-vat-bad-debt-relief.md`.
+See `docs/45-controlled-accounting-posting-export.md`.
 
 ## Current structure
 
-After all **22** production migrations the Package 004K target application structure is:
+The clean MySQL 8.4.11 gate for Package 004L is authoritative:
 
 ```text
-370 base tables
-824 foreign keys
-473 CHECK constraints
+23 migrations applied
+0 pending
+378 base tables
+841 foreign keys
+485 CHECK constraints
 ```
 
-The clean MySQL gate is authoritative for these counts.
-
-## Current migration validation target
+## Current validation target
 
 ```text
-22 production migrations applied / 0 pending
-370 base tables / 824 foreign keys / 473 CHECK constraints
-zero drift across core + collections generated Kysely outputs
-32 integration files / 136 real-MySQL tests
-tax-relief: 6 tests
-tax-relief bootstrap parity: 1 test
-tax-settings: 4 tests
-bad-debt core: 6 tests
-bad-debt concurrency: 1 test
+23 production migrations applied / 0 pending
+378 base tables / 841 foreign keys / 485 CHECK constraints
+zero generated Kysely drift across core + collections + accounting outputs
+35 integration files / 143 real-MySQL tests
+accounting core: 5 / 5
+accounting concurrency: 1 / 1
+accounting bootstrap parity: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
-
-The final documentation-synchronised PR head must prove this complete gate before merge.
 
 ## Migration rules
 
 - New migrations use Dbmate timestamp filenames.
 - Released migration contents are immutable.
-- All production changes are forward migrations.
-- A new product surface does not require a migration when existing normalised structures and authority already support it.
+- Production changes use forward migrations.
+- A new product surface does not require a migration when existing normalised structures already support it.
 - A new persistent business fact requires a normalised forward migration rather than an application-only shadow store.
 - MySQL-specific DDL is explicit rather than inferred from an ORM schema.
-- Committed Dbmate SQL remains released migration authority.
-- Destructive production changes use expand/migrate/contract sequencing where required.
+- Committed SQL remains schema authority.
+- Destructive changes use expand/migrate/contract sequencing where required.
 - Every migration change must pass a clean MySQL 8.4 build.
 - Database-derived Kysely types must be regenerated after structural changes.
-- Authentication-provider infrastructure and NuBlox domain tables remain explicitly separated.
-- Data-only permission/catalogue migrations pass the full application migration/integration gate.
-- Existing-tenant migration grants and future-organisation bootstrap grants remain aligned and integration-tested.
+- Existing-tenant migration grants and future-organisation bootstrap grants must remain aligned and integration-tested.

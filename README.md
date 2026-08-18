@@ -2,92 +2,26 @@
 
 NuBlox is a proposed **Built Environment Business Operating System** for businesses and professionals across construction and the built environment.
 
-It combines a shared business-management core, a built-environment project/site/asset core, profession-specific capability packs, controlled cross-organisation collaboration, and structured workflow/automation across the building lifecycle.
-
-## Business and brand foundation
-
-- [NuBlox business entity](docs/branding/00-business-entity.md)
-- [NuBlox brand strategy](docs/branding/01-brand-strategy.md)
-- [NuBlox brand architecture and naming](docs/branding/02-brand-architecture-and-naming.md)
-- [NuBlox verbal identity and messaging](docs/branding/03-verbal-identity-and-messaging.md)
-- [NuBlox visual identity brief](docs/branding/04-visual-identity-brief.md)
-- [NuBlox logo concept directions](docs/branding/05-logo-concept-directions.md)
+It combines a shared business-management core, a built-environment project/site/asset core, profession-specific capability packs, controlled cross-organisation collaboration and structured workflow/automation across the building lifecycle.
 
 ## Fixed technology direction
 
 - **Frontend:** Svelte 5
 - **Application framework:** SvelteKit
-- **Authentication/session boundary:** Better Auth 1.6.25
+- **Authentication:** Better Auth 1.6.25
 - **Primary persistence:** MySQL 8.4 / InnoDB
-- **Runtime query layer:** Kysely + mysql2
+- **Runtime query layer:** Kysely 0.29.5 + mysql2
 - **Production migrations:** Dbmate plain SQL
 - **Database type generation:** kysely-codegen from migrated MySQL
-- **Architecture:** modular monolith first, explicit domain boundaries
+- **Architecture:** modular monolith with explicit domain boundaries
 - **Database design:** normalised relational model, targeting 3NF by default
 - **Schema authority:** committed MySQL SQL migrations; generated TypeScript types are derivative
-- **Market assumption:** UK-first, regionalisation designed in rather than hard-coded
 
-Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
+Architecture decisions are under [`docs/adr`](docs/adr/README.md).
 
-## Database implementation
+## Governing security rule
 
-The validated 001–010 relational baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
-
-The production stream now contains **22 migrations**. The latest migration is:
-
-- `20260818080000_vat_bad_debt_relief.sql` — Package 004K source-linked VAT bad-debt-relief preparation/authorisation/reversal, recovery repayment and VAT-return posting/reversal evidence.
-
-The current Package 004K application structure is:
-
-```text
-370 base tables
-824 foreign keys
-473 CHECK constraints
-```
-
-Implementation-level database material is grouped under `/database`:
-
-- [Database workflow and rules](database/README.md)
-- [Database package documentation](database/docs/README.md)
-- [SQL package index](database/schema/README.md)
-- [Production migration stream](database/migrations/README.md)
-- [Database baseline validation](database/validation/README.md)
-
-## Application persistence boundary
-
-```text
-SvelteKit action / endpoint
-          ↓
-     Domain service
-          ↓
-       Repository / query boundary
-          ↓
-        Kysely
-          ↓
-      mysql2 pool
-          ↓
-      MySQL 8.4
-```
-
-Routes/components do not issue SQL directly. Tenant context, authorisation, record lifecycle and cross-domain policy are mandatory server-domain concerns.
-
-## Authentication and tenant trust boundary
-
-```text
-Better Auth session
-        ↓
-auth_user_links
-        ↓
-Active NuBlox user
-        ↓
-Active organisation membership
-        ↓
-Organisation roles / member overrides
-        ↓
-Project membership scope where required
-        ↓
-Record / lifecycle / cross-domain policy
-```
+> **Career ≠ Organisation Role ≠ Project Role ≠ Permission.**
 
 Within one permission key:
 
@@ -98,9 +32,9 @@ explicit member deny
     > default deny
 ```
 
-A granular permission is resolved before its same-domain umbrella. The umbrella applies only on granular default-deny, so an explicit granular member deny cannot be bypassed.
+A granular key is resolved before its same-domain umbrella. The umbrella applies only on granular default-deny, so an explicit granular deny cannot be bypassed.
 
-## Same-domain permission umbrellas
+Current same-domain umbrellas:
 
 ```text
 project.manage
@@ -110,27 +44,58 @@ contract.manage
 finance.manage
 ```
 
-**Umbrellas never cross domains.** Commercial authority does not grant contract or finance authority; contract authority does not grant finance authority; finance authority does not grant commercial or contract mutations.
+Umbrellas never cross domains.
 
-## Standard organisation roles
+## Current production database
 
-Every organisation receives:
+The validated 001–010 baseline contains:
 
 ```text
-Owner
-Administrator
-Manager
-Finance/Commercial
-Member/Professional
-Field Worker
-Read Only
+337 base tables
+739 foreign keys
+427 CHECK constraints
 ```
 
-The founding member receives **Owner only**. Careers/job titles remain separate from security roles.
+Package 004L advances the production stream to:
 
-Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions.
+```text
+23 production migrations
+378 base tables
+841 foreign keys
+485 CHECK constraints
+```
 
-Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities. For Package 004K it can view and prepare VAT bad-debt-relief evidence, but does not receive `finance.manage`, VAT-relief authorisation/reversal, VAT recovery-repayment authority or VAT-return posting authority by default.
+Latest migration:
+
+```text
+20260818100000_accounting_posting_export.sql
+```
+
+Database material:
+
+- [Database workflow](database/README.md)
+- [Database package documentation](database/docs/README.md)
+- [SQL package index](database/schema/README.md)
+- [Production migration stream](database/migrations/README.md)
+- [Database validation](database/validation/README.md)
+
+## Application persistence boundary
+
+```text
+SvelteKit action / endpoint
+          ↓
+     Domain service
+          ↓
+       Query boundary
+          ↓
+        Kysely
+          ↓
+      mysql2 pool
+          ↓
+      MySQL 8.4
+```
+
+Routes and components do not issue SQL directly. Tenant context, authorisation, lifecycle state and cross-domain policy are server-domain concerns.
 
 ## Implemented business chain
 
@@ -139,62 +104,41 @@ CRM Opportunity
     ↓
 Estimate
     ↓
-Final Estimate Version
-    ↓
 Quotation
     ↓
-Issued + Accepted Quotation
+Accepted Quotation
     ↓
 Credit-Control Commitment Gate
     ↓
-Proposed Project
+Project Conversion
     ↓
-Controlled Contract Formation
+Controlled Contract Formation / Execution
     ↓
-Issued Contract
+Contract Amendments
     ↓
-Credit-Control Commitment Gate
-    ↓
-Executed Contract
-    ↓
-Controlled Contract Amendments
-    ↓
-Customer Billing Defaults + Tenant Tax Configuration
+Billing Settings + Tenant Tax Configuration
     ↓
 Draft / Issued Invoice
     ↓
-Controlled Credit Note / Exceptional Invoice Void
+Credit Note / Exceptional Invoice Void
     ↓
-Payment Receipt + Controlled Allocation/Reversal
+Payment Receipt + Allocation / Reversal
     ↓
-Derived Customer Receivable
+Derived Receivable + Statements / Aging
     ↓
-Customer Statement + Aged Receivables
+Collections + Dunning + Credit Control
     ↓
-Controlled Collections + Credit Control
+Bad-Debt Assessment / Write-off / Recovery
     ↓
-Bad-Debt Assessment Case
+VAT Bad-Debt Relief Evidence
     ↓
-Immutable Recommendation
+Controlled Accounting Journal Posting
     ↓
-Separate Write-off Authorisation / Reversal
-    ↓
-Optional Payment-linked Recovery / Reversal
-    ↓
-Controlled VAT Bad-Debt Relief
-    ├─ Prepared source-tax evidence
-    ├─ Separate relief authorisation / reversal
-    ├─ VAT-return Box 4 posting evidence
-    └─ Recovery-linked proportional VAT repayment
-         └─ VAT-return Box 1 posting evidence
+Checksum-backed Accounting Export Evidence
 ```
 
-Detailed business specifications:
+Detailed finance specifications:
 
-- [`docs/31-crm-opportunities-activity-timeline.md`](docs/31-crm-opportunities-activity-timeline.md)
-- [`docs/32-estimates-quotations.md`](docs/32-estimates-quotations.md)
-- [`docs/33-contract-formation.md`](docs/33-contract-formation.md)
-- [`docs/34-contract-amendments.md`](docs/34-contract-amendments.md)
 - [`docs/35-accounts-receivable-invoices.md`](docs/35-accounts-receivable-invoices.md)
 - [`docs/36-receivable-corrections.md`](docs/36-receivable-corrections.md)
 - [`docs/37-payment-receipt-allocation.md`](docs/37-payment-receipt-allocation.md)
@@ -205,10 +149,9 @@ Detailed business specifications:
 - [`docs/42-invoice-tax-settings.md`](docs/42-invoice-tax-settings.md)
 - [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md)
 - [`docs/44-controlled-vat-bad-debt-relief.md`](docs/44-controlled-vat-bad-debt-relief.md)
+- [`docs/45-controlled-accounting-posting-export.md`](docs/45-controlled-accounting-posting-export.md)
 
-## Operational accounts receivable
-
-The authoritative invoice receivable is derived from controlled finance facts:
+## Authoritative accounts receivable
 
 ```text
 Invoice Outstanding
@@ -218,131 +161,91 @@ Invoice Outstanding
 − Active Write-offs
 ```
 
-No Package 004 workflow stores a mutable duplicate outstanding-balance field.
+No reporting, collections, credit-control, bad-debt, VAT-relief or accounting package stores a mutable duplicate receivable balance.
 
-### Invoice tax configuration
-
-Protected route:
-
-```text
-/finance/tax
-```
-
-Tax categories are organisation-owned reference data with effective-dated rates. Existing organisations receive a starter UK catalogue through the data migration, while the application can idempotently provision the same starter set for a tenant that reaches invoice/tax settings without categories. Matching tenant-owned categories and existing rate history are preserved.
-
-Starter categories are standard 20%, reduced 5%, zero 0%, exempt and outside-scope. Invoice lines require an explicit tax selection. Issue refreshes the selected category against the rate effective at the issue date and persists applied tax evidence. Construction domestic reverse-charge treatment remains a separate, unimplemented workflow rather than being represented as ordinary 0% tax.
-
-See [`docs/42-invoice-tax-settings.md`](docs/42-invoice-tax-settings.md).
-
-### Package 004J — controlled bad debt, write-off and recovery
+## Package 004L — controlled accounting posting and export
 
 Protected routes:
 
 ```text
-/finance/bad-debt
-/finance/bad-debt/[casePublicId]
+/finance/accounting
+/finance/accounting/exports/[exportPublicId]
 ```
 
-Package 004J separates doubtful-debt assessment from loss recognition. A recommendation never changes receivable; an active write-off does; reversal restores receivable. Later recovery consumes payment capacity but does not reopen or reduce receivable again.
+Package 004L introduces tenant chart-of-accounts records and semantic account mappings, then derives balanced journals from immutable operational finance events.
+
+Supported source families include invoice/credit/void, payment/allocation/reversal, bad-debt write-off/recovery/reversal and Package 004K VAT-relief posting evidence.
 
 ```text
-Available Payment
-= Payment Amount
-− Active Invoice Allocations
-− Active Bad-Debt Recoveries
+immutable source event
+        ↓
+deterministic debit / credit candidate
+        ↓
+controlled journal posting
+        ↓
+immutable journal + source fingerprint
+        ↓
+optional additive reversal journal
+        ↓
+generic CSV export + SHA-256 evidence
+        ↓
+optional additive export reversal
 ```
 
-Write-off tax treatment is explicit as `no_tax_adjustment` or `separate_tax_adjustment_required` and Package 004J itself does not post VAT/tax relief or general-ledger facts.
+There is no freehand journal UI. Existing operational finance facts are never rewritten to make accounting history fit.
 
-See [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md).
-
-### Package 004K — controlled VAT bad-debt relief
-
-Protected route:
+### Semantic account mappings
 
 ```text
-/finance/tax-relief
+accounts_receivable
+sales_revenue
+vat_control
+cash_receipts
+customer_unapplied_cash
+bad_debt_expense
+bad_debt_recovery_income
 ```
 
-Package 004K starts only from an active 004J write-off marked `separate_tax_adjustment_required`.
+### Permissions
 
 ```text
-Active Write-off
-    ↓
-Prepared relief evidence
-    ↓
-Separate authorisation
-    ↓
-VAT Return Box 4 posting evidence
-    ↓
-Later recovery, if any
-    ↓
-Proportional VAT repayment
-    ↓
-VAT Return Box 1 posting evidence
+finance.accounting.view
+finance.accounting.configure
+finance.accounting.post
+finance.accounting.reverse
+finance.accounting.export
+finance.accounting.export.reverse
 ```
 
-The operator selects consideration against exact immutable invoice tax-snapshot lines. NuBlox calculates the VAT relief amount; a VAT rate or relief amount is never manually typed into the claim.
+Owner / Administrator receive all six. Finance/Commercial receives `finance.accounting.view` only by default. Explicit granular deny still overrides `finance.manage` fallback.
 
-The issued invoice due date is authoritative for the six-month eligibility calculation when present. Authorisation revalidates the current eligibility window and remaining write-off/source-tax capacity.
+Concurrent posting uses an organisation accounting mutex plus locking/current source and sequence reads. Under MySQL `REPEATABLE READ`, this ensures a transaction that waited for another poster sees the newly committed journal rather than an older snapshot.
 
-Later repayment is tied to the exact bad-debt recovery. Its VAT-return posting period must contain the actual recovery receipt date.
-
-All corrections use additive reversal records. Package 004J also blocks write-off/recovery reversals while dependent 004K VAT evidence remains active.
-
-Package 004K records evidence that amounts were included in a VAT Return; it does not submit a VAT Return to HMRC and does not create a statutory general ledger.
-
-New permissions:
+Kysely generation is now partitioned across:
 
 ```text
-finance.tax_relief.view
-finance.tax_relief.prepare
-finance.tax_relief.authorise
-finance.tax_relief.reverse
-finance.tax_relief.repayment.record
-finance.tax_relief.repayment.reverse
-finance.tax_relief.post
-finance.tax_relief.post.reverse
+app/src/lib/server/db/generated/database.d.ts
+app/src/lib/server/db/generated/collections.d.ts
+app/src/lib/server/db/generated/accounting.d.ts
 ```
 
-Owner / Administrator receive all eight. Finance/Commercial receives view + prepare only by default. All granular keys use `finance.manage` only as same-domain fallback and explicit granular deny still wins.
-
-See [`docs/44-controlled-vat-bad-debt-relief.md`](docs/44-controlled-vat-bad-debt-relief.md).
+See [`docs/45-controlled-accounting-posting-export.md`](docs/45-controlled-accounting-posting-export.md).
 
 ## Deliberate finance exclusions
 
 Still not claimed implemented:
 
-- construction domestic reverse-charge invoice treatment;
-- FX conversion / cross-currency allocation, recovery or credit aggregation;
-- refunds / outbound customer payments;
-- bank-feed/payment-gateway ingestion and bank reconciliation;
-- automated remittance matching;
-- statutory general-ledger posting / double-entry journal engine;
-- direct HMRC VAT Return / Making Tax Digital submission;
-- complete VAT account / VAT control account;
-- automatic proof of external VAT/legal eligibility facts;
-- credit-note void/reversal;
-- persisted/issued statement documents and automatic statement delivery;
-- durable background scheduler/worker-driven collections execution;
-- production outbound email/SMS/postal/portal reminder providers;
-- automatic promise-breaking decisions;
-- automatic credit-scoring/bureau integration or automatic limit changes;
-- parent/group/guarantee/insurance credit limits;
-- automatic hold placement/release;
-- late-fee / interest calculation;
-- legal/agency escalation;
-- expected-credit-loss/provisioning accounting or debt-sale assignment.
-
-## Projects, participants and teams
-
-Normal in-project access requires organisation authority **and** active organisation participation **and** an active `project_members` row for the exact member. Project contextual roles classify context and never grant application permissions.
-
-## Governing product rule
-
-> **NuBlox models what people and organisations do, not only what their job title is.**
-
-Career titles configure defaults and feature relevance. Reusable capabilities, organisation permissions, project membership scope and workflow state determine actual behaviour.
+- freehand/manual journals;
+- accounting-period open/close locks and year-end close;
+- statutory trial balance / P&L / balance-sheet presentation;
+- provider-specific Sage/Xero/QuickBooks integration;
+- bank feeds and bank reconciliation;
+- purchase-ledger/AP accounting beyond currently operational source events;
+- FX revaluation/translation;
+- direct HMRC VAT Return / MTD submission;
+- construction domestic reverse-charge invoice workflow;
+- expected-credit-loss/provisioning accounting;
+- credit-note void/reversal.
 
 ## Validation
 
@@ -356,21 +259,21 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004K release contract:
+Package 004L executable release contract, validated by GitHub Actions run 402:
 
 ```text
-22 production migrations applied / 0 pending
-370 base tables / 824 foreign keys / 473 CHECK constraints
-zero generated Kysely drift across core + collections outputs
-32 integration files / 136 real-MySQL tests
-tax-relief: 6 tests
-tax-relief bootstrap parity: 1 test
-tax settings: 4 tests
-bad-debt core: 6 tests
-bad-debt concurrency: 1 test
+23 migrations applied / 0 pending
+378 tables / 841 foreign keys / 485 CHECK constraints
+zero Kysely drift across core + collections + accounting outputs
+35 integration files / 143 real-MySQL tests
+accounting core: 5 / 5
+accounting concurrency: 1 / 1
+accounting bootstrap parity: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must prove this complete gate before merge.
+The final documentation-synchronised PR head must reproduce this gate before merge.
 
-For the detailed authorization specification see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
+The next finance boundary is **Controlled Accounting Periods and Close Governance**.
+
+For detailed authorization rules see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).

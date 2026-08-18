@@ -48,7 +48,12 @@ export type FinanceMutationPermission =
 	| 'finance.tax_relief.repayment.record'
 	| 'finance.tax_relief.repayment.reverse'
 	| 'finance.tax_relief.post'
-	| 'finance.tax_relief.post.reverse';
+	| 'finance.tax_relief.post.reverse'
+	| 'finance.accounting.configure'
+	| 'finance.accounting.post'
+	| 'finance.accounting.reverse'
+	| 'finance.accounting.export'
+	| 'finance.accounting.export.reverse';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
@@ -171,6 +176,10 @@ export class FinanceAccessPolicy {
 
 	async taxReliefViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
 		return new PermissionService(db).decideWithUmbrella(actor, 'finance.tax_relief.view', 'finance.manage');
+	}
+
+	async accountingViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
+		return new PermissionService(db).decideWithUmbrella(actor, 'finance.accounting.view', 'finance.manage');
 	}
 
 	async mutationDecision(
