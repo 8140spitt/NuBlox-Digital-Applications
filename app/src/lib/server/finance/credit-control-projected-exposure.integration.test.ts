@@ -270,39 +270,35 @@ describe('Package 004I projected exposure enforcement', () => {
 		});
 
 		await expect(
-			db
-				.transaction()
-				.execute((trx) =>
-					service.enforceCommitment(
-						actor,
-						{
-							customerPartyId: customerId,
-							currencyCode: 'GBP',
-							workflowType: 'contract_execution',
-							subjectPublicId: 'projection-without-override',
-							commitmentAmount: '80.0001'
-						},
-						trx
-					)
-				)
-		).rejects.toBeInstanceOf(CreditControlBlockedError);
-
-		await db
-			.transaction()
-			.execute((trx) =>
+			db.transaction().execute((trx) =>
 				service.enforceCommitment(
 					actor,
 					{
 						customerPartyId: customerId,
 						currencyCode: 'GBP',
 						workflowType: 'contract_execution',
-						subjectPublicId: 'projection-with-override',
-						commitmentAmount: '80.0001',
-						overrideReason: 'Owner approves the small projected exposure exception.'
+						subjectPublicId: 'projection-without-override',
+						commitmentAmount: '80.0001'
 					},
 					trx
 				)
-			);
+			)
+		).rejects.toBeInstanceOf(CreditControlBlockedError);
+
+		await db.transaction().execute((trx) =>
+			service.enforceCommitment(
+				actor,
+				{
+					customerPartyId: customerId,
+					currencyCode: 'GBP',
+					workflowType: 'contract_execution',
+					subjectPublicId: 'projection-with-override',
+					commitmentAmount: '80.0001',
+					overrideReason: 'Owner approves the small projected exposure exception.'
+				},
+				trx
+			)
+		);
 
 		const evidence = await db
 			.selectFrom('receivable_credit_control_overrides')
