@@ -7,6 +7,11 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import {
+	assertAccountingExportPeriod,
+	assertAccountingExportReversalAllowed,
+	assertOpenAccountingPeriod
+} from './accounting-period-service';
+import {
 	ACCOUNTING_SOURCE_TYPES,
 	listAccountingSourceReferences,
 	resolveAccountingSourceCandidate,
@@ -309,6 +314,7 @@ export class AccountingService {
 			const active = await activeJournalForSource(trx, actor.organisationId, sourceType, candidate.sourcePublicId);
 			if (active) throw new FinanceValidationError('This source event already has an active accounting journal.');
 			const accountingDate = suppliedAccountingDate ?? dateOnly(candidate.sourceEventAt);
+			await assertOpenAccountingPeriod(trx, actor.organisationId, accountingDate);
 			const mappings = new Map<string, { id: string; code: string; active: number }>();
 			for (const key of [...new Set(candidate.lines.map((entry) => entry.mappingKey))]) {
 				const mapping = await trx
@@ -341,6 +347,7 @@ export class AccountingService {
 			const membership = await policy.assertActiveActor(actor, trx);
 			if (!(await policy.mutationDecision(actor, 'finance.accounting.reverse', trx)).allowed) throw new TenantAccessError('Accounting journal reversal is not permitted.');
 			await trx.selectFrom('organisations').select('id').where('id', '=', actor.organisationId).forUpdate().executeTakeFirstOrThrow();
+			await assertOpenAccountingPeriod(trx, actor.organisationId, accountingDate);
 			const original = await trx.selectFrom('accounting_journal_entries').select(['id', 'public_id as publicId', 'journal_number as journalNumber', 'currency_code as currencyCode', 'source_amount as sourceAmount']).where('organisation_id', '=', actor.organisationId).where('public_id', '=', journalPublicId).forUpdate().executeTakeFirst();
 			if (!original) throw new RecordNotFoundError('Accounting journal not found.');
 			if (await trx.selectFrom('accounting_journal_entry_reversals').select('journal_entry_id').where('organisation_id', '=', actor.organisationId).where('journal_entry_id', '=', original.id).forUpdate().executeTakeFirst()) throw new FinanceValidationError('The accounting journal is already reversed.');
@@ -389,6 +396,7 @@ export class AccountingService {
 			const membership = await policy.assertActiveActor(actor, trx);
 			if (!(await policy.mutationDecision(actor, 'finance.accounting.export', trx)).allowed) throw new TenantAccessError('Accounting export is not permitted.');
 			await trx.selectFrom('organisations').select('id').where('id', '=', actor.organisationId).forUpdate().executeTakeFirstOrThrow();
+			await assertAccountingExportPeriod(trx, actor.organisationId, periodStart, periodEnd);
 			const journalRows = await trx
 				.selectFrom('accounting_journal_entries as journal')
 				.select(['journal.id', 'journal.accounting_date as accountingDate'])
@@ -446,8 +454,10 @@ export class AccountingService {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
 			if (!(await policy.mutationDecision(actor, 'finance.accounting.export.reverse', trx)).allowed) throw new TenantAccessError('Accounting export reversal is not permitted.');
-			const batch = await trx.selectFrom('accounting_export_batches').select(['id', 'export_number as exportNumber', 'content_sha256 as contentSha256']).where('organisation_id', '=', actor.organisationId).where('public_id', '=', exportPublicId).forUpdate().executeTakeFirst();
+			await trx.selectFrom('organisations').select('id').where('id', '=', actor.organisationId).forUpdate().executeTakeFirstOrThrow();
+			const batch = await trx.selectFrom('accounting_export_batches').select(['id', 'export_number as exportNumber', 'content_sha256 as contentSha256', 'period_start as periodStart', 'period_end as periodEnd']).where('organisation_id', '=', actor.organisationId).where('public_id', '=', exportPublicId).forUpdate().executeTakeFirst();
 			if (!batch) throw new RecordNotFoundError('Accounting export not found.');
+			await assertAccountingExportReversalAllowed(trx, actor.organisationId, batch.periodStart, batch.periodEnd);
 			if (await trx.selectFrom('accounting_export_reversals').select('accounting_export_batch_id').where('organisation_id', '=', actor.organisationId).where('accounting_export_batch_id', '=', batch.id).forUpdate().executeTakeFirst()) throw new FinanceValidationError('The accounting export is already reversed.');
 			const reversedAt = this.now();
 			await trx.insertInto('accounting_export_reversals').values({ accounting_export_batch_id: batch.id, organisation_id: actor.organisationId, reversed_by_member_id: membership.id, reversed_at: reversedAt, reason }).executeTakeFirstOrThrow();
