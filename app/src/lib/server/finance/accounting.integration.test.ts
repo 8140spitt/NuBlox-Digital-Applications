@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import { AccountingPeriodService } from './accounting-period-service';
 import { AccountingService } from './accounting-service';
 import { FinanceValidationError } from './finance-common';
 
@@ -21,6 +22,7 @@ let ownerBMemberId = '';
 let actorOwnerA: TenantActorContext;
 let actorFinanceA: TenantActorContext;
 let actorOwnerB: TenantActorContext;
+let periodAPublicId = '';
 let invoicePublicId = '';
 let journalPublicId = '';
 let reversalJournalPublicId = '';
@@ -46,6 +48,9 @@ async function cleanup() {
 	await db.deleteFrom('accounting_journal_entries').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('accounting_account_mappings').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('accounting_accounts').where('organisation_id', 'in', ids).execute();
+	await db.deleteFrom('accounting_period_status_events').where('organisation_id', 'in', ids).execute();
+	await db.deleteFrom('accounting_periods').where('organisation_id', 'in', ids).execute();
+	await db.deleteFrom('accounting_financial_years').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('financial_document_issue_recipients').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('financial_document_issue_events').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('financial_document_item_taxes').where('organisation_id', 'in', ids).execute();
@@ -86,6 +91,13 @@ async function assignRole(organisationId: string, memberId: string, name: string
 	await db.insertInto('member_roles').values({ organisation_id: organisationId, organisation_member_id: memberId, organisation_role_id: roleId }).executeTakeFirstOrThrow();
 }
 
+async function createOpenDayPeriod(actor: TenantActorContext, code: string): Promise<string> {
+	const service = new AccountingPeriodService(db, randomUUID, () => NOW);
+	const year = await service.createFinancialYear(actor, { yearCode: code, name: `${code} year`, startsOn: '2026-08-18', endsOn: '2026-08-18' });
+	const period = await service.createPeriod(actor, { financialYearPublicId: year.publicId, periodNumber: 1, name: '18 Aug 2026', startsOn: '2026-08-18', endsOn: '2026-08-18' });
+	return period.publicId;
+}
+
 beforeAll(async () => {
 	db = getDatabase();
 	await cleanup();
@@ -103,6 +115,8 @@ beforeAll(async () => {
 	actorOwnerA = { organisationId: organisationAId, userId: ownerAUserId, memberId: ownerAMemberId, correlationId: randomUUID() };
 	actorFinanceA = { organisationId: organisationAId, userId: financeAUserId, memberId: financeAMemberId, correlationId: randomUUID() };
 	actorOwnerB = { organisationId: organisationBId, userId: ownerBUserId, memberId: ownerBMemberId, correlationId: randomUUID() };
+	periodAPublicId = await createOpenDayPeriod(actorOwnerA, 'FY26-A');
+	await createOpenDayPeriod(actorOwnerB, 'FY26-B');
 
 	salesItemTypeId = Number((await db.selectFrom('sales_item_types').select('id').where('is_active', '=', 1).orderBy('id').executeTakeFirstOrThrow()).id);
 	const customerId = insertedId(await db.insertInto('parties').values({ organisation_id: organisationAId, public_id: randomUUID(), party_kind: 'organisation', account_owner_member_id: ownerAMemberId, status: 'active' }).executeTakeFirstOrThrow());
@@ -130,15 +144,11 @@ describe.sequential('Package 004L controlled accounting posting and export evide
 		expect(initial.canConfigure).toBe(false);
 		expect(initial.canPost).toBe(false);
 		await expect(financeService.createAccount(actorFinanceA, { accountCode: '1100', name: 'Trade Receivables', accountType: 'asset' })).rejects.toBeInstanceOf(TenantAccessError);
-
 		const ownerService = new AccountingService(db, randomUUID, () => NOW);
 		const accountSpecs = [
-			['1100', 'Trade Receivables', 'asset', 'accounts_receivable'],
-			['4000', 'Sales Revenue', 'revenue', 'sales_revenue'],
-			['2200', 'VAT Control', 'liability', 'vat_control'],
-			['1000', 'Bank / Cash Receipts', 'asset', 'cash_receipts'],
-			['2100', 'Customer Unapplied Cash', 'liability', 'customer_unapplied_cash'],
-			['6100', 'Bad Debt Expense', 'expense', 'bad_debt_expense'],
+			['1100', 'Trade Receivables', 'asset', 'accounts_receivable'], ['4000', 'Sales Revenue', 'revenue', 'sales_revenue'],
+			['2200', 'VAT Control', 'liability', 'vat_control'], ['1000', 'Bank / Cash Receipts', 'asset', 'cash_receipts'],
+			['2100', 'Customer Unapplied Cash', 'liability', 'customer_unapplied_cash'], ['6100', 'Bad Debt Expense', 'expense', 'bad_debt_expense'],
 			['4900', 'Bad Debt Recovery Income', 'revenue', 'bad_debt_recovery_income']
 		] as const;
 		for (const [accountCode, name, accountType, mappingKey] of accountSpecs) {
@@ -163,7 +173,6 @@ describe.sequential('Package 004L controlled accounting posting and export evide
 		await db.insertInto('member_permission_overrides').values({ organisation_id: organisationAId, organisation_member_id: ownerAMemberId, permission_id: permission.id, effect: 'deny', reason: 'Accounting integration explicit deny.' }).executeTakeFirstOrThrow();
 		await expect(service.postSource(actorOwnerA, { sourceType: 'invoice_issue', sourcePublicId: invoicePublicId })).rejects.toBeInstanceOf(TenantAccessError);
 		await db.deleteFrom('member_permission_overrides').where('organisation_id', '=', organisationAId).where('organisation_member_id', '=', ownerAMemberId).where('permission_id', '=', permission.id).execute();
-
 		const posted = await service.postSource(actorOwnerA, { sourceType: 'invoice_issue', sourcePublicId: invoicePublicId });
 		journalPublicId = posted.publicId;
 		expect(posted.journalNumber).toBe('JRN-000001');
@@ -171,10 +180,8 @@ describe.sequential('Package 004L controlled accounting posting and export evide
 		expect(journal.sourceAmount).toBe('120.0000');
 		expect(journal.fingerprint).toMatch(/^[a-f0-9]{64}$/);
 		const lines = await db.selectFrom('accounting_journal_lines').select(['debit_amount as debitAmount', 'credit_amount as creditAmount']).where('organisation_id', '=', organisationAId).where('journal_entry_id', '=', journal.id).execute();
-		const debit = lines.reduce((sum, line) => sum + Number(line.debitAmount), 0);
-		const credit = lines.reduce((sum, line) => sum + Number(line.creditAmount), 0);
-		expect(debit).toBe(120);
-		expect(credit).toBe(120);
+		expect(lines.reduce((sum, line) => sum + Number(line.debitAmount), 0)).toBe(120);
+		expect(lines.reduce((sum, line) => sum + Number(line.creditAmount), 0)).toBe(120);
 		await expect(service.postSource(actorOwnerA, { sourceType: 'invoice_issue', sourcePublicId: invoicePublicId })).rejects.toBeInstanceOf(FinanceValidationError);
 	});
 
@@ -196,6 +203,7 @@ describe.sequential('Package 004L controlled accounting posting and export evide
 
 	it('creates checksum-backed generic CSV export evidence, prevents duplicate active export, then re-enables after additive export reversal', async () => {
 		const service = new AccountingService(db, randomUUID, () => NOW);
+		await new AccountingPeriodService(db, randomUUID, () => NOW).softClose(actorOwnerA, periodAPublicId, 'Ready for accounting export.');
 		const created = await service.createExport(actorOwnerA, { periodStart: '2026-08-18', periodEnd: '2026-08-18', reason: 'Export posted accounting evidence for external review.' });
 		exportPublicId = created.publicId;
 		expect(created.exportNumber).toBe('AEX-000001');
@@ -213,6 +221,6 @@ describe.sequential('Package 004L controlled accounting posting and export evide
 	it('masks accounting journal and export identities across tenants', async () => {
 		const serviceB = new AccountingService(db, randomUUID, () => NOW);
 		await expect(serviceB.getExportContent(actorOwnerB, exportPublicId)).rejects.toBeInstanceOf(RecordNotFoundError);
-		await expect(serviceB.reverseJournal(actorOwnerB, { journalPublicId: repostJournalPublicId, reason: 'Foreign tenant must not see journal.' })).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(serviceB.reverseJournal(actorOwnerB, { journalPublicId: repostJournalPublicId, accountingDate: '2026-08-18', reason: 'Foreign tenant must not see journal.' })).rejects.toBeInstanceOf(RecordNotFoundError);
 	});
 });
