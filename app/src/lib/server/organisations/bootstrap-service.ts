@@ -17,7 +17,7 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'finance.credit_control.view','finance.credit_control.policy.manage','finance.credit_control.hold.manage','finance.credit_control.override',
 	'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.write_off.authorise','finance.bad_debt.write_off.reverse','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse',
 	'finance.tax_relief.view','finance.tax_relief.prepare','finance.tax_relief.authorise','finance.tax_relief.reverse','finance.tax_relief.repayment.record','finance.tax_relief.repayment.reverse','finance.tax_relief.post','finance.tax_relief.post.reverse',
-	'finance.accounting.view','finance.accounting.configure','finance.accounting.post','finance.accounting.reverse','finance.accounting.export','finance.accounting.export.reverse'
+	'finance.accounting.view','finance.accounting.configure','finance.accounting.post','finance.accounting.reverse','finance.accounting.export','finance.accounting.export.reverse','finance.accounting.period.configure','finance.accounting.period.close','finance.accounting.period.reopen'
 ] as const;
 
 const OWNER_FINANCE_KEYS = [
@@ -26,7 +26,7 @@ const OWNER_FINANCE_KEYS = [
 	'finance.credit_control.view','finance.credit_control.policy.manage','finance.credit_control.hold.manage','finance.credit_control.override',
 	'finance.bad_debt.view','finance.bad_debt.case.manage','finance.bad_debt.recommend','finance.bad_debt.write_off.authorise','finance.bad_debt.write_off.reverse','finance.bad_debt.recovery.record','finance.bad_debt.recovery.reverse',
 	'finance.tax_relief.view','finance.tax_relief.prepare','finance.tax_relief.authorise','finance.tax_relief.reverse','finance.tax_relief.repayment.record','finance.tax_relief.repayment.reverse','finance.tax_relief.post','finance.tax_relief.post.reverse',
-	'finance.accounting.view','finance.accounting.configure','finance.accounting.post','finance.accounting.reverse','finance.accounting.export','finance.accounting.export.reverse'
+	'finance.accounting.view','finance.accounting.configure','finance.accounting.post','finance.accounting.reverse','finance.accounting.export','finance.accounting.export.reverse','finance.accounting.period.configure','finance.accounting.period.close','finance.accounting.period.reopen'
 ] as const;
 const OWNER_CORE_KEYS = [
 	'organisation.manage','member.invite','member.manage','project.create','project.view','project.manage','project.lifecycle.manage','project.participant.manage','project.team.manage','project.participation.manage','crm.view','crm.manage','crm.party.manage','crm.contact.manage','commercial.view','commercial.manage','commercial.estimate.manage','commercial.quotation.manage','commercial.quotation.issue','commercial.quotation.response.record','contract.view','contract.manage','contract.create','contract.draft.manage','contract.issue','contract.execute','contract.amendment.create','contract.amendment.draft.manage','contract.amendment.issue','contract.amendment.decide'
