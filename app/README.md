@@ -11,7 +11,7 @@ This application is a Svelte 5 / SvelteKit modular monolith following `docs/05-s
 - Authentication identity never implies tenant or domain authority.
 - Tenant-owned records are resolved through active membership and same-tenant scope.
 - Reporting and accounting derive from immutable domain facts instead of mutable shadow balances.
-- Corrections and governance transitions use additive evidence.
+- Corrections, period governance and year-end close use additive evidence.
 
 ## Permission resolution
 
@@ -34,7 +34,7 @@ contract.manage
 finance.manage
 ```
 
-Accounting permissions released through Package 004M include:
+Accounting permission family through Package 004O:
 
 ```text
 finance.accounting.view
@@ -46,9 +46,12 @@ finance.accounting.export.reverse
 finance.accounting.period.configure
 finance.accounting.period.close
 finance.accounting.period.reopen
+finance.accounting.year_end.prepare
+finance.accounting.year_end.authorise
+finance.accounting.year_end.reverse
 ```
 
-Package 004N introduces no additional permission. Reports use the existing accounting read boundary:
+Package 004N reporting adds no permission. Accounting read authority remains:
 
 ```text
 active membership
@@ -56,7 +59,7 @@ AND finance.view
 AND (finance.accounting.view OR finance.manage)
 ```
 
-Owner / Administrator receive the complete accounting family. Finance/Commercial receives `finance.accounting.view` only by default. Explicit granular member deny remains stronger than `finance.manage`.
+Owner / Administrator receive the complete accounting family for existing and future organisations. Finance/Commercial receives `finance.accounting.view` only by default. Explicit granular member deny remains stronger than `finance.manage`.
 
 ## Key protected finance routes
 
@@ -75,6 +78,7 @@ Owner / Administrator receive the complete accounting family. Finance/Commercial
 /finance/accounting
 /finance/accounting/periods
 /finance/accounting/reports
+/finance/accounting/year-end
 /finance/accounting/exports/[exportPublicId]
 ```
 
@@ -106,13 +110,7 @@ src/lib/server/finance/accounting-source-service.ts
 src/lib/server/finance/accounting-service.ts
 ```
 
-Source-derived journals are balanced:
-
-```text
-sum(debits) = sum(credits) = source amount
-```
-
-There is no ordinary freehand journal-line mutation path. Correction creates an additive reversal journal. Generic CSV export records exact journal membership and a SHA-256 content checksum; export correction is additive.
+Source-derived journals are balanced. There is no ordinary freehand journal-line mutation path. Correction creates an additive reversal journal. Generic CSV export records exact journal membership and a SHA-256 content checksum; export correction is additive.
 
 See `docs/45-controlled-accounting-posting-export.md`.
 
@@ -144,10 +142,11 @@ See `docs/46-controlled-accounting-period-close.md`.
 
 ## Package 004N — trial balance and financial reporting
 
-Core module:
+Core modules:
 
 ```text
 src/lib/server/finance/accounting-reporting-service.ts
+src/lib/server/finance/accounting-year-end-reporting-service.ts
 ```
 
 Protected workspace:
@@ -156,48 +155,35 @@ Protected workspace:
 /finance/accounting/reports
 ```
 
-Package 004N is migration-free. It derives reports from `accounting_journal_entries`, `accounting_journal_lines`, account metadata and the governed period calendar.
-
-Each report is scoped to one tenant, one accounting period and one currency.
-
-### Trial balance
-
-```text
-opening = journal net before period start
-period  = debit / credit movement inside selected period
-closing = journal net through period end
-```
-
-The service derives opening, period and closing debit/credit equality flags independently.
-
-### Profit and loss
-
-Revenue and expense accounts provide:
-
-```text
-period revenue
-period expenses
-period profit / loss
-financial-year-to-date revenue
-financial-year-to-date expenses
-financial-year-to-date profit / loss
-```
-
-### Balance-sheet view
-
-Asset, liability and equity accounts are presented at closing balance. Until a later year-end closing-journal boundary exists, cumulative revenue less expenses is shown explicitly as **unclosed earnings** and included in the balance-sheet equality control.
-
-### Historical reversal semantics
-
-An additive reversal journal changes reporting from its own accounting date onward. The original journal remains included in earlier periods, so historical prior-period reporting is not rewritten.
-
-### Currency policy
-
-GBP, EUR and other currencies remain separate. Package 004N does not translate or aggregate currencies.
-
-An open-period report is labelled provisional because later journals/reversals can still affect it.
+Package 004N derives tenant-, accounting-period- and currency-specific trial balance, P&L and balance-sheet reporting from immutable journal lines. Controlled year-end close/reversal journals remain in trial-balance and balance-sheet evidence, while operating P&L excludes those closing mechanics so historical operating performance remains visible after retained-earnings transfer.
 
 See `docs/47-controlled-trial-balance-financial-reporting.md`.
+
+## Package 004O — year-end close and retained earnings
+
+Core modules:
+
+```text
+src/lib/server/finance/accounting-year-end-service.ts
+src/lib/server/finance/accounting-year-end-configuration-service.ts
+src/lib/server/finance/accounting-year-end-reporting-service.ts
+```
+
+Protected workspace:
+
+```text
+/finance/accounting/year-end
+```
+
+A year-end preparation requires complete financial-year period coverage, every period `hard_closed`, an active retained-earnings mapping to an equity account and revenue/expense journal movement for the selected currency.
+
+The service fingerprints the governed source journals and periods, persists immutable preparation evidence and re-derives the fingerprint under the organisation accounting mutex before authorisation. The authorising member must differ from the preparer.
+
+The generated `year_end_close` journal closes revenue and expense balances into retained earnings on the financial-year end date. Correction creates an additive reversal journal and year-end reversal provenance; prior journals, periods and close evidence are never rewritten.
+
+Concurrent authorisations serialize on the organisation accounting mutex so only one active close can win.
+
+See `docs/48-controlled-year-end-close-retained-earnings.md`.
 
 ## Generated database types
 
@@ -240,13 +226,15 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004N release target:
+Package 004O release target:
 
 ```text
-24 production migrations applied / 0 pending
-381 tables / 848 foreign keys / 492 CHECK constraints
+25 production migrations applied / 0 pending
+384 tables / 857 foreign keys / 495 CHECK constraints
 zero generated drift across database.d.ts + collections.d.ts + accounting.d.ts
-38 integration files / 154 real-MySQL tests
+40 integration files / 158 real-MySQL tests
+accounting year-end: 3 / 3
+accounting year-end bootstrap + explicit deny: 1 / 1
 accounting reporting: 4 / 4
 accounting periods: 6 / 6
 accounting period bootstrap + explicit deny: 1 / 1
@@ -255,4 +243,4 @@ accounting concurrency: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
 
-The next accounting boundary is **Controlled Year-End Close and Retained Earnings**.
+The next accounting boundary is **Controlled Statutory Financial Statements**.
