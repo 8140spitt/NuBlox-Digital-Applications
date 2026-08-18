@@ -1,4 +1,9 @@
-import { parseScaledDecimal, subtractMoney, sumMoney, lineAmount } from '$lib/server/commercial/commercial-decimal';
+import {
+	parseScaledDecimal,
+	subtractMoney,
+	sumMoney,
+	lineAmount
+} from '$lib/server/commercial/commercial-decimal';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type IssuedInvoiceOutstanding = {
@@ -54,7 +59,8 @@ export async function issuedCreditGrossForInvoice(
 	if (currentRead) query = query.forUpdate();
 	const credits = await query.execute();
 	const totals: string[] = [];
-	for (const credit of credits) totals.push(await financialDocumentGross(db, organisationId, credit.id));
+	for (const credit of credits)
+		totals.push(await financialDocumentGross(db, organisationId, credit.id));
 	return sumMoney(totals);
 }
 

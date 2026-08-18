@@ -9,12 +9,18 @@ import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/error
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
-	return { organisationId: locals.tenant.organisationId, userId: locals.actor.userId, memberId: locals.tenant.memberId, correlationId: locals.correlationId };
+	return {
+		organisationId: locals.tenant.organisationId,
+		userId: locals.actor.userId,
+		memberId: locals.tenant.memberId,
+		correlationId: locals.correlationId
+	};
 }
 
 function actionFailure(cause: unknown) {
 	if (cause instanceof FinanceValidationError) return fail(400, { actionError: cause.message });
-	if (cause instanceof RecordNotFoundError) return fail(404, { actionError: 'The requested billing record is unavailable.' });
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, { actionError: 'The requested billing record is unavailable.' });
 	if (cause instanceof TenantAccessError) return fail(403, { actionError: cause.message });
 	throw cause;
 }
@@ -29,7 +35,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		return await new BillingSettingsService(getDatabase()).getWorkspace(actor);
 	} catch (cause) {
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Accounts-receivable access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Accounts-receivable access is not permitted.');
 		throw cause;
 	}
 };

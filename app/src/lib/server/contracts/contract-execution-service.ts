@@ -3,7 +3,10 @@ import { randomUUID } from 'node:crypto';
 import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase, type Database } from '$lib/server/db/database';
-import { CreditControlBlockedError, CreditControlService } from '$lib/server/finance/credit-control-service';
+import {
+	CreditControlBlockedError,
+	CreditControlService
+} from '$lib/server/finance/credit-control-service';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import {
 	ContractAccessPolicy,
@@ -31,24 +34,38 @@ export class ContractExecutionService {
 		this.policy = new ContractAccessPolicy(db);
 	}
 
-	async execute(actor: TenantActorContext, input: CreditControlledExecuteContractInput): Promise<void> {
+	async execute(
+		actor: TenantActorContext,
+		input: CreditControlledExecuteContractInput
+	): Promise<void> {
 		const contractPublicId = cleanText(input.contractPublicId, 64, 'Contract ID', true)!;
 		const versionNumber = positiveInt(input.versionNumber, 'Contract version');
 		const executionMethod = input.executionMethod.trim();
-		if (!EXECUTION_METHODS.has(executionMethod)) throw new ContractValidationError('Execution method is invalid.');
+		if (!EXECUTION_METHODS.has(executionMethod))
+			throw new ContractValidationError('Execution method is invalid.');
 		const executedAt = validateDateTime(input.executedAt, 'Execution date/time');
 		const signatoryName = cleanText(input.signatoryName, 255, 'Signatory name', true)!;
 		const signatoryEmail = cleanText(input.signatoryEmail, 320, 'Signatory email');
-		if (signatoryEmail && !signatoryEmail.includes('@')) throw new ContractValidationError('Signatory email is invalid.');
+		if (signatoryEmail && !signatoryEmail.includes('@'))
+			throw new ContractValidationError('Signatory email is invalid.');
 		const signingRole = cleanText(input.signingRole, 160, 'Signing role');
-		const externalTransactionReference = cleanText(input.externalTransactionReference, 255, 'External transaction reference');
+		const externalTransactionReference = cleanText(
+			input.externalTransactionReference,
+			255,
+			'External transaction reference'
+		);
 		const note = cleanText(input.note, 1000, 'Execution note');
-		const creditOverrideReason = cleanText(input.creditOverrideReason, 1000, 'Credit-control override reason');
+		const creditOverrideReason = cleanText(
+			input.creditOverrideReason,
+			1000,
+			'Credit-control override reason'
+		);
 
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.execute', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract execution recording is not permitted.');
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract execution recording is not permitted.');
 
 			const contract = await trx
 				.selectFrom('contracts')
@@ -76,7 +93,9 @@ export class ContractExecutionService {
 				.executeTakeFirst();
 			if (!version) throw new RecordNotFoundError('Contract version not found.');
 			if (version.versionStatus !== 'issued' || !version.lockedAt) {
-				throw new ContractValidationError('Only an issued and locked contract version can be executed.');
+				throw new ContractValidationError(
+					'Only an issued and locked contract version can be executed.'
+				);
 			}
 			if (contract.lifecycleStatus !== 'under_review') {
 				throw new ContractValidationError('The contract is not awaiting execution.');
@@ -88,18 +107,29 @@ export class ContractExecutionService {
 				.where('organisation_id', '=', actor.organisationId)
 				.where('contract_version_id', '=', version.id)
 				.executeTakeFirst();
-			if (existingExecution) throw new ContractValidationError('Execution evidence already exists for this contract version.');
+			if (existingExecution)
+				throw new ContractValidationError(
+					'Execution evidence already exists for this contract version.'
+				);
 
 			const clientParty = await trx
 				.selectFrom('contract_version_parties as party')
-				.innerJoin('contract_party_role_types as role', 'role.id', 'party.contract_party_role_type_id')
+				.innerJoin(
+					'contract_party_role_types as role',
+					'role.id',
+					'party.contract_party_role_type_id'
+				)
 				.select('party.source_party_id as sourcePartyId')
 				.where('party.organisation_id', '=', actor.organisationId)
 				.where('party.contract_version_id', '=', version.id)
 				.where('role.code', '=', 'client')
 				.orderBy('party.sort_order')
 				.executeTakeFirst();
-			const commitmentAmount = await contractVersionCommitmentAmount(trx, actor.organisationId, version.id);
+			const commitmentAmount = await contractVersionCommitmentAmount(
+				trx,
+				actor.organisationId,
+				version.id
+			);
 
 			if (clientParty?.sourcePartyId) {
 				try {
@@ -116,7 +146,8 @@ export class ContractExecutionService {
 						trx
 					);
 				} catch (cause) {
-					if (cause instanceof CreditControlBlockedError) throw new ContractValidationError(cause.message);
+					if (cause instanceof CreditControlBlockedError)
+						throw new ContractValidationError(cause.message);
 					throw cause;
 				}
 			}
@@ -133,7 +164,8 @@ export class ContractExecutionService {
 					note
 				})
 				.executeTakeFirstOrThrow();
-			if (executionInsert.insertId === undefined) throw new Error('Contract execution event insert did not return an ID.');
+			if (executionInsert.insertId === undefined)
+				throw new Error('Contract execution event insert did not return an ID.');
 
 			await trx
 				.insertInto('contract_execution_signatories')

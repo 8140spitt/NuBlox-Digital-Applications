@@ -7,7 +7,12 @@ import { getDatabase } from '$lib/server/db/database';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
-	return { organisationId: locals.tenant.organisationId, userId: locals.actor.userId, memberId: locals.tenant.memberId, correlationId: locals.correlationId };
+	return {
+		organisationId: locals.tenant.organisationId,
+		userId: locals.actor.userId,
+		memberId: locals.tenant.memberId,
+		correlationId: locals.correlationId
+	};
 }
 
 export const load: PageServerLoad = async ({ locals }) => {

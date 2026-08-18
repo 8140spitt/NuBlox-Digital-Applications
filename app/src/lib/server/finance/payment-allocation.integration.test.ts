@@ -53,12 +53,27 @@ async function cleanup(): Promise<void> {
 	await db.deleteFrom('payment_allocations').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('payment_reversals').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('payments').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_issue_recipients').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_issue_events').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_party_snapshot_addresses').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_party_snapshots').where('organisation_id', 'in', ids).execute();
+	await db
+		.deleteFrom('financial_document_issue_recipients')
+		.where('organisation_id', 'in', ids)
+		.execute();
+	await db
+		.deleteFrom('financial_document_issue_events')
+		.where('organisation_id', 'in', ids)
+		.execute();
+	await db
+		.deleteFrom('financial_document_party_snapshot_addresses')
+		.where('organisation_id', 'in', ids)
+		.execute();
+	await db
+		.deleteFrom('financial_document_party_snapshots')
+		.where('organisation_id', 'in', ids)
+		.execute();
 	await db.deleteFrom('credit_note_item_sources').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_item_taxes').where('organisation_id', 'in', ids).execute();
+	await db
+		.deleteFrom('financial_document_item_taxes')
+		.where('organisation_id', 'in', ids)
+		.execute();
 	await db.deleteFrom('financial_document_items').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('credit_notes').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('invoices').where('organisation_id', 'in', ids).execute();
@@ -90,7 +105,12 @@ async function createOrganisation(name: string): Promise<string> {
 	return insertedId(
 		await db
 			.insertInto('organisations')
-			.values({ public_id: randomUUID(), legal_name: `${PREFIX}${name}`, default_currency_code: 'GBP', status: 'active' })
+			.values({
+				public_id: randomUUID(),
+				legal_name: `${PREFIX}${name}`,
+				default_currency_code: 'GBP',
+				status: 'active'
+			})
 			.executeTakeFirstOrThrow()
 	);
 }
@@ -119,7 +139,12 @@ async function assignRole(
 	const roleId = insertedId(
 		await db
 			.insertInto('organisation_roles')
-			.values({ organisation_id: organisationId, public_id: randomUUID(), name: `${PREFIX}${name}`, is_active: 1 })
+			.values({
+				organisation_id: organisationId,
+				public_id: randomUUID(),
+				name: `${PREFIX}${name}`,
+				is_active: 1
+			})
 			.executeTakeFirstOrThrow()
 	);
 	const permissions = await db
@@ -141,7 +166,11 @@ async function assignRole(
 		.execute();
 	await db
 		.insertInto('member_roles')
-		.values({ organisation_id: organisationId, organisation_member_id: memberId, organisation_role_id: roleId })
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: memberId,
+			organisation_role_id: roleId
+		})
 		.executeTakeFirstOrThrow();
 }
 
@@ -361,7 +390,11 @@ beforeAll(async () => {
 	ownerAMemberId = await createMember(organisationAId, ownerAUserId);
 	financeAMemberId = await createMember(organisationAId, financeAUserId);
 	ownerBMemberId = await createMember(organisationBId, ownerBUserId);
-	await assignRole(organisationAId, ownerAMemberId, 'Owner A', ['finance.view', 'finance.manage', 'crm.view']);
+	await assignRole(organisationAId, ownerAMemberId, 'Owner A', [
+		'finance.view',
+		'finance.manage',
+		'crm.view'
+	]);
 	await assignRole(organisationAId, financeAMemberId, 'Finance A', [
 		'finance.view',
 		'crm.view',
@@ -370,12 +403,36 @@ beforeAll(async () => {
 		'finance.payment.allocation.reverse',
 		'finance.payment.reverse'
 	]);
-	await assignRole(organisationBId, ownerBMemberId, 'Owner B', ['finance.view', 'finance.manage', 'crm.view']);
-	actorOwnerA = { organisationId: organisationAId, userId: ownerAUserId, memberId: ownerAMemberId, correlationId: randomUUID() };
-	actorFinanceA = { organisationId: organisationAId, userId: financeAUserId, memberId: financeAMemberId, correlationId: randomUUID() };
-	actorOwnerB = { organisationId: organisationBId, userId: ownerBUserId, memberId: ownerBMemberId, correlationId: randomUUID() };
+	await assignRole(organisationBId, ownerBMemberId, 'Owner B', [
+		'finance.view',
+		'finance.manage',
+		'crm.view'
+	]);
+	actorOwnerA = {
+		organisationId: organisationAId,
+		userId: ownerAUserId,
+		memberId: ownerAMemberId,
+		correlationId: randomUUID()
+	};
+	actorFinanceA = {
+		organisationId: organisationAId,
+		userId: financeAUserId,
+		memberId: financeAMemberId,
+		correlationId: randomUUID()
+	};
+	actorOwnerB = {
+		organisationId: organisationBId,
+		userId: ownerBUserId,
+		memberId: ownerBMemberId,
+		correlationId: randomUUID()
+	};
 	await createCustomer();
-	const salesType = await db.selectFrom('sales_item_types').select('id').where('is_active', '=', 1).orderBy('id', 'asc').executeTakeFirstOrThrow();
+	const salesType = await db
+		.selectFrom('sales_item_types')
+		.select('id')
+		.where('is_active', '=', 1)
+		.orderBy('id', 'asc')
+		.executeTakeFirstOrThrow();
 	salesItemTypeId = salesType.id;
 	await createTaxCategory();
 	const first = await createIssuedInvoice('INV-PAY-001', 'GBP', '2.000000', '100.0000');
@@ -419,7 +476,11 @@ describe('Package 004E payment receipt and controlled allocation', () => {
 			unallocatedAmount: '300.0000',
 			isReversed: false
 		});
-		expect(workspace.invoiceCandidates.find((candidate) => candidate.invoicePublicId === firstInvoicePublicId)).toMatchObject({
+		expect(
+			workspace.invoiceCandidates.find(
+				(candidate) => candidate.invoicePublicId === firstInvoicePublicId
+			)
+		).toMatchObject({
 			invoiceGross: '240.0000',
 			issuedCreditGross: '60.0000',
 			activeAllocatedAmount: '0.0000',
@@ -437,8 +498,15 @@ describe('Package 004E payment receipt and controlled allocation', () => {
 		});
 		let workspace = await service.getWorkspace(actorFinanceA, paymentPublicId);
 		firstAllocationId = workspace.allocations[0]!.id;
-		expect(workspace.payment).toMatchObject({ allocatedAmount: '100.0000', unallocatedAmount: '200.0000' });
-		expect(workspace.invoiceCandidates.find((candidate) => candidate.invoicePublicId === firstInvoicePublicId)?.outstandingAmount).toBe('80.0000');
+		expect(workspace.payment).toMatchObject({
+			allocatedAmount: '100.0000',
+			unallocatedAmount: '200.0000'
+		});
+		expect(
+			workspace.invoiceCandidates.find(
+				(candidate) => candidate.invoicePublicId === firstInvoicePublicId
+			)?.outstandingAmount
+		).toBe('80.0000');
 		await expect(
 			service.allocate(actorFinanceA, {
 				paymentPublicId,
@@ -452,7 +520,10 @@ describe('Package 004E payment receipt and controlled allocation', () => {
 			amount: '180'
 		});
 		workspace = await service.getWorkspace(actorFinanceA, paymentPublicId);
-		expect(workspace.payment).toMatchObject({ allocatedAmount: '280.0000', unallocatedAmount: '20.0000' });
+		expect(workspace.payment).toMatchObject({
+			allocatedAmount: '280.0000',
+			unallocatedAmount: '20.0000'
+		});
 		await expect(
 			service.allocate(actorFinanceA, {
 				paymentPublicId,
@@ -506,7 +577,10 @@ describe('Package 004E payment receipt and controlled allocation', () => {
 			amount: '20'
 		});
 		const workspace = await service.getWorkspace(actorOwnerA, secondaryPaymentPublicId);
-		expect(workspace.payment).toMatchObject({ allocatedAmount: '20.0000', unallocatedAmount: '30.0000' });
+		expect(workspace.payment).toMatchObject({
+			allocatedAmount: '20.0000',
+			unallocatedAmount: '30.0000'
+		});
 	});
 
 	it('blocks FX allocation and masks foreign-tenant payment identities', async () => {
@@ -518,7 +592,9 @@ describe('Package 004E payment receipt and controlled allocation', () => {
 				amount: '10'
 			})
 		).rejects.toThrow('currency must match');
-		await expect(service.getWorkspace(actorOwnerB, paymentPublicId)).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(service.getWorkspace(actorOwnerB, paymentPublicId)).rejects.toBeInstanceOf(
+			RecordNotFoundError
+		);
 		await expect(
 			service.allocate(actorOwnerB, {
 				paymentPublicId,
@@ -536,12 +612,21 @@ describe('Package 004E payment receipt and controlled allocation', () => {
 			reason: 'Allocated to the wrong invoice'
 		});
 		const workspace = await service.getWorkspace(actorFinanceA, paymentPublicId);
-		expect(workspace.payment).toMatchObject({ allocatedAmount: '180.0000', unallocatedAmount: '120.0000' });
-		expect(workspace.allocations.find((allocation) => allocation.id === firstAllocationId)).toMatchObject({
+		expect(workspace.payment).toMatchObject({
+			allocatedAmount: '180.0000',
+			unallocatedAmount: '120.0000'
+		});
+		expect(
+			workspace.allocations.find((allocation) => allocation.id === firstAllocationId)
+		).toMatchObject({
 			isReversed: true,
 			reversalReason: 'Allocated to the wrong invoice'
 		});
-		expect(workspace.invoiceCandidates.find((candidate) => candidate.invoicePublicId === firstInvoicePublicId)?.outstandingAmount).toBe('160.0000');
+		expect(
+			workspace.invoiceCandidates.find(
+				(candidate) => candidate.invoicePublicId === firstInvoicePublicId
+			)?.outstandingAmount
+		).toBe('160.0000');
 		await expect(
 			service.reverseAllocation(actorFinanceA, {
 				paymentPublicId,

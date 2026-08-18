@@ -13,11 +13,20 @@ let organisationId = '';
 async function cleanup(): Promise<void> {
 	if (!db) return;
 	if (organisationId) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('role_permissions').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
 	}
 	if (userId) await db.deleteFrom('users').where('id', '=', userId).execute();
@@ -27,7 +36,9 @@ async function permissionKeys(roleName: string): Promise<string[]> {
 	const rows = await db
 		.selectFrom('role_permissions as grant')
 		.innerJoin('organisation_roles as role', (join) =>
-			join.onRef('role.id', '=', 'grant.organisation_role_id').onRef('role.organisation_id', '=', 'grant.organisation_id')
+			join
+				.onRef('role.id', '=', 'grant.organisation_role_id')
+				.onRef('role.organisation_id', '=', 'grant.organisation_id')
 		)
 		.innerJoin('permissions as permission', 'permission.id', 'grant.permission_id')
 		.select('permission.permission_key as permissionKey')
@@ -42,11 +53,14 @@ async function permissionKeys(roleName: string): Promise<string[]> {
 beforeAll(async () => {
 	db = getDatabase();
 	await cleanup();
-	const result = await db.insertInto('users').values({
-		public_id: randomUUID(),
-		display_name: `${PREFIX}Owner`,
-		status: 'active'
-	}).executeTakeFirstOrThrow();
+	const result = await db
+		.insertInto('users')
+		.values({
+			public_id: randomUUID(),
+			display_name: `${PREFIX}Owner`,
+			status: 'active'
+		})
+		.executeTakeFirstOrThrow();
 	if (result.insertId === undefined) throw new Error('Expected user insert ID.');
 	userId = result.insertId.toString();
 });

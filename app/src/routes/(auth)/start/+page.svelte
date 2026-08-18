@@ -87,7 +87,9 @@
 				{#if form?.message}<p class="error" role="alert">{form.message}</p>{/if}
 				<button class="primary" type="submit">Create organisation</button>
 			</form>
-			<p class="secondary-copy"><a href="/select-organisation">Back to organisation selection</a></p>
+			<p class="secondary-copy">
+				<a href="/select-organisation">Back to organisation selection</a>
+			</p>
 		{:else if submitted}
 			<p class="eyebrow">Verify your account</p>
 			<h1>Check your email</h1>
@@ -156,25 +158,114 @@
 </main>
 
 <style>
-	.shell { min-height: 100vh; display: grid; place-items: center; padding: 2rem; background: #f5f5f2; }
-	.card { width: min(100%, 42rem); background: white; border: 1px solid #d9d9d2; border-radius: 1rem; padding: 2rem; box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.06); }
-	.brand { margin: 0 0 2rem; font-weight: 850; letter-spacing: -0.02em; }
-	.eyebrow { margin: 0 0 0.45rem; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.75rem; font-weight: 750; color: #62625c; }
-	h1 { margin: 0; font-size: clamp(2rem, 6vw, 2.8rem); letter-spacing: -0.04em; }
-	h2 { margin: 0.7rem 0 -0.2rem; font-size: 1rem; }
-	.lede, .secondary-copy { color: #5c5c56; line-height: 1.6; }
-	.stack { display: grid; gap: 1rem; margin-top: 1.5rem; }
-	.row { display: grid; grid-template-columns: 1fr 9rem; gap: 1rem; }
-	label { display: grid; gap: 0.4rem; font-weight: 650; }
-	label small { font-weight: 400; color: #6b6b65; }
-	input { font: inherit; border: 1px solid #b9b9b1; border-radius: 0.55rem; padding: 0.75rem 0.85rem; min-width: 0; }
-	input:focus { outline: 2px solid #222; outline-offset: 2px; }
-	button { font: inherit; font-weight: 700; border-radius: 0.55rem; padding: 0.8rem 1rem; cursor: pointer; }
-	.primary { border: 1px solid #111; background: #111; color: white; }
-	button:disabled { opacity: 0.55; cursor: wait; }
-	.notice { margin: 1.25rem 0; padding: 1rem; border-radius: 0.6rem; line-height: 1.55; }
-	.notice.success { background: #e8f6eb; }
-	.error { color: #9b1c1c; margin: 0; }
-	a { color: inherit; font-weight: 700; }
-	@media (max-width: 620px) { .row { grid-template-columns: 1fr; } }
+	.shell {
+		min-height: 100vh;
+		display: grid;
+		place-items: center;
+		padding: 2rem;
+		background: #f5f5f2;
+	}
+	.card {
+		width: min(100%, 42rem);
+		background: white;
+		border: 1px solid #d9d9d2;
+		border-radius: 1rem;
+		padding: 2rem;
+		box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.06);
+	}
+	.brand {
+		margin: 0 0 2rem;
+		font-weight: 850;
+		letter-spacing: -0.02em;
+	}
+	.eyebrow {
+		margin: 0 0 0.45rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		font-size: 0.75rem;
+		font-weight: 750;
+		color: #62625c;
+	}
+	h1 {
+		margin: 0;
+		font-size: clamp(2rem, 6vw, 2.8rem);
+		letter-spacing: -0.04em;
+	}
+	h2 {
+		margin: 0.7rem 0 -0.2rem;
+		font-size: 1rem;
+	}
+	.lede,
+	.secondary-copy {
+		color: #5c5c56;
+		line-height: 1.6;
+	}
+	.stack {
+		display: grid;
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+	.row {
+		display: grid;
+		grid-template-columns: 1fr 9rem;
+		gap: 1rem;
+	}
+	label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 650;
+	}
+	label small {
+		font-weight: 400;
+		color: #6b6b65;
+	}
+	input {
+		font: inherit;
+		border: 1px solid #b9b9b1;
+		border-radius: 0.55rem;
+		padding: 0.75rem 0.85rem;
+		min-width: 0;
+	}
+	input:focus {
+		outline: 2px solid #222;
+		outline-offset: 2px;
+	}
+	button {
+		font: inherit;
+		font-weight: 700;
+		border-radius: 0.55rem;
+		padding: 0.8rem 1rem;
+		cursor: pointer;
+	}
+	.primary {
+		border: 1px solid #111;
+		background: #111;
+		color: white;
+	}
+	button:disabled {
+		opacity: 0.55;
+		cursor: wait;
+	}
+	.notice {
+		margin: 1.25rem 0;
+		padding: 1rem;
+		border-radius: 0.6rem;
+		line-height: 1.55;
+	}
+	.notice.success {
+		background: #e8f6eb;
+	}
+	.error {
+		color: #9b1c1c;
+		margin: 0;
+	}
+	a {
+		color: inherit;
+		font-weight: 700;
+	}
+	@media (max-width: 620px) {
+		.row {
+			grid-template-columns: 1fr;
+		}
+	}
 </style>

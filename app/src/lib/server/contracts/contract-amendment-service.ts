@@ -3,14 +3,19 @@ import { randomUUID } from 'node:crypto';
 import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
-import { formatScaledDecimal, parseScaledDecimal, sumMoney } from '$lib/server/commercial/commercial-decimal';
+import {
+	formatScaledDecimal,
+	parseScaledDecimal,
+	sumMoney
+} from '$lib/server/commercial/commercial-decimal';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { cleanText, ContractValidationError, validateCode, validateDate } from './contract-common';
 
-export type ContractAmendmentLifecycleStatus = 'draft' | 'issued' | 'agreed' | 'rejected' | 'withdrawn';
+export type ContractAmendmentLifecycleStatus =
+	'draft' | 'issued' | 'agreed' | 'rejected' | 'withdrawn';
 export type ContractAmendmentDecision = 'agreed' | 'rejected';
 
 export type ContractAmendmentSummary = {
@@ -138,7 +143,8 @@ function validateSignedAdjustment(value: string): string {
 			cause instanceof Error ? cause.message : 'Contract adjustment must be a decimal number.'
 		);
 	}
-	if (parsed === 0n) throw new ContractAmendmentValidationError('Contract adjustment must not be zero.');
+	if (parsed === 0n)
+		throw new ContractAmendmentValidationError('Contract adjustment must not be zero.');
 	const absolute = parsed < 0n ? -parsed : parsed;
 	if (absolute > 9_999_999_999_999_999_999n) {
 		throw new ContractAmendmentValidationError('Contract adjustment is too large.');
@@ -158,7 +164,9 @@ export class ContractAmendmentService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -257,7 +265,11 @@ export class ContractAmendmentService {
 	) {
 		let query = db
 			.selectFrom('contract_amendments as amendment')
-			.innerJoin('contract_amendment_types as type', 'type.id', 'amendment.contract_amendment_type_id')
+			.innerJoin(
+				'contract_amendment_types as type',
+				'type.id',
+				'amendment.contract_amendment_type_id'
+			)
 			.select([
 				'amendment.id as id',
 				'amendment.public_id as publicId',
@@ -293,7 +305,11 @@ export class ContractAmendmentService {
 		const [items, amendmentTypes, createDecision, baseline] = await Promise.all([
 			this.db
 				.selectFrom('contract_amendments as amendment')
-				.innerJoin('contract_amendment_types as type', 'type.id', 'amendment.contract_amendment_type_id')
+				.innerJoin(
+					'contract_amendment_types as type',
+					'type.id',
+					'amendment.contract_amendment_type_id'
+				)
 				.select([
 					'amendment.id as id',
 					'amendment.public_id as publicId',
@@ -333,7 +349,8 @@ export class ContractAmendmentService {
 		return {
 			items,
 			amendmentTypes,
-			canCreate: createDecision.allowed && contract.lifecycleStatus === 'active' && Boolean(baseline),
+			canCreate:
+				createDecision.allowed && contract.lifecycleStatus === 'active' && Boolean(baseline),
 			baselineValue,
 			agreedAdjustmentTotal,
 			currentContractValue:
@@ -354,15 +371,20 @@ export class ContractAmendmentService {
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const decision = await this.mutationDecision(actor, 'contract.amendment.create', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract amendment creation is not permitted.');
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract amendment creation is not permitted.');
 			const contract = await this.findContract(trx, actor.organisationId, contractPublicId, true);
 			if (!contract) throw new RecordNotFoundError('Contract not found.');
 			if (contract.lifecycleStatus !== 'active') {
-				throw new ContractAmendmentValidationError('Only an active executed contract can be amended.');
+				throw new ContractAmendmentValidationError(
+					'Only an active executed contract can be amended.'
+				);
 			}
 			const baseline = await this.executedBaselineVersion(trx, actor.organisationId, contract.id);
 			if (!baseline) {
-				throw new ContractAmendmentValidationError('An executed contract baseline is required before amendment.');
+				throw new ContractAmendmentValidationError(
+					'An executed contract baseline is required before amendment.'
+				);
 			}
 			const type = await trx
 				.selectFrom('contract_amendment_types')
@@ -436,7 +458,8 @@ export class ContractAmendmentService {
 		);
 		if (!amendment) throw new RecordNotFoundError('Contract amendment not found.');
 		const baseline = await this.executedBaselineVersion(this.db, actor.organisationId, contract.id);
-		if (!baseline) throw new ContractAmendmentValidationError('The contract has no executed baseline.');
+		if (!baseline)
+			throw new ContractAmendmentValidationError('The contract has no executed baseline.');
 
 		const [
 			valueAdjustments,
@@ -452,7 +475,11 @@ export class ContractAmendmentService {
 		] = await Promise.all([
 			this.db
 				.selectFrom('contract_amendment_value_adjustments as adjustment')
-				.innerJoin('contract_value_component_types as type', 'type.id', 'adjustment.contract_value_component_type_id')
+				.innerJoin(
+					'contract_value_component_types as type',
+					'type.id',
+					'adjustment.contract_value_component_type_id'
+				)
 				.select([
 					'adjustment.id as id',
 					'type.code as typeCode',
@@ -480,9 +507,24 @@ export class ContractAmendmentService {
 				.where('change.contract_amendment_id', '=', amendment.id)
 				.orderBy('change.sort_order', 'asc')
 				.execute(),
-			this.db.selectFrom('contract_amendment_types').select(['id', 'code', 'name']).where('is_active', '=', 1).orderBy('name').execute(),
-			this.db.selectFrom('contract_value_component_types').select(['id', 'code', 'name']).where('is_active', '=', 1).orderBy('name').execute(),
-			this.db.selectFrom('contract_key_date_types').select(['id', 'code', 'name']).where('is_active', '=', 1).orderBy('name').execute(),
+			this.db
+				.selectFrom('contract_amendment_types')
+				.select(['id', 'code', 'name'])
+				.where('is_active', '=', 1)
+				.orderBy('name')
+				.execute(),
+			this.db
+				.selectFrom('contract_value_component_types')
+				.select(['id', 'code', 'name'])
+				.where('is_active', '=', 1)
+				.orderBy('name')
+				.execute(),
+			this.db
+				.selectFrom('contract_key_date_types')
+				.select(['id', 'code', 'name'])
+				.where('is_active', '=', 1)
+				.orderBy('name')
+				.execute(),
 			this.mutationDecision(actor, 'contract.amendment.draft.manage'),
 			this.mutationDecision(actor, 'contract.amendment.issue'),
 			this.mutationDecision(actor, 'contract.amendment.decide'),
@@ -542,9 +584,20 @@ export class ContractAmendmentService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const decision = await this.mutationDecision(actor, 'contract.amendment.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract amendment draft management is not permitted.');
-			const { contract, amendment } = await this.lockDraft(trx, actor, contractPublicId, amendmentPublicId);
-			const type = await trx.selectFrom('contract_amendment_types').select('id').where('code', '=', typeCode).where('is_active', '=', 1).executeTakeFirst();
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract amendment draft management is not permitted.');
+			const { contract, amendment } = await this.lockDraft(
+				trx,
+				actor,
+				contractPublicId,
+				amendmentPublicId
+			);
+			const type = await trx
+				.selectFrom('contract_amendment_types')
+				.select('id')
+				.where('code', '=', typeCode)
+				.where('is_active', '=', 1)
+				.executeTakeFirst();
 			if (!type) throw new ContractAmendmentValidationError('Amendment type is not available.');
 			await trx
 				.updateTable('contract_amendments')
@@ -572,7 +625,10 @@ export class ContractAmendmentService {
 		});
 	}
 
-	async addValueAdjustment(actor: TenantActorContext, input: AddContractAmendmentValueInput): Promise<void> {
+	async addValueAdjustment(
+		actor: TenantActorContext,
+		input: AddContractAmendmentValueInput
+	): Promise<void> {
 		const contractPublicId = cleanText(input.contractPublicId, 64, 'Contract ID', true)!;
 		const amendmentPublicId = cleanText(input.amendmentPublicId, 64, 'Amendment ID', true)!;
 		const typeCode = validateCode(input.typeCode, 'Value component type');
@@ -581,10 +637,22 @@ export class ContractAmendmentService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const decision = await this.mutationDecision(actor, 'contract.amendment.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract amendment draft management is not permitted.');
-			const { contract, amendment } = await this.lockDraft(trx, actor, contractPublicId, amendmentPublicId);
-			const type = await trx.selectFrom('contract_value_component_types').select('id').where('code', '=', typeCode).where('is_active', '=', 1).executeTakeFirst();
-			if (!type) throw new ContractAmendmentValidationError('Value component type is not available.');
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract amendment draft management is not permitted.');
+			const { contract, amendment } = await this.lockDraft(
+				trx,
+				actor,
+				contractPublicId,
+				amendmentPublicId
+			);
+			const type = await trx
+				.selectFrom('contract_value_component_types')
+				.select('id')
+				.where('code', '=', typeCode)
+				.where('is_active', '=', 1)
+				.executeTakeFirst();
+			if (!type)
+				throw new ContractAmendmentValidationError('Value component type is not available.');
 			const last = await trx
 				.selectFrom('contract_amendment_value_adjustments')
 				.select('sort_order as sortOrder')
@@ -605,10 +673,16 @@ export class ContractAmendmentService {
 				})
 				.executeTakeFirstOrThrow();
 			await new AuditRepository(trx).append({
-				eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId,
-				actionKey: 'contract.amendment.value.added', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId,
-				correlationId: actor.correlationId, changeSummary: { typeCode, description, adjustmentAmount, sortOrder }
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				projectId: contract.projectId,
+				actionKey: 'contract.amendment.value.added',
+				subjectType: 'contract_amendment',
+				subjectPublicId: amendment.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { typeCode, description, adjustmentAmount, sortOrder }
 			});
 		});
 	}
@@ -621,20 +695,46 @@ export class ContractAmendmentService {
 	): Promise<void> {
 		const contractPublicId = cleanText(contractPublicIdInput, 64, 'Contract ID', true)!;
 		const amendmentPublicId = cleanText(amendmentPublicIdInput, 64, 'Amendment ID', true)!;
-		if (!Number.isSafeInteger(sortOrderInput) || sortOrderInput <= 0) throw new ContractAmendmentValidationError('Value adjustment is invalid.');
+		if (!Number.isSafeInteger(sortOrderInput) || sortOrderInput <= 0)
+			throw new ContractAmendmentValidationError('Value adjustment is invalid.');
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const decision = await this.mutationDecision(actor, 'contract.amendment.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract amendment draft management is not permitted.');
-			const { contract, amendment } = await this.lockDraft(trx, actor, contractPublicId, amendmentPublicId);
-			const result = await trx.deleteFrom('contract_amendment_value_adjustments')
-				.where('organisation_id', '=', actor.organisationId).where('contract_amendment_id', '=', amendment.id).where('sort_order', '=', sortOrderInput).executeTakeFirst();
-			if (Number(result.numDeletedRows) === 0) throw new RecordNotFoundError('Value adjustment not found.');
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: 'contract.amendment.value.removed', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { sortOrder: sortOrderInput } });
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract amendment draft management is not permitted.');
+			const { contract, amendment } = await this.lockDraft(
+				trx,
+				actor,
+				contractPublicId,
+				amendmentPublicId
+			);
+			const result = await trx
+				.deleteFrom('contract_amendment_value_adjustments')
+				.where('organisation_id', '=', actor.organisationId)
+				.where('contract_amendment_id', '=', amendment.id)
+				.where('sort_order', '=', sortOrderInput)
+				.executeTakeFirst();
+			if (Number(result.numDeletedRows) === 0)
+				throw new RecordNotFoundError('Value adjustment not found.');
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				projectId: contract.projectId,
+				actionKey: 'contract.amendment.value.removed',
+				subjectType: 'contract_amendment',
+				subjectPublicId: amendment.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { sortOrder: sortOrderInput }
+			});
 		});
 	}
 
-	async addKeyDateChange(actor: TenantActorContext, input: AddContractAmendmentKeyDateInput): Promise<void> {
+	async addKeyDateChange(
+		actor: TenantActorContext,
+		input: AddContractAmendmentKeyDateInput
+	): Promise<void> {
 		const contractPublicId = cleanText(input.contractPublicId, 64, 'Contract ID', true)!;
 		const amendmentPublicId = cleanText(input.amendmentPublicId, 64, 'Amendment ID', true)!;
 		const typeCode = validateCode(input.typeCode, 'Key date type');
@@ -643,14 +743,52 @@ export class ContractAmendmentService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const decision = await this.mutationDecision(actor, 'contract.amendment.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract amendment draft management is not permitted.');
-			const { contract, amendment } = await this.lockDraft(trx, actor, contractPublicId, amendmentPublicId);
-			const type = await trx.selectFrom('contract_key_date_types').select('id').where('code', '=', typeCode).where('is_active', '=', 1).executeTakeFirst();
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract amendment draft management is not permitted.');
+			const { contract, amendment } = await this.lockDraft(
+				trx,
+				actor,
+				contractPublicId,
+				amendmentPublicId
+			);
+			const type = await trx
+				.selectFrom('contract_key_date_types')
+				.select('id')
+				.where('code', '=', typeCode)
+				.where('is_active', '=', 1)
+				.executeTakeFirst();
 			if (!type) throw new ContractAmendmentValidationError('Key date type is not available.');
-			const last = await trx.selectFrom('contract_amendment_key_date_changes').select('sort_order as sortOrder').where('organisation_id', '=', actor.organisationId).where('contract_amendment_id', '=', amendment.id).orderBy('sort_order', 'desc').executeTakeFirst();
+			const last = await trx
+				.selectFrom('contract_amendment_key_date_changes')
+				.select('sort_order as sortOrder')
+				.where('organisation_id', '=', actor.organisationId)
+				.where('contract_amendment_id', '=', amendment.id)
+				.orderBy('sort_order', 'desc')
+				.executeTakeFirst();
 			const sortOrder = (last?.sortOrder ?? 0) + 1;
-			await trx.insertInto('contract_amendment_key_date_changes').values({ organisation_id: actor.organisationId, contract_amendment_id: amendment.id, contract_key_date_type_id: type.id, label, new_date: newDate, sort_order: sortOrder }).executeTakeFirstOrThrow();
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: 'contract.amendment.key_date.added', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { typeCode, label, newDate, sortOrder } });
+			await trx
+				.insertInto('contract_amendment_key_date_changes')
+				.values({
+					organisation_id: actor.organisationId,
+					contract_amendment_id: amendment.id,
+					contract_key_date_type_id: type.id,
+					label,
+					new_date: newDate,
+					sort_order: sortOrder
+				})
+				.executeTakeFirstOrThrow();
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				projectId: contract.projectId,
+				actionKey: 'contract.amendment.key_date.added',
+				subjectType: 'contract_amendment',
+				subjectPublicId: amendment.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { typeCode, label, newDate, sortOrder }
+			});
 		});
 	}
 
@@ -662,39 +800,109 @@ export class ContractAmendmentService {
 	): Promise<void> {
 		const contractPublicId = cleanText(contractPublicIdInput, 64, 'Contract ID', true)!;
 		const amendmentPublicId = cleanText(amendmentPublicIdInput, 64, 'Amendment ID', true)!;
-		if (!Number.isSafeInteger(sortOrderInput) || sortOrderInput <= 0) throw new ContractAmendmentValidationError('Key date change is invalid.');
+		if (!Number.isSafeInteger(sortOrderInput) || sortOrderInput <= 0)
+			throw new ContractAmendmentValidationError('Key date change is invalid.');
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const decision = await this.mutationDecision(actor, 'contract.amendment.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract amendment draft management is not permitted.');
-			const { contract, amendment } = await this.lockDraft(trx, actor, contractPublicId, amendmentPublicId);
-			const result = await trx.deleteFrom('contract_amendment_key_date_changes').where('organisation_id', '=', actor.organisationId).where('contract_amendment_id', '=', amendment.id).where('sort_order', '=', sortOrderInput).executeTakeFirst();
-			if (Number(result.numDeletedRows) === 0) throw new RecordNotFoundError('Key date change not found.');
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: 'contract.amendment.key_date.removed', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { sortOrder: sortOrderInput } });
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract amendment draft management is not permitted.');
+			const { contract, amendment } = await this.lockDraft(
+				trx,
+				actor,
+				contractPublicId,
+				amendmentPublicId
+			);
+			const result = await trx
+				.deleteFrom('contract_amendment_key_date_changes')
+				.where('organisation_id', '=', actor.organisationId)
+				.where('contract_amendment_id', '=', amendment.id)
+				.where('sort_order', '=', sortOrderInput)
+				.executeTakeFirst();
+			if (Number(result.numDeletedRows) === 0)
+				throw new RecordNotFoundError('Key date change not found.');
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				projectId: contract.projectId,
+				actionKey: 'contract.amendment.key_date.removed',
+				subjectType: 'contract_amendment',
+				subjectPublicId: amendment.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { sortOrder: sortOrderInput }
+			});
 		});
 	}
 
-	async issue(actor: TenantActorContext, contractPublicIdInput: string, amendmentPublicIdInput: string): Promise<void> {
+	async issue(
+		actor: TenantActorContext,
+		contractPublicIdInput: string,
+		amendmentPublicIdInput: string
+	): Promise<void> {
 		const contractPublicId = cleanText(contractPublicIdInput, 64, 'Contract ID', true)!;
 		const amendmentPublicId = cleanText(amendmentPublicIdInput, 64, 'Amendment ID', true)!;
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const decision = await this.mutationDecision(actor, 'contract.amendment.issue', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract amendment issue is not permitted.');
-			const { contract, amendment } = await this.lockDraft(trx, actor, contractPublicId, amendmentPublicId);
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract amendment issue is not permitted.');
+			const { contract, amendment } = await this.lockDraft(
+				trx,
+				actor,
+				contractPublicId,
+				amendmentPublicId
+			);
 			if (!amendment.effectiveOn) {
-				throw new ContractAmendmentValidationError('Set an effective date before issuing the amendment.');
+				throw new ContractAmendmentValidationError(
+					'Set an effective date before issuing the amendment.'
+				);
 			}
 			const [value, date] = await Promise.all([
-				trx.selectFrom('contract_amendment_value_adjustments').select('id').where('organisation_id', '=', actor.organisationId).where('contract_amendment_id', '=', amendment.id).limit(1).executeTakeFirst(),
-				trx.selectFrom('contract_amendment_key_date_changes').select('id').where('organisation_id', '=', actor.organisationId).where('contract_amendment_id', '=', amendment.id).limit(1).executeTakeFirst()
+				trx
+					.selectFrom('contract_amendment_value_adjustments')
+					.select('id')
+					.where('organisation_id', '=', actor.organisationId)
+					.where('contract_amendment_id', '=', amendment.id)
+					.limit(1)
+					.executeTakeFirst(),
+				trx
+					.selectFrom('contract_amendment_key_date_changes')
+					.select('id')
+					.where('organisation_id', '=', actor.organisationId)
+					.where('contract_amendment_id', '=', amendment.id)
+					.limit(1)
+					.executeTakeFirst()
 			]);
 			if (!amendment.description && !value && !date) {
-				throw new ContractAmendmentValidationError('Add an amendment description, value adjustment or key-date change before issue.');
+				throw new ContractAmendmentValidationError(
+					'Add an amendment description, value adjustment or key-date change before issue.'
+				);
 			}
 			const issuedAt = this.now();
-			await trx.updateTable('contract_amendments').set({ lifecycle_status: 'issued', issued_by_member_id: membership.id, issued_at: issuedAt }).where('id', '=', amendment.id).where('organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: 'contract.amendment.issued', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { issuedAt, effectiveOn: amendment.effectiveOn } });
+			await trx
+				.updateTable('contract_amendments')
+				.set({
+					lifecycle_status: 'issued',
+					issued_by_member_id: membership.id,
+					issued_at: issuedAt
+				})
+				.where('id', '=', amendment.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				projectId: contract.projectId,
+				actionKey: 'contract.amendment.issued',
+				subjectType: 'contract_amendment',
+				subjectPublicId: amendment.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { issuedAt, effectiveOn: amendment.effectiveOn }
+			});
 		});
 	}
 
@@ -704,41 +912,104 @@ export class ContractAmendmentService {
 		amendmentPublicIdInput: string,
 		decisionInput: ContractAmendmentDecision
 	): Promise<void> {
-		if (decisionInput !== 'agreed' && decisionInput !== 'rejected') throw new ContractAmendmentValidationError('Amendment decision is invalid.');
+		if (decisionInput !== 'agreed' && decisionInput !== 'rejected')
+			throw new ContractAmendmentValidationError('Amendment decision is invalid.');
 		const contractPublicId = cleanText(contractPublicIdInput, 64, 'Contract ID', true)!;
 		const amendmentPublicId = cleanText(amendmentPublicIdInput, 64, 'Amendment ID', true)!;
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const permission = await this.mutationDecision(actor, 'contract.amendment.decide', trx);
-			if (!permission.allowed) throw new TenantAccessError('Contract amendment decision is not permitted.');
+			if (!permission.allowed)
+				throw new TenantAccessError('Contract amendment decision is not permitted.');
 			const contract = await this.findContract(trx, actor.organisationId, contractPublicId, true);
 			if (!contract) throw new RecordNotFoundError('Contract not found.');
-			const amendment = await this.findAmendment(trx, actor.organisationId, contract.id, amendmentPublicId, true);
+			const amendment = await this.findAmendment(
+				trx,
+				actor.organisationId,
+				contract.id,
+				amendmentPublicId,
+				true
+			);
 			if (!amendment) throw new RecordNotFoundError('Contract amendment not found.');
-			if (amendment.lifecycleStatus !== 'issued') throw new ContractAmendmentValidationError('Only an issued amendment can be agreed or rejected.');
-			if (decisionInput === 'agreed' && !amendment.effectiveOn) throw new ContractAmendmentValidationError('An effective date is required before agreement.');
+			if (amendment.lifecycleStatus !== 'issued')
+				throw new ContractAmendmentValidationError(
+					'Only an issued amendment can be agreed or rejected.'
+				);
+			if (decisionInput === 'agreed' && !amendment.effectiveOn)
+				throw new ContractAmendmentValidationError(
+					'An effective date is required before agreement.'
+				);
 			const decidedAt = this.now();
-			await trx.updateTable('contract_amendments').set({ lifecycle_status: decisionInput, decided_by_member_id: membership.id, decided_at: decidedAt }).where('id', '=', amendment.id).where('organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: `contract.amendment.${decisionInput}`, subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { decidedAt, effectiveOn: amendment.effectiveOn } });
+			await trx
+				.updateTable('contract_amendments')
+				.set({
+					lifecycle_status: decisionInput,
+					decided_by_member_id: membership.id,
+					decided_at: decidedAt
+				})
+				.where('id', '=', amendment.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				projectId: contract.projectId,
+				actionKey: `contract.amendment.${decisionInput}`,
+				subjectType: 'contract_amendment',
+				subjectPublicId: amendment.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { decidedAt, effectiveOn: amendment.effectiveOn }
+			});
 		});
 	}
 
-	async withdraw(actor: TenantActorContext, contractPublicIdInput: string, amendmentPublicIdInput: string): Promise<void> {
+	async withdraw(
+		actor: TenantActorContext,
+		contractPublicIdInput: string,
+		amendmentPublicIdInput: string
+	): Promise<void> {
 		const contractPublicId = cleanText(contractPublicIdInput, 64, 'Contract ID', true)!;
 		const amendmentPublicId = cleanText(amendmentPublicIdInput, 64, 'Amendment ID', true)!;
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			const permission = await this.mutationDecision(actor, 'contract.amendment.decide', trx);
-			if (!permission.allowed) throw new TenantAccessError('Contract amendment withdrawal is not permitted.');
+			if (!permission.allowed)
+				throw new TenantAccessError('Contract amendment withdrawal is not permitted.');
 			const contract = await this.findContract(trx, actor.organisationId, contractPublicId, true);
 			if (!contract) throw new RecordNotFoundError('Contract not found.');
-			const amendment = await this.findAmendment(trx, actor.organisationId, contract.id, amendmentPublicId, true);
+			const amendment = await this.findAmendment(
+				trx,
+				actor.organisationId,
+				contract.id,
+				amendmentPublicId,
+				true
+			);
 			if (!amendment) throw new RecordNotFoundError('Contract amendment not found.');
 			if (amendment.lifecycleStatus !== 'draft' && amendment.lifecycleStatus !== 'issued') {
-				throw new ContractAmendmentValidationError('Only a draft or issued amendment can be withdrawn.');
+				throw new ContractAmendmentValidationError(
+					'Only a draft or issued amendment can be withdrawn.'
+				);
 			}
-			await trx.updateTable('contract_amendments').set({ lifecycle_status: 'withdrawn' }).where('id', '=', amendment.id).where('organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: contract.projectId, actionKey: 'contract.amendment.withdrawn', subjectType: 'contract_amendment', subjectPublicId: amendment.publicId, correlationId: actor.correlationId, changeSummary: { fromStatus: amendment.lifecycleStatus } });
+			await trx
+				.updateTable('contract_amendments')
+				.set({ lifecycle_status: 'withdrawn' })
+				.where('id', '=', amendment.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				projectId: contract.projectId,
+				actionKey: 'contract.amendment.withdrawn',
+				subjectType: 'contract_amendment',
+				subjectPublicId: amendment.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { fromStatus: amendment.lifecycleStatus }
+			});
 		});
 	}
 }

@@ -5,10 +5,7 @@ import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
 import { auth, authPool } from '$lib/server/auth/better-auth';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import type { EmailDelivery, TransactionalEmail } from '$lib/server/email/email-delivery';
-import {
-	hashInvitationToken,
-	OrganisationInvitationService
-} from './invitation-service';
+import { hashInvitationToken, OrganisationInvitationService } from './invitation-service';
 
 const PREFIX = 'Provisioning Integration ';
 const PASSWORD = 'NuBlox-Provisioning-Test-2026!';
@@ -57,7 +54,10 @@ async function cleanup(): Promise<void> {
 		await db
 			.deleteFrom('audit_events')
 			.where('acting_organisation_id', '=', organisationId)
-			.where('action_key', 'in', ['organisation.invitation.create', 'organisation.invitation.accept'])
+			.where('action_key', 'in', [
+				'organisation.invitation.create',
+				'organisation.invitation.accept'
+			])
 			.execute();
 	}
 
@@ -95,10 +95,13 @@ async function cleanup(): Promise<void> {
 		await db.deleteFrom('users').where('id', '=', invitedPlatformUserId).execute();
 	}
 
-	if (invitedAuthUserId) await db.deleteFrom('auth_users').where('id', '=', invitedAuthUserId).execute();
+	if (invitedAuthUserId)
+		await db.deleteFrom('auth_users').where('id', '=', invitedAuthUserId).execute();
 	if (roleId) await db.deleteFrom('organisation_roles').where('id', '=', roleId).execute();
-	if (inviterMemberId) await db.deleteFrom('organisation_members').where('id', '=', inviterMemberId).execute();
-	if (organisationId) await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
+	if (inviterMemberId)
+		await db.deleteFrom('organisation_members').where('id', '=', inviterMemberId).execute();
+	if (organisationId)
+		await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
 	if (inviterUserId) await db.deleteFrom('users').where('id', '=', inviterUserId).execute();
 }
 
@@ -268,7 +271,10 @@ describe('account provisioning and invitation lifecycle', () => {
 			.where('id', '=', invitedAuthUserId)
 			.executeTakeFirstOrThrow();
 
-		const accepted = await new OrganisationInvitationService(db, emailDelivery).activateVerifiedAuthUser({
+		const accepted = await new OrganisationInvitationService(
+			db,
+			emailDelivery
+		).activateVerifiedAuthUser({
 			authUserId: invitedAuthUserId,
 			email: inviteEmail,
 			displayName: `${PREFIX}Invited User`,

@@ -5,7 +5,10 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { ProjectRepository } from './project-repository';
-import { ProjectWorkspaceService, ProjectWorkspaceValidationError } from './project-workspace-service';
+import {
+	ProjectWorkspaceService,
+	ProjectWorkspaceValidationError
+} from './project-workspace-service';
 
 const PREFIX = 'Project Workspace Integration ';
 const PROJECT_PREFIX = 'PWI-';
@@ -42,7 +45,10 @@ async function cleanup(): Promise<void> {
 		await db.deleteFrom('audit_events').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_member_roles').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_members').where('project_id', 'in', projectIds).execute();
-		await db.deleteFrom('project_organisation_roles').where('project_id', 'in', projectIds).execute();
+		await db
+			.deleteFrom('project_organisation_roles')
+			.where('project_id', 'in', projectIds)
+			.execute();
 		await db.deleteFrom('project_organisations').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('projects').where('id', 'in', projectIds).execute();
 	}
@@ -54,12 +60,27 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 
@@ -70,7 +91,11 @@ async function createUser(displayName: string): Promise<string> {
 	return insertedId(
 		await db
 			.insertInto('users')
-			.values({ public_id: randomUUID(), display_name: `${PREFIX}${displayName}`, status: 'active' })
+			.values({
+				public_id: randomUUID(),
+				display_name: `${PREFIX}${displayName}`,
+				status: 'active'
+			})
 			.executeTakeFirstOrThrow()
 	);
 }
@@ -227,7 +252,9 @@ describe('permission-aware project creation and workspace', () => {
 		const listBeforeMembership = await service.listProjects(actorB);
 		expect(listBeforeMembership.canView).toBe(true);
 		expect(listBeforeMembership.projects).toHaveLength(0);
-		await expect(service.getWorkspace(actorB, projectPublicId)).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(service.getWorkspace(actorB, projectPublicId)).rejects.toBeInstanceOf(
+			RecordNotFoundError
+		);
 
 		await new ProjectRepository(db).insertProjectMember(
 			projectId,
@@ -237,7 +264,9 @@ describe('permission-aware project creation and workspace', () => {
 		);
 
 		const listAfterMembership = await service.listProjects(actorB);
-		expect(listAfterMembership.projects.map((project) => project.publicId)).toEqual([projectPublicId]);
+		expect(listAfterMembership.projects.map((project) => project.publicId)).toEqual([
+			projectPublicId
+		]);
 		const workspace = await service.getWorkspace(actorB, projectPublicId);
 		expect(workspace.canManageLifecycle).toBe(false);
 		await expect(
@@ -247,7 +276,10 @@ describe('permission-aware project creation and workspace', () => {
 
 	it('rejects duplicate project numbers and permits lifecycle mutation only after project.manage', async () => {
 		const service = new ProjectWorkspaceService(db);
-		const existing = await new ProjectRepository(db).findOwnedByPublicId(organisationAId, projectPublicId);
+		const existing = await new ProjectRepository(db).findOwnedByPublicId(
+			organisationAId,
+			projectPublicId
+		);
 		expect(existing).not.toBeNull();
 		await expect(
 			service.createProject(actorA, {
@@ -271,7 +303,10 @@ describe('permission-aware project creation and workspace', () => {
 			.where('action_key', '=', 'project.status_changed')
 			.orderBy('id', 'desc')
 			.executeTakeFirstOrThrow();
-		expect(audit).toMatchObject({ action_key: 'project.status_changed', actor_member_id: memberBId });
+		expect(audit).toMatchObject({
+			action_key: 'project.status_changed',
+			actor_member_id: memberBId
+		});
 	});
 
 	it('allows an external participant to view after explicit scope but never to mutate owner lifecycle', async () => {

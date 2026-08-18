@@ -32,10 +32,15 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new CollectionsService(getDatabase()).getWorkspace(actor, params.customerPartyPublicId);
+		return await new CollectionsService(getDatabase()).getWorkspace(
+			actor,
+			params.customerPartyPublicId
+		);
 	} catch (cause) {
-		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Customer collections account not found.');
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Collections access is not permitted.');
+		if (cause instanceof RecordNotFoundError)
+			throw httpError(404, 'Customer collections account not found.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Collections access is not permitted.');
 		throw cause;
 	}
 };

@@ -21,13 +21,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 		'member.manage'
 	]);
 	const canManageOrganisation = decisions.get('organisation.manage')?.allowed ?? false;
-	const canInviteMembers = canManageOrganisation || (decisions.get('member.invite')?.allowed ?? false);
-	const canAssignRoles = canManageOrganisation || (decisions.get('member.manage')?.allowed ?? false);
-	const roles = canInviteMembers && canAssignRoles
-		? await new OrganisationRoleRepository(getDatabase()).listActiveForOrganisation(
-				locals.tenant.organisationId
-			)
-		: [];
+	const canInviteMembers =
+		canManageOrganisation || (decisions.get('member.invite')?.allowed ?? false);
+	const canAssignRoles =
+		canManageOrganisation || (decisions.get('member.manage')?.allowed ?? false);
+	const roles =
+		canInviteMembers && canAssignRoles
+			? await new OrganisationRoleRepository(getDatabase()).listActiveForOrganisation(
+					locals.tenant.organisationId
+				)
+			: [];
 
 	return {
 		canInviteMembers,

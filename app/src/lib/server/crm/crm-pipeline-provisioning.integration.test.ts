@@ -19,7 +19,11 @@ function insertedId(result: { insertId?: bigint }): string {
 
 async function cleanup(): Promise<void> {
 	if (!db) return;
-	const organisations = await db.selectFrom('organisations').select('id').where('legal_name', 'like', `${PREFIX}%`).execute();
+	const organisations = await db
+		.selectFrom('organisations')
+		.select('id')
+		.where('legal_name', 'like', `${PREFIX}%`)
+		.execute();
 	const ids = organisations.map((row) => row.id);
 	if (ids.length > 0) {
 		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', ids).execute();
@@ -37,13 +41,63 @@ async function cleanup(): Promise<void> {
 beforeAll(async () => {
 	db = getDatabase();
 	await cleanup();
-	userId = insertedId(await db.insertInto('users').values({ public_id: randomUUID(), display_name: `${PREFIX}Owner`, status: 'active' }).executeTakeFirstOrThrow());
-	organisationId = insertedId(await db.insertInto('organisations').values({ public_id: randomUUID(), legal_name: `${PREFIX}Tenant`, status: 'active' }).executeTakeFirstOrThrow());
-	memberId = insertedId(await db.insertInto('organisation_members').values({ organisation_id: organisationId, user_id: userId, public_id: randomUUID(), status: 'active', joined_at: new Date() }).executeTakeFirstOrThrow());
-	const roleId = insertedId(await db.insertInto('organisation_roles').values({ organisation_id: organisationId, public_id: randomUUID(), name: `${PREFIX}Owner Role`, is_active: 1 }).executeTakeFirstOrThrow());
-	const crmManage = await db.selectFrom('permissions').select('id').where('permission_key', '=', 'crm.manage').where('is_active', '=', 1).executeTakeFirstOrThrow();
-	await db.insertInto('role_permissions').values({ organisation_id: organisationId, organisation_role_id: roleId, permission_id: crmManage.id }).executeTakeFirstOrThrow();
-	await db.insertInto('member_roles').values({ organisation_id: organisationId, organisation_member_id: memberId, organisation_role_id: roleId }).executeTakeFirstOrThrow();
+	userId = insertedId(
+		await db
+			.insertInto('users')
+			.values({ public_id: randomUUID(), display_name: `${PREFIX}Owner`, status: 'active' })
+			.executeTakeFirstOrThrow()
+	);
+	organisationId = insertedId(
+		await db
+			.insertInto('organisations')
+			.values({ public_id: randomUUID(), legal_name: `${PREFIX}Tenant`, status: 'active' })
+			.executeTakeFirstOrThrow()
+	);
+	memberId = insertedId(
+		await db
+			.insertInto('organisation_members')
+			.values({
+				organisation_id: organisationId,
+				user_id: userId,
+				public_id: randomUUID(),
+				status: 'active',
+				joined_at: new Date()
+			})
+			.executeTakeFirstOrThrow()
+	);
+	const roleId = insertedId(
+		await db
+			.insertInto('organisation_roles')
+			.values({
+				organisation_id: organisationId,
+				public_id: randomUUID(),
+				name: `${PREFIX}Owner Role`,
+				is_active: 1
+			})
+			.executeTakeFirstOrThrow()
+	);
+	const crmManage = await db
+		.selectFrom('permissions')
+		.select('id')
+		.where('permission_key', '=', 'crm.manage')
+		.where('is_active', '=', 1)
+		.executeTakeFirstOrThrow();
+	await db
+		.insertInto('role_permissions')
+		.values({
+			organisation_id: organisationId,
+			organisation_role_id: roleId,
+			permission_id: crmManage.id
+		})
+		.executeTakeFirstOrThrow();
+	await db
+		.insertInto('member_roles')
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: memberId,
+			organisation_role_id: roleId
+		})
+		.executeTakeFirstOrThrow();
 	actor = { organisationId, userId, memberId, correlationId: randomUUID() };
 });
 

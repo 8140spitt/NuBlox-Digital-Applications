@@ -59,8 +59,8 @@
 			<button class="secondary" type="button" onclick={signOut}>Sign out and continue</button>
 		{:else if submitted}
 			<div class="notice success">
-				Account created. Check {data.invitation.email} for the NuBlox verification link. Your
-				organisation membership becomes active only after the email is verified.
+				Account created. Check {data.invitation.email} for the NuBlox verification link. Your organisation
+				membership becomes active only after the email is verified.
 			</div>
 			<p><a href="/signin">Go to sign in</a></p>
 		{:else}
@@ -121,17 +121,35 @@
 		letter-spacing: 0.12em;
 		text-transform: uppercase;
 	}
-	h1 { margin: 0 0 0.75rem; font-size: 2rem; }
-	.lede, .secondary-copy { color: #52524d; line-height: 1.6; }
-	.stack { display: grid; gap: 1rem; margin-top: 1.5rem; }
-	label { display: grid; gap: 0.4rem; font-weight: 600; }
+	h1 {
+		margin: 0 0 0.75rem;
+		font-size: 2rem;
+	}
+	.lede,
+	.secondary-copy {
+		color: #52524d;
+		line-height: 1.6;
+	}
+	.stack {
+		display: grid;
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+	label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 600;
+	}
 	input {
 		font: inherit;
 		border: 1px solid #b9b9b1;
 		border-radius: 0.55rem;
 		padding: 0.75rem 0.85rem;
 	}
-	input:focus { outline: 2px solid #222; outline-offset: 2px; }
+	input:focus {
+		outline: 2px solid #222;
+		outline-offset: 2px;
+	}
 	button {
 		font: inherit;
 		font-weight: 700;
@@ -139,12 +157,38 @@
 		padding: 0.8rem 1rem;
 		cursor: pointer;
 	}
-	.primary { border: 1px solid #111; background: #111; color: white; }
-	.secondary { border: 1px solid #aaa; background: white; color: #111; }
-	button:disabled { opacity: 0.55; cursor: wait; }
-	.notice { margin: 1.25rem 0; padding: 0.9rem; border-radius: 0.55rem; background: #f0f0ec; }
-	.notice.warning { background: #fff4d6; }
-	.notice.success { background: #e8f6eb; }
-	.error { color: #9b1c1c; margin: 0; }
-	a { color: inherit; font-weight: 700; }
+	.primary {
+		border: 1px solid #111;
+		background: #111;
+		color: white;
+	}
+	.secondary {
+		border: 1px solid #aaa;
+		background: white;
+		color: #111;
+	}
+	button:disabled {
+		opacity: 0.55;
+		cursor: wait;
+	}
+	.notice {
+		margin: 1.25rem 0;
+		padding: 0.9rem;
+		border-radius: 0.55rem;
+		background: #f0f0ec;
+	}
+	.notice.warning {
+		background: #fff4d6;
+	}
+	.notice.success {
+		background: #e8f6eb;
+	}
+	.error {
+		color: #9b1c1c;
+		margin: 0;
+	}
+	a {
+		color: inherit;
+		font-weight: 700;
+	}
 </style>

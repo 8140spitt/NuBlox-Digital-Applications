@@ -1,10 +1,7 @@
 import { randomUUID } from 'node:crypto';
 
 import { getDatabase, type Database } from '$lib/server/db/database';
-import {
-	FinanceValidationError,
-	validateFinanceDate
-} from './finance-common';
+import { FinanceValidationError, validateFinanceDate } from './finance-common';
 import { TaxReliefService } from './tax-relief-service';
 
 type PrepareClaimInput = Parameters<TaxReliefService['prepareClaim']>[1];
@@ -76,7 +73,10 @@ export class ControlledTaxReliefService extends TaxReliefService {
 		input: ReturnPostingInput
 	): Promise<{ publicId: string }> {
 		if (input.sourceKind === 'relief_repayment') {
-			const periodStart = validateFinanceDate(input.vatReturnPeriodStart, 'VAT return period start');
+			const periodStart = validateFinanceDate(
+				input.vatReturnPeriodStart,
+				'VAT return period start'
+			);
 			const periodEnd = validateFinanceDate(input.vatReturnPeriodEnd, 'VAT return period end');
 			if (!periodStart || !periodEnd) {
 				throw new FinanceValidationError('VAT return period is invalid.');

@@ -16,7 +16,10 @@
 	<div>
 		<p class="eyebrow">Controlled accounting evidence</p>
 		<h1>Year-end close</h1>
-		<p>Prepare a fingerprinted close from hard-closed periods, require separate authorisation, and transfer the derived result to retained earnings without rewriting journal history.</p>
+		<p>
+			Prepare a fingerprinted close from hard-closed periods, require separate authorisation, and
+			transfer the derived result to retained earnings without rewriting journal history.
+		</p>
 	</div>
 </section>
 
@@ -24,18 +27,34 @@
 
 <section class="notice">
 	<strong>Separation of duties</strong>
-	<span>The member who prepares a close cannot authorise that same preparation. Every period in the financial year must be hard closed and retained earnings must be mapped to an active equity account.</span>
+	<span
+		>The member who prepares a close cannot authorise that same preparation. Every period in the
+		financial year must be hard closed and retained earnings must be mapped to an active equity
+		account.</span
+	>
 </section>
 
 <section class="panel">
-	<div class="section-heading"><div><p class="eyebrow">Closing destination</p><h2>Retained earnings mapping</h2></div></div>
-	<p>{data.retainedEarningsMapping ? `${data.retainedEarningsMapping.accountCode} · ${data.retainedEarningsMapping.name}` : 'No retained earnings account is mapped.'}</p>
+	<div class="section-heading">
+		<div>
+			<p class="eyebrow">Closing destination</p>
+			<h2>Retained earnings mapping</h2>
+		</div>
+	</div>
+	<p>
+		{data.retainedEarningsMapping
+			? `${data.retainedEarningsMapping.accountCode} · ${data.retainedEarningsMapping.name}`
+			: 'No retained earnings account is mapped.'}
+	</p>
 	{#if data.canConfigureRetainedEarnings}
 		<form method="POST" action="?/assignRetainedEarnings" class="form-grid card">
-			<label>Active equity account
+			<label
+				>Active equity account
 				<select name="accountPublicId" required>
 					<option value="">Choose an equity account</option>
-					{#each data.retainedEarningsAccounts as account}<option value={account.publicId}>{account.accountCode} · {account.name}</option>{/each}
+					{#each data.retainedEarningsAccounts as account}<option value={account.publicId}
+							>{account.accountCode} · {account.name}</option
+						>{/each}
 				</select>
 			</label>
 			<label>Reason<input name="reason" maxlength="1000" required /></label>
@@ -46,12 +65,20 @@
 
 {#if data.canPrepare}
 	<section class="panel">
-		<div class="section-heading"><div><p class="eyebrow">Preparation</p><h2>Prepare year-end close</h2></div></div>
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Preparation</p>
+				<h2>Prepare year-end close</h2>
+			</div>
+		</div>
 		<form method="POST" action="?/prepare" class="form-grid card">
-			<label>Financial year
+			<label
+				>Financial year
 				<select name="financialYearPublicId" required>
 					<option value="">Choose a financial year</option>
-					{#each data.financialYears as year}<option value={year.publicId}>{year.yearCode} · {year.name}</option>{/each}
+					{#each data.financialYears as year}<option value={year.publicId}
+							>{year.yearCode} · {year.name}</option
+						>{/each}
 				</select>
 			</label>
 			<label>Currency<input name="currencyCode" maxlength="3" value="GBP" required /></label>
@@ -62,7 +89,13 @@
 {/if}
 
 <section class="panel">
-	<div class="section-heading"><div><p class="eyebrow">Immutable preparation evidence</p><h2>Preparations</h2></div><span>{data.preparations.length}</span></div>
+	<div class="section-heading">
+		<div>
+			<p class="eyebrow">Immutable preparation evidence</p>
+			<h2>Preparations</h2>
+		</div>
+		<span>{data.preparations.length}</span>
+	</div>
 	{#if data.preparations.length === 0}
 		<p class="muted">No year-end close preparations have been recorded.</p>
 	{:else}
@@ -70,7 +103,16 @@
 			{#each data.preparations as preparation}
 				<article class="record">
 					<div class="record-head">
-						<div><strong>Preparation #{preparation.preparationSequence} · {preparation.currencyCode}</strong><small>{dateText(preparation.preparedAt)} · fingerprint {preparation.sourceFingerprint.slice(0, 12)}…</small></div>
+						<div>
+							<strong
+								>Preparation #{preparation.preparationSequence} · {preparation.currencyCode}</strong
+							><small
+								>{dateText(preparation.preparedAt)} · fingerprint {preparation.sourceFingerprint.slice(
+									0,
+									12
+								)}…</small
+							>
+						</div>
 						<em>{preparation.currencyCode} {preparation.profitLossAmount}</em>
 					</div>
 					<p>Revenue {preparation.revenueTotal} · Expenses {preparation.expenseTotal}</p>
@@ -89,7 +131,13 @@
 </section>
 
 <section class="panel">
-	<div class="section-heading"><div><p class="eyebrow">Authorised accounting evidence</p><h2>Year-end closes</h2></div><span>{data.closes.length}</span></div>
+	<div class="section-heading">
+		<div>
+			<p class="eyebrow">Authorised accounting evidence</p>
+			<h2>Year-end closes</h2>
+		</div>
+		<span>{data.closes.length}</span>
+	</div>
 	{#if data.closes.length === 0}
 		<p class="muted">No year-end closes have been authorised.</p>
 	{:else}
@@ -97,8 +145,14 @@
 			{#each data.closes as close}
 				<article class="record">
 					<div class="record-head">
-						<div><strong>Close #{close.closeSequence} · {close.currencyCode}</strong><small>Authorised {dateText(close.authorisedAt)}</small></div>
-						<em class:reversed={close.reversedAt}>{close.reversedAt ? `Reversed ${dateText(close.reversedAt)}` : 'Active'}</em>
+						<div>
+							<strong>Close #{close.closeSequence} · {close.currencyCode}</strong><small
+								>Authorised {dateText(close.authorisedAt)}</small
+							>
+						</div>
+						<em class:reversed={close.reversedAt}
+							>{close.reversedAt ? `Reversed ${dateText(close.reversedAt)}` : 'Active'}</em
+						>
 					</div>
 					{#if data.canReverse && !close.reversedAt}
 						<form method="POST" action="?/reverse" class="inline-action danger-action">

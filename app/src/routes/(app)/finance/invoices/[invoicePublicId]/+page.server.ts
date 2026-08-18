@@ -21,13 +21,15 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 
 function positiveInt(value: FormDataEntryValue | null, label: string): number {
 	const parsed = Number(String(value ?? ''));
-	if (!Number.isSafeInteger(parsed) || parsed <= 0) throw new FinanceValidationError(`${label} is invalid.`);
+	if (!Number.isSafeInteger(parsed) || parsed <= 0)
+		throw new FinanceValidationError(`${label} is invalid.`);
 	return parsed;
 }
 
 function actionFailure(cause: unknown) {
 	if (cause instanceof FinanceValidationError) return fail(400, { actionError: cause.message });
-	if (cause instanceof RecordNotFoundError) return fail(404, { actionError: 'The invoice or requested record is unavailable.' });
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, { actionError: 'The invoice or requested record is unavailable.' });
 	if (cause instanceof TenantAccessError) return fail(403, { actionError: cause.message });
 	throw cause;
 }
@@ -49,7 +51,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		return { ...workspace, receivablePosition };
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Invoice not found.');
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Accounts-receivable access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Accounts-receivable access is not permitted.');
 		throw cause;
 	}
 };

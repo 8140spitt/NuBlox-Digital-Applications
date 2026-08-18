@@ -62,7 +62,9 @@ function partyDisplayName(row: {
 
 function isDuplicateKeyError(error: unknown): boolean {
 	return Boolean(
-		error && typeof error === 'object' && 'code' in error &&
+		error &&
+		typeof error === 'object' &&
+		'code' in error &&
 		(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
 	);
 }
@@ -73,7 +75,10 @@ export class BillingSettingsService {
 		private readonly publicIdFactory: () => string = randomUUID
 	) {}
 
-	private async paymentTerms(db: DatabaseExecutor, organisationId: string): Promise<PaymentTermRecord[]> {
+	private async paymentTerms(
+		db: DatabaseExecutor,
+		organisationId: string
+	): Promise<PaymentTermRecord[]> {
 		const rows = await db
 			.selectFrom('payment_terms')
 			.select([
@@ -107,16 +112,24 @@ export class BillingSettingsService {
 			this.db
 				.selectFrom('parties as party')
 				.leftJoin('party_persons as person', (join) =>
-					join.onRef('person.party_id', '=', 'party.id').onRef('person.organisation_id', '=', 'party.organisation_id')
+					join
+						.onRef('person.party_id', '=', 'party.id')
+						.onRef('person.organisation_id', '=', 'party.organisation_id')
 				)
 				.leftJoin('party_organisations as company', (join) =>
-					join.onRef('company.party_id', '=', 'party.id').onRef('company.organisation_id', '=', 'party.organisation_id')
+					join
+						.onRef('company.party_id', '=', 'party.id')
+						.onRef('company.organisation_id', '=', 'party.organisation_id')
 				)
 				.leftJoin('party_billing_settings as settings', (join) =>
-					join.onRef('settings.party_id', '=', 'party.id').onRef('settings.organisation_id', '=', 'party.organisation_id')
+					join
+						.onRef('settings.party_id', '=', 'party.id')
+						.onRef('settings.organisation_id', '=', 'party.organisation_id')
 				)
 				.leftJoin('payment_terms as term', (join) =>
-					join.onRef('term.id', '=', 'settings.default_payment_term_id').onRef('term.organisation_id', '=', 'party.organisation_id')
+					join
+						.onRef('term.id', '=', 'settings.default_payment_term_id')
+						.onRef('term.organisation_id', '=', 'party.organisation_id')
 				)
 				.select([
 					'party.id as partyId',
@@ -154,16 +167,24 @@ export class BillingSettingsService {
 		};
 	}
 
-	async createPaymentTerm(actor: TenantActorContext, input: {
-		name: string;
-		calculationBasis: string;
-		daysOffset: number;
-		isDefault: boolean;
-	}): Promise<string> {
+	async createPaymentTerm(
+		actor: TenantActorContext,
+		input: {
+			name: string;
+			calculationBasis: string;
+			daysOffset: number;
+			isDefault: boolean;
+		}
+	): Promise<string> {
 		const name = cleanFinanceText(input.name, 160, 'Payment term name', true)!;
 		const calculationBasis = input.calculationBasis.trim();
-		if (!PAYMENT_TERM_BASES.has(calculationBasis)) throw new FinanceValidationError('Payment-term calculation basis is invalid.');
-		if (!Number.isSafeInteger(input.daysOffset) || input.daysOffset < 0 || input.daysOffset > 65535) {
+		if (!PAYMENT_TERM_BASES.has(calculationBasis))
+			throw new FinanceValidationError('Payment-term calculation basis is invalid.');
+		if (
+			!Number.isSafeInteger(input.daysOffset) ||
+			input.daysOffset < 0 ||
+			input.daysOffset > 65535
+		) {
 			throw new FinanceValidationError('Payment-term day offset is invalid.');
 		}
 		if (calculationBasis === 'manual' && input.daysOffset !== 0) {
@@ -174,21 +195,35 @@ export class BillingSettingsService {
 				const policy = new FinanceAccessPolicy(trx);
 				const membership = await policy.assertActiveActor(actor, trx);
 				const decision = await policy.mutationDecision(actor, 'finance.billing.manage', trx);
-				if (!decision.allowed) throw new TenantAccessError('Billing settings management is not permitted.');
-				await trx.selectFrom('organisations').select('id').where('id', '=', actor.organisationId).forUpdate().executeTakeFirstOrThrow();
+				if (!decision.allowed)
+					throw new TenantAccessError('Billing settings management is not permitted.');
+				await trx
+					.selectFrom('organisations')
+					.select('id')
+					.where('id', '=', actor.organisationId)
+					.forUpdate()
+					.executeTakeFirstOrThrow();
 				if (input.isDefault) {
-					await trx.updateTable('payment_terms').set({ is_default: 0 }).where('organisation_id', '=', actor.organisationId).where('is_default', '=', 1).execute();
+					await trx
+						.updateTable('payment_terms')
+						.set({ is_default: 0 })
+						.where('organisation_id', '=', actor.organisationId)
+						.where('is_default', '=', 1)
+						.execute();
 				}
 				const publicId = this.publicIdFactory();
-				await trx.insertInto('payment_terms').values({
-					organisation_id: actor.organisationId,
-					public_id: publicId,
-					name,
-					calculation_basis: calculationBasis,
-					days_offset: input.daysOffset,
-					is_default: input.isDefault ? 1 : 0,
-					is_active: 1
-				}).executeTakeFirstOrThrow();
+				await trx
+					.insertInto('payment_terms')
+					.values({
+						organisation_id: actor.organisationId,
+						public_id: publicId,
+						name,
+						calculation_basis: calculationBasis,
+						days_offset: input.daysOffset,
+						is_default: input.isDefault ? 1 : 0,
+						is_active: 1
+					})
+					.executeTakeFirstOrThrow();
 				await new AuditRepository(trx).append({
 					eventPublicId: this.publicIdFactory(),
 					actingOrganisationId: actor.organisationId,
@@ -198,60 +233,95 @@ export class BillingSettingsService {
 					subjectType: 'payment_term',
 					subjectPublicId: publicId,
 					correlationId: actor.correlationId,
-					changeSummary: { name, calculationBasis, daysOffset: input.daysOffset, isDefault: input.isDefault }
+					changeSummary: {
+						name,
+						calculationBasis,
+						daysOffset: input.daysOffset,
+						isDefault: input.isDefault
+					}
 				});
 				return publicId;
 			});
 		} catch (cause) {
-			if (isDuplicateKeyError(cause)) throw new FinanceValidationError('A payment term with that name already exists.');
+			if (isDuplicateKeyError(cause))
+				throw new FinanceValidationError('A payment term with that name already exists.');
 			throw cause;
 		}
 	}
 
-	async setPartyBillingSettings(actor: TenantActorContext, input: {
-		partyPublicId: string;
-		defaultPaymentTermPublicId?: string | null;
-		defaultCurrencyCode?: string | null;
-		customerAccountReference?: string | null;
-		purchaseOrderRequired: boolean;
-	}): Promise<void> {
+	async setPartyBillingSettings(
+		actor: TenantActorContext,
+		input: {
+			partyPublicId: string;
+			defaultPaymentTermPublicId?: string | null;
+			defaultCurrencyCode?: string | null;
+			customerAccountReference?: string | null;
+			purchaseOrderRequired: boolean;
+		}
+	): Promise<void> {
 		const partyPublicId = cleanFinanceText(input.partyPublicId, 64, 'Party ID', true)!;
 		const currencyCode = validateCurrencyCode(input.defaultCurrencyCode);
-		const accountReference = cleanFinanceText(input.customerAccountReference, 120, 'Customer account reference');
+		const accountReference = cleanFinanceText(
+			input.customerAccountReference,
+			120,
+			'Customer account reference'
+		);
 		await this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
 			const decision = await policy.mutationDecision(actor, 'finance.billing.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Billing settings management is not permitted.');
-			const party = await trx.selectFrom('parties').select(['id', 'public_id as publicId'])
-				.where('organisation_id', '=', actor.organisationId).where('public_id', '=', partyPublicId).executeTakeFirst();
+			if (!decision.allowed)
+				throw new TenantAccessError('Billing settings management is not permitted.');
+			const party = await trx
+				.selectFrom('parties')
+				.select(['id', 'public_id as publicId'])
+				.where('organisation_id', '=', actor.organisationId)
+				.where('public_id', '=', partyPublicId)
+				.executeTakeFirst();
 			if (!party) throw new RecordNotFoundError('Customer party not found.');
 			let paymentTermId: string | null = null;
 			const termPublicId = input.defaultPaymentTermPublicId?.trim() ?? '';
 			if (termPublicId) {
-				const term = await trx.selectFrom('payment_terms').select('id')
-					.where('organisation_id', '=', actor.organisationId).where('public_id', '=', termPublicId).where('is_active', '=', 1).executeTakeFirst();
+				const term = await trx
+					.selectFrom('payment_terms')
+					.select('id')
+					.where('organisation_id', '=', actor.organisationId)
+					.where('public_id', '=', termPublicId)
+					.where('is_active', '=', 1)
+					.executeTakeFirst();
 				if (!term) throw new FinanceValidationError('Default payment term is unavailable.');
 				paymentTermId = term.id;
 			}
-			const existing = await trx.selectFrom('party_billing_settings').select('party_id')
-				.where('party_id', '=', party.id).where('organisation_id', '=', actor.organisationId).executeTakeFirst();
+			const existing = await trx
+				.selectFrom('party_billing_settings')
+				.select('party_id')
+				.where('party_id', '=', party.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.executeTakeFirst();
 			if (existing) {
-				await trx.updateTable('party_billing_settings').set({
-					default_payment_term_id: paymentTermId,
-					default_currency_code: currencyCode,
-					customer_account_reference: accountReference,
-					purchase_order_required: input.purchaseOrderRequired ? 1 : 0
-				}).where('party_id', '=', party.id).where('organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
+				await trx
+					.updateTable('party_billing_settings')
+					.set({
+						default_payment_term_id: paymentTermId,
+						default_currency_code: currencyCode,
+						customer_account_reference: accountReference,
+						purchase_order_required: input.purchaseOrderRequired ? 1 : 0
+					})
+					.where('party_id', '=', party.id)
+					.where('organisation_id', '=', actor.organisationId)
+					.executeTakeFirstOrThrow();
 			} else {
-				await trx.insertInto('party_billing_settings').values({
-					party_id: party.id,
-					organisation_id: actor.organisationId,
-					default_payment_term_id: paymentTermId,
-					default_currency_code: currencyCode,
-					customer_account_reference: accountReference,
-					purchase_order_required: input.purchaseOrderRequired ? 1 : 0
-				}).executeTakeFirstOrThrow();
+				await trx
+					.insertInto('party_billing_settings')
+					.values({
+						party_id: party.id,
+						organisation_id: actor.organisationId,
+						default_payment_term_id: paymentTermId,
+						default_currency_code: currencyCode,
+						customer_account_reference: accountReference,
+						purchase_order_required: input.purchaseOrderRequired ? 1 : 0
+					})
+					.executeTakeFirstOrThrow();
 			}
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),

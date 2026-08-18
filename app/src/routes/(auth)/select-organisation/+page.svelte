@@ -74,24 +74,96 @@
 </main>
 
 <style>
-	.shell { min-height: 100vh; display: grid; place-items: center; padding: 2rem; background: #f5f5f2; }
-	.card { width: min(100%, 42rem); background: white; border: 1px solid #d9d9d2; border-radius: 1rem; padding: 2rem; }
-	.brand { margin: 0 0 2rem; font-weight: 800; }
-	h1 { margin: 0; font-size: 2rem; }
-	.lede { color: #5c5c56; }
-	.choices { display: grid; gap: 0.75rem; margin: 1.5rem 0; }
-	.choices button {
-		display: flex; justify-content: space-between; align-items: center; gap: 1rem;
-		width: 100%; text-align: left; padding: 1rem; border: 1px solid #c9c9c2;
-		border-radius: 0.7rem; background: white; font: inherit; cursor: pointer;
+	.shell {
+		min-height: 100vh;
+		display: grid;
+		place-items: center;
+		padding: 2rem;
+		background: #f5f5f2;
 	}
-	.choices button:hover, .choices button:focus-visible { border-color: #111; }
-	.choices button.current { border-color: #111; background: #f4f4ef; }
-	.choices span { font-weight: 700; }
-	.choices small { color: #666; }
-	.notice { margin: 1.5rem 0; padding: 1rem; border-radius: 0.6rem; background: #f0f0ec; line-height: 1.5; }
-	.actions { display: flex; align-items: center; gap: 1rem; margin-top: 1.5rem; }
-	.create { display: inline-block; border: 1px solid #111; border-radius: 0.55rem; padding: 0.7rem 0.9rem; background: #111; color: white; text-decoration: none; font-weight: 700; }
-	.error { color: #9b1c1c; }
-	.signout { border: 0; background: transparent; padding: 0; text-decoration: underline; cursor: pointer; font: inherit; }
+	.card {
+		width: min(100%, 42rem);
+		background: white;
+		border: 1px solid #d9d9d2;
+		border-radius: 1rem;
+		padding: 2rem;
+	}
+	.brand {
+		margin: 0 0 2rem;
+		font-weight: 800;
+	}
+	h1 {
+		margin: 0;
+		font-size: 2rem;
+	}
+	.lede {
+		color: #5c5c56;
+	}
+	.choices {
+		display: grid;
+		gap: 0.75rem;
+		margin: 1.5rem 0;
+	}
+	.choices button {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: 1rem;
+		width: 100%;
+		text-align: left;
+		padding: 1rem;
+		border: 1px solid #c9c9c2;
+		border-radius: 0.7rem;
+		background: white;
+		font: inherit;
+		cursor: pointer;
+	}
+	.choices button:hover,
+	.choices button:focus-visible {
+		border-color: #111;
+	}
+	.choices button.current {
+		border-color: #111;
+		background: #f4f4ef;
+	}
+	.choices span {
+		font-weight: 700;
+	}
+	.choices small {
+		color: #666;
+	}
+	.notice {
+		margin: 1.5rem 0;
+		padding: 1rem;
+		border-radius: 0.6rem;
+		background: #f0f0ec;
+		line-height: 1.5;
+	}
+	.actions {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+	.create {
+		display: inline-block;
+		border: 1px solid #111;
+		border-radius: 0.55rem;
+		padding: 0.7rem 0.9rem;
+		background: #111;
+		color: white;
+		text-decoration: none;
+		font-weight: 700;
+	}
+	.error {
+		color: #9b1c1c;
+	}
+	.signout {
+		border: 0;
+		background: transparent;
+		padding: 0;
+		text-decoration: underline;
+		cursor: pointer;
+		font: inherit;
+	}
 </style>

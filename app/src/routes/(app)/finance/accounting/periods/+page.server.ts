@@ -19,7 +19,8 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 
 function actionFailure(cause: unknown) {
 	if (cause instanceof FinanceValidationError) return fail(400, { actionError: cause.message });
-	if (cause instanceof RecordNotFoundError) return fail(404, { actionError: 'The requested accounting-period record is unavailable.' });
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, { actionError: 'The requested accounting-period record is unavailable.' });
 	if (cause instanceof TenantAccessError) return fail(403, { actionError: cause.message });
 	throw cause;
 }
@@ -34,7 +35,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		return await new AccountingPeriodService(getDatabase()).getWorkspace(actor);
 	} catch (cause) {
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Accounting-period access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Accounting-period access is not permitted.');
 		throw cause;
 	}
 };

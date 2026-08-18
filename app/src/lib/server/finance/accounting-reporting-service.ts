@@ -2,7 +2,11 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { formatScaledDecimal, parseScaledDecimal } from '$lib/server/commercial/commercial-decimal';
 import type { Database } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
-import { FinanceAccessPolicy, FinanceValidationError, validateCurrencyCode } from './finance-common';
+import {
+	FinanceAccessPolicy,
+	FinanceValidationError,
+	validateCurrencyCode
+} from './finance-common';
 
 type AccountType = 'asset' | 'liability' | 'equity' | 'revenue' | 'expense';
 type NormalBalance = 'debit' | 'credit';
@@ -156,7 +160,9 @@ export class AccountingReportingService {
 			this.db
 				.selectFrom('accounting_periods as period')
 				.innerJoin('accounting_financial_years as year', (join) =>
-					join.onRef('year.id', '=', 'period.financial_year_id').onRef('year.organisation_id', '=', 'period.organisation_id')
+					join
+						.onRef('year.id', '=', 'period.financial_year_id')
+						.onRef('year.organisation_id', '=', 'period.organisation_id')
 				)
 				.select([
 					'period.public_id as publicId',
@@ -193,13 +199,15 @@ export class AccountingReportingService {
 			periodNumber: Number(row.periodNumber)
 		}));
 		const selectedPeriod = input.periodPublicId
-			? periods.find((period) => period.publicId === input.periodPublicId) ?? null
-			: periods[0] ?? null;
+			? (periods.find((period) => period.publicId === input.periodPublicId) ?? null)
+			: (periods[0] ?? null);
 		if (input.periodPublicId && !selectedPeriod) {
 			throw new FinanceValidationError('The selected accounting period is unavailable.');
 		}
 
-		const currencies = [...new Set([organisation.defaultCurrencyCode, ...currencyRows.map((row) => row.currencyCode)])].sort();
+		const currencies = [
+			...new Set([organisation.defaultCurrencyCode, ...currencyRows.map((row) => row.currencyCode)])
+		].sort();
 		const requestedCurrency = validateCurrencyCode(input.currencyCode, 'Reporting currency');
 		const selectedCurrency = requestedCurrency ?? organisation.defaultCurrencyCode;
 		if (!selectedPeriod) return this.emptyWorkspace(periods, currencies, selectedCurrency);
@@ -221,7 +229,9 @@ export class AccountingReportingService {
 			this.db
 				.selectFrom('accounting_journal_lines as line')
 				.innerJoin('accounting_journal_entries as journal', (join) =>
-					join.onRef('journal.id', '=', 'line.journal_entry_id').onRef('journal.organisation_id', '=', 'line.organisation_id')
+					join
+						.onRef('journal.id', '=', 'line.journal_entry_id')
+						.onRef('journal.organisation_id', '=', 'line.organisation_id')
 				)
 				.select([
 					'line.accounting_account_id as accountId',
@@ -274,8 +284,12 @@ export class AccountingReportingService {
 			}
 		}
 
-		const activeAccounts = [...byAccount.values()].filter((account) =>
-			account.openingNet !== 0n || account.periodDebit !== 0n || account.periodCredit !== 0n || account.closingNet !== 0n
+		const activeAccounts = [...byAccount.values()].filter(
+			(account) =>
+				account.openingNet !== 0n ||
+				account.periodDebit !== 0n ||
+				account.periodCredit !== 0n ||
+				account.closingNet !== 0n
 		);
 		const trialRows: TrialBalanceRow[] = [];
 		let openingDebit = 0n;
@@ -310,19 +324,48 @@ export class AccountingReportingService {
 
 		const revenueAccounts = activeAccounts.filter((account) => account.accountType === 'revenue');
 		const expenseAccounts = activeAccounts.filter((account) => account.accountType === 'expense');
-		const periodRevenue = revenueAccounts.reduce((sum, account) => sum + (account.periodCredit - account.periodDebit), 0n);
-		const periodExpenses = expenseAccounts.reduce((sum, account) => sum + (account.periodDebit - account.periodCredit), 0n);
-		const yearRevenue = revenueAccounts.reduce((sum, account) => sum + (account.yearCredit - account.yearDebit), 0n);
-		const yearExpenses = expenseAccounts.reduce((sum, account) => sum + (account.yearDebit - account.yearCredit), 0n);
+		const periodRevenue = revenueAccounts.reduce(
+			(sum, account) => sum + (account.periodCredit - account.periodDebit),
+			0n
+		);
+		const periodExpenses = expenseAccounts.reduce(
+			(sum, account) => sum + (account.periodDebit - account.periodCredit),
+			0n
+		);
+		const yearRevenue = revenueAccounts.reduce(
+			(sum, account) => sum + (account.yearCredit - account.yearDebit),
+			0n
+		);
+		const yearExpenses = expenseAccounts.reduce(
+			(sum, account) => sum + (account.yearDebit - account.yearCredit),
+			0n
+		);
 
 		const assetAccounts = activeAccounts.filter((account) => account.accountType === 'asset');
-		const liabilityAccounts = activeAccounts.filter((account) => account.accountType === 'liability');
+		const liabilityAccounts = activeAccounts.filter(
+			(account) => account.accountType === 'liability'
+		);
 		const equityAccounts = activeAccounts.filter((account) => account.accountType === 'equity');
-		const assetsTotal = assetAccounts.reduce((sum, account) => sum + naturalAmount(account, account.closingNet), 0n);
-		const liabilitiesTotal = liabilityAccounts.reduce((sum, account) => sum + naturalAmount(account, account.closingNet), 0n);
-		const equityTotal = equityAccounts.reduce((sum, account) => sum + naturalAmount(account, account.closingNet), 0n);
-		const cumulativeRevenue = revenueAccounts.reduce((sum, account) => sum + (account.closingNet * -1n), 0n);
-		const cumulativeExpenses = expenseAccounts.reduce((sum, account) => sum + account.closingNet, 0n);
+		const assetsTotal = assetAccounts.reduce(
+			(sum, account) => sum + naturalAmount(account, account.closingNet),
+			0n
+		);
+		const liabilitiesTotal = liabilityAccounts.reduce(
+			(sum, account) => sum + naturalAmount(account, account.closingNet),
+			0n
+		);
+		const equityTotal = equityAccounts.reduce(
+			(sum, account) => sum + naturalAmount(account, account.closingNet),
+			0n
+		);
+		const cumulativeRevenue = revenueAccounts.reduce(
+			(sum, account) => sum + account.closingNet * -1n,
+			0n
+		);
+		const cumulativeExpenses = expenseAccounts.reduce(
+			(sum, account) => sum + account.closingNet,
+			0n
+		);
 		const unclosedEarnings = cumulativeRevenue - cumulativeExpenses;
 		const liabilitiesEquityAndEarningsTotal = liabilitiesTotal + equityTotal + unclosedEarnings;
 
@@ -344,8 +387,12 @@ export class AccountingReportingService {
 				closingBalanced: closingDebit === closingCredit
 			},
 			profitAndLoss: {
-				revenue: revenueAccounts.map((account) => rowAmount(account, account.periodCredit - account.periodDebit)),
-				expenses: expenseAccounts.map((account) => rowAmount(account, account.periodDebit - account.periodCredit)),
+				revenue: revenueAccounts.map((account) =>
+					rowAmount(account, account.periodCredit - account.periodDebit)
+				),
+				expenses: expenseAccounts.map((account) =>
+					rowAmount(account, account.periodDebit - account.periodCredit)
+				),
 				periodRevenue: moneyText(periodRevenue),
 				periodExpenses: moneyText(periodExpenses),
 				periodProfit: moneyText(periodRevenue - periodExpenses),
@@ -354,9 +401,15 @@ export class AccountingReportingService {
 				yearToDateProfit: moneyText(yearRevenue - yearExpenses)
 			},
 			balanceSheet: {
-				assets: assetAccounts.map((account) => rowAmount(account, naturalAmount(account, account.closingNet))),
-				liabilities: liabilityAccounts.map((account) => rowAmount(account, naturalAmount(account, account.closingNet))),
-				equity: equityAccounts.map((account) => rowAmount(account, naturalAmount(account, account.closingNet))),
+				assets: assetAccounts.map((account) =>
+					rowAmount(account, naturalAmount(account, account.closingNet))
+				),
+				liabilities: liabilityAccounts.map((account) =>
+					rowAmount(account, naturalAmount(account, account.closingNet))
+				),
+				equity: equityAccounts.map((account) =>
+					rowAmount(account, naturalAmount(account, account.closingNet))
+				),
 				assetsTotal: moneyText(assetsTotal),
 				liabilitiesTotal: moneyText(liabilitiesTotal),
 				equityTotal: moneyText(equityTotal),
@@ -379,14 +432,36 @@ export class AccountingReportingService {
 			selectedCurrency,
 			trialBalance: {
 				rows: [],
-				openingDebit: '0.0000', openingCredit: '0.0000', periodDebit: '0.0000', periodCredit: '0.0000', closingDebit: '0.0000', closingCredit: '0.0000',
-				openingBalanced: true, periodBalanced: true, closingBalanced: true
+				openingDebit: '0.0000',
+				openingCredit: '0.0000',
+				periodDebit: '0.0000',
+				periodCredit: '0.0000',
+				closingDebit: '0.0000',
+				closingCredit: '0.0000',
+				openingBalanced: true,
+				periodBalanced: true,
+				closingBalanced: true
 			},
 			profitAndLoss: {
-				revenue: [], expenses: [], periodRevenue: '0.0000', periodExpenses: '0.0000', periodProfit: '0.0000', yearToDateRevenue: '0.0000', yearToDateExpenses: '0.0000', yearToDateProfit: '0.0000'
+				revenue: [],
+				expenses: [],
+				periodRevenue: '0.0000',
+				periodExpenses: '0.0000',
+				periodProfit: '0.0000',
+				yearToDateRevenue: '0.0000',
+				yearToDateExpenses: '0.0000',
+				yearToDateProfit: '0.0000'
 			},
 			balanceSheet: {
-				assets: [], liabilities: [], equity: [], assetsTotal: '0.0000', liabilitiesTotal: '0.0000', equityTotal: '0.0000', unclosedEarnings: '0.0000', liabilitiesEquityAndEarningsTotal: '0.0000', balanced: true
+				assets: [],
+				liabilities: [],
+				equity: [],
+				assetsTotal: '0.0000',
+				liabilitiesTotal: '0.0000',
+				equityTotal: '0.0000',
+				unclosedEarnings: '0.0000',
+				liabilitiesEquityAndEarningsTotal: '0.0000',
+				balanced: true
 			}
 		};
 	}

@@ -125,9 +125,13 @@ export class ContractFormationService {
 			.where('party.organisation_id', '=', organisationId)
 			.where('party.id', '=', partyId)
 			.executeTakeFirst();
-		if (!row) throw new ContractValidationError('The quotation customer is no longer available in CRM.');
+		if (!row)
+			throw new ContractValidationError('The quotation customer is no longer available in CRM.');
 		if (row.partyKind === 'organisation') return row.tradingName ?? row.legalName ?? 'Customer';
-		return row.preferredName ?? ([row.givenNames, row.familyName].filter(Boolean).join(' ') || 'Customer');
+		return (
+			row.preferredName ??
+			([row.givenNames, row.familyName].filter(Boolean).join(' ') || 'Customer')
+		);
 	}
 
 	private async quotationNetAmount(
@@ -143,7 +147,8 @@ export class ContractFormationService {
 			.where('is_optional', '=', 0)
 			.orderBy('line_number', 'asc')
 			.execute();
-		if (rows.length === 0) throw new ContractValidationError('The accepted quotation has no included lines.');
+		if (rows.length === 0)
+			throw new ContractValidationError('The accepted quotation has no included lines.');
 		return sumMoney(rows.map((row) => lineAmount(row.quantity, row.unitRate)));
 	}
 
@@ -247,7 +252,11 @@ export class ContractFormationService {
 					.innerJoin('project_members as member', (join) =>
 						join
 							.onRef('member.project_id', '=', 'project.id')
-							.onRef('member.participant_organisation_id', '=', 'participation.participant_organisation_id')
+							.onRef(
+								'member.participant_organisation_id',
+								'=',
+								'participation.participant_organisation_id'
+							)
 							.on('member.organisation_member_id', '=', actor.memberId)
 							.on('member.status', '=', 'active')
 					)
@@ -305,19 +314,27 @@ export class ContractFormationService {
 					.orderBy('project.id', 'desc')
 					.execute()
 					.then((rows) =>
-						rows.map((row) => ({ ...row, customerDisplayName: row.customerDisplayName ?? 'Customer' }))
+						rows.map((row) => ({
+							...row,
+							customerDisplayName: row.customerDisplayName ?? 'Customer'
+						}))
 					)
 			: [];
 
 		return { canView, canCreate, contracts, eligibleProjects };
 	}
 
-	async getFormationWorkspace(actor: TenantActorContext, projectPublicId: string): Promise<ContractFormationWorkspace> {
+	async getFormationWorkspace(
+		actor: TenantActorContext,
+		projectPublicId: string
+	): Promise<ContractFormationWorkspace> {
 		await this.policy.assertActiveActor(actor);
 		const project = await this.policy.assertProjectScope(actor, projectPublicId);
 		const source = await this.findSourceByProjectId(this.db, actor.organisationId, project.id);
 		if (!source || source.responseType !== 'accepted') {
-			throw new ContractValidationError('This project is not linked to an accepted quotation conversion.');
+			throw new ContractValidationError(
+				'This project is not linked to an accepted quotation conversion.'
+			);
 		}
 		if (source.quotationVersionStatus !== 'issued' || !source.quotationLockedAt) {
 			throw new ContractValidationError('The source quotation version is not issued and locked.');
@@ -332,7 +349,12 @@ export class ContractFormationService {
 				.where('is_active', '=', 1)
 				.orderBy('name', 'asc')
 				.execute(),
-			this.findExistingSourceContract(this.db, actor.organisationId, project.id, source.acceptedResponseId),
+			this.findExistingSourceContract(
+				this.db,
+				actor.organisationId,
+				project.id,
+				source.acceptedResponseId
+			),
 			this.policy.mutationDecision(actor, 'contract.create'),
 			this.quotationNetAmount(this.db, actor.organisationId, source.quotationVersionId)
 		]);
@@ -360,7 +382,10 @@ export class ContractFormationService {
 		};
 	}
 
-	async createFromProject(actor: TenantActorContext, input: CreateContractInput): Promise<ContractSummary> {
+	async createFromProject(
+		actor: TenantActorContext,
+		input: CreateContractInput
+	): Promise<ContractSummary> {
 		const projectPublicId = cleanText(input.projectPublicId, 64, 'Project ID', true)!;
 		const contractTypeCode = validateCode(input.contractTypeCode, 'Contract type');
 		const title = cleanText(input.title, 255, 'Contract title', true)!;
@@ -372,7 +397,8 @@ export class ContractFormationService {
 				const membership = await this.policy.assertActiveActor(actor, trx);
 				const project = await this.policy.assertProjectScope(actor, projectPublicId, trx);
 				const createDecision = await this.policy.mutationDecision(actor, 'contract.create', trx);
-				if (!createDecision.allowed) throw new TenantAccessError('Contract creation is not permitted.');
+				if (!createDecision.allowed)
+					throw new TenantAccessError('Contract creation is not permitted.');
 
 				const lockedProject = await trx
 					.selectFrom('projects')
@@ -381,12 +407,21 @@ export class ContractFormationService {
 					.where('id', '=', project.id)
 					.forUpdate()
 					.executeTakeFirstOrThrow();
-				const source = await this.findSourceByProjectId(trx, actor.organisationId, project.id, true);
+				const source = await this.findSourceByProjectId(
+					trx,
+					actor.organisationId,
+					project.id,
+					true
+				);
 				if (!source || source.responseType !== 'accepted') {
-					throw new ContractValidationError('This project is not linked to an accepted quotation conversion.');
+					throw new ContractValidationError(
+						'This project is not linked to an accepted quotation conversion.'
+					);
 				}
 				if (source.quotationVersionStatus !== 'issued' || !source.quotationLockedAt) {
-					throw new ContractValidationError('The source quotation version is not issued and locked.');
+					throw new ContractValidationError(
+						'The source quotation version is not issued and locked.'
+					);
 				}
 
 				const existing = await this.findExistingSourceContract(
@@ -408,7 +443,8 @@ export class ContractFormationService {
 					.where('code', '=', contractTypeCode)
 					.where('is_active', '=', 1)
 					.executeTakeFirst();
-				if (!type) throw new ContractValidationError('The selected contract type is not available.');
+				if (!type)
+					throw new ContractValidationError('The selected contract type is not available.');
 
 				const contractNumber = generatedContractNumber(project.projectNumber, project.publicId);
 				const conflictingNumber = await trx
@@ -426,7 +462,11 @@ export class ContractFormationService {
 				const customerDisplayName =
 					source.customerDisplayName ??
 					(await this.livePartyDisplayName(trx, actor.organisationId, source.customerPartyId));
-				const netAmount = await this.quotationNetAmount(trx, actor.organisationId, source.quotationVersionId);
+				const netAmount = await this.quotationNetAmount(
+					trx,
+					actor.organisationId,
+					source.quotationVersionId
+				);
 				const clientRole = await trx
 					.selectFrom('contract_party_role_types')
 					.select(['id', 'code'])
@@ -460,7 +500,8 @@ export class ContractFormationService {
 						archived_at: null
 					})
 					.executeTakeFirstOrThrow();
-				if (contractInsert.insertId === undefined) throw new Error('Contract insert did not return an ID.');
+				if (contractInsert.insertId === undefined)
+					throw new Error('Contract insert did not return an ID.');
 				const contractId = contractInsert.insertId.toString();
 
 				const versionInsert = await trx
@@ -477,7 +518,8 @@ export class ContractFormationService {
 						locked_at: null
 					})
 					.executeTakeFirstOrThrow();
-				if (versionInsert.insertId === undefined) throw new Error('Contract version insert did not return an ID.');
+				if (versionInsert.insertId === undefined)
+					throw new Error('Contract version insert did not return an ID.');
 				const versionId = versionInsert.insertId.toString();
 
 				const partyInsert = await trx
@@ -492,7 +534,8 @@ export class ContractFormationService {
 						sort_order: 1
 					})
 					.executeTakeFirstOrThrow();
-				if (partyInsert.insertId === undefined) throw new Error('Contract party insert did not return an ID.');
+				if (partyInsert.insertId === undefined)
+					throw new Error('Contract party insert did not return an ID.');
 				const contractPartyId = partyInsert.insertId.toString();
 
 				if (source.customerSnapshotId) {
@@ -570,13 +613,20 @@ export class ContractFormationService {
 					}
 				});
 
-				const created = await this.findSummaryByPublicId(trx, actor.organisationId, contractPublicId);
-				if (!created) throw new Error('Created contract could not be reloaded inside its transaction.');
+				const created = await this.findSummaryByPublicId(
+					trx,
+					actor.organisationId,
+					contractPublicId
+				);
+				if (!created)
+					throw new Error('Created contract could not be reloaded inside its transaction.');
 				return created;
 			})
 			.catch((error) => {
 				if (isDuplicateKeyError(error)) {
-					throw new ContractValidationError('Contract creation conflicted with an existing record. Reload and try again.');
+					throw new ContractValidationError(
+						'Contract creation conflicted with an existing record. Reload and try again.'
+					);
 				}
 				throw error;
 			});

@@ -94,9 +94,7 @@ function displayName(row: {
 	legalName: string | null;
 	tradingName: string | null;
 }): string {
-	return row.kind === 'person'
-		? personDisplayName(row)
-		: organisationDisplayName(row);
+	return row.kind === 'person' ? personDisplayName(row) : organisationDisplayName(row);
 }
 
 function insertedId(result: { insertId?: bigint }): string {

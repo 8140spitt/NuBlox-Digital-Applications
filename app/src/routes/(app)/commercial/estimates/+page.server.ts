@@ -2,7 +2,10 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
-import { CommercialService, CommercialValidationError } from '$lib/server/commercial/commercial-service';
+import {
+	CommercialService,
+	CommercialValidationError
+} from '$lib/server/commercial/commercial-service';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -25,7 +28,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { createError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { createError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			const estimate = await new CommercialService(getDatabase()).createEstimate(actor, {
@@ -36,9 +40,12 @@ export const actions: Actions = {
 			});
 			throw redirect(303, `/commercial/estimates/${encodeURIComponent(estimate.publicId)}`);
 		} catch (error) {
-			if (error instanceof CommercialValidationError) return fail(400, { createError: error.message });
-			if (error instanceof RecordNotFoundError) return fail(404, { createError: 'The selected CRM opportunity is unavailable.' });
-			if (error instanceof TenantAccessError) return fail(403, { createError: 'You do not have permission to create estimates.' });
+			if (error instanceof CommercialValidationError)
+				return fail(400, { createError: error.message });
+			if (error instanceof RecordNotFoundError)
+				return fail(404, { createError: 'The selected CRM opportunity is unavailable.' });
+			if (error instanceof TenantAccessError)
+				return fail(403, { createError: 'You do not have permission to create estimates.' });
 			throw error;
 		}
 	}

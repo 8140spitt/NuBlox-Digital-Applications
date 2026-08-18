@@ -84,10 +84,14 @@ export function cleanFinanceText(
 	return text || null;
 }
 
-export function validateCurrencyCode(value: string | null | undefined, label = 'Currency'): string | null {
+export function validateCurrencyCode(
+	value: string | null | undefined,
+	label = 'Currency'
+): string | null {
 	const text = value?.trim().toUpperCase() ?? '';
 	if (!text) return null;
-	if (!/^[A-Z]{3}$/.test(text)) throw new FinanceValidationError(`${label} must be a three-letter ISO code.`);
+	if (!/^[A-Z]{3}$/.test(text))
+		throw new FinanceValidationError(`${label} must be a three-letter ISO code.`);
 	return text;
 }
 
@@ -105,7 +109,9 @@ export function validateQuantity(value: string): string {
 	try {
 		parsed = parseScaledDecimal(value, 6, 'Quantity');
 	} catch (cause) {
-		throw new FinanceValidationError(cause instanceof Error ? cause.message : 'Quantity is invalid.');
+		throw new FinanceValidationError(
+			cause instanceof Error ? cause.message : 'Quantity is invalid.'
+		);
 	}
 	if (parsed <= 0n) throw new FinanceValidationError('Quantity must be greater than zero.');
 	return formatScaledDecimal(parsed, 6);
@@ -116,7 +122,9 @@ export function validateUnitRate(value: string): string {
 	try {
 		parsed = parseScaledDecimal(value, 4, 'Unit rate');
 	} catch (cause) {
-		throw new FinanceValidationError(cause instanceof Error ? cause.message : 'Unit rate is invalid.');
+		throw new FinanceValidationError(
+			cause instanceof Error ? cause.message : 'Unit rate is invalid.'
+		);
 	}
 	if (parsed < 0n) throw new FinanceValidationError('Unit rate must not be negative.');
 	return formatScaledDecimal(parsed, 4);
@@ -127,7 +135,9 @@ export function validateMoneyAmount(value: string, label = 'Amount'): string {
 	try {
 		parsed = parseScaledDecimal(value, 4, label);
 	} catch (cause) {
-		throw new FinanceValidationError(cause instanceof Error ? cause.message : `${label} is invalid.`);
+		throw new FinanceValidationError(
+			cause instanceof Error ? cause.message : `${label} is invalid.`
+		);
 	}
 	if (parsed <= 0n) throw new FinanceValidationError(`${label} must be greater than zero.`);
 	return formatScaledDecimal(parsed, 4);
@@ -156,7 +166,9 @@ export class FinanceAccessPolicy {
 	constructor(private readonly db: DatabaseExecutor) {}
 
 	async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -166,23 +178,43 @@ export class FinanceAccessPolicy {
 	}
 
 	async collectionsViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		return new PermissionService(db).decideWithUmbrella(actor, 'finance.collections.view', 'finance.manage');
+		return new PermissionService(db).decideWithUmbrella(
+			actor,
+			'finance.collections.view',
+			'finance.manage'
+		);
 	}
 
 	async creditControlViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		return new PermissionService(db).decideWithUmbrella(actor, 'finance.credit_control.view', 'finance.manage');
+		return new PermissionService(db).decideWithUmbrella(
+			actor,
+			'finance.credit_control.view',
+			'finance.manage'
+		);
 	}
 
 	async badDebtViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		return new PermissionService(db).decideWithUmbrella(actor, 'finance.bad_debt.view', 'finance.manage');
+		return new PermissionService(db).decideWithUmbrella(
+			actor,
+			'finance.bad_debt.view',
+			'finance.manage'
+		);
 	}
 
 	async taxReliefViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		return new PermissionService(db).decideWithUmbrella(actor, 'finance.tax_relief.view', 'finance.manage');
+		return new PermissionService(db).decideWithUmbrella(
+			actor,
+			'finance.tax_relief.view',
+			'finance.manage'
+		);
 	}
 
 	async accountingViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		return new PermissionService(db).decideWithUmbrella(actor, 'finance.accounting.view', 'finance.manage');
+		return new PermissionService(db).decideWithUmbrella(
+			actor,
+			'finance.accounting.view',
+			'finance.manage'
+		);
 	}
 
 	async mutationDecision(

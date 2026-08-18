@@ -4,7 +4,11 @@ import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectRepository, type ProjectRecord } from './project-repository';
 import {
@@ -19,9 +23,7 @@ import {
 
 const TERMINAL_COLLABORATION_PROJECT_STATUSES = new Set(['cancelled', 'archived']);
 type ProjectCollaborationPermission =
-	| 'project.participant.manage'
-	| 'project.team.manage'
-	| 'project.participation.manage';
+	'project.participant.manage' | 'project.team.manage' | 'project.participation.manage';
 
 export type ProjectTeamView = {
 	canManageTeam: boolean;
@@ -77,7 +79,9 @@ export class ProjectTeamService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -87,7 +91,11 @@ export class ProjectTeamService {
 		permissionKey: ProjectCollaborationPermission,
 		db = this.db
 	): Promise<void> {
-		const decision = await new PermissionService(db).decideWithUmbrella(actor, permissionKey, 'project.manage');
+		const decision = await new PermissionService(db).decideWithUmbrella(
+			actor,
+			permissionKey,
+			'project.manage'
+		);
 		if (!decision.allowed) throw new TenantAccessError('Project administration is not permitted.');
 	}
 
@@ -153,18 +161,26 @@ export class ProjectTeamService {
 			permissionService.decideWithUmbrella(actor, 'project.participant.manage', 'project.manage', {
 				projectId: project.id
 			}),
-			permissionService.decideWithUmbrella(actor, 'project.participation.manage', 'project.manage', {
-				projectId: project.id
-			})
+			permissionService.decideWithUmbrella(
+				actor,
+				'project.participation.manage',
+				'project.manage',
+				{
+					projectId: project.id
+				}
+			)
 		]);
 		const canManageTeam = teamDecision.allowed;
-		const canManageParticipants = participantDecision.allowed && project.owningOrganisationId === actor.organisationId;
+		const canManageParticipants =
+			participantDecision.allowed && project.owningOrganisationId === actor.organisationId;
 		const repository = new ProjectTeamRepository(this.db);
 		const [allParticipants, teamMembers, roleTypes, organisationMembers] = await Promise.all([
 			repository.listParticipants(project.id),
 			repository.listActiveProjectMembers(project.id, actor.organisationId),
 			repository.listActiveRoleTypes(),
-			canManageTeam ? repository.listActiveOrganisationMembers(actor.organisationId) : Promise.resolve([])
+			canManageTeam
+				? repository.listActiveOrganisationMembers(actor.organisationId)
+				: Promise.resolve([])
 		]);
 		const activeProjectMemberIds = new Set(teamMembers.map((member) => member.id));
 		const participants = canManageParticipants
@@ -183,7 +199,9 @@ export class ProjectTeamService {
 				ownParticipant?.status === 'active',
 			participants,
 			teamMembers,
-			availableMembers: organisationMembers.filter((member) => !activeProjectMemberIds.has(member.id)),
+			availableMembers: organisationMembers.filter(
+				(member) => !activeProjectMemberIds.has(member.id)
+			),
 			roleTypes,
 			ownOrganisationPublicId: ownParticipant?.organisationPublicId ?? null
 		};
@@ -196,16 +214,28 @@ export class ProjectTeamService {
 		const targetPublicId = normalisePublicId(input.organisationPublicId, 'Organisation ID');
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const project = await this.loadScopedProject(actor, input.projectPublicId, trx, 'project.participant.manage');
+			const project = await this.loadScopedProject(
+				actor,
+				input.projectPublicId,
+				trx,
+				'project.participant.manage'
+			);
 			if (project.owningOrganisationId !== actor.organisationId) {
-				throw new TenantAccessError('Only the owning organisation can invite project participants.');
+				throw new TenantAccessError(
+					'Only the owning organisation can invite project participants.'
+				);
 			}
 			assertCollaborationCanGrow(project);
 			const repository = new ProjectTeamRepository(trx);
 			const target = await repository.findActiveOrganisationByPublicId(targetPublicId);
-			if (!target) throw new ProjectTeamValidationError('No active NuBlox organisation matches that exact organisation ID.');
+			if (!target)
+				throw new ProjectTeamValidationError(
+					'No active NuBlox organisation matches that exact organisation ID.'
+				);
 			if (target.id === project.owningOrganisationId) {
-				throw new ProjectTeamValidationError('The owning organisation already participates in its project.');
+				throw new ProjectTeamValidationError(
+					'The owning organisation already participates in its project.'
+				);
 			}
 			const { roleKeys, roleIds } = await this.resolveRoleIds(repository, input.roleKeys, true);
 			const current = await repository.findParticipationForUpdate(project.id, target.id);
@@ -213,7 +243,9 @@ export class ProjectTeamService {
 			if (!current) {
 				await repository.insertInvitation(project.id, target.id, actorMembership.id);
 			} else if (current.status === 'active') {
-				throw new ProjectTeamValidationError('That organisation already participates in this project.');
+				throw new ProjectTeamValidationError(
+					'That organisation already participates in this project.'
+				);
 			} else if (current.status === 'invited') {
 				actionKey = 'project.participant.invitation_updated';
 			} else {
@@ -256,9 +288,14 @@ export class ProjectTeamService {
 				projectPublicId
 			);
 			if (!invitation || invitation.status !== 'invited') {
-				throw new RecordNotFoundError('No pending project invitation exists for this organisation.');
+				throw new RecordNotFoundError(
+					'No pending project invitation exists for this organisation.'
+				);
 			}
-			if (input.response === 'accept' && TERMINAL_COLLABORATION_PROJECT_STATUSES.has(invitation.projectStatus)) {
+			if (
+				input.response === 'accept' &&
+				TERMINAL_COLLABORATION_PROJECT_STATUSES.has(invitation.projectStatus)
+			) {
 				throw new ProjectTeamValidationError('This project can no longer accept participants.');
 			}
 			const at = this.now();
@@ -337,17 +374,26 @@ export class ProjectTeamService {
 		const targetPublicId = normalisePublicId(input.organisationPublicId, 'Organisation ID');
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const project = await this.loadScopedProject(actor, input.projectPublicId, trx, 'project.participant.manage');
+			const project = await this.loadScopedProject(
+				actor,
+				input.projectPublicId,
+				trx,
+				'project.participant.manage'
+			);
 			if (project.owningOrganisationId !== actor.organisationId) {
 				throw new TenantAccessError('Only the owning organisation can manage participant roles.');
 			}
-			if (project.status === 'archived') throw new ProjectTeamValidationError('Archived projects are read-only.');
+			if (project.status === 'archived')
+				throw new ProjectTeamValidationError('Archived projects are read-only.');
 			const repository = new ProjectTeamRepository(trx);
 			const target = await repository.findActiveOrganisationByPublicId(targetPublicId);
-			if (!target) throw new ProjectTeamValidationError('The participant organisation is unavailable.');
+			if (!target)
+				throw new ProjectTeamValidationError('The participant organisation is unavailable.');
 			const participation = await repository.findParticipationForUpdate(project.id, target.id);
 			if (!participation || ['removed', 'declined', 'left'].includes(participation.status)) {
-				throw new ProjectTeamValidationError('That organisation is not a current project participant.');
+				throw new ProjectTeamValidationError(
+					'That organisation is not a current project participant.'
+				);
 			}
 			const { roleKeys, roleIds } = await this.resolveRoleIds(repository, input.roleKeys);
 			await repository.replaceOrganisationRoles(project.id, target.id, roleIds);
@@ -373,19 +419,31 @@ export class ProjectTeamService {
 		const targetPublicId = normalisePublicId(input.organisationPublicId, 'Organisation ID');
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const project = await this.loadScopedProject(actor, input.projectPublicId, trx, 'project.participant.manage');
+			const project = await this.loadScopedProject(
+				actor,
+				input.projectPublicId,
+				trx,
+				'project.participant.manage'
+			);
 			if (project.owningOrganisationId !== actor.organisationId) {
-				throw new TenantAccessError('Only the owning organisation can remove project participants.');
+				throw new TenantAccessError(
+					'Only the owning organisation can remove project participants.'
+				);
 			}
 			const repository = new ProjectTeamRepository(trx);
 			const target = await repository.findActiveOrganisationByPublicId(targetPublicId);
-			if (!target) throw new ProjectTeamValidationError('The participant organisation is unavailable.');
+			if (!target)
+				throw new ProjectTeamValidationError('The participant organisation is unavailable.');
 			if (target.id === project.owningOrganisationId) {
-				throw new ProjectTeamValidationError('The owning organisation cannot be removed from its own project.');
+				throw new ProjectTeamValidationError(
+					'The owning organisation cannot be removed from its own project.'
+				);
 			}
 			const participation = await repository.findParticipationForUpdate(project.id, target.id);
 			if (!participation || ['removed', 'declined', 'left'].includes(participation.status)) {
-				throw new ProjectTeamValidationError('That organisation is not a current project participant.');
+				throw new ProjectTeamValidationError(
+					'That organisation is not a current project participant.'
+				);
 			}
 			const at = this.now();
 			const changed = await repository.updateParticipationStatus({
@@ -422,14 +480,26 @@ export class ProjectTeamService {
 	async leaveProject(actor: TenantActorContext, projectPublicId: string): Promise<void> {
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const project = await this.loadScopedProject(actor, projectPublicId, trx, 'project.participation.manage');
+			const project = await this.loadScopedProject(
+				actor,
+				projectPublicId,
+				trx,
+				'project.participation.manage'
+			);
 			if (project.owningOrganisationId === actor.organisationId) {
-				throw new ProjectTeamValidationError('The owning organisation cannot leave its own project.');
+				throw new ProjectTeamValidationError(
+					'The owning organisation cannot leave its own project.'
+				);
 			}
 			const repository = new ProjectTeamRepository(trx);
-			const participation = await repository.findParticipationForUpdate(project.id, actor.organisationId);
+			const participation = await repository.findParticipationForUpdate(
+				project.id,
+				actor.organisationId
+			);
 			if (!participation || participation.status !== 'active') {
-				throw new ProjectTeamValidationError('This organisation is not an active project participant.');
+				throw new ProjectTeamValidationError(
+					'This organisation is not an active project participant.'
+				);
 			}
 			const at = this.now();
 			const changed = await repository.updateParticipationStatus({
@@ -470,16 +540,34 @@ export class ProjectTeamService {
 		const memberPublicId = normalisePublicId(input.memberPublicId, 'Member ID');
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const project = await this.loadScopedProject(actor, input.projectPublicId, trx, 'project.team.manage');
+			const project = await this.loadScopedProject(
+				actor,
+				input.projectPublicId,
+				trx,
+				'project.team.manage'
+			);
 			assertCollaborationCanGrow(project);
 			const repository = new ProjectTeamRepository(trx);
-			const participation = await repository.findParticipationForUpdate(project.id, actor.organisationId);
+			const participation = await repository.findParticipationForUpdate(
+				project.id,
+				actor.organisationId
+			);
 			if (!participation || participation.status !== 'active') {
-				throw new TenantAccessError('Only active project participants can manage their project team.');
+				throw new TenantAccessError(
+					'Only active project participants can manage their project team.'
+				);
 			}
-			const member = await repository.findActiveOrganisationMemberForUpdate(actor.organisationId, memberPublicId);
-			if (!member) throw new ProjectTeamValidationError('That active organisation member was not found.');
-			const existing = await repository.findProjectMemberForUpdate(project.id, actor.organisationId, member.id);
+			const member = await repository.findActiveOrganisationMemberForUpdate(
+				actor.organisationId,
+				memberPublicId
+			);
+			if (!member)
+				throw new ProjectTeamValidationError('That active organisation member was not found.');
+			const existing = await repository.findProjectMemberForUpdate(
+				project.id,
+				actor.organisationId,
+				member.id
+			);
 			if (existing?.status === 'active') {
 				throw new ProjectTeamValidationError('That member already belongs to this project team.');
 			}
@@ -520,11 +608,24 @@ export class ProjectTeamService {
 		const memberPublicId = normalisePublicId(input.memberPublicId, 'Member ID');
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const project = await this.loadScopedProject(actor, input.projectPublicId, trx, 'project.team.manage');
+			const project = await this.loadScopedProject(
+				actor,
+				input.projectPublicId,
+				trx,
+				'project.team.manage'
+			);
 			const repository = new ProjectTeamRepository(trx);
-			const member = await repository.findActiveOrganisationMemberForUpdate(actor.organisationId, memberPublicId);
-			if (!member) throw new ProjectTeamValidationError('That active organisation member was not found.');
-			const projectMember = await repository.findProjectMemberForUpdate(project.id, actor.organisationId, member.id);
+			const member = await repository.findActiveOrganisationMemberForUpdate(
+				actor.organisationId,
+				memberPublicId
+			);
+			if (!member)
+				throw new ProjectTeamValidationError('That active organisation member was not found.');
+			const projectMember = await repository.findProjectMemberForUpdate(
+				project.id,
+				actor.organisationId,
+				member.id
+			);
 			if (!projectMember || projectMember.status !== 'active') {
 				throw new ProjectTeamValidationError('That member is not active on this project team.');
 			}
@@ -542,7 +643,10 @@ export class ProjectTeamService {
 				{ projectId: project.id }
 			);
 			if (targetDecision.allowed) {
-				const candidates = await repository.listActiveProjectMemberActors(project.id, actor.organisationId);
+				const candidates = await repository.listActiveProjectMemberActors(
+					project.id,
+					actor.organisationId
+				);
 				let anotherManagerExists = false;
 				for (const candidate of candidates) {
 					if (candidate.memberId === member.id) continue;
@@ -608,12 +712,26 @@ export class ProjectTeamService {
 		const memberPublicId = normalisePublicId(input.memberPublicId, 'Member ID');
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const project = await this.loadScopedProject(actor, input.projectPublicId, trx, 'project.team.manage');
-			if (project.status === 'archived') throw new ProjectTeamValidationError('Archived projects are read-only.');
+			const project = await this.loadScopedProject(
+				actor,
+				input.projectPublicId,
+				trx,
+				'project.team.manage'
+			);
+			if (project.status === 'archived')
+				throw new ProjectTeamValidationError('Archived projects are read-only.');
 			const repository = new ProjectTeamRepository(trx);
-			const member = await repository.findActiveOrganisationMemberForUpdate(actor.organisationId, memberPublicId);
-			if (!member) throw new ProjectTeamValidationError('That active organisation member was not found.');
-			const projectMember = await repository.findProjectMemberForUpdate(project.id, actor.organisationId, member.id);
+			const member = await repository.findActiveOrganisationMemberForUpdate(
+				actor.organisationId,
+				memberPublicId
+			);
+			if (!member)
+				throw new ProjectTeamValidationError('That active organisation member was not found.');
+			const projectMember = await repository.findProjectMemberForUpdate(
+				project.id,
+				actor.organisationId,
+				member.id
+			);
 			if (!projectMember || projectMember.status !== 'active') {
 				throw new ProjectTeamValidationError('That member is not active on this project team.');
 			}

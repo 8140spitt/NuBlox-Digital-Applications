@@ -46,7 +46,10 @@ async function cleanupKernelIntegrationRows(): Promise<void> {
 	if (projectIds.length > 0) {
 		await db.deleteFrom('project_member_roles').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_members').where('project_id', 'in', projectIds).execute();
-		await db.deleteFrom('project_organisation_roles').where('project_id', 'in', projectIds).execute();
+		await db
+			.deleteFrom('project_organisation_roles')
+			.where('project_id', 'in', projectIds)
+			.execute();
 		await db.deleteFrom('project_organisations').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('projects').where('id', 'in', projectIds).execute();
 	}
@@ -66,10 +69,7 @@ async function cleanupKernelIntegrationRows(): Promise<void> {
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 
-	await db
-		.deleteFrom('users')
-		.where('display_name', 'like', `${TEST_NAME_PREFIX}%`)
-		.execute();
+	await db.deleteFrom('users').where('display_name', 'like', `${TEST_NAME_PREFIX}%`).execute();
 }
 
 async function createFixture(): Promise<KernelFixture> {
@@ -187,7 +187,9 @@ describe('Platform Kernel tenant isolation', () => {
 			})
 		).resolves.toBeNull();
 
-		await expect(new OrganisationService(db).getCurrentOrganisation(fixture.actorB)).resolves.toMatchObject({
+		await expect(
+			new OrganisationService(db).getCurrentOrganisation(fixture.actorB)
+		).resolves.toMatchObject({
 			id: fixture.organisationBId,
 			status: 'active'
 		});

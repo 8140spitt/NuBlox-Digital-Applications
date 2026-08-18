@@ -26,8 +26,12 @@ export class ContractEntryService {
 		this.policy = new ContractAccessPolicy(db);
 	}
 
-	async listAcceptedQuotationQueue(actor: TenantActorContext): Promise<AcceptedQuotationContractQueue> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+	async listAcceptedQuotationQueue(
+		actor: TenantActorContext
+	): Promise<AcceptedQuotationContractQueue> {
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 
 		const permissions = new PermissionService(this.db);
@@ -38,7 +42,10 @@ export class ContractEntryService {
 			this.policy.mutationDecision(actor, 'contract.create')
 		]);
 		const canConvertAcceptedQuotation =
-			commercialConvert.allowed && projectCreate.allowed && projectView.allowed && contractCreate.allowed;
+			commercialConvert.allowed &&
+			projectCreate.allowed &&
+			projectView.allowed &&
+			contractCreate.allowed;
 
 		const acceptedQuotationsAwaitingProject = await this.db
 			.selectFrom('quotation_responses as response')

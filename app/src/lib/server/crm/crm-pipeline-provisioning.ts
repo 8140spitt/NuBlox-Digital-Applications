@@ -26,14 +26,17 @@ export class CrmPipelineProvisioningService {
 	) {}
 
 	async ensureDefaultPipeline(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 		const permission = await new PermissionService(this.db).decideWithUmbrella(
 			actor,
 			'crm.opportunity.manage',
 			'crm.manage'
 		);
-		if (!permission.allowed) throw new TenantAccessError('CRM opportunity management is not permitted.');
+		if (!permission.allowed)
+			throw new TenantAccessError('CRM opportunity management is not permitted.');
 
 		await this.db.transaction().execute(async (trx) => {
 			const lockedOrganisation = await trx

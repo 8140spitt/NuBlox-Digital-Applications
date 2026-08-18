@@ -43,13 +43,17 @@ function validateCreateProjectInput(input: CreateProjectInput): CreateProjectInp
 	const description = input.description?.trim() || null;
 
 	if (!projectNumber || projectNumber.length > 80) {
-		throw new ProjectWorkspaceValidationError('Project number must be between 1 and 80 characters.');
+		throw new ProjectWorkspaceValidationError(
+			'Project number must be between 1 and 80 characters.'
+		);
 	}
 	if (!name || name.length > 255) {
 		throw new ProjectWorkspaceValidationError('Project name must be between 1 and 255 characters.');
 	}
 	if (description && description.length > 10000) {
-		throw new ProjectWorkspaceValidationError('Project description must not exceed 10,000 characters.');
+		throw new ProjectWorkspaceValidationError(
+			'Project description must not exceed 10,000 characters.'
+		);
 	}
 
 	return { projectNumber, name, description };
@@ -58,9 +62,9 @@ function validateCreateProjectInput(input: CreateProjectInput): CreateProjectInp
 function isDuplicateKeyError(error: unknown): boolean {
 	return Boolean(
 		error &&
-			typeof error === 'object' &&
-			'code' in error &&
-			(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
+		typeof error === 'object' &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
 	);
 }
 
@@ -68,7 +72,9 @@ export class ProjectWorkspaceService {
 	constructor(private readonly db: Database = getDatabase()) {}
 
 	private async assertActiveActor(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 	}
 
@@ -90,7 +96,10 @@ export class ProjectWorkspaceService {
 		};
 	}
 
-	async createProject(actor: TenantActorContext, input: CreateProjectInput): Promise<ProjectRecord> {
+	async createProject(
+		actor: TenantActorContext,
+		input: CreateProjectInput
+	): Promise<ProjectRecord> {
 		await this.assertActiveActor(actor);
 		const decision = await new PermissionService(this.db).decide(actor, 'project.create');
 		if (!decision.allowed) throw new TenantAccessError('Project creation is not permitted.');
@@ -101,7 +110,9 @@ export class ProjectWorkspaceService {
 			validated.projectNumber
 		);
 		if (existing) {
-			throw new ProjectWorkspaceValidationError('That project number is already in use in this organisation.');
+			throw new ProjectWorkspaceValidationError(
+				'That project number is already in use in this organisation.'
+			);
 		}
 
 		try {
@@ -116,7 +127,10 @@ export class ProjectWorkspaceService {
 		}
 	}
 
-	async getWorkspace(actor: TenantActorContext, projectPublicId: string): Promise<ProjectWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		projectPublicId: string
+	): Promise<ProjectWorkspace> {
 		await this.assertActiveActor(actor);
 		const project = await new ProjectRepository(this.db).findForMemberByPublicId(
 			actor.organisationId,
@@ -128,7 +142,9 @@ export class ProjectWorkspaceService {
 		}
 
 		const permissionService = new PermissionService(this.db);
-		const viewDecision = await permissionService.decide(actor, 'project.view', { projectId: project.id });
+		const viewDecision = await permissionService.decide(actor, 'project.view', {
+			projectId: project.id
+		});
 		if (!viewDecision.allowed) {
 			throw new RecordNotFoundError('Project not found in the active member scope.');
 		}
@@ -143,7 +159,9 @@ export class ProjectWorkspaceService {
 
 		return {
 			project,
-			participants: await new ProjectRepository(this.db).listActiveParticipantOrganisations(project.id),
+			participants: await new ProjectRepository(this.db).listActiveParticipantOrganisations(
+				project.id
+			),
 			canManageLifecycle: lifecycleDecision.allowed && isOwningOrganisation,
 			allowedTransitions: isOwningOrganisation
 				? allowedProjectLifecycleTransitions(project.status)

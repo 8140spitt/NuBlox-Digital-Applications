@@ -39,7 +39,9 @@ export type TaxSettingsWorkspace = {
 
 function isDuplicateKeyError(error: unknown): boolean {
 	return Boolean(
-		error && typeof error === 'object' && 'code' in error &&
+		error &&
+		typeof error === 'object' &&
+		'code' in error &&
 		(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
 	);
 }
@@ -47,7 +49,9 @@ function isDuplicateKeyError(error: unknown): boolean {
 function taxCode(value: string): string {
 	const code = value.trim().toUpperCase();
 	if (!/^[A-Z0-9_]{1,48}$/.test(code)) {
-		throw new FinanceValidationError('Tax code must use 1–48 uppercase letters, numbers or underscores.');
+		throw new FinanceValidationError(
+			'Tax code must use 1–48 uppercase letters, numbers or underscores.'
+		);
 	}
 	return code;
 }
@@ -61,7 +65,8 @@ function treatment(value: string): 'taxable' | 'zero' | 'exempt' | 'outside_scop
 function ratePercent(value: string, selectedTreatment: string): string | null {
 	if (selectedTreatment === 'exempt' || selectedTreatment === 'outside_scope') return null;
 	const parsed = parseScaledDecimal(value, 4, 'Tax rate', true);
-	if (parsed < 0n || parsed > 1000000n) throw new FinanceValidationError('Tax rate must be between 0% and 100%.');
+	if (parsed < 0n || parsed > 1000000n)
+		throw new FinanceValidationError('Tax rate must be between 0% and 100%.');
 	if (selectedTreatment === 'zero' && parsed !== 0n) {
 		throw new FinanceValidationError('Zero-rated tax categories must use a 0% rate.');
 	}
@@ -104,7 +109,14 @@ export class TaxSettingsService {
 		const [categoryRows, manageDecision] = await Promise.all([
 			this.db
 				.selectFrom('tax_categories')
-				.select(['id', 'public_id as publicId', 'code', 'name', 'treatment', 'is_active as isActive'])
+				.select([
+					'id',
+					'public_id as publicId',
+					'code',
+					'name',
+					'treatment',
+					'is_active as isActive'
+				])
 				.where('organisation_id', '=', actor.organisationId)
 				.orderBy('name', 'asc')
 				.execute(),
@@ -114,7 +126,12 @@ export class TaxSettingsService {
 		for (const row of categoryRows) {
 			const rates = await this.db
 				.selectFrom('tax_category_rates')
-				.select(['id', 'rate_percent as ratePercent', 'valid_from as validFrom', 'valid_to as validTo'])
+				.select([
+					'id',
+					'rate_percent as ratePercent',
+					'valid_from as validFrom',
+					'valid_to as validTo'
+				])
 				.where('organisation_id', '=', actor.organisationId)
 				.where('tax_category_id', '=', row.id)
 				.orderBy('valid_from', 'desc')
@@ -132,19 +149,24 @@ export class TaxSettingsService {
 		return { categories, canManage: manageDecision.allowed };
 	}
 
-	async createCategory(actor: TenantActorContext, input: {
-		code: string;
-		name: string;
-		treatment: string;
-		ratePercent?: string | null;
-		validFrom?: string | null;
-	}): Promise<string> {
+	async createCategory(
+		actor: TenantActorContext,
+		input: {
+			code: string;
+			name: string;
+			treatment: string;
+			ratePercent?: string | null;
+			validFrom?: string | null;
+		}
+	): Promise<string> {
 		const code = taxCode(input.code);
 		const name = cleanFinanceText(input.name, 160, 'Tax category name', true)!;
 		const selectedTreatment = treatment(input.treatment);
 		const rate = ratePercent(input.ratePercent ?? '', selectedTreatment);
-		const validFrom = rate === null ? null : validateFinanceDate(input.validFrom, 'Tax rate start date');
-		if (rate !== null && !validFrom) throw new FinanceValidationError('Tax rate start date is required.');
+		const validFrom =
+			rate === null ? null : validateFinanceDate(input.validFrom, 'Tax rate start date');
+		if (rate !== null && !validFrom)
+			throw new FinanceValidationError('Tax rate start date is required.');
 
 		try {
 			return await this.db.transaction().execute(async (trx) => {
@@ -165,7 +187,8 @@ export class TaxSettingsService {
 						is_active: 1
 					})
 					.executeTakeFirstOrThrow();
-				if (result.insertId === undefined) throw new Error('Tax-category insert did not return an ID.');
+				if (result.insertId === undefined)
+					throw new Error('Tax-category insert did not return an ID.');
 				const categoryId = result.insertId.toString();
 				if (rate !== null && validFrom) {
 					await trx
@@ -194,16 +217,20 @@ export class TaxSettingsService {
 				return publicId;
 			});
 		} catch (cause) {
-			if (isDuplicateKeyError(cause)) throw new FinanceValidationError('A tax category with that code already exists.');
+			if (isDuplicateKeyError(cause))
+				throw new FinanceValidationError('A tax category with that code already exists.');
 			throw cause;
 		}
 	}
 
-	async addRate(actor: TenantActorContext, input: {
-		categoryPublicId: string;
-		ratePercent: string;
-		validFrom: string;
-	}): Promise<void> {
+	async addRate(
+		actor: TenantActorContext,
+		input: {
+			categoryPublicId: string;
+			ratePercent: string;
+			validFrom: string;
+		}
+	): Promise<void> {
 		const categoryPublicId = cleanFinanceText(input.categoryPublicId, 64, 'Tax category ID', true)!;
 		const validFrom = validateFinanceDate(input.validFrom, 'Tax rate start date');
 		if (!validFrom) throw new FinanceValidationError('Tax rate start date is required.');
@@ -224,7 +251,9 @@ export class TaxSettingsService {
 				.executeTakeFirst();
 			if (!category) throw new RecordNotFoundError('Tax category not found.');
 			if (category.treatment === 'exempt' || category.treatment === 'outside_scope') {
-				throw new FinanceValidationError('Exempt and outside-scope categories do not use percentage rates.');
+				throw new FinanceValidationError(
+					'Exempt and outside-scope categories do not use percentage rates.'
+				);
 			}
 			const rate = ratePercent(input.ratePercent, category.treatment);
 			if (rate === null) throw new FinanceValidationError('A tax rate is required.');
@@ -238,10 +267,14 @@ export class TaxSettingsService {
 				.execute();
 			const latest = rates[0] ?? null;
 			if (latest && validFrom <= latest.validFrom) {
-				throw new FinanceValidationError('A new tax rate must start after the latest existing rate period.');
+				throw new FinanceValidationError(
+					'A new tax rate must start after the latest existing rate period.'
+				);
 			}
 			if (latest?.validTo && latest.validTo >= validFrom) {
-				throw new FinanceValidationError('The new tax rate overlaps the latest existing rate period.');
+				throw new FinanceValidationError(
+					'The new tax rate overlaps the latest existing rate period.'
+				);
 			}
 			if (latest && latest.validTo === null) {
 				await trx
@@ -271,7 +304,11 @@ export class TaxSettingsService {
 				subjectType: 'tax_category',
 				subjectPublicId: category.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { ratePercent: rate, validFrom, previousRateClosed: latest?.validTo === null }
+				changeSummary: {
+					ratePercent: rate,
+					validFrom,
+					previousRateClosed: latest?.validTo === null
+				}
 			});
 		});
 	}

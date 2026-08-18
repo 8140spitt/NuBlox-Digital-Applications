@@ -19,7 +19,8 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 
 function actionFailure(cause: unknown) {
 	if (cause instanceof FinanceValidationError) return fail(400, { actionError: cause.message });
-	if (cause instanceof RecordNotFoundError) return fail(404, { actionError: 'The requested VAT bad-debt relief record is unavailable.' });
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, { actionError: 'The requested VAT bad-debt relief record is unavailable.' });
 	if (cause instanceof TenantAccessError) return fail(403, { actionError: cause.message });
 	throw cause;
 }
@@ -33,7 +34,11 @@ function checked(data: FormData, key: string): boolean {
 }
 
 function claimLines(data: FormData) {
-	const lines: Array<{ sourceInvoiceItemId: string; taxCategoryId: string; considerationBasisAmount: string }> = [];
+	const lines: Array<{
+		sourceInvoiceItemId: string;
+		taxCategoryId: string;
+		considerationBasisAmount: string;
+	}> = [];
 	for (const [key, raw] of data.entries()) {
 		if (!key.startsWith('basis:')) continue;
 		const [, sourceInvoiceItemId, taxCategoryId] = key.split(':');
@@ -50,7 +55,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		return await new ControlledTaxReliefService(getDatabase()).getWorkspace(actor);
 	} catch (cause) {
-		if (cause instanceof TenantAccessError) throw httpError(403, 'VAT bad-debt relief access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'VAT bad-debt relief access is not permitted.');
 		throw cause;
 	}
 };

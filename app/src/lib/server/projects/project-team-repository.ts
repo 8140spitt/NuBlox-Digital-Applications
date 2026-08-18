@@ -1,12 +1,7 @@
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type ProjectParticipationStatus =
-	| 'invited'
-	| 'active'
-	| 'suspended'
-	| 'left'
-	| 'removed'
-	| 'declined';
+	'invited' | 'active' | 'suspended' | 'left' | 'removed' | 'declined';
 
 export type ProjectRoleTypeSummary = {
 	id: string;
@@ -135,7 +130,9 @@ export class ProjectTeamRepository {
 		};
 	}
 
-	async listPendingInvitations(participantOrganisationId: string): Promise<ProjectInvitationSummary[]> {
+	async listPendingInvitations(
+		participantOrganisationId: string
+	): Promise<ProjectInvitationSummary[]> {
 		const invitations = await this.db
 			.selectFrom('project_organisations as participation')
 			.innerJoin('projects as project', 'project.id', 'participation.project_id')
@@ -240,7 +237,11 @@ export class ProjectTeamRepository {
 	async findParticipationForUpdate(
 		projectId: string,
 		participantOrganisationId: string
-	): Promise<{ status: ProjectParticipationStatus; joinedAt: Date | null; leftAt: Date | null } | null> {
+	): Promise<{
+		status: ProjectParticipationStatus;
+		joinedAt: Date | null;
+		leftAt: Date | null;
+	} | null> {
 		const row = await this.db
 			.selectFrom('project_organisations')
 			.select(['status', 'joined_at', 'left_at'])
@@ -339,7 +340,11 @@ export class ProjectTeamRepository {
 	async listParticipants(projectId: string): Promise<ProjectParticipantAdmin[]> {
 		const participants = await this.db
 			.selectFrom('project_organisations as participation')
-			.innerJoin('organisations as organisation', 'organisation.id', 'participation.participant_organisation_id')
+			.innerJoin(
+				'organisations as organisation',
+				'organisation.id',
+				'participation.participant_organisation_id'
+			)
 			.select([
 				'organisation.id as organisationId',
 				'organisation.public_id as organisationPublicId',

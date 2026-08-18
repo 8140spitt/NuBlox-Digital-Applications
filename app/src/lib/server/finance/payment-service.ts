@@ -107,7 +107,8 @@ function positiveOrZeroMoney(value: string): string {
 
 function validateAllocationId(value: string): string {
 	const text = value.trim();
-	if (!/^\d+$/.test(text) || text === '0') throw new FinanceValidationError('Payment allocation is invalid.');
+	if (!/^\d+$/.test(text) || text === '0')
+		throw new FinanceValidationError('Payment allocation is invalid.');
 	return text;
 }
 
@@ -243,11 +244,7 @@ export class PaymentService {
 		return query.executeTakeFirst();
 	}
 
-	private async paymentReversal(
-		db: DatabaseExecutor,
-		organisationId: string,
-		paymentId: string
-	) {
+	private async paymentReversal(db: DatabaseExecutor, organisationId: string, paymentId: string) {
 		return db
 			.selectFrom('payment_reversals')
 			.select(['reversed_at as reversedAt', 'reason'])
@@ -380,7 +377,8 @@ export class PaymentService {
 			const invoice = await this.invoiceRecord(db, organisationId, row.publicId);
 			const candidate = await this.invoiceCandidate(db, organisationId, invoice, payerPartyId);
 			if (!candidate) continue;
-			if (parseScaledDecimal(candidate.outstandingAmount, 4, 'Outstanding amount', true) <= 0n) continue;
+			if (parseScaledDecimal(candidate.outstandingAmount, 4, 'Outstanding amount', true) <= 0n)
+				continue;
 			candidates.push(candidate);
 		}
 		return candidates.sort((left, right) => {
@@ -395,36 +393,39 @@ export class PaymentService {
 		await policy.assertActiveActor(actor);
 		const view = await policy.viewDecision(actor);
 		if (!view.allowed) throw new TenantAccessError('Payment viewing is not permitted.');
-		const [createDecision, crmViewDecision, paymentRows, paymentMethods, organisation] = await Promise.all([
-			policy.mutationDecision(actor, 'finance.payment.create'),
-			new PermissionService(this.db).decide(actor, 'crm.view'),
-			this.db
-				.selectFrom('payments')
-				.select('public_id as publicId')
-				.where('organisation_id', '=', actor.organisationId)
-				.orderBy('received_at', 'desc')
-				.orderBy('id', 'desc')
-				.limit(250)
-				.execute(),
-			this.db
-				.selectFrom('payment_methods')
-				.select(['code', 'name'])
-				.where('is_active', '=', 1)
-				.orderBy('name', 'asc')
-				.execute(),
-			this.db
-				.selectFrom('organisations')
-				.select('default_currency_code as defaultCurrencyCode')
-				.where('id', '=', actor.organisationId)
-				.executeTakeFirstOrThrow()
-		]);
+		const [createDecision, crmViewDecision, paymentRows, paymentMethods, organisation] =
+			await Promise.all([
+				policy.mutationDecision(actor, 'finance.payment.create'),
+				new PermissionService(this.db).decide(actor, 'crm.view'),
+				this.db
+					.selectFrom('payments')
+					.select('public_id as publicId')
+					.where('organisation_id', '=', actor.organisationId)
+					.orderBy('received_at', 'desc')
+					.orderBy('id', 'desc')
+					.limit(250)
+					.execute(),
+				this.db
+					.selectFrom('payment_methods')
+					.select(['code', 'name'])
+					.where('is_active', '=', 1)
+					.orderBy('name', 'asc')
+					.execute(),
+				this.db
+					.selectFrom('organisations')
+					.select('default_currency_code as defaultCurrencyCode')
+					.where('id', '=', actor.organisationId)
+					.executeTakeFirstOrThrow()
+			]);
 		const payments: PaymentSummary[] = [];
 		for (const row of paymentRows) {
 			const summary = await this.paymentSummary(this.db, actor.organisationId, row.publicId);
 			if (summary) payments.push(summary);
 		}
 		const payerCandidates = crmViewDecision.allowed
-			? (await new CrmRepository(this.db).listParties(actor.organisationId, { status: 'active' })).map((party) => ({
+			? (
+					await new CrmRepository(this.db).listParties(actor.organisationId, { status: 'active' })
+				).map((party) => ({
 					publicId: party.publicId,
 					displayName: party.displayName,
 					kind: party.kind
@@ -452,7 +453,12 @@ export class PaymentService {
 			paymentReference?: string | null;
 		}
 	): Promise<{ publicId: string }> {
-		const paymentMethodCode = cleanFinanceText(input.paymentMethodCode, 64, 'Payment method', true)!;
+		const paymentMethodCode = cleanFinanceText(
+			input.paymentMethodCode,
+			64,
+			'Payment method',
+			true
+		)!;
 		const receivedAt = validateFinanceDate(input.receivedOn, 'Received date');
 		if (!receivedAt) throw new FinanceValidationError('Received date is required.');
 		const amount = validateMoneyAmount(input.amount, 'Payment amount');
@@ -479,10 +485,15 @@ export class PaymentService {
 			let payerDisplayName: string | null = null;
 			if (payerPublicId) {
 				const crmView = await new PermissionService(trx).decide(actor, 'crm.view');
-				if (!crmView.allowed) throw new TenantAccessError('CRM viewing is required to select a payer.');
-				const payer = await new CrmRepository(trx).findPartyByPublicId(actor.organisationId, payerPublicId);
+				if (!crmView.allowed)
+					throw new TenantAccessError('CRM viewing is required to select a payer.');
+				const payer = await new CrmRepository(trx).findPartyByPublicId(
+					actor.organisationId,
+					payerPublicId
+				);
 				if (!payer) throw new RecordNotFoundError('Payer not found.');
-				if (payer.status !== 'active') throw new FinanceValidationError('The selected payer is not active.');
+				if (payer.status !== 'active')
+					throw new FinanceValidationError('The selected payer is not active.');
 				payerPartyId = payer.id;
 				payerDisplayName = payer.displayName;
 			}
@@ -577,7 +588,10 @@ export class PaymentService {
 		}));
 	}
 
-	async getWorkspace(actor: TenantActorContext, paymentPublicIdInput: string): Promise<PaymentWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		paymentPublicIdInput: string
+	): Promise<PaymentWorkspace> {
 		const policy = new FinanceAccessPolicy(this.db);
 		await policy.assertActiveActor(actor);
 		const view = await policy.viewDecision(actor);
@@ -585,20 +599,29 @@ export class PaymentService {
 		const publicId = cleanFinanceText(paymentPublicIdInput, 64, 'Payment ID', true)!;
 		const payment = await this.paymentSummary(this.db, actor.organisationId, publicId);
 		if (!payment) throw new RecordNotFoundError('Payment not found.');
-		const [allocateDecision, allocationReverseDecision, paymentReverseDecision, allocations] = await Promise.all([
-			policy.mutationDecision(actor, 'finance.payment.allocate'),
-			policy.mutationDecision(actor, 'finance.payment.allocation.reverse'),
-			policy.mutationDecision(actor, 'finance.payment.reverse'),
-			this.allocations(this.db, actor.organisationId, payment.id)
-		]);
+		const [allocateDecision, allocationReverseDecision, paymentReverseDecision, allocations] =
+			await Promise.all([
+				policy.mutationDecision(actor, 'finance.payment.allocate'),
+				policy.mutationDecision(actor, 'finance.payment.allocation.reverse'),
+				policy.mutationDecision(actor, 'finance.payment.reverse'),
+				this.allocations(this.db, actor.organisationId, payment.id)
+			]);
 		const invoiceCandidates = payment.isReversed
 			? []
-			: await this.listInvoiceCandidates(this.db, actor.organisationId, payment.currencyCode, payment.payerPartyId);
+			: await this.listInvoiceCandidates(
+					this.db,
+					actor.organisationId,
+					payment.currencyCode,
+					payment.payerPartyId
+				);
 		return {
 			payment,
 			allocations,
 			invoiceCandidates,
-			canAllocate: allocateDecision.allowed && !payment.isReversed && parseScaledDecimal(payment.unallocatedAmount, 4) > 0n,
+			canAllocate:
+				allocateDecision.allowed &&
+				!payment.isReversed &&
+				parseScaledDecimal(payment.unallocatedAmount, 4) > 0n,
 			canReverseAllocation: allocationReverseDecision.allowed && !payment.isReversed,
 			canReversePayment: paymentReverseDecision.allowed && !payment.isReversed
 		};
@@ -630,19 +653,39 @@ export class PaymentService {
 				throw new FinanceValidationError('Payment and invoice currency must match.');
 			}
 
-			const activePaymentAllocations = await this.activeAllocatedAmountForPayment(trx, actor.organisationId, payment.id);
+			const activePaymentAllocations = await this.activeAllocatedAmountForPayment(
+				trx,
+				actor.organisationId,
+				payment.id
+			);
 			const paymentAvailable = subtractMoney(payment.amount, activePaymentAllocations);
-			if (parseScaledDecimal(amount, 4) > parseScaledDecimal(paymentAvailable, 4, 'Available payment', true)) {
-				throw new FinanceValidationError(`Allocation exceeds the remaining ${positiveOrZeroMoney(paymentAvailable)} available on the payment.`);
+			if (
+				parseScaledDecimal(amount, 4) >
+				parseScaledDecimal(paymentAvailable, 4, 'Available payment', true)
+			) {
+				throw new FinanceValidationError(
+					`Allocation exceeds the remaining ${positiveOrZeroMoney(paymentAvailable)} available on the payment.`
+				);
 			}
 
-			const candidate = await this.invoiceCandidate(trx, actor.organisationId, invoice, payment.payerPartyId);
-			if (!candidate) throw new FinanceValidationError('The invoice is not available for allocation.');
+			const candidate = await this.invoiceCandidate(
+				trx,
+				actor.organisationId,
+				invoice,
+				payment.payerPartyId
+			);
+			if (!candidate)
+				throw new FinanceValidationError('The invoice is not available for allocation.');
 			if (parseScaledDecimal(candidate.outstandingAmount, 4, 'Invoice outstanding', true) <= 0n) {
 				throw new FinanceValidationError('The invoice has no remaining outstanding balance.');
 			}
-			if (parseScaledDecimal(amount, 4) > parseScaledDecimal(candidate.outstandingAmount, 4, 'Invoice outstanding', true)) {
-				throw new FinanceValidationError(`Allocation exceeds the invoice outstanding balance of ${candidate.outstandingAmount}.`);
+			if (
+				parseScaledDecimal(amount, 4) >
+				parseScaledDecimal(candidate.outstandingAmount, 4, 'Invoice outstanding', true)
+			) {
+				throw new FinanceValidationError(
+					`Allocation exceeds the invoice outstanding balance of ${candidate.outstandingAmount}.`
+				);
 			}
 
 			const allocationId = insertedId(
@@ -689,8 +732,13 @@ export class PaymentService {
 		await this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
-			const decision = await policy.mutationDecision(actor, 'finance.payment.allocation.reverse', trx);
-			if (!decision.allowed) throw new TenantAccessError('Payment-allocation reversal is not permitted.');
+			const decision = await policy.mutationDecision(
+				actor,
+				'finance.payment.allocation.reverse',
+				trx
+			);
+			if (!decision.allowed)
+				throw new TenantAccessError('Payment-allocation reversal is not permitted.');
 			const payment = await this.paymentRecord(trx, actor.organisationId, paymentPublicId, true);
 			if (!payment) throw new RecordNotFoundError('Payment not found.');
 			if (await this.paymentReversal(trx, actor.organisationId, payment.id)) {
@@ -785,10 +833,16 @@ export class PaymentService {
 					.selectFrom('payment_allocation_reversals')
 					.select('payment_allocation_id as paymentAllocationId')
 					.where('organisation_id', '=', actor.organisationId)
-					.where('payment_allocation_id', 'in', allocations.map((allocation) => allocation.id))
+					.where(
+						'payment_allocation_id',
+						'in',
+						allocations.map((allocation) => allocation.id)
+					)
 					.execute();
 				const reversedIds = new Set(reversalRows.map((row) => row.paymentAllocationId));
-				const activeAllocations = allocations.filter((allocation) => !reversedIds.has(allocation.id));
+				const activeAllocations = allocations.filter(
+					(allocation) => !reversedIds.has(allocation.id)
+				);
 				if (activeAllocations.length > 0) {
 					const reversedAt = this.now();
 					await trx

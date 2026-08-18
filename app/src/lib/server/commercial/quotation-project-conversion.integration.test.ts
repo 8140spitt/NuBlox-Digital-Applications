@@ -42,51 +42,156 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('quotation_project_conversions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_responses').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_issue_recipients').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_issue_events').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_party_snapshot_addresses').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_party_snapshots').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_text_blocks').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_item_taxes').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_items').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_sections').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_version_estimates').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('quotation_versions').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('quotation_project_conversions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_responses')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_issue_recipients')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_issue_events')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_party_snapshot_addresses')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_party_snapshots')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_text_blocks')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_item_taxes')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_items')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_sections')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_version_estimates')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('quotation_versions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('quotations').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('estimate_item_cost_components').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('estimate_item_cost_components')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('estimate_items').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('estimate_sections').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('estimate_versions').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('estimate_sections')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('estimate_versions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('estimates').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('crm_activity_members').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('crm_activity_parties').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('crm_activity_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('crm_activity_parties')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('crm_activities').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('opportunity_parties').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('opportunity_parties')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('opportunities').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('crm_pipeline_stages').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('crm_pipeline_stages')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('crm_pipelines').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_organisation_contacts').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_addresses').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('party_organisation_contacts')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('party_addresses')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('addresses').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_role_assignments').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_phone_numbers').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_email_addresses').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('party_role_assignments')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('party_phone_numbers')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('party_email_addresses')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('party_persons').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_organisations').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('party_organisations')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('parties').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('project_member_roles').where('participant_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('project_organisation_roles').where('participant_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('project_members').where('participant_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('project_organisations').where('participant_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('projects').where('owning_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('project_member_roles')
+			.where('participant_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('project_organisation_roles')
+			.where('participant_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('project_members')
+			.where('participant_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('project_organisations')
+			.where('participant_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('projects')
+			.where('owning_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
@@ -134,7 +239,12 @@ async function assignPermissionRole(
 	const roleId = insertedId(
 		await db
 			.insertInto('organisation_roles')
-			.values({ organisation_id: organisationId, public_id: randomUUID(), name: `${PREFIX}${name}`, is_active: 1 })
+			.values({
+				organisation_id: organisationId,
+				public_id: randomUUID(),
+				name: `${PREFIX}${name}`,
+				is_active: 1
+			})
 			.executeTakeFirstOrThrow()
 	);
 	const permissions = await db
@@ -156,7 +266,11 @@ async function assignPermissionRole(
 		.execute();
 	await db
 		.insertInto('member_roles')
-		.values({ organisation_id: organisationId, organisation_member_id: memberId, organisation_role_id: roleId })
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: memberId,
+			organisation_role_id: roleId
+		})
 		.executeTakeFirstOrThrow();
 }
 
@@ -188,7 +302,11 @@ async function createQuotation(
 	clientName: string,
 	accepted: boolean
 ): Promise<{ quotationPublicId: string; estimatePublicId: string }> {
-	const commercial = new CommercialService(db, randomUUID, () => new Date('2026-08-16T00:20:00.000Z'));
+	const commercial = new CommercialService(
+		db,
+		randomUUID,
+		() => new Date('2026-08-16T00:20:00.000Z')
+	);
 	const opportunityPublicId = await createOpportunity(actor, clientName);
 	const estimate = await commercial.createEstimate(actor, {
 		opportunityPublicId,
@@ -245,29 +363,45 @@ beforeAll(async () => {
 	commercialOnlyMemberId = await createMember(organisationAId, commercialOnlyUserId);
 	ownerBMemberId = await createMember(organisationBId, ownerBUserId);
 
-	const fullPermissions = ['crm.view', 'crm.manage', 'commercial.view', 'commercial.manage', 'project.create', 'project.view'];
+	const fullPermissions = [
+		'crm.view',
+		'crm.manage',
+		'commercial.view',
+		'commercial.manage',
+		'project.create',
+		'project.view'
+	];
 	await assignPermissionRole(organisationAId, ownerAMemberId, 'Owner A', fullPermissions);
-	await assignPermissionRole(
-		organisationAId,
-		commercialOnlyMemberId,
-		'Commercial Convert Only A',
-		['commercial.view', 'commercial.quotation.convert']
-	);
+	await assignPermissionRole(organisationAId, commercialOnlyMemberId, 'Commercial Convert Only A', [
+		'commercial.view',
+		'commercial.quotation.convert'
+	]);
 	await assignPermissionRole(organisationBId, ownerBMemberId, 'Owner B', fullPermissions);
 
-	actorOwnerA = { organisationId: organisationAId, userId: ownerAUserId, memberId: ownerAMemberId, correlationId: randomUUID() };
+	actorOwnerA = {
+		organisationId: organisationAId,
+		userId: ownerAUserId,
+		memberId: ownerAMemberId,
+		correlationId: randomUUID()
+	};
 	actorCommercialOnly = {
 		organisationId: organisationAId,
 		userId: commercialOnlyUserId,
 		memberId: commercialOnlyMemberId,
 		correlationId: randomUUID()
 	};
-	actorOwnerB = { organisationId: organisationBId, userId: ownerBUserId, memberId: ownerBMemberId, correlationId: randomUUID() };
+	actorOwnerB = {
+		organisationId: organisationBId,
+		userId: ownerBUserId,
+		memberId: ownerBMemberId,
+		correlationId: randomUUID()
+	};
 
 	const accepted = await createQuotation(actorOwnerA, 'Accepted Client', true);
 	acceptedQuotationPublicId = accepted.quotationPublicId;
 	acceptedEstimatePublicId = accepted.estimatePublicId;
-	unacceptedQuotationPublicId = (await createQuotation(actorOwnerA, 'Pending Client', false)).quotationPublicId;
+	unacceptedQuotationPublicId = (await createQuotation(actorOwnerA, 'Pending Client', false))
+		.quotationPublicId;
 });
 
 afterAll(async () => {
@@ -282,7 +416,9 @@ describe('accepted quotation to project conversion', () => {
 		expect(workspace.hasCommercialConvertPermission).toBe(true);
 		expect(workspace.hasProjectCreatePermission).toBe(false);
 		expect(workspace.canConvert).toBe(false);
-		await expect(service.convert(actorCommercialOnly, acceptedQuotationPublicId, 1)).rejects.toBeInstanceOf(TenantAccessError);
+		await expect(
+			service.convert(actorCommercialOnly, acceptedQuotationPublicId, 1)
+		).rejects.toBeInstanceOf(TenantAccessError);
 	});
 
 	it('converts one accepted issued version into one proposed project with explicit provenance', async () => {
@@ -336,17 +472,26 @@ describe('accepted quotation to project conversion', () => {
 
 		const members = await db
 			.selectFrom('project_members')
-			.select(['participant_organisation_id as organisationId', 'organisation_member_id as memberId', 'status'])
+			.select([
+				'participant_organisation_id as organisationId',
+				'organisation_member_id as memberId',
+				'status'
+			])
 			.where('project_id', '=', project.id)
 			.execute();
-		expect(members).toEqual([{ organisationId: organisationAId, memberId: ownerAMemberId, status: 'active' }]);
+		expect(members).toEqual([
+			{ organisationId: organisationAId, memberId: ownerAMemberId, status: 'active' }
+		]);
 
 		const audits = await db
 			.selectFrom('audit_events')
 			.select('action_key as actionKey')
 			.where('acting_organisation_id', '=', organisationAId)
 			.where('project_id', '=', project.id)
-			.where('action_key', 'in', ['commercial.quotation.converted_to_project', 'project.created_from_quotation'])
+			.where('action_key', 'in', [
+				'commercial.quotation.converted_to_project',
+				'project.created_from_quotation'
+			])
 			.orderBy('action_key', 'asc')
 			.execute();
 		expect(audits.map((row) => row.actionKey)).toEqual([
@@ -376,7 +521,11 @@ describe('accepted quotation to project conversion', () => {
 
 	it('rejects unaccepted versions and masks a foreign-tenant quotation', async () => {
 		const service = new QuotationProjectConversionService(db);
-		await expect(service.convert(actorOwnerA, unacceptedQuotationPublicId, 1)).rejects.toBeInstanceOf(CommercialValidationError);
-		await expect(service.convert(actorOwnerB, acceptedQuotationPublicId, 1)).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(
+			service.convert(actorOwnerA, unacceptedQuotationPublicId, 1)
+		).rejects.toBeInstanceOf(CommercialValidationError);
+		await expect(service.convert(actorOwnerB, acceptedQuotationPublicId, 1)).rejects.toBeInstanceOf(
+			RecordNotFoundError
+		);
 	});
 });

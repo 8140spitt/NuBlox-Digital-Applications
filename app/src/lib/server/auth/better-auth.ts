@@ -35,8 +35,7 @@ function bootstrapService(): OrganisationBootstrapService {
 }
 
 type SignupProvisioningIntent =
-	| { kind: 'invitation'; token: string }
-	| { kind: 'organisation-bootstrap'; token: string };
+	{ kind: 'invitation'; token: string } | { kind: 'organisation-bootstrap'; token: string };
 
 function signupProvisioningIntentFromContext(ctx: {
 	getCookie(name: string): string | null | undefined;
@@ -44,7 +43,9 @@ function signupProvisioningIntentFromContext(ctx: {
 	const invitationToken = ctx.getCookie(INVITATION_SIGNUP_COOKIE)?.trim() ?? '';
 	const bootstrapToken = ctx.getCookie(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE)?.trim() ?? '';
 	if (invitationToken && bootstrapToken) {
-		throw new APIError('FORBIDDEN', { message: 'The NuBlox account setup state is ambiguous. Start again.' });
+		throw new APIError('FORBIDDEN', {
+			message: 'The NuBlox account setup state is ambiguous. Start again.'
+		});
 	}
 	if (invitationToken) return { kind: 'invitation', token: invitationToken };
 	if (bootstrapToken) return { kind: 'organisation-bootstrap', token: bootstrapToken };
@@ -140,7 +141,10 @@ export const auth = betterAuth({
 					await bootstrapService().validateSignup(intent.token, email);
 				}
 			} catch (cause) {
-				if (cause instanceof InvitationAccessError || cause instanceof OrganisationBootstrapAccessError) {
+				if (
+					cause instanceof InvitationAccessError ||
+					cause instanceof OrganisationBootstrapAccessError
+				) {
 					throw new APIError('FORBIDDEN', {
 						message: 'A valid NuBlox invitation or organisation setup request is required.'
 					});

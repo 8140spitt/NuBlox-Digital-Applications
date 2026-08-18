@@ -82,12 +82,14 @@ export type CrmActivityTimelineItem = {
 };
 
 function opportunityStatus(value: string): OpportunityStatus {
-	if (value === 'open' || value === 'won' || value === 'lost' || value === 'cancelled') return value;
+	if (value === 'open' || value === 'won' || value === 'lost' || value === 'cancelled')
+		return value;
 	throw new Error(`Unexpected opportunity status: ${value}`);
 }
 
 function activityDirection(value: string | null): ActivityDirection {
-	if (value === null || value === 'inbound' || value === 'outbound' || value === 'internal') return value;
+	if (value === null || value === 'inbound' || value === 'outbound' || value === 'internal')
+		return value;
 	throw new Error(`Unexpected CRM activity direction: ${value}`);
 }
 
@@ -144,7 +146,11 @@ export class CrmOpportunityRepository {
 				'probability_percent as probabilityPercent'
 			])
 			.where('organisation_id', '=', organisationId)
-			.where('crm_pipeline_id', 'in', pipelines.map((pipeline) => pipeline.id))
+			.where(
+				'crm_pipeline_id',
+				'in',
+				pipelines.map((pipeline) => pipeline.id)
+			)
 			.where('is_active', '=', 1)
 			.orderBy('sort_order', 'asc')
 			.execute();
@@ -299,7 +305,12 @@ export class CrmOpportunityRepository {
 			.where('opportunity.organisation_id', '=', organisationId);
 	}
 
-	private mapOpportunity(row: Awaited<ReturnType<ReturnType<CrmOpportunityRepository['opportunityQuery']>['executeTakeFirst']>> & object): CrmOpportunitySummary {
+	private mapOpportunity(
+		row: Awaited<
+			ReturnType<ReturnType<CrmOpportunityRepository['opportunityQuery']>['executeTakeFirst']>
+		> &
+			object
+	): CrmOpportunitySummary {
 		const value = row as any;
 		return {
 			id: value.id,
@@ -432,7 +443,10 @@ export class CrmOpportunityRepository {
 		return result.numUpdatedRows > 0n;
 	}
 
-	async listParticipants(organisationId: string, opportunityId: string): Promise<CrmOpportunityParticipant[]> {
+	async listParticipants(
+		organisationId: string,
+		opportunityId: string
+	): Promise<CrmOpportunityParticipant[]> {
 		const rows = await this.db
 			.selectFrom('opportunity_parties as assignment')
 			.innerJoin('parties as party', (join) =>
@@ -440,7 +454,11 @@ export class CrmOpportunityRepository {
 					.onRef('party.id', '=', 'assignment.party_id')
 					.onRef('party.organisation_id', '=', 'assignment.organisation_id')
 			)
-			.innerJoin('opportunity_party_role_types as role', 'role.id', 'assignment.opportunity_party_role_type_id')
+			.innerJoin(
+				'opportunity_party_role_types as role',
+				'role.id',
+				'assignment.opportunity_party_role_type_id'
+			)
 			.leftJoin('party_persons as person', (join) =>
 				join
 					.onRef('person.party_id', '=', 'party.id')
@@ -630,7 +648,10 @@ export class CrmOpportunityRepository {
 			.executeTakeFirstOrThrow();
 	}
 
-	async listActivities(organisationId: string, opportunityId: string): Promise<CrmActivityTimelineItem[]> {
+	async listActivities(
+		organisationId: string,
+		opportunityId: string
+	): Promise<CrmActivityTimelineItem[]> {
 		const rows = await this.db
 			.selectFrom('crm_activities as activity')
 			.innerJoin('crm_activity_types as type', 'type.id', 'activity.crm_activity_type_id')
@@ -688,7 +709,11 @@ export class CrmOpportunityRepository {
 				'company.trading_name as tradingName'
 			])
 			.where('participant.organisation_id', '=', organisationId)
-			.where('participant.crm_activity_id', 'in', rows.map((row) => row.id))
+			.where(
+				'participant.crm_activity_id',
+				'in',
+				rows.map((row) => row.id)
+			)
 			.orderBy('participant.participant_role', 'asc')
 			.execute();
 		const partiesByActivity = new Map<string, CrmActivityPartyParticipant[]>();

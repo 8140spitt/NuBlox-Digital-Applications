@@ -69,18 +69,40 @@
 		padding: 2rem;
 		box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.06);
 	}
-	.brand { font-weight: 800; letter-spacing: -0.02em; margin: 0 0 2rem; }
-	h1 { margin: 0; font-size: 2rem; }
-	.lede, .support-copy { color: #5c5c56; line-height: 1.6; }
-	.stack { display: grid; gap: 1rem; margin-top: 1.5rem; }
-	label { display: grid; gap: 0.4rem; font-weight: 600; }
+	.brand {
+		font-weight: 800;
+		letter-spacing: -0.02em;
+		margin: 0 0 2rem;
+	}
+	h1 {
+		margin: 0;
+		font-size: 2rem;
+	}
+	.lede,
+	.support-copy {
+		color: #5c5c56;
+		line-height: 1.6;
+	}
+	.stack {
+		display: grid;
+		gap: 1rem;
+		margin-top: 1.5rem;
+	}
+	label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 600;
+	}
 	input {
 		font: inherit;
 		border: 1px solid #b9b9b1;
 		border-radius: 0.55rem;
 		padding: 0.75rem 0.85rem;
 	}
-	input:focus { outline: 2px solid #222; outline-offset: 2px; }
+	input:focus {
+		outline: 2px solid #222;
+		outline-offset: 2px;
+	}
 	button {
 		font: inherit;
 		font-weight: 700;
@@ -91,9 +113,24 @@
 		color: white;
 		cursor: pointer;
 	}
-	.recovery-link { margin: -0.25rem 0 0; text-align: right; font-size: 0.92rem; }
-	.error { color: #9b1c1c; margin: 0; }
-	.notice { padding: 0.8rem; border-radius: 0.55rem; }
-	.notice.success { background: #e8f6eb; }
-	a { color: inherit; font-weight: 700; }
+	.recovery-link {
+		margin: -0.25rem 0 0;
+		text-align: right;
+		font-size: 0.92rem;
+	}
+	.error {
+		color: #9b1c1c;
+		margin: 0;
+	}
+	.notice {
+		padding: 0.8rem;
+		border-radius: 0.55rem;
+	}
+	.notice.success {
+		background: #e8f6eb;
+	}
+	a {
+		color: inherit;
+		font-weight: 700;
+	}
 </style>

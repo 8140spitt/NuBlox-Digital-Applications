@@ -57,11 +57,7 @@ export type ReceivablesPortfolio = {
 };
 
 export type StatementMovementKind =
-	| 'invoice'
-	| 'invoice_void'
-	| 'credit_note'
-	| 'payment_allocation'
-	| 'allocation_reversal';
+	'invoice' | 'invoice_void' | 'credit_note' | 'payment_allocation' | 'allocation_reversal';
 
 export type StatementMovement = {
 	id: string;
@@ -137,7 +133,10 @@ function partyDisplayName(row: {
 	return row.tradingName?.trim() || row.legalName?.trim() || 'Unnamed organisation';
 }
 
-function dateParts(date: Date, timeZone: string): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
+function dateParts(
+	date: Date,
+	timeZone: string
+): { year: number; month: number; day: number; hour: number; minute: number; second: number } {
 	const parts = new Intl.DateTimeFormat('en-GB', {
 		timeZone,
 		year: 'numeric',
@@ -148,7 +147,8 @@ function dateParts(date: Date, timeZone: string): { year: number; month: number;
 		second: '2-digit',
 		hourCycle: 'h23'
 	}).formatToParts(date);
-	const value = (type: Intl.DateTimeFormatPartTypes) => Number(parts.find((part) => part.type === type)?.value ?? '0');
+	const value = (type: Intl.DateTimeFormatPartTypes) =>
+		Number(parts.find((part) => part.type === type)?.value ?? '0');
 	return {
 		year: value('year'),
 		month: value('month'),
@@ -183,7 +183,14 @@ function addDateOnlyDays(value: string, days: number): string {
 function timezoneOffsetMs(date: Date, timeZone: string): number {
 	const rounded = new Date(Math.floor(date.getTime() / 1000) * 1000);
 	const parts = dateParts(rounded, timeZone);
-	const representedAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second);
+	const representedAsUtc = Date.UTC(
+		parts.year,
+		parts.month - 1,
+		parts.day,
+		parts.hour,
+		parts.minute,
+		parts.second
+	);
 	return representedAsUtc - rounded.getTime();
 }
 
@@ -207,7 +214,10 @@ function moneyFromScaled(value: bigint): string {
 }
 
 function signedMoney(debit: string, credit: string): bigint {
-	return parseScaledDecimal(debit, 4, 'Debit amount', true) - parseScaledDecimal(credit, 4, 'Credit amount', true);
+	return (
+		parseScaledDecimal(debit, 4, 'Debit amount', true) -
+		parseScaledDecimal(credit, 4, 'Credit amount', true)
+	);
 }
 
 function agingBucket(daysOverdue: number): ReceivableAgingBucketCode {
@@ -218,7 +228,10 @@ function agingBucket(daysOverdue: number): ReceivableAgingBucketCode {
 	return '91_plus';
 }
 
-function emptyBuckets(): Record<ReceivableAgingBucketCode, { amount: bigint; invoiceCount: number }> {
+function emptyBuckets(): Record<
+	ReceivableAgingBucketCode,
+	{ amount: bigint; invoiceCount: number }
+> {
 	return {
 		current: { amount: 0n, invoiceCount: 0 },
 		'1_30': { amount: 0n, invoiceCount: 0 },
@@ -228,7 +241,9 @@ function emptyBuckets(): Record<ReceivableAgingBucketCode, { amount: bigint; inv
 	};
 }
 
-function publicBuckets(source: Record<ReceivableAgingBucketCode, { amount: bigint; invoiceCount: number }>): ReceivableAgingBucket[] {
+function publicBuckets(
+	source: Record<ReceivableAgingBucketCode, { amount: bigint; invoiceCount: number }>
+): ReceivableAgingBucket[] {
 	return (Object.keys(AGING_LABELS) as ReceivableAgingBucketCode[]).map((code) => ({
 		code,
 		label: AGING_LABELS[code],
@@ -269,13 +284,19 @@ export class ReceivablesReportingService {
 		const row = await db
 			.selectFrom('parties as party')
 			.leftJoin('party_persons as person', (join) =>
-				join.onRef('person.party_id', '=', 'party.id').onRef('person.organisation_id', '=', 'party.organisation_id')
+				join
+					.onRef('person.party_id', '=', 'party.id')
+					.onRef('person.organisation_id', '=', 'party.organisation_id')
 			)
 			.leftJoin('party_organisations as company', (join) =>
-				join.onRef('company.party_id', '=', 'party.id').onRef('company.organisation_id', '=', 'party.organisation_id')
+				join
+					.onRef('company.party_id', '=', 'party.id')
+					.onRef('company.organisation_id', '=', 'party.organisation_id')
 			)
 			.leftJoin('party_billing_settings as billing', (join) =>
-				join.onRef('billing.party_id', '=', 'party.id').onRef('billing.organisation_id', '=', 'party.organisation_id')
+				join
+					.onRef('billing.party_id', '=', 'party.id')
+					.onRef('billing.organisation_id', '=', 'party.organisation_id')
 			)
 			.select([
 				'party.id as id',
@@ -293,15 +314,19 @@ export class ReceivablesReportingService {
 			.executeTakeFirst();
 		return row
 			? {
-				id: row.id,
-				publicId: row.publicId,
-				displayName: partyDisplayName(row),
-				customerAccountReference: row.customerAccountReference ?? null
-			}
+					id: row.id,
+					publicId: row.publicId,
+					displayName: partyDisplayName(row),
+					customerAccountReference: row.customerAccountReference ?? null
+				}
 			: null;
 	}
 
-	private async documentGross(db: DatabaseExecutor, organisationId: string, documentId: string): Promise<string> {
+	private async documentGross(
+		db: DatabaseExecutor,
+		organisationId: string,
+		documentId: string
+	): Promise<string> {
 		const items = await db
 			.selectFrom('financial_document_items')
 			.select(['id', 'quantity', 'unit_rate as unitRate'])
@@ -322,7 +347,11 @@ export class ReceivablesReportingService {
 		return sumMoney(values);
 	}
 
-	private async firstIssueAt(db: DatabaseExecutor, organisationId: string, documentId: string): Promise<Date | null> {
+	private async firstIssueAt(
+		db: DatabaseExecutor,
+		organisationId: string,
+		documentId: string
+	): Promise<Date | null> {
 		const issue = await db
 			.selectFrom('financial_document_issue_events')
 			.select('issued_at as issuedAt')
@@ -342,7 +371,9 @@ export class ReceivablesReportingService {
 		const credits = await db
 			.selectFrom('credit_notes as credit')
 			.innerJoin('financial_documents as document', (join) =>
-				join.onRef('document.id', '=', 'credit.financial_document_id').onRef('document.organisation_id', '=', 'credit.organisation_id')
+				join
+					.onRef('document.id', '=', 'credit.financial_document_id')
+					.onRef('document.organisation_id', '=', 'credit.organisation_id')
 			)
 			.select('document.id')
 			.where('credit.organisation_id', '=', organisationId)
@@ -367,7 +398,9 @@ export class ReceivablesReportingService {
 		const rows = await db
 			.selectFrom('payment_allocations as allocation')
 			.leftJoin('payment_allocation_reversals as reversal', (join) =>
-				join.onRef('reversal.payment_allocation_id', '=', 'allocation.id').onRef('reversal.organisation_id', '=', 'allocation.organisation_id')
+				join
+					.onRef('reversal.payment_allocation_id', '=', 'allocation.id')
+					.onRef('reversal.organisation_id', '=', 'allocation.organisation_id')
 			)
 			.select(['allocation.allocated_amount as amount', 'reversal.reversed_at as reversedAt'])
 			.where('allocation.organisation_id', '=', organisationId)
@@ -375,7 +408,9 @@ export class ReceivablesReportingService {
 			.where('allocation.allocated_at', '<', cutoff)
 			.execute();
 		return sumMoney(
-			rows.filter((row) => row.reversedAt === null || row.reversedAt >= cutoff).map((row) => row.amount)
+			rows
+				.filter((row) => row.reversedAt === null || row.reversedAt >= cutoff)
+				.map((row) => row.amount)
 		);
 	}
 
@@ -389,7 +424,9 @@ export class ReceivablesReportingService {
 		const invoices = await db
 			.selectFrom('financial_documents as document')
 			.innerJoin('invoices as invoice', (join) =>
-				join.onRef('invoice.financial_document_id', '=', 'document.id').onRef('invoice.organisation_id', '=', 'document.organisation_id')
+				join
+					.onRef('invoice.financial_document_id', '=', 'document.id')
+					.onRef('invoice.organisation_id', '=', 'document.organisation_id')
 			)
 			.select([
 				'document.id as id',
@@ -437,7 +474,10 @@ export class ReceivablesReportingService {
 				this.issuedCreditGrossAsOf(db, organisationId, invoice.id, cutoff),
 				this.allocatedAmountAsOf(db, organisationId, invoice.id, cutoff)
 			]);
-			const outstandingAmount = subtractMoney(subtractMoney(invoiceGross, issuedCreditGross), activeAllocatedAmount);
+			const outstandingAmount = subtractMoney(
+				subtractMoney(invoiceGross, issuedCreditGross),
+				activeAllocatedAmount
+			);
 			const outstanding = parseScaledDecimal(outstandingAmount, 4, 'Outstanding amount', true);
 			if (outstanding <= 0n) continue;
 			const dueText = invoice.dueDate ? invoice.dueDate.toISOString().slice(0, 10) : null;
@@ -529,7 +569,9 @@ export class ReceivablesReportingService {
 						occurredAt: document.voidedAt,
 						kind: 'invoice_void',
 						reference: document.documentNumber,
-						description: document.voidReason ? `Invoice void — ${document.voidReason}` : 'Invoice void',
+						description: document.voidReason
+							? `Invoice void — ${document.voidReason}`
+							: 'Invoice void',
 						invoicePublicId: document.publicId,
 						debitAmount: ZERO,
 						creditAmount: gross
@@ -554,13 +596,19 @@ export class ReceivablesReportingService {
 		const allocations = await db
 			.selectFrom('payment_allocations as allocation')
 			.innerJoin('financial_documents as invoice', (join) =>
-				join.onRef('invoice.id', '=', 'allocation.invoice_document_id').onRef('invoice.organisation_id', '=', 'allocation.organisation_id')
+				join
+					.onRef('invoice.id', '=', 'allocation.invoice_document_id')
+					.onRef('invoice.organisation_id', '=', 'allocation.organisation_id')
 			)
 			.innerJoin('payments as payment', (join) =>
-				join.onRef('payment.id', '=', 'allocation.payment_id').onRef('payment.organisation_id', '=', 'allocation.organisation_id')
+				join
+					.onRef('payment.id', '=', 'allocation.payment_id')
+					.onRef('payment.organisation_id', '=', 'allocation.organisation_id')
 			)
 			.leftJoin('payment_allocation_reversals as reversal', (join) =>
-				join.onRef('reversal.payment_allocation_id', '=', 'allocation.id').onRef('reversal.organisation_id', '=', 'allocation.organisation_id')
+				join
+					.onRef('reversal.payment_allocation_id', '=', 'allocation.id')
+					.onRef('reversal.organisation_id', '=', 'allocation.organisation_id')
 			)
 			.select([
 				'allocation.id as id',
@@ -613,10 +661,16 @@ export class ReceivablesReportingService {
 			}
 		}
 
-		return movements.sort((a, b) => a.occurredAt.getTime() - b.occurredAt.getTime() || a.sortKey.localeCompare(b.sortKey));
+		return movements.sort(
+			(a, b) =>
+				a.occurredAt.getTime() - b.occurredAt.getTime() || a.sortKey.localeCompare(b.sortKey)
+		);
 	}
 
-	private publicAccount(customer: CustomerRecord, positions: CustomerCurrencyReceivable[]): CustomerReceivableAccount {
+	private publicAccount(
+		customer: CustomerRecord,
+		positions: CustomerCurrencyReceivable[]
+	): CustomerReceivableAccount {
 		return {
 			customerPartyPublicId: customer.publicId,
 			customerDisplayName: customer.displayName,
@@ -633,7 +687,9 @@ export class ReceivablesReportingService {
 		const customers = await this.db
 			.selectFrom('financial_documents as document')
 			.innerJoin('parties as party', (join) =>
-				join.onRef('party.id', '=', 'document.customer_party_id').onRef('party.organisation_id', '=', 'document.organisation_id')
+				join
+					.onRef('party.id', '=', 'document.customer_party_id')
+					.onRef('party.organisation_id', '=', 'document.organisation_id')
 			)
 			.select('party.public_id as publicId')
 			.distinct()
@@ -646,25 +702,49 @@ export class ReceivablesReportingService {
 		for (const row of customers) {
 			const customer = await this.customerByPublicId(this.db, actor.organisationId, row.publicId);
 			if (!customer) continue;
-			const positions = await this.customerAging(this.db, actor.organisationId, customer.id, asOf, cutoff);
+			const positions = await this.customerAging(
+				this.db,
+				actor.organisationId,
+				customer.id,
+				asOf,
+				cutoff
+			);
 			if (positions.length === 0) continue;
 			accounts.push(this.publicAccount(customer, positions));
 		}
 		accounts.sort((a, b) => a.customerDisplayName.localeCompare(b.customerDisplayName));
 
-		const totals = new Map<string, { issuedInvoiceCount: number; openInvoiceCount: number; total: bigint; buckets: ReturnType<typeof emptyBuckets> }>();
+		const totals = new Map<
+			string,
+			{
+				issuedInvoiceCount: number;
+				openInvoiceCount: number;
+				total: bigint;
+				buckets: ReturnType<typeof emptyBuckets>;
+			}
+		>();
 		for (const account of accounts) {
 			for (const position of account.positions) {
 				let total = totals.get(position.currencyCode);
 				if (!total) {
-					total = { issuedInvoiceCount: 0, openInvoiceCount: 0, total: 0n, buckets: emptyBuckets() };
+					total = {
+						issuedInvoiceCount: 0,
+						openInvoiceCount: 0,
+						total: 0n,
+						buckets: emptyBuckets()
+					};
 					totals.set(position.currencyCode, total);
 				}
 				total.issuedInvoiceCount += position.issuedInvoiceCount;
 				total.openInvoiceCount += position.openInvoiceCount;
 				total.total += parseScaledDecimal(position.totalOutstanding, 4, 'Outstanding amount', true);
 				for (const bucket of position.buckets) {
-					total.buckets[bucket.code].amount += parseScaledDecimal(bucket.amount, 4, 'Aging amount', true);
+					total.buckets[bucket.code].amount += parseScaledDecimal(
+						bucket.amount,
+						4,
+						'Aging amount',
+						true
+					);
 					total.buckets[bucket.code].invoiceCount += bucket.invoiceCount;
 				}
 			}
@@ -693,8 +773,13 @@ export class ReceivablesReportingService {
 	): Promise<CustomerStatementWorkspace> {
 		await this.assertReporting(actor);
 		const customerPartyPublicId = customerPartyPublicIdInput.trim();
-		if (!customerPartyPublicId || customerPartyPublicId.length > 64) throw new RecordNotFoundError('Customer not found.');
-		const customer = await this.customerByPublicId(this.db, actor.organisationId, customerPartyPublicId);
+		if (!customerPartyPublicId || customerPartyPublicId.length > 64)
+			throw new RecordNotFoundError('Customer not found.');
+		const customer = await this.customerByPublicId(
+			this.db,
+			actor.organisationId,
+			customerPartyPublicId
+		);
 		if (!customer) throw new RecordNotFoundError('Customer not found.');
 		const hasInvoice = await this.db
 			.selectFrom('financial_documents')
@@ -710,14 +795,20 @@ export class ReceivablesReportingService {
 		const defaultFrom = `${today.slice(0, 8)}01`;
 		const from = validateDateText(input.from?.trim() || defaultFrom, 'Statement start date');
 		const to = validateDateText(input.to?.trim() || today, 'Statement end date');
-		if (from > to) throw new FinanceValidationError('Statement start date must not be after the end date.');
+		if (from > to)
+			throw new FinanceValidationError('Statement start date must not be after the end date.');
 		if (to > today) throw new FinanceValidationError('Statement end date cannot be in the future.');
 		if (dateOnlyDayNumber(to) - dateOnlyDayNumber(from) > 366) {
 			throw new FinanceValidationError('A statement period must not exceed 367 calendar days.');
 		}
 		const fromInstant = zonedStartOfDay(from, timezone);
 		const cutoff = zonedStartOfDay(addDateOnlyDays(to, 1), timezone);
-		const allMovements = await this.rawStatementMovements(this.db, actor.organisationId, customer.id, cutoff);
+		const allMovements = await this.rawStatementMovements(
+			this.db,
+			actor.organisationId,
+			customer.id,
+			cutoff
+		);
 		const aging = await this.customerAging(this.db, actor.organisationId, customer.id, to, cutoff);
 		const currencies = new Set<string>([
 			...allMovements.map((movement) => movement.currencyCode),
@@ -726,7 +817,9 @@ export class ReceivablesReportingService {
 		const statements: CurrencyStatement[] = [];
 
 		for (const currencyCode of [...currencies].sort()) {
-			const currencyMovements = allMovements.filter((movement) => movement.currencyCode === currencyCode);
+			const currencyMovements = allMovements.filter(
+				(movement) => movement.currencyCode === currencyCode
+			);
 			let opening = 0n;
 			for (const movement of currencyMovements) {
 				if (movement.occurredAt >= fromInstant) break;

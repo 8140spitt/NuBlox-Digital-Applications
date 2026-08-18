@@ -4,7 +4,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import type { EmailDelivery, TransactionalEmail } from '$lib/server/email/email-delivery';
 import { InvitationRoleError, OrganisationInvitationService } from './invitation-service';
-import { OrganisationAdminValidationError, OrganisationAdminService } from './organisation-admin-service';
+import {
+	OrganisationAdminValidationError,
+	OrganisationAdminService
+} from './organisation-admin-service';
 
 const PREFIX = 'Role Delegation Integration ';
 
@@ -68,13 +71,28 @@ async function createUser(name: string): Promise<string> {
 async function cleanup(): Promise<void> {
 	if (!db) return;
 	if (organisationId) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_invitation_roles').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_invitations').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('organisation_invitation_roles')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('organisation_invitations')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('role_permissions').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
 	}
 	const userIds = [actorUserId, targetUserId].filter(Boolean);
@@ -270,9 +288,9 @@ describe('organisation role delegation ceiling', () => {
 			.executeTakeFirstOrThrow();
 
 		const service = new OrganisationAdminService(db);
-		await expect(service.setMemberStatus(actor(), targetMemberPublicId, 'suspended')).rejects.toBeInstanceOf(
-			OrganisationAdminValidationError
-		);
+		await expect(
+			service.setMemberStatus(actor(), targetMemberPublicId, 'suspended')
+		).rejects.toBeInstanceOf(OrganisationAdminValidationError);
 		await expect(
 			service.replaceMemberRoles(actor(), targetMemberPublicId, [delegableRolePublicId])
 		).rejects.toBeInstanceOf(OrganisationAdminValidationError);

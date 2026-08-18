@@ -3,7 +3,11 @@ import { randomUUID } from 'node:crypto';
 import type { Database } from '$lib/server/db/database';
 
 export type VerifiedIdentityRecoveryResult =
-	| { recovered: true; userId: string; outcome: 'linked-existing' | 'activated-pending' | 'created' }
+	| {
+			recovered: true;
+			userId: string;
+			outcome: 'linked-existing' | 'activated-pending' | 'created';
+	  }
 	| { recovered: false; reason: string };
 
 function normaliseEmail(email: string): string {
@@ -151,7 +155,8 @@ export async function recoverVerifiedPlatformIdentity(
 				status: 'active'
 			})
 			.executeTakeFirstOrThrow();
-		if (userInsert.insertId === undefined) throw new Error('Recovered user insert did not return an ID.');
+		if (userInsert.insertId === undefined)
+			throw new Error('Recovered user insert did not return an ID.');
 		const userId = userInsert.insertId.toString();
 
 		await trx
