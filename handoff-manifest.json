@@ -1,7 +1,7 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 11,
-  "generated_date": "2026-08-17",
+  "manifest_version": 12,
+  "generated_date": "2026-08-18",
   "product": {
     "career_count": 84,
     "professional_domain_count": 16,
@@ -60,8 +60,19 @@
       "finance.invoice.void",
       "finance.credit_control.override",
       "finance.bad_debt.write_off.authorise",
-      "finance.bad_debt.write_off.reverse"
+      "finance.bad_debt.write_off.reverse",
+      "finance.tax_relief.authorise",
+      "finance.tax_relief.reverse",
+      "finance.tax_relief.repayment.record",
+      "finance.tax_relief.repayment.reverse",
+      "finance.tax_relief.post",
+      "finance.tax_relief.post.reverse"
     ],
+    "package_004k_defaults": {
+      "Owner": "all eight finance.tax_relief permissions",
+      "Administrator": "all eight finance.tax_relief permissions",
+      "Finance/Commercial": "finance.tax_relief.view + finance.tax_relief.prepare only"
+    },
     "bootstrap_parity": "Existing-tenant forward-migration grants and future OrganisationBootstrapService grants are persisted and integration-tested for released finance authority families."
   },
   "implemented_workflow": [
@@ -105,7 +116,12 @@
     "Separate Write-off Authorisation",
     "Additive Write-off Reversal",
     "Payment-Linked Bad-Debt Recovery",
-    "Additive Recovery Reversal"
+    "Additive Recovery Reversal",
+    "Source-Linked VAT Bad-Debt Relief Preparation",
+    "Separate VAT Relief Authorisation and Reversal",
+    "VAT Return Box 4 Posting Evidence",
+    "Recovery-Linked Proportional VAT Repayment",
+    "VAT Return Box 1 Repayment Posting Evidence"
   ],
   "accounts_receivable": {
     "authoritative_position": {
@@ -127,10 +143,6 @@
       "service": "app/src/lib/server/finance/tax-settings-service.ts",
       "defaults_service": "app/src/lib/server/tax/tax-defaults.ts",
       "route": "/finance/tax",
-      "permissions": {
-        "view": "finance.view",
-        "manage": "finance.billing.manage or finance.manage fallback"
-      },
       "starter_categories": [
         "VAT_STANDARD 20%",
         "VAT_REDUCED 5%",
@@ -142,69 +154,21 @@
       "invoice_line_policy": "invoice draft lines require explicit tax selection and issue refreshes the selected category against the issue-date effective rate",
       "deliberate_non_claim": "construction domestic reverse-charge invoice treatment is not represented as ordinary 0% tax"
     },
-    "receivables_reporting": {
-      "spec": "docs/38-customer-statements-aged-receivables.md",
-      "service": "app/src/lib/server/finance/receivables-control-reporting-service.ts",
-      "persistence_policy": "no customer-statement, statement-line, aging-balance or editable balance tables",
-      "write_off_history": "write-off authorisation is a statement credit; write-off reversal is a statement debit; aging subtracts write-offs active at the cutoff; recovery is not a customer receivable movement"
-    },
-    "controlled_collections": {
-      "spec": "docs/39-controlled-collections-dunning.md",
-      "service": "app/src/lib/server/finance/collections-service.ts",
-      "accounting_boundary": "collection cases/actions/promises/disputes never become a receivable, settlement or aging ledger"
-    },
-    "collections_automation": {
-      "spec": "docs/40-collections-automation-policy.md",
-      "service": "app/src/lib/server/finance/collections-automation-service.ts",
-      "route": "/finance/collections/automation",
-      "scheduler_policy": "no cron scheduler, durable worker or background automatic generation/dispatch is claimed"
-    },
     "credit_control": {
       "migration": "database/migrations/20260817150000_credit_control_limits_holds.sql",
       "spec": "docs/41-controlled-credit-limits-holds.md",
       "service": "app/src/lib/server/finance/credit-control-service.ts",
       "route": "/finance/credit-control",
-      "permissions": [
-        "finance.credit_control.view",
-        "finance.credit_control.policy.manage",
-        "finance.credit_control.hold.manage",
-        "finance.credit_control.override"
-      ],
-      "current_receivable_formula": "sum positive issued invoice outstanding after credits, allocations and active write-offs",
       "projected_exposure_formula": "current receivable + proposed commitment",
-      "limit_block_rule": "projected exposure > enabled credit limit; exact equality is allowed",
-      "hold_block_rule": "active customer hold blocks named new-commitment boundaries regardless of currency/amount",
-      "enforcement_boundaries": [
-        "accepted quotation -> proposed project conversion",
-        "contract execution"
-      ],
-      "serialization": "customer-first invoice locking and current/locking receivable reads prevent concurrent invoice issue or write-off mutation from racing a commitment decision",
-      "persistence_policy": "no mutable used-credit, available-credit, reserved-headroom or shadow receivable balance"
+      "serialization": "customer-first invoice locking and current/locking receivable reads prevent concurrent invoice issue or write-off mutation from racing a commitment decision"
     },
     "bad_debt": {
       "package": "004J",
-      "name": "Controlled Bad Debt, Write-off and Recovery",
       "migration": "database/migrations/20260817190000_bad_debt_writeoff_recovery.sql",
       "spec": "docs/43-controlled-bad-debt-writeoff-recovery.md",
       "routes": [
         "/finance/bad-debt",
         "/finance/bad-debt/[casePublicId]"
-      ],
-      "services": [
-        "app/src/lib/server/finance/bad-debt-common.ts",
-        "app/src/lib/server/finance/bad-debt-query-service.ts",
-        "app/src/lib/server/finance/bad-debt-mutation-service.ts",
-        "app/src/lib/server/finance/payment-control-service.ts",
-        "app/src/lib/server/finance/receivable-ledger.ts",
-        "app/src/lib/server/finance/receivables-control-reporting-service.ts"
-      ],
-      "tables": [
-        "receivable_bad_debt_cases",
-        "receivable_bad_debt_recommendations",
-        "receivable_write_offs",
-        "receivable_write_off_reversals",
-        "receivable_write_off_recoveries",
-        "receivable_write_off_recovery_reversals"
       ],
       "permissions": [
         "finance.bad_debt.view",
@@ -215,44 +179,95 @@
         "finance.bad_debt.recovery.record",
         "finance.bad_debt.recovery.reverse"
       ],
-      "standard_role_defaults": {
-        "Owner": "all seven permissions",
-        "Administrator": "all seven permissions",
-        "Finance/Commercial": "view + case.manage + recommend + recovery.record + recovery.reverse; no write-off authorise/reverse"
-      },
-      "workflow": [
-        "invoice-specific assessment case",
-        "immutable write-off recommendation",
-        "separate write-off authorisation",
-        "active partial/full write-off",
-        "additive write-off reversal",
-        "payment-linked bad-debt recovery",
-        "additive recovery reversal"
-      ],
-      "invariants": [
-        "bad-debt case is exact tenant/customer/invoice evidence and stores no editable receivable balance",
-        "recommendation is immutable evidence and never changes receivable",
-        "write-off authorisation is separately permissioned and revalidates against current invoice outstanding",
-        "active write-off reduces operational receivable without mutating invoice, credit-note or payment history",
-        "write-off reversal is additive and restores receivable",
-        "recovery consumes capacity from an existing non-reversed same-currency payment receipt but does not reopen customer receivable",
-        "recovery reversal restores payment capacity only",
-        "active recovery must be reversed before source write-off or source payment reversal",
-        "invoice bad-debt mutation lock order is customer -> invoice -> bad-debt evidence",
-        "historical statements show write-off credits and reversal debits at real event times; recovery is not a customer receivable movement"
-      ],
       "tax_treatment_values": [
         "no_tax_adjustment",
         "separate_tax_adjustment_required"
       ],
+      "dependency_policy": "004K active VAT relief claims block write-off reversal; active VAT repayment evidence blocks operational recovery reversal"
+    },
+    "vat_bad_debt_relief": {
+      "package": "004K",
+      "name": "Controlled VAT Bad-Debt Relief",
+      "status": "implemented on PR #33 pending exact documentation-synchronised release gate",
+      "migration": "database/migrations/20260818080000_vat_bad_debt_relief.sql",
+      "spec": "docs/44-controlled-vat-bad-debt-relief.md",
+      "route": "/finance/tax-relief",
+      "services": [
+        "app/src/lib/server/finance/tax-relief-service.ts",
+        "app/src/lib/server/finance/tax-relief-control-service.ts",
+        "app/src/lib/server/finance/bad-debt-mutation-service.ts"
+      ],
+      "tables": [
+        "receivable_vat_bad_debt_claims",
+        "receivable_vat_bad_debt_claim_lines",
+        "receivable_vat_bad_debt_claim_authorisations",
+        "receivable_vat_bad_debt_claim_reversals",
+        "receivable_vat_bad_debt_repayments",
+        "receivable_vat_bad_debt_repayment_reversals",
+        "receivable_vat_return_postings",
+        "receivable_vat_return_posting_reversals"
+      ],
+      "permissions": [
+        "finance.tax_relief.view",
+        "finance.tax_relief.prepare",
+        "finance.tax_relief.authorise",
+        "finance.tax_relief.reverse",
+        "finance.tax_relief.repayment.record",
+        "finance.tax_relief.repayment.reverse",
+        "finance.tax_relief.post",
+        "finance.tax_relief.post.reverse"
+      ],
+      "workflow": [
+        "active write-off marked separate_tax_adjustment_required",
+        "prepared source-tax-linked claim and eligibility attestations",
+        "separate relief authorisation",
+        "optional additive claim reversal",
+        "VAT Return Box 4 posting evidence",
+        "later same-writeoff Package 004J recovery",
+        "proportional VAT repayment evidence",
+        "VAT Return Box 1 posting evidence",
+        "additive repayment/posting reversals"
+      ],
+      "eligibility_policy": {
+        "relevant_date": "later of supply date and payment due date",
+        "eligible_from": "relevant date + 6 calendar months",
+        "claim_deadline": "relevant date + 54 calendar months",
+        "issued_due_date_guard": "when invoice due_date exists it is authoritative and operator input must match",
+        "future_supply_guard": "future supply dates are rejected",
+        "attestations": [
+          "VAT accounted for and paid to HMRC",
+          "debt not sold or factored",
+          "selling-price condition met",
+          "relief scheme applicable"
+        ]
+      },
+      "calculation_policy": {
+        "claim_vat": "immutable source invoice VAT × claim consideration basis ÷ source gross",
+        "repayment_vat": "authorised claim VAT × recovered consideration ÷ authorised claim consideration",
+        "arithmetic": "fixed-point decimal; operator does not enter VAT relief/repayment amounts"
+      },
+      "posting_policy": {
+        "claim": "Box 4; amount derived from authorised claim VAT; VAT-period end within eligibility/deadline window",
+        "repayment": "Box 1; amount derived from proportional VAT repayment; VAT period must contain actual operational recovery received date",
+        "boundary": "posting evidence only; no HMRC submission or complete VAT-return engine"
+      },
+      "reversal_policy": "claim, repayment and VAT-return posting corrections are additive reversal facts; downstream evidence must be reversed before upstream operational facts",
+      "regulatory_sources_checked": [
+        "GOV.UK VAT Notice 700/18 — Relief from VAT on bad debts",
+        "GOV.UK HMRC VBDR4100 — Repayment of relief when subsequent payments received",
+        "GOV.UK HMRC VBDR4200 — How and when repayment is made",
+        "GOV.UK HMRC VBDR1600 — What time limits apply for claiming relief?"
+      ],
+      "regulatory_check_date": "2026-08-18",
       "deliberate_non_claims": [
-        "automatic bad-debt classification",
-        "VAT/tax bad-debt relief posting",
+        "direct HMRC VAT Return submission",
+        "Making Tax Digital API integration",
+        "complete statutory VAT account",
         "general-ledger posting",
-        "bank reconciliation",
-        "FX conversion",
-        "expected-credit-loss/provisioning accounting",
-        "debt-sale assignment"
+        "automatic proof of external VAT/legal eligibility facts",
+        "Cash Accounting Scheme logic",
+        "special legacy pre-1997 relief rules",
+        "foreign VAT regimes"
       ]
     }
   },
@@ -271,28 +286,31 @@
       "check_constraints": 427
     },
     "current": {
-      "base_tables": 362,
-      "foreign_keys": 804,
-      "check_constraints": 465
+      "base_tables": 370,
+      "foreign_keys": 824,
+      "check_constraints": 473
     },
-    "production_migration_count": 21,
-    "latest_migration": "database/migrations/20260817190000_bad_debt_writeoff_recovery.sql"
+    "production_migration_count": 22,
+    "latest_migration": "database/migrations/20260818080000_vat_bad_debt_relief.sql"
   },
   "validation": {
     "workflow": ".github/workflows/database-migration-validation.yml",
     "target_mysql": "8.4.11",
-    "production_migrations": 21,
+    "production_migrations": 22,
     "pending_migrations": 0,
-    "schema_counts": "362 / 804 / 465",
+    "schema_counts": "370 / 824 / 473",
     "generated_kysely_drift": "zero across core + collections outputs required",
-    "expected_integration_files": 30,
-    "expected_real_mysql_tests": 129,
+    "expected_integration_files": 32,
+    "expected_real_mysql_tests": 136,
+    "tax_relief_tests": 6,
+    "tax_relief_bootstrap_parity_tests": 1,
+    "tax_settings_tests": 4,
     "bad_debt_core_tests": 6,
     "bad_debt_concurrency_tests": 1,
-    "bad_debt_bootstrap_parity_tests": 1,
-    "tax_settings_tests": 4,
     "required_svelte_check": "0 errors / 0 warnings",
-    "status": "final documentation-synchronised Package 004J head must prove the complete gate before merge"
+    "last_executable_green_head": "6400f661776b125b6bded299143d913cf5756f78",
+    "last_executable_green_run": 32111588199,
+    "status": "final documentation-synchronised Package 004K head must prove the complete gate before merge"
   },
   "deliberate_exclusions": [
     "construction domestic reverse-charge invoice treatment",
@@ -302,8 +320,10 @@
     "bank-feed/payment-gateway ingestion",
     "bank reconciliation",
     "automatic remittance matching",
-    "statutory general-ledger posting",
-    "VAT/tax bad-debt relief posting",
+    "statutory general-ledger posting / double-entry journal engine",
+    "direct HMRC VAT Return / Making Tax Digital submission",
+    "complete VAT account / VAT control account",
+    "credit-note void/reversal",
     "persisted/issued statement documents",
     "durable background scheduler/worker execution",
     "production reminder provider adapters",
@@ -313,16 +333,22 @@
   ],
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Controlled Tax Relief and Accounting Posting Evidence",
+    "name": "Controlled General-Ledger Posting and Accounting Export Evidence",
     "recommended_sequence": [
-      "inspect existing Package 004 tax/accounting structures before adding any new ledger facts",
-      "define explicit VAT/tax bad-debt relief evidence independently from operational write-off evidence",
-      "define posting/export events without mutating operational invoice/payment/write-off facts",
-      "make every accounting correction additive through reversing evidence",
-      "keep bank reconciliation and FX as separate later boundaries"
+      "inspect the existing Package 004 reference/accounting structures before adding journal facts",
+      "define tenant chart-of-accounts/accounting-mapping prerequisites without coupling careers to authority",
+      "derive posting candidates from immutable invoice, credit-note, payment, write-off and VAT-relief events",
+      "record balanced posting batches/export evidence without mutating operational source facts",
+      "make accounting corrections additive through reversal/reposting evidence",
+      "keep bank reconciliation, FX and direct tax-authority submission as separate later boundaries"
     ],
-    "governing_rule": "tax relief and accounting posting must be explicit auditable facts linked to operational source evidence; they must not rewrite the invoice, payment or write-off history"
+    "governing_rule": "accounting posting/export must be explicit balanced auditable evidence linked to immutable operational source events; operational documents and cash facts are never rewritten to make accounting history fit"
   },
+  "open_product_gaps": [
+    "general/direct contract creation independent of accepted-quotation conversion",
+    "Package 003 accepted-quotation conversion evidence for a legitimate already-existing source-estimate project",
+    "construction domestic reverse-charge invoice treatment"
+  ],
   "key_docs": [
     "README.md",
     "app/README.md",
@@ -336,6 +362,7 @@
     "docs/41-controlled-credit-limits-holds.md",
     "docs/42-invoice-tax-settings.md",
     "docs/43-controlled-bad-debt-writeoff-recovery.md",
+    "docs/44-controlled-vat-bad-debt-relief.md",
     "database/docs/004-contracts-finance.md",
     "database/migrations/README.md"
   ]
