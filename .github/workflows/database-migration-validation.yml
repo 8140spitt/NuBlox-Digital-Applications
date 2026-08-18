@@ -120,9 +120,17 @@ jobs:
         working-directory: app
         run: pnpm test:unit -- --run
 
-      - name: Run formatting and lint checks
+      - name: Check formatting
+        id: formatting
+        continue-on-error: true
         working-directory: app
-        run: pnpm lint
+        run: pnpm exec prettier --check .
+
+      - name: Run ESLint
+        id: eslint
+        continue-on-error: true
+        working-directory: app
+        run: pnpm exec eslint .
 
       - name: Build production SvelteKit application
         working-directory: app
@@ -131,3 +139,9 @@ jobs:
       - name: Run Playwright browser E2E suite
         working-directory: app
         run: pnpm exec playwright test
+
+      - name: Enforce quality results
+        if: always()
+        run: |
+          test "${{ steps.formatting.outcome }}" = "success"
+          test "${{ steps.eslint.outcome }}" = "success"
