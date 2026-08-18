@@ -156,7 +156,7 @@ export class AccountingReportingService {
 			this.db
 				.selectFrom('accounting_periods as period')
 				.innerJoin('accounting_financial_years as year', (join) =>
-					join.onRef('year.id', '=', 'period.accounting_financial_year_id').onRef('year.organisation_id', '=', 'period.organisation_id')
+					join.onRef('year.id', '=', 'period.financial_year_id').onRef('year.organisation_id', '=', 'period.organisation_id')
 				)
 				.select([
 					'period.public_id as publicId',
