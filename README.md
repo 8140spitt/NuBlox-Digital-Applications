@@ -23,8 +23,6 @@ Architecture decisions are under [`docs/adr`](docs/adr/README.md).
 
 > **Career ≠ Organisation Role ≠ Project Role ≠ Permission.**
 
-Within one permission key:
-
 ```text
 explicit member deny
     > explicit member allow
@@ -33,8 +31,6 @@ explicit member deny
 ```
 
 A granular key is resolved before its same-domain umbrella. The umbrella applies only on granular default-deny, so an explicit granular deny cannot be bypassed.
-
-Current same-domain umbrellas:
 
 ```text
 project.manage
@@ -56,19 +52,19 @@ The validated 001–010 baseline contains:
 427 CHECK constraints
 ```
 
-Package 004L advances the production stream to:
+Package 004M advances the production stream to:
 
 ```text
-23 production migrations
-378 base tables
-841 foreign keys
-485 CHECK constraints
+24 production migrations
+381 base tables
+848 foreign keys
+492 CHECK constraints
 ```
 
 Latest migration:
 
 ```text
-20260818100000_accounting_posting_export.sql
+20260818120000_accounting_period_close_governance.sql
 ```
 
 Database material:
@@ -78,24 +74,6 @@ Database material:
 - [SQL package index](database/schema/README.md)
 - [Production migration stream](database/migrations/README.md)
 - [Database validation](database/validation/README.md)
-
-## Application persistence boundary
-
-```text
-SvelteKit action / endpoint
-          ↓
-     Domain service
-          ↓
-       Query boundary
-          ↓
-        Kysely
-          ↓
-      mysql2 pool
-          ↓
-      MySQL 8.4
-```
-
-Routes and components do not issue SQL directly. Tenant context, authorisation, lifecycle state and cross-domain policy are server-domain concerns.
 
 ## Implemented business chain
 
@@ -132,9 +110,11 @@ Bad-Debt Assessment / Write-off / Recovery
     ↓
 VAT Bad-Debt Relief Evidence
     ↓
-Controlled Accounting Journal Posting
+Controlled Accounting Journal Posting / Reversal
     ↓
 Checksum-backed Accounting Export Evidence
+    ↓
+Controlled Accounting Period / Close Governance
 ```
 
 Detailed finance specifications:
@@ -150,6 +130,7 @@ Detailed finance specifications:
 - [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md)
 - [`docs/44-controlled-vat-bad-debt-relief.md`](docs/44-controlled-vat-bad-debt-relief.md)
 - [`docs/45-controlled-accounting-posting-export.md`](docs/45-controlled-accounting-posting-export.md)
+- [`docs/46-controlled-accounting-period-close.md`](docs/46-controlled-accounting-period-close.md)
 
 ## Authoritative accounts receivable
 
@@ -163,7 +144,7 @@ Invoice Outstanding
 
 No reporting, collections, credit-control, bad-debt, VAT-relief or accounting package stores a mutable duplicate receivable balance.
 
-## Package 004L — controlled accounting posting and export
+## Package 004L — controlled accounting evidence
 
 Protected routes:
 
@@ -172,56 +153,49 @@ Protected routes:
 /finance/accounting/exports/[exportPublicId]
 ```
 
-Package 004L introduces tenant chart-of-accounts records and semantic account mappings, then derives balanced journals from immutable operational finance events.
+Package 004L derives balanced journals from immutable operational finance events and supports additive journal reversal plus checksum-backed generic CSV export/reversal evidence. There is no ordinary freehand journal UI.
 
-Supported source families include invoice/credit/void, payment/allocation/reversal, bad-debt write-off/recovery/reversal and Package 004K VAT-relief posting evidence.
+## Package 004M — controlled accounting periods and close governance
 
-```text
-immutable source event
-        ↓
-deterministic debit / credit candidate
-        ↓
-controlled journal posting
-        ↓
-immutable journal + source fingerprint
-        ↓
-optional additive reversal journal
-        ↓
-generic CSV export + SHA-256 evidence
-        ↓
-optional additive export reversal
-```
-
-There is no freehand journal UI. Existing operational finance facts are never rewritten to make accounting history fit.
-
-### Semantic account mappings
+Protected route:
 
 ```text
-accounts_receivable
-sales_revenue
-vat_control
-cash_receipts
-customer_unapplied_cash
-bad_debt_expense
-bad_debt_recovery_income
+/finance/accounting/periods
 ```
 
-### Permissions
+Package 004M adds tenant financial years, non-overlapping accounting periods and additive period-status evidence.
 
 ```text
-finance.accounting.view
-finance.accounting.configure
-finance.accounting.post
-finance.accounting.reverse
-finance.accounting.export
-finance.accounting.export.reverse
+open -> soft_closed -> hard_closed
+ ^                         |
+ +------- reasoned reopen--+
 ```
 
-Owner / Administrator receive all six. Finance/Commercial receives `finance.accounting.view` only by default. Explicit granular deny still overrides `finance.manage` fallback.
+Server-side accounting controls now require:
 
-Concurrent posting uses an organisation accounting mutex plus locking/current source and sequence reads. Under MySQL `REPEATABLE READ`, this ensures a transaction that waited for another poster sees the newly committed journal rather than an older snapshot.
+- journal posting accounting date → exactly one configured `open` period;
+- journal reversal date → `open` period;
+- export range → exact configured `soft_closed` or `hard_closed` period;
+- hard close → every journal in the period has active export evidence;
+- export reversal in a hard-closed period → explicit reopen first.
 
-Kysely generation is now partitioned across:
+Period state constrains new accounting evidence and **never rewrites operational source events or already-posted journal history**.
+
+New permissions:
+
+```text
+finance.accounting.period.configure
+finance.accounting.period.close
+finance.accounting.period.reopen
+```
+
+Owner / Administrator receive all three. Finance/Commercial remains `finance.accounting.view` only by default. Existing and future organisations use equivalent persisted grants, and integration coverage proves an explicit granular deny still overrides `finance.manage`.
+
+See [`docs/46-controlled-accounting-period-close.md`](docs/46-controlled-accounting-period-close.md).
+
+## Database-derived types
+
+Kysely generation is partitioned across:
 
 ```text
 app/src/lib/server/db/generated/database.d.ts
@@ -229,18 +203,19 @@ app/src/lib/server/db/generated/collections.d.ts
 app/src/lib/server/db/generated/accounting.d.ts
 ```
 
-See [`docs/45-controlled-accounting-posting-export.md`](docs/45-controlled-accounting-posting-export.md).
+All remain derivative of the migrated MySQL schema.
 
 ## Deliberate finance exclusions
 
 Still not claimed implemented:
 
-- freehand/manual journals;
-- accounting-period open/close locks and year-end close;
-- statutory trial balance / P&L / balance-sheet presentation;
+- automatic accounting-period generation;
+- year-end closing journals / retained-earnings transfer;
+- trial balance / P&L / balance-sheet presentation;
+- statutory financial statements and consolidation;
 - provider-specific Sage/Xero/QuickBooks integration;
 - bank feeds and bank reconciliation;
-- purchase-ledger/AP accounting beyond currently operational source events;
+- purchase-ledger/AP expansion beyond current operational sources;
 - FX revaluation/translation;
 - direct HMRC VAT Return / MTD submission;
 - construction domestic reverse-charge invoice workflow;
@@ -259,21 +234,22 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004L executable release contract, validated by GitHub Actions run 402:
+Package 004M release target:
 
 ```text
-23 migrations applied / 0 pending
-378 tables / 841 foreign keys / 485 CHECK constraints
+24 migrations applied / 0 pending
+381 tables / 848 foreign keys / 492 CHECK constraints
 zero Kysely drift across core + collections + accounting outputs
-35 integration files / 143 real-MySQL tests
+37 integration files / 150 real-MySQL tests
+accounting periods: 6 / 6
+accounting period bootstrap + explicit deny: 1 / 1
 accounting core: 5 / 5
 accounting concurrency: 1 / 1
-accounting bootstrap parity: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must reproduce this gate before merge.
+The exact documentation-synchronised PR head must reproduce this gate before merge.
 
-The next finance boundary is **Controlled Accounting Periods and Close Governance**.
+The next accounting boundary is **Controlled Trial Balance and Financial Reporting**.
 
 For detailed authorization rules see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
