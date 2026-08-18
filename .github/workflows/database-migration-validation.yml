@@ -1,4 +1,4 @@
-name: Database Migration, Type, Provisioning, Auth and Kernel Validation
+name: Complete System Validation
 
 on:
   pull_request:
@@ -9,8 +9,10 @@ on:
       - 'app/.kysely-codegenrc.json'
       - 'app/.kysely-collections-codegenrc.json'
       - 'app/.kysely-accounting-codegenrc.json'
+      - 'app/playwright.config.ts'
       - 'app/vite.config.ts'
       - 'app/vitest.integration.config.ts'
+      - 'app/e2e/**'
       - 'app/src/**'
       - '.github/workflows/database-migration-validation.yml'
   push:
@@ -23,8 +25,10 @@ on:
       - 'app/.kysely-codegenrc.json'
       - 'app/.kysely-collections-codegenrc.json'
       - 'app/.kysely-accounting-codegenrc.json'
+      - 'app/playwright.config.ts'
       - 'app/vite.config.ts'
       - 'app/vitest.integration.config.ts'
+      - 'app/e2e/**'
       - 'app/src/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
@@ -33,8 +37,8 @@ permissions:
   contents: read
 
 jobs:
-  migration-types-provisioning-auth-kernel:
-    name: Dbmate migration, Kysely types, provisioning/auth/kernel integration and Svelte check
+  complete-system-validation:
+    name: Database, integration, quality, build and browser validation
     runs-on: ubuntu-latest
 
     services:
@@ -49,6 +53,13 @@ jobs:
           --health-interval=5s
           --health-timeout=5s
           --health-retries=30
+
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
+      DB_POOL_MAX: '5'
+      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+      EMAIL_DELIVERY_MODE: console
 
     steps:
       - uses: actions/checkout@v4
@@ -70,8 +81,6 @@ jobs:
 
       - name: Apply production migration stream
         working-directory: app
-        env:
-          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
         run: |
           pnpm db:migrate
           pnpm db:status
@@ -80,7 +89,6 @@ jobs:
         env:
           MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
         run: |
-          # Package 004O candidate structure. Change these only with a validated forward migration.
           table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
@@ -91,28 +99,35 @@ jobs:
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
-        env:
-          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
         run: pnpm db:types
 
       - name: Verify generated types are committed
         run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts
 
-      - name: Run provisioning, authentication and Platform Kernel integration tests
+      - name: Run real-MySQL integration suite
         working-directory: app
-        env:
-          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
-          DB_POOL_MAX: '5'
-          BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
-          BETTER_AUTH_URL: http://localhost:5173
-          EMAIL_DELIVERY_MODE: console
         run: pnpm test:integration
 
       - name: Type-check SvelteKit application
         working-directory: app
-        env:
-          DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
-          BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
-          BETTER_AUTH_URL: http://localhost:5173
-          EMAIL_DELIVERY_MODE: console
         run: pnpm check
+
+      - name: Install Chromium for component and browser validation
+        working-directory: app
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Run unit and component tests
+        working-directory: app
+        run: pnpm test:unit -- --run
+
+      - name: Run formatting and lint checks
+        working-directory: app
+        run: pnpm lint
+
+      - name: Build production SvelteKit application
+        working-directory: app
+        run: pnpm build
+
+      - name: Run Playwright browser E2E suite
+        working-directory: app
+        run: pnpm exec playwright test
