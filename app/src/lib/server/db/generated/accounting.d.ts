@@ -66,6 +66,17 @@ export interface AccountingExportReversals {
   reversed_by_member_id: string;
 }
 
+export interface AccountingFinancialYears {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  ends_on: Date;
+  id: Generated<string>;
+  name: string;
+  organisation_id: string;
+  public_id: string;
+  starts_on: Date;
+}
+
 export interface AccountingJournalEntries {
   accounting_date: Date;
   created_at: Generated<Date>;
@@ -106,13 +117,60 @@ export interface AccountingJournalLines {
   organisation_id: string;
 }
 
+export interface AccountingPeriodReopenAuthorities {
+  accounting_period_id: string;
+  authorised_at: Generated<Date>;
+  authorised_by_member_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  prior_state: string;
+  public_id: string;
+  reason: string;
+  state_event_id: string;
+}
+
+export interface AccountingPeriods {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  ends_on: Date;
+  financial_year_id: string;
+  id: Generated<string>;
+  name: string;
+  organisation_id: string;
+  period_number: number;
+  public_id: string;
+  starts_on: Date;
+  state: Generated<string>;
+  state_version: Generated<number>;
+  updated_at: Generated<Date>;
+}
+
+export interface AccountingPeriodStateEvents {
+  accounting_period_id: string;
+  acted_at: Generated<Date>;
+  acted_by_member_id: string;
+  created_at: Generated<Date>;
+  from_state: string;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  state_version: number;
+  to_state: string;
+}
+
 export interface DB {
   accounting_account_mappings: AccountingAccountMappings;
   accounting_accounts: AccountingAccounts;
   accounting_export_batch_entries: AccountingExportBatchEntries;
   accounting_export_batches: AccountingExportBatches;
   accounting_export_reversals: AccountingExportReversals;
+  accounting_financial_years: AccountingFinancialYears;
   accounting_journal_entries: AccountingJournalEntries;
   accounting_journal_entry_reversals: AccountingJournalEntryReversals;
   accounting_journal_lines: AccountingJournalLines;
+  accounting_period_reopen_authorities: AccountingPeriodReopenAuthorities;
+  accounting_period_state_events: AccountingPeriodStateEvents;
+  accounting_periods: AccountingPeriods;
 }
