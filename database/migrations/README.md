@@ -50,9 +50,10 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 20260817150000_credit_control_limits_holds.sql
 20260817180500_default_uk_tax_categories.sql
 20260817190000_bad_debt_writeoff_recovery.sql
+20260818080000_vat_bad_debt_relief.sql
 ```
 
-Including Baseline v1, the production stream contains **21 migrations**.
+Including Baseline v1, the production stream contains **22 migrations**.
 
 ## Package 004F — migration-free reporting activation
 
@@ -95,26 +96,7 @@ receivable_write_off_recoveries
 receivable_write_off_recovery_reversals
 ```
 
-### Bad-debt assessment
-
-A bad-debt case is tenant/customer/invoice scoped and stores no receivable amount. One open case is enforced per tenant/invoice. Recommendations are immutable positive assessment facts and do not change the receivable.
-
-### Write-off evidence
-
-A write-off references one exact recommendation, case and invoice. It records a positive amount, authorising member/time/reason and explicit tax-treatment policy:
-
-```text
-no_tax_adjustment
-separate_tax_adjustment_required
-```
-
-The migration does not post tax or general-ledger entries. A write-off reversal is additive one-to-one evidence; the original write-off remains immutable.
-
-### Recovery evidence
-
-A recovery references one exact write-off and one existing payment receipt. It consumes available payment capacity but does not reopen the already-written-off customer receivable. A recovery reversal restores payment capacity only.
-
-### Receivable and payment rules
+Bad-debt assessment, recommendations, write-offs, write-off reversal and later payment-linked recovery remain operational accounts-receivable facts. The original invoice, credit-note and payment facts are immutable.
 
 ```text
 Invoice Outstanding
@@ -131,20 +113,77 @@ Available Payment
 − Active Bad-Debt Recoveries
 ```
 
-An active recovery must be reversed before either its write-off or source payment can be reversed.
+The write-off records one of:
+
+```text
+no_tax_adjustment
+separate_tax_adjustment_required
+```
+
+Package 004J itself does not post VAT/tax or general-ledger entries. See `docs/43-controlled-bad-debt-writeoff-recovery.md`.
+
+## Package 004K — `20260818080000_vat_bad_debt_relief.sql`
+
+Package 004K adds eight additive VAT bad-debt-relief evidence tables:
+
+```text
+receivable_vat_bad_debt_claims
+receivable_vat_bad_debt_claim_lines
+receivable_vat_bad_debt_claim_authorisations
+receivable_vat_bad_debt_claim_reversals
+receivable_vat_bad_debt_repayments
+receivable_vat_bad_debt_repayment_reversals
+receivable_vat_return_postings
+receivable_vat_return_posting_reversals
+```
+
+It also adds composite context keys on existing 004J write-off/recovery tables so tenant/provenance foreign keys remain explicit.
+
+### Claim preparation and authorisation
+
+A candidate must be an active Package 004J write-off marked `separate_tax_adjustment_required`.
+
+Preparation stores exact invoice/write-off provenance, eligibility dates/attestations and source invoice tax-snapshot lines. VAT amounts are calculated from `financial_document_item_taxes`; the operator does not type a VAT rate or relief amount.
+
+Authorisation is a separate additive fact and revalidates the active write-off, current capacity, eligibility window and immutable source-tax evidence.
+
+### Recovery repayment
+
+Later repayment evidence references an exact authorised VAT relief claim and exact active Package 004J recovery from the same write-off.
+
+```text
+VAT Repayment
+= Authorised Claim VAT
+  × Recovered Consideration
+  ÷ Authorised Claim Consideration
+```
+
+The repayment is additive and separately reversible.
+
+### VAT-return posting evidence
+
+```text
+relief_claim     → VAT Return Box 4
+relief_repayment → VAT Return Box 1
+```
+
+Box and amount are service-derived. Posting stores the VAT-period reference/start/end, optional external reference, reason/member/time and has additive reversal evidence.
+
+For recovery repayment the VAT period must contain the actual `recovered_at` receipt date.
+
+This is evidence that an amount was included in a VAT return; the migration does not implement a VAT-return submission engine or general ledger.
 
 ### Permission family
 
-The migration adds:
-
 ```text
-finance.bad_debt.view
-finance.bad_debt.case.manage
-finance.bad_debt.recommend
-finance.bad_debt.write_off.authorise
-finance.bad_debt.write_off.reverse
-finance.bad_debt.recovery.record
-finance.bad_debt.recovery.reverse
+finance.tax_relief.view
+finance.tax_relief.prepare
+finance.tax_relief.authorise
+finance.tax_relief.reverse
+finance.tax_relief.repayment.record
+finance.tax_relief.repayment.reverse
+finance.tax_relief.post
+finance.tax_relief.post.reverse
 ```
 
 All granular keys use `finance.manage` only as same-domain fallback.
@@ -153,28 +192,28 @@ Default persisted delegation:
 
 ```text
 Owner / Administrator
-    → all seven keys
+    → all eight keys
 
 Finance/Commercial
     → view
-    → case manage
-    → recommend
-    → recovery record
-    → recovery reverse
-    ✕ write-off authorise
-    ✕ write-off reverse
+    → prepare
+    ✕ authorise/reverse
+    ✕ repayment record/reverse
+    ✕ VAT-return posting/reverse
 ```
 
-`OrganisationBootstrapService` persists the equivalent split for future organisations and a dedicated integration suite verifies those stored role-permission rows.
+`OrganisationBootstrapService` persists the equivalent split for future organisations and integration coverage verifies those stored grants.
+
+Detailed application/regulatory evidence rules are documented in `docs/44-controlled-vat-bad-debt-relief.md`.
 
 ## Current structure
 
-After all **21** production migrations the Package 004J target application structure is:
+After all **22** production migrations the Package 004K target application structure is:
 
 ```text
-362 base tables
-804 foreign keys
-465 CHECK constraints
+370 base tables
+824 foreign keys
+473 CHECK constraints
 ```
 
 The clean MySQL gate is authoritative for these counts.
@@ -182,14 +221,15 @@ The clean MySQL gate is authoritative for these counts.
 ## Current migration validation target
 
 ```text
-21 production migrations applied / 0 pending
-362 base tables / 804 foreign keys / 465 CHECK constraints
+22 production migrations applied / 0 pending
+370 base tables / 824 foreign keys / 473 CHECK constraints
 zero drift across core + collections generated Kysely outputs
-30 integration files / 129 real-MySQL tests
+32 integration files / 136 real-MySQL tests
+tax-relief: 6 tests
+tax-relief bootstrap parity: 1 test
+tax-settings: 4 tests
 bad-debt core: 6 tests
 bad-debt concurrency: 1 test
-bad-debt bootstrap parity: 1 test
-tax-settings: 4 tests
 svelte-check: 0 errors / 0 warnings
 ```
 
