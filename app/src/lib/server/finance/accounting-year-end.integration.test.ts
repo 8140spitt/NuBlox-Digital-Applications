@@ -143,4 +143,25 @@ describe.sequential('Package 004O controlled year-end close', () => {
 		expect(report.balanceSheet.equityTotal).toBe('0.0000');
 		expect(report.balanceSheet.balanced).toBe(true);
 	});
+
+	it('serializes concurrent authorisation so only one active close can win', async () => {
+		const service = new AccountingYearEndService(db, randomUUID, () => NOW);
+		const prepared = await service.prepare(actorPreparer, { financialYearPublicId: yearPublicId, currencyCode: 'GBP', reason: 'Concurrent close preparation.' });
+		const results = await Promise.allSettled([
+			service.authorise(actorAuthoriser, { preparationPublicId: prepared.publicId, reason: 'Concurrent authorisation A.' }),
+			service.authorise(actorAuthoriser, { preparationPublicId: prepared.publicId, reason: 'Concurrent authorisation B.' })
+		]);
+		expect(results.filter((result) => result.status === 'fulfilled')).toHaveLength(1);
+		expect(results.filter((result) => result.status === 'rejected')).toHaveLength(1);
+		const rejected = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+		expect(rejected?.reason).toBeInstanceOf(FinanceValidationError);
+		const activeCloses = await db
+			.selectFrom('accounting_year_end_closes as close')
+			.leftJoin('accounting_year_end_close_reversals as reversal', (join) => join.onRef('reversal.year_end_close_id', '=', 'close.id').onRef('reversal.organisation_id', '=', 'close.organisation_id'))
+			.select('close.id')
+			.where('close.organisation_id', '=', organisationId)
+			.where('reversal.year_end_close_id', 'is', null)
+			.execute();
+		expect(activeCloses).toHaveLength(1);
+	});
 });
