@@ -278,8 +278,8 @@ export interface ReceivableVatBadDebtClaims {
   eligible_from: Date;
   id: Generated<string>;
   invoice_document_id: string;
-  original_vat_period_reference: string;
   organisation_id: string;
+  original_vat_period_reference: string;
   payment_due_date: Date;
   prepared_at: Generated<Date>;
   prepared_by_member_id: string;
