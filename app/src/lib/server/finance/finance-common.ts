@@ -41,7 +41,14 @@ export type FinanceMutationPermission =
 	| 'finance.bad_debt.write_off.authorise'
 	| 'finance.bad_debt.write_off.reverse'
 	| 'finance.bad_debt.recovery.record'
-	| 'finance.bad_debt.recovery.reverse';
+	| 'finance.bad_debt.recovery.reverse'
+	| 'finance.tax_relief.prepare'
+	| 'finance.tax_relief.authorise'
+	| 'finance.tax_relief.reverse'
+	| 'finance.tax_relief.repayment.record'
+	| 'finance.tax_relief.repayment.reverse'
+	| 'finance.tax_relief.post'
+	| 'finance.tax_relief.post.reverse';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
@@ -160,6 +167,10 @@ export class FinanceAccessPolicy {
 
 	async badDebtViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
 		return new PermissionService(db).decideWithUmbrella(actor, 'finance.bad_debt.view', 'finance.manage');
+	}
+
+	async taxReliefViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
+		return new PermissionService(db).decideWithUmbrella(actor, 'finance.tax_relief.view', 'finance.manage');
 	}
 
 	async mutationDecision(
