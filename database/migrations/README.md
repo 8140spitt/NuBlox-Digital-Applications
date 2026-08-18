@@ -50,9 +50,10 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 20260817190000_bad_debt_writeoff_recovery.sql
 20260818080000_vat_bad_debt_relief.sql
 20260818100000_accounting_posting_export.sql
+20260818120000_accounting_period_close_governance.sql
 ```
 
-Including Baseline v1, Package 004L contains **23 production migrations**.
+Including Baseline v1, Package 004M contains **24 production migrations**.
 
 ## Package 004F — migration-free reporting activation
 
@@ -103,7 +104,7 @@ See `docs/44-controlled-vat-bad-debt-relief.md`.
 
 ## Package 004L — controlled accounting posting and export
 
-`20260818100000_accounting_posting_export.sql` adds eight tenant-scoped accounting tables:
+`20260818100000_accounting_posting_export.sql` adds eight tenant-scoped accounting tables for chart-of-accounts mappings, source-derived balanced journals, additive journal reversal, checksum-backed generic CSV export and additive export reversal.
 
 ```text
 accounting_accounts
@@ -116,55 +117,9 @@ accounting_export_batch_entries
 accounting_export_reversals
 ```
 
-### Chart of accounts and mappings
+Source-derived journals retain exact operational provenance and balanced debit/credit lines. There is no freehand journal creation path.
 
-Tenant-owned accounts are mapped to semantic finance roles:
-
-```text
-accounts_receivable
-sales_revenue
-vat_control
-cash_receipts
-customer_unapplied_cash
-bad_debt_expense
-bad_debt_recovery_income
-```
-
-Historical journal lines retain exact account foreign keys, so later remapping cannot rewrite posted history.
-
-### Journal facts
-
-A journal is derived from a supported immutable source event and stores:
-
-- tenant-local `JRN-...` number;
-- source type/public ID/timestamp;
-- source amount/currency;
-- SHA-256 source fingerprint;
-- accounting date;
-- posting member/time;
-- exact balanced debit/credit lines.
-
-```text
-sum(debits) = sum(credits) = source amount
-```
-
-There is no freehand journal creation path in this package.
-
-Correction creates an additive reversal journal and reversal-link fact. The source journal is not edited or deleted.
-
-### Concurrency
-
-Posting uses an organisation accounting mutex plus locking/current reads for active-source detection and sequence allocation. This prevents MySQL `REPEATABLE READ` from using a stale pre-wait snapshot after a competing poster commits.
-
-At most one active non-reversed journal may exist for one source type/public ID.
-
-### Export facts
-
-`generic_csv` export batches retain exact journal membership, period, row count, SHA-256 content checksum, creator/time/reason and optional additive reversal evidence.
-
-The application regenerates exported content from the persisted links and rejects download if the checksum no longer matches.
-
-### Permission family
+Package 004L permissions:
 
 ```text
 finance.accounting.view
@@ -175,43 +130,79 @@ finance.accounting.export
 finance.accounting.export.reverse
 ```
 
-All use `finance.manage` only as same-domain fallback.
-
-Default persisted grants:
-
-```text
-Owner / Administrator → all six
-Finance/Commercial    → finance.accounting.view only
-```
-
-The migration and `OrganisationBootstrapService` persist the same split for existing and future organisations.
+Owner / Administrator receive all six. Finance/Commercial receives `finance.accounting.view` only.
 
 See `docs/45-controlled-accounting-posting-export.md`.
 
-## Current structure
+## Package 004M — accounting period and close governance
 
-The clean MySQL 8.4.11 gate for Package 004L is authoritative:
+`20260818120000_accounting_period_close_governance.sql` adds three tenant-scoped governance tables:
 
 ```text
-23 migrations applied
+accounting_financial_years
+accounting_periods
+accounting_period_status_events
+```
+
+### Period lifecycle
+
+```text
+open -> soft_closed -> hard_closed
+ ^                         |
+ +------- reasoned reopen--+
+```
+
+Financial years and periods cannot overlap. Periods must be fully contained within their financial year.
+
+### Posting / export controls
+
+- journal posting requires an accounting date in exactly one configured `open` period;
+- journal reversal requires its reversal accounting date in an `open` period;
+- an accounting export must match one configured period exactly and that period must be `soft_closed` or `hard_closed`;
+- a hard-closed period blocks export reversal until the period is explicitly reopened;
+- hard close is blocked until every journal in the period has active export evidence.
+
+Period state constrains new accounting evidence; it does not rewrite operational source events or posted journal history.
+
+### Permission family
+
+```text
+finance.accounting.period.configure
+finance.accounting.period.close
+finance.accounting.period.reopen
+```
+
+Owner / Administrator receive all three for existing and future organisations. Finance/Commercial remains accounting-view-only by default. Explicit granular member deny cannot be bypassed by `finance.manage`.
+
+See `docs/46-controlled-accounting-period-close.md`.
+
+## Current structure
+
+The clean MySQL 8.4.11 Package 004M candidate structure is:
+
+```text
+24 migrations applied
 0 pending
-378 base tables
-841 foreign keys
-485 CHECK constraints
+381 base tables
+848 foreign keys
+492 CHECK constraints
 ```
 
 ## Current validation target
 
 ```text
-23 production migrations applied / 0 pending
-378 base tables / 841 foreign keys / 485 CHECK constraints
+24 production migrations applied / 0 pending
+381 base tables / 848 foreign keys / 492 CHECK constraints
 zero generated Kysely drift across core + collections + accounting outputs
-35 integration files / 143 real-MySQL tests
+37 integration files / 150 real-MySQL tests
+accounting periods: 6 / 6
+accounting period bootstrap + deny precedence: 1 / 1
 accounting core: 5 / 5
 accounting concurrency: 1 / 1
-accounting bootstrap parity: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
+
+These test totals become release authority only after the exact documentation-synchronised PR head reproduces the complete gate.
 
 ## Migration rules
 

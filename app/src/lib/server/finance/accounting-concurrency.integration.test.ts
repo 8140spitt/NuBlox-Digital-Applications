@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
+import { AccountingPeriodService } from './accounting-period-service';
 import { AccountingService } from './accounting-service';
 import { FinanceValidationError } from './finance-common';
 
@@ -31,6 +32,10 @@ beforeAll(async () => {
 	await db.insertInto('member_roles').values({ organisation_id: organisationId, organisation_member_id: memberId, organisation_role_id: roleId }).executeTakeFirstOrThrow();
 	actor = { organisationId, userId, memberId, correlationId: randomUUID() };
 
+	const periodService = new AccountingPeriodService(db, randomUUID, () => NOW);
+	const year = await periodService.createFinancialYear(actor, { yearCode: 'FY26-CON', name: 'FY26 Concurrency', startsOn: '2026-08-18', endsOn: '2026-08-18' });
+	await periodService.createPeriod(actor, { financialYearPublicId: year.publicId, periodNumber: 1, name: '18 Aug 2026', startsOn: '2026-08-18', endsOn: '2026-08-18' });
+
 	const service = new AccountingService(db, randomUUID, () => NOW);
 	const ar = await service.createAccount(actor, { accountCode: '1100', name: 'Trade Receivables', accountType: 'asset' });
 	const revenue = await service.createAccount(actor, { accountCode: '4000', name: 'Sales Revenue', accountType: 'revenue' });
@@ -57,6 +62,9 @@ afterAll(async () => {
 		await db.deleteFrom('accounting_journal_entries').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('accounting_account_mappings').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('accounting_accounts').where('organisation_id', '=', organisationId).execute();
+		await db.deleteFrom('accounting_period_status_events').where('organisation_id', '=', organisationId).execute();
+		await db.deleteFrom('accounting_periods').where('organisation_id', '=', organisationId).execute();
+		await db.deleteFrom('accounting_financial_years').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('financial_document_issue_events').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('financial_document_items').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('invoices').where('organisation_id', '=', organisationId).execute();

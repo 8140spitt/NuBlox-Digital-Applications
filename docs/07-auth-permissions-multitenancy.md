@@ -30,8 +30,6 @@ The selected-organisation cookie is a selection hint only. Active membership is 
 
 ## 3. Permission precedence
 
-Within one permission key:
-
 ```text
 explicit member deny
     > explicit member allow
@@ -39,18 +37,7 @@ explicit member deny
     > default deny
 ```
 
-For a granular permission with a same-domain umbrella:
-
-```text
-granular member deny
-    > granular member allow / role grant
-    > same-domain umbrella fallback
-    > default deny
-```
-
-The umbrella is consulted only when the granular key has no explicit member/role decision. Explicit granular deny cannot be bypassed.
-
-Permission umbrellas never cross domains:
+For a granular permission with a same-domain umbrella, the umbrella is consulted only when the granular key has no explicit member/role decision. Explicit granular deny cannot be bypassed.
 
 ```text
 commercial.manage ≠ contract authority
@@ -108,6 +95,9 @@ finance.accounting.post
 finance.accounting.reverse
 finance.accounting.export
 finance.accounting.export.reverse
+finance.accounting.period.configure
+finance.accounting.period.close
+finance.accounting.period.reopen
 ```
 
 `finance.manage` is the same-domain umbrella for released finance granular keys. It never grants commercial or contract authority.
@@ -130,15 +120,13 @@ The founding member receives Owner only.
 
 ### Owner / Administrator
 
-Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions.
-
-For Package 004L they receive all six `finance.accounting.*` permissions explicitly.
+Owner and Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions. For Packages 004L–004M they receive the six accounting permissions plus the three accounting-period governance permissions explicitly.
 
 ### Finance/Commercial
 
 Finance/Commercial receives ordinary billing, invoice, credit-note, payment/allocation, collections, credit-control administration and delegated bad-debt/tax-evidence responsibilities.
 
-Package 004L adds only:
+Its accounting default remains:
 
 ```text
 finance.accounting.view
@@ -163,9 +151,12 @@ finance.accounting.post
 finance.accounting.reverse
 finance.accounting.export
 finance.accounting.export.reverse
+finance.accounting.period.configure
+finance.accounting.period.close
+finance.accounting.period.reopen
 ```
 
-This keeps operational finance visibility distinct from stronger accounting configuration, posting, correction and export authority.
+This keeps operational finance visibility distinct from stronger accounting configuration, posting, correction, export and period-close authority.
 
 ### Other roles
 
@@ -177,16 +168,13 @@ Read Only           → project.view + crm.view
 
 ## 6. Controlled account provisioning
 
-Better Auth signup remains fail-closed. Exactly one provisioning intent must validate:
-
-1. an existing-organisation invitation; or
-2. a self-service organisation-bootstrap intent.
+Better Auth signup remains fail-closed. Exactly one provisioning intent must validate: an existing-organisation invitation or a self-service organisation-bootstrap intent.
 
 Authentication alone is not tenant authority.
 
-Forward-migration role grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations must remain aligned at persisted role-permission-row level.
+Forward-migration role grants for existing organisations and `OrganisationBootstrapService` defaults for future organisations remain aligned at persisted role-permission-row level.
 
-Package 004L parity is:
+Packages 004L–004M parity is:
 
 ```text
 Owner / Administrator
@@ -196,23 +184,19 @@ Owner / Administrator
     → journal reverse
     → export
     → export reverse
+    → period configure
+    → period close
+    → period reopen
 
 Finance/Commercial
     → accounting view only
 ```
 
-A dedicated real-MySQL integration test verifies this split for newly created organisations.
+Real-MySQL bootstrap coverage verifies this split. Package 004M also verifies that an explicit member deny on `finance.accounting.period.close` overrides the Owner role and `finance.manage` until that explicit deny is removed.
 
 ## 7. Finance read and mutation boundary
 
-Normal finance reads require:
-
-```text
-active NuBlox user
-AND active organisation membership
-AND finance.view
-AND finance record organisation_id = active tenant
-```
+Normal finance reads require active NuBlox user, active organisation membership, `finance.view` and same-tenant record scope.
 
 Finance mutations require the granular finance permission or `finance.manage` fallback plus record/lifecycle/business policy.
 
@@ -230,13 +214,11 @@ Invoice Outstanding
 − Active Write-offs
 ```
 
-Customer/currency receivable is the sum of positive issued-invoice positions. Voided invoices contribute no exposure. Unallocated cash does not reduce customer receivable until allocated.
-
 Accounting journal posting is downstream evidence. It does not become the authority for operational invoice outstanding.
 
 ## 9. Credit-control commitment gates
 
-Accepted quotation conversion and contract execution use the Package 004I finance decision:
+Accepted quotation conversion and contract execution use:
 
 ```text
 Projected Exposure
@@ -246,15 +228,11 @@ Projected Exposure
 
 An active hold or projected exposure above an enabled currency limit blocks new commitment unless a separately authorised, reasoned override is recorded in the same business transaction.
 
-Credit control and invoice mutations use a customer-first lock hierarchy plus current/locking receivable reads.
-
 ## 10. Bad debt and VAT-relief separation
 
 Package 004J separates bad-debt assessment/recommendation from stronger write-off recognition. Active write-offs reduce receivable; recommendations and later recoveries do not.
 
 Package 004K VAT relief starts only from an active write-off marked `separate_tax_adjustment_required`. Claim preparation, authorisation, repayment and VAT-return posting/reversal use distinct permissions and additive evidence.
-
-VAT-relief evidence is downstream tax evidence and does not create a second customer receivable.
 
 ## 11. Package 004L accounting viewing authority
 
@@ -267,91 +245,114 @@ AND same-tenant accounting scope
 
 Finance/Commercial receives this read key by default but no accounting mutation keys.
 
-## 12. Package 004L configuration authority
+## 12. Package 004L configuration / posting / reversal / export
 
-```text
-finance.accounting.configure OR finance.manage
-AND active membership
-AND same-tenant accounting account/mapping scope
-```
+Configuration requires `finance.accounting.configure` or `finance.manage`.
 
-Configuration covers tenant chart-of-accounts records and semantic account mappings. Mapping changes affect future derived candidates only; historical journal lines keep their exact account foreign keys.
-
-Expected mapping account types are enforced by service policy.
-
-## 13. Package 004L posting authority
-
-```text
-finance.accounting.post OR finance.manage
-AND exact supported immutable source event
-AND required semantic mappings active
-AND balanced deterministic journal candidate
-AND no active journal for the same source type/public ID
-```
-
-Supported sources are derived from released invoice, credit-note, payment/allocation, bad-debt and VAT-relief facts.
+Posting requires `finance.accounting.post` or `finance.manage`, a supported immutable source event, required active mappings, a balanced deterministic journal candidate and no active journal for the same source type/public ID.
 
 No ordinary route accepts arbitrary freehand debit/credit lines.
 
-### Posting serialization
+Journal correction requires `finance.accounting.reverse` or `finance.manage` and creates a new `journal_reversal` entry; the original remains immutable.
 
-Accounting posting uses:
+Export requires `finance.accounting.export` or `finance.manage`. Export evidence stores exact journal membership, period, row count and SHA-256 content checksum. Export reversal requires `finance.accounting.export.reverse` or `finance.manage` and creates additive reversal evidence.
+
+Accounting posting uses an organisation accounting mutex plus locking/current source and sequence reads so a transaction that waited under MySQL `REPEATABLE READ` sees the newly committed journal rather than an older snapshot.
+
+## 13. Package 004M accounting-period viewing authority
+
+The period workspace is part of the accounting read boundary:
 
 ```text
-organisation accounting mutex
-        ↓
-locking/current source resolution
-        ↓
-locking/current active-journal check
-        ↓
-locking/current journal-number sequence
-        ↓
-insert exact journal + lines
+active membership
+AND finance.view
+AND (finance.accounting.view OR finance.manage)
+AND same-tenant accounting scope
 ```
 
-The current reads are intentional under MySQL `REPEATABLE READ`: a transaction that waited behind a competing poster must see the journal committed while it waited rather than reuse its older consistent snapshot.
+Finance/Commercial can therefore inspect financial years, periods, statuses, unexported-journal counts and transition history without acquiring close authority.
 
-At most one active non-reversed journal exists for one source type/public ID. A competing attempt rejects with a domain validation error.
-
-## 14. Package 004L journal reversal authority
+## 14. Package 004M period configuration authority
 
 ```text
-finance.accounting.reverse OR finance.manage
-AND same-tenant active journal
+finance.accounting.period.configure OR finance.manage
+AND active membership
+AND same tenant
+```
+
+Configuration creates financial-year and accounting-period facts.
+
+Business rules:
+
+- financial years cannot overlap within one tenant;
+- accounting periods cannot overlap within one tenant;
+- a period must be fully contained within its financial year;
+- new periods begin `open`.
+
+## 15. Package 004M close authority
+
+```text
+finance.accounting.period.close OR finance.manage
+AND active membership
+AND same-tenant period
 AND explicit reason
 ```
 
-Correction creates a new `journal_reversal` journal with debit/credit sides inverted and a one-to-one reversal link. The original journal remains immutable.
-
-After reversal, the original operational source can be reposted under current mappings while preserving the complete history.
-
-## 15. Package 004L export authority
+Lifecycle:
 
 ```text
-finance.accounting.export OR finance.manage
-AND selected accounting period contains unexported journals
+open -> soft_closed -> hard_closed
+```
+
+Direct `open -> hard_closed` is rejected.
+
+Hard close additionally requires every journal whose accounting date is inside the period to have active export evidence.
+
+Every successful close creates an immutable `accounting_period_status_events` row plus audit evidence.
+
+## 16. Package 004M reopen authority
+
+```text
+finance.accounting.period.reopen OR finance.manage
+AND active membership
+AND same-tenant closed period
 AND explicit reason
 ```
 
-The first format is provider-neutral `generic_csv`.
+A soft-closed or hard-closed period may be reopened to `open`. The prior transition history remains intact.
 
-Export evidence stores exact journal membership, period, row count and SHA-256 content checksum. Download regenerates content from persisted links and refuses delivery if the checksum differs.
+An export linked to a hard-closed period cannot be reversed through `finance.accounting.export.reverse` while the period is hard closed. The stronger period reopen decision must occur first.
 
-Export reversal requires `finance.accounting.export.reverse` or `finance.manage` and creates additive reversal evidence. It does not delete the original export batch.
+## 17. Package 004M accounting-date enforcement
 
-## 16. Cross-domain separation
+Period governance is enforced inside server-domain accounting operations, not only in the UI.
+
+```text
+journal posting date
+    → exactly one configured open period
+
+journal reversal date
+    → exactly one configured open period
+
+accounting export range
+    → exactly one configured period with exact start/end
+    → period must be soft_closed or hard_closed
+```
+
+Period state constrains **new accounting evidence**. It never rewrites the operational source event or a posted journal.
+
+## 18. Cross-domain separation
 
 ```text
 commercial.manage cannot post accounting journals
-contract.manage cannot post accounting journals
+contract.manage cannot close accounting periods
 finance.accounting.* cannot mutate contracts or quotations
+finance.accounting.period.* does not imply accounting post/reverse/export authority
 finance.accounting.* does not imply HMRC submission authority
 finance.tax_relief.* does not imply accounting-posting authority
 ```
 
-Operational source authority and downstream accounting authority remain distinct.
-
-## 17. Tenant isolation
+## 19. Tenant isolation
 
 - Trusted tenant context comes from authenticated active membership.
 - Tenant-owned queries include active `organisation_id`.
@@ -359,9 +360,9 @@ Operational source authority and downstream accounting authority remain distinct
 - Foreign tenant identities are masked where appropriate.
 - Project contextual roles never grant application permission.
 - Reports, exports and generated files preserve tenant boundaries.
-- Accounting exports contain only journals from the active tenant.
+- Accounting periods, journals and exports remain tenant scoped.
 
-## 18. Package 004L release testing requirements
+## 20. Package 004M release testing requirements
 
 The real-MySQL release gate covers:
 
@@ -370,30 +371,33 @@ The real-MySQL release gate covers:
 - organisation bootstrap parity;
 - existing CRM/commercial/project/contract/finance regression suites;
 - chart-of-accounts and semantic mapping type rules;
-- Finance/Commercial view-only accounting authority;
-- explicit accounting-post deny precedence over `finance.manage`;
-- issued-invoice net/VAT/gross journal derivation;
-- exact debit/credit balance persistence;
-- one active journal per source event;
-- concurrent duplicate-source serialization and domain rejection;
-- additive journal reversal and repost;
-- generic CSV checksum regeneration;
-- active-export duplicate prevention and additive export reversal;
-- foreign-tenant accounting identity masking;
+- source-derived balanced accounting journals and additive reversal;
+- accounting posting concurrency;
+- financial-year and accounting-period non-overlap;
+- period containment inside financial year;
+- open-period posting and reversal enforcement;
+- exact closed-period export enforcement;
+- hard-close export completeness;
+- hard-closed export-reversal guard and reasoned reopen;
+- additive period transition evidence;
+- Finance/Commercial read-only period authority;
+- Owner/Admin bootstrap period grants;
+- explicit granular period-close deny precedence over `finance.manage`;
 - zero generated Kysely drift across all three schema outputs;
 - Svelte/TypeScript diagnostics.
 
-Validated executable Package 004L contract:
+Package 004M release target:
 
 ```text
-23 production migrations applied / 0 pending
-378 tables / 841 foreign keys / 485 CHECK constraints
+24 production migrations applied / 0 pending
+381 tables / 848 foreign keys / 492 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts + accounting.d.ts
-35 integration files / 143 real-MySQL tests
+37 integration files / 150 real-MySQL tests
+accounting periods: 6 / 6
+accounting period bootstrap + explicit deny: 1 / 1
 accounting core: 5 / 5
 accounting concurrency: 1 / 1
-accounting bootstrap parity: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
 
-The final documentation-synchronised PR head must reproduce this complete gate before merge.
+The exact documentation-synchronised PR head must reproduce this complete gate before merge.

@@ -54,25 +54,28 @@ afterAll(async () => {
 	await closeDatabase();
 });
 
-describe('Package 004L future organisation bootstrap parity', () => {
-	it('keeps accounting viewing delegated while reserving configuration, posting, reversal and export authority', async () => {
+describe('Package 004L/004M future organisation bootstrap parity', () => {
+	it('keeps accounting viewing delegated while reserving configuration, posting, reversal, export and period governance', async () => {
 		const created = await new OrganisationBootstrapService(db).createForExistingUser(
 			{ userId, correlationId: `accounting-bootstrap-${randomUUID()}` },
 			{ legalName: `${PREFIX}Organisation`, defaultTimezone: 'Europe/London', defaultCurrencyCode: 'GBP' }
 		);
 		organisationId = created.organisationId;
 
-		const allSix = [
+		const ownerAccountingKeys = [
 			'finance.accounting.configure',
 			'finance.accounting.export',
 			'finance.accounting.export.reverse',
+			'finance.accounting.period.close',
+			'finance.accounting.period.configure',
+			'finance.accounting.period.reopen',
 			'finance.accounting.post',
 			'finance.accounting.reverse',
 			'finance.accounting.view'
 		].sort();
 
-		await expect(permissionKeys('Owner')).resolves.toEqual(allSix);
-		await expect(permissionKeys('Administrator')).resolves.toEqual(allSix);
+		await expect(permissionKeys('Owner')).resolves.toEqual(ownerAccountingKeys);
+		await expect(permissionKeys('Administrator')).resolves.toEqual(ownerAccountingKeys);
 		await expect(permissionKeys('Finance/Commercial')).resolves.toEqual(['finance.accounting.view']);
 	});
 });
