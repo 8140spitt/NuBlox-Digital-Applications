@@ -3,6 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
+import { AccountingYearEndConfigurationService } from '$lib/server/finance/accounting-year-end-configuration-service';
 import { AccountingYearEndService } from '$lib/server/finance/accounting-year-end-service';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
@@ -32,7 +33,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new AccountingYearEndService(getDatabase()).getWorkspace(actor);
+		const db = getDatabase();
+		const [workspace, configuration] = await Promise.all([
+			new AccountingYearEndService(db).getWorkspace(actor),
+			new AccountingYearEndConfigurationService(db).getConfiguration(actor)
+		]);
+		return { ...workspace, ...configuration };
 	} catch (cause) {
 		if (cause instanceof TenantAccessError) throw httpError(403, 'Year-end accounting access is not permitted.');
 		throw cause;
@@ -40,6 +46,20 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
+	assignRetainedEarnings: async ({ request, locals }) => {
+		const actor = actorFromLocals(locals);
+		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
+		const data = await request.formData();
+		try {
+			await new AccountingYearEndConfigurationService(getDatabase()).assignRetainedEarnings(actor, {
+				accountPublicId: String(data.get('accountPublicId') ?? ''),
+				reason: String(data.get('reason') ?? '')
+			});
+		} catch (cause) {
+			return actionFailure(cause);
+		}
+		return back();
+	},
 	prepare: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
