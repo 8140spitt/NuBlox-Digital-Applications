@@ -132,6 +132,17 @@ export class BadDebtMutationService {
 			if (!writeOff) throw new RecordNotFoundError('Write-off not found.');
 			if (await trx.selectFrom('receivable_write_off_reversals').select('write_off_id').where('organisation_id', '=', actor.organisationId).where('write_off_id', '=', writeOff.id).forUpdate().executeTakeFirst()) throw new FinanceValidationError('The write-off is already reversed.');
 			if (parseScaledDecimal(await activeRecoveryAmountForWriteOff(trx, actor.organisationId, writeOff.id, true), 4) > 0n) throw new FinanceValidationError('Reverse active bad-debt recoveries before reversing the write-off.');
+			const activeVatClaim = await trx
+				.selectFrom('receivable_vat_bad_debt_claims as claim')
+				.innerJoin('receivable_vat_bad_debt_claim_authorisations as authorisation', (join) => join.onRef('authorisation.claim_id', '=', 'claim.id').onRef('authorisation.organisation_id', '=', 'claim.organisation_id'))
+				.leftJoin('receivable_vat_bad_debt_claim_reversals as reversal', (join) => join.onRef('reversal.claim_id', '=', 'claim.id').onRef('reversal.organisation_id', '=', 'claim.organisation_id'))
+				.select('claim.id')
+				.where('claim.organisation_id', '=', actor.organisationId)
+				.where('claim.write_off_id', '=', writeOff.id)
+				.where('reversal.claim_id', 'is', null)
+				.forUpdate()
+				.executeTakeFirst();
+			if (activeVatClaim) throw new FinanceValidationError('Reverse active VAT bad-debt relief claims before reversing the write-off.');
 			const reversedAt = this.now();
 			await trx.insertInto('receivable_write_off_reversals').values({ write_off_id: writeOff.id, organisation_id: actor.organisationId, reversed_by_member_id: membership.id, reversed_at: reversedAt, reason }).executeTakeFirstOrThrow();
 			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: null, actionKey: 'finance.bad_debt.write_off.reversed', subjectType: 'bad_debt_case', subjectPublicId: casePublicId, correlationId: actor.correlationId, changeSummary: { writeOffPublicId, amount: writeOff.amount, reason, reversedAt } });
@@ -186,6 +197,16 @@ export class BadDebtMutationService {
 			await trx.selectFrom('payments').select('id').where('organisation_id', '=', actor.organisationId).where('id', '=', recoveryIdentity.paymentId).forUpdate().executeTakeFirstOrThrow();
 			const recovery = await trx.selectFrom('receivable_write_off_recoveries').select(['id', 'recovered_amount as amount']).where('organisation_id', '=', actor.organisationId).where('id', '=', recoveryIdentity.id).forUpdate().executeTakeFirstOrThrow();
 			if (await trx.selectFrom('receivable_write_off_recovery_reversals').select('recovery_id').where('organisation_id', '=', actor.organisationId).where('recovery_id', '=', recovery.id).forUpdate().executeTakeFirst()) throw new FinanceValidationError('The recovery is already reversed.');
+			const activeVatRepayment = await trx
+				.selectFrom('receivable_vat_bad_debt_repayments as repayment')
+				.leftJoin('receivable_vat_bad_debt_repayment_reversals as reversal', (join) => join.onRef('reversal.repayment_id', '=', 'repayment.id').onRef('reversal.organisation_id', '=', 'repayment.organisation_id'))
+				.select('repayment.id')
+				.where('repayment.organisation_id', '=', actor.organisationId)
+				.where('repayment.recovery_id', '=', recovery.id)
+				.where('reversal.repayment_id', 'is', null)
+				.forUpdate()
+				.executeTakeFirst();
+			if (activeVatRepayment) throw new FinanceValidationError('Reverse active VAT bad-debt relief repayment evidence before reversing the recovery.');
 			const reversedAt = this.now();
 			await trx.insertInto('receivable_write_off_recovery_reversals').values({ recovery_id: recovery.id, organisation_id: actor.organisationId, reversed_by_member_id: membership.id, reversed_at: reversedAt, reason }).executeTakeFirstOrThrow();
 			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: membership.id, projectId: null, actionKey: 'finance.bad_debt.recovery.reversed', subjectType: 'bad_debt_case', subjectPublicId: casePublicId, correlationId: actor.correlationId, changeSummary: { recoveryPublicId, amount: recovery.amount, reason, reversedAt } });

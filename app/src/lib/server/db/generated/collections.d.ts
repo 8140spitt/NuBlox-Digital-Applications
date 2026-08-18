@@ -240,6 +240,111 @@ export interface ReceivablePromisesToPay {
   updated_at: Generated<Date>;
 }
 
+export interface ReceivableVatBadDebtClaimAuthorisations {
+  authorised_at: Generated<Date>;
+  authorised_by_member_id: string;
+  claim_id: string;
+  created_at: Generated<Date>;
+  organisation_id: string;
+  reason: string;
+}
+
+export interface ReceivableVatBadDebtClaimLines {
+  claim_id: string;
+  consideration_basis_amount: Decimal;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  invoice_document_id: string;
+  organisation_id: string;
+  sort_order: number;
+  source_invoice_item_id: string;
+  tax_category_id: string;
+  vat_relief_amount: Decimal;
+}
+
+export interface ReceivableVatBadDebtClaimReversals {
+  claim_id: string;
+  created_at: Generated<Date>;
+  organisation_id: string;
+  reason: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+}
+
+export interface ReceivableVatBadDebtClaims {
+  claim_deadline: Date;
+  created_at: Generated<Date>;
+  debt_not_sold_or_factored: number;
+  eligible_from: Date;
+  id: Generated<string>;
+  invoice_document_id: string;
+  organisation_id: string;
+  original_vat_period_reference: string;
+  payment_due_date: Date;
+  prepared_at: Generated<Date>;
+  prepared_by_member_id: string;
+  public_id: string;
+  reason: string;
+  relevant_date: Date;
+  relief_scheme_applicable: number;
+  selling_price_condition_met: number;
+  supply_date: Date;
+  vat_accounted_and_paid: number;
+  write_off_id: string;
+}
+
+export interface ReceivableVatBadDebtRepaymentReversals {
+  created_at: Generated<Date>;
+  organisation_id: string;
+  reason: string;
+  repayment_id: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+}
+
+export interface ReceivableVatBadDebtRepayments {
+  claim_id: string;
+  consideration_payment_amount: Decimal;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  recorded_at: Generated<Date>;
+  recorded_by_member_id: string;
+  recovery_id: string;
+  vat_repayment_amount: Decimal;
+  write_off_id: string;
+}
+
+export interface ReceivableVatReturnPostingReversals {
+  created_at: Generated<Date>;
+  organisation_id: string;
+  posting_id: string;
+  reason: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+}
+
+export interface ReceivableVatReturnPostings {
+  amount: Decimal;
+  claim_id: string | null;
+  created_at: Generated<Date>;
+  external_reference: string | null;
+  id: Generated<string>;
+  organisation_id: string;
+  posted_at: Generated<Date>;
+  posted_by_member_id: string;
+  posting_kind: string;
+  public_id: string;
+  reason: string;
+  repayment_id: string | null;
+  vat_return_box: number;
+  vat_return_period_end: Date;
+  vat_return_period_reference: string;
+  vat_return_period_start: Date;
+}
+
 export interface ReceivableWriteOffRecoveries {
   created_at: Generated<Date>;
   id: Generated<string>;
@@ -301,6 +406,14 @@ export interface DB {
   receivable_credit_policy_revisions: ReceivableCreditPolicyRevisions;
   receivable_disputes: ReceivableDisputes;
   receivable_promises_to_pay: ReceivablePromisesToPay;
+  receivable_vat_bad_debt_claim_authorisations: ReceivableVatBadDebtClaimAuthorisations;
+  receivable_vat_bad_debt_claim_lines: ReceivableVatBadDebtClaimLines;
+  receivable_vat_bad_debt_claim_reversals: ReceivableVatBadDebtClaimReversals;
+  receivable_vat_bad_debt_claims: ReceivableVatBadDebtClaims;
+  receivable_vat_bad_debt_repayment_reversals: ReceivableVatBadDebtRepaymentReversals;
+  receivable_vat_bad_debt_repayments: ReceivableVatBadDebtRepayments;
+  receivable_vat_return_posting_reversals: ReceivableVatReturnPostingReversals;
+  receivable_vat_return_postings: ReceivableVatReturnPostings;
   receivable_write_off_recoveries: ReceivableWriteOffRecoveries;
   receivable_write_off_recovery_reversals: ReceivableWriteOffRecoveryReversals;
   receivable_write_off_reversals: ReceivableWriteOffReversals;

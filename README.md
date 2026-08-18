@@ -33,16 +33,16 @@ Architecture decisions are recorded under [`docs/adr`](docs/adr/README.md).
 
 The validated 001–010 relational baseline contains **337 base tables, 739 foreign keys and 427 `CHECK` constraints** and is consolidated into `database/migrations/20260815140337_baseline_v1.sql`.
 
-The production stream now contains **21 migrations**. The latest migration is:
+The production stream now contains **22 migrations**. The latest migration is:
 
-- `20260817190000_bad_debt_writeoff_recovery.sql` — Package 004J invoice-specific bad-debt assessment, immutable recommendation, separately authorised write-off/reversal and payment-linked recovery/reversal evidence.
+- `20260818080000_vat_bad_debt_relief.sql` — Package 004K source-linked VAT bad-debt-relief preparation/authorisation/reversal, recovery repayment and VAT-return posting/reversal evidence.
 
-The current validated Package 004J structure is:
+The current Package 004K application structure is:
 
 ```text
-362 base tables
-804 foreign keys
-465 CHECK constraints
+370 base tables
+824 foreign keys
+473 CHECK constraints
 ```
 
 Implementation-level database material is grouped under `/database`:
@@ -130,7 +130,7 @@ The founding member receives **Owner only**. Careers/job titles remain separate 
 
 Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions.
 
-Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities but does not receive `finance.manage`, `finance.invoice.void`, `finance.credit_control.override` or Package 004J write-off authorisation/reversal by default.
+Finance/Commercial receives ordinary operational AR, collections and credit-control responsibilities. For Package 004K it can view and prepare VAT bad-debt-relief evidence, but does not receive `finance.manage`, VAT-relief authorisation/reversal, VAT recovery-repayment authority or VAT-return posting authority by default.
 
 ## Implemented business chain
 
@@ -180,6 +180,13 @@ Immutable Recommendation
 Separate Write-off Authorisation / Reversal
     ↓
 Optional Payment-linked Recovery / Reversal
+    ↓
+Controlled VAT Bad-Debt Relief
+    ├─ Prepared source-tax evidence
+    ├─ Separate relief authorisation / reversal
+    ├─ VAT-return Box 4 posting evidence
+    └─ Recovery-linked proportional VAT repayment
+         └─ VAT-return Box 1 posting evidence
 ```
 
 Detailed business specifications:
@@ -197,6 +204,7 @@ Detailed business specifications:
 - [`docs/41-controlled-credit-limits-holds.md`](docs/41-controlled-credit-limits-holds.md)
 - [`docs/42-invoice-tax-settings.md`](docs/42-invoice-tax-settings.md)
 - [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md)
+- [`docs/44-controlled-vat-bad-debt-relief.md`](docs/44-controlled-vat-bad-debt-relief.md)
 
 ## Operational accounts receivable
 
@@ -235,26 +243,7 @@ Protected routes:
 /finance/bad-debt/[casePublicId]
 ```
 
-Package 004J separates doubtful-debt assessment from loss recognition:
-
-```text
-Open invoice receivable
-    ↓
-Bad-debt assessment case
-    ↓
-Immutable recommendation
-    ↓
-Separate write-off authorisation
-    ↓
-Active partial/full write-off
-    ├── additive reversal
-    └── later recovery from an existing payment receipt
-            └── additive recovery reversal
-```
-
-A recommendation never changes receivable. An active write-off does. A write-off reversal restores receivable. Write-off authorisation revalidates the recommendation against the **current** outstanding balance under the canonical customer → invoice locking hierarchy.
-
-Recovery consumes payment capacity but does **not** reopen or reduce customer receivable again:
+Package 004J separates doubtful-debt assessment from loss recognition. A recommendation never changes receivable; an active write-off does; reversal restores receivable. Later recovery consumes payment capacity but does not reopen or reduce receivable again.
 
 ```text
 Available Payment
@@ -263,27 +252,62 @@ Available Payment
 − Active Bad-Debt Recoveries
 ```
 
-A payment with active recovery evidence cannot be reversed until that recovery is explicitly reversed. An active write-off with active recovery cannot be reversed first.
+Write-off tax treatment is explicit as `no_tax_adjustment` or `separate_tax_adjustment_required` and Package 004J itself does not post VAT/tax relief or general-ledger facts.
 
-Write-off tax treatment is captured explicitly as either `no_tax_adjustment` or `separate_tax_adjustment_required`. Package 004J does not post VAT/tax relief or general-ledger facts.
+See [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md).
+
+### Package 004K — controlled VAT bad-debt relief
+
+Protected route:
+
+```text
+/finance/tax-relief
+```
+
+Package 004K starts only from an active 004J write-off marked `separate_tax_adjustment_required`.
+
+```text
+Active Write-off
+    ↓
+Prepared relief evidence
+    ↓
+Separate authorisation
+    ↓
+VAT Return Box 4 posting evidence
+    ↓
+Later recovery, if any
+    ↓
+Proportional VAT repayment
+    ↓
+VAT Return Box 1 posting evidence
+```
+
+The operator selects consideration against exact immutable invoice tax-snapshot lines. NuBlox calculates the VAT relief amount; a VAT rate or relief amount is never manually typed into the claim.
+
+The issued invoice due date is authoritative for the six-month eligibility calculation when present. Authorisation revalidates the current eligibility window and remaining write-off/source-tax capacity.
+
+Later repayment is tied to the exact bad-debt recovery. Its VAT-return posting period must contain the actual recovery receipt date.
+
+All corrections use additive reversal records. Package 004J also blocks write-off/recovery reversals while dependent 004K VAT evidence remains active.
+
+Package 004K records evidence that amounts were included in a VAT Return; it does not submit a VAT Return to HMRC and does not create a statutory general ledger.
 
 New permissions:
 
 ```text
-finance.bad_debt.view
-finance.bad_debt.case.manage
-finance.bad_debt.recommend
-finance.bad_debt.write_off.authorise
-finance.bad_debt.write_off.reverse
-finance.bad_debt.recovery.record
-finance.bad_debt.recovery.reverse
+finance.tax_relief.view
+finance.tax_relief.prepare
+finance.tax_relief.authorise
+finance.tax_relief.reverse
+finance.tax_relief.repayment.record
+finance.tax_relief.repayment.reverse
+finance.tax_relief.post
+finance.tax_relief.post.reverse
 ```
 
-Owner / Administrator receive all seven. Finance/Commercial receives view, case management, recommendation and recovery/recovery-reversal authority, but not write-off authorisation/reversal by default. All granular keys use `finance.manage` only as same-domain fallback and explicit granular deny still wins.
+Owner / Administrator receive all eight. Finance/Commercial receives view + prepare only by default. All granular keys use `finance.manage` only as same-domain fallback and explicit granular deny still wins.
 
-Current and historical receivable reporting is write-off aware: statements show write-off credits and reversal debits at their actual event times; aging subtracts write-offs active at the selected cutoff; recovery is not misrepresented as a customer receivable movement.
-
-See [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md).
+See [`docs/44-controlled-vat-bad-debt-relief.md`](docs/44-controlled-vat-bad-debt-relief.md).
 
 ## Deliberate finance exclusions
 
@@ -294,8 +318,10 @@ Still not claimed implemented:
 - refunds / outbound customer payments;
 - bank-feed/payment-gateway ingestion and bank reconciliation;
 - automated remittance matching;
-- statutory general-ledger posting;
-- VAT/tax bad-debt relief posting;
+- statutory general-ledger posting / double-entry journal engine;
+- direct HMRC VAT Return / Making Tax Digital submission;
+- complete VAT account / VAT control account;
+- automatic proof of external VAT/legal eligibility facts;
 - credit-note void/reversal;
 - persisted/issued statement documents and automatic statement delivery;
 - durable background scheduler/worker-driven collections execution;
@@ -330,17 +356,18 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004J release contract:
+Package 004K release contract:
 
 ```text
-21 production migrations applied / 0 pending
-362 base tables / 804 foreign keys / 465 CHECK constraints
+22 production migrations applied / 0 pending
+370 base tables / 824 foreign keys / 473 CHECK constraints
 zero generated Kysely drift across core + collections outputs
-30 integration files / 129 real-MySQL tests
+32 integration files / 136 real-MySQL tests
+tax-relief: 6 tests
+tax-relief bootstrap parity: 1 test
+tax settings: 4 tests
 bad-debt core: 6 tests
 bad-debt concurrency: 1 test
-bad-debt bootstrap parity: 1 test
-tax settings: 4 tests
 svelte-check: 0 errors / 0 warnings
 ```
 
