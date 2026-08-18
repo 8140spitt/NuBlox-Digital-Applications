@@ -98,9 +98,12 @@ finance.accounting.export.reverse
 finance.accounting.period.configure
 finance.accounting.period.close
 finance.accounting.period.reopen
+finance.accounting.year_end.prepare
+finance.accounting.year_end.authorise
+finance.accounting.year_end.reverse
 ```
 
-`finance.manage` is the same-domain umbrella for released finance granular keys. Package 004N adds no permission.
+`finance.manage` is the same-domain umbrella for released finance granular keys. Package 004N reporting adds no additional permission.
 
 ## 5. Standard organisation roles
 
@@ -118,7 +121,7 @@ Read Only
 
 The founding member receives Owner only.
 
-Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions.
+Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus the complete released accounting permission family for both existing and future organisations.
 
 Finance/Commercial receives ordinary billing, receivable, collections and delegated finance visibility. Its accounting default remains:
 
@@ -126,7 +129,7 @@ Finance/Commercial receives ordinary billing, receivable, collections and delega
 finance.accounting.view
 ```
 
-It does **not** receive accounting configure/post/reverse/export or accounting-period governance permissions by default.
+It does **not** receive accounting configure/post/reverse/export, period-governance or year-end-close mutation permissions by default.
 
 ## 6. Controlled account provisioning
 
@@ -134,7 +137,7 @@ Better Auth signup remains fail-closed. Exactly one provisioning intent must val
 
 Authentication alone is not tenant authority.
 
-Existing-tenant migration grants and future `OrganisationBootstrapService` role grants remain aligned at persisted role-permission-row level.
+Existing-tenant migration grants and future `OrganisationBootstrapService` role grants remain aligned at persisted role-permission-row level. Package 004O integration coverage verifies year-end permissions remain in that parity contract.
 
 ## 7. Finance read and mutation boundary
 
@@ -160,7 +163,7 @@ Accounting journal posting is downstream evidence. It does not become the author
 
 ## 9. Accounting read authority
 
-Package 004L established the accounting read boundary and Packages 004M–004N reuse it:
+Packages 004L–004O use the accounting read boundary:
 
 ```text
 active membership
@@ -169,7 +172,7 @@ AND (finance.accounting.view OR finance.manage)
 AND same-tenant accounting scope
 ```
 
-An explicit member deny on `finance.accounting.view` blocks accounting journals, period governance views and Package 004N financial reports even if the member otherwise has `finance.manage`.
+An explicit member deny on `finance.accounting.view` blocks accounting journals, period governance views, financial reports and year-end workspaces even if the member otherwise has `finance.manage`.
 
 Finance/Commercial receives `finance.accounting.view`, so it can inspect accounting evidence and reports without acquiring mutation authority.
 
@@ -189,25 +192,13 @@ No ordinary accounting route accepts arbitrary freehand debit/credit lines.
 
 The period workspace uses the accounting read boundary above.
 
-Configuration:
-
 ```text
-finance.accounting.period.configure OR finance.manage
+configure: finance.accounting.period.configure OR finance.manage
+close:     finance.accounting.period.close OR finance.manage
+reopen:    finance.accounting.period.reopen OR finance.manage
 ```
 
-Close:
-
-```text
-finance.accounting.period.close OR finance.manage
-AND explicit reason
-```
-
-Reopen:
-
-```text
-finance.accounting.period.reopen OR finance.manage
-AND explicit reason
-```
+Close/reopen mutations require an explicit reason.
 
 Lifecycle:
 
@@ -221,7 +212,7 @@ Posting and reversal require an open period. Export requires an exactly matching
 
 Package 004M integration coverage proves an explicit member deny on `finance.accounting.period.close` overrides Owner role authority and the `finance.manage` fallback.
 
-## 12. Package 004N financial-reporting authority
+## 12. Financial-reporting authority
 
 Package 004N is read-only and introduces no permission.
 
@@ -229,37 +220,57 @@ Package 004N is read-only and introduces no permission.
 /finance/accounting/reports
 ```
 
-The route requires:
-
-```text
-active membership
-AND finance.view
-AND (finance.accounting.view OR finance.manage)
-AND selected period belongs to active tenant
-AND selected journal/account rows belong to active tenant
-```
-
-The reporting service does not call accounting mutation permissions and cannot create, reverse, export or close accounting evidence.
+The route requires active membership, finance/accounting read authority, same-tenant period scope and same-tenant journal/account scope.
 
 Foreign accounting-period public IDs are returned as unavailable rather than disclosing another tenant's period identity.
 
-## 13. Package 004N reporting invariants
-
-Reports are tenant-, period- and currency-specific.
-
-```text
-opening balance = journal net before period start
-period movement = debit / credit movement inside selected period
-closing balance = journal net through period end
-```
-
-Trial-balance equality is derived independently for opening, period movement and closing balances.
-
-P&L derives from revenue/expense account types. Balance-sheet presentation derives from asset/liability/equity account types plus explicit cumulative unclosed earnings until a later year-end closing-journal boundary exists.
-
-Reversal journals remain separate evidence and enter reports at their own accounting date. Earlier periods therefore remain historically unchanged.
+Reports are tenant-, period- and currency-specific. Controlled Package 004O year-end close/reversal journals remain in trial-balance and balance-sheet accounting evidence. The year-end reporting bridge excludes those closing mechanics only from operating P&L aggregation so closing revenue/expense accounts does not erase historical operating performance.
 
 No report snapshot or editable report balance is persisted.
+
+## 13. Year-end close authority
+
+Protected workspace:
+
+```text
+/finance/accounting/year-end
+```
+
+Preparation requires:
+
+```text
+finance.accounting.year_end.prepare OR finance.manage
+```
+
+Authorisation requires:
+
+```text
+finance.accounting.year_end.authorise OR finance.manage
+AND authorising member != preparing member
+```
+
+Reversal requires:
+
+```text
+finance.accounting.year_end.reverse OR finance.manage
+```
+
+A year-end preparation additionally requires:
+
+- financial year belongs to the active tenant;
+- configured periods cover the complete financial year without gaps;
+- every period is `hard_closed`;
+- selected currency has revenue/expense journal movement;
+- `retained_earnings` maps to an active equity account;
+- no active authorised close exists for the same financial year and currency.
+
+Preparation stores immutable source totals and a SHA-256 fingerprint. Authorisation acquires the organisation accounting mutex, re-derives the fingerprint from locked period/journal evidence and rejects stale preparation evidence.
+
+The generated `year_end_close` journal is dated at the financial-year end, closes revenue and expense balances and transfers profit/loss to retained earnings. Correction creates an additive reversal journal plus `accounting_year_end_close_reversals` provenance; prior journals, period history, preparations and closes are never rewritten.
+
+Concurrent authorisations serialize on the organisation accounting mutex. Integration coverage requires exactly one concurrent winner for a shared preparation.
+
+An explicit member deny on a year-end granular key remains stronger than Owner role grants and the `finance.manage` fallback.
 
 ## 14. Cross-domain separation
 
@@ -268,6 +279,7 @@ commercial.manage cannot post accounting journals
 contract.manage cannot close accounting periods
 finance.accounting.* cannot mutate contracts or quotations
 finance.accounting.period.* does not imply accounting post/reverse/export authority
+finance.accounting.year_end.* does not imply ordinary source posting authority
 finance.accounting.view does not imply any accounting mutation authority
 finance.accounting.view/reporting does not imply HMRC submission authority
 finance.tax_relief.* does not imply accounting-posting authority
@@ -281,10 +293,10 @@ finance.tax_relief.* does not imply accounting-posting authority
 - Foreign tenant identities are masked where appropriate.
 - Project contextual roles never grant application permission.
 - Reports, exports and generated files preserve tenant boundaries.
-- Accounting periods, journals and reports remain tenant scoped.
-- Package 004N never aggregates currencies implicitly.
+- Accounting periods, journals, year-end evidence and reports remain tenant scoped.
+- Currencies are never combined implicitly.
 
-## 16. Package 004N release testing requirements
+## 16. Package 004O release testing requirements
 
 The real-MySQL release gate covers:
 
@@ -296,22 +308,27 @@ The real-MySQL release gate covers:
 - accounting posting concurrency;
 - accounting-period governance and close/reopen enforcement;
 - trial-balance opening/period/closing equality;
-- period and financial-year-to-date P&L;
-- balance-sheet equality using explicit unclosed earnings;
-- GBP/EUR currency isolation;
-- historical reversal timing;
-- explicit `finance.accounting.view` deny precedence over `finance.manage`;
-- foreign-period tenant masking;
+- period and financial-year-to-date operating P&L;
+- balance-sheet equality before/after retained-earnings close and reversal;
+- complete hard-closed financial-year prerequisite;
+- retained-earnings equity mapping prerequisite;
+- immutable preparation fingerprint and stale-source revalidation;
+- preparer/authoriser separation;
+- concurrent year-end authorisation serialization;
+- additive year-end close reversal;
+- year-end bootstrap parity and explicit granular deny precedence;
 - zero generated Kysely drift across all three schema outputs;
 - Svelte/TypeScript diagnostics.
 
-Package 004N release target:
+Package 004O release target:
 
 ```text
-24 production migrations applied / 0 pending
-381 tables / 848 foreign keys / 492 CHECK constraints
+25 production migrations applied / 0 pending
+384 tables / 857 foreign keys / 495 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts + accounting.d.ts
-38 integration files / 154 real-MySQL tests
+40 integration files / 158 real-MySQL tests
+accounting year-end: 3 / 3
+accounting year-end bootstrap + explicit deny: 1 / 1
 accounting reporting: 4 / 4
 accounting periods: 6 / 6
 accounting period bootstrap + explicit deny: 1 / 1
