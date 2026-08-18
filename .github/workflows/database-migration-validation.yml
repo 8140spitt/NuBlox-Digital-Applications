@@ -102,6 +102,10 @@ jobs:
             git push origin HEAD:validation/complete-system-e2e
           fi
 
+      - name: Check committed formatting
+        working-directory: app
+        run: pnpm exec prettier --check .
+
       - name: Apply production migration stream
         working-directory: app
         run: |
@@ -143,13 +147,12 @@ jobs:
         working-directory: app
         run: pnpm test:unit -- --run
 
-      - name: Check formatting
-        working-directory: app
-        run: pnpm exec prettier --check .
-
       - name: Run ESLint
         working-directory: app
         run: pnpm exec eslint .
+
+      - name: Verify tracked files were not mutated by validation
+        run: git diff --exit-code
 
       - name: Build production SvelteKit application
         working-directory: app
