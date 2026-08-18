@@ -1,0 +1,13 @@
+{
+  "dialect": "mysql",
+  "url": "env(DATABASE_URL)",
+  "outFile": "./src/lib/server/db/generated/accounting.d.ts",
+  "includePattern": "accounting_*",
+  "camelCase": false,
+  "numericParser": "string",
+  "typeMapping": {
+    "bigint": "string"
+  },
+  "typeOnlyImports": true,
+  "logLevel": "warn"
+}
