@@ -24,7 +24,8 @@ function parseStatus(value: FormDataEntryValue | null): CrmPartyStatus | null {
 function mutationFailure(error: unknown, field: string) {
 	if (error instanceof CrmValidationError) return fail(400, { [field]: error.message });
 	if (error instanceof RecordNotFoundError) return fail(404, { [field]: 'CRM record not found.' });
-	if (error instanceof TenantAccessError) return fail(403, { [field]: 'You do not have permission to manage this CRM record.' });
+	if (error instanceof TenantAccessError)
+		return fail(403, { [field]: 'You do not have permission to manage this CRM record.' });
 	throw error;
 }
 
@@ -44,7 +45,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 export const actions: Actions = {
 	update: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { updateError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { updateError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		const status = parseStatus(data.get('status'));
 		if (!status) return fail(400, { updateError: 'Choose a valid CRM status.' });
@@ -70,7 +72,8 @@ export const actions: Actions = {
 
 	createContact: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { contactError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { contactError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new CrmService(getDatabase()).createOrganisationContact(actor, params.partyPublicId, {
@@ -92,7 +95,10 @@ export const actions: Actions = {
 
 	linkContact: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { linkContactError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, {
+				linkContactError: 'Authentication and organisation context are required.'
+			});
 		const data = await request.formData();
 		try {
 			await new CrmService(getDatabase()).linkExistingOrganisationContact(actor, {
@@ -110,7 +116,10 @@ export const actions: Actions = {
 
 	endContact: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { contactActionError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, {
+				contactActionError: 'Authentication and organisation context are required.'
+			});
 		const data = await request.formData();
 		try {
 			await new CrmService(getDatabase()).endOrganisationContact(
@@ -126,7 +135,10 @@ export const actions: Actions = {
 
 	makePrimaryContact: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { contactActionError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, {
+				contactActionError: 'Authentication and organisation context are required.'
+			});
 		const data = await request.formData();
 		try {
 			await new CrmService(getDatabase()).makePrimaryOrganisationContact(

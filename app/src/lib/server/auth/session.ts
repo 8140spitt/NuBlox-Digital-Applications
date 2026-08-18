@@ -32,11 +32,14 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 	let linkedUser = await identities.findActivePlatformUser(session.user.id);
 
 	if (!linkedUser) {
-		console.warn('[NuBlox auth] Session resolved but no active NuBlox platform user was found; reconciling.', {
-			pathname,
-			authUserId: session.user.id,
-			email: session.user.email
-		});
+		console.warn(
+			'[NuBlox auth] Session resolved but no active NuBlox platform user was found; reconciling.',
+			{
+				pathname,
+				authUserId: session.user.id,
+				email: session.user.email
+			}
+		);
 
 		try {
 			await assertVerifiedAuthUser(db, session.user.id, session.user.email);
@@ -93,11 +96,14 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 	}
 
 	if (!linkedUser) {
-		console.error('[NuBlox auth] Better Auth session exists but NuBlox platform user is still unavailable.', {
-			pathname,
-			authUserId: session.user.id,
-			email: session.user.email
-		});
+		console.error(
+			'[NuBlox auth] Better Auth session exists but NuBlox platform user is still unavailable.',
+			{
+				pathname,
+				authUserId: session.user.id,
+				email: session.user.email
+			}
+		);
 		return null;
 	}
 

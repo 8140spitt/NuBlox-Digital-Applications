@@ -21,7 +21,10 @@ export const GET: RequestHandler = async ({ locals, params }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw error(401, 'Authentication and organisation context are required.');
 	try {
-		const result = await new AccountingService(getDatabase()).getExportContent(actor, params.exportPublicId);
+		const result = await new AccountingService(getDatabase()).getExportContent(
+			actor,
+			params.exportPublicId
+		);
 		return new Response(result.content, {
 			headers: {
 				'content-type': 'text/csv; charset=utf-8',

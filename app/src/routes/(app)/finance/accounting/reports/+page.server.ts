@@ -26,7 +26,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			currencyCode: url.searchParams.get('currency')
 		});
 	} catch (cause) {
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Accounting reporting access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Accounting reporting access is not permitted.');
 		if (cause instanceof FinanceValidationError) throw httpError(400, cause.message);
 		throw cause;
 	}

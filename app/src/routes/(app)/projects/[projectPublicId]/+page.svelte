@@ -60,19 +60,35 @@
 			</div>
 		</div>
 		<dl>
-			<div><dt>Project number</dt><dd>{data.project.projectNumber}</dd></div>
-			<div><dt>Status</dt><dd>{statusLabels[data.project.status] ?? data.project.status}</dd></div>
+			<div>
+				<dt>Project number</dt>
+				<dd>{data.project.projectNumber}</dd>
+			</div>
+			<div>
+				<dt>Status</dt>
+				<dd>{statusLabels[data.project.status] ?? data.project.status}</dd>
+			</div>
 			<div>
 				<dt>Ownership</dt>
-				<dd>{data.isOwningOrganisation ? 'Owned by this organisation' : 'Participating organisation'}</dd>
+				<dd>
+					{data.isOwningOrganisation ? 'Owned by this organisation' : 'Participating organisation'}
+				</dd>
 			</div>
 			<div>
 				<dt>Started</dt>
-				<dd>{data.project.startedOn ? new Date(data.project.startedOn).toLocaleDateString() : 'Not started'}</dd>
+				<dd>
+					{data.project.startedOn
+						? new Date(data.project.startedOn).toLocaleDateString()
+						: 'Not started'}
+				</dd>
 			</div>
 			<div>
 				<dt>Completed</dt>
-				<dd>{data.project.completedOn ? new Date(data.project.completedOn).toLocaleDateString() : 'Not completed'}</dd>
+				<dd>
+					{data.project.completedOn
+						? new Date(data.project.completedOn).toLocaleDateString()
+						: 'Not completed'}
+				</dd>
 			</div>
 		</dl>
 	</section>
@@ -96,7 +112,11 @@
 					<div class="participant-summary">
 						<div>
 							<strong>{participant.organisationName}</strong>
-							<small>{participant.organisationId === data.project.owningOrganisationId ? 'Project owner' : 'Participant'}</small>
+							<small
+								>{participant.organisationId === data.project.owningOrganisationId
+									? 'Project owner'
+									: 'Participant'}</small
+							>
 							<code>{participant.organisationPublicId}</code>
 						</div>
 						<span class={`participant-status participant-${participant.status}`}>
@@ -104,19 +124,29 @@
 						</span>
 					</div>
 					<div class="role-list">
-						{#if participant.roles.length === 0}<span class="empty-role">No contextual role</span>{/if}
+						{#if participant.roles.length === 0}<span class="empty-role">No contextual role</span
+							>{/if}
 						{#each participant.roles as role}<span>{role.name}</span>{/each}
 					</div>
 
 					{#if data.team.canManageParticipants && !['removed', 'declined', 'left'].includes(participant.status)}
 						<div class="participant-controls">
 							<form method="POST" action="?/updateParticipantRoles" class="role-form">
-								<input type="hidden" name="organisationPublicId" value={participant.organisationPublicId} />
+								<input
+									type="hidden"
+									name="organisationPublicId"
+									value={participant.organisationPublicId}
+								/>
 								<label>
 									<span>Organisation project roles</span>
 									<select name="roleKeys" multiple size="4">
 										{#each data.team.roleTypes as role}
-											<option value={role.roleKey} selected={participant.roles.some((assigned) => assigned.roleKey === role.roleKey)}>{role.name}</option>
+											<option
+												value={role.roleKey}
+												selected={participant.roles.some(
+													(assigned) => assigned.roleKey === role.roleKey
+												)}>{role.name}</option
+											>
 										{/each}
 									</select>
 								</label>
@@ -124,7 +154,11 @@
 							</form>
 							{#if participant.organisationId !== data.project.owningOrganisationId}
 								<form method="POST" action="?/removeParticipant">
-									<input type="hidden" name="organisationPublicId" value={participant.organisationPublicId} />
+									<input
+										type="hidden"
+										name="organisationPublicId"
+										value={participant.organisationPublicId}
+									/>
 									<button class="danger" type="submit">
 										{participant.status === 'invited' ? 'Revoke invitation' : 'Remove participant'}
 									</button>
@@ -139,15 +173,24 @@
 		{#if data.team.canManageParticipants}
 			<form method="POST" action="?/inviteParticipant" class="invite-form">
 				<h3>Invite organisation</h3>
-				<p class="hint">Use the organisation's exact NuBlox public ID. NuBlox does not expose an unrestricted organisation directory here.</p>
+				<p class="hint">
+					Use the organisation's exact NuBlox public ID. NuBlox does not expose an unrestricted
+					organisation directory here.
+				</p>
 				<label>
 					<span>Organisation ID</span>
-					<input name="organisationPublicId" required maxlength="64" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+					<input
+						name="organisationPublicId"
+						required
+						maxlength="64"
+						placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+					/>
 				</label>
 				<label>
 					<span>Project roles</span>
 					<select name="roleKeys" multiple size="6" required>
-						{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option>{/each}
+						{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option
+							>{/each}
 					</select>
 				</label>
 				<button type="submit">Send project invitation</button>
@@ -164,9 +207,14 @@
 			<span class="count">{data.team.teamMembers.length}</span>
 		</div>
 		{#if data.team.ownOrganisationPublicId}
-			<p class="organisation-id">Your NuBlox organisation ID: <code>{data.team.ownOrganisationPublicId}</code></p>
+			<p class="organisation-id">
+				Your NuBlox organisation ID: <code>{data.team.ownOrganisationPublicId}</code>
+			</p>
 		{/if}
-		<p class="hint">Project membership controls scope. Project-role labels describe context and do not grant permissions by themselves.</p>
+		<p class="hint">
+			Project membership controls scope. Project-role labels describe context and do not grant
+			permissions by themselves.
+		</p>
 
 		{#if form?.teamError && (form.teamAction === 'add-member' || form.teamAction.startsWith('member-') || form.teamAction === 'leave-project')}
 			<p class="error" role="alert">{form.teamError}</p>
@@ -191,7 +239,12 @@
 									<span>Member project roles</span>
 									<select name="roleKeys" multiple size="4">
 										{#each data.team.roleTypes as role}
-											<option value={role.roleKey} selected={member.roles.some((assigned) => assigned.roleKey === role.roleKey)}>{role.name}</option>
+											<option
+												value={role.roleKey}
+												selected={member.roles.some(
+													(assigned) => assigned.roleKey === role.roleKey
+												)}>{role.name}</option
+											>
 										{/each}
 									</select>
 								</label>
@@ -215,14 +268,17 @@
 					<select name="memberPublicId" required>
 						<option value="">Select member</option>
 						{#each data.team.availableMembers as member}
-							<option value={member.publicId}>{member.displayName}{member.email ? ` · ${member.email}` : ''}</option>
+							<option value={member.publicId}
+								>{member.displayName}{member.email ? ` · ${member.email}` : ''}</option
+							>
 						{/each}
 					</select>
 				</label>
 				<label>
 					<span>Project roles <small>optional</small></span>
 					<select name="roleKeys" multiple size="5">
-						{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option>{/each}
+						{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option
+							>{/each}
 					</select>
 				</label>
 				<button type="submit">Add to project team</button>
@@ -233,7 +289,10 @@
 			<div class="leave-zone">
 				<div>
 					<strong>Leave project</strong>
-					<p>Leaving removes this organisation's active project-member scope. The owning organisation can invite it again later.</p>
+					<p>
+						Leaving removes this organisation's active project-member scope. The owning organisation
+						can invite it again later.
+					</p>
 				</div>
 				<form method="POST" action="?/leaveProject">
 					<button class="danger" type="submit">Leave project</button>
@@ -253,7 +312,11 @@
 		{#if form?.transitionError}<p class="error" role="alert">{form.transitionError}</p>{/if}
 
 		{#if data.canManageLifecycle && data.allowedTransitions.length > 0}
-			<p class="muted">Choose a valid transition from the current <strong>{statusLabels[data.project.status]}</strong> state.</p>
+			<p class="muted">
+				Choose a valid transition from the current <strong
+					>{statusLabels[data.project.status]}</strong
+				> state.
+			</p>
 			<div class="transition-list">
 				{#each data.allowedTransitions as target}
 					<form method="POST" action="?/transition" class="transition-form">
@@ -275,7 +338,9 @@
 		{:else if !data.isOwningOrganisation}
 			<p class="muted">Only the owning organisation can change this project's lifecycle.</p>
 		{:else}
-			<p class="muted">You do not have the <code>project.manage</code> permission for this project.</p>
+			<p class="muted">
+				You do not have the <code>project.manage</code> permission for this project.
+			</p>
 		{/if}
 	</section>
 
@@ -287,84 +352,374 @@
 			</div>
 		</div>
 		<div class="module-grid">
-			<div><strong>Information</strong><span>Controlled documents, RFIs, submittals and instructions</span></div>
-			<div><strong>Commercial</strong><span>Cost control, change, valuations and forecasting</span></div>
+			<div>
+				<strong>Information</strong><span
+					>Controlled documents, RFIs, submittals and instructions</span
+				>
+			</div>
+			<div>
+				<strong>Commercial</strong><span>Cost control, change, valuations and forecasting</span>
+			</div>
 			<div><strong>Site</strong><span>Diaries, quality, safety and field evidence</span></div>
-			<div><strong>Assets</strong><span>Asset handover, maintenance and operational records</span></div>
+			<div>
+				<strong>Assets</strong><span>Asset handover, maintenance and operational records</span>
+			</div>
 		</div>
-		<p class="hint">These domain modules are represented in the relational baseline and will be activated through subsequent application slices.</p>
+		<p class="hint">
+			These domain modules are represented in the relational baseline and will be activated through
+			subsequent application slices.
+		</p>
 	</section>
 </div>
 
 <style>
-	.breadcrumbs { display: flex; gap: 0.55rem; align-items: center; margin-bottom: 1.1rem; color: #686862; font-size: 0.9rem; }
-	.breadcrumbs a { color: inherit; font-weight: 650; }
-	.project-header { margin-bottom: 1.5rem; }
-	.header-meta { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 0.5rem; }
-	.project-number { font-weight: 750; color: #62625c; }
-	h1 { margin: 0; font-size: clamp(2rem, 5vw, 3.2rem); letter-spacing: -0.045em; }
-	.project-header p { max-width: 60rem; color: #5d5d57; line-height: 1.6; }
-	.status { font-size: 0.72rem; font-weight: 750; padding: 0.28rem 0.48rem; border-radius: 999px; background: #ecece6; }
-	.status-active { background: #e4f5e8; }
-	.status-on_hold { background: #fff1cd; }
-	.status-completed { background: #e5eef9; }
-	.status-cancelled, .status-archived { background: #ececec; color: #666; }
-	.workspace-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; align-items: start; }
-	.panel { background: white; border: 1px solid #d9d9d2; border-radius: 0.8rem; padding: 1.25rem; }
-	.panel-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 1rem; }
-	.eyebrow { margin: 0 0 0.28rem; text-transform: uppercase; letter-spacing: 0.1em; font-size: 0.72rem; font-weight: 750; color: #666; }
-	.panel h2, .panel h3 { margin-top: 0; }
-	.count { min-width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 999px; background: #f0f0eb; font-weight: 750; }
-	dl { display: grid; gap: 0.75rem; margin: 0; }
-	dl div { display: grid; grid-template-columns: 8rem 1fr; gap: 1rem; }
-	dt { color: #6a6a64; }
-	dd { margin: 0; font-weight: 650; }
-	.participant-list, .member-list { display: grid; gap: 0.75rem; }
-	.participant-card, .member-card { display: grid; gap: 0.75rem; padding: 0.9rem; border: 1px solid #e1e1db; border-radius: 0.6rem; }
-	.participant-summary { display: flex; justify-content: space-between; gap: 1rem; align-items: start; }
-	.participant-summary > div, .member-card > div:first-child { display: grid; gap: 0.2rem; }
-	.participant-card small, .member-card small { color: #6b6b65; font-size: 0.78rem; }
-	code { overflow-wrap: anywhere; font-size: 0.78rem; }
-	.participant-status { font-size: 0.72rem; font-weight: 750; border-radius: 999px; background: #ecece6; padding: 0.28rem 0.48rem; }
-	.participant-active { background: #e4f5e8; }
-	.participant-invited { background: #fff1cd; }
-	.participant-declined, .participant-left, .participant-removed { color: #666; }
-	.role-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-	.role-list span { border-radius: 999px; background: #ecece6; padding: 0.24rem 0.48rem; font-size: 0.75rem; font-weight: 650; }
-	.role-list .empty-role { background: transparent; border: 1px dashed #c8c8c0; color: #777; }
-	.participant-controls, .member-controls { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: end; }
-	.role-form { display: flex; flex: 1 1 18rem; gap: 0.65rem; align-items: end; }
-	.role-form label { flex: 1; }
-	.invite-form, .add-member-form { display: grid; gap: 0.8rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e1e1db; }
-	.invite-form label, .add-member-form label, .role-form label { display: grid; gap: 0.35rem; font-size: 0.82rem; font-weight: 650; }
-	input, select { font: inherit; border: 1px solid #b9b9b1; border-radius: 0.45rem; padding: 0.58rem; background: white; min-width: 0; }
-	select[multiple] { padding: 0.35rem; }
-	.organisation-id, .hint, .muted { color: #65655f; line-height: 1.55; font-size: 0.9rem; }
-	.hint { margin-bottom: 0; }
-	.leave-zone { display: flex; justify-content: space-between; gap: 1rem; align-items: center; margin-top: 1.2rem; padding-top: 1rem; border-top: 1px solid #e1e1db; }
-	.leave-zone p { margin: 0.25rem 0 0; color: #666; font-size: 0.85rem; }
-	.transition-list { display: grid; gap: 0.75rem; }
-	.transition-form { display: flex; flex-wrap: wrap; align-items: end; gap: 0.75rem; padding: 0.75rem; border: 1px solid #e0e0da; border-radius: 0.55rem; }
-	.transition-form label { display: grid; gap: 0.3rem; font-size: 0.82rem; font-weight: 650; }
-	.transition-form input[type='date'] { font: inherit; border: 1px solid #b9b9b1; border-radius: 0.45rem; padding: 0.55rem; }
-	button { font: inherit; font-weight: 750; border: 1px solid #111; border-radius: 0.5rem; padding: 0.65rem 0.9rem; background: #111; color: white; cursor: pointer; }
-	button.secondary { background: white; color: #222; border-color: #aaa; }
-	button.danger { background: #8f2222; border-color: #8f2222; }
-	button.ghost-danger { background: white; color: #8f2222; }
-	.error { color: #9b1c1c; }
-	.modules { grid-column: 1 / -1; }
-	.module-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.7rem; }
-	.module-grid div { display: grid; gap: 0.35rem; padding: 0.85rem; border: 1px solid #e0e0da; border-radius: 0.55rem; background: #fafaf7; }
-	.module-grid span { color: #666; font-size: 0.85rem; line-height: 1.45; }
+	.breadcrumbs {
+		display: flex;
+		gap: 0.55rem;
+		align-items: center;
+		margin-bottom: 1.1rem;
+		color: #686862;
+		font-size: 0.9rem;
+	}
+	.breadcrumbs a {
+		color: inherit;
+		font-weight: 650;
+	}
+	.project-header {
+		margin-bottom: 1.5rem;
+	}
+	.header-meta {
+		display: flex;
+		align-items: center;
+		gap: 0.7rem;
+		margin-bottom: 0.5rem;
+	}
+	.project-number {
+		font-weight: 750;
+		color: #62625c;
+	}
+	h1 {
+		margin: 0;
+		font-size: clamp(2rem, 5vw, 3.2rem);
+		letter-spacing: -0.045em;
+	}
+	.project-header p {
+		max-width: 60rem;
+		color: #5d5d57;
+		line-height: 1.6;
+	}
+	.status {
+		font-size: 0.72rem;
+		font-weight: 750;
+		padding: 0.28rem 0.48rem;
+		border-radius: 999px;
+		background: #ecece6;
+	}
+	.status-active {
+		background: #e4f5e8;
+	}
+	.status-on_hold {
+		background: #fff1cd;
+	}
+	.status-completed {
+		background: #e5eef9;
+	}
+	.status-cancelled,
+	.status-archived {
+		background: #ececec;
+		color: #666;
+	}
+	.workspace-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+		align-items: start;
+	}
+	.panel {
+		background: white;
+		border: 1px solid #d9d9d2;
+		border-radius: 0.8rem;
+		padding: 1.25rem;
+	}
+	.panel-heading {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: start;
+		margin-bottom: 1rem;
+	}
+	.eyebrow {
+		margin: 0 0 0.28rem;
+		text-transform: uppercase;
+		letter-spacing: 0.1em;
+		font-size: 0.72rem;
+		font-weight: 750;
+		color: #666;
+	}
+	.panel h2,
+	.panel h3 {
+		margin-top: 0;
+	}
+	.count {
+		min-width: 2rem;
+		height: 2rem;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: #f0f0eb;
+		font-weight: 750;
+	}
+	dl {
+		display: grid;
+		gap: 0.75rem;
+		margin: 0;
+	}
+	dl div {
+		display: grid;
+		grid-template-columns: 8rem 1fr;
+		gap: 1rem;
+	}
+	dt {
+		color: #6a6a64;
+	}
+	dd {
+		margin: 0;
+		font-weight: 650;
+	}
+	.participant-list,
+	.member-list {
+		display: grid;
+		gap: 0.75rem;
+	}
+	.participant-card,
+	.member-card {
+		display: grid;
+		gap: 0.75rem;
+		padding: 0.9rem;
+		border: 1px solid #e1e1db;
+		border-radius: 0.6rem;
+	}
+	.participant-summary {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: start;
+	}
+	.participant-summary > div,
+	.member-card > div:first-child {
+		display: grid;
+		gap: 0.2rem;
+	}
+	.participant-card small,
+	.member-card small {
+		color: #6b6b65;
+		font-size: 0.78rem;
+	}
+	code {
+		overflow-wrap: anywhere;
+		font-size: 0.78rem;
+	}
+	.participant-status {
+		font-size: 0.72rem;
+		font-weight: 750;
+		border-radius: 999px;
+		background: #ecece6;
+		padding: 0.28rem 0.48rem;
+	}
+	.participant-active {
+		background: #e4f5e8;
+	}
+	.participant-invited {
+		background: #fff1cd;
+	}
+	.participant-declined,
+	.participant-left,
+	.participant-removed {
+		color: #666;
+	}
+	.role-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+	.role-list span {
+		border-radius: 999px;
+		background: #ecece6;
+		padding: 0.24rem 0.48rem;
+		font-size: 0.75rem;
+		font-weight: 650;
+	}
+	.role-list .empty-role {
+		background: transparent;
+		border: 1px dashed #c8c8c0;
+		color: #777;
+	}
+	.participant-controls,
+	.member-controls {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.65rem;
+		align-items: end;
+	}
+	.role-form {
+		display: flex;
+		flex: 1 1 18rem;
+		gap: 0.65rem;
+		align-items: end;
+	}
+	.role-form label {
+		flex: 1;
+	}
+	.invite-form,
+	.add-member-form {
+		display: grid;
+		gap: 0.8rem;
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid #e1e1db;
+	}
+	.invite-form label,
+	.add-member-form label,
+	.role-form label {
+		display: grid;
+		gap: 0.35rem;
+		font-size: 0.82rem;
+		font-weight: 650;
+	}
+	input,
+	select {
+		font: inherit;
+		border: 1px solid #b9b9b1;
+		border-radius: 0.45rem;
+		padding: 0.58rem;
+		background: white;
+		min-width: 0;
+	}
+	select[multiple] {
+		padding: 0.35rem;
+	}
+	.organisation-id,
+	.hint,
+	.muted {
+		color: #65655f;
+		line-height: 1.55;
+		font-size: 0.9rem;
+	}
+	.hint {
+		margin-bottom: 0;
+	}
+	.leave-zone {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: center;
+		margin-top: 1.2rem;
+		padding-top: 1rem;
+		border-top: 1px solid #e1e1db;
+	}
+	.leave-zone p {
+		margin: 0.25rem 0 0;
+		color: #666;
+		font-size: 0.85rem;
+	}
+	.transition-list {
+		display: grid;
+		gap: 0.75rem;
+	}
+	.transition-form {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: end;
+		gap: 0.75rem;
+		padding: 0.75rem;
+		border: 1px solid #e0e0da;
+		border-radius: 0.55rem;
+	}
+	.transition-form label {
+		display: grid;
+		gap: 0.3rem;
+		font-size: 0.82rem;
+		font-weight: 650;
+	}
+	.transition-form input[type='date'] {
+		font: inherit;
+		border: 1px solid #b9b9b1;
+		border-radius: 0.45rem;
+		padding: 0.55rem;
+	}
+	button {
+		font: inherit;
+		font-weight: 750;
+		border: 1px solid #111;
+		border-radius: 0.5rem;
+		padding: 0.65rem 0.9rem;
+		background: #111;
+		color: white;
+		cursor: pointer;
+	}
+	button.secondary {
+		background: white;
+		color: #222;
+		border-color: #aaa;
+	}
+	button.danger {
+		background: #8f2222;
+		border-color: #8f2222;
+	}
+	button.ghost-danger {
+		background: white;
+		color: #8f2222;
+	}
+	.error {
+		color: #9b1c1c;
+	}
+	.modules {
+		grid-column: 1 / -1;
+	}
+	.module-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.7rem;
+	}
+	.module-grid div {
+		display: grid;
+		gap: 0.35rem;
+		padding: 0.85rem;
+		border: 1px solid #e0e0da;
+		border-radius: 0.55rem;
+		background: #fafaf7;
+	}
+	.module-grid span {
+		color: #666;
+		font-size: 0.85rem;
+		line-height: 1.45;
+	}
 	@media (max-width: 920px) {
-		.workspace-grid { grid-template-columns: 1fr; }
-		.modules { grid-column: auto; }
-		.module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.workspace-grid {
+			grid-template-columns: 1fr;
+		}
+		.modules {
+			grid-column: auto;
+		}
+		.module-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 	}
 	@media (max-width: 620px) {
-		dl div { grid-template-columns: 1fr; gap: 0.15rem; }
-		.module-grid { grid-template-columns: 1fr; }
-		.participant-summary, .leave-zone { display: grid; }
-		.role-form { display: grid; width: 100%; }
+		dl div {
+			grid-template-columns: 1fr;
+			gap: 0.15rem;
+		}
+		.module-grid {
+			grid-template-columns: 1fr;
+		}
+		.participant-summary,
+		.leave-zone {
+			display: grid;
+		}
+		.role-form {
+			display: grid;
+			width: 100%;
+		}
 	}
 </style>

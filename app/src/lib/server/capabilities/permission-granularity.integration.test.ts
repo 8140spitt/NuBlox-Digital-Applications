@@ -18,13 +18,18 @@ function insertedId(result: { insertId?: bigint }): string {
 async function cleanup(): Promise<void> {
 	if (!db) return;
 	if (memberId) {
-		await db.deleteFrom('member_permission_overrides').where('organisation_member_id', '=', memberId).execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_member_id', '=', memberId)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_member_id', '=', memberId).execute();
 	}
-	if (roleId) await db.deleteFrom('role_permissions').where('organisation_role_id', '=', roleId).execute();
+	if (roleId)
+		await db.deleteFrom('role_permissions').where('organisation_role_id', '=', roleId).execute();
 	if (roleId) await db.deleteFrom('organisation_roles').where('id', '=', roleId).execute();
 	if (memberId) await db.deleteFrom('organisation_members').where('id', '=', memberId).execute();
-	if (organisationId) await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
+	if (organisationId)
+		await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
 	if (userId) await db.deleteFrom('users').where('id', '=', userId).execute();
 }
 
@@ -36,13 +41,21 @@ describe('granular permission umbrella semantics', () => {
 		userId = insertedId(
 			await db
 				.insertInto('users')
-				.values({ public_id: randomUUID(), display_name: 'Permission Granularity User', status: 'active' })
+				.values({
+					public_id: randomUUID(),
+					display_name: 'Permission Granularity User',
+					status: 'active'
+				})
 				.executeTakeFirstOrThrow()
 		);
 		organisationId = insertedId(
 			await db
 				.insertInto('organisations')
-				.values({ public_id: randomUUID(), legal_name: 'Permission Granularity Organisation', status: 'active' })
+				.values({
+					public_id: randomUUID(),
+					legal_name: 'Permission Granularity Organisation',
+					status: 'active'
+				})
 				.executeTakeFirstOrThrow()
 		);
 		memberId = insertedId(
@@ -82,8 +95,14 @@ describe('granular permission umbrella semantics', () => {
 			.where('is_active', '=', 1)
 			.execute();
 		const permissionId = new Map(permissions.map((row) => [row.permission_key, row.id]));
-		for (const key of ['project.manage', 'project.team.manage', 'crm.manage', 'crm.contact.manage']) {
-			if (!permissionId.has(key)) throw new Error(`Required permission missing from migration stream: ${key}`);
+		for (const key of [
+			'project.manage',
+			'project.team.manage',
+			'crm.manage',
+			'crm.contact.manage'
+		]) {
+			if (!permissionId.has(key))
+				throw new Error(`Required permission missing from migration stream: ${key}`);
 		}
 
 		await db

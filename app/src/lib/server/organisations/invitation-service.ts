@@ -82,7 +82,9 @@ export class OrganisationInvitationService {
 			throw new InvitationAccessError('A valid email address is required.');
 		}
 
-		const rolePublicIds = [...new Set(input.rolePublicIds.map((role) => role.trim()).filter(Boolean))];
+		const rolePublicIds = [
+			...new Set(input.rolePublicIds.map((role) => role.trim()).filter(Boolean))
+		];
 		const token = randomBytes(32).toString('base64url');
 		const tokenHash = hashInvitationToken(token);
 		const publicId = randomUUID();
@@ -103,7 +105,9 @@ export class OrganisationInvitationService {
 				);
 			}
 			if (await invitations.hasActiveMemberByEmail(input.actor.organisationId, email)) {
-				throw new InvitationAccessError('This email already belongs to an active member of the organisation.');
+				throw new InvitationAccessError(
+					'This email already belongs to an active member of the organisation.'
+				);
 			}
 
 			await invitations.revokePendingForEmail(input.actor.organisationId, email);
@@ -145,7 +149,10 @@ export class OrganisationInvitationService {
 			};
 		});
 
-		const inviteUrl = new URL(`/invite/${encodeURIComponent(token)}`, applicationBaseUrl()).toString();
+		const inviteUrl = new URL(
+			`/invite/${encodeURIComponent(token)}`,
+			applicationBaseUrl()
+		).toString();
 		await this.emailDelivery.send({
 			to: email,
 			subject: `You're invited to ${summary.organisationName} on NuBlox`,
@@ -159,7 +166,10 @@ export class OrganisationInvitationService {
 		const invitation = await new OrganisationInvitationRepository(this.db).findPendingByTokenHash(
 			hashInvitationToken(rawToken)
 		);
-		if (!invitation || normaliseInvitationEmail(invitation.email) !== normaliseInvitationEmail(email)) {
+		if (
+			!invitation ||
+			normaliseInvitationEmail(invitation.email) !== normaliseInvitationEmail(email)
+		) {
 			throw new InvitationAccessError();
 		}
 		return invitation;
@@ -167,7 +177,8 @@ export class OrganisationInvitationService {
 
 	async bindSignupAuthUser(rawToken: string, email: string, authUserId: string): Promise<void> {
 		const invitation = await this.validateSignup(rawToken, email);
-		if (invitation.authUserId && invitation.authUserId !== authUserId) throw new InvitationAccessError();
+		if (invitation.authUserId && invitation.authUserId !== authUserId)
+			throw new InvitationAccessError();
 		await new OrganisationInvitationRepository(this.db).bindAuthUser(invitation.id, authUserId);
 	}
 
@@ -220,7 +231,12 @@ export class OrganisationInvitationService {
 			const invitation =
 				'tokenHash' in input.lookup
 					? await invitations.findPendingByTokenHash(input.lookup.tokenHash, new Date(), true)
-					: await invitations.findPendingByAuthUser(input.lookup.authUserId, email, new Date(), true);
+					: await invitations.findPendingByAuthUser(
+							input.lookup.authUserId,
+							email,
+							new Date(),
+							true
+						);
 
 			if (!invitation || normaliseInvitationEmail(invitation.email) !== email) {
 				throw new InvitationAccessError();
@@ -247,10 +263,14 @@ export class OrganisationInvitationService {
 
 			let userId = existingLink?.user_id ?? null;
 			if (existingEmailOwner && userId && existingEmailOwner.user_id !== userId) {
-				throw new InvitationAccessError('The verified email is already linked to another NuBlox user.');
+				throw new InvitationAccessError(
+					'The verified email is already linked to another NuBlox user.'
+				);
 			}
 			if (existingEmailOwner && !userId) {
-				throw new InvitationAccessError('The verified email already belongs to another NuBlox identity.');
+				throw new InvitationAccessError(
+					'The verified email already belongs to another NuBlox identity.'
+				);
 			}
 
 			if (!userId) {
@@ -304,7 +324,8 @@ export class OrganisationInvitationService {
 				.select('status')
 				.where('id', '=', userId)
 				.executeTakeFirstOrThrow();
-			if (currentUser.status !== 'active') throw new InvitationAccessError('The NuBlox user is not active.');
+			if (currentUser.status !== 'active')
+				throw new InvitationAccessError('The NuBlox user is not active.');
 
 			const existingMembership = await trx
 				.selectFrom('organisation_members')
@@ -325,7 +346,8 @@ export class OrganisationInvitationService {
 						joined_at: new Date()
 					})
 					.executeTakeFirstOrThrow();
-				if (memberInsert.insertId === undefined) throw new Error('Membership insert did not return an ID.');
+				if (memberInsert.insertId === undefined)
+					throw new Error('Membership insert did not return an ID.');
 				memberId = memberInsert.insertId.toString();
 			} else {
 				memberId = existingMembership.id;

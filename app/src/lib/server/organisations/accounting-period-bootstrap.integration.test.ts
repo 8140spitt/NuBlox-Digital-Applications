@@ -16,15 +16,36 @@ let memberId = '';
 async function cleanup() {
 	if (!db) return;
 	if (organisationId) {
-		await db.deleteFrom('accounting_period_status_events').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('accounting_periods').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('accounting_financial_years').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('audit_events').where('acting_organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('member_permission_overrides').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('accounting_period_status_events')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('accounting_periods')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('accounting_financial_years')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('role_permissions').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
 	}
 	if (userId) await db.deleteFrom('users').where('id', '=', userId).execute();
@@ -34,7 +55,9 @@ async function periodPermissionKeys(roleName: string): Promise<string[]> {
 	const rows = await db
 		.selectFrom('role_permissions as grant')
 		.innerJoin('organisation_roles as role', (join) =>
-			join.onRef('role.id', '=', 'grant.organisation_role_id').onRef('role.organisation_id', '=', 'grant.organisation_id')
+			join
+				.onRef('role.id', '=', 'grant.organisation_role_id')
+				.onRef('role.organisation_id', '=', 'grant.organisation_id')
 		)
 		.innerJoin('permissions as permission', 'permission.id', 'grant.permission_id')
 		.select('permission.permission_key as permissionKey')
@@ -66,7 +89,11 @@ describe('Package 004M future organisation bootstrap parity', () => {
 	it('reserves period governance for Owner/Admin and preserves explicit granular deny precedence', async () => {
 		const created = await new OrganisationBootstrapService(db).createForExistingUser(
 			{ userId, correlationId: `accounting-period-bootstrap-${randomUUID()}` },
-			{ legalName: `${PREFIX}Organisation`, defaultTimezone: 'Europe/London', defaultCurrencyCode: 'GBP' }
+			{
+				legalName: `${PREFIX}Organisation`,
+				defaultTimezone: 'Europe/London',
+				defaultCurrencyCode: 'GBP'
+			}
 		);
 		organisationId = created.organisationId;
 		memberId = created.memberId;
@@ -86,7 +113,11 @@ describe('Package 004M future organisation bootstrap parity', () => {
 			memberId,
 			correlationId: `accounting-period-bootstrap-${randomUUID()}`
 		};
-		const periods = new AccountingPeriodService(db, randomUUID, () => new Date('2026-08-18T12:00:00.000Z'));
+		const periods = new AccountingPeriodService(
+			db,
+			randomUUID,
+			() => new Date('2026-08-18T12:00:00.000Z')
+		);
 		const year = await periods.createFinancialYear(actor, {
 			yearCode: 'FY26-P',
 			name: 'Period parity FY26',
@@ -117,7 +148,9 @@ describe('Package 004M future organisation bootstrap parity', () => {
 			})
 			.executeTakeFirstOrThrow();
 
-		await expect(periods.softClose(actor, period.publicId, 'Should be blocked by explicit deny.')).rejects.toBeInstanceOf(TenantAccessError);
+		await expect(
+			periods.softClose(actor, period.publicId, 'Should be blocked by explicit deny.')
+		).rejects.toBeInstanceOf(TenantAccessError);
 		await db
 			.deleteFrom('member_permission_overrides')
 			.where('organisation_id', '=', organisationId)

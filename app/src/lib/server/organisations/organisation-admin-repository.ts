@@ -248,7 +248,10 @@ export class OrganisationAdminRepository {
 		const grants = await this.db
 			.selectFrom('role_permissions as grant')
 			.innerJoin('permissions as permission', 'permission.id', 'grant.permission_id')
-			.select(['grant.organisation_role_id as roleId', 'permission.permission_key as permissionKey'])
+			.select([
+				'grant.organisation_role_id as roleId',
+				'permission.permission_key as permissionKey'
+			])
 			.where('grant.organisation_id', '=', organisationId)
 			.orderBy('permission.permission_key', 'asc')
 			.execute();

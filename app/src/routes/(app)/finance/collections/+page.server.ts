@@ -22,7 +22,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		return await new CollectionsService(getDatabase()).getPortfolio(actor);
 	} catch (cause) {
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Collections access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Collections access is not permitted.');
 		throw cause;
 	}
 };

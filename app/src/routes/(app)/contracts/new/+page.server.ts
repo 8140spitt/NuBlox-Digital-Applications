@@ -25,7 +25,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		return await new ContractService(getDatabase()).getFormationWorkspace(actor, projectPublicId);
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Project not found.');
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Contract formation is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Contract formation is not permitted.');
 		if (cause instanceof ContractValidationError) throw httpError(409, cause.message);
 		throw cause;
 	}
@@ -34,7 +35,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { actionError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { actionError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			const contract = await new ContractService(getDatabase()).createFromProject(actor, {
@@ -45,11 +47,13 @@ export const actions: Actions = {
 			});
 			throw redirect(303, `/contracts/${encodeURIComponent(contract.publicId)}`);
 		} catch (cause) {
-			if (cause instanceof ContractValidationError) return fail(400, { actionError: cause.message });
+			if (cause instanceof ContractValidationError)
+				return fail(400, { actionError: cause.message });
 			if (cause instanceof RecordNotFoundError) {
 				return fail(404, { actionError: 'The source project or quotation is unavailable.' });
 			}
-			if (cause instanceof TenantAccessError) return fail(403, { actionError: 'Contract creation is not permitted.' });
+			if (cause instanceof TenantAccessError)
+				return fail(403, { actionError: 'Contract creation is not permitted.' });
 			throw cause;
 		}
 	}

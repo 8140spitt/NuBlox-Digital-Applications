@@ -60,7 +60,10 @@ export class ContractLifecycleService {
 		return query.executeTakeFirst();
 	}
 
-	async getWorkspace(actor: TenantActorContext, contractPublicIdInput: string): Promise<ContractWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		contractPublicIdInput: string
+	): Promise<ContractWorkspace> {
 		await this.policy.assertActiveActor(actor);
 		const contractPublicId = cleanText(contractPublicIdInput, 64, 'Contract ID', true)!;
 		const view = await this.policy.viewDecision(actor);
@@ -122,7 +125,11 @@ export class ContractLifecycleService {
 		] = await Promise.all([
 			this.db
 				.selectFrom('contract_version_parties as party')
-				.innerJoin('contract_party_role_types as role', 'role.id', 'party.contract_party_role_type_id')
+				.innerJoin(
+					'contract_party_role_types as role',
+					'role.id',
+					'party.contract_party_role_type_id'
+				)
 				.select([
 					'party.id as id',
 					'role.code as roleCode',
@@ -137,7 +144,11 @@ export class ContractLifecycleService {
 				.execute(),
 			this.db
 				.selectFrom('contract_version_value_components as value')
-				.innerJoin('contract_value_component_types as type', 'type.id', 'value.contract_value_component_type_id')
+				.innerJoin(
+					'contract_value_component_types as type',
+					'type.id',
+					'value.contract_value_component_type_id'
+				)
 				.select([
 					'value.id as id',
 					'type.code as typeCode',
@@ -152,7 +163,11 @@ export class ContractLifecycleService {
 				.execute(),
 			this.db
 				.selectFrom('contract_version_key_dates as key_date')
-				.innerJoin('contract_key_date_types as type', 'type.id', 'key_date.contract_key_date_type_id')
+				.innerJoin(
+					'contract_key_date_types as type',
+					'type.id',
+					'key_date.contract_key_date_type_id'
+				)
 				.select([
 					'key_date.id as id',
 					'type.code as typeCode',
@@ -258,7 +273,13 @@ export class ContractLifecycleService {
 	) {
 		const contract = await trx
 			.selectFrom('contracts')
-			.select(['id', 'public_id as publicId', 'title', 'lifecycle_status as lifecycleStatus', 'project_id as projectId'])
+			.select([
+				'id',
+				'public_id as publicId',
+				'title',
+				'lifecycle_status as lifecycleStatus',
+				'project_id as projectId'
+			])
 			.where('organisation_id', '=', actor.organisationId)
 			.where('public_id', '=', contractPublicId)
 			.forUpdate()
@@ -287,8 +308,14 @@ export class ContractLifecycleService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract draft management is not permitted.');
-			const { contract, version } = await this.lockDraftVersion(trx, actor, contractPublicId, versionNumber);
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract draft management is not permitted.');
+			const { contract, version } = await this.lockDraftVersion(
+				trx,
+				actor,
+				contractPublicId,
+				versionNumber
+			);
 			await trx
 				.updateTable('contracts')
 				.set({ title })
@@ -325,15 +352,22 @@ export class ContractLifecycleService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract draft management is not permitted.');
-			const { contract, version } = await this.lockDraftVersion(trx, actor, contractPublicId, versionNumber);
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract draft management is not permitted.');
+			const { contract, version } = await this.lockDraftVersion(
+				trx,
+				actor,
+				contractPublicId,
+				versionNumber
+			);
 			const type = await trx
 				.selectFrom('contract_value_component_types')
 				.select('id')
 				.where('code', '=', typeCode)
 				.where('is_active', '=', 1)
 				.executeTakeFirst();
-			if (!type) throw new ContractValidationError('The selected value component type is not available.');
+			if (!type)
+				throw new ContractValidationError('The selected value component type is not available.');
 			const last = await trx
 				.selectFrom('contract_version_value_components')
 				.select('sort_order as sortOrder')
@@ -381,15 +415,22 @@ export class ContractLifecycleService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract draft management is not permitted.');
-			const { contract, version } = await this.lockDraftVersion(trx, actor, contractPublicId, versionNumber);
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract draft management is not permitted.');
+			const { contract, version } = await this.lockDraftVersion(
+				trx,
+				actor,
+				contractPublicId,
+				versionNumber
+			);
 			const result = await trx
 				.deleteFrom('contract_version_value_components')
 				.where('organisation_id', '=', actor.organisationId)
 				.where('contract_version_id', '=', version.id)
 				.where('sort_order', '=', sortOrder)
 				.executeTakeFirst();
-			if (result.numDeletedRows !== 1n) throw new RecordNotFoundError('Contract value component not found.');
+			if (result.numDeletedRows !== 1n)
+				throw new RecordNotFoundError('Contract value component not found.');
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -414,8 +455,14 @@ export class ContractLifecycleService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract draft management is not permitted.');
-			const { contract, version } = await this.lockDraftVersion(trx, actor, contractPublicId, versionNumber);
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract draft management is not permitted.');
+			const { contract, version } = await this.lockDraftVersion(
+				trx,
+				actor,
+				contractPublicId,
+				versionNumber
+			);
 			const type = await trx
 				.selectFrom('contract_key_date_types')
 				.select('id')
@@ -470,15 +517,22 @@ export class ContractLifecycleService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract draft management is not permitted.');
-			const { contract, version } = await this.lockDraftVersion(trx, actor, contractPublicId, versionNumber);
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract draft management is not permitted.');
+			const { contract, version } = await this.lockDraftVersion(
+				trx,
+				actor,
+				contractPublicId,
+				versionNumber
+			);
 			const result = await trx
 				.deleteFrom('contract_version_key_dates')
 				.where('organisation_id', '=', actor.organisationId)
 				.where('contract_version_id', '=', version.id)
 				.where('sort_order', '=', sortOrder)
 				.executeTakeFirst();
-			if (result.numDeletedRows !== 1n) throw new RecordNotFoundError('Contract key date not found.');
+			if (result.numDeletedRows !== 1n)
+				throw new RecordNotFoundError('Contract key date not found.');
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -498,17 +552,24 @@ export class ContractLifecycleService {
 		const contractPublicId = cleanText(input.contractPublicId, 64, 'Contract ID', true)!;
 		const versionNumber = positiveInt(input.versionNumber, 'Contract version');
 		const deliveryChannel = input.deliveryChannel.trim();
-		if (!DELIVERY_CHANNELS.has(deliveryChannel)) throw new ContractValidationError('Delivery channel is invalid.');
+		if (!DELIVERY_CHANNELS.has(deliveryChannel))
+			throw new ContractValidationError('Delivery channel is invalid.');
 		const recipientName = cleanText(input.recipientName, 255, 'Recipient name', true)!;
 		const recipientEmail = cleanText(input.recipientEmail, 320, 'Recipient email');
-		if (recipientEmail && !recipientEmail.includes('@')) throw new ContractValidationError('Recipient email is invalid.');
+		if (recipientEmail && !recipientEmail.includes('@'))
+			throw new ContractValidationError('Recipient email is invalid.');
 		const note = cleanText(input.note, 1000, 'Issue note');
 
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.issue', trx);
 			if (!decision.allowed) throw new TenantAccessError('Contract issue is not permitted.');
-			const { contract, version } = await this.lockDraftVersion(trx, actor, contractPublicId, versionNumber);
+			const { contract, version } = await this.lockDraftVersion(
+				trx,
+				actor,
+				contractPublicId,
+				versionNumber
+			);
 			const [partyCount, valueCount, clientParty] = await Promise.all([
 				trx
 					.selectFrom('contract_version_parties')
@@ -524,7 +585,11 @@ export class ContractLifecycleService {
 					.executeTakeFirstOrThrow(),
 				trx
 					.selectFrom('contract_version_parties as party')
-					.innerJoin('contract_party_role_types as role', 'role.id', 'party.contract_party_role_type_id')
+					.innerJoin(
+						'contract_party_role_types as role',
+						'role.id',
+						'party.contract_party_role_type_id'
+					)
 					.select('party.source_party_id as sourcePartyId')
 					.where('party.organisation_id', '=', actor.organisationId)
 					.where('party.contract_version_id', '=', version.id)
@@ -536,7 +601,9 @@ export class ContractLifecycleService {
 				throw new ContractValidationError('A contract requires at least one party before issue.');
 			}
 			if (Number(valueCount.count) < 1) {
-				throw new ContractValidationError('A contract requires at least one value component before issue.');
+				throw new ContractValidationError(
+					'A contract requires at least one value component before issue.'
+				);
 			}
 
 			const lockedAt = this.now();
@@ -565,7 +632,8 @@ export class ContractLifecycleService {
 					note
 				})
 				.executeTakeFirstOrThrow();
-			if (issueInsert.insertId === undefined) throw new Error('Contract issue event insert did not return an ID.');
+			if (issueInsert.insertId === undefined)
+				throw new Error('Contract issue event insert did not return an ID.');
 			await trx
 				.insertInto('contract_issue_recipients')
 				.values({
@@ -603,11 +671,13 @@ export class ContractLifecycleService {
 		const contractPublicId = cleanText(input.contractPublicId, 64, 'Contract ID', true)!;
 		const versionNumber = positiveInt(input.versionNumber, 'Contract version');
 		const executionMethod = input.executionMethod.trim();
-		if (!EXECUTION_METHODS.has(executionMethod)) throw new ContractValidationError('Execution method is invalid.');
+		if (!EXECUTION_METHODS.has(executionMethod))
+			throw new ContractValidationError('Execution method is invalid.');
 		const executedAt = validateDateTime(input.executedAt, 'Execution date/time');
 		const signatoryName = cleanText(input.signatoryName, 255, 'Signatory name', true)!;
 		const signatoryEmail = cleanText(input.signatoryEmail, 320, 'Signatory email');
-		if (signatoryEmail && !signatoryEmail.includes('@')) throw new ContractValidationError('Signatory email is invalid.');
+		if (signatoryEmail && !signatoryEmail.includes('@'))
+			throw new ContractValidationError('Signatory email is invalid.');
 		const signingRole = cleanText(input.signingRole, 160, 'Signing role');
 		const externalTransactionReference = cleanText(
 			input.externalTransactionReference,
@@ -619,7 +689,8 @@ export class ContractLifecycleService {
 		await this.db.transaction().execute(async (trx) => {
 			const membership = await this.policy.assertActiveActor(actor, trx);
 			const decision = await this.policy.mutationDecision(actor, 'contract.execute', trx);
-			if (!decision.allowed) throw new TenantAccessError('Contract execution recording is not permitted.');
+			if (!decision.allowed)
+				throw new TenantAccessError('Contract execution recording is not permitted.');
 			const contract = await trx
 				.selectFrom('contracts')
 				.select([
@@ -644,7 +715,9 @@ export class ContractLifecycleService {
 				.executeTakeFirst();
 			if (!version) throw new RecordNotFoundError('Contract version not found.');
 			if (version.versionStatus !== 'issued' || !version.lockedAt) {
-				throw new ContractValidationError('Only an issued and locked contract version can be executed.');
+				throw new ContractValidationError(
+					'Only an issued and locked contract version can be executed.'
+				);
 			}
 			if (contract.lifecycleStatus !== 'under_review') {
 				throw new ContractValidationError('The contract is not awaiting execution.');
@@ -655,10 +728,17 @@ export class ContractLifecycleService {
 				.where('organisation_id', '=', actor.organisationId)
 				.where('contract_version_id', '=', version.id)
 				.executeTakeFirst();
-			if (existingExecution) throw new ContractValidationError('Execution evidence already exists for this contract version.');
+			if (existingExecution)
+				throw new ContractValidationError(
+					'Execution evidence already exists for this contract version.'
+				);
 			const clientParty = await trx
 				.selectFrom('contract_version_parties as party')
-				.innerJoin('contract_party_role_types as role', 'role.id', 'party.contract_party_role_type_id')
+				.innerJoin(
+					'contract_party_role_types as role',
+					'role.id',
+					'party.contract_party_role_type_id'
+				)
 				.select('party.source_party_id as sourcePartyId')
 				.where('party.organisation_id', '=', actor.organisationId)
 				.where('party.contract_version_id', '=', version.id)
@@ -677,7 +757,8 @@ export class ContractLifecycleService {
 					note
 				})
 				.executeTakeFirstOrThrow();
-			if (executionInsert.insertId === undefined) throw new Error('Contract execution event insert did not return an ID.');
+			if (executionInsert.insertId === undefined)
+				throw new Error('Contract execution event insert did not return an ID.');
 			await trx
 				.insertInto('contract_execution_signatories')
 				.values({

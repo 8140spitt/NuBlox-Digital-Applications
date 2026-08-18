@@ -37,7 +37,10 @@ export class LastOrganisationManagerError extends Error {
 	}
 }
 
-const STATUS_TRANSITIONS: Record<OrganisationMemberStatus, ReadonlySet<OrganisationMemberStatus>> = {
+const STATUS_TRANSITIONS: Record<
+	OrganisationMemberStatus,
+	ReadonlySet<OrganisationMemberStatus>
+> = {
 	invited: new Set(['active', 'disabled']),
 	active: new Set(['suspended', 'disabled', 'left']),
 	suspended: new Set(['active', 'disabled', 'left']),
@@ -134,7 +137,9 @@ export class OrganisationAdminService {
 				member.joinedAt
 			);
 			if (!updated) {
-				throw new OrganisationAdminValidationError('Membership changed concurrently; reload and try again.');
+				throw new OrganisationAdminValidationError(
+					'Membership changed concurrently; reload and try again.'
+				);
 			}
 
 			if (targetWasManager && nextStatus !== 'active') {
@@ -350,10 +355,14 @@ export class OrganisationAdminService {
 			);
 			if (!invitation) throw new OrganisationAdminNotFoundError('Invitation not found.');
 			if (invitation.status !== 'pending' && invitation.status !== 'expired') {
-				throw new OrganisationAdminValidationError('Only pending or expired invitations can be revoked.');
+				throw new OrganisationAdminValidationError(
+					'Only pending or expired invitations can be revoked.'
+				);
 			}
 			if (!(await repository.revokeInvitation(actor.organisationId, invitation.id))) {
-				throw new OrganisationAdminValidationError('Invitation changed concurrently; reload and try again.');
+				throw new OrganisationAdminValidationError(
+					'Invitation changed concurrently; reload and try again.'
+				);
 			}
 
 			await new AuditRepository(trx).append({
@@ -382,7 +391,9 @@ export class OrganisationAdminService {
 			);
 			if (!invitation) throw new OrganisationAdminNotFoundError('Invitation not found.');
 			if (invitation.status !== 'pending' && invitation.status !== 'expired') {
-				throw new OrganisationAdminValidationError('Only pending or expired invitations can be resent.');
+				throw new OrganisationAdminValidationError(
+					'Only pending or expired invitations can be resent.'
+				);
 			}
 			return invitation;
 		});

@@ -6,7 +6,10 @@ import {
 	CrmOpportunityService,
 	CrmOpportunityValidationError
 } from '$lib/server/crm/crm-opportunity-service';
-import type { ActivityDirection, OpportunityStatus } from '$lib/server/crm/crm-opportunity-repository';
+import type {
+	ActivityDirection,
+	OpportunityStatus
+} from '$lib/server/crm/crm-opportunity-repository';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -20,7 +23,10 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	};
 }
 
-function stageSelection(value: FormDataEntryValue | null): { pipelinePublicId: string; stageName: string } {
+function stageSelection(value: FormDataEntryValue | null): {
+	pipelinePublicId: string;
+	stageName: string;
+} {
 	const raw = String(value ?? '');
 	const separator = raw.indexOf('::');
 	if (separator <= 0 || separator >= raw.length - 2) {
@@ -31,20 +37,23 @@ function stageSelection(value: FormDataEntryValue | null): { pipelinePublicId: s
 
 function statusValue(value: FormDataEntryValue | null): OpportunityStatus {
 	const status = String(value ?? '');
-	if (status === 'open' || status === 'won' || status === 'lost' || status === 'cancelled') return status;
+	if (status === 'open' || status === 'won' || status === 'lost' || status === 'cancelled')
+		return status;
 	throw new CrmOpportunityValidationError('Choose a valid opportunity status.');
 }
 
 function directionValue(value: FormDataEntryValue | null): ActivityDirection {
 	const direction = String(value ?? '');
 	if (!direction) return null;
-	if (direction === 'inbound' || direction === 'outbound' || direction === 'internal') return direction;
+	if (direction === 'inbound' || direction === 'outbound' || direction === 'internal')
+		return direction;
 	throw new CrmOpportunityValidationError('Choose a valid activity direction.');
 }
 
 function actionError(error: unknown, key: string) {
 	if (error instanceof CrmOpportunityValidationError) return fail(400, { [key]: error.message });
-	if (error instanceof TenantAccessError) return fail(403, { [key]: 'You do not have permission for this CRM action.' });
+	if (error instanceof TenantAccessError)
+		return fail(403, { [key]: 'You do not have permission for this CRM action.' });
 	if (error instanceof RecordNotFoundError) return fail(404, { [key]: error.message });
 	throw error;
 }
@@ -53,7 +62,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new CrmOpportunityService(getDatabase()).getWorkspace(actor, params.opportunityPublicId);
+		return await new CrmOpportunityService(getDatabase()).getWorkspace(
+			actor,
+			params.opportunityPublicId
+		);
 	} catch (error) {
 		if (error instanceof RecordNotFoundError) throw httpError(404, 'CRM opportunity not found.');
 		if (error instanceof TenantAccessError) throw httpError(403, 'CRM viewing is not permitted.');
@@ -64,7 +76,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 export const actions: Actions = {
 	update: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { updateError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { updateError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			const selectedStage = stageSelection(data.get('stageSelection'));
@@ -88,7 +101,10 @@ export const actions: Actions = {
 
 	addParticipant: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { participantError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, {
+				participantError: 'Authentication and organisation context are required.'
+			});
 		const data = await request.formData();
 		try {
 			await new CrmOpportunityService(getDatabase()).addParticipant(actor, {
@@ -96,7 +112,10 @@ export const actions: Actions = {
 				partyPublicId: String(data.get('partyPublicId') ?? ''),
 				roleCode: String(data.get('roleCode') ?? '')
 			});
-			throw redirect(303, `/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}#participants`);
+			throw redirect(
+				303,
+				`/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}#participants`
+			);
 		} catch (error) {
 			return actionError(error, 'participantError');
 		}
@@ -104,7 +123,10 @@ export const actions: Actions = {
 
 	removeParticipant: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { participantError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, {
+				participantError: 'Authentication and organisation context are required.'
+			});
 		const data = await request.formData();
 		try {
 			await new CrmOpportunityService(getDatabase()).removeParticipant(actor, {
@@ -112,7 +134,10 @@ export const actions: Actions = {
 				partyPublicId: String(data.get('partyPublicId') ?? ''),
 				roleCode: String(data.get('roleCode') ?? '')
 			});
-			throw redirect(303, `/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}#participants`);
+			throw redirect(
+				303,
+				`/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}#participants`
+			);
 		} catch (error) {
 			return actionError(error, 'participantError');
 		}
@@ -120,7 +145,8 @@ export const actions: Actions = {
 
 	createActivity: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { activityError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { activityError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new CrmOpportunityService(getDatabase()).createActivity(actor, {
@@ -131,7 +157,10 @@ export const actions: Actions = {
 				direction: directionValue(data.get('direction')),
 				partyPublicIds: data.getAll('partyPublicId').map(String)
 			});
-			throw redirect(303, `/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}#timeline`);
+			throw redirect(
+				303,
+				`/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}#timeline`
+			);
 		} catch (error) {
 			return actionError(error, 'activityError');
 		}

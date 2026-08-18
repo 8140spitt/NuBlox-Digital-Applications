@@ -3,12 +3,7 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type PermissionDecision = {
 	allowed: boolean;
-	reason:
-		| 'member-deny'
-		| 'member-allow'
-		| 'role-grant'
-		| 'default-deny'
-		| 'project-scope-deny';
+	reason: 'member-deny' | 'member-allow' | 'role-grant' | 'default-deny' | 'project-scope-deny';
 };
 
 export class PermissionService {
@@ -18,7 +13,9 @@ export class PermissionService {
 		actor: TenantActorContext,
 		permissionKeysInput: readonly string[]
 	): Promise<Map<string, PermissionDecision>> {
-		const permissionKeys = [...new Set(permissionKeysInput.map((key) => key.trim()).filter(Boolean))];
+		const permissionKeys = [
+			...new Set(permissionKeysInput.map((key) => key.trim()).filter(Boolean))
+		];
 		const decisions = new Map<string, PermissionDecision>();
 		if (permissionKeys.length === 0) return decisions;
 
@@ -83,7 +80,10 @@ export class PermissionService {
 		);
 	}
 
-	private async hasActiveProjectScope(actor: TenantActorContext, projectId: string): Promise<boolean> {
+	private async hasActiveProjectScope(
+		actor: TenantActorContext,
+		projectId: string
+	): Promise<boolean> {
 		const row = await this.db
 			.selectFrom('project_members as pm')
 			.innerJoin('project_organisations as po', (join) =>

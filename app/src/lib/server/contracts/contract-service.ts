@@ -13,7 +13,10 @@ import type {
 	UpdateContractDraftInput
 } from './contract-common';
 import { ContractEntryService } from './contract-entry-service';
-import { ContractExecutionService, type CreditControlledExecuteContractInput } from './contract-execution-service';
+import {
+	ContractExecutionService,
+	type CreditControlledExecuteContractInput
+} from './contract-execution-service';
 import { ContractFormationService } from './contract-formation-service';
 import { ContractLifecycleService } from './contract-lifecycle-service';
 
@@ -60,7 +63,10 @@ export class ContractService {
 		return this.formation.getFormationWorkspace(actor, projectPublicId);
 	}
 
-	createFromProject(actor: TenantActorContext, input: CreateContractInput): Promise<ContractSummary> {
+	createFromProject(
+		actor: TenantActorContext,
+		input: CreateContractInput
+	): Promise<ContractSummary> {
 		return this.formation.createFromProject(actor, input);
 	}
 

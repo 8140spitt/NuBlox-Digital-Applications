@@ -62,7 +62,7 @@ export const actions: Actions = {
 		} catch (cause) {
 			if (isAPIError(cause)) {
 				console.warn('[NuBlox auth] Sign-in rejected.', {
-				email,
+					email,
 					status: cause.status,
 					message: cause.message
 				});
@@ -78,7 +78,8 @@ export const actions: Actions = {
 			console.error('[NuBlox auth] Sign-in failed unexpectedly.', cause);
 			return fail(500, {
 				email,
-				message: 'Sign-in could not be completed. Check the application terminal for the server error.'
+				message:
+					'Sign-in could not be completed. Check the application terminal for the server error.'
 			});
 		}
 

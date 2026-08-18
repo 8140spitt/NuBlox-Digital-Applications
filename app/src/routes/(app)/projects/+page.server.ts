@@ -3,8 +3,15 @@ import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
-import { ProjectTeamService, ProjectTeamValidationError } from '$lib/server/projects/project-team-service';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
+import {
+	ProjectTeamService,
+	ProjectTeamValidationError
+} from '$lib/server/projects/project-team-service';
 import {
 	ProjectWorkspaceService,
 	ProjectWorkspaceValidationError
@@ -73,7 +80,10 @@ export const actions: Actions = {
 			});
 		} catch (error) {
 			if (error instanceof ProjectWorkspaceValidationError) {
-				return fail(400, formFailure({ createError: error.message, projectNumber, name, description }));
+				return fail(
+					400,
+					formFailure({ createError: error.message, projectNumber, name, description })
+				);
 			}
 			if (error instanceof TenantAccessError) {
 				return fail(
@@ -112,19 +122,32 @@ export const actions: Actions = {
 			});
 		} catch (error) {
 			if (error instanceof RecordNotFoundError) {
-				return fail(404, formFailure({ invitationError: error.message, invitationProjectPublicId: projectPublicId }));
+				return fail(
+					404,
+					formFailure({
+						invitationError: error.message,
+						invitationProjectPublicId: projectPublicId
+					})
+				);
 			}
 			if (error instanceof TenantAccessError) {
 				return fail(
 					403,
 					formFailure({
-						invitationError: 'You do not have permission to respond to project invitations for this organisation.',
+						invitationError:
+							'You do not have permission to respond to project invitations for this organisation.',
 						invitationProjectPublicId: projectPublicId
 					})
 				);
 			}
 			if (error instanceof ProjectTeamValidationError || error instanceof ConcurrentUpdateError) {
-				return fail(409, formFailure({ invitationError: error.message, invitationProjectPublicId: projectPublicId }));
+				return fail(
+					409,
+					formFailure({
+						invitationError: error.message,
+						invitationProjectPublicId: projectPublicId
+					})
+				);
 			}
 			throw error;
 		}
@@ -151,19 +174,32 @@ export const actions: Actions = {
 			});
 		} catch (error) {
 			if (error instanceof RecordNotFoundError) {
-				return fail(404, formFailure({ invitationError: error.message, invitationProjectPublicId: projectPublicId }));
+				return fail(
+					404,
+					formFailure({
+						invitationError: error.message,
+						invitationProjectPublicId: projectPublicId
+					})
+				);
 			}
 			if (error instanceof TenantAccessError) {
 				return fail(
 					403,
 					formFailure({
-						invitationError: 'You do not have permission to respond to project invitations for this organisation.',
+						invitationError:
+							'You do not have permission to respond to project invitations for this organisation.',
 						invitationProjectPublicId: projectPublicId
 					})
 				);
 			}
 			if (error instanceof ProjectTeamValidationError || error instanceof ConcurrentUpdateError) {
-				return fail(409, formFailure({ invitationError: error.message, invitationProjectPublicId: projectPublicId }));
+				return fail(
+					409,
+					formFailure({
+						invitationError: error.message,
+						invitationProjectPublicId: projectPublicId
+					})
+				);
 			}
 			throw error;
 		}

@@ -22,10 +22,15 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 }
 
 function parseStatus(value: string | null): OpportunityStatus | undefined {
-	return value === 'open' || value === 'won' || value === 'lost' || value === 'cancelled' ? value : undefined;
+	return value === 'open' || value === 'won' || value === 'lost' || value === 'cancelled'
+		? value
+		: undefined;
 }
 
-function stageSelection(value: FormDataEntryValue | null): { pipelinePublicId: string; stageName: string } {
+function stageSelection(value: FormDataEntryValue | null): {
+	pipelinePublicId: string;
+	stageName: string;
+} {
 	const raw = String(value ?? '');
 	const separator = raw.indexOf('::');
 	if (separator <= 0 || separator >= raw.length - 2) {
@@ -58,7 +63,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { createError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { createError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			const selectedStage = stageSelection(data.get('stageSelection'));
@@ -74,9 +80,12 @@ export const actions: Actions = {
 			});
 			throw redirect(303, `/crm/opportunities/${encodeURIComponent(opportunity.publicId)}`);
 		} catch (error) {
-			if (error instanceof CrmOpportunityValidationError) return fail(400, { createError: error.message });
+			if (error instanceof CrmOpportunityValidationError)
+				return fail(400, { createError: error.message });
 			if (error instanceof TenantAccessError) {
-				return fail(403, { createError: 'You do not have permission to manage CRM opportunities.' });
+				return fail(403, {
+					createError: 'You do not have permission to manage CRM opportunities.'
+				});
 			}
 			throw error;
 		}

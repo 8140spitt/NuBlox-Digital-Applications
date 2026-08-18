@@ -9,7 +9,6 @@ import {
 	FinanceAccessPolicy,
 	FinanceValidationError,
 	cleanFinanceText,
-	insertedId,
 	validateFinanceDate
 } from './finance-common';
 
@@ -37,7 +36,12 @@ function requiredPeriodNumber(value: number): number {
 }
 
 async function lockOrganisation(db: DatabaseExecutor, organisationId: string): Promise<void> {
-	await db.selectFrom('organisations').select('id').where('id', '=', organisationId).forUpdate().executeTakeFirstOrThrow();
+	await db
+		.selectFrom('organisations')
+		.select('id')
+		.where('id', '=', organisationId)
+		.forUpdate()
+		.executeTakeFirstOrThrow();
 }
 
 async function periodForDate(
@@ -66,10 +70,14 @@ async function periodForDate(
 	if (lock) query = query.forUpdate();
 	const rows = await query.execute();
 	if (rows.length === 0) {
-		throw new FinanceValidationError('No configured accounting period contains the selected accounting date.');
+		throw new FinanceValidationError(
+			'No configured accounting period contains the selected accounting date.'
+		);
 	}
 	if (rows.length > 1) {
-		throw new FinanceValidationError('Accounting period configuration overlaps for the selected accounting date.');
+		throw new FinanceValidationError(
+			'Accounting period configuration overlaps for the selected accounting date.'
+		);
 	}
 	return rows[0]!;
 }
@@ -107,7 +115,9 @@ export async function assertOpenAccountingPeriod(
 ) {
 	const period = await periodForDate(db, organisationId, accountingDate, true);
 	if (period.status !== 'open') {
-		throw new FinanceValidationError(`Accounting period ${period.name} is ${period.status.replace('_', ' ')}; posting is not permitted.`);
+		throw new FinanceValidationError(
+			`Accounting period ${period.name} is ${period.status.replace('_', ' ')}; posting is not permitted.`
+		);
 	}
 	return period;
 }
@@ -120,10 +130,14 @@ export async function assertAccountingExportPeriod(
 ) {
 	const period = await exactPeriodForRange(db, organisationId, periodStart, periodEnd, true);
 	if (!period) {
-		throw new FinanceValidationError('Accounting exports must match one configured accounting period exactly.');
+		throw new FinanceValidationError(
+			'Accounting exports must match one configured accounting period exactly.'
+		);
 	}
 	if (period.status === 'open') {
-		throw new FinanceValidationError('Close the accounting period before creating an accounting export.');
+		throw new FinanceValidationError(
+			'Close the accounting period before creating an accounting export.'
+		);
 	}
 	return period;
 }
@@ -136,11 +150,17 @@ export async function assertAccountingExportReversalAllowed(
 ): Promise<void> {
 	const period = await exactPeriodForRange(db, organisationId, periodStart, periodEnd, true);
 	if (period?.status === 'hard_closed') {
-		throw new FinanceValidationError('Reopen the hard-closed accounting period before reversing its export evidence.');
+		throw new FinanceValidationError(
+			'Reopen the hard-closed accounting period before reversing its export evidence.'
+		);
 	}
 }
 
-async function activeExportForJournal(db: DatabaseExecutor, organisationId: string, journalId: string) {
+async function activeExportForJournal(
+	db: DatabaseExecutor,
+	organisationId: string,
+	journalId: string
+) {
 	return db
 		.selectFrom('accounting_export_batch_entries as item')
 		.innerJoin('accounting_export_batches as batch', (join) =>
@@ -225,7 +245,10 @@ export class AccountingPeriodService {
 	private async assertView(actor: TenantActorContext): Promise<FinanceAccessPolicy> {
 		const policy = new FinanceAccessPolicy(this.db);
 		await policy.assertActiveActor(actor);
-		if (!(await policy.viewDecision(actor)).allowed || !(await policy.accountingViewDecision(actor)).allowed) {
+		if (
+			!(await policy.viewDecision(actor)).allowed ||
+			!(await policy.accountingViewDecision(actor)).allowed
+		) {
 			throw new TenantAccessError('Accounting period viewing is not permitted.');
 		}
 		return policy;
@@ -289,7 +312,9 @@ export class AccountingPeriodService {
 		const recentEvents = await this.db
 			.selectFrom('accounting_period_status_events as event')
 			.innerJoin('accounting_periods as period', (join) =>
-				join.onRef('period.id', '=', 'event.accounting_period_id').onRef('period.organisation_id', '=', 'event.organisation_id')
+				join
+					.onRef('period.id', '=', 'event.accounting_period_id')
+					.onRef('period.organisation_id', '=', 'event.organisation_id')
 			)
 			.select([
 				'event.public_id as publicId',
@@ -321,11 +346,14 @@ export class AccountingPeriodService {
 		const name = cleanFinanceText(input.name, 160, 'Financial year name', true)!;
 		const startsOn = requiredDate(input.startsOn, 'Financial year start');
 		const endsOn = requiredDate(input.endsOn, 'Financial year end');
-		if (endsOn < startsOn) throw new FinanceValidationError('Financial year end must be on or after its start.');
+		if (endsOn < startsOn)
+			throw new FinanceValidationError('Financial year end must be on or after its start.');
 		return this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
-			if (!(await policy.mutationDecision(actor, 'finance.accounting.period.configure', trx)).allowed) {
+			if (
+				!(await policy.mutationDecision(actor, 'finance.accounting.period.configure', trx)).allowed
+			) {
 				throw new TenantAccessError('Accounting period configuration is not permitted.');
 			}
 			await lockOrganisation(trx, actor.organisationId);
@@ -377,16 +405,24 @@ export class AccountingPeriodService {
 			endsOn: string;
 		}
 	): Promise<{ publicId: string }> {
-		const financialYearPublicId = cleanFinanceText(input.financialYearPublicId, 64, 'Financial year ID', true)!;
+		const financialYearPublicId = cleanFinanceText(
+			input.financialYearPublicId,
+			64,
+			'Financial year ID',
+			true
+		)!;
 		const periodNumber = requiredPeriodNumber(input.periodNumber);
 		const name = cleanFinanceText(input.name, 120, 'Accounting period name', true)!;
 		const startsOn = requiredDate(input.startsOn, 'Accounting period start');
 		const endsOn = requiredDate(input.endsOn, 'Accounting period end');
-		if (endsOn < startsOn) throw new FinanceValidationError('Accounting period end must be on or after its start.');
+		if (endsOn < startsOn)
+			throw new FinanceValidationError('Accounting period end must be on or after its start.');
 		return this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
-			if (!(await policy.mutationDecision(actor, 'finance.accounting.period.configure', trx)).allowed) {
+			if (
+				!(await policy.mutationDecision(actor, 'finance.accounting.period.configure', trx)).allowed
+			) {
 				throw new TenantAccessError('Accounting period configuration is not permitted.');
 			}
 			await lockOrganisation(trx, actor.organisationId);
@@ -399,7 +435,9 @@ export class AccountingPeriodService {
 				.executeTakeFirst();
 			if (!year) throw new RecordNotFoundError('Financial year not found.');
 			if (startsOn < year.startsOn || endsOn > year.endsOn) {
-				throw new FinanceValidationError('Accounting period must be fully contained within its financial year.');
+				throw new FinanceValidationError(
+					'Accounting period must be fully contained within its financial year.'
+				);
 			}
 			const overlap = await trx
 				.selectFrom('accounting_periods')
@@ -435,17 +473,32 @@ export class AccountingPeriodService {
 				subjectType: 'accounting_period',
 				subjectPublicId: publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { financialYearPublicId, periodNumber, name, startsOn, endsOn, status: 'open' }
+				changeSummary: {
+					financialYearPublicId,
+					periodNumber,
+					name,
+					startsOn,
+					endsOn,
+					status: 'open'
+				}
 			});
 			return { publicId };
 		});
 	}
 
-	async softClose(actor: TenantActorContext, periodPublicId: string, reason: string): Promise<void> {
+	async softClose(
+		actor: TenantActorContext,
+		periodPublicId: string,
+		reason: string
+	): Promise<void> {
 		await this.transition(actor, periodPublicId, 'soft_closed', reason);
 	}
 
-	async hardClose(actor: TenantActorContext, periodPublicId: string, reason: string): Promise<void> {
+	async hardClose(
+		actor: TenantActorContext,
+		periodPublicId: string,
+		reason: string
+	): Promise<void> {
 		await this.transition(actor, periodPublicId, 'hard_closed', reason);
 	}
 
@@ -465,14 +518,27 @@ export class AccountingPeriodService {
 		await this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
-			const permission = reopen ? 'finance.accounting.period.reopen' : 'finance.accounting.period.close';
+			const permission = reopen
+				? 'finance.accounting.period.reopen'
+				: 'finance.accounting.period.close';
 			if (!(await policy.mutationDecision(actor, permission, trx)).allowed) {
-				throw new TenantAccessError(reopen ? 'Accounting period reopening is not permitted.' : 'Accounting period closing is not permitted.');
+				throw new TenantAccessError(
+					reopen
+						? 'Accounting period reopening is not permitted.'
+						: 'Accounting period closing is not permitted.'
+				);
 			}
 			await lockOrganisation(trx, actor.organisationId);
 			const period = await trx
 				.selectFrom('accounting_periods')
-				.select(['id', 'public_id as publicId', 'name', 'starts_on as startsOn', 'ends_on as endsOn', 'status'])
+				.select([
+					'id',
+					'public_id as publicId',
+					'name',
+					'starts_on as startsOn',
+					'ends_on as endsOn',
+					'status'
+				])
 				.where('organisation_id', '=', actor.organisationId)
 				.where('public_id', '=', periodPublicId)
 				.forUpdate()
@@ -484,7 +550,9 @@ export class AccountingPeriodService {
 			}
 			if (toStatus === 'hard_closed') {
 				if (fromStatus !== 'soft_closed') {
-					throw new FinanceValidationError('Only a soft-closed accounting period can be hard-closed.');
+					throw new FinanceValidationError(
+						'Only a soft-closed accounting period can be hard-closed.'
+					);
 				}
 				const missing = await unexportedJournalCount(
 					trx,
@@ -494,7 +562,9 @@ export class AccountingPeriodService {
 					true
 				);
 				if (missing > 0) {
-					throw new FinanceValidationError(`Hard close is blocked until ${missing} journal${missing === 1 ? '' : 's'} have active accounting export evidence.`);
+					throw new FinanceValidationError(
+						`Hard close is blocked until ${missing} journal${missing === 1 ? '' : 's'} have active accounting export evidence.`
+					);
 				}
 			}
 			if (toStatus === 'open' && fromStatus === 'open') {
@@ -520,11 +590,12 @@ export class AccountingPeriodService {
 					changed_at: this.now()
 				})
 				.executeTakeFirstOrThrow();
-			const actionKey = toStatus === 'soft_closed'
-				? 'finance.accounting.period.soft_closed'
-				: toStatus === 'hard_closed'
-					? 'finance.accounting.period.hard_closed'
-					: 'finance.accounting.period.reopened';
+			const actionKey =
+				toStatus === 'soft_closed'
+					? 'finance.accounting.period.soft_closed'
+					: toStatus === 'hard_closed'
+						? 'finance.accounting.period.hard_closed'
+						: 'finance.accounting.period.reopened';
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -535,7 +606,13 @@ export class AccountingPeriodService {
 				subjectType: 'accounting_period',
 				subjectPublicId: period.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { fromStatus, toStatus, reason, periodName: period.name, statusEventPublicId: eventPublicId }
+				changeSummary: {
+					fromStatus,
+					toStatus,
+					reason,
+					periodName: period.name,
+					statusEventPublicId: eventPublicId
+				}
 			});
 		});
 	}

@@ -94,12 +94,18 @@ type ValidatedOpportunityInput = {
 function requiredText(value: string, maxLength: number, label: string): string {
 	const text = value.trim();
 	if (!text || text.length > maxLength) {
-		throw new CrmOpportunityValidationError(`${label} must be between 1 and ${maxLength} characters.`);
+		throw new CrmOpportunityValidationError(
+			`${label} must be between 1 and ${maxLength} characters.`
+		);
 	}
 	return text;
 }
 
-function optionalText(value: string | null | undefined, maxLength: number, label: string): string | null {
+function optionalText(
+	value: string | null | undefined,
+	maxLength: number,
+	label: string
+): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
 	if (text.length > maxLength) {
@@ -110,7 +116,8 @@ function optionalText(value: string | null | undefined, maxLength: number, label
 
 function publicId(value: string, label: string): string {
 	const result = value.trim();
-	if (!result || result.length > 64) throw new CrmOpportunityValidationError(`${label} is required.`);
+	if (!result || result.length > 64)
+		throw new CrmOpportunityValidationError(`${label} is required.`);
 	return result;
 }
 
@@ -134,7 +141,9 @@ function estimatedValue(value: string | null | undefined): string | null {
 	const result = value?.trim() ?? '';
 	if (!result) return null;
 	if (!/^\d{1,15}(\.\d{1,4})?$/.test(result)) {
-		throw new CrmOpportunityValidationError('Estimated value must be a non-negative amount with at most four decimal places.');
+		throw new CrmOpportunityValidationError(
+			'Estimated value must be a non-negative amount with at most four decimal places.'
+		);
 	}
 	return result;
 }
@@ -161,12 +170,19 @@ function dateValue(value: string | null | undefined, label: string): Date | null
 }
 
 function statusValue(value: string): OpportunityStatus {
-	if (value === 'open' || value === 'won' || value === 'lost' || value === 'cancelled') return value;
+	if (value === 'open' || value === 'won' || value === 'lost' || value === 'cancelled')
+		return value;
 	throw new CrmOpportunityValidationError('Opportunity status is invalid.');
 }
 
 function directionValue(value: ActivityDirection | undefined): ActivityDirection {
-	if (value === undefined || value === null || value === 'inbound' || value === 'outbound' || value === 'internal') {
+	if (
+		value === undefined ||
+		value === null ||
+		value === 'inbound' ||
+		value === 'outbound' ||
+		value === 'internal'
+	) {
 		return value ?? null;
 	}
 	throw new CrmOpportunityValidationError('CRM activity direction is invalid.');
@@ -193,22 +209,35 @@ export class CrmOpportunityService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
 
-	private async assertOpportunityManage(actor: TenantActorContext, db: DatabaseExecutor = this.db): Promise<void> {
+	private async assertOpportunityManage(
+		actor: TenantActorContext,
+		db: DatabaseExecutor = this.db
+	): Promise<void> {
 		const decision = await new PermissionService(db).decideWithUmbrella(
 			actor,
 			'crm.opportunity.manage',
 			'crm.manage'
 		);
-		if (!decision.allowed) throw new TenantAccessError('CRM opportunity management is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('CRM opportunity management is not permitted.');
 	}
 
-	private async assertActivityManage(actor: TenantActorContext, db: DatabaseExecutor = this.db): Promise<void> {
-		const decision = await new PermissionService(db).decideWithUmbrella(actor, 'crm.activity.manage', 'crm.manage');
+	private async assertActivityManage(
+		actor: TenantActorContext,
+		db: DatabaseExecutor = this.db
+	): Promise<void> {
+		const decision = await new PermissionService(db).decideWithUmbrella(
+			actor,
+			'crm.activity.manage',
+			'crm.manage'
+		);
 		if (!decision.allowed) throw new TenantAccessError('CRM activity management is not permitted.');
 	}
 
@@ -218,11 +247,20 @@ export class CrmOpportunityService {
 		if (!decision.allowed) throw new TenantAccessError('CRM viewing is not permitted.');
 	}
 
-	private async activeParty(actor: TenantActorContext, partyPublicId: string, db: DatabaseExecutor) {
-		const party = await new CrmRepository(db).findPartyByPublicId(actor.organisationId, partyPublicId);
+	private async activeParty(
+		actor: TenantActorContext,
+		partyPublicId: string,
+		db: DatabaseExecutor
+	) {
+		const party = await new CrmRepository(db).findPartyByPublicId(
+			actor.organisationId,
+			partyPublicId
+		);
 		if (!party) throw new RecordNotFoundError('CRM party not found.');
 		if (party.status === 'archived') {
-			throw new CrmOpportunityValidationError('Archived CRM parties cannot be added to opportunities or activities.');
+			throw new CrmOpportunityValidationError(
+				'Archived CRM parties cannot be added to opportunities or activities.'
+			);
 		}
 		return party;
 	}
@@ -242,10 +280,10 @@ export class CrmOpportunityService {
 		const repository = new CrmOpportunityRepository(this.db);
 		const [opportunities, pipelines, partyCandidates] = canView
 			? await Promise.all([
-				repository.listOpportunities(actor.organisationId, filters),
-				repository.listPipelines(actor.organisationId),
-				new CrmRepository(this.db).listParties(actor.organisationId, { status: 'active' })
-			])
+					repository.listOpportunities(actor.organisationId, filters),
+					repository.listPipelines(actor.organisationId),
+					new CrmRepository(this.db).listParties(actor.organisationId, { status: 'active' })
+				])
 			: [[], [], []];
 		return {
 			canView,
@@ -258,24 +296,38 @@ export class CrmOpportunityService {
 		};
 	}
 
-	async getWorkspace(actor: TenantActorContext, opportunityPublicIdInput: string): Promise<OpportunityWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		opportunityPublicIdInput: string
+	): Promise<OpportunityWorkspace> {
 		await this.requireView(actor);
 		const opportunityPublicId = publicId(opportunityPublicIdInput, 'Opportunity ID');
 		const repository = new CrmOpportunityRepository(this.db);
-		const opportunity = await repository.findOpportunityByPublicId(actor.organisationId, opportunityPublicId);
+		const opportunity = await repository.findOpportunityByPublicId(
+			actor.organisationId,
+			opportunityPublicId
+		);
 		if (!opportunity) throw new RecordNotFoundError('CRM opportunity not found.');
 		const permissions = new PermissionService(this.db);
-		const [opportunityDecision, activityDecision, pipelines, participants, partyRoleTypes, activityTypes, activities, partyCandidates] =
-			await Promise.all([
-				permissions.decideWithUmbrella(actor, 'crm.opportunity.manage', 'crm.manage'),
-				permissions.decideWithUmbrella(actor, 'crm.activity.manage', 'crm.manage'),
-				repository.listPipelines(actor.organisationId),
-				repository.listParticipants(actor.organisationId, opportunity.id),
-				repository.listOpportunityPartyRoleTypes(),
-				repository.listActivityTypes(),
-				repository.listActivities(actor.organisationId, opportunity.id),
-				new CrmRepository(this.db).listParties(actor.organisationId, { status: 'active' })
-			]);
+		const [
+			opportunityDecision,
+			activityDecision,
+			pipelines,
+			participants,
+			partyRoleTypes,
+			activityTypes,
+			activities,
+			partyCandidates
+		] = await Promise.all([
+			permissions.decideWithUmbrella(actor, 'crm.opportunity.manage', 'crm.manage'),
+			permissions.decideWithUmbrella(actor, 'crm.activity.manage', 'crm.manage'),
+			repository.listPipelines(actor.organisationId),
+			repository.listParticipants(actor.organisationId, opportunity.id),
+			repository.listOpportunityPartyRoleTypes(),
+			repository.listActivityTypes(),
+			repository.listActivities(actor.organisationId, opportunity.id),
+			new CrmRepository(this.db).listParties(actor.organisationId, { status: 'active' })
+		]);
 		return {
 			opportunity,
 			canManageOpportunities: opportunityDecision.allowed,
@@ -289,7 +341,10 @@ export class CrmOpportunityService {
 		};
 	}
 
-	async createOpportunity(actor: TenantActorContext, input: OpportunityInput): Promise<CrmOpportunitySummary> {
+	async createOpportunity(
+		actor: TenantActorContext,
+		input: OpportunityInput
+	): Promise<CrmOpportunitySummary> {
 		await this.assertActiveActor(actor);
 		await this.assertOpportunityManage(actor);
 		const validated = validateOpportunity(input);
@@ -302,10 +357,12 @@ export class CrmOpportunityService {
 				validated.pipelinePublicId,
 				validated.stageName
 			);
-			if (!stage) throw new CrmOpportunityValidationError('The selected pipeline stage is unavailable.');
+			if (!stage)
+				throw new CrmOpportunityValidationError('The selected pipeline stage is unavailable.');
 			const party = await this.activeParty(actor, validated.primaryPartyPublicId, trx);
 			const customerRoleTypeId = await repository.findOpportunityPartyRoleTypeId('customer');
-			if (customerRoleTypeId === null) throw new Error('Required opportunity customer role type is missing.');
+			if (customerRoleTypeId === null)
+				throw new Error('Required opportunity customer role type is missing.');
 			const opportunityPublicId = this.publicIdFactory();
 			const opportunityId = await repository.insertOpportunity({
 				organisationId: actor.organisationId,
@@ -343,13 +400,19 @@ export class CrmOpportunityService {
 					currencyCode: validated.currencyCode
 				}
 			});
-			const created = await repository.findOpportunityByPublicId(actor.organisationId, opportunityPublicId);
+			const created = await repository.findOpportunityByPublicId(
+				actor.organisationId,
+				opportunityPublicId
+			);
 			if (!created) throw new Error('Created CRM opportunity could not be reloaded.');
 			return created;
 		});
 	}
 
-	async updateOpportunity(actor: TenantActorContext, input: OpportunityUpdateInput): Promise<CrmOpportunitySummary> {
+	async updateOpportunity(
+		actor: TenantActorContext,
+		input: OpportunityUpdateInput
+	): Promise<CrmOpportunitySummary> {
 		await this.assertActiveActor(actor);
 		await this.assertOpportunityManage(actor);
 		const opportunityPublicId = publicId(input.opportunityPublicId, 'Opportunity ID');
@@ -359,18 +422,30 @@ export class CrmOpportunityService {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertOpportunityManage(actor, trx);
 			const repository = new CrmOpportunityRepository(trx);
-			const current = await repository.findOpportunityByPublicId(actor.organisationId, opportunityPublicId);
+			const current = await repository.findOpportunityByPublicId(
+				actor.organisationId,
+				opportunityPublicId
+			);
 			if (!current) throw new RecordNotFoundError('CRM opportunity not found.');
 			const stage = await repository.resolveStage(
 				actor.organisationId,
 				validated.pipelinePublicId,
 				validated.stageName
 			);
-			if (!stage) throw new CrmOpportunityValidationError('The selected pipeline stage is unavailable.');
+			if (!stage)
+				throw new CrmOpportunityValidationError('The selected pipeline stage is unavailable.');
 			const primaryParty = await this.activeParty(actor, validated.primaryPartyPublicId, trx);
 			const customerRoleTypeId = await repository.findOpportunityPartyRoleTypeId('customer');
-			if (customerRoleTypeId === null) throw new Error('Required opportunity customer role type is missing.');
-			if (!(await repository.hasParticipant(actor.organisationId, current.id, primaryParty.id, customerRoleTypeId))) {
+			if (customerRoleTypeId === null)
+				throw new Error('Required opportunity customer role type is missing.');
+			if (
+				!(await repository.hasParticipant(
+					actor.organisationId,
+					current.id,
+					primaryParty.id,
+					customerRoleTypeId
+				))
+			) {
 				await repository.insertParticipant({
 					organisationId: actor.organisationId,
 					opportunityId: current.id,
@@ -390,7 +465,12 @@ export class CrmOpportunityService {
 			) {
 				throw new Error('Primary opportunity customer assignment could not be updated.');
 			}
-			const closedAt = status === 'open' ? null : current.status === status && current.closedAt ? current.closedAt : this.now();
+			const closedAt =
+				status === 'open'
+					? null
+					: current.status === status && current.closedAt
+						? current.closedAt
+						: this.now();
 			await repository.updateOpportunity({
 				organisationId: actor.organisationId,
 				opportunityId: current.id,
@@ -419,7 +499,10 @@ export class CrmOpportunityService {
 					primaryPartyPublicId: primaryParty.publicId
 				}
 			});
-			const updated = await repository.findOpportunityByPublicId(actor.organisationId, opportunityPublicId);
+			const updated = await repository.findOpportunityByPublicId(
+				actor.organisationId,
+				opportunityPublicId
+			);
 			if (!updated) throw new Error('Updated CRM opportunity could not be reloaded.');
 			return updated;
 		});
@@ -438,12 +521,18 @@ export class CrmOpportunityService {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertOpportunityManage(actor, trx);
 			const repository = new CrmOpportunityRepository(trx);
-			const opportunity = await repository.findOpportunityByPublicId(actor.organisationId, opportunityPublicId);
+			const opportunity = await repository.findOpportunityByPublicId(
+				actor.organisationId,
+				opportunityPublicId
+			);
 			if (!opportunity) throw new RecordNotFoundError('CRM opportunity not found.');
 			const party = await this.activeParty(actor, partyPublicId, trx);
 			const roleTypeId = await repository.findOpportunityPartyRoleTypeId(participantRoleCode);
-			if (roleTypeId === null) throw new CrmOpportunityValidationError('Opportunity participant role is unavailable.');
-			if (await repository.hasParticipant(actor.organisationId, opportunity.id, party.id, roleTypeId)) {
+			if (roleTypeId === null)
+				throw new CrmOpportunityValidationError('Opportunity participant role is unavailable.');
+			if (
+				await repository.hasParticipant(actor.organisationId, opportunity.id, party.id, roleTypeId)
+			) {
 				throw new CrmOpportunityValidationError('That party already has this opportunity role.');
 			}
 			await repository.insertParticipant({
@@ -480,11 +569,15 @@ export class CrmOpportunityService {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertOpportunityManage(actor, trx);
 			const repository = new CrmOpportunityRepository(trx);
-			const opportunity = await repository.findOpportunityByPublicId(actor.organisationId, opportunityPublicId);
+			const opportunity = await repository.findOpportunityByPublicId(
+				actor.organisationId,
+				opportunityPublicId
+			);
 			if (!opportunity) throw new RecordNotFoundError('CRM opportunity not found.');
 			const party = await this.activeParty(actor, partyPublicId, trx);
 			const roleTypeId = await repository.findOpportunityPartyRoleTypeId(participantRoleCode);
-			if (roleTypeId === null) throw new CrmOpportunityValidationError('Opportunity participant role is unavailable.');
+			if (roleTypeId === null)
+				throw new CrmOpportunityValidationError('Opportunity participant role is unavailable.');
 			const removed = await repository.deleteParticipant({
 				organisationId: actor.organisationId,
 				opportunityId: opportunity.id,
@@ -492,7 +585,9 @@ export class CrmOpportunityService {
 				roleTypeId
 			});
 			if (!removed) {
-				throw new CrmOpportunityValidationError('The primary customer cannot be removed; choose another primary customer first.');
+				throw new CrmOpportunityValidationError(
+					'The primary customer cannot be removed; choose another primary customer first.'
+				);
 			}
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
@@ -516,23 +611,31 @@ export class CrmOpportunityService {
 		const subject = requiredText(input.subject, 255, 'Activity subject');
 		const body = optionalText(input.body, 20_000, 'Activity notes');
 		const direction = directionValue(input.direction);
-		const requestedPartyIds = [...new Set((input.partyPublicIds ?? []).map((value) => publicId(value, 'CRM party ID')))];
-		if (requestedPartyIds.length > 20) throw new CrmOpportunityValidationError('An activity may reference at most 20 CRM parties.');
+		const requestedPartyIds = [
+			...new Set((input.partyPublicIds ?? []).map((value) => publicId(value, 'CRM party ID')))
+		];
+		if (requestedPartyIds.length > 20)
+			throw new CrmOpportunityValidationError('An activity may reference at most 20 CRM parties.');
 
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertActivityManage(actor, trx);
 			const repository = new CrmOpportunityRepository(trx);
-			const opportunity = await repository.findOpportunityByPublicId(actor.organisationId, opportunityPublicId);
+			const opportunity = await repository.findOpportunityByPublicId(
+				actor.organisationId,
+				opportunityPublicId
+			);
 			if (!opportunity) throw new RecordNotFoundError('CRM opportunity not found.');
 			const activityTypeId = await repository.findActivityTypeId(typeCode);
-			if (activityTypeId === null) throw new CrmOpportunityValidationError('CRM activity type is unavailable.');
+			if (activityTypeId === null)
+				throw new CrmOpportunityValidationError('CRM activity type is unavailable.');
 
-			const partyIds = requestedPartyIds.length > 0
-				? requestedPartyIds
-				: opportunity.primaryPartyPublicId
-					? [opportunity.primaryPartyPublicId]
-					: [];
+			const partyIds =
+				requestedPartyIds.length > 0
+					? requestedPartyIds
+					: opportunity.primaryPartyPublicId
+						? [opportunity.primaryPartyPublicId]
+						: [];
 			const parties = [];
 			for (const partyPublicId of partyIds) {
 				parties.push(await this.activeParty(actor, partyPublicId, trx));
@@ -561,7 +664,8 @@ export class CrmOpportunityService {
 					organisationId: actor.organisationId,
 					activityId,
 					partyId: party.id,
-					participantRole: party.publicId === opportunity.primaryPartyPublicId ? 'regarding' : 'participant'
+					participantRole:
+						party.publicId === opportunity.primaryPartyPublicId ? 'regarding' : 'participant'
 				});
 			}
 			await new AuditRepository(trx).append({

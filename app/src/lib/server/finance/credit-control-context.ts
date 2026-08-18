@@ -10,7 +10,8 @@ export async function contractCreditControlPreview(
 	db: Database = getDatabase()
 ): Promise<CreditCommitmentPreview | null> {
 	const contractPublicId = contractPublicIdInput.trim();
-	if (!contractPublicId || contractPublicId.length > 64) throw new RecordNotFoundError('Contract not found.');
+	if (!contractPublicId || contractPublicId.length > 64)
+		throw new RecordNotFoundError('Contract not found.');
 	const contract = await db
 		.selectFrom('contracts')
 		.select(['id', 'currency_code as currencyCode'])
@@ -36,6 +37,15 @@ export async function contractCreditControlPreview(
 		.orderBy('party.sort_order')
 		.executeTakeFirst();
 	if (!clientParty?.sourcePartyId) return null;
-	const commitmentAmount = await contractVersionCommitmentAmount(db, actor.organisationId, version.id);
-	return new CreditControlService(db).commitmentPreview(actor, clientParty.sourcePartyId, contract.currencyCode, commitmentAmount);
+	const commitmentAmount = await contractVersionCommitmentAmount(
+		db,
+		actor.organisationId,
+		version.id
+	);
+	return new CreditControlService(db).commitmentPreview(
+		actor,
+		clientParty.sourcePartyId,
+		contract.currencyCode,
+		commitmentAmount
+	);
 }

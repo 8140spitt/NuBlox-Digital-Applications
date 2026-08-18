@@ -303,9 +303,9 @@ export function generatedContractNumber(projectNumber: string, projectPublicId: 
 export function isDuplicateKeyError(error: unknown): boolean {
 	return Boolean(
 		error &&
-			typeof error === 'object' &&
-			'code' in error &&
-			(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
+		typeof error === 'object' &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
 	);
 }
 
@@ -313,7 +313,9 @@ export class ContractAccessPolicy {
 	constructor(private readonly db: DatabaseExecutor) {}
 
 	async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -324,7 +326,8 @@ export class ContractAccessPolicy {
 
 	async mutationDecision(
 		actor: TenantActorContext,
-		permissionKey: 'contract.create' | 'contract.draft.manage' | 'contract.issue' | 'contract.execute',
+		permissionKey:
+			'contract.create' | 'contract.draft.manage' | 'contract.issue' | 'contract.execute',
 		db: DatabaseExecutor = this.db
 	) {
 		return new PermissionService(db).decideWithUmbrella(actor, permissionKey, 'contract.manage');

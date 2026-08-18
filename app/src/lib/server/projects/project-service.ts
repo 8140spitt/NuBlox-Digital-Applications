@@ -65,12 +65,16 @@ export class ProjectService {
 			actor.organisationId,
 			projectPublicId
 		);
-		if (!project) throw new RecordNotFoundError('Project not found in the participating organisation scope.');
+		if (!project)
+			throw new RecordNotFoundError('Project not found in the participating organisation scope.');
 
 		return project;
 	}
 
-	async createProject(actor: TenantActorContext, input: CreateProjectInput): Promise<ProjectRecord> {
+	async createProject(
+		actor: TenantActorContext,
+		input: CreateProjectInput
+	): Promise<ProjectRecord> {
 		const projectPublicId = this.publicIdFactory();
 		const createdAt = this.now();
 
@@ -119,7 +123,8 @@ export class ProjectService {
 				actor.organisationId,
 				projectPublicId
 			);
-			if (!project) throw new Error('Created project could not be reloaded inside its transaction.');
+			if (!project)
+				throw new Error('Created project could not be reloaded inside its transaction.');
 
 			return project;
 		});
@@ -184,7 +189,8 @@ export class ProjectService {
 				actor.organisationId,
 				project.publicId
 			);
-			if (!reloaded) throw new Error('Updated project could not be reloaded inside its transaction.');
+			if (!reloaded)
+				throw new Error('Updated project could not be reloaded inside its transaction.');
 
 			return reloaded;
 		});

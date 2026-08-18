@@ -1,12 +1,7 @@
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type ProjectLifecycleStatus =
-	| 'proposed'
-	| 'active'
-	| 'on_hold'
-	| 'completed'
-	| 'cancelled'
-	| 'archived';
+	'proposed' | 'active' | 'on_hold' | 'completed' | 'cancelled' | 'archived';
 
 export type ProjectRecord = {
 	id: string;
@@ -216,7 +211,11 @@ export class ProjectRepository {
 	): Promise<ProjectParticipantOrganisation[]> {
 		const rows = await this.db
 			.selectFrom('project_organisations as po')
-			.innerJoin('organisations as organisation', 'organisation.id', 'po.participant_organisation_id')
+			.innerJoin(
+				'organisations as organisation',
+				'organisation.id',
+				'po.participant_organisation_id'
+			)
 			.select([
 				'organisation.id as organisationId',
 				'organisation.public_id as organisationPublicId',

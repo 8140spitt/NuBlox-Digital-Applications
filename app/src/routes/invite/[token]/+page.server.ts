@@ -40,13 +40,14 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 		returnTo: `/invite/${encodeURIComponent(params.token)}`,
 		actor: locals.actor
 			? {
-				email: locals.actor.email,
-				displayName: locals.actor.displayName
-			}
+					email: locals.actor.email,
+					displayName: locals.actor.displayName
+				}
 			: null,
 		canAcceptExisting:
 			Boolean(locals.actor) &&
-			normaliseInvitationEmail(locals.actor?.email ?? '') === normaliseInvitationEmail(invitation.email)
+			normaliseInvitationEmail(locals.actor?.email ?? '') ===
+				normaliseInvitationEmail(invitation.email)
 	};
 };
 

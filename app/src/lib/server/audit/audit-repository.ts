@@ -32,7 +32,8 @@ export class AuditRepository {
 				correlation_id: event.correlationId,
 				change_summary:
 					event.changeSummary === undefined ? null : JSON.stringify(event.changeSummary),
-				event_metadata: event.eventMetadata === undefined ? null : JSON.stringify(event.eventMetadata)
+				event_metadata:
+					event.eventMetadata === undefined ? null : JSON.stringify(event.eventMetadata)
 			})
 			.executeTakeFirstOrThrow();
 	}

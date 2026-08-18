@@ -49,7 +49,10 @@ async function cleanup(): Promise<void> {
 		await db.deleteFrom('audit_events').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_member_roles').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_members').where('project_id', 'in', projectIds).execute();
-		await db.deleteFrom('project_organisation_roles').where('project_id', 'in', projectIds).execute();
+		await db
+			.deleteFrom('project_organisation_roles')
+			.where('project_id', 'in', projectIds)
+			.execute();
 		await db.deleteFrom('project_organisations').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('projects').where('id', 'in', projectIds).execute();
 	}
@@ -61,12 +64,27 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
@@ -76,7 +94,11 @@ async function createUser(displayName: string): Promise<string> {
 	return insertedId(
 		await db
 			.insertInto('users')
-			.values({ public_id: randomUUID(), display_name: `${PREFIX}${displayName}`, status: 'active' })
+			.values({
+				public_id: randomUUID(),
+				display_name: `${PREFIX}${displayName}`,
+				status: 'active'
+			})
 			.executeTakeFirstOrThrow()
 	);
 }
@@ -193,7 +215,9 @@ beforeAll(async () => {
 		'project.view',
 		'project.manage'
 	]);
-	await assignPermissionRole(organisationBId, memberBTeammateId, 'External Viewer', ['project.view']);
+	await assignPermissionRole(organisationBId, memberBTeammateId, 'External Viewer', [
+		'project.view'
+	]);
 	await assignPermissionRole(organisationCId, memberCId, 'Unrelated Viewer', ['project.view']);
 
 	actorA = {
@@ -295,7 +319,10 @@ describe('project participant and team administration', () => {
 			.executeTakeFirstOrThrow();
 		expect(projectMember.status).toBe('active');
 
-		const workspace = await new ProjectWorkspaceService(db).getWorkspace(actorBManager, projectPublicId);
+		const workspace = await new ProjectWorkspaceService(db).getWorkspace(
+			actorBManager,
+			projectPublicId
+		);
 		expect(workspace.isOwningOrganisation).toBe(false);
 		expect(workspace.canManageLifecycle).toBe(false);
 		const team = await service.getTeamView(actorBManager, projectPublicId);
@@ -316,7 +343,9 @@ describe('project participant and team administration', () => {
 			[memberBManagerPublicId, memberBTeammatePublicId].sort()
 		);
 		expect(
-			team.teamMembers.find((member) => member.publicId === memberBTeammatePublicId)?.roles.map((role) => role.roleKey)
+			team.teamMembers
+				.find((member) => member.publicId === memberBTeammatePublicId)
+				?.roles.map((role) => role.roleKey)
 		).toEqual(['engineer']);
 
 		await expect(
@@ -349,7 +378,10 @@ describe('project participant and team administration', () => {
 		await expect(
 			new ProjectWorkspaceService(db).getWorkspace(actorBManager, projectPublicId)
 		).rejects.toBeInstanceOf(RecordNotFoundError);
-		const teammateWorkspace = await new ProjectWorkspaceService(db).getWorkspace(actorBTeammate, projectPublicId);
+		const teammateWorkspace = await new ProjectWorkspaceService(db).getWorkspace(
+			actorBTeammate,
+			projectPublicId
+		);
 		expect(teammateWorkspace.isOwningOrganisation).toBe(false);
 	});
 

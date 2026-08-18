@@ -49,12 +49,27 @@ async function cleanup(): Promise<void> {
 	await db.deleteFrom('payment_allocations').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('payment_reversals').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('payments').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_issue_recipients').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_issue_events').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_party_snapshot_addresses').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_party_snapshots').where('organisation_id', 'in', ids).execute();
+	await db
+		.deleteFrom('financial_document_issue_recipients')
+		.where('organisation_id', 'in', ids)
+		.execute();
+	await db
+		.deleteFrom('financial_document_issue_events')
+		.where('organisation_id', 'in', ids)
+		.execute();
+	await db
+		.deleteFrom('financial_document_party_snapshot_addresses')
+		.where('organisation_id', 'in', ids)
+		.execute();
+	await db
+		.deleteFrom('financial_document_party_snapshots')
+		.where('organisation_id', 'in', ids)
+		.execute();
 	await db.deleteFrom('credit_note_item_sources').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('financial_document_item_taxes').where('organisation_id', 'in', ids).execute();
+	await db
+		.deleteFrom('financial_document_item_taxes')
+		.where('organisation_id', 'in', ids)
+		.execute();
 	await db.deleteFrom('financial_document_items').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('credit_notes').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('invoices').where('organisation_id', 'in', ids).execute();
@@ -115,7 +130,12 @@ async function assignRole(
 	const roleId = insertedId(
 		await db
 			.insertInto('organisation_roles')
-			.values({ organisation_id: organisationId, public_id: randomUUID(), name: `${PREFIX}${name}`, is_active: 1 })
+			.values({
+				organisation_id: organisationId,
+				public_id: randomUUID(),
+				name: `${PREFIX}${name}`,
+				is_active: 1
+			})
 			.executeTakeFirstOrThrow()
 	);
 	const permissions = await db
@@ -137,7 +157,11 @@ async function assignRole(
 		.execute();
 	await db
 		.insertInto('member_roles')
-		.values({ organisation_id: organisationId, organisation_member_id: memberId, organisation_role_id: roleId })
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: memberId,
+			organisation_role_id: roleId
+		})
 		.executeTakeFirstOrThrow();
 }
 
@@ -344,16 +368,51 @@ beforeAll(async () => {
 		'finance.credit_note.issue'
 	]);
 	await assignRole(organisationBId, ownerBMemberId, 'Owner B', ['finance.view', 'finance.manage']);
-	actorOwnerA = { organisationId: organisationAId, userId: ownerAUserId, memberId: ownerAMemberId, correlationId: randomUUID() };
-	actorFinanceA = { organisationId: organisationAId, userId: financeAUserId, memberId: financeAMemberId, correlationId: randomUUID() };
-	actorOwnerB = { organisationId: organisationBId, userId: ownerBUserId, memberId: ownerBMemberId, correlationId: randomUUID() };
+	actorOwnerA = {
+		organisationId: organisationAId,
+		userId: ownerAUserId,
+		memberId: ownerAMemberId,
+		correlationId: randomUUID()
+	};
+	actorFinanceA = {
+		organisationId: organisationAId,
+		userId: financeAUserId,
+		memberId: financeAMemberId,
+		correlationId: randomUUID()
+	};
+	actorOwnerB = {
+		organisationId: organisationBId,
+		userId: ownerBUserId,
+		memberId: ownerBMemberId,
+		correlationId: randomUUID()
+	};
 	await createCustomer();
-	const salesType = await db.selectFrom('sales_item_types').select('id').where('is_active', '=', 1).orderBy('id', 'asc').executeTakeFirstOrThrow();
+	const salesType = await db
+		.selectFrom('sales_item_types')
+		.select('id')
+		.where('is_active', '=', 1)
+		.orderBy('id', 'asc')
+		.executeTakeFirstOrThrow();
 	salesItemTypeId = salesType.id;
 	await createTaxCategory();
-	const first = await createIssuedInvoice('INV-000001', 'Two units of corrected work', '2.000000', '100.0000');
-	const second = await createIssuedInvoice('INV-000002', 'Invoice eligible for controlled void', '1.000000', '50.0000');
-	const third = await createIssuedInvoice('INV-000003', 'Invoice with payment allocation', '1.000000', '75.0000');
+	const first = await createIssuedInvoice(
+		'INV-000001',
+		'Two units of corrected work',
+		'2.000000',
+		'100.0000'
+	);
+	const second = await createIssuedInvoice(
+		'INV-000002',
+		'Invoice eligible for controlled void',
+		'1.000000',
+		'50.0000'
+	);
+	const third = await createIssuedInvoice(
+		'INV-000003',
+		'Invoice with payment allocation',
+		'1.000000',
+		'75.0000'
+	);
 	firstInvoicePublicId = first.publicId;
 	secondInvoicePublicId = second.publicId;
 	thirdInvoicePublicId = third.publicId;
@@ -367,7 +426,11 @@ afterAll(async () => {
 
 describe('Package 004D receivable corrections', () => {
 	it('creates an unnumbered source-linked credit-note draft without requiring contract authority', async () => {
-		const service = new CreditNoteService(db, randomUUID, () => new Date('2026-08-17T09:00:00.000Z'));
+		const service = new CreditNoteService(
+			db,
+			randomUUID,
+			() => new Date('2026-08-17T09:00:00.000Z')
+		);
 		const created = await service.createFromInvoice(actorFinanceA, {
 			invoicePublicId: firstInvoicePublicId,
 			reason: 'Partial scope correction'
@@ -403,7 +466,11 @@ describe('Package 004D receivable corrections', () => {
 	});
 
 	it('lets an explicit granular deny override finance authority, then issues with original tax and immutable snapshots', async () => {
-		const service = new CreditNoteService(db, randomUUID, () => new Date('2026-08-17T09:15:00.000Z'));
+		const service = new CreditNoteService(
+			db,
+			randomUUID,
+			() => new Date('2026-08-17T09:15:00.000Z')
+		);
 		const issuePermission = await db
 			.selectFrom('permissions')
 			.select('id')
@@ -419,7 +486,10 @@ describe('Package 004D receivable corrections', () => {
 			})
 			.executeTakeFirstOrThrow();
 		await expect(
-			service.issue(actorFinanceA, { creditNotePublicId: firstCreditNotePublicId, deliveryChannel: 'manual' })
+			service.issue(actorFinanceA, {
+				creditNotePublicId: firstCreditNotePublicId,
+				deliveryChannel: 'manual'
+			})
 		).rejects.toBeInstanceOf(TenantAccessError);
 		await db
 			.deleteFrom('member_permission_overrides')
@@ -473,7 +543,11 @@ describe('Package 004D receivable corrections', () => {
 	});
 
 	it('prevents over-crediting and derives remaining receivable from issued credit notes', async () => {
-		const service = new CreditNoteService(db, randomUUID, () => new Date('2026-08-17T09:30:00.000Z'));
+		const service = new CreditNoteService(
+			db,
+			randomUUID,
+			() => new Date('2026-08-17T09:30:00.000Z')
+		);
 		const second = await service.createFromInvoice(actorFinanceA, {
 			invoicePublicId: firstInvoicePublicId,
 			reason: 'Credit remaining unit'
@@ -490,11 +564,16 @@ describe('Package 004D receivable corrections', () => {
 			originalInvoiceLineNumber: 1,
 			quantity: '1'
 		});
-		await service.issue(actorFinanceA, { creditNotePublicId: second.publicId, deliveryChannel: 'manual' });
+		await service.issue(actorFinanceA, {
+			creditNotePublicId: second.publicId,
+			deliveryChannel: 'manual'
+		});
 		const issued = await service.getWorkspace(actorFinanceA, second.publicId);
 		expect(issued.creditNote.documentNumber).toBe('CN-000002');
 		const portfolio = await service.getPortfolio(actorFinanceA);
-		const invoice = portfolio.invoices.find((candidate) => candidate.invoicePublicId === firstInvoicePublicId);
+		const invoice = portfolio.invoices.find(
+			(candidate) => candidate.invoicePublicId === firstInvoicePublicId
+		);
 		expect(invoice).toMatchObject({
 			invoiceGross: '240.0000',
 			issuedCreditGross: '240.0000',
@@ -510,7 +589,11 @@ describe('Package 004D receivable corrections', () => {
 	});
 
 	it('keeps invoice voiding as stronger authority and blocks void after credit or active allocation history', async () => {
-		const service = new CreditNoteService(db, randomUUID, () => new Date('2026-08-17T09:45:00.000Z'));
+		const service = new CreditNoteService(
+			db,
+			randomUUID,
+			() => new Date('2026-08-17T09:45:00.000Z')
+		);
 		await expect(
 			service.voidInvoice(actorFinanceA, {
 				invoicePublicId: secondInvoicePublicId,
@@ -523,7 +606,11 @@ describe('Package 004D receivable corrections', () => {
 		});
 		const voided = await db
 			.selectFrom('financial_documents')
-			.select(['lifecycle_status as lifecycleStatus', 'void_reason as voidReason', 'voided_by_member_id as voidedByMemberId'])
+			.select([
+				'lifecycle_status as lifecycleStatus',
+				'void_reason as voidReason',
+				'voided_by_member_id as voidedByMemberId'
+			])
 			.where('organisation_id', '=', organisationAId)
 			.where('public_id', '=', secondInvoicePublicId)
 			.executeTakeFirstOrThrow();
@@ -598,7 +685,9 @@ describe('Package 004D receivable corrections', () => {
 
 	it('masks foreign-tenant invoice and credit-note identities', async () => {
 		const service = new CreditNoteService(db);
-		await expect(service.getWorkspace(actorOwnerB, firstCreditNotePublicId)).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(service.getWorkspace(actorOwnerB, firstCreditNotePublicId)).rejects.toBeInstanceOf(
+			RecordNotFoundError
+		);
 		await expect(
 			service.createFromInvoice(actorOwnerB, {
 				invoicePublicId: firstInvoicePublicId,

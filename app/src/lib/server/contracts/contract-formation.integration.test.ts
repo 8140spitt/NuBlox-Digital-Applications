@@ -38,33 +38,93 @@ async function cleanup(): Promise<void> {
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length === 0) return;
 
-	await db.deleteFrom('contract_execution_signatories').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_execution_events').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_issue_recipients').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_issue_events').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_version_party_addresses').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_version_parties').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_version_key_dates').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_version_value_components').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('contract_versions').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('contract_execution_signatories')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_execution_events')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_issue_recipients')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_issue_events')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_version_party_addresses')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_version_parties')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_version_key_dates')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_version_value_components')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('contract_versions')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('contracts').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('quotation_project_conversions').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('quotation_responses').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('quotation_party_snapshot_addresses').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('quotation_party_snapshots').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('quotation_project_conversions')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('quotation_responses')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('quotation_party_snapshot_addresses')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('quotation_party_snapshots')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('quotation_items').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('quotation_versions').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('quotation_versions')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('quotations').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('party_organisations').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('party_organisations')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('parties').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('project_members').where('participant_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('project_organisations').where('participant_organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('audit_events')
+		.where('acting_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('project_members')
+		.where('participant_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('project_organisations')
+		.where('participant_organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('projects').where('owning_organisation_id', 'in', organisationIds).execute();
 	await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
 	await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('organisation_roles')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('organisation_members')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
 }
@@ -405,7 +465,10 @@ describe('controlled Package 004 contract formation', () => {
 			displayName: `${PREFIX}Client Ltd`
 		});
 		expect(workspace.valueComponents).toHaveLength(1);
-		expect(workspace.valueComponents[0]).toMatchObject({ typeCode: 'base_scope', amount: '1250.0000' });
+		expect(workspace.valueComponents[0]).toMatchObject({
+			typeCode: 'base_scope',
+			amount: '1250.0000'
+		});
 		expect(workspace.contract.sourceQuotationNumber).toBe('QUO-CTR-001');
 
 		const address = await db
@@ -516,8 +579,8 @@ describe('controlled Package 004 contract formation', () => {
 	});
 
 	it('masks foreign-tenant contract identity', async () => {
-		await expect(new ContractService(db).getWorkspace(actorOwnerB, contractPublicId)).rejects.toBeInstanceOf(
-			RecordNotFoundError
-		);
+		await expect(
+			new ContractService(db).getWorkspace(actorOwnerB, contractPublicId)
+		).rejects.toBeInstanceOf(RecordNotFoundError);
 	});
 });

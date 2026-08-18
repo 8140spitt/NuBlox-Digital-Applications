@@ -19,7 +19,8 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 
 function actionFailure(cause: unknown) {
 	if (cause instanceof FinanceValidationError) return fail(400, { actionError: cause.message });
-	if (cause instanceof RecordNotFoundError) return fail(404, { actionError: 'The payment, allocation or invoice is unavailable.' });
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, { actionError: 'The payment, allocation or invoice is unavailable.' });
 	if (cause instanceof TenantAccessError) return fail(403, { actionError: cause.message });
 	throw cause;
 }
@@ -28,10 +29,14 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new PaymentControlService(getDatabase()).getWorkspace(actor, params.paymentPublicId);
+		return await new PaymentControlService(getDatabase()).getWorkspace(
+			actor,
+			params.paymentPublicId
+		);
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Payment not found.');
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Payment access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Payment access is not permitted.');
 		throw cause;
 	}
 };

@@ -108,17 +108,35 @@ async function cleanup(): Promise<void> {
 	if (!db) return;
 	const organisationIds = [organisationId, otherOrganisationId].filter(Boolean);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
 		await db
 			.deleteFrom('organisation_invitation_roles')
 			.where('organisation_id', 'in', organisationIds)
 			.execute();
-		await db.deleteFrom('organisation_invitations').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('organisation_invitations')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 	}
 
 	const userIds = [actorUserId, targetUserId, backupUserId, otherUserId].filter(Boolean);
@@ -140,13 +158,21 @@ async function createFixture(): Promise<void> {
 	organisationId = insertedId(
 		await db
 			.insertInto('organisations')
-			.values({ public_id: organisationPublicId, legal_name: `${PREFIX}Organisation`, status: 'active' })
+			.values({
+				public_id: organisationPublicId,
+				legal_name: `${PREFIX}Organisation`,
+				status: 'active'
+			})
 			.executeTakeFirstOrThrow()
 	);
 	otherOrganisationId = insertedId(
 		await db
 			.insertInto('organisations')
-			.values({ public_id: randomUUID(), legal_name: `${PREFIX}Other Organisation`, status: 'active' })
+			.values({
+				public_id: randomUUID(),
+				legal_name: `${PREFIX}Other Organisation`,
+				status: 'active'
+			})
 			.executeTakeFirstOrThrow()
 	);
 
@@ -272,9 +298,9 @@ describe('organisation administration', () => {
 
 	it('blocks self status changes and changes another member status with audit evidence', async () => {
 		const service = new OrganisationAdminService(db);
-		await expect(service.setMemberStatus(actor(), actorMemberPublicId, 'suspended')).rejects.toBeInstanceOf(
-			OrganisationAdminValidationError
-		);
+		await expect(
+			service.setMemberStatus(actor(), actorMemberPublicId, 'suspended')
+		).rejects.toBeInstanceOf(OrganisationAdminValidationError);
 
 		await service.setMemberStatus(actor(), targetMemberPublicId, 'suspended');
 		const suspended = await db
@@ -333,13 +359,17 @@ describe('organisation administration', () => {
 			name: `${PREFIX}Backup Administrator`,
 			permissionKeys: ['organisation.manage']
 		});
-		await service.replaceMemberRoles(actor(), (
-			await db
-				.selectFrom('organisation_members')
-				.select('public_id')
-				.where('id', '=', backupMemberId)
-				.executeTakeFirstOrThrow()
-		).public_id, [backupRolePublicId]);
+		await service.replaceMemberRoles(
+			actor(),
+			(
+				await db
+					.selectFrom('organisation_members')
+					.select('public_id')
+					.where('id', '=', backupMemberId)
+					.executeTakeFirstOrThrow()
+			).public_id,
+			[backupRolePublicId]
+		);
 
 		await service.updateRole(actor(), {
 			rolePublicId: adminRolePublicId,
@@ -410,7 +440,10 @@ describe('organisation administration', () => {
 			.selectFrom('audit_events')
 			.select('action_key')
 			.where('acting_organisation_id', '=', organisationId)
-			.where('action_key', 'in', ['organisation.invitation.resend', 'organisation.invitation.revoke'])
+			.where('action_key', 'in', [
+				'organisation.invitation.resend',
+				'organisation.invitation.revoke'
+			])
 			.execute();
 		expect(auditActions.map((event) => event.action_key)).toEqual(
 			expect.arrayContaining(['organisation.invitation.resend', 'organisation.invitation.revoke'])

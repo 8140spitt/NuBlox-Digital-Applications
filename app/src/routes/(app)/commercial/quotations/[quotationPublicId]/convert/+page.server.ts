@@ -43,7 +43,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 		);
 	} catch (error) {
 		if (error instanceof RecordNotFoundError) throw httpError(404, 'Quotation not found.');
-		if (error instanceof TenantAccessError) throw httpError(403, 'Commercial access is not permitted.');
+		if (error instanceof TenantAccessError)
+			throw httpError(403, 'Commercial access is not permitted.');
 		throw error;
 	}
 };
@@ -51,7 +52,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 export const actions: Actions = {
 	convert: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { actionError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { actionError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			const project = await new QuotationProjectConversionService(getDatabase()).convert(
@@ -62,11 +64,14 @@ export const actions: Actions = {
 			);
 			throw redirect(303, `/contracts/new?project=${encodeURIComponent(project.publicId)}`);
 		} catch (error) {
-			if (error instanceof CommercialValidationError) return fail(400, { actionError: error.message });
-			if (error instanceof RecordNotFoundError) return fail(404, { actionError: 'The quotation or accepted response is unavailable.' });
+			if (error instanceof CommercialValidationError)
+				return fail(400, { actionError: error.message });
+			if (error instanceof RecordNotFoundError)
+				return fail(404, { actionError: 'The quotation or accepted response is unavailable.' });
 			if (error instanceof TenantAccessError) {
 				return fail(403, {
-					actionError: 'Conversion requires quotation-conversion authority and project.create permission.'
+					actionError:
+						'Conversion requires quotation-conversion authority and project.create permission.'
 				});
 			}
 			throw error;

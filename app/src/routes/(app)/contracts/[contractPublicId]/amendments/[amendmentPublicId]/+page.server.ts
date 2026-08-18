@@ -55,7 +55,8 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		);
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Contract amendment not found.');
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Contract access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Contract access is not permitted.');
 		throw cause;
 	}
 };

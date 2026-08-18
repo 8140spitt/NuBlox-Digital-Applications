@@ -32,7 +32,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		return await new CollectionsAutomationService(getDatabase()).getWorkspace(actor);
 	} catch (cause) {
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Collections automation access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Collections automation access is not permitted.');
 		throw cause;
 	}
 };
@@ -43,7 +44,10 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new CollectionsAutomationService(getDatabase()).createDraftPolicy(actor, String(data.get('name') ?? ''));
+			await new CollectionsAutomationService(getDatabase()).createDraftPolicy(
+				actor,
+				String(data.get('name') ?? '')
+			);
 		} catch (cause) {
 			return actionFailure(cause);
 		}
@@ -90,7 +94,10 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new CollectionsAutomationService(getDatabase()).activatePolicy(actor, String(data.get('policyPublicId') ?? ''));
+			await new CollectionsAutomationService(getDatabase()).activatePolicy(
+				actor,
+				String(data.get('policyPublicId') ?? '')
+			);
 		} catch (cause) {
 			return actionFailure(cause);
 		}
@@ -116,8 +123,12 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			const result = await new CollectionsAutomationService(getDatabase()).dispatchReminder(actor, String(data.get('reminderPublicId') ?? ''));
-			if (!result.sent) return fail(502, { actionError: result.errorMessage ?? 'Reminder delivery failed.' });
+			const result = await new CollectionsAutomationService(getDatabase()).dispatchReminder(
+				actor,
+				String(data.get('reminderPublicId') ?? '')
+			);
+			if (!result.sent)
+				return fail(502, { actionError: result.errorMessage ?? 'Reminder delivery failed.' });
 		} catch (cause) {
 			return actionFailure(cause);
 		}

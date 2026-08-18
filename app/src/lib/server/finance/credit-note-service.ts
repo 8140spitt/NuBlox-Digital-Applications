@@ -413,7 +413,10 @@ export class CreditNoteService {
 				throw new FinanceValidationError('Only an issued invoice can be credited.');
 			}
 			const candidate = await this.candidateForInvoice(trx, actor.organisationId, invoice);
-			if (!candidate?.canCredit) throw new FinanceValidationError('The invoice has no remaining amount available to credit.');
+			if (!candidate?.canCredit)
+				throw new FinanceValidationError(
+					'The invoice has no remaining amount available to credit.'
+				);
 			const documentId = insertedId(
 				await trx
 					.insertInto('financial_documents')
@@ -454,7 +457,11 @@ export class CreditNoteService {
 				subjectType: 'credit_note',
 				subjectPublicId: publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { invoicePublicId: invoice.publicId, invoiceNumber: invoice.documentNumber, reason }
+				changeSummary: {
+					invoicePublicId: invoice.publicId,
+					invoiceNumber: invoice.documentNumber,
+					reason
+				}
 			});
 		});
 		return (await this.summary(this.db, actor.organisationId, publicId))!;
@@ -478,8 +485,13 @@ export class CreditNoteService {
 		await this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
-			const decision = await policy.mutationDecision(actor, 'finance.credit_note.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Credit-note draft management is not permitted.');
+			const decision = await policy.mutationDecision(
+				actor,
+				'finance.credit_note.draft.manage',
+				trx
+			);
+			if (!decision.allowed)
+				throw new TenantAccessError('Credit-note draft management is not permitted.');
 			const record = await this.draftRecord(trx, actor, publicId);
 			await trx
 				.updateTable('credit_notes')
@@ -507,15 +519,23 @@ export class CreditNoteService {
 		input: { creditNotePublicId: string; originalInvoiceLineNumber: number; quantity: string }
 	): Promise<void> {
 		const publicId = cleanFinanceText(input.creditNotePublicId, 64, 'Credit-note ID', true)!;
-		if (!Number.isSafeInteger(input.originalInvoiceLineNumber) || input.originalInvoiceLineNumber <= 0) {
+		if (
+			!Number.isSafeInteger(input.originalInvoiceLineNumber) ||
+			input.originalInvoiceLineNumber <= 0
+		) {
 			throw new FinanceValidationError('Original invoice line is invalid.');
 		}
 		const quantity = validateQuantity(input.quantity);
 		await this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
-			const decision = await policy.mutationDecision(actor, 'finance.credit_note.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Credit-note draft management is not permitted.');
+			const decision = await policy.mutationDecision(
+				actor,
+				'finance.credit_note.draft.manage',
+				trx
+			);
+			if (!decision.allowed)
+				throw new TenantAccessError('Credit-note draft management is not permitted.');
 			const record = await this.draftRecord(trx, actor, publicId);
 			const sourceItem = await trx
 				.selectFrom('financial_document_items')
@@ -542,11 +562,23 @@ export class CreditNoteService {
 				.where('credit_note_document_id', '=', record.id)
 				.where('original_invoice_item_id', '=', sourceItem.id)
 				.executeTakeFirst();
-			if (existing) throw new FinanceValidationError('This invoice line is already included in the credit-note draft.');
-			const creditedQuantity = await this.creditedQuantityForOriginalItem(trx, actor.organisationId, sourceItem.id);
+			if (existing)
+				throw new FinanceValidationError(
+					'This invoice line is already included in the credit-note draft.'
+				);
+			const creditedQuantity = await this.creditedQuantityForOriginalItem(
+				trx,
+				actor.organisationId,
+				sourceItem.id
+			);
 			const available = positiveRemainingQuantity(sourceItem.quantity, creditedQuantity);
-			if (parseScaledDecimal(quantity, 6, 'Credit quantity') > parseScaledDecimal(available, 6, 'Available quantity')) {
-				throw new FinanceValidationError(`Credit quantity exceeds the remaining ${available} available on the invoice line.`);
+			if (
+				parseScaledDecimal(quantity, 6, 'Credit quantity') >
+				parseScaledDecimal(available, 6, 'Available quantity')
+			) {
+				throw new FinanceValidationError(
+					`Credit quantity exceeds the remaining ${available} available on the invoice line.`
+				);
 			}
 			const lastLine = await trx
 				.selectFrom('financial_document_items')
@@ -585,7 +617,11 @@ export class CreditNoteService {
 				.executeTakeFirstOrThrow();
 			const sourceTaxes = await trx
 				.selectFrom('financial_document_item_taxes')
-				.select(['tax_category_id as taxCategoryId', 'sort_order as sortOrder', 'applied_rate_percent as appliedRatePercent'])
+				.select([
+					'tax_category_id as taxCategoryId',
+					'sort_order as sortOrder',
+					'applied_rate_percent as appliedRatePercent'
+				])
 				.where('organisation_id', '=', actor.organisationId)
 				.where('financial_document_item_id', '=', sourceItem.id)
 				.orderBy('sort_order', 'asc')
@@ -627,14 +663,24 @@ export class CreditNoteService {
 		});
 	}
 
-	async removeLine(actor: TenantActorContext, creditNotePublicIdInput: string, lineNumber: number): Promise<void> {
+	async removeLine(
+		actor: TenantActorContext,
+		creditNotePublicIdInput: string,
+		lineNumber: number
+	): Promise<void> {
 		const publicId = cleanFinanceText(creditNotePublicIdInput, 64, 'Credit-note ID', true)!;
-		if (!Number.isSafeInteger(lineNumber) || lineNumber <= 0) throw new FinanceValidationError('Credit-note line is invalid.');
+		if (!Number.isSafeInteger(lineNumber) || lineNumber <= 0)
+			throw new FinanceValidationError('Credit-note line is invalid.');
 		await this.db.transaction().execute(async (trx) => {
 			const policy = new FinanceAccessPolicy(trx);
 			const membership = await policy.assertActiveActor(actor, trx);
-			const decision = await policy.mutationDecision(actor, 'finance.credit_note.draft.manage', trx);
-			if (!decision.allowed) throw new TenantAccessError('Credit-note draft management is not permitted.');
+			const decision = await policy.mutationDecision(
+				actor,
+				'finance.credit_note.draft.manage',
+				trx
+			);
+			if (!decision.allowed)
+				throw new TenantAccessError('Credit-note draft management is not permitted.');
 			const record = await this.draftRecord(trx, actor, publicId);
 			const item = await trx
 				.selectFrom('financial_document_items')
@@ -730,14 +776,24 @@ export class CreditNoteService {
 	): Promise<OriginalInvoiceLine[]> {
 		const rows = await db
 			.selectFrom('financial_document_items')
-			.select(['id', 'line_number as lineNumber', 'description', 'quantity', 'unit_rate as unitRate'])
+			.select([
+				'id',
+				'line_number as lineNumber',
+				'description',
+				'quantity',
+				'unit_rate as unitRate'
+			])
 			.where('organisation_id', '=', organisationId)
 			.where('financial_document_id', '=', invoiceDocumentId)
 			.orderBy('line_number', 'asc')
 			.execute();
 		const result: OriginalInvoiceLine[] = [];
 		for (const row of rows) {
-			const creditedQuantity = await this.creditedQuantityForOriginalItem(db, organisationId, row.id);
+			const creditedQuantity = await this.creditedQuantityForOriginalItem(
+				db,
+				organisationId,
+				row.id
+			);
 			result.push({
 				...row,
 				netAmount: lineAmount(row.quantity, row.unitRate),
@@ -748,7 +804,10 @@ export class CreditNoteService {
 		return result;
 	}
 
-	async getWorkspace(actor: TenantActorContext, creditNotePublicIdInput: string): Promise<CreditNoteWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		creditNotePublicIdInput: string
+	): Promise<CreditNoteWorkspace> {
 		const policy = new FinanceAccessPolicy(this.db);
 		await policy.assertActiveActor(actor);
 		const view = await policy.viewDecision(actor);
@@ -756,48 +815,49 @@ export class CreditNoteService {
 		const publicId = cleanFinanceText(creditNotePublicIdInput, 64, 'Credit-note ID', true)!;
 		const record = await this.creditNoteRecord(this.db, actor.organisationId, publicId);
 		if (!record) throw new RecordNotFoundError('Credit note not found.');
-		const [summary, lines, originalInvoiceLines, manageDecision, issueDecision, snapshots, issues] = await Promise.all([
-			this.summary(this.db, actor.organisationId, publicId),
-			this.lines(this.db, actor.organisationId, record.id),
-			this.originalInvoiceLines(this.db, actor.organisationId, record.originalInvoiceDocumentId),
-			policy.mutationDecision(actor, 'finance.credit_note.draft.manage'),
-			policy.mutationDecision(actor, 'finance.credit_note.issue'),
-			this.db
-				.selectFrom('financial_document_party_snapshots')
-				.select([
-					'id',
-					'snapshot_role as snapshotRole',
-					'display_name as displayName',
-					'email',
-					'reference_identifier as referenceIdentifier'
-				])
-				.where('organisation_id', '=', actor.organisationId)
-				.where('financial_document_id', '=', record.id)
-				.orderBy('snapshot_role', 'asc')
-				.orderBy('sort_order', 'asc')
-				.execute(),
-			this.db
-				.selectFrom('financial_document_issue_events as issue')
-				.leftJoin('financial_document_issue_recipients as recipient', (join) =>
-					join
-						.onRef('recipient.financial_document_issue_event_id', '=', 'issue.id')
-						.onRef('recipient.organisation_id', '=', 'issue.organisation_id')
-				)
-				.select([
-					'issue.id',
-					'issue.issue_sequence as issueSequence',
-					'issue.delivery_channel as deliveryChannel',
-					'issue.issued_at as issuedAt',
-					'issue.note',
-					'recipient.recipient_name as recipientName',
-					'recipient.recipient_email as recipientEmail',
-					'recipient.delivery_status as deliveryStatus'
-				])
-				.where('issue.organisation_id', '=', actor.organisationId)
-				.where('issue.financial_document_id', '=', record.id)
-				.orderBy('issue.issue_sequence', 'asc')
-				.execute()
-		]);
+		const [summary, lines, originalInvoiceLines, manageDecision, issueDecision, snapshots, issues] =
+			await Promise.all([
+				this.summary(this.db, actor.organisationId, publicId),
+				this.lines(this.db, actor.organisationId, record.id),
+				this.originalInvoiceLines(this.db, actor.organisationId, record.originalInvoiceDocumentId),
+				policy.mutationDecision(actor, 'finance.credit_note.draft.manage'),
+				policy.mutationDecision(actor, 'finance.credit_note.issue'),
+				this.db
+					.selectFrom('financial_document_party_snapshots')
+					.select([
+						'id',
+						'snapshot_role as snapshotRole',
+						'display_name as displayName',
+						'email',
+						'reference_identifier as referenceIdentifier'
+					])
+					.where('organisation_id', '=', actor.organisationId)
+					.where('financial_document_id', '=', record.id)
+					.orderBy('snapshot_role', 'asc')
+					.orderBy('sort_order', 'asc')
+					.execute(),
+				this.db
+					.selectFrom('financial_document_issue_events as issue')
+					.leftJoin('financial_document_issue_recipients as recipient', (join) =>
+						join
+							.onRef('recipient.financial_document_issue_event_id', '=', 'issue.id')
+							.onRef('recipient.organisation_id', '=', 'issue.organisation_id')
+					)
+					.select([
+						'issue.id',
+						'issue.issue_sequence as issueSequence',
+						'issue.delivery_channel as deliveryChannel',
+						'issue.issued_at as issuedAt',
+						'issue.note',
+						'recipient.recipient_name as recipientName',
+						'recipient.recipient_email as recipientEmail',
+						'recipient.delivery_status as deliveryStatus'
+					])
+					.where('issue.organisation_id', '=', actor.organisationId)
+					.where('issue.financial_document_id', '=', record.id)
+					.orderBy('issue.issue_sequence', 'asc')
+					.execute()
+			]);
 		if (!summary) throw new RecordNotFoundError('Credit note not found.');
 		return {
 			creditNote: summary,
@@ -837,18 +897,29 @@ export class CreditNoteService {
 			.where('source.organisation_id', '=', organisationId)
 			.where('source.credit_note_document_id', '=', creditDocumentId)
 			.execute();
-		if (sources.length === 0) throw new FinanceValidationError('Add at least one credit-note line before issue.');
+		if (sources.length === 0)
+			throw new FinanceValidationError('Add at least one credit-note line before issue.');
 		for (const source of sources) {
-			const alreadyCredited = await this.creditedQuantityForOriginalItem(trx, organisationId, source.originalItemId);
+			const alreadyCredited = await this.creditedQuantityForOriginalItem(
+				trx,
+				organisationId,
+				source.originalItemId
+			);
 			const totalAfterIssue =
 				parseScaledDecimal(alreadyCredited, 6, 'Credited quantity') +
 				parseScaledDecimal(source.creditQuantity, 6, 'Credit quantity');
 			if (totalAfterIssue > parseScaledDecimal(source.originalQuantity, 6, 'Original quantity')) {
-				throw new FinanceValidationError('Credit-note issue would exceed the remaining quantity on an original invoice line.');
+				throw new FinanceValidationError(
+					'Credit-note issue would exceed the remaining quantity on an original invoice line.'
+				);
 			}
 			const originalTaxes = await trx
 				.selectFrom('financial_document_item_taxes')
-				.select(['tax_category_id as taxCategoryId', 'sort_order as sortOrder', 'applied_rate_percent as appliedRatePercent'])
+				.select([
+					'tax_category_id as taxCategoryId',
+					'sort_order as sortOrder',
+					'applied_rate_percent as appliedRatePercent'
+				])
 				.where('organisation_id', '=', organisationId)
 				.where('financial_document_item_id', '=', source.originalItemId)
 				.orderBy('sort_order', 'asc')
@@ -973,7 +1044,8 @@ export class CreditNoteService {
 	): Promise<void> {
 		const publicId = cleanFinanceText(input.creditNotePublicId, 64, 'Credit-note ID', true)!;
 		const deliveryChannel = input.deliveryChannel.trim();
-		if (!FINANCE_DELIVERY_CHANNELS.has(deliveryChannel)) throw new FinanceValidationError('Credit-note delivery channel is invalid.');
+		if (!FINANCE_DELIVERY_CHANNELS.has(deliveryChannel))
+			throw new FinanceValidationError('Credit-note delivery channel is invalid.');
 		const recipientNameInput = cleanFinanceText(input.recipientName, 255, 'Recipient name');
 		const recipientEmailInput = cleanFinanceText(input.recipientEmail, 320, 'Recipient email');
 		const note = cleanFinanceText(input.note, 1000, 'Issue note');
@@ -992,11 +1064,23 @@ export class CreditNoteService {
 				.forUpdate()
 				.executeTakeFirst();
 			if (!invoice || invoice.lifecycleStatus !== 'issued') {
-				throw new FinanceValidationError('The original invoice must remain issued when the credit note is issued.');
+				throw new FinanceValidationError(
+					'The original invoice must remain issued when the credit note is issued.'
+				);
 			}
 			await this.revalidateAndRefreshTaxes(trx, actor.organisationId, record.id);
-			await this.copyInvoiceSnapshots(trx, actor.organisationId, record.originalInvoiceDocumentId, record.id);
-			await trx.selectFrom('organisations').select('id').where('id', '=', actor.organisationId).forUpdate().executeTakeFirstOrThrow();
+			await this.copyInvoiceSnapshots(
+				trx,
+				actor.organisationId,
+				record.originalInvoiceDocumentId,
+				record.id
+			);
+			await trx
+				.selectFrom('organisations')
+				.select('id')
+				.where('id', '=', actor.organisationId)
+				.forUpdate()
+				.executeTakeFirstOrThrow();
 			const existingNumbers = await trx
 				.selectFrom('financial_documents')
 				.select('document_number as documentNumber')
@@ -1004,7 +1088,10 @@ export class CreditNoteService {
 				.where('document_kind', '=', 'credit_note')
 				.where('document_number', 'is not', null)
 				.execute();
-			const documentNumber = numberedDocument(existingNumbers.map((row) => row.documentNumber), 'CN');
+			const documentNumber = numberedDocument(
+				existingNumbers.map((row) => row.documentNumber),
+				'CN'
+			);
 			await trx
 				.updateTable('financial_documents')
 				.set({ document_number: documentNumber, lifecycle_status: 'issued' })
@@ -1037,9 +1124,12 @@ export class CreditNoteService {
 				.orderBy('snapshot_role', 'asc')
 				.orderBy('sort_order', 'asc')
 				.executeTakeFirstOrThrow();
-			const recipientName = recipientNameInput ?? sourceRecipient?.recipientName ?? fallbackSnapshot.displayName;
-			const recipientEmail = recipientEmailInput ?? sourceRecipient?.recipientEmail ?? fallbackSnapshot.email;
-			const recipientSourcePartyId = sourceRecipient?.sourcePartyId ?? fallbackSnapshot.sourcePartyId;
+			const recipientName =
+				recipientNameInput ?? sourceRecipient?.recipientName ?? fallbackSnapshot.displayName;
+			const recipientEmail =
+				recipientEmailInput ?? sourceRecipient?.recipientEmail ?? fallbackSnapshot.email;
+			const recipientSourcePartyId =
+				sourceRecipient?.sourcePartyId ?? fallbackSnapshot.sourcePartyId;
 			const issuedAt = this.now();
 			const issueId = insertedId(
 				await trx
@@ -1105,7 +1195,8 @@ export class CreditNoteService {
 			if (!decision.allowed) throw new TenantAccessError('Invoice voiding is not permitted.');
 			const invoice = await this.invoiceRecord(trx, actor.organisationId, invoicePublicId, true);
 			if (!invoice) throw new RecordNotFoundError('Invoice not found.');
-			if (invoice.lifecycleStatus !== 'issued') throw new FinanceValidationError('Only an issued invoice can be voided.');
+			if (invoice.lifecycleStatus !== 'issued')
+				throw new FinanceValidationError('Only an issued invoice can be voided.');
 			const credit = await trx
 				.selectFrom('credit_notes as creditNote')
 				.innerJoin('financial_documents as creditDocument', (join) =>
@@ -1119,7 +1210,9 @@ export class CreditNoteService {
 				.where('creditDocument.lifecycle_status', '!=', 'void')
 				.executeTakeFirst();
 			if (credit) {
-				throw new FinanceValidationError('An invoice with a draft or issued credit note cannot be voided. Resolve the credit-note history instead.');
+				throw new FinanceValidationError(
+					'An invoice with a draft or issued credit note cannot be voided. Resolve the credit-note history instead.'
+				);
 			}
 			const allocation = await trx
 				.selectFrom('payment_allocations as allocation')
@@ -1133,7 +1226,10 @@ export class CreditNoteService {
 				.where('allocation.invoice_document_id', '=', invoice.id)
 				.where('reversal.payment_allocation_id', 'is', null)
 				.executeTakeFirst();
-			if (allocation) throw new FinanceValidationError('An invoice with an active payment allocation cannot be voided.');
+			if (allocation)
+				throw new FinanceValidationError(
+					'An invoice with an active payment allocation cannot be voided.'
+				);
 			const voidedAt = this.now();
 			await trx
 				.updateTable('financial_documents')

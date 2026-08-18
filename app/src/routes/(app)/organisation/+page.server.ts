@@ -93,7 +93,11 @@ function actionFailure(cause: unknown) {
 export const load: PageServerLoad = async ({ locals }) => {
 	const actor = actorFromLocals(locals);
 	const permissions = await administrationPermissions(actor);
-	if (!permissions.canManageOrganisation && !permissions.canInvite && !permissions.canManageMembers) {
+	if (
+		!permissions.canManageOrganisation &&
+		!permissions.canInvite &&
+		!permissions.canManageMembers
+	) {
 		throw error(403, 'You do not have organisation administration access.');
 	}
 
@@ -161,7 +165,8 @@ export const actions: Actions = {
 		const permissions = await administrationPermissions(actor);
 		if (!permissions.canInvite || !permissions.canManageMembers) {
 			return fail(403, {
-				adminError: 'Invite and member-management permission are required to resend an invitation with its roles.'
+				adminError:
+					'Invite and member-management permission are required to resend an invitation with its roles.'
 			});
 		}
 		const invitationPublicId = stringField(await request.formData(), 'invitationPublicId');
@@ -186,7 +191,11 @@ export const actions: Actions = {
 			return fail(400, { adminError: 'A valid member and membership status are required.' });
 		}
 		try {
-			await new OrganisationAdminService(getDatabase()).setMemberStatus(actor, memberPublicId, status);
+			await new OrganisationAdminService(getDatabase()).setMemberStatus(
+				actor,
+				memberPublicId,
+				status
+			);
 			return { adminSuccess: 'Member status updated.' };
 		} catch (cause) {
 			return actionFailure(cause);

@@ -35,19 +35,49 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_organisation_contacts').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_role_assignments').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_phone_numbers').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_email_addresses').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('party_organisation_contacts')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('party_role_assignments')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('party_phone_numbers')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('party_email_addresses')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('party_persons').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('party_organisations').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('party_organisations')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('parties').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
@@ -141,9 +171,15 @@ beforeAll(async () => {
 	managerAMemberId = await createMember(organisationAId, managerAUserId);
 	viewerAMemberId = await createMember(organisationAId, viewerAUserId);
 	managerBMemberId = await createMember(organisationBId, managerBUserId);
-	await assignPermissionRole(organisationAId, managerAMemberId, 'Manager A', ['crm.view', 'crm.manage']);
+	await assignPermissionRole(organisationAId, managerAMemberId, 'Manager A', [
+		'crm.view',
+		'crm.manage'
+	]);
 	await assignPermissionRole(organisationAId, viewerAMemberId, 'Viewer A', ['crm.view']);
-	await assignPermissionRole(organisationBId, managerBMemberId, 'Manager B', ['crm.view', 'crm.manage']);
+	await assignPermissionRole(organisationBId, managerBMemberId, 'Manager B', [
+		'crm.view',
+		'crm.manage'
+	]);
 
 	actorManagerA = {
 		organisationId: organisationAId,
@@ -239,10 +275,12 @@ describe('CRM parties and contacts', () => {
 			legalName: `${PREFIX}Private Client`,
 			roleCodes: ['client']
 		});
-		await expect(new CrmService(db).getPartyWorkspace(actorManagerB, party.publicId)).rejects.toBeInstanceOf(
-			RecordNotFoundError
-		);
-		const tenantB = await new CrmService(db).listWorkspace(actorManagerB, { search: 'Private Client' });
+		await expect(
+			new CrmService(db).getPartyWorkspace(actorManagerB, party.publicId)
+		).rejects.toBeInstanceOf(RecordNotFoundError);
+		const tenantB = await new CrmService(db).listWorkspace(actorManagerB, {
+			search: 'Private Client'
+		});
 		expect(tenantB.parties).toEqual([]);
 	});
 
@@ -306,16 +344,31 @@ describe('CRM parties and contacts', () => {
 
 		let workspace = await service.getPartyWorkspace(actorManagerA, company.publicId);
 		expect(workspace.contacts).toHaveLength(2);
-		expect(workspace.contacts.find((contact) => contact.personPublicId === firstPerson.publicId)?.isPrimaryContact).toBe(true);
+		expect(
+			workspace.contacts.find((contact) => contact.personPublicId === firstPerson.publicId)
+				?.isPrimaryContact
+		).toBe(true);
 
-		await service.makePrimaryOrganisationContact(actorManagerA, company.publicId, existingPerson.publicId);
+		await service.makePrimaryOrganisationContact(
+			actorManagerA,
+			company.publicId,
+			existingPerson.publicId
+		);
 		workspace = await service.getPartyWorkspace(actorManagerA, company.publicId);
-		expect(workspace.contacts.find((contact) => contact.personPublicId === existingPerson.publicId)?.isPrimaryContact).toBe(true);
-		expect(workspace.contacts.find((contact) => contact.personPublicId === firstPerson.publicId)?.isPrimaryContact).toBe(false);
+		expect(
+			workspace.contacts.find((contact) => contact.personPublicId === existingPerson.publicId)
+				?.isPrimaryContact
+		).toBe(true);
+		expect(
+			workspace.contacts.find((contact) => contact.personPublicId === firstPerson.publicId)
+				?.isPrimaryContact
+		).toBe(false);
 
 		await service.endOrganisationContact(actorManagerA, company.publicId, existingPerson.publicId);
 		workspace = await service.getPartyWorkspace(actorManagerA, company.publicId);
-		expect(workspace.contacts.map((contact) => contact.personPublicId)).toEqual([firstPerson.publicId]);
+		expect(workspace.contacts.map((contact) => contact.personPublicId)).toEqual([
+			firstPerson.publicId
+		]);
 	});
 
 	it('prevents read-only members and archived organisations from acquiring new CRM relationships', async () => {

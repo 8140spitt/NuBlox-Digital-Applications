@@ -19,7 +19,9 @@
 	<div>
 		<p class="eyebrow">Project delivery</p>
 		<h1>Projects</h1>
-		<p>Projects visible here require both organisation permission and your active project membership.</p>
+		<p>
+			Projects visible here require both organisation permission and your active project membership.
+		</p>
 	</div>
 	{#if data.canCreate}<a class="header-action" href="#create-project">Create project</a>{/if}
 </section>
@@ -30,7 +32,10 @@
 			<div>
 				<p class="eyebrow">Collaboration</p>
 				<h2 id="project-invitations-heading">Project invitations</h2>
-				<p class="muted">Accepting establishes this organisation as an active participant and adds you as its first active project member.</p>
+				<p class="muted">
+					Accepting establishes this organisation as an active participant and adds you as its first
+					active project member.
+				</p>
 			</div>
 			<span class="count">{data.invitations.length}</span>
 		</div>
@@ -78,8 +83,8 @@
 			<div class="empty-state">
 				<h2>No projects in your workspace</h2>
 				<p>
-					Projects appear here only when you are an active project member. Creating a project adds you
-					as its first project member automatically.
+					Projects appear here only when you are an active project member. Creating a project adds
+					you as its first project member automatically.
 				</p>
 			</div>
 		{:else}
@@ -88,13 +93,19 @@
 					<a class="project-card" href={`/projects/${project.publicId}`}>
 						<div class="card-topline">
 							<span class="project-number">{project.projectNumber}</span>
-							<span class={`status status-${project.status}`}>{statusLabels[project.status] ?? project.status}</span>
+							<span class={`status status-${project.status}`}
+								>{statusLabels[project.status] ?? project.status}</span
+							>
 						</div>
 						<h2>{project.name}</h2>
 						{#if project.description}<p>{project.description}</p>{/if}
 						<div class="card-meta">
-							{#if project.startedOn}<span>Started {new Date(project.startedOn).toLocaleDateString()}</span>{/if}
-							{#if project.completedOn}<span>Completed {new Date(project.completedOn).toLocaleDateString()}</span>{/if}
+							{#if project.startedOn}<span
+									>Started {new Date(project.startedOn).toLocaleDateString()}</span
+								>{/if}
+							{#if project.completedOn}<span
+									>Completed {new Date(project.completedOn).toLocaleDateString()}</span
+								>{/if}
 						</div>
 					</a>
 				{/each}
@@ -108,8 +119,8 @@
 		<p class="eyebrow">New project</p>
 		<h2>Create an organisation-owned project</h2>
 		<p class="muted">
-			The creating organisation becomes the project owner and first participant. You become the first
-			active project member.
+			The creating organisation becomes the project owner and first participant. You become the
+			first active project member.
 		</p>
 	</div>
 
@@ -143,7 +154,9 @@
 			<button type="submit">Create project</button>
 		</form>
 	{:else}
-		<p class="muted">You do not have the <code>project.create</code> permission in this organisation.</p>
+		<p class="muted">
+			You do not have the <code>project.create</code> permission in this organisation.
+		</p>
 	{/if}
 </section>
 
@@ -163,9 +176,18 @@
 		font-weight: 750;
 		color: #61615b;
 	}
-	h1 { margin: 0; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.04em; }
-	.page-header p:last-child, .muted { color: #5d5d57; line-height: 1.6; }
-	.header-action, button {
+	h1 {
+		margin: 0;
+		font-size: clamp(2rem, 5vw, 3rem);
+		letter-spacing: -0.04em;
+	}
+	.page-header p:last-child,
+	.muted {
+		color: #5d5d57;
+		line-height: 1.6;
+	}
+	.header-action,
+	button {
 		font: inherit;
 		font-weight: 750;
 		border: 1px solid #111;
@@ -176,25 +198,88 @@
 		text-decoration: none;
 		cursor: pointer;
 	}
-	button.secondary { background: white; color: #222; border-color: #aaa; }
-	.notice, .empty-state, .create-panel, .invitation-panel {
+	button.secondary {
+		background: white;
+		color: #222;
+		border-color: #aaa;
+	}
+	.notice,
+	.empty-state,
+	.create-panel,
+	.invitation-panel {
 		background: white;
 		border: 1px solid #d9d9d2;
 		border-radius: 0.8rem;
 		padding: 1.25rem;
 	}
-	.notice, .empty-state, .invitation-panel { margin-bottom: 1rem; }
-	.notice h2, .empty-state h2, .create-panel h2, .invitation-panel h2 { margin-top: 0; }
-	.section-heading { display: flex; justify-content: space-between; gap: 1rem; align-items: start; margin-bottom: 1rem; }
-	.count { min-width: 2rem; height: 2rem; display: grid; place-items: center; border-radius: 999px; background: #f0f0eb; font-weight: 750; }
-	.invitation-list { display: grid; gap: 0.75rem; }
-	.invitation-card { display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; padding: 1rem; border: 1px solid #deded7; border-radius: 0.65rem; background: #fafaf7; }
-	.invitation-card h3 { margin: 0.45rem 0; }
-	.invitation-card small { display: block; margin-top: 0.55rem; color: #6b6b65; }
-	.invitation-actions { display: flex; gap: 0.55rem; }
-	.invitation-error { grid-column: 1 / -1; }
-	.role-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-	.role-list span { border-radius: 999px; background: #ecece6; padding: 0.24rem 0.48rem; font-size: 0.75rem; font-weight: 650; }
+	.notice,
+	.empty-state,
+	.invitation-panel {
+		margin-bottom: 1rem;
+	}
+	.notice h2,
+	.empty-state h2,
+	.create-panel h2,
+	.invitation-panel h2 {
+		margin-top: 0;
+	}
+	.section-heading {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: start;
+		margin-bottom: 1rem;
+	}
+	.count {
+		min-width: 2rem;
+		height: 2rem;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: #f0f0eb;
+		font-weight: 750;
+	}
+	.invitation-list {
+		display: grid;
+		gap: 0.75rem;
+	}
+	.invitation-card {
+		display: grid;
+		grid-template-columns: 1fr auto;
+		gap: 1rem;
+		align-items: center;
+		padding: 1rem;
+		border: 1px solid #deded7;
+		border-radius: 0.65rem;
+		background: #fafaf7;
+	}
+	.invitation-card h3 {
+		margin: 0.45rem 0;
+	}
+	.invitation-card small {
+		display: block;
+		margin-top: 0.55rem;
+		color: #6b6b65;
+	}
+	.invitation-actions {
+		display: flex;
+		gap: 0.55rem;
+	}
+	.invitation-error {
+		grid-column: 1 / -1;
+	}
+	.role-list {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.35rem;
+	}
+	.role-list span {
+		border-radius: 999px;
+		background: #ecece6;
+		padding: 0.24rem 0.48rem;
+		font-size: 0.75rem;
+		font-weight: 650;
+	}
 	.project-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
@@ -210,41 +295,129 @@
 		border-radius: 0.8rem;
 		color: inherit;
 		text-decoration: none;
-		transition: border-color 120ms ease, transform 120ms ease;
+		transition:
+			border-color 120ms ease,
+			transform 120ms ease;
 	}
-	.project-card:hover, .project-card:focus-visible { border-color: #777; transform: translateY(-1px); }
-	.card-topline { display: flex; justify-content: space-between; gap: 0.75rem; align-items: center; color: #666; font-size: 0.8rem; }
-	.project-number { font-size: 0.8rem; font-weight: 750; color: #666; }
-	.project-card h2 { margin: 1rem 0 0.55rem; font-size: 1.25rem; }
-	.project-card p { color: #5d5d57; line-height: 1.5; }
-	.status { font-size: 0.72rem; font-weight: 750; padding: 0.28rem 0.48rem; border-radius: 999px; background: #ecece6; }
-	.status-active { background: #e4f5e8; }
-	.status-on_hold { background: #fff1cd; }
-	.status-completed { background: #e5eef9; }
-	.status-cancelled, .status-archived { background: #ececec; color: #666; }
-	.card-meta { display: flex; flex-wrap: wrap; gap: 0.65rem; font-size: 0.78rem; color: #777; }
-	.create-panel { display: grid; grid-template-columns: minmax(14rem, 0.75fr) minmax(20rem, 1.25fr); gap: 2rem; align-items: start; }
-	.project-form { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
-	.project-form label { display: grid; gap: 0.4rem; font-weight: 650; }
-	.project-form small { color: #777; font-weight: 500; }
-	.project-form input, .project-form textarea {
+	.project-card:hover,
+	.project-card:focus-visible {
+		border-color: #777;
+		transform: translateY(-1px);
+	}
+	.card-topline {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		align-items: center;
+		color: #666;
+		font-size: 0.8rem;
+	}
+	.project-number {
+		font-size: 0.8rem;
+		font-weight: 750;
+		color: #666;
+	}
+	.project-card h2 {
+		margin: 1rem 0 0.55rem;
+		font-size: 1.25rem;
+	}
+	.project-card p {
+		color: #5d5d57;
+		line-height: 1.5;
+	}
+	.status {
+		font-size: 0.72rem;
+		font-weight: 750;
+		padding: 0.28rem 0.48rem;
+		border-radius: 999px;
+		background: #ecece6;
+	}
+	.status-active {
+		background: #e4f5e8;
+	}
+	.status-on_hold {
+		background: #fff1cd;
+	}
+	.status-completed {
+		background: #e5eef9;
+	}
+	.status-cancelled,
+	.status-archived {
+		background: #ececec;
+		color: #666;
+	}
+	.card-meta {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.65rem;
+		font-size: 0.78rem;
+		color: #777;
+	}
+	.create-panel {
+		display: grid;
+		grid-template-columns: minmax(14rem, 0.75fr) minmax(20rem, 1.25fr);
+		gap: 2rem;
+		align-items: start;
+	}
+	.project-form {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1rem;
+	}
+	.project-form label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 650;
+	}
+	.project-form small {
+		color: #777;
+		font-weight: 500;
+	}
+	.project-form input,
+	.project-form textarea {
 		font: inherit;
 		border: 1px solid #b9b9b1;
 		border-radius: 0.5rem;
 		padding: 0.72rem;
 		background: white;
 	}
-	.project-form input:focus, .project-form textarea:focus { outline: 2px solid #222; outline-offset: 2px; }
-	.full { grid-column: 1 / -1; }
-	.error { color: #9b1c1c; margin: 0; }
-	.project-form button { justify-self: start; }
+	.project-form input:focus,
+	.project-form textarea:focus {
+		outline: 2px solid #222;
+		outline-offset: 2px;
+	}
+	.full {
+		grid-column: 1 / -1;
+	}
+	.error {
+		color: #9b1c1c;
+		margin: 0;
+	}
+	.project-form button {
+		justify-self: start;
+	}
 	@media (max-width: 820px) {
-		.page-header { display: block; }
-		.header-action { display: inline-block; margin-top: 0.5rem; }
-		.create-panel { grid-template-columns: 1fr; }
-		.project-form { grid-template-columns: 1fr; }
-		.full { grid-column: auto; }
-		.invitation-card { grid-template-columns: 1fr; }
-		.invitation-actions { justify-content: start; }
+		.page-header {
+			display: block;
+		}
+		.header-action {
+			display: inline-block;
+			margin-top: 0.5rem;
+		}
+		.create-panel {
+			grid-template-columns: 1fr;
+		}
+		.project-form {
+			grid-template-columns: 1fr;
+		}
+		.full {
+			grid-column: auto;
+		}
+		.invitation-card {
+			grid-template-columns: 1fr;
+		}
+		.invitation-actions {
+			justify-content: start;
+		}
 	}
 </style>

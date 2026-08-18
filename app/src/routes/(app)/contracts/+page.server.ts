@@ -22,7 +22,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		return await new ContractService(getDatabase()).listPortfolio(actor);
 	} catch (cause) {
-		if (cause instanceof TenantAccessError) throw httpError(403, 'Contract access is not permitted.');
+		if (cause instanceof TenantAccessError)
+			throw httpError(403, 'Contract access is not permitted.');
 		throw cause;
 	}
 };

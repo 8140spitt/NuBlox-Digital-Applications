@@ -23,7 +23,8 @@ export function parseScaledDecimal(
 	const match = /^(-?)(\d+)(?:\.(\d+))?$/.exec(text);
 	if (!match) throw new CommercialDecimalError(`${label} must be a decimal number.`);
 	const negative = match[1] === '-';
-	if (negative && !allowNegative) throw new CommercialDecimalError(`${label} must not be negative.`);
+	if (negative && !allowNegative)
+		throw new CommercialDecimalError(`${label} must not be negative.`);
 	const fraction = match[3] ?? '';
 	if (fraction.length > scale) {
 		throw new CommercialDecimalError(`${label} must have at most ${scale} decimal places.`);
@@ -102,7 +103,9 @@ export function sumMoney(values: readonly string[]): string {
 }
 
 export function subtractMoney(left: string, right: string): string {
-	const result = parseScaledDecimal(left, 4, 'Money amount', true) - parseScaledDecimal(right, 4, 'Money amount', true);
+	const result =
+		parseScaledDecimal(left, 4, 'Money amount', true) -
+		parseScaledDecimal(right, 4, 'Money amount', true);
 	return formatScaledDecimal(result, 4);
 }
 

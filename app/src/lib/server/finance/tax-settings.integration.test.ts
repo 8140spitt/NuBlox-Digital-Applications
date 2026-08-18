@@ -24,60 +24,95 @@ function insertedId(result: { insertId?: bigint }): string {
 }
 
 async function createUser(name: string): Promise<string> {
-	return insertedId(await db.insertInto('users').values({
-		public_id: randomUUID(),
-		display_name: `${PREFIX}${name}`,
-		status: 'active'
-	}).executeTakeFirstOrThrow());
+	return insertedId(
+		await db
+			.insertInto('users')
+			.values({
+				public_id: randomUUID(),
+				display_name: `${PREFIX}${name}`,
+				status: 'active'
+			})
+			.executeTakeFirstOrThrow()
+	);
 }
 
 async function createOrganisation(name: string): Promise<string> {
-	return insertedId(await db.insertInto('organisations').values({
-		public_id: randomUUID(),
-		legal_name: `${PREFIX}${name}`,
-		default_currency_code: 'GBP',
-		status: 'active'
-	}).executeTakeFirstOrThrow());
+	return insertedId(
+		await db
+			.insertInto('organisations')
+			.values({
+				public_id: randomUUID(),
+				legal_name: `${PREFIX}${name}`,
+				default_currency_code: 'GBP',
+				status: 'active'
+			})
+			.executeTakeFirstOrThrow()
+	);
 }
 
 async function createMember(organisationId: string, userId: string): Promise<string> {
-	return insertedId(await db.insertInto('organisation_members').values({
-		organisation_id: organisationId,
-		user_id: userId,
-		public_id: randomUUID(),
-		status: 'active',
-		joined_at: new Date('2026-08-17T08:00:00.000Z')
-	}).executeTakeFirstOrThrow());
+	return insertedId(
+		await db
+			.insertInto('organisation_members')
+			.values({
+				organisation_id: organisationId,
+				user_id: userId,
+				public_id: randomUUID(),
+				status: 'active',
+				joined_at: new Date('2026-08-17T08:00:00.000Z')
+			})
+			.executeTakeFirstOrThrow()
+	);
 }
 
-async function assignRole(organisationId: string, memberId: string, name: string, permissionKeys: string[]): Promise<void> {
-	const roleId = insertedId(await db.insertInto('organisation_roles').values({
-		organisation_id: organisationId,
-		public_id: randomUUID(),
-		name: `${PREFIX}${name}`,
-		is_active: 1
-	}).executeTakeFirstOrThrow());
-	const permissions = await db.selectFrom('permissions')
+async function assignRole(
+	organisationId: string,
+	memberId: string,
+	name: string,
+	permissionKeys: string[]
+): Promise<void> {
+	const roleId = insertedId(
+		await db
+			.insertInto('organisation_roles')
+			.values({
+				organisation_id: organisationId,
+				public_id: randomUUID(),
+				name: `${PREFIX}${name}`,
+				is_active: 1
+			})
+			.executeTakeFirstOrThrow()
+	);
+	const permissions = await db
+		.selectFrom('permissions')
 		.select(['id', 'permission_key'])
 		.where('permission_key', 'in', permissionKeys)
 		.where('is_active', '=', 1)
 		.execute();
 	expect(permissions.map((row) => row.permission_key).sort()).toEqual([...permissionKeys].sort());
-	await db.insertInto('role_permissions').values(permissions.map((permission) => ({
-		organisation_id: organisationId,
-		organisation_role_id: roleId,
-		permission_id: permission.id
-	}))).execute();
-	await db.insertInto('member_roles').values({
-		organisation_id: organisationId,
-		organisation_member_id: memberId,
-		organisation_role_id: roleId
-	}).executeTakeFirstOrThrow();
+	await db
+		.insertInto('role_permissions')
+		.values(
+			permissions.map((permission) => ({
+				organisation_id: organisationId,
+				organisation_role_id: roleId,
+				permission_id: permission.id
+			}))
+		)
+		.execute();
+	await db
+		.insertInto('member_roles')
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: memberId,
+			organisation_role_id: roleId
+		})
+		.executeTakeFirstOrThrow();
 }
 
 async function cleanup(): Promise<void> {
 	if (!db) return;
-	const organisations = await db.selectFrom('organisations')
+	const organisations = await db
+		.selectFrom('organisations')
 		.select('id')
 		.where('legal_name', 'like', `${PREFIX}%`)
 		.execute();
@@ -103,26 +138,47 @@ beforeAll(async () => {
 	preservingOrganisationId = await createOrganisation('Preserve existing');
 	ownerMemberId = await createMember(organisationId, ownerUserId);
 	readerMemberId = await createMember(organisationId, readerUserId);
-	await assignRole(organisationId, ownerMemberId, 'Owner', ['finance.view', 'finance.billing.manage']);
+	await assignRole(organisationId, ownerMemberId, 'Owner', [
+		'finance.view',
+		'finance.billing.manage'
+	]);
 	await assignRole(organisationId, readerMemberId, 'Reader', ['finance.view']);
-	actorOwner = { organisationId, userId: ownerUserId, memberId: ownerMemberId, correlationId: randomUUID() };
-	actorReader = { organisationId, userId: readerUserId, memberId: readerMemberId, correlationId: randomUUID() };
+	actorOwner = {
+		organisationId,
+		userId: ownerUserId,
+		memberId: ownerMemberId,
+		correlationId: randomUUID()
+	};
+	actorReader = {
+		organisationId,
+		userId: readerUserId,
+		memberId: readerMemberId,
+		correlationId: randomUUID()
+	};
 
-	const existingCategoryId = insertedId(await db.insertInto('tax_categories').values({
-		organisation_id: preservingOrganisationId,
-		public_id: randomUUID(),
-		code: 'VAT_STANDARD',
-		name: 'Tenant-owned standard VAT',
-		treatment: 'taxable',
-		is_active: 1
-	}).executeTakeFirstOrThrow());
-	await db.insertInto('tax_category_rates').values({
-		organisation_id: preservingOrganisationId,
-		tax_category_id: existingCategoryId,
-		rate_percent: '17.5000',
-		valid_from: new Date('2025-01-01T00:00:00.000Z'),
-		valid_to: null
-	}).executeTakeFirstOrThrow();
+	const existingCategoryId = insertedId(
+		await db
+			.insertInto('tax_categories')
+			.values({
+				organisation_id: preservingOrganisationId,
+				public_id: randomUUID(),
+				code: 'VAT_STANDARD',
+				name: 'Tenant-owned standard VAT',
+				treatment: 'taxable',
+				is_active: 1
+			})
+			.executeTakeFirstOrThrow()
+	);
+	await db
+		.insertInto('tax_category_rates')
+		.values({
+			organisation_id: preservingOrganisationId,
+			tax_category_id: existingCategoryId,
+			rate_percent: '17.5000',
+			valid_from: new Date('2025-01-01T00:00:00.000Z'),
+			valid_to: null
+		})
+		.executeTakeFirstOrThrow();
 });
 
 afterAll(async () => {
@@ -135,11 +191,23 @@ describe('invoice tax configuration', () => {
 		const workspace = await new TaxSettingsService(db, randomUUID).getWorkspace(actorOwner);
 		expect(workspace.canManage).toBe(true);
 		expect(workspace.categories.map((category) => category.code).sort()).toEqual([
-			'OUTSIDE_SCOPE', 'VAT_EXEMPT', 'VAT_REDUCED', 'VAT_STANDARD', 'VAT_ZERO'
+			'OUTSIDE_SCOPE',
+			'VAT_EXEMPT',
+			'VAT_REDUCED',
+			'VAT_STANDARD',
+			'VAT_ZERO'
 		]);
-		expect(workspace.categories.find((category) => category.code === 'VAT_STANDARD')?.rates[0]?.ratePercent).toBe('20.0000');
-		expect(workspace.categories.find((category) => category.code === 'VAT_REDUCED')?.rates[0]?.ratePercent).toBe('5.0000');
-		expect(workspace.categories.find((category) => category.code === 'VAT_ZERO')?.rates[0]?.ratePercent).toBe('0.0000');
+		expect(
+			workspace.categories.find((category) => category.code === 'VAT_STANDARD')?.rates[0]
+				?.ratePercent
+		).toBe('20.0000');
+		expect(
+			workspace.categories.find((category) => category.code === 'VAT_REDUCED')?.rates[0]
+				?.ratePercent
+		).toBe('5.0000');
+		expect(
+			workspace.categories.find((category) => category.code === 'VAT_ZERO')?.rates[0]?.ratePercent
+		).toBe('0.0000');
 	});
 
 	it('allows delegated billing administrators to add a category and append future rate history', async () => {
@@ -165,13 +233,15 @@ describe('invoice tax configuration', () => {
 	});
 
 	it('keeps tax management separate from finance read access', async () => {
-		await expect(new TaxSettingsService(db, randomUUID).createCategory(actorReader, {
-			code: 'FORBIDDEN',
-			name: 'Forbidden',
-			treatment: 'taxable',
-			ratePercent: '20',
-			validFrom: '2026-08-17'
-		})).rejects.toBeInstanceOf(TenantAccessError);
+		await expect(
+			new TaxSettingsService(db, randomUUID).createCategory(actorReader, {
+				code: 'FORBIDDEN',
+				name: 'Forbidden',
+				treatment: 'taxable',
+				ratePercent: '20',
+				validFrom: '2026-08-17'
+			})
+		).rejects.toBeInstanceOf(TenantAccessError);
 	});
 
 	it('does not overwrite existing tenant-owned rate history when defaults are ensured', async () => {
