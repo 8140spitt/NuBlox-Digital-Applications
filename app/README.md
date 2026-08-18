@@ -34,7 +34,7 @@ contract.manage
 finance.manage
 ```
 
-Package 004L accounting permissions:
+Accounting permissions released through Package 004M include:
 
 ```text
 finance.accounting.view
@@ -43,17 +43,20 @@ finance.accounting.post
 finance.accounting.reverse
 finance.accounting.export
 finance.accounting.export.reverse
-```
-
-Package 004M adds:
-
-```text
 finance.accounting.period.configure
 finance.accounting.period.close
 finance.accounting.period.reopen
 ```
 
-Owner / Administrator receive the complete accounting and period-governance families. Finance/Commercial receives `finance.accounting.view` only by default. Existing-tenant migration grants and future `OrganisationBootstrapService` grants use the same split, and explicit granular member deny remains stronger than `finance.manage`.
+Package 004N introduces no additional permission. Reports use the existing accounting read boundary:
+
+```text
+active membership
+AND finance.view
+AND (finance.accounting.view OR finance.manage)
+```
+
+Owner / Administrator receive the complete accounting family. Finance/Commercial receives `finance.accounting.view` only by default. Explicit granular member deny remains stronger than `finance.manage`.
 
 ## Key protected finance routes
 
@@ -71,6 +74,7 @@ Owner / Administrator receive the complete accounting and period-governance fami
 /finance/tax-relief
 /finance/accounting
 /finance/accounting/periods
+/finance/accounting/reports
 /finance/accounting/exports/[exportPublicId]
 ```
 
@@ -91,7 +95,7 @@ Available Payment
 − Active Bad-Debt Recoveries
 ```
 
-Operational finance remains authoritative. Accounting journals/reporting never replace those source facts.
+Operational finance remains authoritative. Accounting journals and reports never replace source facts.
 
 ## Package 004L — accounting evidence
 
@@ -134,22 +138,66 @@ open -> soft_closed -> hard_closed
  +------- reasoned reopen--+
 ```
 
-Server-side enforcement:
-
-- source posting requires an accounting date in exactly one configured `open` period;
-- journal reversal requires its reversal date in an `open` period;
-- accounting export must exactly match one configured `soft_closed` or `hard_closed` period;
-- hard close is blocked until every journal in the period has active export evidence;
-- export reversal from a `hard_closed` period is blocked until a reasoned reopen;
-- every period status change is retained in `accounting_period_status_events`.
-
-Financial years and accounting periods are tenant scoped, non-overlapping, and periods must be fully contained in their financial year.
-
-The organisation row is the accounting governance mutex for period mutations and posting/export decisions. Locking/current reads preserve visibility after waits under MySQL `REPEATABLE READ`.
-
-Period governance constrains creation of **new accounting evidence**. It never rewrites operational source events or already-posted journals.
+Server-side enforcement requires open periods for posting/reversal, exact soft/hard-closed periods for export, export completeness before hard close and explicit reopen before reversing hard-closed export evidence.
 
 See `docs/46-controlled-accounting-period-close.md`.
+
+## Package 004N — trial balance and financial reporting
+
+Core module:
+
+```text
+src/lib/server/finance/accounting-reporting-service.ts
+```
+
+Protected workspace:
+
+```text
+/finance/accounting/reports
+```
+
+Package 004N is migration-free. It derives reports from `accounting_journal_entries`, `accounting_journal_lines`, account metadata and the governed period calendar.
+
+Each report is scoped to one tenant, one accounting period and one currency.
+
+### Trial balance
+
+```text
+opening = journal net before period start
+period  = debit / credit movement inside selected period
+closing = journal net through period end
+```
+
+The service derives opening, period and closing debit/credit equality flags independently.
+
+### Profit and loss
+
+Revenue and expense accounts provide:
+
+```text
+period revenue
+period expenses
+period profit / loss
+financial-year-to-date revenue
+financial-year-to-date expenses
+financial-year-to-date profit / loss
+```
+
+### Balance-sheet view
+
+Asset, liability and equity accounts are presented at closing balance. Until a later year-end closing-journal boundary exists, cumulative revenue less expenses is shown explicitly as **unclosed earnings** and included in the balance-sheet equality control.
+
+### Historical reversal semantics
+
+An additive reversal journal changes reporting from its own accounting date onward. The original journal remains included in earlier periods, so historical prior-period reporting is not rewritten.
+
+### Currency policy
+
+GBP, EUR and other currencies remain separate. Package 004N does not translate or aggregate currencies.
+
+An open-period report is labelled provisional because later journals/reversals can still affect it.
+
+See `docs/47-controlled-trial-balance-financial-reporting.md`.
 
 ## Generated database types
 
@@ -192,13 +240,14 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004M release target:
+Package 004N release target:
 
 ```text
 24 production migrations applied / 0 pending
 381 tables / 848 foreign keys / 492 CHECK constraints
 zero generated drift across database.d.ts + collections.d.ts + accounting.d.ts
-37 integration files / 150 real-MySQL tests
+38 integration files / 154 real-MySQL tests
+accounting reporting: 4 / 4
 accounting periods: 6 / 6
 accounting period bootstrap + explicit deny: 1 / 1
 accounting core: 5 / 5
@@ -206,4 +255,4 @@ accounting concurrency: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
 
-The next accounting boundary is **Controlled Trial Balance and Financial Reporting**.
+The next accounting boundary is **Controlled Year-End Close and Retained Earnings**.
