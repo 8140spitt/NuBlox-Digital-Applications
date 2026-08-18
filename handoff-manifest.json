@@ -1,6 +1,6 @@
 {
   "name": "NuBlox Developer Handoff Pack",
-  "manifest_version": 14,
+  "manifest_version": 15,
   "generated_date": "2026-08-18",
   "product": {
     "career_count": 84,
@@ -36,33 +36,6 @@
     ],
     "umbrella_rule": "resolve granular key first; same-domain umbrella applies only on granular default-deny; explicit granular deny cannot be bypassed; umbrellas never cross domains"
   },
-  "standard_roles": {
-    "names": [
-      "Owner",
-      "Administrator",
-      "Manager",
-      "Finance/Commercial",
-      "Member/Professional",
-      "Field Worker",
-      "Read Only"
-    ],
-    "founding_member_default": "Owner only",
-    "package_004m_defaults": {
-      "Owner": [
-        "finance.accounting.period.configure",
-        "finance.accounting.period.close",
-        "finance.accounting.period.reopen"
-      ],
-      "Administrator": [
-        "finance.accounting.period.configure",
-        "finance.accounting.period.close",
-        "finance.accounting.period.reopen"
-      ],
-      "Finance/Commercial": []
-    },
-    "finance_commercial_accounting_read": "finance.accounting.view",
-    "bootstrap_parity": "existing-tenant migration grants and future OrganisationBootstrapService grants use the same Package 004M split; integration coverage also proves explicit granular deny precedence"
-  },
   "implemented_workflow": [
     "CRM Opportunity",
     "Estimate",
@@ -84,68 +57,104 @@
     "Additive Journal Reversal",
     "Checksum-Backed Generic Accounting Export",
     "Additive Accounting Export Reversal",
-    "Controlled Accounting Period and Close Governance"
+    "Controlled Accounting Period and Close Governance",
+    "Derived Trial Balance, P&L and Balance-Sheet Reporting"
   ],
-  "package_004l": {
-    "name": "Controlled General-Ledger Posting and Accounting Export Evidence",
-    "status": "released on main",
-    "migration": "database/migrations/20260818100000_accounting_posting_export.sql",
-    "spec": "docs/45-controlled-accounting-posting-export.md",
-    "routes": [
-      "/finance/accounting",
-      "/finance/accounting/exports/[exportPublicId]"
+  "accounting_authority": {
+    "read": "finance.view AND (finance.accounting.view OR finance.manage)",
+    "finance_commercial_default": [
+      "finance.view",
+      "finance.accounting.view"
     ],
-    "governing_rule": "journals are source-derived and balanced; corrections and export corrections are additive"
+    "owner_admin_period_permissions": [
+      "finance.accounting.period.configure",
+      "finance.accounting.period.close",
+      "finance.accounting.period.reopen"
+    ],
+    "reporting_new_permissions": [],
+    "explicit_deny_rule": "an explicit finance.accounting.view deny blocks reporting even when finance.manage is otherwise allowed"
   },
   "package_004m": {
     "name": "Controlled Accounting Periods and Close Governance",
-    "status": "implemented on PR #35 pending exact documentation-synchronised release gate",
+    "status": "released on main",
     "migration": "database/migrations/20260818120000_accounting_period_close_governance.sql",
     "spec": "docs/46-controlled-accounting-period-close.md",
     "route": "/finance/accounting/periods",
-    "service": "app/src/lib/server/finance/accounting-period-service.ts",
     "tables": [
       "accounting_financial_years",
       "accounting_periods",
       "accounting_period_status_events"
     ],
-    "permissions": [
-      "finance.accounting.period.configure",
-      "finance.accounting.period.close",
-      "finance.accounting.period.reopen"
+    "release_head": "05998b8d59fdac8bd80590aca7f9ffc7b6c44d77",
+    "merge_commit": "480e08be34075da9a07be61e2d657caef752f90d",
+    "release_validation": "24 migrations / 381 tables / 848 FKs / 492 CHECKs / 37 integration files / 150 tests / Svelte 0-0"
+  },
+  "package_004n": {
+    "name": "Controlled Trial Balance and Financial Reporting",
+    "status": "implemented on PR #37 pending exact documentation-synchronised release gate",
+    "migration_free": true,
+    "migration": null,
+    "spec": "docs/47-controlled-trial-balance-financial-reporting.md",
+    "route": "/finance/accounting/reports",
+    "service": "app/src/lib/server/finance/accounting-reporting-service.ts",
+    "permissions_added": [],
+    "read_authority": "finance.view AND (finance.accounting.view OR finance.manage)",
+    "dimensions": [
+      "tenant",
+      "accounting period",
+      "currency"
     ],
-    "lifecycle": [
-      "open -> soft_closed",
-      "soft_closed -> hard_closed",
-      "soft_closed -> open via reasoned reopen",
-      "hard_closed -> open via reasoned reopen"
+    "trial_balance": {
+      "opening": "journal net before selected period start",
+      "movement": "raw debit and credit movement inside selected period",
+      "closing": "journal net through selected period end",
+      "controls": [
+        "opening debit equals opening credit",
+        "period debit equals period credit",
+        "closing debit equals closing credit"
+      ]
+    },
+    "profit_and_loss": [
+      "period revenue",
+      "period expenses",
+      "period profit/loss",
+      "financial-year-to-date revenue",
+      "financial-year-to-date expenses",
+      "financial-year-to-date profit/loss"
     ],
+    "balance_sheet": {
+      "account_types": [
+        "asset",
+        "liability",
+        "equity"
+      ],
+      "unclosed_earnings": "cumulative revenue less cumulative expenses through selected period end until a later year-end close journal exists",
+      "control": "assets = liabilities + equity + unclosed earnings"
+    },
     "invariants": [
-      "financial years do not overlap within a tenant",
-      "accounting periods do not overlap and are contained within one financial year",
-      "journal posting and journal reversal require an accounting date in exactly one configured open period",
-      "accounting export must exactly match one configured soft-closed or hard-closed period",
-      "hard close requires active export evidence for every journal in the period",
-      "hard-closed export evidence cannot be reversed until the period is explicitly reopened",
-      "period status transitions are additive evidence with member, reason and timestamp",
-      "period governance constrains new accounting evidence and never rewrites operational events or posted journals"
+      "reports derive only from immutable accounting journal lines and governed period metadata",
+      "no persisted or editable report balance exists",
+      "currencies are never combined implicitly",
+      "reversal journals affect reports from their own accounting date onward",
+      "earlier accounting periods remain historically unchanged after a later reversal",
+      "open-period reports are explicitly provisional",
+      "foreign accounting period identifiers are tenant-masked as unavailable",
+      "explicit accounting-view deny overrides finance.manage fallback"
     ],
-    "audit_actions": [
-      "finance.accounting.year.created",
-      "finance.accounting.period.created",
-      "finance.accounting.period.soft_closed",
-      "finance.accounting.period.hard_closed",
-      "finance.accounting.period.reopened"
+    "tests": [
+      "app/src/lib/server/finance/accounting-reporting.integration.test.ts"
     ],
     "deliberate_exclusions": [
-      "automatic period generation",
-      "year-end closing journals and retained-earnings transfer",
-      "trial balance/P&L/balance-sheet presentation",
-      "statutory financial statements",
+      "persisted report snapshots",
+      "year-end closing journals",
+      "retained-earnings transfer",
+      "statutory financial statements and filing",
+      "consolidation",
+      "cash-flow statement",
+      "budgets/forecasts",
+      "FX translation/revaluation",
       "bank reconciliation",
-      "purchase-ledger/AP expansion",
-      "FX revaluation/translation",
-      "provider-specific accounting period locks"
+      "purchase-ledger/AP expansion"
     ]
   },
   "database_types": {
@@ -175,32 +184,35 @@
     "pending_migrations": 0,
     "schema_counts": "381 / 848 / 492",
     "generated_kysely_drift": "zero across core + collections + accounting outputs",
-    "integration_files_target": 37,
-    "real_mysql_tests_target": 150,
+    "integration_files_target": 38,
+    "real_mysql_tests_target": 154,
+    "accounting_reporting_tests": 4,
     "accounting_period_tests": 6,
     "accounting_period_bootstrap_and_deny_tests": 1,
     "accounting_core_tests": 5,
     "accounting_concurrency_tests": 1,
     "svelte_errors_target": 0,
     "svelte_warnings_target": 0,
-    "status": "exact documentation-synchronised Package 004M head must reproduce the complete gate before merge"
+    "status": "exact documentation-synchronised Package 004N head must reproduce the complete gate before merge"
   },
   "next_boundary": {
     "package": "004-contracts-finance",
-    "name": "Controlled Trial Balance and Financial Reporting",
+    "name": "Controlled Year-End Close and Retained Earnings",
     "recommended_sequence": [
-      "derive trial balance from immutable active accounting journals by accounting period",
-      "prove debit/credit equality and opening/current/closing balances",
-      "add account-type financial reporting without mutable report balances",
-      "make reporting respect period status and reversal evidence",
-      "keep statutory filing, consolidation, bank reconciliation, AP expansion and FX as later boundaries"
+      "require a complete financial year with governed accounting periods before year-end close",
+      "define whether every period must be hard closed before a year-end closing transaction can be prepared",
+      "derive the financial-year revenue/expense result from immutable journal evidence",
+      "create a controlled balanced closing journal that transfers revenue/expense balances to an explicitly mapped retained-earnings account",
+      "record exact year-end close provenance, authorisation and journal linkage",
+      "make correction/reopen additive through reversal or reopening evidence rather than mutating the closing journal",
+      "update Package 004N so unclosed earnings become retained earnings only after the controlled close journal takes effect"
     ],
-    "governing_rule": "financial reporting must be a derivation over governed journal evidence; reports must never become a second editable ledger"
+    "governing_rule": "year-end close must consume governed journal/period evidence and create additive balanced accounting evidence; it must never rewrite prior journals or period history"
   },
   "open_product_gaps": [
     "General/direct contract creation remains absent; current formation is accepted-quotation-derived.",
     "Accepted-quotation conversion edge case remains when the source estimate already has a project but conversion provenance is absent.",
-    "Trial balance and financial statement reporting remain the next accounting boundary.",
-    "Provider-specific accounting integrations, bank reconciliation, purchase-ledger/AP and FX remain later boundaries."
+    "Year-end close and retained-earnings transfer are the next accounting boundary.",
+    "Statutory financial statements, provider integrations, bank reconciliation, purchase-ledger/AP and FX remain later boundaries."
   ]
 }
