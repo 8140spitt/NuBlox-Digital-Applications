@@ -52,7 +52,7 @@ The validated 001–010 baseline contains:
 427 CHECK constraints
 ```
 
-Package 004M advances the production stream to:
+Package 004N is migration-free, so the current production stream remains:
 
 ```text
 24 production migrations
@@ -115,6 +115,8 @@ Controlled Accounting Journal Posting / Reversal
 Checksum-backed Accounting Export Evidence
     ↓
 Controlled Accounting Period / Close Governance
+    ↓
+Trial Balance + P&L + Balance-Sheet Reporting
 ```
 
 Detailed finance specifications:
@@ -131,6 +133,7 @@ Detailed finance specifications:
 - [`docs/44-controlled-vat-bad-debt-relief.md`](docs/44-controlled-vat-bad-debt-relief.md)
 - [`docs/45-controlled-accounting-posting-export.md`](docs/45-controlled-accounting-posting-export.md)
 - [`docs/46-controlled-accounting-period-close.md`](docs/46-controlled-accounting-period-close.md)
+- [`docs/47-controlled-trial-balance-financial-reporting.md`](docs/47-controlled-trial-balance-financial-reporting.md)
 
 ## Authoritative accounts receivable
 
@@ -171,31 +174,43 @@ open -> soft_closed -> hard_closed
  +------- reasoned reopen--+
 ```
 
-Server-side accounting controls now require:
+Server-side accounting controls require open periods for journal posting/reversal, exact closed-period ranges for export, export completeness before hard close, and explicit reopen before reversing hard-closed export evidence.
 
-- journal posting accounting date → exactly one configured `open` period;
-- journal reversal date → `open` period;
-- export range → exact configured `soft_closed` or `hard_closed` period;
-- hard close → every journal in the period has active export evidence;
-- export reversal in a hard-closed period → explicit reopen first.
+## Package 004N — controlled trial balance and financial reporting
 
-Period state constrains new accounting evidence and **never rewrites operational source events or already-posted journal history**.
-
-New permissions:
+Protected route:
 
 ```text
-finance.accounting.period.configure
-finance.accounting.period.close
-finance.accounting.period.reopen
+/finance/accounting/reports
 ```
 
-Owner / Administrator receive all three. Finance/Commercial remains `finance.accounting.view` only by default. Existing and future organisations use equivalent persisted grants, and integration coverage proves an explicit granular deny still overrides `finance.manage`.
+Package 004N is a **migration-free reporting activation** under the existing `finance.view` + `finance.accounting.view` boundary.
 
-See [`docs/46-controlled-accounting-period-close.md`](docs/46-controlled-accounting-period-close.md).
+Every report is tenant-, period- and currency-specific and derives only from immutable accounting journal lines.
+
+```text
+Opening balance
++ Period debit/credit movement
+= Closing balance
+```
+
+The workspace provides:
+
+- opening, period and closing trial-balance columns;
+- independent opening/period/closing debit-credit equality controls;
+- period and financial-year-to-date P&L;
+- closing asset/liability/equity presentation;
+- explicit cumulative **unclosed earnings** until a later year-end closing-journal boundary exists.
+
+Reversal journals affect reports from their own accounting date onward. Earlier periods remain historically unchanged. GBP, EUR and other currencies are never combined implicitly.
+
+Open-period reporting is explicitly provisional because later journals dated in the period can still change the result.
+
+See [`docs/47-controlled-trial-balance-financial-reporting.md`](docs/47-controlled-trial-balance-financial-reporting.md).
 
 ## Database-derived types
 
-Kysely generation is partitioned across:
+Kysely generation remains partitioned across:
 
 ```text
 app/src/lib/server/db/generated/database.d.ts
@@ -203,20 +218,20 @@ app/src/lib/server/db/generated/collections.d.ts
 app/src/lib/server/db/generated/accounting.d.ts
 ```
 
-All remain derivative of the migrated MySQL schema.
+All are derivative of migrated MySQL.
 
 ## Deliberate finance exclusions
 
 Still not claimed implemented:
 
-- automatic accounting-period generation;
 - year-end closing journals / retained-earnings transfer;
-- trial balance / P&L / balance-sheet presentation;
-- statutory financial statements and consolidation;
+- statutory financial statements and Companies House filing;
+- consolidated/group reporting;
+- cash-flow statement, budgets and forecasts;
 - provider-specific Sage/Xero/QuickBooks integration;
 - bank feeds and bank reconciliation;
 - purchase-ledger/AP expansion beyond current operational sources;
-- FX revaluation/translation;
+- FX revaluation/translation or reporting-currency consolidation;
 - direct HMRC VAT Return / MTD submission;
 - construction domestic reverse-charge invoice workflow;
 - expected-credit-loss/provisioning accounting;
@@ -234,13 +249,14 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004M release target:
+Package 004N release target:
 
 ```text
 24 migrations applied / 0 pending
 381 tables / 848 foreign keys / 492 CHECK constraints
 zero Kysely drift across core + collections + accounting outputs
-37 integration files / 150 real-MySQL tests
+38 integration files / 154 real-MySQL tests
+accounting reporting: 4 / 4
 accounting periods: 6 / 6
 accounting period bootstrap + explicit deny: 1 / 1
 accounting core: 5 / 5
@@ -250,6 +266,6 @@ svelte-check: 0 errors / 0 warnings
 
 The exact documentation-synchronised PR head must reproduce this gate before merge.
 
-The next accounting boundary is **Controlled Trial Balance and Financial Reporting**.
+The next accounting boundary is **Controlled Year-End Close and Retained Earnings**.
 
 For detailed authorization rules see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
