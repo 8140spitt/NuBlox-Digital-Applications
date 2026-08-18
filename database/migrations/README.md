@@ -51,9 +51,10 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 20260818080000_vat_bad_debt_relief.sql
 20260818100000_accounting_posting_export.sql
 20260818120000_accounting_period_close_governance.sql
+20260818170000_year_end_close_retained_earnings.sql
 ```
 
-Including Baseline v1, the production stream contains **24 migrations**.
+Including Baseline v1, the Package 004O stream contains **25 migrations**.
 
 ## Migration-free reporting activations
 
@@ -63,30 +64,9 @@ Package 004F derives historical customer positions from immutable finance-event 
 
 ### Package 004N — trial balance and financial reporting
 
-Package 004N adds no persistent business fact and therefore no migration.
+Package 004N adds no persistent business fact and therefore no migration. It derives tenant-, period- and currency-specific trial balance, P&L and balance-sheet presentation from Package 004L/004M evidence.
 
-It derives:
-
-```text
-opening trial-balance position
-period debit / credit movement
-closing trial-balance position
-period + YTD profit and loss
-closing asset / liability / equity presentation
-unclosed earnings
-```
-
-from existing Package 004L/004M accounting evidence:
-
-```text
-accounting_accounts
-accounting_journal_entries
-accounting_journal_lines
-accounting_financial_years
-accounting_periods
-```
-
-Reports are tenant-, period- and currency-specific. Reversal journals affect reporting at their own accounting date; no historical journal is deleted or suppressed. No report balance is persisted.
+Package 004O leaves year-end closing/reversal journals in trial-balance and balance-sheet evidence while the year-end reporting bridge excludes those closing mechanics from operating P&L aggregation.
 
 See `docs/47-controlled-trial-balance-financial-reporting.md`.
 
@@ -128,25 +108,49 @@ Posting/reversal requires an open period. Export requires an exact soft/hard-clo
 
 See `docs/46-controlled-accounting-period-close.md`.
 
-## Current structure
+## Package 004O — year-end close and retained earnings
 
-Because Package 004N is migration-free, the current clean MySQL 8.4.11 structure remains:
+`20260818170000_year_end_close_retained_earnings.sql` extends the accounting semantic/source vocabularies and adds:
 
 ```text
-24 migrations applied
+accounting_year_end_close_preparations
+accounting_year_end_closes
+accounting_year_end_close_reversals
+```
+
+It also adds:
+
+```text
+finance.accounting.year_end.prepare
+finance.accounting.year_end.authorise
+finance.accounting.year_end.reverse
+```
+
+A close preparation is immutable and fingerprinted. Authorisation requires a different member, re-derives the source fingerprint under the organisation accounting mutex and creates a balanced `year_end_close` journal that transfers revenue/expense balances to an explicitly mapped retained-earnings equity account. Correction is additive through a reversal journal and reversal provenance.
+
+See `docs/48-controlled-year-end-close-retained-earnings.md`.
+
+## Current structure
+
+Package 004O clean MySQL 8.4.11 structure:
+
+```text
+25 migrations applied
 0 pending
-381 base tables
-848 foreign keys
-492 CHECK constraints
+384 base tables
+857 foreign keys
+495 CHECK constraints
 ```
 
 ## Current validation target
 
 ```text
-24 production migrations applied / 0 pending
-381 base tables / 848 foreign keys / 492 CHECK constraints
+25 production migrations applied / 0 pending
+384 base tables / 857 foreign keys / 495 CHECK constraints
 zero drift across core + collections + accounting generated Kysely outputs
-38 integration files / 154 real-MySQL tests
+40 integration files / 158 real-MySQL tests
+accounting year-end: 3 / 3
+accounting year-end bootstrap + explicit deny: 1 / 1
 accounting reporting: 4 / 4
 accounting periods: 6 / 6
 accounting period bootstrap + explicit deny: 1 / 1
@@ -155,7 +159,7 @@ accounting concurrency: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
 
-These totals become release authority only after the exact documentation-synchronised Package 004N head reproduces the complete gate.
+These totals become release authority only after the exact documentation-synchronised Package 004O head reproduces the complete gate.
 
 ## Migration rules
 
