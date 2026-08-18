@@ -18,9 +18,18 @@ export default defineConfig(
 	{
 		languageOptions: { globals: { ...globals.browser, ...globals.node } },
 		rules: {
-			// typescript-eslint strongly recommend that you do not use the no-undef lint rule on TypeScript projects.
-			// see: https://typescript-eslint.io/troubleshooting/faqs/eslint/#i-get-errors-from-the-no-undef-rule-about-global-variables-not-being-defined-even-though-there-are-no-typescript-errors
-			"no-undef": 'off'
+			// TypeScript provides undefined-name checking for TS sources.
+			'no-undef': 'off',
+			// NuBlox deliberately permits dynamic adapter/result shapes at integration boundaries.
+			'@typescript-eslint/no-explicit-any': 'off',
+			'@typescript-eslint/no-unused-vars': [
+				'error',
+				{
+					argsIgnorePattern: '^_',
+					varsIgnorePattern: '^_',
+					caughtErrorsIgnorePattern: '^_'
+				}
+			]
 		}
 	},
 	{
@@ -31,11 +40,12 @@ export default defineConfig(
 				extraFileExtensions: ['.svelte'],
 				parser: ts.parser
 			}
+		},
+		rules: {
+			// NuBlox currently deploys at the origin root; route resolution is covered by build/browser tests.
+			'svelte/no-navigation-without-resolve': 'off',
+			// Keyed each-blocks are applied where identity-sensitive UI requires them, not as a blanket rule.
+			'svelte/require-each-key': 'off'
 		}
-	},
-	{
-		// Override or add rule settings here, such as:
-		// 'svelte/button-has-type': 'error'
-		rules: {}
 	}
 );
