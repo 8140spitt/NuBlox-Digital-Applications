@@ -13,7 +13,8 @@ This app is a modular monolith following `docs/05-system-architecture.md`.
 - Tenant-owned records are resolved through active tenant context rather than public/surrogate ID alone.
 - Reporting derives from authoritative domain facts rather than parallel editable balance stores.
 - Tax rates are effective-dated reference facts; later changes never rewrite issued-document tax evidence.
-- Collections, credit control and bad-debt processing react to authoritative receivables but never create a second receivable ledger.
+- Collections, credit control, bad-debt and VAT-relief processing react to authoritative facts but never create a second receivable ledger.
+- Accounting corrections are additive evidence; original commercial/payment/tax facts are not silently rewritten.
 
 ## Stack
 
@@ -63,19 +64,20 @@ contract.manage
 finance.manage
 ```
 
-Package 004J adds under `finance.manage`:
+Package 004K adds under `finance.manage`:
 
 ```text
-finance.bad_debt.view
-finance.bad_debt.case.manage
-finance.bad_debt.recommend
-finance.bad_debt.write_off.authorise
-finance.bad_debt.write_off.reverse
-finance.bad_debt.recovery.record
-finance.bad_debt.recovery.reverse
+finance.tax_relief.view
+finance.tax_relief.prepare
+finance.tax_relief.authorise
+finance.tax_relief.reverse
+finance.tax_relief.repayment.record
+finance.tax_relief.repayment.reverse
+finance.tax_relief.post
+finance.tax_relief.post.reverse
 ```
 
-Tax settings reuse released finance authority:
+Tax settings continue to reuse released finance authority:
 
 ```text
 finance.view                  → read tax settings
@@ -91,7 +93,7 @@ New organisations receive Owner, Administrator, Manager, Finance/Commercial, Mem
 
 Owner / Administrator receive broad project, CRM, commercial, contract and finance umbrellas plus released granular permissions. Existing-tenant migrations and future `OrganisationBootstrapService` defaults are maintained with equivalent persisted grants.
 
-For Package 004J Finance/Commercial receives bad-debt view, case management, recommendation and recovery/recovery-reversal authority, but deliberately not write-off authorisation/reversal or `finance.manage`.
+For Package 004K Finance/Commercial receives VAT-relief view + preparation authority only. It deliberately does not receive authorisation/reversal, VAT repayment, VAT-return posting or `finance.manage` authority by default.
 
 ## Protected application surfaces
 
@@ -108,6 +110,7 @@ Key protected routes include:
 /contracts/[contractPublicId]
 /finance/billing
 /finance/tax
+/finance/tax-relief
 /finance/invoices
 /finance/credit-notes
 /finance/payments
@@ -146,6 +149,8 @@ src/lib/server/finance/credit-control-context.ts
 src/lib/server/finance/bad-debt-common.ts
 src/lib/server/finance/bad-debt-query-service.ts
 src/lib/server/finance/bad-debt-mutation-service.ts
+src/lib/server/finance/tax-relief-service.ts
+src/lib/server/finance/tax-relief-control-service.ts
 ```
 
 ### Invoice tax configuration
@@ -191,34 +196,47 @@ See `docs/39-controlled-collections-dunning.md`, `docs/40-collections-automation
 
 ### Package 004J bad debt
 
-`BadDebtQueryService` and `BadDebtMutationService` implement:
+`BadDebtQueryService` and `BadDebtMutationService` implement invoice-specific assessment, immutable recommendation, separate write-off authorisation, additive write-off reversal, payment-linked recovery and additive recovery reversal.
 
-```text
-invoice-specific assessment case
-immutable recommendation
-separate write-off authorisation
-partial/full active write-off
-additive write-off reversal
-payment-linked bad-debt recovery
-additive recovery reversal
-```
+A recommendation does not change receivable. Active write-off does. Write-off reversal restores receivable. Recovery consumes payment capacity without reopening customer receivable.
 
-A recommendation does not change receivable. Active write-off does. Write-off reversal restores receivable.
-
-Recovery consumes existing payment capacity but does not reopen the customer debt. Active recovery must be reversed before either the source payment or write-off can be reversed.
-
-Write-off authorisation always revalidates the recommendation against the **current** invoice outstanding balance under customer → invoice locking.
-
-`ReceivablesControlReportingService` preserves historical statement/aging semantics while adding:
-
-```text
-write-off authorisation → statement credit
-write-off reversal      → statement debit
-```
-
-Aging subtracts write-offs active as of the selected period end. Recovery is not shown as a customer receivable movement because the debt was already removed by the write-off.
+Package 004K adds dependency guards so a write-off cannot be reversed while an authorised VAT relief claim remains active, and a recovery cannot be reversed while active VAT repayment evidence still depends on it.
 
 See `docs/43-controlled-bad-debt-writeoff-recovery.md`.
+
+### Package 004K VAT bad-debt relief
+
+`TaxReliefService` owns the transactional source-linked evidence workflow. `ControlledTaxReliefService` is the public application boundary used by `/finance/tax-relief` and adds authoritative statutory-date guards.
+
+```text
+active separate-tax-adjustment write-off
+        ↓
+prepared claim + source tax lines
+        ↓
+separate authorisation
+        ↓
+Box 4 VAT-return posting evidence
+        ↓
+later Package 004J recovery
+        ↓
+proportional VAT repayment
+        ↓
+Box 1 VAT-return posting evidence
+```
+
+Preparation stores the later-of-supply/due-date eligibility basis and explicit external-condition attestations. Where the issued invoice has a due date, that stored due date is authoritative and cannot be replaced with an earlier operator date.
+
+VAT relief values are calculated from immutable `financial_document_item_taxes` source evidence rather than current tax settings or user-entered VAT amounts.
+
+Authorisation revalidates eligibility, active write-off capacity and exact source-tax capacity under current/locking reads.
+
+Later VAT repayment is derived proportionally from an exact active bad-debt recovery. The controlled posting boundary requires the repayment VAT period to contain the operational recovery's actual `recovered_at` date.
+
+Claim, repayment and VAT-return posting corrections are all additive reversal records.
+
+This application records VAT-return posting evidence only. It does not submit a VAT Return, maintain a complete statutory VAT account or create double-entry general-ledger journals.
+
+See `docs/44-controlled-vat-bad-debt-relief.md`.
 
 ## Generated database types
 
@@ -229,7 +247,7 @@ src/lib/server/db/generated/database.d.ts
     core schema, excluding receivable_*
 
 src/lib/server/db/generated/collections.d.ts
-    receivable_* collections, credit-control and bad-debt schema
+    receivable_* collections, credit-control, bad-debt and VAT-relief schema
 ```
 
 `DatabaseSchema` composes the two generated `DB` interfaces so normal handles and transactions share one type authority.
@@ -267,17 +285,18 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004J release contract:
+Package 004K release contract:
 
 ```text
-21 production migrations applied / 0 pending
-362 tables / 804 foreign keys / 465 CHECK constraints
+22 production migrations applied / 0 pending
+370 tables / 824 foreign keys / 473 CHECK constraints
 zero generated Kysely drift across database.d.ts + collections.d.ts
-30 integration files / 129 real-MySQL tests
+32 integration files / 136 real-MySQL tests
+tax-relief: 6 tests
+tax-relief bootstrap parity: 1 test
+tax settings: 4 tests
 bad-debt core: 6 tests
 bad-debt concurrency: 1 test
-bad-debt bootstrap parity: 1 test
-tax settings: 4 tests
 svelte-check: 0 errors / 0 warnings
 ```
 
