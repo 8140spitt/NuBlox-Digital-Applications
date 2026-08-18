@@ -3,8 +3,8 @@ import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
+import { ControlledTaxReliefService } from '$lib/server/finance/tax-relief-control-service';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
-import { TaxReliefService } from '$lib/server/finance/tax-relief-service';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -48,7 +48,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new TaxReliefService(getDatabase()).getWorkspace(actor);
+		return await new ControlledTaxReliefService(getDatabase()).getWorkspace(actor);
 	} catch (cause) {
 		if (cause instanceof TenantAccessError) throw httpError(403, 'VAT bad-debt relief access is not permitted.');
 		throw cause;
@@ -61,7 +61,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new TaxReliefService(getDatabase()).prepareClaim(actor, {
+			await new ControlledTaxReliefService(getDatabase()).prepareClaim(actor, {
 				writeOffPublicId: String(data.get('writeOffPublicId') ?? ''),
 				supplyDate: String(data.get('supplyDate') ?? ''),
 				paymentDueDate: String(data.get('paymentDueDate') ?? ''),
@@ -83,7 +83,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new TaxReliefService(getDatabase()).authoriseClaim(actor, {
+			await new ControlledTaxReliefService(getDatabase()).authoriseClaim(actor, {
 				claimPublicId: String(data.get('claimPublicId') ?? ''),
 				reason: String(data.get('reason') ?? '')
 			});
@@ -97,7 +97,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new TaxReliefService(getDatabase()).reverseClaim(actor, {
+			await new ControlledTaxReliefService(getDatabase()).reverseClaim(actor, {
 				claimPublicId: String(data.get('claimPublicId') ?? ''),
 				reason: String(data.get('reason') ?? '')
 			});
@@ -111,7 +111,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new TaxReliefService(getDatabase()).recordRepayment(actor, {
+			await new ControlledTaxReliefService(getDatabase()).recordRepayment(actor, {
 				claimPublicId: String(data.get('claimPublicId') ?? ''),
 				recoveryPublicId: String(data.get('recoveryPublicId') ?? ''),
 				considerationPaymentAmount: String(data.get('considerationPaymentAmount') ?? ''),
@@ -127,7 +127,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new TaxReliefService(getDatabase()).reverseRepayment(actor, {
+			await new ControlledTaxReliefService(getDatabase()).reverseRepayment(actor, {
 				repaymentPublicId: String(data.get('repaymentPublicId') ?? ''),
 				reason: String(data.get('reason') ?? '')
 			});
@@ -145,7 +145,7 @@ export const actions: Actions = {
 			return fail(400, { actionError: 'VAT return posting source is invalid.' });
 		}
 		try {
-			await new TaxReliefService(getDatabase()).recordReturnPosting(actor, {
+			await new ControlledTaxReliefService(getDatabase()).recordReturnPosting(actor, {
 				sourceKind,
 				sourcePublicId: String(data.get('sourcePublicId') ?? ''),
 				vatReturnPeriodReference: String(data.get('vatReturnPeriodReference') ?? ''),
@@ -164,7 +164,7 @@ export const actions: Actions = {
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		const data = await request.formData();
 		try {
-			await new TaxReliefService(getDatabase()).reverseReturnPosting(actor, {
+			await new ControlledTaxReliefService(getDatabase()).reverseReturnPosting(actor, {
 				postingPublicId: String(data.get('postingPublicId') ?? ''),
 				reason: String(data.get('reason') ?? '')
 			});
