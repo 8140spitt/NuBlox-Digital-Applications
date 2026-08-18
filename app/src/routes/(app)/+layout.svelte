@@ -44,6 +44,7 @@
 			<a class="subnav" href="/finance/tax-relief">VAT bad-debt relief</a>
 			<a class="subnav" href="/finance/accounting">Accounting</a>
 			<a class="subnav" href="/finance/accounting/periods">Accounting periods</a>
+			<a class="subnav" href="/finance/accounting/reports">Financial reports</a>
 			<a class="subnav" href="/finance/billing">Billing settings</a>
 			<a class="subnav" href="/finance/tax">Tax settings</a>
 			<a href="/organisation">Organisation</a>
