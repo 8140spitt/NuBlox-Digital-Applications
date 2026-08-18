@@ -6,7 +6,7 @@ import { closeDatabase, getDatabase, type Database } from '$lib/server/db/databa
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { BadDebtMutationService } from './bad-debt-mutation-service';
 import { FinanceValidationError } from './finance-common';
-import { TaxReliefService } from './tax-relief-service';
+import { ControlledTaxReliefService } from './tax-relief-control-service';
 
 const PREFIX = 'Tax Relief Integration ';
 const NOW = new Date('2026-08-18T09:00:00.000Z');
@@ -157,12 +157,25 @@ afterAll(async () => {
 });
 
 describe.sequential('Package 004K controlled VAT bad-debt relief', () => {
-	it('allows delegated preparation, calculates VAT from immutable source tax, and enforces the six-month authorisation gate', async () => {
-		const service = new TaxReliefService(db, randomUUID, () => NOW);
+	it('allows delegated preparation, binds eligibility to the issued due date, calculates VAT from immutable source tax, and enforces the six-month gate', async () => {
+		const service = new ControlledTaxReliefService(db, randomUUID, () => NOW);
 		const before = await service.getWorkspace(actorFinanceA);
 		expect(before.candidates).toHaveLength(1);
 		expect(before.candidates[0]?.availableClaimBasisAmount).toBe('60.0000');
 		expect(before.candidates[0]?.taxLines[0]?.taxAmount).toBe('20.0000');
+
+		await expect(service.prepareClaim(actorFinanceA, {
+			writeOffPublicId,
+			supplyDate: '2026-01-01',
+			paymentDueDate: '2026-01-30',
+			originalVatPeriodReference: '2026-Q1',
+			reason: 'Operator input must not accelerate eligibility.',
+			vatAccountedAndPaid: true,
+			debtNotSoldOrFactored: true,
+			sellingPriceConditionMet: true,
+			reliefSchemeApplicable: true,
+			lines: [{ sourceInvoiceItemId: invoiceItemId, taxCategoryId, considerationBasisAmount: '60.0000' }]
+		})).rejects.toThrow('Payment due date must match the issued invoice due date of 2026-01-31.');
 
 		claimPublicId = (await service.prepareClaim(actorFinanceA, {
 			writeOffPublicId,
@@ -178,7 +191,7 @@ describe.sequential('Package 004K controlled VAT bad-debt relief', () => {
 		})).publicId;
 
 		await expect(service.authoriseClaim(actorFinanceA, { claimPublicId, reason: 'Delegated preparer must not authorise.' })).rejects.toBeInstanceOf(TenantAccessError);
-		await expect(new TaxReliefService(db, randomUUID, () => BEFORE_ELIGIBLE).authoriseClaim(actorOwnerA, { claimPublicId, reason: 'Too early.' })).rejects.toBeInstanceOf(FinanceValidationError);
+		await expect(new ControlledTaxReliefService(db, randomUUID, () => BEFORE_ELIGIBLE).authoriseClaim(actorOwnerA, { claimPublicId, reason: 'Too early.' })).rejects.toBeInstanceOf(FinanceValidationError);
 		await service.authoriseClaim(actorOwnerA, { claimPublicId, reason: 'Eligibility and source evidence revalidated.' });
 
 		const workspace = await service.getWorkspace(actorOwnerA);
@@ -202,7 +215,7 @@ describe.sequential('Package 004K controlled VAT bad-debt relief', () => {
 	});
 
 	it('records Box 4 posting evidence and honours explicit granular deny above finance.manage', async () => {
-		const service = new TaxReliefService(db, randomUUID, () => NOW);
+		const service = new ControlledTaxReliefService(db, randomUUID, () => NOW);
 		const permission = await db.selectFrom('permissions').select('id').where('permission_key', '=', 'finance.tax_relief.post').executeTakeFirstOrThrow();
 		await db.insertInto('member_permission_overrides').values({ organisation_id: organisationAId, organisation_member_id: ownerAMemberId, permission_id: permission.id, effect: 'deny', reason: 'Integration explicit deny.' }).executeTakeFirstOrThrow();
 		await expect(service.recordReturnPosting(actorOwnerA, { sourceKind: 'relief_claim', sourcePublicId: claimPublicId, vatReturnPeriodReference: '2026-Q3', vatReturnPeriodStart: '2026-07-01', vatReturnPeriodEnd: '2026-09-30', externalReference: 'VAT-Q3-DRAFT', reason: 'Explicit deny must win.' })).rejects.toBeInstanceOf(TenantAccessError);
@@ -215,15 +228,16 @@ describe.sequential('Package 004K controlled VAT bad-debt relief', () => {
 		await expect(new BadDebtMutationService(db).reverseWriteOff(actorOwnerA, { casePublicId: badDebtCasePublicId, writeOffPublicId, reason: 'VAT claim must be reversed first.' })).rejects.toBeInstanceOf(FinanceValidationError);
 	});
 
-	it('records proportional VAT repayment from later bad-debt recovery and requires Box 1 posting authority', async () => {
+	it('records proportional VAT repayment from later bad-debt recovery and requires the VAT period containing the recovery receipt date', async () => {
 		recoveryPublicId = randomUUID();
 		await db.insertInto('receivable_write_off_recoveries').values({ organisation_id: organisationAId, public_id: recoveryPublicId, write_off_id: writeOffId, payment_id: paymentId, recovered_amount: '30.0000', reason: 'Late customer recovery after VAT relief.', recorded_by_member_id: financeAMemberId, recovered_at: NOW }).executeTakeFirstOrThrow();
-		const service = new TaxReliefService(db, randomUUID, () => NOW);
+		const service = new ControlledTaxReliefService(db, randomUUID, () => NOW);
 		await expect(service.recordRepayment(actorFinanceA, { claimPublicId, recoveryPublicId, considerationPaymentAmount: '30.0000', reason: 'Delegated preparation must not record VAT repayment.' })).rejects.toBeInstanceOf(TenantAccessError);
 		repaymentPublicId = (await service.recordRepayment(actorOwnerA, { claimPublicId, recoveryPublicId, considerationPaymentAmount: '30.0000', reason: 'Repay VAT proportionally after recovery.' })).publicId;
 		const claim = (await service.getWorkspace(actorOwnerA)).claims.find((row) => row.publicId === claimPublicId);
 		const repayment = claim?.repayments.find((row) => row.publicId === repaymentPublicId);
 		expect(repayment?.vatRepaymentAmount).toBe('5.0000');
+		await expect(service.recordReturnPosting(actorOwnerA, { sourceKind: 'relief_repayment', sourcePublicId: repaymentPublicId, vatReturnPeriodReference: '2026-Q2', vatReturnPeriodStart: '2026-04-01', vatReturnPeriodEnd: '2026-06-30', externalReference: 'WRONG-PERIOD', reason: 'Must not post recovery repayment in the wrong period.' })).rejects.toThrow('VAT repayment posting period must include the bad-debt recovery receipt date of 2026-08-18.');
 		repaymentPostingPublicId = (await service.recordReturnPosting(actorOwnerA, { sourceKind: 'relief_repayment', sourcePublicId: repaymentPublicId, vatReturnPeriodReference: '2026-Q3', vatReturnPeriodStart: '2026-07-01', vatReturnPeriodEnd: '2026-09-30', externalReference: 'VAT-Q3-RECOVERY-001', reason: 'Record repayment in VAT return evidence.' })).publicId;
 		const repaymentPosting = (await service.getWorkspace(actorOwnerA)).claims.find((row) => row.publicId === claimPublicId)?.postings.find((row) => row.publicId === repaymentPostingPublicId);
 		expect(repaymentPosting?.vatReturnBox).toBe(1);
@@ -231,7 +245,7 @@ describe.sequential('Package 004K controlled VAT bad-debt relief', () => {
 	});
 
 	it('enforces additive reversal ordering across VAT posting, VAT repayment and operational recovery evidence', async () => {
-		const service = new TaxReliefService(db, randomUUID, () => NOW);
+		const service = new ControlledTaxReliefService(db, randomUUID, () => NOW);
 		const badDebt = new BadDebtMutationService(db, randomUUID, () => NOW);
 		await expect(badDebt.reverseRecovery(actorOwnerA, { casePublicId: badDebtCasePublicId, recoveryPublicId, reason: 'VAT repayment must be reversed first.' })).rejects.toBeInstanceOf(FinanceValidationError);
 		await expect(service.reverseRepayment(actorOwnerA, { repaymentPublicId, reason: 'Posting must be reversed first.' })).rejects.toBeInstanceOf(FinanceValidationError);
@@ -243,7 +257,7 @@ describe.sequential('Package 004K controlled VAT bad-debt relief', () => {
 	});
 
 	it('reverses VAT claim evidence before allowing the operational write-off reversal', async () => {
-		const service = new TaxReliefService(db, randomUUID, () => NOW);
+		const service = new ControlledTaxReliefService(db, randomUUID, () => NOW);
 		await service.reverseReturnPosting(actorOwnerA, { postingPublicId: claimPostingPublicId, reason: 'Correct the VAT relief posting.' });
 		await service.reverseClaim(actorOwnerA, { claimPublicId, reason: 'Reverse VAT relief before reversing the write-off.' });
 		await new BadDebtMutationService(db, randomUUID, () => NOW).reverseWriteOff(actorOwnerA, { casePublicId: badDebtCasePublicId, writeOffPublicId, reason: 'Tax and recovery dependencies are now reversed.' });
@@ -252,6 +266,6 @@ describe.sequential('Package 004K controlled VAT bad-debt relief', () => {
 	});
 
 	it('masks VAT relief claim identities across tenants', async () => {
-		await expect(new TaxReliefService(db, randomUUID, () => NOW).authoriseClaim(actorOwnerB, { claimPublicId, reason: 'Foreign tenant must not see claim.' })).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(new ControlledTaxReliefService(db, randomUUID, () => NOW).authoriseClaim(actorOwnerB, { claimPublicId, reason: 'Foreign tenant must not see claim.' })).rejects.toBeInstanceOf(RecordNotFoundError);
 	});
 });
