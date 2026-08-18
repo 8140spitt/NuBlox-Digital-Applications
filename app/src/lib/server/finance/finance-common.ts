@@ -54,6 +54,7 @@ export type FinanceMutationPermission =
 	| 'finance.accounting.reverse'
 	| 'finance.accounting.export'
 	| 'finance.accounting.export.reverse'
+	| 'finance.accounting.period.view'
 	| 'finance.accounting.period.configure'
 	| 'finance.accounting.period.soft-close'
 	| 'finance.accounting.period.hard-close'
