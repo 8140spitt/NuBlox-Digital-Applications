@@ -53,11 +53,42 @@ The baseline is intentionally irreversible. Non-production environments rebuild 
 20260818120000_accounting_period_close_governance.sql
 ```
 
-Including Baseline v1, Package 004M contains **24 production migrations**.
+Including Baseline v1, the production stream contains **24 migrations**.
 
-## Package 004F — migration-free reporting activation
+## Migration-free reporting activations
 
-Customer statements and aged receivables derive historical customer positions from immutable finance-event evidence and therefore add no duplicate balance tables.
+### Package 004F — customer statements and aged receivables
+
+Package 004F derives historical customer positions from immutable finance-event evidence and adds no duplicate balance tables.
+
+### Package 004N — trial balance and financial reporting
+
+Package 004N adds no persistent business fact and therefore no migration.
+
+It derives:
+
+```text
+opening trial-balance position
+period debit / credit movement
+closing trial-balance position
+period + YTD profit and loss
+closing asset / liability / equity presentation
+unclosed earnings
+```
+
+from existing Package 004L/004M accounting evidence:
+
+```text
+accounting_accounts
+accounting_journal_entries
+accounting_journal_lines
+accounting_financial_years
+accounting_periods
+```
+
+Reports are tenant-, period- and currency-specific. Reversal journals affect reporting at their own accounting date; no historical journal is deleted or suppressed. No report balance is persisted.
+
+See `docs/47-controlled-trial-balance-financial-reporting.md`.
 
 ## Packages 004G–004I
 
@@ -73,70 +104,19 @@ See `docs/42-invoice-tax-settings.md`.
 
 ## Package 004J — bad debt
 
-`20260817190000_bad_debt_writeoff_recovery.sql` adds six additive evidence tables for invoice-specific bad-debt assessment, immutable recommendation, write-off/reversal and payment-linked recovery/reversal.
-
-```text
-Invoice Outstanding
-= Issued Invoice Gross
-− Issued Credit Note Gross
-− Active Payment Allocations
-− Active Write-offs
-```
-
-```text
-Available Payment
-= Payment Amount
-− Active Invoice Allocations
-− Active Bad-Debt Recoveries
-```
-
-Package 004J does not itself post tax relief or general-ledger entries.
-
-See `docs/43-controlled-bad-debt-writeoff-recovery.md`.
+`20260817190000_bad_debt_writeoff_recovery.sql` adds additive evidence for bad-debt assessment, recommendation, write-off/reversal and payment-linked recovery/reversal.
 
 ## Package 004K — VAT bad-debt relief
 
-`20260818080000_vat_bad_debt_relief.sql` adds eight additive VAT-relief evidence tables covering source-tax-linked claim preparation, separate authorisation/reversal, recovery-linked VAT repayment/reversal and VAT-return Box 4/Box 1 posting evidence/reversal.
+`20260818080000_vat_bad_debt_relief.sql` adds additive VAT-relief claim, repayment and VAT-return posting evidence. It does not submit VAT returns or create a general ledger.
 
-Package 004K records tax-domain evidence only. It does not submit VAT returns or create a general ledger.
+## Package 004L — accounting posting and export
 
-See `docs/44-controlled-vat-bad-debt-relief.md`.
-
-## Package 004L — controlled accounting posting and export
-
-`20260818100000_accounting_posting_export.sql` adds eight tenant-scoped accounting tables for chart-of-accounts mappings, source-derived balanced journals, additive journal reversal, checksum-backed generic CSV export and additive export reversal.
-
-```text
-accounting_accounts
-accounting_account_mappings
-accounting_journal_entries
-accounting_journal_lines
-accounting_journal_entry_reversals
-accounting_export_batches
-accounting_export_batch_entries
-accounting_export_reversals
-```
-
-Source-derived journals retain exact operational provenance and balanced debit/credit lines. There is no freehand journal creation path.
-
-Package 004L permissions:
-
-```text
-finance.accounting.view
-finance.accounting.configure
-finance.accounting.post
-finance.accounting.reverse
-finance.accounting.export
-finance.accounting.export.reverse
-```
-
-Owner / Administrator receive all six. Finance/Commercial receives `finance.accounting.view` only.
-
-See `docs/45-controlled-accounting-posting-export.md`.
+`20260818100000_accounting_posting_export.sql` adds the source-derived accounting journal and generic export evidence model. No ordinary route accepts freehand debit/credit lines.
 
 ## Package 004M — accounting period and close governance
 
-`20260818120000_accounting_period_close_governance.sql` adds three tenant-scoped governance tables:
+`20260818120000_accounting_period_close_governance.sql` adds:
 
 ```text
 accounting_financial_years
@@ -144,41 +124,13 @@ accounting_periods
 accounting_period_status_events
 ```
 
-### Period lifecycle
-
-```text
-open -> soft_closed -> hard_closed
- ^                         |
- +------- reasoned reopen--+
-```
-
-Financial years and periods cannot overlap. Periods must be fully contained within their financial year.
-
-### Posting / export controls
-
-- journal posting requires an accounting date in exactly one configured `open` period;
-- journal reversal requires its reversal accounting date in an `open` period;
-- an accounting export must match one configured period exactly and that period must be `soft_closed` or `hard_closed`;
-- a hard-closed period blocks export reversal until the period is explicitly reopened;
-- hard close is blocked until every journal in the period has active export evidence.
-
-Period state constrains new accounting evidence; it does not rewrite operational source events or posted journal history.
-
-### Permission family
-
-```text
-finance.accounting.period.configure
-finance.accounting.period.close
-finance.accounting.period.reopen
-```
-
-Owner / Administrator receive all three for existing and future organisations. Finance/Commercial remains accounting-view-only by default. Explicit granular member deny cannot be bypassed by `finance.manage`.
+Posting/reversal requires an open period. Export requires an exact soft/hard-closed period. Hard close requires every journal in the period to have active export evidence, and hard-closed export evidence cannot be reversed until reasoned reopen.
 
 See `docs/46-controlled-accounting-period-close.md`.
 
 ## Current structure
 
-The clean MySQL 8.4.11 Package 004M candidate structure is:
+Because Package 004N is migration-free, the current clean MySQL 8.4.11 structure remains:
 
 ```text
 24 migrations applied
@@ -193,16 +145,17 @@ The clean MySQL 8.4.11 Package 004M candidate structure is:
 ```text
 24 production migrations applied / 0 pending
 381 base tables / 848 foreign keys / 492 CHECK constraints
-zero generated Kysely drift across core + collections + accounting outputs
-37 integration files / 150 real-MySQL tests
+zero drift across core + collections + accounting generated Kysely outputs
+38 integration files / 154 real-MySQL tests
+accounting reporting: 4 / 4
 accounting periods: 6 / 6
-accounting period bootstrap + deny precedence: 1 / 1
+accounting period bootstrap + explicit deny: 1 / 1
 accounting core: 5 / 5
 accounting concurrency: 1 / 1
 svelte-check: 0 errors / 0 warnings
 ```
 
-These test totals become release authority only after the exact documentation-synchronised PR head reproduces the complete gate.
+These totals become release authority only after the exact documentation-synchronised Package 004N head reproduces the complete gate.
 
 ## Migration rules
 
