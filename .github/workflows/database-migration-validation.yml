@@ -8,6 +8,7 @@ on:
       - 'app/pnpm-lock.yaml'
       - 'app/.kysely-codegenrc.json'
       - 'app/.kysely-collections-codegenrc.json'
+      - 'app/.kysely-accounting-codegenrc.json'
       - 'app/vite.config.ts'
       - 'app/vitest.integration.config.ts'
       - 'app/src/**'
@@ -21,6 +22,7 @@ on:
       - 'app/pnpm-lock.yaml'
       - 'app/.kysely-codegenrc.json'
       - 'app/.kysely-collections-codegenrc.json'
+      - 'app/.kysely-accounting-codegenrc.json'
       - 'app/vite.config.ts'
       - 'app/vitest.integration.config.ts'
       - 'app/src/**'
@@ -78,14 +80,14 @@ jobs:
         env:
           MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
         run: |
-          # Package 004K release structure. Change these only with a validated forward migration.
+          # Package 004L candidate structure. Change these only with a validated forward migration.
           table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '370'
-          test "$fk_count" = '824'
-          test "$check_count" = '473'
+          test "$table_count" = '378'
+          test "$fk_count" = '841'
+          test "$check_count" = '485'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
@@ -94,7 +96,7 @@ jobs:
         run: pnpm db:types
 
       - name: Verify generated types are committed
-        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts
+        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts
 
       - name: Run provisioning, authentication and Platform Kernel integration tests
         working-directory: app
