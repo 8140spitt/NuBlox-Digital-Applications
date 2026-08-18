@@ -53,7 +53,11 @@ export type FinanceMutationPermission =
 	| 'finance.accounting.post'
 	| 'finance.accounting.reverse'
 	| 'finance.accounting.export'
-	| 'finance.accounting.export.reverse';
+	| 'finance.accounting.export.reverse'
+	| 'finance.accounting.period.configure'
+	| 'finance.accounting.period.soft-close'
+	| 'finance.accounting.period.hard-close'
+	| 'finance.accounting.period.reopen';
 
 export const INVOICE_TYPES = new Set([
 	'standard',
@@ -180,6 +184,10 @@ export class FinanceAccessPolicy {
 
 	async accountingViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
 		return new PermissionService(db).decideWithUmbrella(actor, 'finance.accounting.view', 'finance.manage');
+	}
+
+	async accountingPeriodViewDecision(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
+		return new PermissionService(db).decideWithUmbrella(actor, 'finance.accounting.period.view', 'finance.manage');
 	}
 
 	async mutationDecision(
