@@ -11,7 +11,7 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
-import { compareMoney, lineAmount, percentageAmount, sumMoney } from './commercial-decimal';
+import { lineAmount, percentageAmount, sumMoney } from './commercial-decimal';
 import {
 	CommercialRepository,
 	type CommercialReferenceItem,
