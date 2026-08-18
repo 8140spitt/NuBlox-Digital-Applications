@@ -27,6 +27,23 @@
 	<span>The member who prepares a close cannot authorise that same preparation. Every period in the financial year must be hard closed and retained earnings must be mapped to an active equity account.</span>
 </section>
 
+<section class="panel">
+	<div class="section-heading"><div><p class="eyebrow">Closing destination</p><h2>Retained earnings mapping</h2></div></div>
+	<p>{data.retainedEarningsMapping ? `${data.retainedEarningsMapping.accountCode} · ${data.retainedEarningsMapping.name}` : 'No retained earnings account is mapped.'}</p>
+	{#if data.canConfigureRetainedEarnings}
+		<form method="POST" action="?/assignRetainedEarnings" class="form-grid card">
+			<label>Active equity account
+				<select name="accountPublicId" required>
+					<option value="">Choose an equity account</option>
+					{#each data.retainedEarningsAccounts as account}<option value={account.publicId}>{account.accountCode} · {account.name}</option>{/each}
+				</select>
+			</label>
+			<label>Reason<input name="reason" maxlength="1000" required /></label>
+			<button type="submit">Assign retained earnings</button>
+		</form>
+	{/if}
+</section>
+
 {#if data.canPrepare}
 	<section class="panel">
 		<div class="section-heading"><div><p class="eyebrow">Preparation</p><h2>Prepare year-end close</h2></div></div>
