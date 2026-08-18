@@ -52,19 +52,19 @@ The validated 001–010 baseline contains:
 427 CHECK constraints
 ```
 
-Package 004N is migration-free, so the current production stream remains:
+Package 004O candidate stream:
 
 ```text
-24 production migrations
-381 base tables
-848 foreign keys
-492 CHECK constraints
+25 production migrations
+384 base tables
+857 foreign keys
+495 CHECK constraints
 ```
 
 Latest migration:
 
 ```text
-20260818120000_accounting_period_close_governance.sql
+20260818170000_year_end_close_retained_earnings.sql
 ```
 
 Database material:
@@ -117,6 +117,8 @@ Checksum-backed Accounting Export Evidence
 Controlled Accounting Period / Close Governance
     ↓
 Trial Balance + P&L + Balance-Sheet Reporting
+    ↓
+Controlled Year-End Close + Retained Earnings
 ```
 
 Detailed finance specifications:
@@ -134,6 +136,7 @@ Detailed finance specifications:
 - [`docs/45-controlled-accounting-posting-export.md`](docs/45-controlled-accounting-posting-export.md)
 - [`docs/46-controlled-accounting-period-close.md`](docs/46-controlled-accounting-period-close.md)
 - [`docs/47-controlled-trial-balance-financial-reporting.md`](docs/47-controlled-trial-balance-financial-reporting.md)
+- [`docs/48-controlled-year-end-close-retained-earnings.md`](docs/48-controlled-year-end-close-retained-earnings.md)
 
 ## Authoritative accounts receivable
 
@@ -184,29 +187,53 @@ Protected route:
 /finance/accounting/reports
 ```
 
-Package 004N is a **migration-free reporting activation** under the existing `finance.view` + `finance.accounting.view` boundary.
+Package 004N is a migration-free reporting activation under the existing `finance.view` + `finance.accounting.view` boundary.
 
-Every report is tenant-, period- and currency-specific and derives only from immutable accounting journal lines.
-
-```text
-Opening balance
-+ Period debit/credit movement
-= Closing balance
-```
-
-The workspace provides:
-
-- opening, period and closing trial-balance columns;
-- independent opening/period/closing debit-credit equality controls;
-- period and financial-year-to-date P&L;
-- closing asset/liability/equity presentation;
-- explicit cumulative **unclosed earnings** until a later year-end closing-journal boundary exists.
-
-Reversal journals affect reports from their own accounting date onward. Earlier periods remain historically unchanged. GBP, EUR and other currencies are never combined implicitly.
+Every report is tenant-, period- and currency-specific and derives only from immutable accounting journal lines. Trial balance and balance sheet include controlled year-end close/reversal journals; operating P&L excludes those close mechanics so historical operating performance remains visible after retained-earnings transfer.
 
 Open-period reporting is explicitly provisional because later journals dated in the period can still change the result.
 
 See [`docs/47-controlled-trial-balance-financial-reporting.md`](docs/47-controlled-trial-balance-financial-reporting.md).
+
+## Package 004O — controlled year-end close and retained earnings
+
+Protected route:
+
+```text
+/finance/accounting/year-end
+```
+
+Package 004O requires complete financial-year coverage by accounting periods and requires every period to be `hard_closed` before preparation. An active `retained_earnings` mapping must point to an equity account.
+
+The close flow is additive and authority-separated:
+
+```text
+Hard-closed financial year
+    ↓
+Fingerprint immutable journal evidence
+    ↓
+Prepare close evidence
+    ↓
+Different member authorises
+    ↓
+Balanced year_end_close journal
+    ↓
+Revenue / expense balances -> retained earnings
+```
+
+The source fingerprint is re-derived under the organisation accounting mutex before authorisation. Concurrent authorisations serialize so only one active close can win. Corrections use an additive reversal journal and reversal provenance; prior journals, period history and close evidence are never rewritten.
+
+Permissions:
+
+```text
+finance.accounting.year_end.prepare
+finance.accounting.year_end.authorise
+finance.accounting.year_end.reverse
+```
+
+Owner and Administrator receive all three for existing and future organisations. Finance/Commercial remains accounting-view only by default. Explicit granular deny continues to override `finance.manage` fallback.
+
+See [`docs/48-controlled-year-end-close-retained-earnings.md`](docs/48-controlled-year-end-close-retained-earnings.md).
 
 ## Database-derived types
 
@@ -224,7 +251,6 @@ All are derivative of migrated MySQL.
 
 Still not claimed implemented:
 
-- year-end closing journals / retained-earnings transfer;
 - statutory financial statements and Companies House filing;
 - consolidated/group reporting;
 - cash-flow statement, budgets and forecasts;
@@ -249,13 +275,15 @@ pnpm test:integration
 pnpm check
 ```
 
-Package 004N release target:
+Package 004O release target:
 
 ```text
-24 migrations applied / 0 pending
-381 tables / 848 foreign keys / 492 CHECK constraints
+25 migrations applied / 0 pending
+384 tables / 857 foreign keys / 495 CHECK constraints
 zero Kysely drift across core + collections + accounting outputs
-38 integration files / 154 real-MySQL tests
+40 integration files / 158 real-MySQL tests
+accounting year-end: 3 / 3
+accounting year-end bootstrap + explicit deny: 1 / 1
 accounting reporting: 4 / 4
 accounting periods: 6 / 6
 accounting period bootstrap + explicit deny: 1 / 1
@@ -266,6 +294,6 @@ svelte-check: 0 errors / 0 warnings
 
 The exact documentation-synchronised PR head must reproduce this gate before merge.
 
-The next accounting boundary is **Controlled Year-End Close and Retained Earnings**.
+The next accounting boundary is **Controlled Statutory Financial Statements**.
 
 For detailed authorization rules see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).

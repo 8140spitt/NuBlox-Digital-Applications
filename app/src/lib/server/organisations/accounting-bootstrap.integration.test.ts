@@ -54,8 +54,8 @@ afterAll(async () => {
 	await closeDatabase();
 });
 
-describe('Package 004L/004M future organisation bootstrap parity', () => {
-	it('keeps accounting viewing delegated while reserving configuration, posting, reversal, export and period governance', async () => {
+describe('Package 004L/004M/004O future organisation bootstrap parity', () => {
+	it('keeps accounting viewing delegated while reserving configuration, posting, reversal, export, period governance and year-end authority', async () => {
 		const created = await new OrganisationBootstrapService(db).createForExistingUser(
 			{ userId, correlationId: `accounting-bootstrap-${randomUUID()}` },
 			{ legalName: `${PREFIX}Organisation`, defaultTimezone: 'Europe/London', defaultCurrencyCode: 'GBP' }
@@ -71,7 +71,10 @@ describe('Package 004L/004M future organisation bootstrap parity', () => {
 			'finance.accounting.period.reopen',
 			'finance.accounting.post',
 			'finance.accounting.reverse',
-			'finance.accounting.view'
+			'finance.accounting.view',
+			'finance.accounting.year_end.authorise',
+			'finance.accounting.year_end.prepare',
+			'finance.accounting.year_end.reverse'
 		].sort();
 
 		await expect(permissionKeys('Owner')).resolves.toEqual(ownerAccountingKeys);

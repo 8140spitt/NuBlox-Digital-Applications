@@ -147,6 +147,50 @@ export interface AccountingPeriodStatusEvents {
   to_status: string;
 }
 
+export interface AccountingYearEndClosePreparations {
+  closing_credit_total: Decimal;
+  closing_debit_total: Decimal;
+  created_at: Generated<Date>;
+  currency_code: string;
+  expense_total: Decimal;
+  financial_year_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  preparation_sequence: number;
+  prepared_at: Generated<Date>;
+  prepared_by_member_id: string;
+  profit_loss_amount: Decimal;
+  public_id: string;
+  reason: string;
+  revenue_total: Decimal;
+  source_fingerprint: string;
+}
+
+export interface AccountingYearEndCloseReversals {
+  created_at: Generated<Date>;
+  organisation_id: string;
+  reason: string;
+  reversal_journal_entry_id: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+  year_end_close_id: string;
+}
+
+export interface AccountingYearEndCloses {
+  authorised_at: Generated<Date>;
+  authorised_by_member_id: string;
+  close_sequence: number;
+  closing_journal_entry_id: string;
+  created_at: Generated<Date>;
+  currency_code: string;
+  financial_year_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  preparation_id: string;
+  public_id: string;
+  reason: string;
+}
+
 export interface DB {
   accounting_account_mappings: AccountingAccountMappings;
   accounting_accounts: AccountingAccounts;
@@ -159,4 +203,7 @@ export interface DB {
   accounting_journal_lines: AccountingJournalLines;
   accounting_period_status_events: AccountingPeriodStatusEvents;
   accounting_periods: AccountingPeriods;
+  accounting_year_end_close_preparations: AccountingYearEndClosePreparations;
+  accounting_year_end_close_reversals: AccountingYearEndCloseReversals;
+  accounting_year_end_closes: AccountingYearEndCloses;
 }

@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
-import { AccountingReportingService } from '$lib/server/finance/accounting-reporting-service';
+import { AccountingYearEndReportingService } from '$lib/server/finance/accounting-year-end-reporting-service';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -21,7 +21,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new AccountingReportingService(getDatabase()).getWorkspace(actor, {
+		return await new AccountingYearEndReportingService(getDatabase()).getWorkspace(actor, {
 			periodPublicId: url.searchParams.get('period'),
 			currencyCode: url.searchParams.get('currency')
 		});
