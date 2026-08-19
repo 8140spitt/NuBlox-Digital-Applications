@@ -14,7 +14,9 @@ async function signIn(page: import('@playwright/test').Page) {
 	await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-test('owner configures and transitions accounting periods through the browser', async ({ page }) => {
+test('owner configures and transitions accounting periods through the browser', async ({
+	page
+}) => {
 	await signIn(page);
 	await page.goto('/finance/accounting/periods');
 
@@ -27,7 +29,9 @@ test('owner configures and transitions accounting periods through the browser', 
 	await expect(page.getByText('FY2027 · E2E Financial Year 2027', { exact: true })).toBeVisible();
 
 	const periodForm = page.locator('form[action="?/createPeriod"]');
-	await periodForm.getByLabel('Financial year').selectOption({ label: 'FY2027 · E2E Financial Year 2027' });
+	await periodForm
+		.getByLabel('Financial year')
+		.selectOption({ label: 'FY2027 · E2E Financial Year 2027' });
 	await periodForm.getByLabel('Period number').fill('1');
 	await periodForm.getByLabel('Name').fill('January 2027');
 	await periodForm.getByLabel('Starts').fill('2027-01-01');
