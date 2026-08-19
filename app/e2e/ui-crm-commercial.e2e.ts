@@ -183,5 +183,5 @@ test('owner completes invoice, receipt and cash allocation through the browser',
 	await page.getByLabel('Invoice').selectOption({ index: 1 });
 	await page.getByLabel('Amount').fill('150000.00');
 	await page.getByRole('button', { name: 'Allocate payment' }).click();
-	await expect(page.getByText('Active allocation', { exact: true })).toBeVisible();
+	await expect(page.getByText('Active allocation', { exact: true }).first()).toBeVisible();
 });
