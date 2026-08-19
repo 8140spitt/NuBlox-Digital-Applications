@@ -135,6 +135,38 @@ try {
 		[organisationId, viewerMemberId, viewerRoleId]
 	);
 
+	const [ownerWorker] = await db.execute(
+		`INSERT INTO workers
+		(organisation_id, public_id, organisation_member_id, worker_number, display_name, status)
+		VALUES (?, ?, ?, 'E2E-OWNER', 'NuBlox E2E Owner', 'active')`,
+		[organisationId, randomUUID(), memberId]
+	);
+	const ownerWorkerId = String(ownerWorker.insertId);
+	const [viewerWorker] = await db.execute(
+		`INSERT INTO workers
+		(organisation_id, public_id, organisation_member_id, worker_number, display_name, status)
+		VALUES (?, ?, ?, 'E2E-VIEWER', 'NuBlox E2E Viewer', 'active')`,
+		[organisationId, randomUUID(), viewerMemberId]
+	);
+	const viewerWorkerId = String(viewerWorker.insertId);
+
+	const [[employeeEngagement]] = await db.query(
+		`SELECT id FROM workforce_engagement_types WHERE code = 'employee' AND is_active = 1 LIMIT 1`
+	);
+	if (!employeeEngagement) throw new Error('Employee workforce engagement type is required.');
+	for (const [workerId, reference, jobTitle] of [
+		[ownerWorkerId, 'E2E-OWNER', 'Operations Director'],
+		[viewerWorkerId, 'E2E-VIEWER', 'Site Operative']
+	]) {
+		await db.execute(
+			`INSERT INTO worker_engagements
+			(organisation_id, worker_id, workforce_engagement_type_id, engagement_reference,
+			 job_title, started_on, engagement_status)
+			VALUES (?, ?, ?, ?, ?, '2026-01-01', 'active')`,
+			[organisationId, workerId, employeeEngagement.id, reference, jobTitle]
+		);
+	}
+
 	const pipelinePublicId = randomUUID();
 	const [pipeline] = await db.execute(
 		`INSERT INTO crm_pipelines
