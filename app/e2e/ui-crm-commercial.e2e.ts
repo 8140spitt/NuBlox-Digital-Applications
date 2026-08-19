@@ -41,7 +41,7 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 
 	await page.getByLabel('Title').fill('E2E Office Refurbishment');
 	await page.getByLabel('Primary customer').selectOption({ label: 'E2E Customer Ltd' });
-	await page.getByLabel('Pipeline stage').selectOption({ label: /Lead/ });
+	await page.getByLabel('Pipeline stage').selectOption({ index: 1 });
 	await page.getByLabel('Estimated value').fill('125000.00');
 	await page.getByLabel('Currency').fill('GBP');
 	await page.getByLabel('Expected close date').fill('2026-12-18');
@@ -49,14 +49,12 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.getByRole('button', { name: 'Create opportunity' }).click();
 
 	await expect(page).toHaveURL(/\/crm\/opportunities\/[0-9a-f-]+$/i);
-	await expect(
-		page.getByText('E2E Office Refurbishment', { exact: true }).first()
-	).toBeVisible();
+	await expect(page.getByText('E2E Office Refurbishment', { exact: true }).first()).toBeVisible();
 
 	await page.goto('/commercial/estimates');
 	await page
 		.getByLabel('CRM opportunity')
-		.selectOption({ label: /E2E Office Refurbishment · E2E Customer Ltd/ });
+		.selectOption({ label: 'E2E Office Refurbishment · E2E Customer Ltd' });
 	await page.getByLabel('Estimate title').fill('E2E Office Refurbishment Estimate');
 	await page.getByLabel('Currency').fill('GBP');
 	await page.getByLabel('Notes').fill('Created by full browser acceptance validation.');
