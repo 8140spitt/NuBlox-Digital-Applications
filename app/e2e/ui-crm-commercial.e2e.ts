@@ -49,7 +49,9 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.getByRole('button', { name: 'Create opportunity' }).click();
 
 	await expect(page).toHaveURL(/\/crm\/opportunities\/[0-9a-f-]+$/i);
-	await expect(page.getByText('E2E Office Refurbishment', { exact: true }).first()).toBeVisible();
+	await expect(
+		page.getByText('E2E Office Refurbishment', { exact: true }).first()
+	).toBeVisible();
 
 	await page.goto('/commercial/estimates');
 	await page
@@ -61,5 +63,7 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.getByRole('button', { name: 'Create estimate' }).click();
 
 	await expect(page).toHaveURL(/\/commercial\/estimates\/[0-9a-f-]+$/i);
-	await expect(page.getByText('E2E Office Refurbishment Estimate', { exact: true }).first()).toBeVisible();
+	await expect(
+		page.getByText('E2E Office Refurbishment Estimate', { exact: true }).first()
+	).toBeVisible();
 });
