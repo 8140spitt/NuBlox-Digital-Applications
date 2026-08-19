@@ -23,10 +23,19 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 		primaryNavigation.getByRole('link', { name: 'Projects', exact: true })
 	).toBeVisible();
 	await expect(
+		primaryNavigation.getByRole('link', { name: 'Schedule', exact: true }).first()
+	).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Time', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();
+	await expect(
 		primaryNavigation.getByRole('link', { name: 'Credit control', exact: true })
 	).toBeVisible();
 
 	await page.getByText('Search', { exact: true }).click();
+	await page.getByLabel('Find a workspace').fill('people');
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /People/ })
+	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('year-end');
 	await expect(
 		page.locator('.search-results').getByRole('link', { name: /Year-end close/ })
@@ -38,6 +47,9 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await expect(createPopover.getByRole('link', { name: /CRM record/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Estimate/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Project/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Workforce member/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Scheduled work/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Timesheet/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Contract/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Invoice/ })).toBeVisible();
 
@@ -49,6 +61,9 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 		'/commercial/quotations',
 		'/projects',
 		'/contracts',
+		'/people',
+		'/schedule',
+		'/time',
 		'/finance/invoices',
 		'/finance/payments',
 		'/finance/receivables',
