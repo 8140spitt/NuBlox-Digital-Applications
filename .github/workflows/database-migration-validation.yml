@@ -49,3 +49,5 @@ jobs:
           git add app/src/lib/server/information/project-information.integration.test.ts
           git commit -m "Fix Slice 3 integration teardown"
           git push origin HEAD:product/v1-documents-project-information
+
+# Triggered after push activation was installed.
