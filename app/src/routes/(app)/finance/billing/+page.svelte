@@ -185,6 +185,15 @@
 		display: grid;
 		gap: 1rem;
 	}
+	.layout,
+	.panel,
+	.wide-panel,
+	.customer-grid,
+	.customer-card,
+	.form-grid,
+	.form-grid label {
+		min-width: 0;
+	}
 	.panel,
 	.customer-card {
 		border: 1px solid var(--border, #d0d5dd);
@@ -213,7 +222,7 @@
 	}
 	.customer-grid {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+		grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
 		gap: 0.8rem;
 		margin-top: 1rem;
 	}
@@ -232,6 +241,9 @@
 	}
 	.form-grid input,
 	.form-grid select {
+		box-sizing: border-box;
+		width: 100%;
+		min-width: 0;
 		font: inherit;
 		padding: 0.62rem;
 		border: 1px solid var(--border, #d0d5dd);
@@ -247,7 +259,7 @@
 		width: auto;
 	}
 	.compact {
-		grid-template-columns: 1fr 90px;
+		grid-template-columns: minmax(0, 1fr) 90px;
 	}
 	.compact label:nth-of-type(3),
 	.compact .checkbox,
@@ -302,8 +314,22 @@
 		.layout {
 			grid-template-columns: minmax(280px, 0.7fr) minmax(0, 1.5fr);
 		}
-		.wide-panel {
-			min-width: 0;
+	}
+	@media (max-width: 650px) {
+		.page-heading,
+		.section-heading,
+		.card-heading,
+		.row {
+			flex-wrap: wrap;
+		}
+		.form-grid,
+		.compact {
+			grid-template-columns: 1fr;
+		}
+		.compact label:nth-of-type(3),
+		.compact .checkbox,
+		.compact button {
+			grid-column: auto;
 		}
 	}
 </style>
