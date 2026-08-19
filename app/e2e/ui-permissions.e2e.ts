@@ -70,7 +70,9 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await page.goto('/time');
 	await expect(page.getByRole('heading', { name: 'Time', exact: true, level: 1 })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create timesheet' })).toHaveCount(0);
-	await expect(page.getByText('NuBlox E2E Viewer', { exact: true })).toBeVisible();
+	await expect(
+		page.locator('.identity-card').getByText('NuBlox E2E Viewer', { exact: true })
+	).toBeVisible();
 
 	await page.goto('/finance/accounting/periods');
 	await expect(page.getByRole('heading', { name: 'Accounting periods', level: 1 })).toBeVisible();
