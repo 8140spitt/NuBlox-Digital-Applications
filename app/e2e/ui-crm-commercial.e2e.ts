@@ -157,7 +157,9 @@ test('owner completes invoice, receipt and cash allocation through the browser',
 	await page.getByLabel('Quantity').fill('1');
 	await page.getByLabel('Unit rate').fill('125000.00');
 	const taxSelect = page.getByLabel('Tax');
-	const e2eTaxValue = await taxSelect.locator('option', { hasText: 'E2E VAT 20' }).getAttribute('value');
+	const e2eTaxValue = await taxSelect
+		.locator('option', { hasText: 'E2E VAT 20' })
+		.getAttribute('value');
 	expect(e2eTaxValue).not.toBeNull();
 	await taxSelect.selectOption(e2eTaxValue ?? '');
 	await page.getByRole('button', { name: 'Add line' }).click();
