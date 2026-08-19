@@ -57,12 +57,17 @@ async function verifyWorkspaceSurface(page: Page, errors: string[]) {
 		await page.goto(workspace);
 		expect(new URL(page.url()).pathname).toBe(workspace);
 		await expect(page.locator('body')).not.toContainText('Internal Server Error');
-		const overflow = await page.evaluate(() =>
-			Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) - window.innerWidth
+		const overflow = await page.evaluate(
+			() =>
+				Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) -
+				window.innerWidth
 		);
-		expect(overflow, `unexpected page-level horizontal overflow on ${workspace}`).toBeLessThanOrEqual(1);
+		expect(
+			overflow,
+			`unexpected page-level horizontal overflow on ${workspace}`
+		).toBeLessThanOrEqual(1);
 	}
-	 expect(errors, errors.join('\n')).toEqual([]);
+	expect(errors, errors.join('\n')).toEqual([]);
 }
 
 test('desktop workspaces render without browser errors or page overflow', async ({ page }) => {
