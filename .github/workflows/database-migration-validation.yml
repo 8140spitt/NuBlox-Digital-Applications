@@ -1,9 +1,11 @@
 name: Slice 3 Browser Diagnostic
 
 on:
-  push:
-    branches:
-      - product/v1-documents-project-information
+  pull_request:
+    paths:
+      - 'app/e2e/**'
+      - 'app/src/**'
+      - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
