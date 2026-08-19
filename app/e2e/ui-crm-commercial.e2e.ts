@@ -65,3 +65,56 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 		page.getByText('E2E Office Refurbishment Estimate', { exact: true }).first()
 	).toBeVisible();
 });
+
+test('owner takes commercial evidence through project and executed contract', async ({ page }) => {
+	await signIn(page);
+	await page.goto('/commercial/estimates');
+	await page.getByRole('link', { name: /E2E Office Refurbishment Estimate/ }).click();
+
+	await page.getByLabel('Description').fill('Office refurbishment works');
+	await page.getByLabel('Quantity').fill('1');
+	await page.getByLabel('Sell unit rate').fill('125000.00');
+	await page.getByRole('button', { name: 'Add estimate line' }).click();
+	await expect(page.getByText('Office refurbishment works', { exact: true })).toBeVisible();
+
+	await page.getByRole('button', { name: 'Finalise version 1' }).click();
+	await expect(page.getByRole('button', { name: 'Create quotation' })).toBeVisible();
+	await page.getByLabel('Quotation title').fill('E2E Office Refurbishment Quotation');
+	await page.getByLabel('Customer reference').fill('E2E-PO-001');
+	await page.getByLabel('Valid until').fill('2026-12-31');
+	await page.getByRole('button', { name: 'Create quotation' }).click();
+
+	await expect(page).toHaveURL(/\/commercial\/quotations\/[0-9a-f-]+$/i);
+	await page.getByLabel('Recipient name').fill('E2E Customer');
+	await page.getByLabel('Recipient email').fill('customer-e2e@example.test');
+	await page.getByLabel('Issue note').fill('Issued by browser acceptance validation.');
+	await page.getByRole('button', { name: 'Issue quotation version 1' }).click();
+
+	await page.getByLabel('Response').selectOption('accepted');
+	await page.getByLabel('Respondent name').fill('E2E Customer');
+	await page.getByLabel('Respondent email').fill('customer-e2e@example.test');
+	await page.getByRole('button', { name: 'Record response' }).click();
+	await expect(page.getByText('Accepted', { exact: true }).first()).toBeVisible();
+
+	await page.goto('/commercial/quotations');
+	await page.getByRole('link', { name: 'Project conversion' }).click();
+	await page.getByRole('button', { name: 'Create project from accepted quotation' }).click();
+	await expect(page.getByText('Conversion complete', { exact: true })).toBeVisible();
+
+	await page.goto('/contracts');
+	await page.getByRole('link', { name: 'Form contract' }).click();
+	await page.getByLabel('Customer reference').fill('E2E-CONTRACT-001');
+	await page.getByRole('button', { name: 'Create draft contract' }).click();
+
+	await expect(page).toHaveURL(/\/contracts\/[0-9a-f-]+$/i);
+	await page.getByLabel('Recipient email').fill('customer-e2e@example.test');
+	await page.getByLabel('Note').fill('Contract issued by browser acceptance validation.');
+	await page.getByRole('button', { name: 'Issue contract' }).click();
+
+	await page.getByLabel('Executed at').fill('2026-08-19T10:00');
+	await page.getByLabel('Signatory name').fill('E2E Customer Signatory');
+	await page.getByLabel('Signatory email').fill('customer-e2e@example.test');
+	await page.getByLabel('Signing role').fill('Director');
+	await page.getByRole('button', { name: 'Record execution' }).click();
+	await expect(page.getByText('Executed', { exact: true })).toBeVisible();
+});
