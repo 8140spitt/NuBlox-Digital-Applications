@@ -19,6 +19,15 @@ test('read-only member can view workspaces without receiving mutation controls',
 }) => {
 	await signIn(page);
 
+	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
+	await expect(primaryNavigation.getByRole('link', { name: 'CRM', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Commercial', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Projects', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Contracts', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Finance', exact: true })).toBeVisible();
+	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
+	await expect(page.getByRole('button', { name: 'Notifications' })).toBeDisabled();
+
 	await page.goto('/crm');
 	await expect(page.getByRole('heading', { name: 'CRM', exact: true, level: 1 })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create CRM record' })).toHaveCount(0);
