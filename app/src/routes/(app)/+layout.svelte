@@ -150,7 +150,9 @@
 
 		<details class="account-menu">
 			<summary>
-				<span class="avatar" aria-hidden="true">{data.actor.displayName.slice(0, 1).toUpperCase()}</span>
+				<span class="avatar" aria-hidden="true"
+					>{data.actor.displayName.slice(0, 1).toUpperCase()}</span
+				>
 				<span class="account-summary">
 					<strong>{data.actor.displayName}</strong>
 					<small>{data.actor.email}</small>
