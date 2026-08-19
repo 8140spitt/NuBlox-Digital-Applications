@@ -16,6 +16,24 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await page.getByRole('button', { name: new RegExp(ORGANISATION) }).click();
 	await expect(page).toHaveURL(/\/dashboard$/);
 
+	await expect(page.getByRole('link', { name: 'NuBlox dashboard' })).toBeVisible();
+	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
+	await expect(primaryNavigation.getByRole('link', { name: 'CRM', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Projects', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Credit control', exact: true })).toBeVisible();
+
+	await page.getByText('Search', { exact: true }).click();
+	await page.getByLabel('Find a workspace').fill('year-end');
+	await expect(page.getByRole('link', { name: /Year-end close/ })).toBeVisible();
+	await page.getByText('Search', { exact: true }).click();
+
+	await page.getByText('Create', { exact: true }).click();
+	await expect(page.getByRole('link', { name: /CRM record/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /Estimate/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /Project/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /Contract/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /Invoice/ })).toBeVisible();
+
 	const workspacePaths = [
 		'/dashboard',
 		'/crm',
