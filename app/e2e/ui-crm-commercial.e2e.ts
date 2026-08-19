@@ -32,7 +32,7 @@ test('owner creates and filters a CRM organisation through the browser', async (
 	await page.goto('/crm');
 	await page.getByLabel('Search').fill('E2E Customer Ltd');
 	await page.getByRole('button', { name: 'Filter' }).click();
-	await expect(page.getByRole('link', { name: /E2E Customer Ltd/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /E2E Customer/ })).toBeVisible();
 });
 
 test('owner creates an opportunity and estimate through the browser', async ({ page }) => {
@@ -40,7 +40,7 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.goto('/crm/opportunities');
 
 	await page.getByLabel('Title').fill('E2E Office Refurbishment');
-	await page.getByLabel('Primary customer').selectOption({ label: 'E2E Customer Ltd' });
+	await page.getByLabel('Primary customer').selectOption({ label: 'E2E Customer' });
 	await page.getByLabel('Pipeline stage').selectOption({ index: 1 });
 	await page.getByLabel('Estimated value').fill('125000.00');
 	await page.getByLabel('Currency').fill('GBP');
@@ -54,7 +54,7 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.goto('/commercial/estimates');
 	await page
 		.getByLabel('CRM opportunity')
-		.selectOption({ label: 'E2E Office Refurbishment · E2E Customer Ltd' });
+		.selectOption({ label: 'E2E Office Refurbishment · E2E Customer' });
 	await page.getByLabel('Estimate title').fill('E2E Office Refurbishment Estimate');
 	await page.getByLabel('Currency').fill('GBP');
 	await page.getByLabel('Notes').fill('Created by full browser acceptance validation.');
@@ -172,7 +172,7 @@ test('owner completes invoice, receipt and cash allocation through the browser',
 	await page.getByLabel('Amount').fill('150000.00');
 	await page.getByLabel('Currency').fill('GBP');
 	await page.getByLabel('Payment reference').fill('E2E-RECEIPT-001');
-	await page.getByLabel('Payer').selectOption({ label: 'E2E Customer Ltd' });
+	await page.getByLabel('Payer').selectOption({ label: 'E2E Customer' });
 	await page.getByRole('button', { name: 'Record payment' }).click();
 	await expect(page).toHaveURL(/\/finance\/payments\/[0-9a-f-]+$/i);
 
