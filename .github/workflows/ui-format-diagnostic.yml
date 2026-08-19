@@ -1,0 +1,33 @@
+name: UI Format Diagnostic
+
+on:
+  pull_request:
+    paths:
+      - 'app/e2e/ui-crm-commercial.e2e.ts'
+      - '.github/workflows/ui-format-diagnostic.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  format-diff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Print exact Prettier diff
+        working-directory: app
+        run: |
+          pnpm exec prettier --write e2e/ui-crm-commercial.e2e.ts
+          git diff -- e2e/ui-crm-commercial.e2e.ts
