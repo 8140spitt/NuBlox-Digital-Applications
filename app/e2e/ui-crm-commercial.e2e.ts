@@ -122,7 +122,9 @@ test('owner takes commercial evidence through project and executed contract', as
 
 	await page.goto(projectHref!);
 	await expect(page.locator('.project-header .status')).toHaveText('Proposed');
-	const activationForm = page.locator('form[action="?/transition"]').filter({ hasText: 'Set active' });
+	const activationForm = page
+		.locator('form[action="?/transition"]')
+		.filter({ hasText: 'Set active' });
 	await activationForm.getByLabel('Effective date').fill('2026-08-19');
 	await activationForm.getByRole('button', { name: 'Set active' }).click();
 	await expect(page.locator('.project-header .status')).toHaveText('Active');
