@@ -51,7 +51,7 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	const createPopover = page.locator('.create-popover');
 	await expect(createPopover.getByRole('link', { name: /CRM record/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Estimate/ })).toBeVisible();
-	await expect(createPopover.getByRole('link', { name: /Project/ })).toBeVisible();
+	await expect(createPopover.locator('a[href="/projects"]')).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Controlled document/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /RFI/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Project instruction/ })).toBeVisible();
