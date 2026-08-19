@@ -22,9 +22,15 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	}
 
 	const db = getDatabase();
+	const actorContext = {
+		organisationId: locals.tenant.organisationId,
+		userId: locals.actor.userId,
+		memberId: locals.tenant.memberId,
+		correlationId: locals.correlationId
+	};
 	const [organisation, allowedPermissionKeys] = await Promise.all([
 		new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
-		new PermissionService(db).listAllowedPermissionKeys(locals.actor)
+		new PermissionService(db).listAllowedPermissionKeys(actorContext)
 	]);
 	if (!organisation) throw redirect(303, '/select-organisation');
 
