@@ -43,7 +43,9 @@ test('owner staffs, schedules and records a complete work session through the UI
 	await staffingPanel.getByLabel('Planned allocation %').fill('100');
 	await staffingPanel.getByRole('button', { name: 'Create assignment' }).click();
 	await expect(page).toHaveURL(/\/people$/);
-	await expect(page.getByRole('cell', { name: projectNumber, exact: true })).toBeVisible();
+	const staffingRow = page.getByRole('row').filter({ hasText: projectNumber });
+	await expect(staffingRow.getByText(projectNumber, { exact: true })).toBeVisible();
+	await expect(staffingRow.getByText(projectName, { exact: true })).toBeVisible();
 
 	await page.goto('/schedule');
 	const schedulePanel = page.locator('#schedule-work');
