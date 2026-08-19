@@ -65,6 +65,18 @@ const navigationSections: readonly AppNavigationSection[] = [
 				anyPermissionNamespaces: ['project.']
 			},
 			{
+				id: 'documents',
+				label: 'Documents',
+				href: '/documents',
+				anyPermissionNamespaces: ['information.'],
+				children: [
+					{ id: 'document-register', label: 'Document register', href: '/documents#document-register' },
+					{ id: 'rfi-register', label: 'RFIs', href: '/documents#rfi-register' },
+					{ id: 'submittal-register', label: 'Submittals', href: '/documents#submittal-register' },
+					{ id: 'instruction-register', label: 'Instructions', href: '/documents#instruction-register' }
+				]
+			},
+			{
 				id: 'contracts',
 				label: 'Contracts',
 				href: '/contracts',
@@ -236,6 +248,27 @@ const quickActions: readonly AppQuickAction[] = [
 		href: '/projects',
 		description: 'Create a new project workspace.',
 		anyPermissions: ['project.create']
+	},
+	{
+		id: 'new-document',
+		label: 'Controlled document',
+		href: '/documents#create-document',
+		description: 'Register a document identity and its first revision.',
+		anyPermissions: ['information.manage']
+	},
+	{
+		id: 'new-rfi',
+		label: 'RFI',
+		href: '/documents#create-rfi',
+		description: 'Create a controlled request for information.',
+		anyPermissions: ['information.rfi.manage']
+	},
+	{
+		id: 'new-instruction',
+		label: 'Project instruction',
+		href: '/documents#create-instruction',
+		description: 'Create a formal project instruction draft.',
+		anyPermissions: ['information.instruction.manage']
 	},
 	{
 		id: 'new-workforce-member',
