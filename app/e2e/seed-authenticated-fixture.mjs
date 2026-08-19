@@ -75,6 +75,28 @@ try {
 		[organisationId, memberId, roleId]
 	);
 
+	const pipelinePublicId = randomUUID();
+	const [pipeline] = await db.execute(
+		`INSERT INTO crm_pipelines
+		(organisation_id, public_id, name, is_default, is_active)
+		VALUES (?, ?, 'Sales', 1, 1)`,
+		[organisationId, pipelinePublicId]
+	);
+	const pipelineId = String(pipeline.insertId);
+	for (const stage of [
+		['Lead', 10, '10.00'],
+		['Qualified', 20, '30.00'],
+		['Proposal', 30, '60.00'],
+		['Negotiation', 40, '80.00']
+	]) {
+		await db.execute(
+			`INSERT INTO crm_pipeline_stages
+			(organisation_id, crm_pipeline_id, name, sort_order, probability_percent, is_active)
+			VALUES (?, ?, ?, ?, ?, 1)`,
+			[organisationId, pipelineId, stage[0], stage[1], stage[2]]
+		);
+	}
+
 	console.log(`Seeded authenticated browser fixture for ${E2E_EMAIL}.`);
 } finally {
 	await db.end();
