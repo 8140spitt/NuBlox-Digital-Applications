@@ -119,7 +119,9 @@ test('owner takes commercial evidence through project and executed contract', as
 	await expect(page.getByText('Executed', { exact: true })).toBeVisible();
 });
 
-test('owner completes invoice, receipt and cash allocation through the browser', async ({ page }) => {
+test('owner completes invoice, receipt and cash allocation through the browser', async ({
+	page
+}) => {
 	await signIn(page);
 
 	await page.goto('/finance/billing');
