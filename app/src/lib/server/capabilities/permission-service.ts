@@ -68,6 +68,18 @@ export class PermissionService {
 		return decisions;
 	}
 
+	async listAllowedPermissionKeys(actor: TenantActorContext): Promise<string[]> {
+		const permissionRows = await this.db
+			.selectFrom('permissions')
+			.select('permission_key as permissionKey')
+			.where('is_active', '=', 1)
+			.orderBy('permission_key', 'asc')
+			.execute();
+		const permissionKeys = permissionRows.map((row) => row.permissionKey);
+		const decisions = await this.decideMany(actor, permissionKeys);
+		return permissionKeys.filter((permissionKey) => decisions.get(permissionKey)?.allowed === true);
+	}
+
 	private async resolveOrganisationPermission(
 		actor: TenantActorContext,
 		permissionKey: string
