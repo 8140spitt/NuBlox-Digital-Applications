@@ -20,19 +20,23 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await signIn(page);
 
 	await page.goto('/crm');
-	await expect(page.getByRole('heading', { name: 'CRM', exact: true })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'CRM', exact: true, level: 1 })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create CRM record' })).toHaveCount(0);
 
 	await page.goto('/commercial/estimates');
-	await expect(page.getByRole('heading', { name: 'Estimates', exact: true })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Estimates', exact: true, level: 1 })
+	).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create estimate' })).toHaveCount(0);
 
 	await page.goto('/contracts');
-	await expect(page.getByRole('heading', { name: 'Contracts', exact: true })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Contracts', exact: true, level: 1 })
+	).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Form contract' })).toHaveCount(0);
 
 	await page.goto('/finance/accounting/periods');
-	await expect(page.getByRole('heading', { name: 'Accounting periods' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Accounting periods', level: 1 })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create financial year' })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Soft close' })).toHaveCount(0);
 });
