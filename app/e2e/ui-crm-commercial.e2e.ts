@@ -145,7 +145,7 @@ test('owner completes invoice, receipt and cash allocation through the browser',
 	await page.getByLabel('Code').fill('E2E_VAT20');
 	await page.getByLabel('Name').fill('E2E VAT 20');
 	await page.getByLabel('Treatment').selectOption('taxable');
-	await page.getByLabel('Rate %').fill('20');
+	await page.getByLabel('Rate %', { exact: true }).fill('20');
 	await page.getByRole('button', { name: 'Add tax category' }).click();
 	await expect(page.getByText('E2E VAT 20', { exact: true })).toBeVisible();
 
