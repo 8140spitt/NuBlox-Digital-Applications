@@ -28,6 +28,9 @@ test('read-only member can view workspaces without receiving mutation controls',
 		primaryNavigation.getByRole('link', { name: 'Projects', exact: true })
 	).toBeVisible();
 	await expect(
+		primaryNavigation.getByRole('link', { name: 'Documents', exact: true })
+	).toBeVisible();
+	await expect(
 		primaryNavigation.getByRole('link', { name: 'Contracts', exact: true })
 	).toBeVisible();
 	await expect(
@@ -48,6 +51,16 @@ test('read-only member can view workspaces without receiving mutation controls',
 		page.getByRole('heading', { name: 'Estimates', exact: true, level: 1 })
 	).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create estimate' })).toHaveCount(0);
+
+	await page.goto('/documents');
+	await expect(
+		page.getByRole('heading', { name: 'Documents & information', exact: true, level: 1 })
+	).toBeVisible();
+	await expect(page.locator('#create-document')).toHaveCount(0);
+	await expect(page.locator('#create-rfi')).toHaveCount(0);
+	await expect(page.locator('#create-submittal')).toHaveCount(0);
+	await expect(page.locator('#create-instruction')).toHaveCount(0);
+	await expect(page.getByRole('button', { name: /Issue/ })).toHaveCount(0);
 
 	await page.goto('/contracts');
 	await expect(
