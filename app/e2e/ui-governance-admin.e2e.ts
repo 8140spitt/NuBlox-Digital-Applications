@@ -26,7 +26,9 @@ test('owner configures and transitions accounting periods through the browser', 
 	await yearForm.getByLabel('Starts').fill('2027-01-01');
 	await yearForm.getByLabel('Ends').fill('2027-12-31');
 	await yearForm.getByRole('button', { name: 'Create financial year' }).click();
-	await expect(page.getByText('FY2027 · E2E Financial Year 2027', { exact: true })).toBeVisible();
+	await expect(
+		page.locator('strong').filter({ hasText: 'FY2027 · E2E Financial Year 2027' }).first()
+	).toBeVisible();
 
 	const periodForm = page.locator('form[action="?/createPeriod"]');
 	await periodForm
