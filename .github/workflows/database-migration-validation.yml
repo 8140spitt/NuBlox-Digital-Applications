@@ -1,10 +1,9 @@
 name: Slice 3 Teardown Repair
 
 on:
-  pull_request:
-    paths:
-      - 'app/src/lib/server/information/project-information.integration.test.ts'
-      - '.github/workflows/database-migration-validation.yml'
+  push:
+    branches:
+      - product/v1-documents-project-information
   workflow_dispatch:
 
 permissions:
