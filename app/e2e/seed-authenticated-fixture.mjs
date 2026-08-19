@@ -120,7 +120,7 @@ try {
 	const [viewerRole] = await db.execute(
 		`INSERT INTO organisation_roles
 		(organisation_id, public_id, name, is_active)
-		VALUES (?, ?, 'E2E Read Only', 1)`,
+		VALUES (?, ?, 'E2E Viewer Role', 1)`,
 		[organisationId, viewerRolePublicId]
 	);
 	const viewerRoleId = String(viewerRole.insertId);
