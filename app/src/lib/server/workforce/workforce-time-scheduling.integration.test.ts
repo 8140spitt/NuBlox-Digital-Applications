@@ -27,7 +27,6 @@ let actorObserver: TenantActorContext;
 let workerPublicId = '';
 let observerWorkerPublicId = '';
 let workerId = '';
-let projectId = '';
 let projectPublicId = '';
 let scheduleEventPublicId = '';
 let timesheetPublicId = '';
@@ -376,7 +375,6 @@ describe('V1 workforce, schedule and time activation', () => {
 			projectNumber: `${PROJECT_PREFIX}${randomUUID().slice(0, 8)}`,
 			name: 'Slice 2 staffed project'
 		});
-		projectId = project.id;
 		projectPublicId = project.publicId;
 		await new ProjectRepository(db).insertProjectMember(
 			project.id,
