@@ -100,6 +100,8 @@ test('owner takes commercial evidence through project and executed contract', as
 	await page.getByRole('link', { name: 'Project conversion' }).click();
 	await page.getByRole('button', { name: 'Create project from accepted quotation' }).click();
 	await expect(page.getByText('Conversion complete', { exact: true })).toBeVisible();
+	const projectHref = await page.getByRole('link', { name: 'Open project' }).getAttribute('href');
+	expect(projectHref).toMatch(/^\/projects\/[0-9a-f-]+$/i);
 
 	await page.goto('/contracts');
 	await page.getByRole('link', { name: 'Form contract' }).click();
@@ -117,6 +119,13 @@ test('owner takes commercial evidence through project and executed contract', as
 	await page.getByLabel('Signing role').fill('Director');
 	await page.getByRole('button', { name: 'Record execution' }).click();
 	await expect(page.getByText('Executed', { exact: true })).toBeVisible();
+
+	await page.goto(projectHref!);
+	await expect(page.locator('.project-header .status')).toHaveText('Proposed');
+	const activationForm = page.locator('form[action="?/transition"]').filter({ hasText: 'Set active' });
+	await activationForm.getByLabel('Effective date').fill('2026-08-19');
+	await activationForm.getByRole('button', { name: 'Set active' }).click();
+	await expect(page.locator('.project-header .status')).toHaveText('Active');
 });
 
 test('owner completes invoice, receipt and cash allocation through the browser', async ({
