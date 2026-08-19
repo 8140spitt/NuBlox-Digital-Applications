@@ -105,9 +105,10 @@ export async function ensureWorkforceStandardRoleDefaults(
 			permission_id: string;
 		}> = [];
 		for (const role of roles) {
-			const keys = WORKFORCE_STANDARD_ROLE_PERMISSIONS[
-				role.name as keyof typeof WORKFORCE_STANDARD_ROLE_PERMISSIONS
-			];
+			const keys =
+				WORKFORCE_STANDARD_ROLE_PERMISSIONS[
+					role.name as keyof typeof WORKFORCE_STANDARD_ROLE_PERMISSIONS
+				];
 			if (!keys) continue;
 			for (const permissionKey of keys) {
 				desiredGrants.push({

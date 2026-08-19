@@ -4,7 +4,10 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
-import { WorkforceService, WorkforceValidationError } from '$lib/server/workforce/workforce-service';
+import {
+	WorkforceService,
+	WorkforceValidationError
+} from '$lib/server/workforce/workforce-service';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
@@ -37,7 +40,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	create: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { error: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new WorkforceService(getDatabase()).createScheduleEvent(actor, {
@@ -53,7 +57,8 @@ export const actions: Actions = {
 		} catch (error) {
 			if (error instanceof WorkforceValidationError) return fail(400, { error: error.message });
 			if (error instanceof RecordNotFoundError) return fail(404, { error: error.message });
-			if (error instanceof TenantAccessError) return fail(403, { error: 'You do not have permission to manage the schedule.' });
+			if (error instanceof TenantAccessError)
+				return fail(403, { error: 'You do not have permission to manage the schedule.' });
 			throw error;
 		}
 		throw redirect(303, '/schedule');

@@ -226,7 +226,9 @@ export class WorkforceService {
 	constructor(private readonly db: Database = getDatabase()) {}
 
 	private async assertActiveActor(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 	}
 
@@ -270,26 +272,35 @@ export class WorkforceService {
 		}
 
 		const repository = new WorkforceRepository(this.db);
-		const [workers, engagements, competencies, memberCandidates, teams, engagementTypes, competencyTypes, projectAssignments] =
-			await Promise.all([
-				repository.listWorkers(actor.organisationId),
-				repository.listWorkerEngagements(actor.organisationId),
-				repository.listWorkerCompetencies(actor.organisationId),
-				canManage ? repository.listMemberCandidates(actor.organisationId) : Promise.resolve([]),
-				repository.listTeams(actor.organisationId),
-				repository.listEngagementTypes(),
-				repository.listCompetencyTypes(actor.organisationId),
-				repository.listProjectAssignments(actor.organisationId)
-			]);
+		const [
+			workers,
+			engagements,
+			competencies,
+			memberCandidates,
+			teams,
+			engagementTypes,
+			competencyTypes,
+			projectAssignments
+		] = await Promise.all([
+			repository.listWorkers(actor.organisationId),
+			repository.listWorkerEngagements(actor.organisationId),
+			repository.listWorkerCompetencies(actor.organisationId),
+			canManage ? repository.listMemberCandidates(actor.organisationId) : Promise.resolve([]),
+			repository.listTeams(actor.organisationId),
+			repository.listEngagementTypes(),
+			repository.listCompetencyTypes(actor.organisationId),
+			repository.listProjectAssignments(actor.organisationId)
+		]);
 
 		const projects = canManageAssignments
-			? (await new ProjectRepository(this.db).listForMember(actor.organisationId, actor.memberId)).filter(
-					(project) => project.owningOrganisationId === actor.organisationId
-				)
+			? (
+					await new ProjectRepository(this.db).listForMember(actor.organisationId, actor.memberId)
+				).filter((project) => project.owningOrganisationId === actor.organisationId)
 			: [];
 		const engagementByWorker = new Map<string, WorkerEngagementSummary>();
 		for (const engagement of engagements) {
-			if (!engagementByWorker.has(engagement.workerId)) engagementByWorker.set(engagement.workerId, engagement);
+			if (!engagementByWorker.has(engagement.workerId))
+				engagementByWorker.set(engagement.workerId, engagement);
 		}
 		const competenciesByWorker = new Map<string, WorkerCompetencySummary[]>();
 		for (const competency of competencies) {
@@ -333,7 +344,8 @@ export class WorkforceService {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'workforce.manage');
 		const memberPublicId = input.memberPublicId.trim();
-		if (!memberPublicId) throw new WorkforceValidationError('An active organisation member is required.');
+		if (!memberPublicId)
+			throw new WorkforceValidationError('An active organisation member is required.');
 		const workerNumber = input.workerNumber?.trim() || null;
 		if (workerNumber && workerNumber.length > 80) {
 			throw new WorkforceValidationError('Worker number must not exceed 80 characters.');
@@ -360,7 +372,10 @@ export class WorkforceService {
 				actor.organisationId,
 				member.memberId
 			);
-			if (existing) throw new WorkforceValidationError('That organisation member already has a workforce record.');
+			if (existing)
+				throw new WorkforceValidationError(
+					'That organisation member already has a workforce record.'
+				);
 
 			const engagementType = await trx
 				.selectFrom('workforce_engagement_types')
@@ -368,7 +383,8 @@ export class WorkforceService {
 				.where('code', '=', input.engagementTypeCode.trim())
 				.where('is_active', '=', 1)
 				.executeTakeFirst();
-			if (!engagementType) throw new WorkforceValidationError('A valid engagement type is required.');
+			if (!engagementType)
+				throw new WorkforceValidationError('A valid engagement type is required.');
 
 			let teamId: string | null = null;
 			const teamPublicId = input.teamPublicId?.trim() || null;
@@ -380,7 +396,10 @@ export class WorkforceService {
 					.where('public_id', '=', teamPublicId)
 					.where('is_active', '=', 1)
 					.executeTakeFirst();
-				if (!team) throw new WorkforceValidationError('Selected team is not available in this organisation.');
+				if (!team)
+					throw new WorkforceValidationError(
+						'Selected team is not available in this organisation.'
+					);
 				teamId = team.id;
 			}
 
@@ -427,10 +446,19 @@ export class WorkforceService {
 				subjectType: 'worker',
 				subjectPublicId: publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { memberPublicId, workerNumber, jobTitle, teamPublicId, startedOn: input.startedOn }
+				changeSummary: {
+					memberPublicId,
+					workerNumber,
+					jobTitle,
+					teamPublicId,
+					startedOn: input.startedOn
+				}
 			});
 
-			const created = await new WorkforceRepository(trx).findWorkerByPublicId(actor.organisationId, publicId);
+			const created = await new WorkforceRepository(trx).findWorkerByPublicId(
+				actor.organisationId,
+				publicId
+			);
 			if (!created) throw new Error('Created worker could not be reloaded.');
 			return created;
 		});
@@ -446,10 +474,18 @@ export class WorkforceService {
 		const name = input.name.trim();
 		const description = input.description?.trim() || null;
 		if (!/^[a-z0-9][a-z0-9_-]{0,79}$/.test(code)) {
-			throw new WorkforceValidationError('Competency code must use letters, numbers, hyphens or underscores.');
+			throw new WorkforceValidationError(
+				'Competency code must use letters, numbers, hyphens or underscores.'
+			);
 		}
-		if (!name || name.length > 200) throw new WorkforceValidationError('Competency name is required and must not exceed 200 characters.');
-		if (description && description.length > 10000) throw new WorkforceValidationError('Competency description must not exceed 10,000 characters.');
+		if (!name || name.length > 200)
+			throw new WorkforceValidationError(
+				'Competency name is required and must not exceed 200 characters.'
+			);
+		if (description && description.length > 10000)
+			throw new WorkforceValidationError(
+				'Competency description must not exceed 10,000 characters.'
+			);
 		const publicId = randomUUID();
 		try {
 			await this.db.transaction().execute(async (trx) => {
@@ -479,7 +515,12 @@ export class WorkforceService {
 				});
 			});
 		} catch (error) {
-			if (error && typeof error === 'object' && 'code' in error && (error as { code?: unknown }).code === 'ER_DUP_ENTRY') {
+			if (
+				error &&
+				typeof error === 'object' &&
+				'code' in error &&
+				(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
+			) {
 				throw new WorkforceValidationError('That competency code is already in use.');
 			}
 			throw error;
@@ -500,7 +541,10 @@ export class WorkforceService {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'workforce.competency.manage');
 		const repository = new WorkforceRepository(this.db);
-		const worker = await repository.findWorkerByPublicId(actor.organisationId, input.workerPublicId.trim());
+		const worker = await repository.findWorkerByPublicId(
+			actor.organisationId,
+			input.workerPublicId.trim()
+		);
 		if (!worker) throw new RecordNotFoundError('Worker not found in the active organisation.');
 		const competencyType = await this.db
 			.selectFrom('competency_types')
@@ -509,13 +553,19 @@ export class WorkforceService {
 			.where('public_id', '=', input.competencyTypePublicId.trim())
 			.where('is_active', '=', 1)
 			.executeTakeFirst();
-		if (!competencyType) throw new WorkforceValidationError('Selected competency is not available.');
+		if (!competencyType)
+			throw new WorkforceValidationError('Selected competency is not available.');
 		const validFrom = parseOptionalDate(input.validFrom, 'Competency valid from');
 		const validTo = parseOptionalDate(input.validTo, 'Competency valid to');
-		if (validFrom && validTo && validTo < validFrom) throw new WorkforceValidationError('Competency valid-to date must not precede valid-from date.');
-		if (Boolean(competencyType.requiresExpiry) && !validTo) throw new WorkforceValidationError('This competency requires an expiry date.');
+		if (validFrom && validTo && validTo < validFrom)
+			throw new WorkforceValidationError(
+				'Competency valid-to date must not precede valid-from date.'
+			);
+		if (Boolean(competencyType.requiresExpiry) && !validTo)
+			throw new WorkforceValidationError('This competency requires an expiry date.');
 		const proficiencyLevel = input.proficiencyLevel?.trim() || null;
-		if (proficiencyLevel && proficiencyLevel.length > 64) throw new WorkforceValidationError('Proficiency level must not exceed 64 characters.');
+		if (proficiencyLevel && proficiencyLevel.length > 64)
+			throw new WorkforceValidationError('Proficiency level must not exceed 64 characters.');
 
 		await this.db.transaction().execute(async (trx) => {
 			await trx
@@ -543,7 +593,12 @@ export class WorkforceService {
 				subjectType: 'worker',
 				subjectPublicId: worker.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { competencyTypePublicId: input.competencyTypePublicId, proficiencyLevel, validFrom: input.validFrom ?? null, validTo: input.validTo ?? null }
+				changeSummary: {
+					competencyTypePublicId: input.competencyTypePublicId,
+					proficiencyLevel,
+					validFrom: input.validFrom ?? null,
+					validTo: input.validTo ?? null
+				}
 			});
 		});
 	}
@@ -561,7 +616,10 @@ export class WorkforceService {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'workforce.assignment.manage');
 		const repository = new WorkforceRepository(this.db);
-		const worker = await repository.findWorkerByPublicId(actor.organisationId, input.workerPublicId.trim());
+		const worker = await repository.findWorkerByPublicId(
+			actor.organisationId,
+			input.workerPublicId.trim()
+		);
 		if (!worker) throw new RecordNotFoundError('Worker not found in the active organisation.');
 		const project = await new ProjectRepository(this.db).findForMemberByPublicId(
 			actor.organisationId,
@@ -573,7 +631,8 @@ export class WorkforceService {
 		}
 		const startsOn = parseOptionalDate(input.startsOn, 'Assignment start date');
 		const endsOn = parseOptionalDate(input.endsOn, 'Assignment end date');
-		if (startsOn && endsOn && endsOn < startsOn) throw new WorkforceValidationError('Assignment end date must not precede start date.');
+		if (startsOn && endsOn && endsOn < startsOn)
+			throw new WorkforceValidationError('Assignment end date must not precede start date.');
 		const plannedAllocationPercent = validateOptionalAllocation(input.plannedAllocationPercent);
 
 		const existing = await this.db
@@ -585,7 +644,9 @@ export class WorkforceService {
 			.where('assignment_status', 'in', ['planned', 'active'])
 			.execute();
 		if (existing.some((row) => rangesOverlap(row.startsOn, row.endsOn, startsOn, endsOn))) {
-			throw new WorkforceValidationError('That worker already has an overlapping active assignment to this project.');
+			throw new WorkforceValidationError(
+				'That worker already has an overlapping active assignment to this project.'
+			);
 		}
 
 		const publicId = randomUUID();
@@ -616,7 +677,13 @@ export class WorkforceService {
 				subjectType: 'project_resource_assignment',
 				subjectPublicId: publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { workerPublicId: worker.publicId, projectPublicId: project.publicId, plannedAllocationPercent, startsOn: input.startsOn ?? null, endsOn: input.endsOn ?? null }
+				changeSummary: {
+					workerPublicId: worker.publicId,
+					projectPublicId: project.publicId,
+					plannedAllocationPercent,
+					startsOn: input.startsOn ?? null,
+					endsOn: input.endsOn ?? null
+				}
 			});
 		});
 		return publicId;
@@ -627,22 +694,48 @@ export class WorkforceService {
 		input?: { from?: Date; to?: Date }
 	): Promise<ScheduleWorkspace> {
 		await this.assertActiveActor(actor);
-		const decisions = await new PermissionService(this.db).decideMany(actor, ['schedule.view', 'schedule.manage']);
+		const decisions = await new PermissionService(this.db).decideMany(actor, [
+			'schedule.view',
+			'schedule.manage'
+		]);
 		const canView = decisions.get('schedule.view')?.allowed ?? false;
 		const canManage = decisions.get('schedule.manage')?.allowed ?? false;
 		const repository = new WorkforceRepository(this.db);
-		const currentWorker = await repository.findWorkerByMemberId(actor.organisationId, actor.memberId);
+		const currentWorker = await repository.findWorkerByMemberId(
+			actor.organisationId,
+			actor.memberId
+		);
 		const from = input?.from ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 		const to = input?.to ?? new Date(Date.now() + 35 * 24 * 60 * 60 * 1000);
-		if (to <= from) throw new WorkforceValidationError('Schedule end must be after schedule start.');
-		if (!canView) return { canView, canManage, currentWorker, events: [], workers: [], projects: [], eventTypes: [], from, to };
+		if (to <= from)
+			throw new WorkforceValidationError('Schedule end must be after schedule start.');
+		if (!canView)
+			return {
+				canView,
+				canManage,
+				currentWorker,
+				events: [],
+				workers: [],
+				projects: [],
+				eventTypes: [],
+				from,
+				to
+			};
 
 		const events = canManage
 			? await repository.listScheduleEventsForOrganisation(actor.organisationId, to, from)
 			: currentWorker
-				? await repository.listScheduleEventsForWorker(actor.organisationId, currentWorker.id, to, from)
+				? await repository.listScheduleEventsForWorker(
+						actor.organisationId,
+						currentWorker.id,
+						to,
+						from
+					)
 				: [];
-		const assignments = await repository.listScheduleWorkerAssignments(actor.organisationId, events.map((event) => event.id));
+		const assignments = await repository.listScheduleWorkerAssignments(
+			actor.organisationId,
+			events.map((event) => event.id)
+		);
 		const workersByEvent = new Map<string, typeof assignments>();
 		for (const assignment of assignments) {
 			const current = workersByEvent.get(assignment.scheduleEventId) ?? [];
@@ -651,10 +744,10 @@ export class WorkforceService {
 		}
 		const [workers, projects, eventTypes] = canManage
 			? await Promise.all([
-				repository.listWorkers(actor.organisationId),
-				new ProjectRepository(this.db).listForMember(actor.organisationId, actor.memberId),
-				repository.listScheduleEventTypes()
-			])
+					repository.listWorkers(actor.organisationId),
+					new ProjectRepository(this.db).listForMember(actor.organisationId, actor.memberId),
+					repository.listScheduleEventTypes()
+				])
 			: [[], [], await repository.listScheduleEventTypes()];
 		return {
 			canView,
@@ -686,13 +779,19 @@ export class WorkforceService {
 		await this.requirePermission(actor, 'schedule.manage');
 		const title = input.title.trim();
 		const description = input.description?.trim() || null;
-		if (!title || title.length > 255) throw new WorkforceValidationError('Schedule title is required and must not exceed 255 characters.');
-		if (description && description.length > 10000) throw new WorkforceValidationError('Schedule description must not exceed 10,000 characters.');
+		if (!title || title.length > 255)
+			throw new WorkforceValidationError(
+				'Schedule title is required and must not exceed 255 characters.'
+			);
+		if (description && description.length > 10000)
+			throw new WorkforceValidationError('Schedule description must not exceed 10,000 characters.');
 		const timezone = input.timezone.trim() || 'Europe/London';
-		if (timezone.length > 64) throw new WorkforceValidationError('Timezone must not exceed 64 characters.');
+		if (timezone.length > 64)
+			throw new WorkforceValidationError('Timezone must not exceed 64 characters.');
 		const startsAt = zonedLocalToUtc(input.startsAtLocal, timezone);
 		const endsAt = zonedLocalToUtc(input.endsAtLocal, timezone);
-		if (endsAt <= startsAt) throw new WorkforceValidationError('Schedule end must be after schedule start.');
+		if (endsAt <= startsAt)
+			throw new WorkforceValidationError('Schedule end must be after schedule start.');
 		const eventType = await this.db
 			.selectFrom('schedule_event_types')
 			.select('id')
@@ -700,26 +799,39 @@ export class WorkforceService {
 			.where('is_active', '=', 1)
 			.executeTakeFirst();
 		if (!eventType) throw new WorkforceValidationError('A valid schedule event type is required.');
-		const workerPublicIds = [...new Set(input.workerPublicIds.map((value) => value.trim()).filter(Boolean))];
-		if (workerPublicIds.length === 0) throw new WorkforceValidationError('Assign at least one worker to scheduled work.');
+		const workerPublicIds = [
+			...new Set(input.workerPublicIds.map((value) => value.trim()).filter(Boolean))
+		];
+		if (workerPublicIds.length === 0)
+			throw new WorkforceValidationError('Assign at least one worker to scheduled work.');
 		const repository = new WorkforceRepository(this.db);
 		const workers: WorkerRecord[] = [];
 		for (const publicId of workerPublicIds) {
 			const worker = await repository.findWorkerByPublicId(actor.organisationId, publicId);
-			if (!worker || worker.status !== 'active') throw new WorkforceValidationError('Every scheduled worker must be active in this organisation.');
+			if (!worker || worker.status !== 'active')
+				throw new WorkforceValidationError(
+					'Every scheduled worker must be active in this organisation.'
+				);
 			workers.push(worker);
 		}
 
 		let project: ProjectRecord | null = null;
 		const projectPublicId = input.projectPublicId?.trim() || null;
 		if (projectPublicId) {
-			project = await new ProjectRepository(this.db).findForMemberByPublicId(actor.organisationId, actor.memberId, projectPublicId);
-			if (!project || project.owningOrganisationId !== actor.organisationId) throw new RecordNotFoundError('Owned project not found in the active member scope.');
+			project = await new ProjectRepository(this.db).findForMemberByPublicId(
+				actor.organisationId,
+				actor.memberId,
+				projectPublicId
+			);
+			if (!project || project.owningOrganisationId !== actor.organisationId)
+				throw new RecordNotFoundError('Owned project not found in the active member scope.');
 		}
 
 		const resourceAssignmentIdByWorker = new Map<string, string | null>();
 		if (project) {
-			const eventDate = new Date(Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate()));
+			const eventDate = new Date(
+				Date.UTC(startsAt.getUTCFullYear(), startsAt.getUTCMonth(), startsAt.getUTCDate())
+			);
 			for (const worker of workers) {
 				const assignment = await this.db
 					.selectFrom('project_resource_assignments')
@@ -732,7 +844,10 @@ export class WorkforceService {
 					.where((eb) => eb.or([eb('ends_on', 'is', null), eb('ends_on', '>=', eventDate)]))
 					.orderBy('id', 'desc')
 					.executeTakeFirst();
-				if (!assignment) throw new WorkforceValidationError(`${worker.displayName} must be staffed to the project before project work can be scheduled.`);
+				if (!assignment)
+					throw new WorkforceValidationError(
+						`${worker.displayName} must be staffed to the project before project work can be scheduled.`
+					);
 				resourceAssignmentIdByWorker.set(worker.id, assignment.id);
 			}
 		} else {
@@ -758,7 +873,8 @@ export class WorkforceService {
 					event_status: 'planned'
 				})
 				.executeTakeFirstOrThrow();
-			if (insert.insertId === undefined) throw new Error('Schedule event insert did not return an ID.');
+			if (insert.insertId === undefined)
+				throw new Error('Schedule event insert did not return an ID.');
 			const eventId = insert.insertId.toString();
 			await trx
 				.insertInto('schedule_event_workers')
@@ -771,6 +887,7 @@ export class WorkforceService {
 						assigned_by_member_id: actor.memberId,
 						assignment_status: 'assigned'
 					}))
+				)
 				.execute();
 			await new AuditRepository(trx).append({
 				eventPublicId: randomUUID(),
@@ -782,7 +899,15 @@ export class WorkforceService {
 				subjectType: 'schedule_event',
 				subjectPublicId: publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { eventTypeCode: input.eventTypeCode, title, workerPublicIds, projectPublicId, startsAt: startsAt.toISOString(), endsAt: endsAt.toISOString(), timezone }
+				changeSummary: {
+					eventTypeCode: input.eventTypeCode,
+					title,
+					workerPublicIds,
+					projectPublicId,
+					startsAt: startsAt.toISOString(),
+					endsAt: endsAt.toISOString(),
+					timezone
+				}
 			});
 		});
 		return publicId;
@@ -801,15 +926,38 @@ export class WorkforceService {
 		const canSubmitOwn = decisions.get('timesheet.submit')?.allowed ?? false;
 		const canApprove = decisions.get('timesheet.approve')?.allowed ?? false;
 		const repository = new WorkforceRepository(this.db);
-		const currentWorker = await repository.findWorkerByMemberId(actor.organisationId, actor.memberId);
-		if (!canView) return { canView, canManageOwn, canSubmitOwn, canApprove, currentWorker, ownTimesheets: [], approvalQueue: [], projectAssignments: [], assignedScheduleEvents: [] };
+		const currentWorker = await repository.findWorkerByMemberId(
+			actor.organisationId,
+			actor.memberId
+		);
+		if (!canView)
+			return {
+				canView,
+				canManageOwn,
+				canSubmitOwn,
+				canApprove,
+				currentWorker,
+				ownTimesheets: [],
+				approvalQueue: [],
+				projectAssignments: [],
+				assignedScheduleEvents: []
+			};
 
-		const own = currentWorker ? await repository.listTimesheetsForWorker(actor.organisationId, currentWorker.id) : [];
+		const own = currentWorker
+			? await repository.listTimesheetsForWorker(actor.organisationId, currentWorker.id)
+			: [];
 		const queue = canApprove ? await repository.listSubmittedTimesheets(actor.organisationId) : [];
 		const withEntries = async (timesheets: TimesheetRecord[]) =>
-			Promise.all(timesheets.map(async (timesheet) => ({ ...timesheet, entries: await repository.listTimesheetEntries(actor.organisationId, timesheet.id) })));
+			Promise.all(
+				timesheets.map(async (timesheet) => ({
+					...timesheet,
+					entries: await repository.listTimesheetEntries(actor.organisationId, timesheet.id)
+				}))
+			);
 		const assignments = currentWorker
-			? (await repository.listProjectAssignments(actor.organisationId)).filter((assignment) => assignment.workerPublicId === currentWorker.publicId)
+			? (await repository.listProjectAssignments(actor.organisationId)).filter(
+					(assignment) => assignment.workerPublicId === currentWorker.publicId
+				)
 			: [];
 		const assignedScheduleEvents = currentWorker
 			? await repository.listScheduleEventsForWorker(
@@ -826,7 +974,9 @@ export class WorkforceService {
 			canApprove,
 			currentWorker,
 			ownTimesheets: await withEntries(own),
-			approvalQueue: await withEntries(queue.filter((timesheet) => timesheet.workerId !== currentWorker?.id)),
+			approvalQueue: await withEntries(
+				queue.filter((timesheet) => timesheet.workerId !== currentWorker?.id)
+			),
 			projectAssignments: assignments,
 			assignedScheduleEvents
 		};
@@ -838,13 +988,22 @@ export class WorkforceService {
 	): Promise<string> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'timesheet.manage');
-		const worker = await new WorkforceRepository(this.db).findWorkerByMemberId(actor.organisationId, actor.memberId);
-		if (!worker || worker.status !== 'active') throw new WorkforceValidationError('Your organisation membership is not linked to an active workforce record.');
+		const worker = await new WorkforceRepository(this.db).findWorkerByMemberId(
+			actor.organisationId,
+			actor.memberId
+		);
+		if (!worker || worker.status !== 'active')
+			throw new WorkforceValidationError(
+				'Your organisation membership is not linked to an active workforce record.'
+			);
 		const periodStart = parseDateOnly(input.periodStart, 'Timesheet period start');
 		const periodEnd = parseDateOnly(input.periodEnd, 'Timesheet period end');
-		if (periodEnd < periodStart) throw new WorkforceValidationError('Timesheet period end must not precede the start date.');
-		const spanDays = Math.round((periodEnd.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)) + 1;
-		if (spanDays > 31) throw new WorkforceValidationError('A timesheet period must not exceed 31 days.');
+		if (periodEnd < periodStart)
+			throw new WorkforceValidationError('Timesheet period end must not precede the start date.');
+		const spanDays =
+			Math.round((periodEnd.getTime() - periodStart.getTime()) / (24 * 60 * 60 * 1000)) + 1;
+		if (spanDays > 31)
+			throw new WorkforceValidationError('A timesheet period must not exceed 31 days.');
 		const overlapping = await this.db
 			.selectFrom('timesheets')
 			.select('id')
@@ -854,7 +1013,8 @@ export class WorkforceService {
 			.where('period_start', '<=', periodEnd)
 			.where('period_end', '>=', periodStart)
 			.executeTakeFirst();
-		if (overlapping) throw new WorkforceValidationError('An active timesheet already covers part of that period.');
+		if (overlapping)
+			throw new WorkforceValidationError('An active timesheet already covers part of that period.');
 		const publicId = randomUUID();
 		await this.db.transaction().execute(async (trx) => {
 			await trx
@@ -904,22 +1064,41 @@ export class WorkforceService {
 		await this.requirePermission(actor, 'timesheet.manage');
 		const repository = new WorkforceRepository(this.db);
 		const worker = await repository.findWorkerByMemberId(actor.organisationId, actor.memberId);
-		if (!worker) throw new WorkforceValidationError('Your membership is not linked to a workforce record.');
-		const timesheet = await repository.findTimesheetByPublicId(actor.organisationId, input.timesheetPublicId.trim());
-		if (!timesheet || timesheet.workerId !== worker.id) throw new RecordNotFoundError('Timesheet not found in your worker scope.');
-		if (!['draft', 'rejected', 'reopened'].includes(timesheet.status)) throw new WorkforceValidationError('Submitted or approved timesheets cannot be edited.');
+		if (!worker)
+			throw new WorkforceValidationError('Your membership is not linked to a workforce record.');
+		const timesheet = await repository.findTimesheetByPublicId(
+			actor.organisationId,
+			input.timesheetPublicId.trim()
+		);
+		if (!timesheet || timesheet.workerId !== worker.id)
+			throw new RecordNotFoundError('Timesheet not found in your worker scope.');
+		if (!['draft', 'rejected', 'reopened'].includes(timesheet.status))
+			throw new WorkforceValidationError('Submitted or approved timesheets cannot be edited.');
 		const workDate = parseDateOnly(input.workDate, 'Work date');
-		if (!periodIncludes(timesheet.periodStart, timesheet.periodEnd, workDate)) throw new WorkforceValidationError('Work date must fall within the timesheet period.');
-		const workedMinutes = typeof input.workedMinutes === 'number' ? input.workedMinutes : Number(input.workedMinutes);
-		if (!Number.isInteger(workedMinutes) || workedMinutes <= 0 || workedMinutes > 1440) throw new WorkforceValidationError('Worked minutes must be a whole number between 1 and 1440.');
+		if (!periodIncludes(timesheet.periodStart, timesheet.periodEnd, workDate))
+			throw new WorkforceValidationError('Work date must fall within the timesheet period.');
+		const workedMinutes =
+			typeof input.workedMinutes === 'number' ? input.workedMinutes : Number(input.workedMinutes);
+		if (!Number.isInteger(workedMinutes) || workedMinutes <= 0 || workedMinutes > 1440)
+			throw new WorkforceValidationError(
+				'Worked minutes must be a whole number between 1 and 1440.'
+			);
 		const description = input.description?.trim() || null;
-		if (description && description.length > 1000) throw new WorkforceValidationError('Time-entry description must not exceed 1,000 characters.');
+		if (description && description.length > 1000)
+			throw new WorkforceValidationError(
+				'Time-entry description must not exceed 1,000 characters.'
+			);
 
 		let projectId: string | null = null;
 		const projectPublicId = input.projectPublicId?.trim() || null;
 		if (projectPublicId) {
-			const project = await new ProjectRepository(this.db).findForMemberByPublicId(actor.organisationId, actor.memberId, projectPublicId);
-			if (!project || project.owningOrganisationId !== actor.organisationId) throw new RecordNotFoundError('Project not found in the active member scope.');
+			const project = await new ProjectRepository(this.db).findForMemberByPublicId(
+				actor.organisationId,
+				actor.memberId,
+				projectPublicId
+			);
+			if (!project || project.owningOrganisationId !== actor.organisationId)
+				throw new RecordNotFoundError('Project not found in the active member scope.');
 			const assignment = await this.db
 				.selectFrom('project_resource_assignments')
 				.select('id')
@@ -930,16 +1109,29 @@ export class WorkforceService {
 				.where((eb) => eb.or([eb('starts_on', 'is', null), eb('starts_on', '<=', workDate)]))
 				.where((eb) => eb.or([eb('ends_on', 'is', null), eb('ends_on', '>=', workDate)]))
 				.executeTakeFirst();
-			if (!assignment) throw new WorkforceValidationError('You must be staffed to the project before recording project time.');
+			if (!assignment)
+				throw new WorkforceValidationError(
+					'You must be staffed to the project before recording project time.'
+				);
 			projectId = project.id;
 		}
 
 		let scheduleEventId: string | null = null;
 		const scheduleEventPublicId = input.scheduleEventPublicId?.trim() || null;
 		if (scheduleEventPublicId) {
-			const event = await repository.findScheduleEventByPublicId(actor.organisationId, scheduleEventPublicId);
-			if (!event || !(await repository.hasScheduleWorkerAssignment(actor.organisationId, event.id, worker.id))) throw new RecordNotFoundError('Scheduled work not found in your worker scope.');
-			if (projectId && event.projectId && projectId !== event.projectId) throw new WorkforceValidationError('The selected project does not match the scheduled work.');
+			const event = await repository.findScheduleEventByPublicId(
+				actor.organisationId,
+				scheduleEventPublicId
+			);
+			if (
+				!event ||
+				!(await repository.hasScheduleWorkerAssignment(actor.organisationId, event.id, worker.id))
+			)
+				throw new RecordNotFoundError('Scheduled work not found in your worker scope.');
+			if (projectId && event.projectId && projectId !== event.projectId)
+				throw new WorkforceValidationError(
+					'The selected project does not match the scheduled work.'
+				);
 			if (!projectId && event.projectId) projectId = event.projectId;
 			scheduleEventId = event.id;
 		}
@@ -972,7 +1164,13 @@ export class WorkforceService {
 				subjectType: 'timesheet',
 				subjectPublicId: timesheet.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { workDate: input.workDate, workedMinutes, projectPublicId, scheduleEventPublicId, isBillable: input.isBillable !== false }
+				changeSummary: {
+					workDate: input.workDate,
+					workedMinutes,
+					projectPublicId,
+					scheduleEventPublicId,
+					isBillable: input.isBillable !== false
+				}
 			});
 		});
 	}
@@ -980,38 +1178,76 @@ export class WorkforceService {
 	async submitTimesheet(actor: TenantActorContext, timesheetPublicId: string): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'timesheet.submit');
-		const worker = await new WorkforceRepository(this.db).findWorkerByMemberId(actor.organisationId, actor.memberId);
-		if (!worker) throw new WorkforceValidationError('Your membership is not linked to a workforce record.');
+		const worker = await new WorkforceRepository(this.db).findWorkerByMemberId(
+			actor.organisationId,
+			actor.memberId
+		);
+		if (!worker)
+			throw new WorkforceValidationError('Your membership is not linked to a workforce record.');
 		await this.db.transaction().execute(async (trx) => {
 			const timesheet = await trx
 				.selectFrom('timesheets')
-				.select(['id', 'public_id as publicId', 'worker_id as workerId', 'timesheet_status as status'])
+				.select([
+					'id',
+					'public_id as publicId',
+					'worker_id as workerId',
+					'timesheet_status as status'
+				])
 				.where('organisation_id', '=', actor.organisationId)
 				.where('public_id', '=', timesheetPublicId.trim())
 				.forUpdate()
 				.executeTakeFirst();
-			if (!timesheet || timesheet.workerId !== worker.id) throw new RecordNotFoundError('Timesheet not found in your worker scope.');
-			if (!['draft', 'rejected', 'reopened'].includes(timesheet.status)) throw new ConcurrentUpdateError('Only a draft, rejected or reopened timesheet can be submitted.');
+			if (!timesheet || timesheet.workerId !== worker.id)
+				throw new RecordNotFoundError('Timesheet not found in your worker scope.');
+			if (!['draft', 'rejected', 'reopened'].includes(timesheet.status))
+				throw new ConcurrentUpdateError(
+					'Only a draft, rejected or reopened timesheet can be submitted.'
+				);
 			const entry = await trx
 				.selectFrom('timesheet_entries')
 				.select('id')
 				.where('organisation_id', '=', actor.organisationId)
 				.where('timesheet_id', '=', timesheet.id)
 				.executeTakeFirst();
-			if (!entry) throw new WorkforceValidationError('Add at least one time entry before submitting a timesheet.');
+			if (!entry)
+				throw new WorkforceValidationError(
+					'Add at least one time entry before submitting a timesheet.'
+				);
 			const now = new Date();
 			await trx
 				.updateTable('timesheets')
-				.set({ timesheet_status: 'submitted', submitted_at: now, submitted_by_member_id: actor.memberId, approved_at: null, approved_by_member_id: null })
+				.set({
+					timesheet_status: 'submitted',
+					submitted_at: now,
+					submitted_by_member_id: actor.memberId,
+					approved_at: null,
+					approved_by_member_id: null
+				})
 				.where('id', '=', timesheet.id)
 				.where('organisation_id', '=', actor.organisationId)
 				.executeTakeFirstOrThrow();
 			await trx
 				.insertInto('timesheet_status_events')
-				.values({ organisation_id: actor.organisationId, timesheet_id: timesheet.id, from_status: timesheet.status, to_status: 'submitted', acted_by_member_id: actor.memberId, comment: null })
+				.values({
+					organisation_id: actor.organisationId,
+					timesheet_id: timesheet.id,
+					from_status: timesheet.status,
+					to_status: 'submitted',
+					acted_by_member_id: actor.memberId,
+					comment: null
+				})
 				.executeTakeFirstOrThrow();
 			await new AuditRepository(trx).append({
-				eventPublicId: randomUUID(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: actor.memberId, projectId: null, actionKey: 'timesheet.submit', subjectType: 'timesheet', subjectPublicId: timesheet.publicId, correlationId: actor.correlationId, changeSummary: { fromStatus: timesheet.status, toStatus: 'submitted' }
+				eventPublicId: randomUUID(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: actor.memberId,
+				projectId: null,
+				actionKey: 'timesheet.submit',
+				subjectType: 'timesheet',
+				subjectPublicId: timesheet.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { fromStatus: timesheet.status, toStatus: 'submitted' }
 			});
 		});
 	}
@@ -1022,20 +1258,32 @@ export class WorkforceService {
 	): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'timesheet.approve');
-		const actorWorker = await new WorkforceRepository(this.db).findWorkerByMemberId(actor.organisationId, actor.memberId);
+		const actorWorker = await new WorkforceRepository(this.db).findWorkerByMemberId(
+			actor.organisationId,
+			actor.memberId
+		);
 		const comment = input.comment?.trim() || null;
-		if (comment && comment.length > 1000) throw new WorkforceValidationError('Approval comment must not exceed 1,000 characters.');
+		if (comment && comment.length > 1000)
+			throw new WorkforceValidationError('Approval comment must not exceed 1,000 characters.');
 		await this.db.transaction().execute(async (trx) => {
 			const timesheet = await trx
 				.selectFrom('timesheets')
-				.select(['id', 'public_id as publicId', 'worker_id as workerId', 'timesheet_status as status'])
+				.select([
+					'id',
+					'public_id as publicId',
+					'worker_id as workerId',
+					'timesheet_status as status'
+				])
 				.where('organisation_id', '=', actor.organisationId)
 				.where('public_id', '=', input.timesheetPublicId.trim())
 				.forUpdate()
 				.executeTakeFirst();
-			if (!timesheet) throw new RecordNotFoundError('Submitted timesheet not found in this organisation.');
-			if (actorWorker?.id === timesheet.workerId) throw new TenantAccessError('A worker cannot approve or reject their own timesheet.');
-			if (timesheet.status !== 'submitted') throw new ConcurrentUpdateError('Only a submitted timesheet can be approved or rejected.');
+			if (!timesheet)
+				throw new RecordNotFoundError('Submitted timesheet not found in this organisation.');
+			if (actorWorker?.id === timesheet.workerId)
+				throw new TenantAccessError('A worker cannot approve or reject their own timesheet.');
+			if (timesheet.status !== 'submitted')
+				throw new ConcurrentUpdateError('Only a submitted timesheet can be approved or rejected.');
 			const now = new Date();
 			const toStatus = input.decision === 'approve' ? 'approved' : 'rejected';
 
@@ -1056,9 +1304,16 @@ export class WorkforceService {
 						.where('timesheet_entry_id', '=', entry.id)
 						.executeTakeFirst();
 					if (existingSnapshot) continue;
-					const rate = await repository.findEffectiveStandardCostRate(actor.organisationId, timesheet.workerId, entry.workDate);
+					const rate = await repository.findEffectiveStandardCostRate(
+						actor.organisationId,
+						timesheet.workerId,
+						entry.workDate
+					);
 					if (!rate) continue;
-					if (rate.rateBasis !== 'hour') throw new WorkforceValidationError('Day-based workforce costing requires a configured day-duration policy before approval.');
+					if (rate.rateBasis !== 'hour')
+						throw new WorkforceValidationError(
+							'Day-based workforce costing requires a configured day-duration policy before approval.'
+						);
 					await trx
 						.insertInto('timesheet_entry_cost_snapshots')
 						.values({
@@ -1089,10 +1344,26 @@ export class WorkforceService {
 				.executeTakeFirstOrThrow();
 			await trx
 				.insertInto('timesheet_status_events')
-				.values({ organisation_id: actor.organisationId, timesheet_id: timesheet.id, from_status: 'submitted', to_status: toStatus, acted_by_member_id: actor.memberId, comment })
+				.values({
+					organisation_id: actor.organisationId,
+					timesheet_id: timesheet.id,
+					from_status: 'submitted',
+					to_status: toStatus,
+					acted_by_member_id: actor.memberId,
+					comment
+				})
 				.executeTakeFirstOrThrow();
 			await new AuditRepository(trx).append({
-				eventPublicId: randomUUID(), actingOrganisationId: actor.organisationId, actorUserId: actor.userId, actorMemberId: actor.memberId, projectId: null, actionKey: input.decision === 'approve' ? 'timesheet.approve' : 'timesheet.reject', subjectType: 'timesheet', subjectPublicId: timesheet.publicId, correlationId: actor.correlationId, changeSummary: { fromStatus: 'submitted', toStatus, comment }
+				eventPublicId: randomUUID(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: actor.memberId,
+				projectId: null,
+				actionKey: input.decision === 'approve' ? 'timesheet.approve' : 'timesheet.reject',
+				subjectType: 'timesheet',
+				subjectPublicId: timesheet.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: { fromStatus: 'submitted', toStatus, comment }
 			});
 		});
 	}

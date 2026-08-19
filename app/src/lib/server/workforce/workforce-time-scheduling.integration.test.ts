@@ -108,10 +108,7 @@ async function cleanup(): Promise<void> {
 				.deleteFrom('project_organisation_roles')
 				.where('project_id', 'in', projectIds)
 				.execute();
-			await db
-				.deleteFrom('project_organisations')
-				.where('project_id', 'in', projectIds)
-				.execute();
+			await db.deleteFrom('project_organisations').where('project_id', 'in', projectIds).execute();
 			await db.deleteFrom('projects').where('id', 'in', projectIds).execute();
 		}
 
@@ -369,7 +366,9 @@ describe('V1 workforce, schedule and time activation', () => {
 		});
 		const people = await service.getPeopleWorkspace(actorManager);
 		const reloaded = people.workers.find((candidate) => candidate.publicId === workerPublicId);
-		expect(reloaded?.competencies.map((competency) => competency.competencyName)).toEqual(['ECS Card']);
+		expect(reloaded?.competencies.map((competency) => competency.competencyName)).toEqual([
+			'ECS Card'
+		]);
 	});
 
 	it('requires project staffing before project work can be scheduled and scopes schedule visibility to assigned workers', async () => {
@@ -517,7 +516,11 @@ describe('V1 workforce, schedule and time activation', () => {
 
 		const snapshot = await db
 			.selectFrom('timesheet_entry_cost_snapshots')
-			.select(['rate_amount as rateAmount', 'costed_minutes as costedMinutes', 'cost_amount as costAmount'])
+			.select([
+				'rate_amount as rateAmount',
+				'costed_minutes as costedMinutes',
+				'cost_amount as costAmount'
+			])
 			.where('organisation_id', '=', organisationId)
 			.executeTakeFirstOrThrow();
 		expect(snapshot).toMatchObject({

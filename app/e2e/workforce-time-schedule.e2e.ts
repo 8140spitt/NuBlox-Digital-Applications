@@ -14,7 +14,9 @@ async function signIn(page: import('@playwright/test').Page) {
 	await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-test('owner staffs, schedules and records a complete work session through the UI', async ({ page }) => {
+test('owner staffs, schedules and records a complete work session through the UI', async ({
+	page
+}) => {
 	await signIn(page);
 	const suffix = Date.now().toString().slice(-7);
 	const projectNumber = `E2E-WF-${suffix}`;
@@ -24,7 +26,9 @@ test('owner staffs, schedules and records a complete work session through the UI
 	await page.goto('/projects#create-project');
 	await page.getByLabel('Project number').fill(projectNumber);
 	await page.getByLabel('Project name').fill(projectName);
-	await page.getByLabel(/Description/).fill('Browser acceptance project for workforce scheduling and time.');
+	await page
+		.getByLabel(/Description/)
+		.fill('Browser acceptance project for workforce scheduling and time.');
 	await page.getByRole('button', { name: 'Create project' }).click();
 	await expect(page).toHaveURL(/\/projects\/[0-9a-f-]+$/i);
 
@@ -32,7 +36,9 @@ test('owner staffs, schedules and records a complete work session through the UI
 	await expect(page.getByText('NuBlox E2E Owner', { exact: true }).first()).toBeVisible();
 	const staffingPanel = page.locator('.action-panel').filter({ hasText: 'Staff a project' });
 	await staffingPanel.getByLabel('Worker').selectOption({ label: 'NuBlox E2E Owner' });
-	await staffingPanel.getByLabel('Project').selectOption({ label: `${projectNumber} · ${projectName}` });
+	await staffingPanel
+		.getByLabel('Project')
+		.selectOption({ label: `${projectNumber} · ${projectName}` });
 	await staffingPanel.getByLabel('Starts').fill('2026-08-17');
 	await staffingPanel.getByLabel('Planned allocation %').fill('100');
 	await staffingPanel.getByRole('button', { name: 'Create assignment' }).click();
@@ -50,7 +56,9 @@ test('owner staffs, schedules and records a complete work session through the UI
 	await schedulePanel.getByLabel('Starts').fill('2026-08-20T08:00');
 	await schedulePanel.getByLabel('Ends').fill('2026-08-20T16:00');
 	await schedulePanel.getByLabel('Timezone').fill('Europe/London');
-	await schedulePanel.getByLabel('Description').fill('Scheduled project work session from browser acceptance.');
+	await schedulePanel
+		.getByLabel('Description')
+		.fill('Scheduled project work session from browser acceptance.');
 	await schedulePanel.getByRole('button', { name: 'Schedule work' }).click();
 	await expect(page).toHaveURL(/\/schedule$/);
 	await expect(page.getByRole('heading', { name: workTitle, level: 3 })).toBeVisible();
@@ -71,14 +79,28 @@ test('owner staffs, schedules and records a complete work session through the UI
 		.getByLabel('Project / job')
 		.selectOption({ label: `${projectNumber} · ${projectName}` });
 	await timesheetCard.getByLabel('Assigned work').selectOption({ index: 1 });
-	await timesheetCard.getByLabel('Description').fill('Installed containment through UI acceptance.');
+	await timesheetCard
+		.getByLabel('Description')
+		.fill('Installed containment through UI acceptance.');
 	await timesheetCard.getByRole('button', { name: 'Add time entry' }).click();
 	await expect(page).toHaveURL(/\/time$/);
-	await expect(page.locator('.timesheet-card').first().getByText(projectName, { exact: true })).toBeVisible();
-	await expect(page.locator('.timesheet-card').first().getByText('8h 0m', { exact: true })).toBeVisible();
+	await expect(
+		page.locator('.timesheet-card').first().getByText(projectName, { exact: true })
+	).toBeVisible();
+	await expect(
+		page.locator('.timesheet-card').first().getByText('8h 0m', { exact: true })
+	).toBeVisible();
 
-	await page.locator('.timesheet-card').first().getByRole('button', { name: 'Submit timesheet' }).click();
+	await page
+		.locator('.timesheet-card')
+		.first()
+		.getByRole('button', { name: 'Submit timesheet' })
+		.click();
 	await expect(page).toHaveURL(/\/time$/);
-	await expect(page.locator('.timesheet-card').first().getByText('submitted', { exact: true })).toBeVisible();
-	await expect(page.locator('.timesheet-card').first().getByText('Add time entry', { exact: true })).toHaveCount(0);
+	await expect(
+		page.locator('.timesheet-card').first().getByText('submitted', { exact: true })
+	).toBeVisible();
+	await expect(
+		page.locator('.timesheet-card').first().getByText('Add time entry', { exact: true })
+	).toHaveCount(0);
 });

@@ -8,7 +8,10 @@ import {
 	RecordNotFoundError,
 	TenantAccessError
 } from '$lib/server/kernel/errors';
-import { WorkforceService, WorkforceValidationError } from '$lib/server/workforce/workforce-service';
+import {
+	WorkforceService,
+	WorkforceValidationError
+} from '$lib/server/workforce/workforce-service';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
@@ -49,7 +52,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	createTimesheet: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { error: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new WorkforceService(getDatabase()).createTimesheet(actor, {
@@ -64,7 +68,8 @@ export const actions: Actions = {
 
 	addEntry: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { error: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new WorkforceService(getDatabase()).addTimesheetEntry(actor, {
@@ -84,7 +89,8 @@ export const actions: Actions = {
 
 	submit: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { error: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new WorkforceService(getDatabase()).submitTimesheet(
@@ -99,7 +105,8 @@ export const actions: Actions = {
 
 	approve: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { error: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new WorkforceService(getDatabase()).decideTimesheet(actor, {
@@ -115,7 +122,8 @@ export const actions: Actions = {
 
 	reject: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { error: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
 			await new WorkforceService(getDatabase()).decideTimesheet(actor, {

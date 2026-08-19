@@ -61,7 +61,9 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(page.getByRole('button', { name: 'Create assignment' })).toHaveCount(0);
 
 	await page.goto('/schedule');
-	await expect(page.getByRole('heading', { name: 'Schedule', exact: true, level: 1 })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Schedule', exact: true, level: 1 })
+	).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Schedule work' })).toHaveCount(0);
 	await expect(page.getByText('My schedule', { exact: true })).toBeVisible();
 

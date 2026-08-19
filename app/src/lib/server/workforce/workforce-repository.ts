@@ -2,12 +2,7 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type WorkerStatus = 'active' | 'inactive' | 'suspended' | 'archived';
 export type TimesheetStatus =
-	| 'draft'
-	| 'submitted'
-	| 'approved'
-	| 'rejected'
-	| 'reopened'
-	| 'cancelled';
+	'draft' | 'submitted' | 'approved' | 'rejected' | 'reopened' | 'cancelled';
 
 export type WorkerRecord = {
 	id: string;
@@ -275,7 +270,14 @@ export class WorkforceRepository {
 	async listCompetencyTypes(organisationId: string) {
 		return this.db
 			.selectFrom('competency_types')
-			.select(['id', 'public_id as publicId', 'code', 'name', 'description', 'requires_expiry as requiresExpiry'])
+			.select([
+				'id',
+				'public_id as publicId',
+				'code',
+				'name',
+				'description',
+				'requires_expiry as requiresExpiry'
+			])
 			.where('organisation_id', '=', organisationId)
 			.where('is_active', '=', 1)
 			.orderBy('name')
