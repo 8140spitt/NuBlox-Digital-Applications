@@ -128,7 +128,7 @@ jobs:
 
       - name: Install Chromium for component and browser validation
         working-directory: app
-        run: pnpm exec playwright install --with-deps chromium
+        run: pnpm exec playwright install chromium
 
       - name: Run unit and component tests
         working-directory: app

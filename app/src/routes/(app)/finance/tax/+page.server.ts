@@ -2,6 +2,7 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { CommercialDecimalError } from '$lib/server/commercial/commercial-decimal';
 import { getDatabase } from '$lib/server/db/database';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
 import { TaxSettingsService } from '$lib/server/finance/tax-settings-service';
@@ -18,7 +19,9 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 }
 
 function actionFailure(cause: unknown) {
-	if (cause instanceof FinanceValidationError) return fail(400, { actionError: cause.message });
+	if (cause instanceof FinanceValidationError || cause instanceof CommercialDecimalError) {
+		return fail(400, { actionError: cause.message });
+	}
 	if (cause instanceof RecordNotFoundError)
 		return fail(404, { actionError: 'The requested tax category is unavailable.' });
 	if (cause instanceof TenantAccessError) return fail(403, { actionError: cause.message });
