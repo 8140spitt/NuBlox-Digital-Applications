@@ -116,7 +116,10 @@ export class InformationService {
 		}
 	}
 
-	private async requireProject(actor: TenantActorContext, publicId: string): Promise<ProjectRecord> {
+	private async requireProject(
+		actor: TenantActorContext,
+		publicId: string
+	): Promise<ProjectRecord> {
 		const project = await new ProjectRepository(this.db).findForMemberByPublicId(
 			actor.organisationId,
 			actor.memberId,
@@ -393,10 +396,7 @@ export class InformationService {
 
 		await this.db.transaction().execute(async (trx) => {
 			const txRepository = new InformationRepository(trx);
-			const sequence = await txRepository.nextVersionSequence(
-				container.id,
-				actor.organisationId
-			);
+			const sequence = await txRepository.nextVersionSequence(container.id, actor.organisationId);
 			await txRepository.insertVersion({
 				containerId: container.id,
 				projectId: container.projectId,
@@ -558,10 +558,7 @@ export class InformationService {
 			if (locked !== 1) {
 				throw new InformationValidationError('The revision changed before it could be issued.');
 			}
-			const issueSequence = await txRepository.nextIssueSequence(
-				version.id,
-				actor.organisationId
-			);
+			const issueSequence = await txRepository.nextIssueSequence(version.id, actor.organisationId);
 			await txRepository.insertIssueEvent({
 				projectId: container.projectId,
 				organisationId: actor.organisationId,

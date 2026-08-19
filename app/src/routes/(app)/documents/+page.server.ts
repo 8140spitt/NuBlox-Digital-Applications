@@ -177,26 +177,32 @@ export const actions: Actions = {
 
 	closeRfi: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, (service, actor) => service.closeRfi(actor, text(data, 'rfiPublicId')));
+		return runAction(locals, (service, actor) =>
+			service.closeRfi(actor, text(data, 'rfiPublicId'))
+		);
 	},
 
 	createSubmittal: async ({ request, locals }) => {
 		const data = await request.formData();
 		return runAction(locals, (service, actor) =>
-			service.createSubmittal(actor, {
-				projectPublicId: text(data, 'projectPublicId'),
-				number: text(data, 'number'),
-				typeCode: text(data, 'typeCode'),
-				title: text(data, 'title'),
-				dueAt: text(data, 'dueAt'),
-				versionPublicId: text(data, 'versionPublicId')
-			}).then(() => undefined)
+			service
+				.createSubmittal(actor, {
+					projectPublicId: text(data, 'projectPublicId'),
+					number: text(data, 'number'),
+					typeCode: text(data, 'typeCode'),
+					title: text(data, 'title'),
+					dueAt: text(data, 'dueAt'),
+					versionPublicId: text(data, 'versionPublicId')
+				})
+				.then(() => undefined)
 		);
 	},
 
 	submitSubmittal: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, (service, actor) => service.submitSubmittal(actor, text(data, 'submittalPublicId')));
+		return runAction(locals, (service, actor) =>
+			service.submitSubmittal(actor, text(data, 'submittalPublicId'))
+		);
 	},
 
 	reviewSubmittal: async ({ request, locals }) => {
@@ -213,18 +219,22 @@ export const actions: Actions = {
 	createInstruction: async ({ request, locals }) => {
 		const data = await request.formData();
 		return runAction(locals, (service, actor) =>
-			service.createInstruction(actor, {
-				projectPublicId: text(data, 'projectPublicId'),
-				number: text(data, 'number'),
-				typeCode: text(data, 'typeCode'),
-				subject: text(data, 'subject'),
-				instructionText: text(data, 'instructionText')
-			}).then(() => undefined)
+			service
+				.createInstruction(actor, {
+					projectPublicId: text(data, 'projectPublicId'),
+					number: text(data, 'number'),
+					typeCode: text(data, 'typeCode'),
+					subject: text(data, 'subject'),
+					instructionText: text(data, 'instructionText')
+				})
+				.then(() => undefined)
 		);
 	},
 
 	issueInstruction: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, (service, actor) => service.issueInstruction(actor, text(data, 'instructionPublicId')));
+		return runAction(locals, (service, actor) =>
+			service.issueInstruction(actor, text(data, 'instructionPublicId'))
+		);
 	}
 };

@@ -70,7 +70,10 @@ test('owner controls document revision, RFI, submittal and instruction records t
 	await newRevision.getByRole('button', { name: 'Create revision' }).click();
 	await expect(page).toHaveURL(/\/documents$/);
 	await expect(
-		page.locator('.document-card').filter({ hasText: documentNumber }).getByText('P02', { exact: true })
+		page
+			.locator('.document-card')
+			.filter({ hasText: documentNumber })
+			.getByText('P02', { exact: true })
 	).toBeVisible();
 
 	const rfiPanel = page.locator('#create-rfi');
@@ -97,7 +100,10 @@ test('owner controls document revision, RFI, submittal and instruction records t
 	await rfiCard.getByRole('button', { name: 'Close RFI' }).click();
 	await expect(page).toHaveURL(/\/documents$/);
 	await expect(
-		page.locator('#rfi-register .workflow-card').filter({ hasText: rfiNumber }).getByText('closed', { exact: true })
+		page
+			.locator('#rfi-register .workflow-card')
+			.filter({ hasText: rfiNumber })
+			.getByText('closed', { exact: true })
 	).toBeVisible();
 
 	const submittalPanel = page.locator('#create-submittal');

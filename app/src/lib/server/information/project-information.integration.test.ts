@@ -56,36 +56,93 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const projectIds = projects.map((row) => row.id);
 
-	await db.deleteFrom('submittal_reviews').where('reviewer_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('submittal_reviewers').where('reviewer_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('submittal_items').where('submittal_owner_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('submittals').where('owning_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('rfi_responses').where('responding_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('rfi_addressees').where('rfi_owner_organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('submittal_reviews')
+		.where('reviewer_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('submittal_reviewers')
+		.where('reviewer_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('submittal_items')
+		.where('submittal_owner_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('submittals')
+		.where('owning_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('rfi_responses')
+		.where('responding_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('rfi_addressees')
+		.where('rfi_owner_organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('rfis').where('owning_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('project_instruction_links').where('instruction_owner_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('project_instruction_recipients').where('instruction_owner_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('project_instructions').where('issuing_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('information_version_issue_events').where('issuing_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('information_version_supersessions').where('owning_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('information_files').where('owning_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('information_container_versions').where('owning_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('information_containers').where('owning_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('project_instruction_links')
+		.where('instruction_owner_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('project_instruction_recipients')
+		.where('instruction_owner_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('project_instructions')
+		.where('issuing_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('information_version_issue_events')
+		.where('issuing_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('information_version_supersessions')
+		.where('owning_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('information_files')
+		.where('owning_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('information_container_versions')
+		.where('owning_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('information_containers')
+		.where('owning_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('audit_events')
+		.where('acting_organisation_id', 'in', organisationIds)
+		.execute();
 
 	if (projectIds.length > 0) {
 		await db.deleteFrom('project_member_roles').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_members').where('project_id', 'in', projectIds).execute();
-		await db.deleteFrom('project_organisation_roles').where('project_id', 'in', projectIds).execute();
+		await db
+			.deleteFrom('project_organisation_roles')
+			.where('project_id', 'in', projectIds)
+			.execute();
 		await db.deleteFrom('project_organisations').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('projects').where('id', 'in', projectIds).execute();
 	}
 
-	await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('member_permission_overrides')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
 	await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('organisation_roles')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('organisation_members')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
 }
@@ -283,7 +340,9 @@ describe('V1 documents and project information activation', () => {
 			suitabilityCode: 'S3'
 		});
 		const workspace = await service.getWorkspace(actorManager);
-		const document = workspace.documents.find((candidate) => candidate.publicId === documentPublicId);
+		const document = workspace.documents.find(
+			(candidate) => candidate.publicId === documentPublicId
+		);
 		expect(document).toMatchObject({
 			projectId,
 			title: 'Ground floor containment plan',
@@ -291,7 +350,11 @@ describe('V1 documents and project information activation', () => {
 			classificationCode: 'EF_70_20'
 		});
 		expect(document?.versions).toHaveLength(1);
-		expect(document?.versions[0]).toMatchObject({ revisionCode: 'P01', versionSequence: 1, status: 'draft' });
+		expect(document?.versions[0]).toMatchObject({
+			revisionCode: 'P01',
+			versionSequence: 1,
+			status: 'draft'
+		});
 		issuedVersionPublicId = document!.versions[0]!.publicId;
 
 		const audit = await db
@@ -301,7 +364,10 @@ describe('V1 documents and project information activation', () => {
 			.where('action_key', '=', 'information.document.create')
 			.where('subject_public_id', '=', documentPublicId)
 			.executeTakeFirstOrThrow();
-		expect(audit).toEqual({ actionKey: 'information.document.create', subjectPublicId: documentPublicId });
+		expect(audit).toEqual({
+			actionKey: 'information.document.create',
+			subjectPublicId: documentPublicId
+		});
 	});
 
 	it('locks an issued revision, preserves issue evidence and requires corrections to use a new revision', async () => {
@@ -418,7 +484,10 @@ describe('V1 documents and project information activation', () => {
 			.select(['outcome', 'reviewed_by_member_id as reviewedByMemberId'])
 			.where('submittal_id', '=', submittal!.id)
 			.executeTakeFirstOrThrow();
-		expect(review).toMatchObject({ outcome: 'approved_with_comments', reviewedByMemberId: reviewerMemberId });
+		expect(review).toMatchObject({
+			outcome: 'approved_with_comments',
+			reviewedByMemberId: reviewerMemberId
+		});
 	});
 
 	it('issues formal instructions once and preserves the issued evidence', async () => {
@@ -428,7 +497,8 @@ describe('V1 documents and project information activation', () => {
 			number: `PI-${randomUUID().slice(0, 8)}`,
 			typeCode: 'project',
 			subject: 'Proceed with coordinated containment route',
-			instructionText: 'Proceed in accordance with the coordinated route identified in the current project information.'
+			instructionText:
+				'Proceed in accordance with the coordinated route identified in the current project information.'
 		});
 		await service.issueInstruction(actorManager, instructionPublicId);
 		const instruction = await new InformationRepository(db).findInstructionByPublicId(
@@ -437,8 +507,8 @@ describe('V1 documents and project information activation', () => {
 		);
 		expect(instruction?.status).toBe('issued');
 		expect(instruction?.issuedAt).toBeInstanceOf(Date);
-		await expect(service.issueInstruction(actorManager, instructionPublicId)).rejects.toBeInstanceOf(
-			InformationValidationError
-		);
+		await expect(
+			service.issueInstruction(actorManager, instructionPublicId)
+		).rejects.toBeInstanceOf(InformationValidationError);
 	});
 });

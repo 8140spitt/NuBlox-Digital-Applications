@@ -96,7 +96,8 @@ export type InstructionSummary = {
 };
 
 function insertedId(result: { insertId?: bigint }, label: string): string {
-	if (result.insertId === undefined) throw new Error(`MySQL did not return the inserted ${label} ID.`);
+	if (result.insertId === undefined)
+		throw new Error(`MySQL did not return the inserted ${label} ID.`);
 	return result.insertId.toString();
 }
 
@@ -178,7 +179,11 @@ export class InformationRepository {
 	async listContainers(organisationId: string): Promise<InformationContainerSummary[]> {
 		const rows = await this.db
 			.selectFrom('information_containers as container')
-			.innerJoin('information_container_types as type', 'type.id', 'container.information_container_type_id')
+			.innerJoin(
+				'information_container_types as type',
+				'type.id',
+				'container.information_container_type_id'
+			)
 			.innerJoin('projects as project', 'project.id', 'container.project_id')
 			.select([
 				'container.id as id',
@@ -202,10 +207,17 @@ export class InformationRepository {
 		return rows;
 	}
 
-	async findContainerByPublicId(organisationId: string, publicId: string): Promise<InformationContainerSummary | null> {
+	async findContainerByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<InformationContainerSummary | null> {
 		const row = await this.db
 			.selectFrom('information_containers as container')
-			.innerJoin('information_container_types as type', 'type.id', 'container.information_container_type_id')
+			.innerJoin(
+				'information_container_types as type',
+				'type.id',
+				'container.information_container_type_id'
+			)
 			.innerJoin('projects as project', 'project.id', 'container.project_id')
 			.select([
 				'container.id as id',
@@ -258,10 +270,17 @@ export class InformationRepository {
 		return insertedId(result, 'information container');
 	}
 
-	async listVersions(containerId: string, organisationId: string): Promise<InformationVersionSummary[]> {
+	async listVersions(
+		containerId: string,
+		organisationId: string
+	): Promise<InformationVersionSummary[]> {
 		const rows = await this.db
 			.selectFrom('information_container_versions as version')
-			.leftJoin('information_purpose_codes as purpose', 'purpose.id', 'version.information_purpose_code_id')
+			.leftJoin(
+				'information_purpose_codes as purpose',
+				'purpose.id',
+				'version.information_purpose_code_id'
+			)
 			.select([
 				'version.id as id',
 				'version.information_container_id as containerId',
@@ -282,10 +301,17 @@ export class InformationRepository {
 		return rows;
 	}
 
-	async findVersionByPublicId(organisationId: string, publicId: string): Promise<InformationVersionSummary | null> {
+	async findVersionByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<InformationVersionSummary | null> {
 		const row = await this.db
 			.selectFrom('information_container_versions as version')
-			.leftJoin('information_purpose_codes as purpose', 'purpose.id', 'version.information_purpose_code_id')
+			.leftJoin(
+				'information_purpose_codes as purpose',
+				'purpose.id',
+				'version.information_purpose_code_id'
+			)
 			.select([
 				'version.id as id',
 				'version.information_container_id as containerId',
@@ -509,11 +535,19 @@ export class InformationRepository {
 			.selectFrom('rfis as rfi')
 			.innerJoin('projects as project', 'project.id', 'rfi.project_id')
 			.select([
-				'rfi.id as id', 'rfi.project_id as projectId', 'rfi.public_id as publicId',
-				'rfi.rfi_number as rfiNumber', 'rfi.subject as subject', 'rfi.question as question',
-				'rfi.priority as priority', 'rfi.status as status', 'rfi.due_at as dueAt',
-				'rfi.opened_at as openedAt', 'rfi.closed_at as closedAt',
-				'rfi.created_by_member_id as createdByMemberId', 'project.project_number as projectNumber',
+				'rfi.id as id',
+				'rfi.project_id as projectId',
+				'rfi.public_id as publicId',
+				'rfi.rfi_number as rfiNumber',
+				'rfi.subject as subject',
+				'rfi.question as question',
+				'rfi.priority as priority',
+				'rfi.status as status',
+				'rfi.due_at as dueAt',
+				'rfi.opened_at as openedAt',
+				'rfi.closed_at as closedAt',
+				'rfi.created_by_member_id as createdByMemberId',
+				'project.project_number as projectNumber',
 				'project.name as projectName'
 			])
 			.where('rfi.owning_organisation_id', '=', organisationId)
@@ -523,181 +557,367 @@ export class InformationRepository {
 	}
 
 	async insertRfi(input: {
-		projectId: string; organisationId: string; publicId: string; rfiNumber: string;
-		subject: string; question: string; priority: string; dueAt: Date | null; memberId: string;
+		projectId: string;
+		organisationId: string;
+		publicId: string;
+		rfiNumber: string;
+		subject: string;
+		question: string;
+		priority: string;
+		dueAt: Date | null;
+		memberId: string;
 	}): Promise<string> {
-		const result = await this.db.insertInto('rfis').values({
-			project_id: input.projectId, owning_organisation_id: input.organisationId,
-			public_id: input.publicId, rfi_number: input.rfiNumber, subject: input.subject,
-			question: input.question, priority: input.priority, status: 'draft', due_at: input.dueAt,
-			created_by_member_id: input.memberId, opened_at: null, closed_at: null
-		}).executeTakeFirstOrThrow();
+		const result = await this.db
+			.insertInto('rfis')
+			.values({
+				project_id: input.projectId,
+				owning_organisation_id: input.organisationId,
+				public_id: input.publicId,
+				rfi_number: input.rfiNumber,
+				subject: input.subject,
+				question: input.question,
+				priority: input.priority,
+				status: 'draft',
+				due_at: input.dueAt,
+				created_by_member_id: input.memberId,
+				opened_at: null,
+				closed_at: null
+			})
+			.executeTakeFirstOrThrow();
 		return insertedId(result, 'RFI');
 	}
 
 	async openRfi(id: string, organisationId: string): Promise<number> {
-		const result = await this.db.updateTable('rfis').set({ status: 'open', opened_at: new Date() })
-			.where('id', '=', id).where('owning_organisation_id', '=', organisationId).where('status', '=', 'draft').executeTakeFirst();
+		const result = await this.db
+			.updateTable('rfis')
+			.set({ status: 'open', opened_at: new Date() })
+			.where('id', '=', id)
+			.where('owning_organisation_id', '=', organisationId)
+			.where('status', '=', 'draft')
+			.executeTakeFirst();
 		return Number(result.numUpdatedRows);
 	}
 
 	async nextRfiResponseSequence(rfiId: string, organisationId: string): Promise<number> {
-		const row = await this.db.selectFrom('rfi_responses').select((eb) => eb.fn.max<number>('response_sequence').as('maxSequence'))
-			.where('rfi_id', '=', rfiId).where('responding_organisation_id', '=', organisationId).executeTakeFirst();
+		const row = await this.db
+			.selectFrom('rfi_responses')
+			.select((eb) => eb.fn.max<number>('response_sequence').as('maxSequence'))
+			.where('rfi_id', '=', rfiId)
+			.where('responding_organisation_id', '=', organisationId)
+			.executeTakeFirst();
 		return Number(row?.maxSequence ?? 0) + 1;
 	}
 
 	async insertRfiResponse(input: {
-		projectId: string; rfiId: string; organisationId: string; responseSequence: number;
-		responseText: string; memberId: string; isFinal: boolean;
+		projectId: string;
+		rfiId: string;
+		organisationId: string;
+		responseSequence: number;
+		responseText: string;
+		memberId: string;
+		isFinal: boolean;
 	}): Promise<string> {
-		const result = await this.db.insertInto('rfi_responses').values({
-			project_id: input.projectId, rfi_id: input.rfiId, rfi_owner_organisation_id: input.organisationId,
-			responding_organisation_id: input.organisationId, response_sequence: input.responseSequence,
-			response_text: input.responseText, responded_by_member_id: input.memberId, is_final_response: input.isFinal ? 1 : 0
-		}).executeTakeFirstOrThrow();
+		const result = await this.db
+			.insertInto('rfi_responses')
+			.values({
+				project_id: input.projectId,
+				rfi_id: input.rfiId,
+				rfi_owner_organisation_id: input.organisationId,
+				responding_organisation_id: input.organisationId,
+				response_sequence: input.responseSequence,
+				response_text: input.responseText,
+				responded_by_member_id: input.memberId,
+				is_final_response: input.isFinal ? 1 : 0
+			})
+			.executeTakeFirstOrThrow();
 		return insertedId(result, 'RFI response');
 	}
 
 	async markRfiAnswered(id: string, organisationId: string): Promise<void> {
-		await this.db.updateTable('rfis').set({ status: 'answered' }).where('id', '=', id)
-			.where('owning_organisation_id', '=', organisationId).where('status', 'in', ['open', 'reopened']).execute();
+		await this.db
+			.updateTable('rfis')
+			.set({ status: 'answered' })
+			.where('id', '=', id)
+			.where('owning_organisation_id', '=', organisationId)
+			.where('status', 'in', ['open', 'reopened'])
+			.execute();
 	}
 
 	async closeRfi(id: string, organisationId: string): Promise<number> {
-		const result = await this.db.updateTable('rfis').set({ status: 'closed', closed_at: new Date() })
-			.where('id', '=', id).where('owning_organisation_id', '=', organisationId).where('status', '=', 'answered').executeTakeFirst();
+		const result = await this.db
+			.updateTable('rfis')
+			.set({ status: 'closed', closed_at: new Date() })
+			.where('id', '=', id)
+			.where('owning_organisation_id', '=', organisationId)
+			.where('status', '=', 'answered')
+			.executeTakeFirst();
 		return Number(result.numUpdatedRows);
 	}
 
 	async listSubmittals(organisationId: string): Promise<SubmittalSummary[]> {
-		const rows = await this.db.selectFrom('submittals as submittal')
+		const rows = await this.db
+			.selectFrom('submittals as submittal')
 			.innerJoin('submittal_types as type', 'type.id', 'submittal.submittal_type_id')
 			.innerJoin('projects as project', 'project.id', 'submittal.project_id')
 			.select([
-				'submittal.id as id', 'submittal.project_id as projectId', 'submittal.public_id as publicId',
-				'submittal.submittal_number as submittalNumber', 'type.code as typeCode', 'type.name as typeName',
-				'submittal.title as title', 'submittal.status as status', 'submittal.due_at as dueAt',
-				'submittal.submitted_at as submittedAt', 'submittal.created_by_member_id as createdByMemberId',
-				'project.project_number as projectNumber', 'project.name as projectName'
-			]).where('submittal.owning_organisation_id', '=', organisationId).orderBy('submittal.updated_at', 'desc').execute();
+				'submittal.id as id',
+				'submittal.project_id as projectId',
+				'submittal.public_id as publicId',
+				'submittal.submittal_number as submittalNumber',
+				'type.code as typeCode',
+				'type.name as typeName',
+				'submittal.title as title',
+				'submittal.status as status',
+				'submittal.due_at as dueAt',
+				'submittal.submitted_at as submittedAt',
+				'submittal.created_by_member_id as createdByMemberId',
+				'project.project_number as projectNumber',
+				'project.name as projectName'
+			])
+			.where('submittal.owning_organisation_id', '=', organisationId)
+			.orderBy('submittal.updated_at', 'desc')
+			.execute();
 		return rows;
 	}
 
-	async findSubmittalByPublicId(organisationId: string, publicId: string): Promise<SubmittalSummary | null> {
-		const row = await this.db.selectFrom('submittals as submittal')
+	async findSubmittalByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<SubmittalSummary | null> {
+		const row = await this.db
+			.selectFrom('submittals as submittal')
 			.innerJoin('submittal_types as type', 'type.id', 'submittal.submittal_type_id')
 			.innerJoin('projects as project', 'project.id', 'submittal.project_id')
 			.select([
-				'submittal.id as id', 'submittal.project_id as projectId', 'submittal.public_id as publicId',
-				'submittal.submittal_number as submittalNumber', 'type.code as typeCode', 'type.name as typeName',
-				'submittal.title as title', 'submittal.status as status', 'submittal.due_at as dueAt',
-				'submittal.submitted_at as submittedAt', 'submittal.created_by_member_id as createdByMemberId',
-				'project.project_number as projectNumber', 'project.name as projectName'
-			]).where('submittal.owning_organisation_id', '=', organisationId).where('submittal.public_id', '=', publicId).executeTakeFirst();
+				'submittal.id as id',
+				'submittal.project_id as projectId',
+				'submittal.public_id as publicId',
+				'submittal.submittal_number as submittalNumber',
+				'type.code as typeCode',
+				'type.name as typeName',
+				'submittal.title as title',
+				'submittal.status as status',
+				'submittal.due_at as dueAt',
+				'submittal.submitted_at as submittedAt',
+				'submittal.created_by_member_id as createdByMemberId',
+				'project.project_number as projectNumber',
+				'project.name as projectName'
+			])
+			.where('submittal.owning_organisation_id', '=', organisationId)
+			.where('submittal.public_id', '=', publicId)
+			.executeTakeFirst();
 		return row ?? null;
 	}
 
 	async insertSubmittal(input: {
-		projectId: string; organisationId: string; publicId: string; number: string; typeId: number;
-		title: string; dueAt: Date | null; memberId: string;
+		projectId: string;
+		organisationId: string;
+		publicId: string;
+		number: string;
+		typeId: number;
+		title: string;
+		dueAt: Date | null;
+		memberId: string;
 	}): Promise<string> {
-		const result = await this.db.insertInto('submittals').values({
-			project_id: input.projectId, owning_organisation_id: input.organisationId, public_id: input.publicId,
-			submittal_number: input.number, submittal_type_id: input.typeId, title: input.title,
-			status: 'draft', due_at: input.dueAt, submitted_at: null, created_by_member_id: input.memberId
-		}).executeTakeFirstOrThrow();
+		const result = await this.db
+			.insertInto('submittals')
+			.values({
+				project_id: input.projectId,
+				owning_organisation_id: input.organisationId,
+				public_id: input.publicId,
+				submittal_number: input.number,
+				submittal_type_id: input.typeId,
+				title: input.title,
+				status: 'draft',
+				due_at: input.dueAt,
+				submitted_at: null,
+				created_by_member_id: input.memberId
+			})
+			.executeTakeFirstOrThrow();
 		return insertedId(result, 'submittal');
 	}
 
 	async addSubmittalItem(input: {
-		submittalId: string; organisationId: string; versionId: string; sortOrder: number;
+		submittalId: string;
+		organisationId: string;
+		versionId: string;
+		sortOrder: number;
 	}): Promise<void> {
-		await this.db.insertInto('submittal_items').values({
-			submittal_id: input.submittalId, submittal_owner_organisation_id: input.organisationId,
-			information_container_version_id: input.versionId, version_owner_organisation_id: input.organisationId,
-			sort_order: input.sortOrder, note: null
-		}).executeTakeFirstOrThrow();
+		await this.db
+			.insertInto('submittal_items')
+			.values({
+				submittal_id: input.submittalId,
+				submittal_owner_organisation_id: input.organisationId,
+				information_container_version_id: input.versionId,
+				version_owner_organisation_id: input.organisationId,
+				sort_order: input.sortOrder,
+				note: null
+			})
+			.executeTakeFirstOrThrow();
 	}
 
-	async submitSubmittal(input: { id: string; projectId: string; organisationId: string; dueAt: Date | null }): Promise<number> {
-		const result = await this.db.updateTable('submittals').set({ status: 'submitted', submitted_at: new Date() })
-			.where('id', '=', input.id).where('owning_organisation_id', '=', input.organisationId).where('status', '=', 'draft').executeTakeFirst();
+	async submitSubmittal(input: {
+		id: string;
+		projectId: string;
+		organisationId: string;
+		dueAt: Date | null;
+	}): Promise<number> {
+		const result = await this.db
+			.updateTable('submittals')
+			.set({ status: 'submitted', submitted_at: new Date() })
+			.where('id', '=', input.id)
+			.where('owning_organisation_id', '=', input.organisationId)
+			.where('status', '=', 'draft')
+			.executeTakeFirst();
 		if (Number(result.numUpdatedRows) === 1) {
-			await this.db.insertInto('submittal_reviewers').ignore().values({
-				project_id: input.projectId, submittal_id: input.id, submittal_owner_organisation_id: input.organisationId,
-				reviewer_organisation_id: input.organisationId, due_at: input.dueAt
-			}).execute();
+			await this.db
+				.insertInto('submittal_reviewers')
+				.ignore()
+				.values({
+					project_id: input.projectId,
+					submittal_id: input.id,
+					submittal_owner_organisation_id: input.organisationId,
+					reviewer_organisation_id: input.organisationId,
+					due_at: input.dueAt
+				})
+				.execute();
 		}
 		return Number(result.numUpdatedRows);
 	}
 
 	async nextSubmittalReviewSequence(submittalId: string, organisationId: string): Promise<number> {
-		const row = await this.db.selectFrom('submittal_reviews').select((eb) => eb.fn.max<number>('review_sequence').as('maxSequence'))
-			.where('submittal_id', '=', submittalId).where('reviewer_organisation_id', '=', organisationId).executeTakeFirst();
+		const row = await this.db
+			.selectFrom('submittal_reviews')
+			.select((eb) => eb.fn.max<number>('review_sequence').as('maxSequence'))
+			.where('submittal_id', '=', submittalId)
+			.where('reviewer_organisation_id', '=', organisationId)
+			.executeTakeFirst();
 		return Number(row?.maxSequence ?? 0) + 1;
 	}
 
 	async insertSubmittalReview(input: {
-		submittalId: string; organisationId: string; reviewSequence: number; outcome: string;
-		comments: string | null; memberId: string;
+		submittalId: string;
+		organisationId: string;
+		reviewSequence: number;
+		outcome: string;
+		comments: string | null;
+		memberId: string;
 	}): Promise<string> {
-		const result = await this.db.insertInto('submittal_reviews').values({
-			submittal_id: input.submittalId, reviewer_organisation_id: input.organisationId,
-			review_sequence: input.reviewSequence, outcome: input.outcome, comments: input.comments,
-			reviewed_by_member_id: input.memberId
-		}).executeTakeFirstOrThrow();
+		const result = await this.db
+			.insertInto('submittal_reviews')
+			.values({
+				submittal_id: input.submittalId,
+				reviewer_organisation_id: input.organisationId,
+				review_sequence: input.reviewSequence,
+				outcome: input.outcome,
+				comments: input.comments,
+				reviewed_by_member_id: input.memberId
+			})
+			.executeTakeFirstOrThrow();
 		return insertedId(result, 'submittal review');
 	}
 
 	async markSubmittalReviewed(id: string, organisationId: string): Promise<void> {
-		await this.db.updateTable('submittals').set({ status: 'reviewed' }).where('id', '=', id)
-			.where('owning_organisation_id', '=', organisationId).where('status', 'in', ['submitted', 'under_review']).execute();
+		await this.db
+			.updateTable('submittals')
+			.set({ status: 'reviewed' })
+			.where('id', '=', id)
+			.where('owning_organisation_id', '=', organisationId)
+			.where('status', 'in', ['submitted', 'under_review'])
+			.execute();
 	}
 
 	async listInstructions(organisationId: string): Promise<InstructionSummary[]> {
-		const rows = await this.db.selectFrom('project_instructions as instruction')
+		const rows = await this.db
+			.selectFrom('project_instructions as instruction')
 			.innerJoin('instruction_types as type', 'type.id', 'instruction.instruction_type_id')
 			.innerJoin('projects as project', 'project.id', 'instruction.project_id')
 			.select([
-				'instruction.id as id', 'instruction.project_id as projectId', 'instruction.public_id as publicId',
-				'instruction.instruction_number as instructionNumber', 'type.code as typeCode', 'type.name as typeName',
-				'instruction.subject as subject', 'instruction.instruction_text as instructionText',
-				'instruction.status as status', 'instruction.issued_at as issuedAt', 'instruction.issued_by_member_id as issuedByMemberId',
-				'project.project_number as projectNumber', 'project.name as projectName'
-			]).where('instruction.issuing_organisation_id', '=', organisationId).orderBy('instruction.updated_at', 'desc').execute();
+				'instruction.id as id',
+				'instruction.project_id as projectId',
+				'instruction.public_id as publicId',
+				'instruction.instruction_number as instructionNumber',
+				'type.code as typeCode',
+				'type.name as typeName',
+				'instruction.subject as subject',
+				'instruction.instruction_text as instructionText',
+				'instruction.status as status',
+				'instruction.issued_at as issuedAt',
+				'instruction.issued_by_member_id as issuedByMemberId',
+				'project.project_number as projectNumber',
+				'project.name as projectName'
+			])
+			.where('instruction.issuing_organisation_id', '=', organisationId)
+			.orderBy('instruction.updated_at', 'desc')
+			.execute();
 		return rows;
 	}
 
-	async findInstructionByPublicId(organisationId: string, publicId: string): Promise<InstructionSummary | null> {
-		const row = await this.db.selectFrom('project_instructions as instruction')
+	async findInstructionByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<InstructionSummary | null> {
+		const row = await this.db
+			.selectFrom('project_instructions as instruction')
 			.innerJoin('instruction_types as type', 'type.id', 'instruction.instruction_type_id')
 			.innerJoin('projects as project', 'project.id', 'instruction.project_id')
 			.select([
-				'instruction.id as id', 'instruction.project_id as projectId', 'instruction.public_id as publicId',
-				'instruction.instruction_number as instructionNumber', 'type.code as typeCode', 'type.name as typeName',
-				'instruction.subject as subject', 'instruction.instruction_text as instructionText',
-				'instruction.status as status', 'instruction.issued_at as issuedAt', 'instruction.issued_by_member_id as issuedByMemberId',
-				'project.project_number as projectNumber', 'project.name as projectName'
-			]).where('instruction.issuing_organisation_id', '=', organisationId).where('instruction.public_id', '=', publicId).executeTakeFirst();
+				'instruction.id as id',
+				'instruction.project_id as projectId',
+				'instruction.public_id as publicId',
+				'instruction.instruction_number as instructionNumber',
+				'type.code as typeCode',
+				'type.name as typeName',
+				'instruction.subject as subject',
+				'instruction.instruction_text as instructionText',
+				'instruction.status as status',
+				'instruction.issued_at as issuedAt',
+				'instruction.issued_by_member_id as issuedByMemberId',
+				'project.project_number as projectNumber',
+				'project.name as projectName'
+			])
+			.where('instruction.issuing_organisation_id', '=', organisationId)
+			.where('instruction.public_id', '=', publicId)
+			.executeTakeFirst();
 		return row ?? null;
 	}
 
 	async insertInstruction(input: {
-		projectId: string; organisationId: string; publicId: string; number: string; typeId: number;
-		subject: string; instructionText: string; memberId: string;
+		projectId: string;
+		organisationId: string;
+		publicId: string;
+		number: string;
+		typeId: number;
+		subject: string;
+		instructionText: string;
+		memberId: string;
 	}): Promise<string> {
-		const result = await this.db.insertInto('project_instructions').values({
-			project_id: input.projectId, issuing_organisation_id: input.organisationId, public_id: input.publicId,
-			instruction_number: input.number, instruction_type_id: input.typeId, subject: input.subject,
-			instruction_text: input.instructionText, status: 'draft', issued_by_member_id: input.memberId, issued_at: null
-		}).executeTakeFirstOrThrow();
+		const result = await this.db
+			.insertInto('project_instructions')
+			.values({
+				project_id: input.projectId,
+				issuing_organisation_id: input.organisationId,
+				public_id: input.publicId,
+				instruction_number: input.number,
+				instruction_type_id: input.typeId,
+				subject: input.subject,
+				instruction_text: input.instructionText,
+				status: 'draft',
+				issued_by_member_id: input.memberId,
+				issued_at: null
+			})
+			.executeTakeFirstOrThrow();
 		return insertedId(result, 'project instruction');
 	}
 
 	async issueInstruction(id: string, organisationId: string): Promise<number> {
-		const result = await this.db.updateTable('project_instructions').set({ status: 'issued', issued_at: new Date() })
-			.where('id', '=', id).where('issuing_organisation_id', '=', organisationId).where('status', '=', 'draft').executeTakeFirst();
+		const result = await this.db
+			.updateTable('project_instructions')
+			.set({ status: 'issued', issued_at: new Date() })
+			.where('id', '=', id)
+			.where('issuing_organisation_id', '=', organisationId)
+			.where('status', '=', 'draft')
+			.executeTakeFirst();
 		return Number(result.numUpdatedRows);
 	}
 }

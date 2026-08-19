@@ -70,10 +70,18 @@ const navigationSections: readonly AppNavigationSection[] = [
 				href: '/documents',
 				anyPermissionNamespaces: ['information.'],
 				children: [
-					{ id: 'document-register', label: 'Document register', href: '/documents#document-register' },
+					{
+						id: 'document-register',
+						label: 'Document register',
+						href: '/documents#document-register'
+					},
 					{ id: 'rfi-register', label: 'RFIs', href: '/documents#rfi-register' },
 					{ id: 'submittal-register', label: 'Submittals', href: '/documents#submittal-register' },
-					{ id: 'instruction-register', label: 'Instructions', href: '/documents#instruction-register' }
+					{
+						id: 'instruction-register',
+						label: 'Instructions',
+						href: '/documents#instruction-register'
+					}
 				]
 			},
 			{
