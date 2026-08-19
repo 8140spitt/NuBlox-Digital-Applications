@@ -16,6 +16,7 @@ import {
 	InvitationAccessError,
 	OrganisationInvitationService
 } from '$lib/server/organisations/invitation-service';
+import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from './bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
 import { assertVerifiedAuthUser } from './verified-auth-user';
@@ -162,12 +163,14 @@ export const auth = betterAuth({
 					if (intent.kind === 'invitation') {
 						await invitationService().bindSignupAuthUser(intent.token, user.email, user.id);
 					} else {
-						await bootstrapService().provisionSignup({
+						const db = getDatabase();
+						const created = await new OrganisationBootstrapService(db).provisionSignup({
 							rawToken: intent.token,
 							authUserId: user.id,
 							email: user.email,
 							displayName: user.name
 						});
+						await ensureWorkforceStandardRoleDefaults(db, created.organisationId);
 					}
 				}
 			}
