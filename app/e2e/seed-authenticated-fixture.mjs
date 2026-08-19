@@ -8,6 +8,8 @@ if (!databaseUrl) throw new Error('DATABASE_URL is required for browser fixture 
 export const E2E_EMAIL = 'e2e-owner@example.test';
 export const E2E_PASSWORD = 'NuBlox-E2E-Password-2026!';
 export const E2E_ORGANISATION = 'NuBlox E2E Organisation';
+export const E2E_VIEWER_EMAIL = 'e2e-viewer@example.test';
+export const E2E_VIEWER_PASSWORD = 'NuBlox-E2E-Viewer-2026!';
 
 const db = await mysql.createConnection(databaseUrl);
 try {
@@ -75,6 +77,64 @@ try {
 		[organisationId, memberId, roleId]
 	);
 
+	const viewerUserPublicId = randomUUID();
+	const viewerAuthUserId = randomUUID();
+	const viewerMemberPublicId = randomUUID();
+	const viewerRolePublicId = randomUUID();
+	const [viewerUser] = await db.execute(
+		'INSERT INTO users (public_id, display_name, status) VALUES (?, ?, ?)',
+		[viewerUserPublicId, 'NuBlox E2E Viewer', 'active']
+	);
+	const viewerUserId = String(viewerUser.insertId);
+	await db.execute(
+		`INSERT INTO auth_users
+		(id, display_name, email, email_verified, image, created_at, updated_at)
+		VALUES (?, ?, ?, 1, NULL, ?, ?)`,
+		[viewerAuthUserId, 'NuBlox E2E Viewer', E2E_VIEWER_EMAIL, now, now]
+	);
+	await db.execute(
+		`INSERT INTO auth_accounts
+		(id, provider_account_id, provider_id, auth_user_id, access_token, refresh_token, id_token,
+		 access_token_expires_at, refresh_token_expires_at, scope, password, created_at, updated_at)
+		VALUES (?, ?, 'credential', ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)`,
+		[
+			randomUUID(),
+			viewerAuthUserId,
+			viewerAuthUserId,
+			await hashPassword(E2E_VIEWER_PASSWORD),
+			now,
+			now
+		]
+	);
+	await db.execute('INSERT INTO auth_user_links (auth_user_id, user_id) VALUES (?, ?)', [
+		viewerAuthUserId,
+		viewerUserId
+	]);
+	const [viewerMember] = await db.execute(
+		`INSERT INTO organisation_members
+		(organisation_id, user_id, public_id, status, joined_at)
+		VALUES (?, ?, ?, 'active', ?)`,
+		[organisationId, viewerUserId, viewerMemberPublicId, now]
+	);
+	const viewerMemberId = String(viewerMember.insertId);
+	const [viewerRole] = await db.execute(
+		`INSERT INTO organisation_roles
+		(organisation_id, public_id, name, is_active)
+		VALUES (?, ?, 'E2E Read Only', 1)`,
+		[organisationId, viewerRolePublicId]
+	);
+	const viewerRoleId = String(viewerRole.insertId);
+	await db.execute(
+		`INSERT INTO role_permissions (organisation_id, organisation_role_id, permission_id)
+		SELECT ?, ?, id FROM permissions WHERE is_active = 1 AND permission_key LIKE '%.view'`,
+		[organisationId, viewerRoleId]
+	);
+	await db.execute(
+		`INSERT INTO member_roles (organisation_id, organisation_member_id, organisation_role_id)
+		VALUES (?, ?, ?)`,
+		[organisationId, viewerMemberId, viewerRoleId]
+	);
+
 	const pipelinePublicId = randomUUID();
 	const [pipeline] = await db.execute(
 		`INSERT INTO crm_pipelines
@@ -97,7 +157,7 @@ try {
 		);
 	}
 
-	console.log(`Seeded authenticated browser fixture for ${E2E_EMAIL}.`);
+	console.log(`Seeded authenticated browser fixtures for ${E2E_EMAIL} and ${E2E_VIEWER_EMAIL}.`);
 } finally {
 	await db.end();
 }
