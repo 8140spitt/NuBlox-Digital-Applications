@@ -1,6 +1,8 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
+import { resolveAppNavigation, resolveQuickActions } from '$lib/navigation/app-navigation';
+import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
 
@@ -19,9 +21,11 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		throw redirect(303, '/select-organisation');
 	}
 
-	const organisation = await new OrganisationRepository(getDatabase()).findActiveById(
-		locals.tenant.organisationId
-	);
+	const db = getDatabase();
+	const [organisation, allowedPermissionKeys] = await Promise.all([
+		new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
+		new PermissionService(db).listAllowedPermissionKeys(locals.actor)
+	]);
 	if (!organisation) throw redirect(303, '/select-organisation');
 
 	return {
@@ -32,6 +36,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		organisation: {
 			publicId: organisation.publicId,
 			name: organisation.tradingName ?? organisation.legalName
-		}
+		},
+		navigation: resolveAppNavigation(allowedPermissionKeys),
+		quickActions: resolveQuickActions(allowedPermissionKeys)
 	};
 };
