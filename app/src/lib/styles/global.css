@@ -33,3 +33,27 @@ select,
 textarea {
 	font: inherit;
 }
+
+input,
+select,
+textarea {
+	max-width: 100%;
+	min-width: 0;
+}
+
+.panel,
+.card,
+.year-card,
+.table-wrap,
+.configure-grid,
+.form-grid,
+.two,
+.years,
+.events {
+	min-width: 0;
+}
+
+.table-wrap {
+	max-width: 100%;
+	overflow-x: auto;
+}
