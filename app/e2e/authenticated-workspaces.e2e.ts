@@ -19,8 +19,12 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await expect(page.getByRole('link', { name: 'NuBlox dashboard' })).toBeVisible();
 	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
 	await expect(primaryNavigation.getByRole('link', { name: 'CRM', exact: true })).toBeVisible();
-	await expect(primaryNavigation.getByRole('link', { name: 'Projects', exact: true })).toBeVisible();
-	await expect(primaryNavigation.getByRole('link', { name: 'Credit control', exact: true })).toBeVisible();
+	await expect(
+		primaryNavigation.getByRole('link', { name: 'Projects', exact: true })
+	).toBeVisible();
+	await expect(
+		primaryNavigation.getByRole('link', { name: 'Credit control', exact: true })
+	).toBeVisible();
 
 	await page.getByText('Search', { exact: true }).click();
 	await page.getByLabel('Find a workspace').fill('year-end');
