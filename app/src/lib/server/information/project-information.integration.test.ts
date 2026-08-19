@@ -82,14 +82,6 @@ async function cleanup(): Promise<void> {
 		.execute();
 	await db.deleteFrom('rfis').where('owning_organisation_id', 'in', organisationIds).execute();
 	await db
-		.deleteFrom('project_instruction_links')
-		.where('instruction_owner_organisation_id', 'in', organisationIds)
-		.execute();
-	await db
-		.deleteFrom('project_instruction_recipients')
-		.where('instruction_owner_organisation_id', 'in', organisationIds)
-		.execute();
-	await db
 		.deleteFrom('project_instructions')
 		.where('issuing_organisation_id', 'in', organisationIds)
 		.execute();
