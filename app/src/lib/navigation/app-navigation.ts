@@ -73,6 +73,38 @@ const navigationSections: readonly AppNavigationSection[] = [
 		]
 	},
 	{
+		id: 'operations',
+		label: 'Operations',
+		items: [
+			{
+				id: 'schedule',
+				label: 'Schedule',
+				href: '/schedule',
+				anyPermissionNamespaces: ['schedule.', 'timesheet.'],
+				children: [
+					{
+						id: 'schedule-planning',
+						label: 'Schedule',
+						href: '/schedule',
+						anyPermissionNamespaces: ['schedule.']
+					},
+					{
+						id: 'time',
+						label: 'Time',
+						href: '/time',
+						anyPermissionNamespaces: ['timesheet.']
+					}
+				]
+			},
+			{
+				id: 'people',
+				label: 'People',
+				href: '/people',
+				anyPermissionNamespaces: ['workforce.']
+			}
+		]
+	},
+	{
 		id: 'finance',
 		label: 'Finance',
 		items: [
@@ -204,6 +236,27 @@ const quickActions: readonly AppQuickAction[] = [
 		href: '/projects',
 		description: 'Create a new project workspace.',
 		anyPermissions: ['project.create']
+	},
+	{
+		id: 'new-workforce-member',
+		label: 'Workforce member',
+		href: '/people#create-worker',
+		description: 'Link an organisation member to the workforce.',
+		anyPermissions: ['workforce.manage']
+	},
+	{
+		id: 'new-scheduled-work',
+		label: 'Scheduled work',
+		href: '/schedule#schedule-work',
+		description: 'Plan a visit, shift, appointment or work session.',
+		anyPermissions: ['schedule.manage']
+	},
+	{
+		id: 'new-timesheet',
+		label: 'Timesheet',
+		href: '/time#new-timesheet',
+		description: 'Create a new personal timesheet period.',
+		anyPermissions: ['timesheet.manage']
 	},
 	{
 		id: 'new-contract',
