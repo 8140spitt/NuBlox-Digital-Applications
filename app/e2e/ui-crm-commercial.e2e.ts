@@ -118,3 +118,53 @@ test('owner takes commercial evidence through project and executed contract', as
 	await page.getByRole('button', { name: 'Record execution' }).click();
 	await expect(page.getByText('Executed', { exact: true })).toBeVisible();
 });
+
+test('owner completes invoice, receipt and cash allocation through the browser', async ({ page }) => {
+	await signIn(page);
+
+	await page.goto('/finance/billing');
+	await page.getByLabel('Name').fill('E2E Net 30');
+	await page.getByLabel('Days offset').fill('30');
+	await page.getByLabel('Make default').check();
+	await page.getByRole('button', { name: 'Add payment term' }).click();
+	await expect(page.getByText('E2E Net 30', { exact: true }).first()).toBeVisible();
+
+	await page.goto('/finance/tax');
+	await page.getByLabel('Code').fill('E2E_VAT20');
+	await page.getByLabel('Name').fill('E2E VAT 20');
+	await page.getByLabel('Treatment').selectOption('taxable');
+	await page.getByLabel('Rate %').fill('20');
+	await page.getByRole('button', { name: 'Add tax category' }).click();
+	await expect(page.getByText('E2E VAT 20', { exact: true })).toBeVisible();
+
+	await page.goto('/finance/invoices');
+	await page.getByRole('button', { name: 'Create draft invoice' }).click();
+	await expect(page).toHaveURL(/\/finance\/invoices\/[0-9a-f-]+$/i);
+
+	await page.getByLabel('Description').fill('Office refurbishment works');
+	await page.getByLabel('Quantity').fill('1');
+	await page.getByLabel('Unit rate').fill('125000.00');
+	await page.getByLabel('Tax').selectOption({ label: /E2E VAT 20/ });
+	await page.getByRole('button', { name: 'Add line' }).click();
+	await expect(page.getByText('Office refurbishment works', { exact: true })).toBeVisible();
+
+	await page.getByLabel('Recipient name').fill('E2E Customer');
+	await page.getByLabel('Recipient email').fill('customer-e2e@example.test');
+	await page.getByLabel('Issue note').fill('Invoice issued by browser acceptance validation.');
+	await page.getByRole('button', { name: 'Issue invoice' }).click();
+	await expect(page.getByText('issued', { exact: true }).first()).toBeVisible();
+
+	await page.goto('/finance/payments');
+	await page.getByLabel('Payment method').selectOption({ index: 1 });
+	await page.getByLabel('Amount').fill('150000.00');
+	await page.getByLabel('Currency').fill('GBP');
+	await page.getByLabel('Payment reference').fill('E2E-RECEIPT-001');
+	await page.getByLabel('Payer').selectOption({ label: 'E2E Customer Ltd' });
+	await page.getByRole('button', { name: 'Record payment' }).click();
+	await expect(page).toHaveURL(/\/finance\/payments\/[0-9a-f-]+$/i);
+
+	await page.getByLabel('Invoice').selectOption({ index: 1 });
+	await page.getByLabel('Amount').fill('150000.00');
+	await page.getByRole('button', { name: 'Allocate payment' }).click();
+	await expect(page.getByText('Active allocation', { exact: true })).toBeVisible();
+});
