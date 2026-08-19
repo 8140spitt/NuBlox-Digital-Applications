@@ -99,12 +99,11 @@ test('owner takes commercial evidence through project and executed contract', as
 	await page.goto('/commercial/quotations');
 	await page.getByRole('link', { name: 'Project conversion' }).click();
 	await page.getByRole('button', { name: 'Create project from accepted quotation' }).click();
-	await expect(page.getByText('Conversion complete', { exact: true })).toBeVisible();
-	const projectHref = await page.getByRole('link', { name: 'Open project' }).getAttribute('href');
-	expect(projectHref).toMatch(/^\/projects\/[0-9a-f-]+$/i);
+	await expect(page).toHaveURL(/\/contracts\/new\?project=[0-9a-f-]+$/i);
+	const projectPublicId = new URL(page.url()).searchParams.get('project');
+	expect(projectPublicId).toMatch(/^[0-9a-f-]+$/i);
+	const projectHref = `/projects/${projectPublicId}`;
 
-	await page.goto('/contracts');
-	await page.getByRole('link', { name: 'Form contract' }).click();
 	await page.getByLabel('Customer reference').fill('E2E-CONTRACT-001');
 	await page.getByRole('button', { name: 'Create draft contract' }).click();
 
@@ -120,7 +119,7 @@ test('owner takes commercial evidence through project and executed contract', as
 	await page.getByRole('button', { name: 'Record execution' }).click();
 	await expect(page.getByText('Executed', { exact: true })).toBeVisible();
 
-	await page.goto(projectHref!);
+	await page.goto(projectHref);
 	await expect(page.locator('.project-header .status')).toHaveText('Proposed');
 	const activationForm = page
 		.locator('form[action="?/transition"]')
