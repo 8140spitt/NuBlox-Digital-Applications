@@ -27,7 +27,7 @@ test('owner creates and filters a CRM organisation through the browser', async (
 	await page.getByRole('button', { name: 'Create CRM record' }).click();
 
 	await expect(page).toHaveURL(/\/crm\/[0-9a-f-]+$/i);
-	await expect(page.getByText('E2E Customer Ltd', { exact: true }).first()).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'E2E Customer', level: 1 })).toBeVisible();
 
 	await page.goto('/crm');
 	await page.getByLabel('Search').fill('E2E Customer Ltd');
