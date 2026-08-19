@@ -23,6 +23,9 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 		primaryNavigation.getByRole('link', { name: 'Projects', exact: true })
 	).toBeVisible();
 	await expect(
+		primaryNavigation.getByRole('link', { name: 'Documents', exact: true })
+	).toBeVisible();
+	await expect(
 		primaryNavigation.getByRole('link', { name: 'Schedule', exact: true }).first()
 	).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'Time', exact: true })).toBeVisible();
@@ -32,6 +35,10 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	).toBeVisible();
 
 	await page.getByText('Search', { exact: true }).click();
+	await page.getByLabel('Find a workspace').fill('documents');
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /Documents/ })
+	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('people');
 	await expect(page.locator('.search-results').getByRole('link', { name: /People/ })).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('year-end');
@@ -45,6 +52,9 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await expect(createPopover.getByRole('link', { name: /CRM record/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Estimate/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Project/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Controlled document/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /RFI/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Project instruction/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Workforce member/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Scheduled work/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Timesheet/ })).toBeVisible();
@@ -58,6 +68,7 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 		'/commercial/estimates',
 		'/commercial/quotations',
 		'/projects',
+		'/documents',
 		'/contracts',
 		'/people',
 		'/schedule',
