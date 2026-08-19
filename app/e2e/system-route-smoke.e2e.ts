@@ -21,6 +21,7 @@ test('protected workspaces consistently preserve return targets for unauthentica
 		'/commercial/estimates',
 		'/commercial/quotations',
 		'/projects',
+		'/documents',
 		'/contracts',
 		'/people',
 		'/schedule',
