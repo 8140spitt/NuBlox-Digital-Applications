@@ -16,12 +16,12 @@
 
 	function workspaceItems(sections: AppNavigationSection[]): AppNavigationItem[] {
 		const items: AppNavigationItem[] = [];
-		const seenHrefs = new Set<string>();
+		const seenHrefs: string[] = [];
 		for (const section of sections) {
 			for (const item of section.items) {
 				for (const candidate of [item, ...(item.children ?? [])]) {
-					if (seenHrefs.has(candidate.href)) continue;
-					seenHrefs.add(candidate.href);
+					if (seenHrefs.includes(candidate.href)) continue;
+					seenHrefs.push(candidate.href);
 					items.push(candidate);
 				}
 			}
