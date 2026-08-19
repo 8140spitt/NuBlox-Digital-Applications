@@ -74,7 +74,7 @@ test('owner staffs, schedules and records a complete work session through the UI
 	await expect(page).toHaveURL(/\/time$/);
 
 	const timesheetCard = page.locator('.timesheet-card').first();
-	await timesheetCard.getByText('Add time entry', { exact: true }).click();
+	await timesheetCard.locator('summary').filter({ hasText: 'Add time entry' }).click();
 	await timesheetCard.getByLabel('Work date').fill('2026-08-20');
 	await timesheetCard.getByLabel('Minutes').fill('480');
 	await timesheetCard
