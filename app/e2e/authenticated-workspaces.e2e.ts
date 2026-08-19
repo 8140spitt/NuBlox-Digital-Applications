@@ -34,11 +34,12 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await page.getByText('Search', { exact: true }).click();
 
 	await page.getByText('Create', { exact: true }).click();
-	await expect(page.getByRole('link', { name: /CRM record/ })).toBeVisible();
-	await expect(page.getByRole('link', { name: /Estimate/ })).toBeVisible();
-	await expect(page.getByRole('link', { name: /Project/ })).toBeVisible();
-	await expect(page.getByRole('link', { name: /Contract/ })).toBeVisible();
-	await expect(page.getByRole('link', { name: /Invoice/ })).toBeVisible();
+	const createPopover = page.locator('.create-popover');
+	await expect(createPopover.getByRole('link', { name: /CRM record/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Estimate/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Project/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Contract/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Invoice/ })).toBeVisible();
 
 	const workspacePaths = [
 		'/dashboard',
