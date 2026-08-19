@@ -10,6 +10,7 @@ import {
 	OrganisationBootstrapValidationError
 } from '$lib/server/organisations/bootstrap-service';
 import { ORGANISATION_COOKIE } from '$lib/server/request-context';
+import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
 
 function field(formData: FormData, name: string): string {
 	const value = formData.get(name);
@@ -31,7 +32,8 @@ export const actions: Actions = {
 		const formData = await request.formData();
 
 		try {
-			const created = await new OrganisationBootstrapService(getDatabase()).createForExistingUser(
+			const db = getDatabase();
+			const created = await new OrganisationBootstrapService(db).createForExistingUser(
 				{
 					userId: locals.actor.userId,
 					correlationId: locals.correlationId
@@ -43,6 +45,7 @@ export const actions: Actions = {
 					defaultCurrencyCode: field(formData, 'defaultCurrencyCode')
 				}
 			);
+			await ensureWorkforceStandardRoleDefaults(db, created.organisationId);
 
 			cookies.set(ORGANISATION_COOKIE, created.organisationPublicId, {
 				httpOnly: true,
