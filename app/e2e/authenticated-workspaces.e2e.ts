@@ -28,7 +28,9 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 
 	await page.getByText('Search', { exact: true }).click();
 	await page.getByLabel('Find a workspace').fill('year-end');
-	await expect(page.getByRole('link', { name: /Year-end close/ })).toBeVisible();
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /Year-end close/ })
+	).toBeVisible();
 	await page.getByText('Search', { exact: true }).click();
 
 	await page.getByText('Create', { exact: true }).click();
