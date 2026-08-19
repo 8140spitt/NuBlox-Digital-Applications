@@ -14,7 +14,9 @@ async function signIn(page: import('@playwright/test').Page) {
 	await expect(page).toHaveURL(/\/dashboard$/);
 }
 
-test('read-only member can view workspaces without receiving mutation controls', async ({ page }) => {
+test('read-only member can view workspaces without receiving mutation controls', async ({
+	page
+}) => {
 	await signIn(page);
 
 	await page.goto('/crm');
