@@ -20,10 +20,9 @@ VALUES
     (NULL, 'schedule.view', 'View schedule', 'View schedule events permitted by workforce scope.', TRUE),
     (NULL, 'schedule.manage', 'Manage schedule', 'Create and manage schedule events and worker assignments.', TRUE),
     (NULL, 'timesheet.view', 'View timesheets', 'View permitted personal or approval-scope timesheets.', TRUE),
-    (NULL, 'timesheet.manage', 'Manage own timesheets', 'Create and edit draft or reopened timesheets for the current worker identity.', TRUE),
+    (NULL, 'timesheet.manage', 'Manage own timesheets', 'Create and edit draft, rejected or reopened timesheets for the current worker identity.', TRUE),
     (NULL, 'timesheet.submit', 'Submit own timesheets', 'Submit the current worker identity timesheets for approval.', TRUE),
-    (NULL, 'timesheet.approve', 'Approve timesheets', 'Approve or reject submitted timesheets for other workers.', TRUE),
-    (NULL, 'timesheet.reopen', 'Reopen approved timesheets', 'Reopen approved timesheets through a privileged correction workflow.', TRUE)
+    (NULL, 'timesheet.approve', 'Approve timesheets', 'Approve or reject submitted timesheets for other workers.', TRUE)
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     description = VALUES(description),
@@ -56,8 +55,7 @@ INNER JOIN permissions AS permission
                 'timesheet.view',
                 'timesheet.manage',
                 'timesheet.submit',
-                'timesheet.approve',
-                'timesheet.reopen'
+                'timesheet.approve'
             )
         )
         OR (
@@ -73,8 +71,7 @@ INNER JOIN permissions AS permission
                 'timesheet.view',
                 'timesheet.manage',
                 'timesheet.submit',
-                'timesheet.approve',
-                'timesheet.reopen'
+                'timesheet.approve'
             )
         )
         OR (
