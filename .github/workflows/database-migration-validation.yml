@@ -89,9 +89,12 @@ jobs:
         working-directory: app
         run: pnpm audit --prod --audit-level moderate
 
-      - name: Run formatting and lint checks
+      - name: Show exact Prettier rewrite
         working-directory: app
-        run: pnpm lint
+        run: |
+          pnpm exec prettier --write e2e/authenticated-workspaces.e2e.ts e2e/ui-permissions.e2e.ts 'src/routes/(app)/+layout.svelte'
+          git diff -- e2e/authenticated-workspaces.e2e.ts e2e/ui-permissions.e2e.ts 'src/routes/(app)/+layout.svelte'
+          exit 1
 
       - name: Apply production migration stream
         working-directory: app
