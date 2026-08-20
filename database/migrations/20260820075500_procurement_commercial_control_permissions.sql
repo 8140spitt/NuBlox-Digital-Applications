@@ -18,13 +18,15 @@ VALUES
     (NULL, 'procurement.po.approve', 'Approve purchase orders', 'Approve purchase-order versions before controlled issue.', TRUE),
     (NULL, 'procurement.po.issue', 'Issue purchase orders', 'Issue immutable purchase-order versions and create issue evidence.', TRUE),
     (NULL, 'procurement.receipt.manage', 'Manage purchase-order receipts', 'Record and reverse controlled goods or service receipts against issued purchase orders.', TRUE),
-    (NULL, 'commercial.cost_control.view', 'View project commercial control', 'View confidential project cost codes, budgets, commitments, variations and commercial position.', TRUE),
+    (NULL, 'commercial.cost_control.view', 'View project commercial control', 'View confidential project cost codes, budgets, commitments, variations, valuations and commercial position.', TRUE),
     (NULL, 'commercial.cost_code.manage', 'Manage project cost codes', 'Create and maintain project cost-code structures.', TRUE),
     (NULL, 'commercial.budget.manage', 'Manage project budgets', 'Create project budget identities, draft versions and budget lines.', TRUE),
     (NULL, 'commercial.budget.approve', 'Approve project budgets', 'Approve and lock project budget versions as controlled baselines.', TRUE),
     (NULL, 'commercial.variation.manage', 'Manage commercial variations', 'Create project commercial variations and draft variation versions.', TRUE),
     (NULL, 'commercial.variation.issue', 'Issue commercial variations', 'Issue immutable commercial variation versions.', TRUE),
-    (NULL, 'commercial.variation.decide', 'Record variation decisions', 'Record attributable accepted, partial, rejected or pending variation decisions.', TRUE)
+    (NULL, 'commercial.variation.decide', 'Record variation decisions', 'Record attributable accepted, partial, rejected or pending variation decisions.', TRUE),
+    (NULL, 'commercial.valuation.manage', 'Manage commercial valuations', 'Create and submit project commercial valuation and application records.', TRUE),
+    (NULL, 'commercial.valuation.assess', 'Assess commercial valuations', 'Record attributable assessment of submitted project commercial valuations.', TRUE)
 ON DUPLICATE KEY UPDATE
     name = VALUES(name),
     description = VALUES(description),
@@ -59,7 +61,9 @@ INNER JOIN permissions AS permission
                 'commercial.budget.approve',
                 'commercial.variation.manage',
                 'commercial.variation.issue',
-                'commercial.variation.decide'
+                'commercial.variation.decide',
+                'commercial.valuation.manage',
+                'commercial.valuation.assess'
             )
         )
         OR (
@@ -76,7 +80,9 @@ INNER JOIN permissions AS permission
                 'commercial.cost_code.manage',
                 'commercial.budget.manage',
                 'commercial.variation.manage',
-                'commercial.variation.issue'
+                'commercial.variation.issue',
+                'commercial.valuation.manage',
+                'commercial.valuation.assess'
             )
         )
         OR (
