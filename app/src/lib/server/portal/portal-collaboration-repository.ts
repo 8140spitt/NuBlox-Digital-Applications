@@ -1174,7 +1174,6 @@ export class PortalCollaborationRepository {
 				issuing_organisation_id: input.organisationId,
 				recipient_project_organisation_id: input.recipientOrganisationId,
 				source_party_id: null,
-				source_party_owner_organisation_id: null,
 				recipient_name: input.recipientName,
 				recipient_email: null,
 				delivery_status: 'delivered',
