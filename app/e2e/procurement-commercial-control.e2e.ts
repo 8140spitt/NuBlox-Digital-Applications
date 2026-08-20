@@ -55,7 +55,7 @@ test('owner procures, commits, values and controls project cost through the brow
 	await packagePanel.locator('select[name="packageTypeCode"]').selectOption({ index: 1 });
 	await packagePanel.getByLabel('Package title').fill(packageTitle);
 	await packagePanel
-		.getByLabel('Description')
+		.locator('textarea[name="description"]')
 		.fill('Containment material and installation requirement.');
 	await packagePanel.locator('select[name="salesItemTypeId"]').selectOption({ index: 1 });
 	await packagePanel
