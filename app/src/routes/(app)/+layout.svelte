@@ -2,7 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth-client';
-	import brandHeader from '$lib/assets/nublox-app-header.webp';
+	import brandHeader from '$lib/assets/nublox-logo-on-navy.webp';
 	import type { AppNavigationItem, AppNavigationSection } from '$lib/navigation/app-navigation';
 
 	let { data, children } = $props();
