@@ -1,7 +1,8 @@
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 function insertedId(result: { insertId?: bigint }, label: string): string {
-	if (result.insertId === undefined) throw new Error(`MySQL did not return the inserted ${label} ID.`);
+	if (result.insertId === undefined)
+		throw new Error(`MySQL did not return the inserted ${label} ID.`);
 	return result.insertId.toString();
 }
 

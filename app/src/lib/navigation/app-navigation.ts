@@ -64,7 +64,18 @@ const navigationSections: readonly AppNavigationSection[] = [
 						id: 'project-cost-control',
 						label: 'Project cost control',
 						href: '/commercial/cost-control',
-						anyPermissionNamespaces: ['commercial.cost_control.', 'commercial.cost_code.', 'commercial.budget.', 'commercial.variation.']
+						anyPermissionNamespaces: [
+							'commercial.cost_control.',
+							'commercial.cost_code.',
+							'commercial.budget.',
+							'commercial.variation.'
+						]
+					},
+					{
+						id: 'commercial-valuations',
+						label: 'Valuations',
+						href: '/commercial/valuations',
+						anyPermissionNamespaces: ['commercial.valuation.']
 					}
 				]
 			}
@@ -106,8 +117,16 @@ const navigationSections: readonly AppNavigationSection[] = [
 				href: '/purchasing',
 				anyPermissionNamespaces: ['procurement.'],
 				children: [
-					{ id: 'procurement-packages', label: 'Procurement packages', href: '/purchasing#package-register' },
-					{ id: 'procurement-enquiries', label: 'Enquiries / RFQs', href: '/purchasing#rfq-register' },
+					{
+						id: 'procurement-packages',
+						label: 'Procurement packages',
+						href: '/purchasing#package-register'
+					},
+					{
+						id: 'procurement-enquiries',
+						label: 'Enquiries / RFQs',
+						href: '/purchasing#rfq-register'
+					},
 					{ id: 'purchase-orders', label: 'Purchase orders', href: '/purchasing#po-register' }
 				]
 			},

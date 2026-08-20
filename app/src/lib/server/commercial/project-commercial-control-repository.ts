@@ -1,7 +1,8 @@
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 function insertedId(result: { insertId?: bigint }, label: string): string {
-	if (result.insertId === undefined) throw new Error(`MySQL did not return the inserted ${label} ID.`);
+	if (result.insertId === undefined)
+		throw new Error(`MySQL did not return the inserted ${label} ID.`);
 	return result.insertId.toString();
 }
 
@@ -140,11 +141,18 @@ export class ProjectCommercialControlRepository {
 			.executeTakeFirst();
 	}
 
-	async listCostCodes(organisationId: string, projectIds: readonly string[]): Promise<ProjectCostCodeSummary[]> {
+	async listCostCodes(
+		organisationId: string,
+		projectIds: readonly string[]
+	): Promise<ProjectCostCodeSummary[]> {
 		if (projectIds.length === 0) return [];
 		return this.db
 			.selectFrom('project_cost_codes as costCode')
-			.innerJoin('commercial_cost_categories as category', 'category.id', 'costCode.commercial_cost_category_id')
+			.innerJoin(
+				'commercial_cost_categories as category',
+				'category.id',
+				'costCode.commercial_cost_category_id'
+			)
 			.select([
 				'costCode.id as id',
 				'costCode.organisation_id as organisationId',
@@ -168,10 +176,17 @@ export class ProjectCommercialControlRepository {
 			.execute();
 	}
 
-	async findCostCodeByPublicId(organisationId: string, publicId: string): Promise<ProjectCostCodeSummary | null> {
+	async findCostCodeByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<ProjectCostCodeSummary | null> {
 		const row = await this.db
 			.selectFrom('project_cost_codes as costCode')
-			.innerJoin('commercial_cost_categories as category', 'category.id', 'costCode.commercial_cost_category_id')
+			.innerJoin(
+				'commercial_cost_categories as category',
+				'category.id',
+				'costCode.commercial_cost_category_id'
+			)
 			.select([
 				'costCode.id as id',
 				'costCode.organisation_id as organisationId',
@@ -222,7 +237,10 @@ export class ProjectCommercialControlRepository {
 		return insertedId(result, 'project cost code');
 	}
 
-	async listBudgets(organisationId: string, projectIds: readonly string[]): Promise<ProjectBudgetSummary[]> {
+	async listBudgets(
+		organisationId: string,
+		projectIds: readonly string[]
+	): Promise<ProjectBudgetSummary[]> {
 		if (projectIds.length === 0) return [];
 		return this.db
 			.selectFrom('project_budgets')
@@ -240,7 +258,10 @@ export class ProjectCommercialControlRepository {
 			.execute();
 	}
 
-	async findBudgetByPublicId(organisationId: string, publicId: string): Promise<ProjectBudgetSummary | null> {
+	async findBudgetByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<ProjectBudgetSummary | null> {
 		const row = await this.db
 			.selectFrom('project_budgets')
 			.select([
@@ -328,7 +349,10 @@ export class ProjectCommercialControlRepository {
 		return insertedId(result, 'project budget line');
 	}
 
-	async listBudgetVersions(organisationId: string, budgetId: string): Promise<ProjectBudgetVersionSummary[]> {
+	async listBudgetVersions(
+		organisationId: string,
+		budgetId: string
+	): Promise<ProjectBudgetVersionSummary[]> {
 		return this.db
 			.selectFrom('project_budget_versions')
 			.select([
@@ -347,7 +371,10 @@ export class ProjectCommercialControlRepository {
 			.execute();
 	}
 
-	async listBudgetLines(organisationId: string, versionId: string): Promise<ProjectBudgetLineSummary[]> {
+	async listBudgetLines(
+		organisationId: string,
+		versionId: string
+	): Promise<ProjectBudgetLineSummary[]> {
 		return this.db
 			.selectFrom('project_budget_lines')
 			.select([
@@ -364,7 +391,12 @@ export class ProjectCommercialControlRepository {
 			.execute();
 	}
 
-	async approveBudgetVersion(input: { organisationId: string; versionId: string; memberId: string; approvedAt: Date }): Promise<number> {
+	async approveBudgetVersion(input: {
+		organisationId: string;
+		versionId: string;
+		memberId: string;
+		approvedAt: Date;
+	}): Promise<number> {
 		const result = await this.db
 			.updateTable('project_budget_versions')
 			.set({
@@ -380,7 +412,10 @@ export class ProjectCommercialControlRepository {
 		return Number(result.numUpdatedRows);
 	}
 
-	async listPurchaseOrderCostAllocations(organisationId: string, purchaseOrderItemIds: readonly string[]) {
+	async listPurchaseOrderCostAllocations(
+		organisationId: string,
+		purchaseOrderItemIds: readonly string[]
+	) {
 		if (purchaseOrderItemIds.length === 0) return [];
 		return this.db
 			.selectFrom('purchase_order_item_cost_allocations')
@@ -415,11 +450,18 @@ export class ProjectCommercialControlRepository {
 		return insertedId(result, 'purchase-order cost allocation');
 	}
 
-	async listVariations(organisationId: string, projectIds: readonly string[]): Promise<CommercialVariationSummary[]> {
+	async listVariations(
+		organisationId: string,
+		projectIds: readonly string[]
+	): Promise<CommercialVariationSummary[]> {
 		if (projectIds.length === 0) return [];
 		return this.db
 			.selectFrom('commercial_variations as variation')
-			.innerJoin('commercial_variation_types as variationType', 'variationType.id', 'variation.commercial_variation_type_id')
+			.innerJoin(
+				'commercial_variation_types as variationType',
+				'variationType.id',
+				'variation.commercial_variation_type_id'
+			)
 			.select([
 				'variation.id as id',
 				'variation.project_id as projectId',
@@ -440,10 +482,17 @@ export class ProjectCommercialControlRepository {
 			.execute();
 	}
 
-	async findVariationByPublicId(organisationId: string, publicId: string): Promise<CommercialVariationSummary | null> {
+	async findVariationByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<CommercialVariationSummary | null> {
 		const row = await this.db
 			.selectFrom('commercial_variations as variation')
-			.innerJoin('commercial_variation_types as variationType', 'variationType.id', 'variation.commercial_variation_type_id')
+			.innerJoin(
+				'commercial_variation_types as variationType',
+				'variationType.id',
+				'variation.commercial_variation_type_id'
+			)
 			.select([
 				'variation.id as id',
 				'variation.project_id as projectId',
@@ -557,7 +606,10 @@ export class ProjectCommercialControlRepository {
 		return insertedId(result, 'commercial variation item');
 	}
 
-	async listVariationVersions(organisationId: string, variationId: string): Promise<CommercialVariationVersionSummary[]> {
+	async listVariationVersions(
+		organisationId: string,
+		variationId: string
+	): Promise<CommercialVariationVersionSummary[]> {
 		return this.db
 			.selectFrom('commercial_variation_versions')
 			.select([
@@ -574,7 +626,10 @@ export class ProjectCommercialControlRepository {
 			.execute();
 	}
 
-	async listVariationItems(organisationId: string, versionId: string): Promise<CommercialVariationItemSummary[]> {
+	async listVariationItems(
+		organisationId: string,
+		versionId: string
+	): Promise<CommercialVariationItemSummary[]> {
 		return this.db
 			.selectFrom('commercial_variation_items')
 			.select([
@@ -592,7 +647,11 @@ export class ProjectCommercialControlRepository {
 			.execute();
 	}
 
-	async issueVariationVersion(input: { organisationId: string; versionId: string; lockedAt: Date }): Promise<number> {
+	async issueVariationVersion(input: {
+		organisationId: string;
+		versionId: string;
+		lockedAt: Date;
+	}): Promise<number> {
 		const result = await this.db
 			.updateTable('commercial_variation_versions')
 			.set({ version_status: 'issued', locked_at: input.lockedAt })
@@ -631,7 +690,10 @@ export class ProjectCommercialControlRepository {
 		return insertedId(result, 'commercial variation issue event');
 	}
 
-	async listVariationDecisions(organisationId: string, versionId: string): Promise<CommercialVariationDecisionSummary[]> {
+	async listVariationDecisions(
+		organisationId: string,
+		versionId: string
+	): Promise<CommercialVariationDecisionSummary[]> {
 		return this.db
 			.selectFrom('commercial_variation_decisions')
 			.select([
@@ -683,7 +745,10 @@ export class ProjectCommercialControlRepository {
 		return insertedId(result, 'commercial variation decision');
 	}
 
-	async listReceiptCostFacts(organisationId: string, projectId: string): Promise<ReceiptCostFact[]> {
+	async listReceiptCostFacts(
+		organisationId: string,
+		projectId: string
+	): Promise<ReceiptCostFact[]> {
 		return this.db
 			.selectFrom('purchase_order_receipt_items as receiptItem')
 			.innerJoin('purchase_order_receipts as receipt', (join) =>

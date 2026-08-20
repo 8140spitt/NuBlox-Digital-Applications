@@ -15,7 +15,10 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectRepository, type ProjectRecord } from '$lib/server/projects/project-repository';
-import { ProcurementRepository, type PurchaseOrderSummary } from '$lib/server/procurement/procurement-repository';
+import {
+	ProcurementRepository,
+	type PurchaseOrderSummary
+} from '$lib/server/procurement/procurement-repository';
 import {
 	ProjectCommercialControlRepository,
 	type CommercialVariationSummary,
@@ -118,19 +121,22 @@ function requiredText(value: string, label: string, max = 500): string {
 function optionalText(value: string | null | undefined, max = 2000): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (text.length > max) throw new ProjectCommercialControlValidationError('A supplied value is too long.');
+	if (text.length > max)
+		throw new ProjectCommercialControlValidationError('A supplied value is too long.');
 	return text;
 }
 
 function publicId(value: string, label: string): string {
 	const text = requiredText(value, label, 36);
-	if (!/^[0-9a-f-]{36}$/i.test(text)) throw new ProjectCommercialControlValidationError(`${label} is invalid.`);
+	if (!/^[0-9a-f-]{36}$/i.test(text))
+		throw new ProjectCommercialControlValidationError(`${label} is invalid.`);
 	return text;
 }
 
 function currencyCode(value: string): string {
 	const code = value.trim().toUpperCase();
-	if (!/^[A-Z]{3}$/.test(code)) throw new ProjectCommercialControlValidationError('Currency must be a three-letter ISO code.');
+	if (!/^[A-Z]{3}$/.test(code))
+		throw new ProjectCommercialControlValidationError('Currency must be a three-letter ISO code.');
 	return code;
 }
 
@@ -139,10 +145,14 @@ function decimal(value: string, scale: number, label: string, allowZero = false)
 	try {
 		parsed = parseScaledDecimal(value, scale, label);
 	} catch (cause) {
-		throw new ProjectCommercialControlValidationError(cause instanceof Error ? cause.message : `${label} is invalid.`);
+		throw new ProjectCommercialControlValidationError(
+			cause instanceof Error ? cause.message : `${label} is invalid.`
+		);
 	}
 	if (allowZero ? parsed < 0n : parsed <= 0n) {
-		throw new ProjectCommercialControlValidationError(`${label} must be ${allowZero ? 'zero or greater' : 'greater than zero'}.`);
+		throw new ProjectCommercialControlValidationError(
+			`${label} must be ${allowZero ? 'zero or greater' : 'greater than zero'}.`
+		);
 	}
 	return formatScaledDecimal(parsed, scale);
 }
@@ -150,9 +160,11 @@ function decimal(value: string, scale: number, label: string, allowZero = false)
 function dateOnly(value: string | null | undefined, label: string): Date | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new ProjectCommercialControlValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new ProjectCommercialControlValidationError(`${label} is invalid.`);
 	const date = new Date(`${text}T00:00:00.000Z`);
-	if (Number.isNaN(date.getTime())) throw new ProjectCommercialControlValidationError(`${label} is invalid.`);
+	if (Number.isNaN(date.getTime()))
+		throw new ProjectCommercialControlValidationError(`${label} is invalid.`);
 	return date;
 }
 
@@ -187,7 +199,9 @@ export class ProjectCommercialControlService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -198,7 +212,8 @@ export class ProjectCommercialControlService {
 		db: DatabaseExecutor = this.db
 	): Promise<void> {
 		const decision = await new PermissionService(db).decide(actor, permissionKey);
-		if (!decision.allowed) throw new TenantAccessError('This project commercial-control action is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('This project commercial-control action is not permitted.');
 	}
 
 	private async requireProject(
@@ -211,14 +226,23 @@ export class ProjectCommercialControlService {
 			actor.memberId,
 			publicId(projectPublicIdInput, 'Project')
 		);
-		if (!project) throw new TenantAccessError('The project is outside your effective project scope.');
+		if (!project)
+			throw new TenantAccessError('The project is outside your effective project scope.');
 		return project;
 	}
 
-	private async projectForId(actor: TenantActorContext, projectId: string, db: DatabaseExecutor = this.db) {
-		const projects = await new ProjectRepository(db).listForMember(actor.organisationId, actor.memberId);
+	private async projectForId(
+		actor: TenantActorContext,
+		projectId: string,
+		db: DatabaseExecutor = this.db
+	) {
+		const projects = await new ProjectRepository(db).listForMember(
+			actor.organisationId,
+			actor.memberId
+		);
 		const project = projects.find((row) => row.id === projectId);
-		if (!project) throw new TenantAccessError('The commercial record is outside your effective project scope.');
+		if (!project)
+			throw new TenantAccessError('The commercial record is outside your effective project scope.');
 		return project;
 	}
 
@@ -255,36 +279,54 @@ export class ProjectCommercialControlService {
 		const procurementRepository = new ProcurementRepository(this.db);
 		const budgetValues: string[] = [];
 		let currency = 'GBP';
-		for (const budget of budgets.filter((row) => row.projectId === project.id && row.status === 'active')) {
-			const approvedVersion = (await commercialRepository.listBudgetVersions(actor.organisationId, budget.id)).find(
-				(version) => version.status === 'approved'
-			);
+		for (const budget of budgets.filter(
+			(row) => row.projectId === project.id && row.status === 'active'
+		)) {
+			const approvedVersion = (
+				await commercialRepository.listBudgetVersions(actor.organisationId, budget.id)
+			).find((version) => version.status === 'approved');
 			if (!approvedVersion) continue;
 			currency = approvedVersion.currencyCode;
-			const lines = await commercialRepository.listBudgetLines(actor.organisationId, approvedVersion.id);
+			const lines = await commercialRepository.listBudgetLines(
+				actor.organisationId,
+				approvedVersion.id
+			);
 			budgetValues.push(...lines.map((line) => line.budgetAmount));
 		}
 		const approvedBaselineBudget = sumMoney(budgetValues);
 
 		const commitmentValues: string[] = [];
 		const issuedItemIds: string[] = [];
-		for (const order of orders.filter((row) => row.projectId === project.id && row.status === 'active')) {
-			const latest = (await procurementRepository.listPurchaseOrderVersions(actor.organisationId, order.id))[0];
+		for (const order of orders.filter(
+			(row) => row.projectId === project.id && row.status === 'active'
+		)) {
+			const latest = (
+				await procurementRepository.listPurchaseOrderVersions(actor.organisationId, order.id)
+			)[0];
 			if (!latest || latest.status !== 'issued') continue;
 			currency = order.currencyCode;
-			const items = await procurementRepository.listPurchaseOrderItems(actor.organisationId, latest.id);
+			const items = await procurementRepository.listPurchaseOrderItems(
+				actor.organisationId,
+				latest.id
+			);
 			commitmentValues.push(...items.map((item) => lineAmount(item.quantity, item.unitRate)));
 			issuedItemIds.push(...items.map((item) => item.id));
 		}
 		const issuedPurchaseOrderCommitment = sumMoney(commitmentValues);
 		const classifiedCommitment = sumMoney(
-			(await commercialRepository.listPurchaseOrderCostAllocations(actor.organisationId, issuedItemIds)).map(
-				(allocation) => allocation.allocatedNetAmount
-			)
+			(
+				await commercialRepository.listPurchaseOrderCostAllocations(
+					actor.organisationId,
+					issuedItemIds
+				)
+			).map((allocation) => allocation.allocatedNetAmount)
 		);
 
 		const receiptValues: string[] = [];
-		for (const fact of await commercialRepository.listReceiptCostFacts(actor.organisationId, project.id)) {
+		for (const fact of await commercialRepository.listReceiptCostFacts(
+			actor.organisationId,
+			project.id
+		)) {
 			const acceptedQuantity =
 				parseScaledDecimal(fact.quantityReceived, 6, 'Received quantity') -
 				parseScaledDecimal(fact.quantityRejected, 6, 'Rejected quantity');
@@ -294,19 +336,26 @@ export class ProjectCommercialControlService {
 
 		const approvedChangeValues: string[] = [];
 		const pendingChangeValues: string[] = [];
-		for (const variation of variations.filter((row) => row.projectId === project.id && row.status === 'active')) {
-			const issuedVersion = (await commercialRepository.listVariationVersions(actor.organisationId, variation.id)).find(
-				(version) => version.status === 'issued'
-			);
+		for (const variation of variations.filter(
+			(row) => row.projectId === project.id && row.status === 'active'
+		)) {
+			const issuedVersion = (
+				await commercialRepository.listVariationVersions(actor.organisationId, variation.id)
+			).find((version) => version.status === 'issued');
 			if (!issuedVersion) continue;
 			currency = variation.currencyCode;
 			const versionTotal = sumMoney(
-				(await commercialRepository.listVariationItems(actor.organisationId, issuedVersion.id)).map((item) =>
-					lineAmount(item.quantity, item.unitRate)
+				(await commercialRepository.listVariationItems(actor.organisationId, issuedVersion.id)).map(
+					(item) => lineAmount(item.quantity, item.unitRate)
 				)
 			);
-			const latestDecision = (await commercialRepository.listVariationDecisions(actor.organisationId, issuedVersion.id))[0];
-			if (latestDecision?.decision === 'accepted' || latestDecision?.decision === 'partially_accepted') {
+			const latestDecision = (
+				await commercialRepository.listVariationDecisions(actor.organisationId, issuedVersion.id)
+			)[0];
+			if (
+				latestDecision?.decision === 'accepted' ||
+				latestDecision?.decision === 'partially_accepted'
+			) {
 				approvedChangeValues.push(latestDecision.decisionAmount ?? versionTotal);
 			} else if (!latestDecision || latestDecision.decision === 'pending') {
 				pendingChangeValues.push(versionTotal);
@@ -331,7 +380,10 @@ export class ProjectCommercialControlService {
 		};
 	}
 
-	async getWorkspace(actor: TenantActorContext, selectedProjectPublicIdInput?: string | null): Promise<CommercialControlWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		selectedProjectPublicIdInput?: string | null
+	): Promise<CommercialControlWorkspace> {
 		await this.assertActiveActor(actor);
 		const flags = await this.permissionFlags(actor);
 		if (!flags.canView) {
@@ -348,34 +400,47 @@ export class ProjectCommercialControlService {
 				position: null
 			};
 		}
-		const projects = await new ProjectRepository(this.db).listForMember(actor.organisationId, actor.memberId);
+		const projects = await new ProjectRepository(this.db).listForMember(
+			actor.organisationId,
+			actor.memberId
+		);
 		const projectIds = projects.map((project) => project.id);
 		const repository = new ProjectCommercialControlRepository(this.db);
 		const procurementRepository = new ProcurementRepository(this.db);
-		const [costCategories, variationTypes, costCodes, budgetRows, purchaseOrders, variationRows] = await Promise.all([
-			repository.listCostCategories(),
-			repository.listVariationTypes(),
-			repository.listCostCodes(actor.organisationId, projectIds),
-			repository.listBudgets(actor.organisationId, projectIds),
-			procurementRepository.listPurchaseOrders(actor.organisationId, projectIds),
-			repository.listVariations(actor.organisationId, projectIds)
-		]);
+		const [costCategories, variationTypes, costCodes, budgetRows, purchaseOrders, variationRows] =
+			await Promise.all([
+				repository.listCostCategories(),
+				repository.listVariationTypes(),
+				repository.listCostCodes(actor.organisationId, projectIds),
+				repository.listBudgets(actor.organisationId, projectIds),
+				procurementRepository.listPurchaseOrders(actor.organisationId, projectIds),
+				repository.listVariations(actor.organisationId, projectIds)
+			]);
 
 		const budgets: BudgetWorkspace[] = [];
 		for (const row of budgetRows) {
 			const versions = await repository.listBudgetVersions(actor.organisationId, row.id);
 			const latestVersion = versions[0] ?? null;
-			const lines = latestVersion ? await repository.listBudgetLines(actor.organisationId, latestVersion.id) : [];
-			budgets.push({ ...row, latestVersion, total: sumMoney(lines.map((line) => line.budgetAmount)) });
+			const lines = latestVersion
+				? await repository.listBudgetLines(actor.organisationId, latestVersion.id)
+				: [];
+			budgets.push({
+				...row,
+				latestVersion,
+				total: sumMoney(lines.map((line) => line.budgetAmount))
+			});
 		}
 
 		const variations: VariationWorkspace[] = [];
 		for (const row of variationRows) {
 			const versions = await repository.listVariationVersions(actor.organisationId, row.id);
 			const latestVersion = versions[0] ?? null;
-			const items = latestVersion ? await repository.listVariationItems(actor.organisationId, latestVersion.id) : [];
+			const items = latestVersion
+				? await repository.listVariationItems(actor.organisationId, latestVersion.id)
+				: [];
 			const latestDecision = latestVersion
-				? (await repository.listVariationDecisions(actor.organisationId, latestVersion.id))[0] ?? null
+				? ((await repository.listVariationDecisions(actor.organisationId, latestVersion.id))[0] ??
+					null)
 				: null;
 			variations.push({
 				...row,
@@ -393,7 +458,13 @@ export class ProjectCommercialControlService {
 			selectedProject = projects[0] ?? null;
 		}
 		const position = selectedProject
-			? await this.calculatePosition(actor, selectedProject, budgetRows, variationRows, purchaseOrders)
+			? await this.calculatePosition(
+					actor,
+					selectedProject,
+					budgetRows,
+					variationRows,
+					purchaseOrders
+				)
 			: null;
 
 		return {
@@ -422,8 +493,13 @@ export class ProjectCommercialControlService {
 			await this.requirePermission(actor, 'commercial.cost_code.manage', trx);
 			await this.requireProject(actor, project.publicId, trx);
 			const repository = new ProjectCommercialControlRepository(trx);
-			const category = await repository.findCostCategoryByCode(requiredText(input.categoryCode, 'Cost category', 64));
-			if (!category) throw new ProjectCommercialControlValidationError('The selected cost category is unavailable.');
+			const category = await repository.findCostCategoryByCode(
+				requiredText(input.categoryCode, 'Cost category', 64)
+			);
+			if (!category)
+				throw new ProjectCommercialControlValidationError(
+					'The selected cost category is unavailable.'
+				);
 			const publicIdValue = this.publicIdFactory();
 			await repository.insertCostCode({
 				organisationId: actor.organisationId,
@@ -467,8 +543,14 @@ export class ProjectCommercialControlService {
 			await this.requirePermission(actor, 'commercial.budget.manage', trx);
 			await this.requireProject(actor, project.publicId, trx);
 			const repository = new ProjectCommercialControlRepository(trx);
-			const costCode = await repository.findCostCodeByPublicId(actor.organisationId, costCodePublicId);
-			if (!costCode || costCode.projectId !== project.id || !costCode.isActive) throw new ProjectCommercialControlValidationError('The selected cost code does not belong to this project.');
+			const costCode = await repository.findCostCodeByPublicId(
+				actor.organisationId,
+				costCodePublicId
+			);
+			if (!costCode || costCode.projectId !== project.id || !costCode.isActive)
+				throw new ProjectCommercialControlValidationError(
+					'The selected cost code does not belong to this project.'
+				);
 			const budgetPublicId = this.publicIdFactory();
 			const budgetId = await repository.insertBudget({
 				organisationId: actor.organisationId,
@@ -522,9 +604,25 @@ export class ProjectCommercialControlService {
 			if (!budget) throw new ProjectCommercialControlValidationError('Budget not found.');
 			const project = await this.projectForId(actor, budget.projectId, trx);
 			const version = (await repository.listBudgetVersions(actor.organisationId, budget.id))[0];
-			if (!version || version.status !== 'draft') throw new ProjectCommercialControlValidationError('Only the current draft budget version can be approved.');
-			if ((await repository.listBudgetLines(actor.organisationId, version.id)).length === 0) throw new ProjectCommercialControlValidationError('A budget requires at least one line before approval.');
-			if ((await repository.approveBudgetVersion({ organisationId: actor.organisationId, versionId: version.id, memberId: membership.id, approvedAt: this.now() })) !== 1) throw new ProjectCommercialControlValidationError('The budget version changed before approval.');
+			if (!version || version.status !== 'draft')
+				throw new ProjectCommercialControlValidationError(
+					'Only the current draft budget version can be approved.'
+				);
+			if ((await repository.listBudgetLines(actor.organisationId, version.id)).length === 0)
+				throw new ProjectCommercialControlValidationError(
+					'A budget requires at least one line before approval.'
+				);
+			if (
+				(await repository.approveBudgetVersion({
+					organisationId: actor.organisationId,
+					versionId: version.id,
+					memberId: membership.id,
+					approvedAt: this.now()
+				})) !== 1
+			)
+				throw new ProjectCommercialControlValidationError(
+					'The budget version changed before approval.'
+				);
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -550,23 +648,47 @@ export class ProjectCommercialControlService {
 		await this.requirePermission(actor, 'commercial.cost_code.manage');
 		const purchaseOrderPublicId = publicId(purchaseOrderPublicIdInput, 'Purchase order');
 		const costCodePublicId = publicId(costCodePublicIdInput, 'Cost code');
-		if (!Number.isSafeInteger(lineNumberInput) || lineNumberInput <= 0) throw new ProjectCommercialControlValidationError('Purchase-order line is invalid.');
+		if (!Number.isSafeInteger(lineNumberInput) || lineNumberInput <= 0)
+			throw new ProjectCommercialControlValidationError('Purchase-order line is invalid.');
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.requirePermission(actor, 'commercial.cost_code.manage', trx);
 			const procurementRepository = new ProcurementRepository(trx);
-			const order = await procurementRepository.findPurchaseOrderByPublicId(actor.organisationId, purchaseOrderPublicId);
-			if (!order?.projectPublicId) throw new ProjectCommercialControlValidationError('Purchase order not found.');
+			const order = await procurementRepository.findPurchaseOrderByPublicId(
+				actor.organisationId,
+				purchaseOrderPublicId
+			);
+			if (!order?.projectPublicId)
+				throw new ProjectCommercialControlValidationError('Purchase order not found.');
 			const project = await this.requireProject(actor, order.projectPublicId, trx);
-			const version = (await procurementRepository.listPurchaseOrderVersions(actor.organisationId, order.id))[0];
-			if (!version || version.status !== 'issued') throw new ProjectCommercialControlValidationError('Only a current issued purchase order can be classified as a commitment.');
-			const item = (await procurementRepository.listPurchaseOrderItems(actor.organisationId, version.id)).find((row) => row.lineNumber === lineNumberInput);
-			if (!item) throw new ProjectCommercialControlValidationError('Purchase-order line not found.');
+			const version = (
+				await procurementRepository.listPurchaseOrderVersions(actor.organisationId, order.id)
+			)[0];
+			if (!version || version.status !== 'issued')
+				throw new ProjectCommercialControlValidationError(
+					'Only a current issued purchase order can be classified as a commitment.'
+				);
+			const item = (
+				await procurementRepository.listPurchaseOrderItems(actor.organisationId, version.id)
+			).find((row) => row.lineNumber === lineNumberInput);
+			if (!item)
+				throw new ProjectCommercialControlValidationError('Purchase-order line not found.');
 			const repository = new ProjectCommercialControlRepository(trx);
-			const costCode = await repository.findCostCodeByPublicId(actor.organisationId, costCodePublicId);
-			if (!costCode || costCode.projectId !== project.id || !costCode.isActive) throw new ProjectCommercialControlValidationError('The selected cost code belongs to another project or is inactive.');
-			const existing = await repository.listPurchaseOrderCostAllocations(actor.organisationId, [item.id]);
-			if (existing.length > 0) throw new ProjectCommercialControlValidationError('This purchase-order line is already classified. Split allocation editing is not enabled in this V1 flow.');
+			const costCode = await repository.findCostCodeByPublicId(
+				actor.organisationId,
+				costCodePublicId
+			);
+			if (!costCode || costCode.projectId !== project.id || !costCode.isActive)
+				throw new ProjectCommercialControlValidationError(
+					'The selected cost code belongs to another project or is inactive.'
+				);
+			const existing = await repository.listPurchaseOrderCostAllocations(actor.organisationId, [
+				item.id
+			]);
+			if (existing.length > 0)
+				throw new ProjectCommercialControlValidationError(
+					'This purchase-order line is already classified. Split allocation editing is not enabled in this V1 flow.'
+				);
 			const netAmount = lineAmount(item.quantity, item.unitRate);
 			await repository.insertPurchaseOrderCostAllocation({
 				organisationId: actor.organisationId,
@@ -585,7 +707,11 @@ export class ProjectCommercialControlService {
 				subjectType: 'purchase_order',
 				subjectPublicId: order.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { lineNumber: lineNumberInput, costCodePublicId, allocatedNetAmount: netAmount }
+				changeSummary: {
+					lineNumber: lineNumberInput,
+					costCodePublicId,
+					allocatedNetAmount: netAmount
+				}
 			});
 		});
 	}
@@ -605,22 +731,39 @@ export class ProjectCommercialControlService {
 			await this.requirePermission(actor, 'commercial.variation.manage', trx);
 			await this.requireProject(actor, project.publicId, trx);
 			const repository = new ProjectCommercialControlRepository(trx);
-			const variationType = await repository.findVariationTypeByCode(requiredText(input.variationTypeCode, 'Variation type', 64));
-			if (!variationType) throw new ProjectCommercialControlValidationError('The selected variation type is unavailable.');
+			const variationType = await repository.findVariationTypeByCode(
+				requiredText(input.variationTypeCode, 'Variation type', 64)
+			);
+			if (!variationType)
+				throw new ProjectCommercialControlValidationError(
+					'The selected variation type is unavailable.'
+				);
 			let costCodeId: string | null = null;
 			if (input.costCodePublicId?.trim()) {
-				const costCode = await repository.findCostCodeByPublicId(actor.organisationId, publicId(input.costCodePublicId, 'Cost code'));
-				if (!costCode || costCode.projectId !== project.id || !costCode.isActive) throw new ProjectCommercialControlValidationError('The selected cost code belongs to another project or is inactive.');
+				const costCode = await repository.findCostCodeByPublicId(
+					actor.organisationId,
+					publicId(input.costCodePublicId, 'Cost code')
+				);
+				if (!costCode || costCode.projectId !== project.id || !costCode.isActive)
+					throw new ProjectCommercialControlValidationError(
+						'The selected cost code belongs to another project or is inactive.'
+					);
 				costCodeId = costCode.id;
 			}
 			let purchaseOrder: PurchaseOrderSummary | null = null;
 			if (input.purchaseOrderPublicId?.trim()) {
-				if (side !== 'cost') throw new ProjectCommercialControlValidationError('Only cost-side variations can link directly to a purchase order.');
+				if (side !== 'cost')
+					throw new ProjectCommercialControlValidationError(
+						'Only cost-side variations can link directly to a purchase order.'
+					);
 				purchaseOrder = await new ProcurementRepository(trx).findPurchaseOrderByPublicId(
 					actor.organisationId,
 					publicId(input.purchaseOrderPublicId, 'Purchase order')
 				);
-				if (!purchaseOrder || purchaseOrder.projectId !== project.id) throw new ProjectCommercialControlValidationError('The selected purchase order belongs to another project.');
+				if (!purchaseOrder || purchaseOrder.projectId !== project.id)
+					throw new ProjectCommercialControlValidationError(
+						'The selected purchase order belongs to another project.'
+					);
 			}
 			const variationPublicId = this.publicIdFactory();
 			const variationId = await repository.insertVariation({
@@ -687,13 +830,31 @@ export class ProjectCommercialControlService {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.requirePermission(actor, 'commercial.variation.issue', trx);
 			const repository = new ProjectCommercialControlRepository(trx);
-			const variation = await repository.findVariationByPublicId(actor.organisationId, variationPublicId);
+			const variation = await repository.findVariationByPublicId(
+				actor.organisationId,
+				variationPublicId
+			);
 			if (!variation) throw new ProjectCommercialControlValidationError('Variation not found.');
 			const project = await this.projectForId(actor, variation.projectId, trx);
-			const version = (await repository.listVariationVersions(actor.organisationId, variation.id))[0];
-			if (!version || version.status !== 'draft') throw new ProjectCommercialControlValidationError('Only the current draft variation version can be issued.');
-			if ((await repository.listVariationItems(actor.organisationId, version.id)).length === 0) throw new ProjectCommercialControlValidationError('A variation requires at least one item before issue.');
-			if ((await repository.issueVariationVersion({ organisationId: actor.organisationId, versionId: version.id, lockedAt: this.now() })) !== 1) throw new ProjectCommercialControlValidationError('The variation changed before issue.');
+			const version = (
+				await repository.listVariationVersions(actor.organisationId, variation.id)
+			)[0];
+			if (!version || version.status !== 'draft')
+				throw new ProjectCommercialControlValidationError(
+					'Only the current draft variation version can be issued.'
+				);
+			if ((await repository.listVariationItems(actor.organisationId, version.id)).length === 0)
+				throw new ProjectCommercialControlValidationError(
+					'A variation requires at least one item before issue.'
+				);
+			if (
+				(await repository.issueVariationVersion({
+					organisationId: actor.organisationId,
+					versionId: version.id,
+					lockedAt: this.now()
+				})) !== 1
+			)
+				throw new ProjectCommercialControlValidationError('The variation changed before issue.');
 			await repository.insertVariationIssueEvent({
 				organisationId: actor.organisationId,
 				versionId: version.id,
@@ -731,20 +892,32 @@ export class ProjectCommercialControlService {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.requirePermission(actor, 'commercial.variation.decide', trx);
 			const repository = new ProjectCommercialControlRepository(trx);
-			const variation = await repository.findVariationByPublicId(actor.organisationId, variationPublicId);
+			const variation = await repository.findVariationByPublicId(
+				actor.organisationId,
+				variationPublicId
+			);
 			if (!variation) throw new ProjectCommercialControlValidationError('Variation not found.');
 			const project = await this.projectForId(actor, variation.projectId, trx);
-			const version = (await repository.listVariationVersions(actor.organisationId, variation.id)).find((row) => row.status === 'issued');
-			if (!version) throw new ProjectCommercialControlValidationError('Only an issued variation can receive a decision.');
+			const version = (
+				await repository.listVariationVersions(actor.organisationId, variation.id)
+			).find((row) => row.status === 'issued');
+			if (!version)
+				throw new ProjectCommercialControlValidationError(
+					'Only an issued variation can receive a decision.'
+				);
 			const versionTotal = sumMoney(
-				(await repository.listVariationItems(actor.organisationId, version.id)).map((item) => lineAmount(item.quantity, item.unitRate))
+				(await repository.listVariationItems(actor.organisationId, version.id)).map((item) =>
+					lineAmount(item.quantity, item.unitRate)
+				)
 			);
 			let decisionAmount: string | null = null;
 			if (decision === 'accepted' || decision === 'partially_accepted') {
 				const supplied = decisionAmountInput?.trim();
 				decisionAmount = supplied ? decimal(supplied, 4, 'Decision amount', true) : versionTotal;
 			} else if (decisionAmountInput?.trim()) {
-				throw new ProjectCommercialControlValidationError('A decision amount is only valid for accepted or partially accepted variations.');
+				throw new ProjectCommercialControlValidationError(
+					'A decision amount is only valid for accepted or partially accepted variations.'
+				);
 			}
 			await repository.insertVariationDecision({
 				organisationId: actor.organisationId,

@@ -3,7 +3,8 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 const SUPPLIER_ROLE_CODES = ['supplier', 'subcontractor', 'consultant', 'manufacturer', 'merchant'];
 
 function insertedId(result: { insertId?: bigint }, label: string): string {
-	if (result.insertId === undefined) throw new Error(`MySQL did not return the inserted ${label} ID.`);
+	if (result.insertId === undefined)
+		throw new Error(`MySQL did not return the inserted ${label} ID.`);
 	return result.insertId.toString();
 }
 
@@ -249,11 +250,18 @@ export class ProcurementRepository {
 			.executeTakeFirst();
 	}
 
-	async listPackages(organisationId: string, projectIds: readonly string[]): Promise<ProcurementPackageSummary[]> {
+	async listPackages(
+		organisationId: string,
+		projectIds: readonly string[]
+	): Promise<ProcurementPackageSummary[]> {
 		if (projectIds.length === 0) return [];
 		const rows = await this.db
 			.selectFrom('procurement_packages as procurementPackage')
-			.innerJoin('procurement_package_types as packageType', 'packageType.id', 'procurementPackage.procurement_package_type_id')
+			.innerJoin(
+				'procurement_package_types as packageType',
+				'packageType.id',
+				'procurementPackage.procurement_package_type_id'
+			)
 			.leftJoin('projects as project', (join) =>
 				join
 					.onRef('project.id', '=', 'procurementPackage.project_id')
@@ -282,10 +290,17 @@ export class ProcurementRepository {
 		return rows;
 	}
 
-	async findPackageByPublicId(organisationId: string, publicId: string): Promise<ProcurementPackageSummary | null> {
+	async findPackageByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<ProcurementPackageSummary | null> {
 		const row = await this.db
 			.selectFrom('procurement_packages as procurementPackage')
-			.innerJoin('procurement_package_types as packageType', 'packageType.id', 'procurementPackage.procurement_package_type_id')
+			.innerJoin(
+				'procurement_package_types as packageType',
+				'packageType.id',
+				'procurementPackage.procurement_package_type_id'
+			)
 			.leftJoin('projects as project', (join) =>
 				join
 					.onRef('project.id', '=', 'procurementPackage.project_id')
@@ -372,7 +387,10 @@ export class ProcurementRepository {
 		return insertedId(result, 'procurement package item');
 	}
 
-	async listPackageItems(organisationId: string, packageId: string): Promise<ProcurementPackageItem[]> {
+	async listPackageItems(
+		organisationId: string,
+		packageId: string
+	): Promise<ProcurementPackageItem[]> {
 		return this.db
 			.selectFrom('procurement_package_items')
 			.select([
@@ -468,7 +486,10 @@ export class ProcurementRepository {
 		return insertedId(result, 'RFQ item');
 	}
 
-	async listRfqsForPackages(organisationId: string, packageIds: readonly string[]): Promise<RfqSummary[]> {
+	async listRfqsForPackages(
+		organisationId: string,
+		packageIds: readonly string[]
+	): Promise<RfqSummary[]> {
 		if (packageIds.length === 0) return [];
 		return this.db
 			.selectFrom('rfqs')
@@ -520,7 +541,11 @@ export class ProcurementRepository {
 			.execute();
 	}
 
-	async issueRfqVersion(input: { organisationId: string; versionId: string; memberId: string }): Promise<number> {
+	async issueRfqVersion(input: {
+		organisationId: string;
+		versionId: string;
+		memberId: string;
+	}): Promise<number> {
 		const result = await this.db
 			.updateTable('rfq_versions')
 			.set({ version_status: 'issued', locked_by_member_id: input.memberId, locked_at: new Date() })
@@ -673,11 +698,18 @@ export class ProcurementRepository {
 		return insertedId(result, 'purchase order item');
 	}
 
-	async listPurchaseOrders(organisationId: string, projectIds: readonly string[]): Promise<PurchaseOrderSummary[]> {
+	async listPurchaseOrders(
+		organisationId: string,
+		projectIds: readonly string[]
+	): Promise<PurchaseOrderSummary[]> {
 		if (projectIds.length === 0) return [];
 		const rows = await this.db
 			.selectFrom('purchase_orders as purchaseOrder')
-			.innerJoin('purchase_order_types as orderType', 'orderType.id', 'purchaseOrder.purchase_order_type_id')
+			.innerJoin(
+				'purchase_order_types as orderType',
+				'orderType.id',
+				'purchaseOrder.purchase_order_type_id'
+			)
 			.innerJoin('parties as supplier', (join) =>
 				join
 					.onRef('supplier.id', '=', 'purchaseOrder.supplier_party_id')
@@ -720,29 +752,39 @@ export class ProcurementRepository {
 		}));
 	}
 
-	async findPurchaseOrderByPublicId(organisationId: string, publicId: string): Promise<PurchaseOrderSummary | null> {
+	async findPurchaseOrderByPublicId(
+		organisationId: string,
+		publicId: string
+	): Promise<PurchaseOrderSummary | null> {
 		const rows = await this.listPurchaseOrders(
 			organisationId,
-			(await this.db
-				.selectFrom('purchase_orders')
-				.select('project_id')
-				.where('organisation_id', '=', organisationId)
-				.where('public_id', '=', publicId)
-				.executeTakeFirst())?.project_id
+			(
+				await this.db
+					.selectFrom('purchase_orders')
+					.select('project_id')
+					.where('organisation_id', '=', organisationId)
+					.where('public_id', '=', publicId)
+					.executeTakeFirst()
+			)?.project_id
 				? [
-						(await this.db
-							.selectFrom('purchase_orders')
-							.select('project_id')
-							.where('organisation_id', '=', organisationId)
-							.where('public_id', '=', publicId)
-							.executeTakeFirstOrThrow()).project_id!
+						(
+							await this.db
+								.selectFrom('purchase_orders')
+								.select('project_id')
+								.where('organisation_id', '=', organisationId)
+								.where('public_id', '=', publicId)
+								.executeTakeFirstOrThrow()
+						).project_id!
 					]
 				: []
 		);
 		return rows.find((row) => row.publicId === publicId) ?? null;
 	}
 
-	async listPurchaseOrderVersions(organisationId: string, purchaseOrderId: string): Promise<PurchaseOrderVersionSummary[]> {
+	async listPurchaseOrderVersions(
+		organisationId: string,
+		purchaseOrderId: string
+	): Promise<PurchaseOrderVersionSummary[]> {
 		return this.db
 			.selectFrom('purchase_order_versions')
 			.select([
@@ -763,7 +805,10 @@ export class ProcurementRepository {
 			.execute();
 	}
 
-	async listPurchaseOrderItems(organisationId: string, versionId: string): Promise<PurchaseOrderItemSummary[]> {
+	async listPurchaseOrderItems(
+		organisationId: string,
+		versionId: string
+	): Promise<PurchaseOrderItemSummary[]> {
 		return this.db
 			.selectFrom('purchase_order_items')
 			.select([
@@ -782,7 +827,11 @@ export class ProcurementRepository {
 			.execute();
 	}
 
-	async approvePurchaseOrderVersion(input: { organisationId: string; versionId: string; memberId: string }): Promise<number> {
+	async approvePurchaseOrderVersion(input: {
+		organisationId: string;
+		versionId: string;
+		memberId: string;
+	}): Promise<number> {
 		const now = new Date();
 		const result = await this.db
 			.updateTable('purchase_order_versions')
@@ -794,7 +843,11 @@ export class ProcurementRepository {
 		return Number(result.numUpdatedRows);
 	}
 
-	async issuePurchaseOrderVersion(input: { organisationId: string; versionId: string; memberId: string }): Promise<number> {
+	async issuePurchaseOrderVersion(input: {
+		organisationId: string;
+		versionId: string;
+		memberId: string;
+	}): Promise<number> {
 		const now = new Date();
 		const result = await this.db
 			.updateTable('purchase_order_versions')
@@ -983,7 +1036,10 @@ export class ProcurementRepository {
 			.execute();
 	}
 
-	async receivedQuantityForItem(organisationId: string, purchaseOrderItemId: string): Promise<string[]> {
+	async receivedQuantityForItem(
+		organisationId: string,
+		purchaseOrderItemId: string
+	): Promise<string[]> {
 		const rows = await this.db
 			.selectFrom('purchase_order_receipt_items as item')
 			.innerJoin('purchase_order_receipts as receipt', (join) =>

@@ -14,7 +14,8 @@ try {
 		'SELECT id FROM organisations WHERE legal_name = ? LIMIT 1',
 		[ORGANISATION]
 	);
-	if (!organisation) throw new Error('E2E organisation fixture must be seeded before Slice 4 fixture.');
+	if (!organisation)
+		throw new Error('E2E organisation fixture must be seeded before Slice 4 fixture.');
 	const organisationId = String(organisation.id);
 
 	await db.execute(
@@ -34,7 +35,8 @@ try {
 	const [[supplierRole]] = await db.query(
 		`SELECT id FROM party_role_types WHERE code = 'supplier' AND is_active = 1 LIMIT 1`
 	);
-	if (!supplierRole) throw new Error('Supplier CRM role type is required for Slice 4 browser fixture.');
+	if (!supplierRole)
+		throw new Error('Supplier CRM role type is required for Slice 4 browser fixture.');
 
 	const supplierPublicId = randomUUID();
 	const [party] = await db.execute(

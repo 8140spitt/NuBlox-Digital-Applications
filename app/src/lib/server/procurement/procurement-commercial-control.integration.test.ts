@@ -340,9 +340,9 @@ describe('V1 procurement and project commercial-control activation', () => {
 			.where('rfq_version_id', '=', version!.id)
 			.executeTakeFirstOrThrow();
 		expect(invitation).toEqual({ supplierPartyId, versionId: version!.id });
-		await expect(service.issueRfq(actorOwner, rfqPublicId, supplierPublicId)).rejects.toBeInstanceOf(
-			ProcurementValidationError
-		);
+		await expect(
+			service.issueRfq(actorOwner, rfqPublicId, supplierPublicId)
+		).rejects.toBeInstanceOf(ProcurementValidationError);
 	});
 
 	it('enforces effective project membership independently from organisation permission grants', async () => {
@@ -393,7 +393,10 @@ describe('V1 procurement and project commercial-control activation', () => {
 		await service.issuePurchaseOrder(actorOwner, purchaseOrderPublicId);
 
 		const repository = new ProcurementRepository(db);
-		const order = await repository.findPurchaseOrderByPublicId(organisationId, purchaseOrderPublicId);
+		const order = await repository.findPurchaseOrderByPublicId(
+			organisationId,
+			purchaseOrderPublicId
+		);
 		const version = (await repository.listPurchaseOrderVersions(organisationId, order!.id))[0];
 		expect(version).toMatchObject({ versionNumber: 1, status: 'issued' });
 		expect(version?.approvedAt).toBeInstanceOf(Date);

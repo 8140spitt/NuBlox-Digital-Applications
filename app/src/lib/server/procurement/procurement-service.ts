@@ -133,7 +133,8 @@ function publicId(value: string, label: string): string {
 
 function currencyCode(value: string): string {
 	const code = value.trim().toUpperCase();
-	if (!/^[A-Z]{3}$/.test(code)) throw new ProcurementValidationError('Currency must be a three-letter ISO code.');
+	if (!/^[A-Z]{3}$/.test(code))
+		throw new ProcurementValidationError('Currency must be a three-letter ISO code.');
 	return code;
 }
 
@@ -142,10 +143,14 @@ function decimal(value: string, scale: number, label: string, allowZero = false)
 	try {
 		parsed = parseScaledDecimal(value, scale, label);
 	} catch (cause) {
-		throw new ProcurementValidationError(cause instanceof Error ? cause.message : `${label} is invalid.`);
+		throw new ProcurementValidationError(
+			cause instanceof Error ? cause.message : `${label} is invalid.`
+		);
 	}
 	if (allowZero ? parsed < 0n : parsed <= 0n) {
-		throw new ProcurementValidationError(`${label} must be ${allowZero ? 'zero or greater' : 'greater than zero'}.`);
+		throw new ProcurementValidationError(
+			`${label} must be ${allowZero ? 'zero or greater' : 'greater than zero'}.`
+		);
 	}
 	return formatScaledDecimal(parsed, scale);
 }
@@ -159,7 +164,8 @@ function optionalMoney(value: string | null | undefined, label: string): string 
 function dateOnly(value: string | null | undefined, label: string): Date | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new ProcurementValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new ProcurementValidationError(`${label} is invalid.`);
 	const date = new Date(`${text}T00:00:00.000Z`);
 	if (Number.isNaN(date.getTime())) throw new ProcurementValidationError(`${label} is invalid.`);
 	return date;
@@ -175,7 +181,8 @@ function dateTime(value: string | null | undefined, label: string): Date | null 
 }
 
 function positiveInteger(value: number, label: string): number {
-	if (!Number.isSafeInteger(value) || value <= 0) throw new ProcurementValidationError(`${label} is invalid.`);
+	if (!Number.isSafeInteger(value) || value <= 0)
+		throw new ProcurementValidationError(`${label} is invalid.`);
 	return value;
 }
 
@@ -196,11 +203,10 @@ export class ProcurementService {
 		private readonly now: () => Date = () => new Date()
 	) {}
 
-	private async assertActiveActor(
-		actor: TenantActorContext,
-		db: DatabaseExecutor = this.db
-	) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -224,7 +230,8 @@ export class ProcurementService {
 			actor.memberId,
 			publicId(projectPublicId, 'Project')
 		);
-		if (!project) throw new TenantAccessError('The project is outside your effective project scope.');
+		if (!project)
+			throw new TenantAccessError('The project is outside your effective project scope.');
 		return project;
 	}
 
@@ -238,7 +245,8 @@ export class ProcurementService {
 			actor.organisationId,
 			publicId(packagePublicIdInput, 'Procurement package')
 		);
-		if (!procurementPackage?.projectPublicId) throw new TenantAccessError('Procurement package not found in your project scope.');
+		if (!procurementPackage?.projectPublicId)
+			throw new TenantAccessError('Procurement package not found in your project scope.');
 		await this.requireProject(actor, procurementPackage.projectPublicId, db);
 		return procurementPackage;
 	}
@@ -253,7 +261,8 @@ export class ProcurementService {
 			actor.organisationId,
 			publicId(purchaseOrderPublicIdInput, 'Purchase order')
 		);
-		if (!order?.projectPublicId) throw new TenantAccessError('Purchase order not found in your project scope.');
+		if (!order?.projectPublicId)
+			throw new TenantAccessError('Purchase order not found in your project scope.');
 		await this.requireProject(actor, order.projectPublicId, db);
 		return order;
 	}
@@ -304,16 +313,23 @@ export class ProcurementService {
 		);
 		const repository = new ProcurementRepository(this.db);
 		const projectIds = projects.map((project) => project.id);
-		const [suppliers, packageTypes, purchaseOrderTypes, salesItemTypes, units, packageRows, orderRows] =
-			await Promise.all([
-				repository.listEligibleSuppliers(actor.organisationId),
-				repository.listPackageTypes(),
-				repository.listPurchaseOrderTypes(),
-				repository.listSalesItemTypes(),
-				repository.listUnitsOfMeasure(),
-				repository.listPackages(actor.organisationId, projectIds),
-				repository.listPurchaseOrders(actor.organisationId, projectIds)
-			]);
+		const [
+			suppliers,
+			packageTypes,
+			purchaseOrderTypes,
+			salesItemTypes,
+			units,
+			packageRows,
+			orderRows
+		] = await Promise.all([
+			repository.listEligibleSuppliers(actor.organisationId),
+			repository.listPackageTypes(),
+			repository.listPurchaseOrderTypes(),
+			repository.listSalesItemTypes(),
+			repository.listUnitsOfMeasure(),
+			repository.listPackages(actor.organisationId, projectIds),
+			repository.listPurchaseOrders(actor.organisationId, projectIds)
+		]);
 
 		const rfqs = await repository.listRfqsForPackages(
 			actor.organisationId,
@@ -324,7 +340,9 @@ export class ProcurementService {
 			const packageRfqs = rfqs.filter((rfq) => rfq.packageId === row.id);
 			let latestRfqStatus: string | null = null;
 			if (packageRfqs[0]) {
-				latestRfqStatus = (await repository.listRfqVersions(actor.organisationId, packageRfqs[0].id))[0]?.status ?? null;
+				latestRfqStatus =
+					(await repository.listRfqVersions(actor.organisationId, packageRfqs[0].id))[0]?.status ??
+					null;
 			}
 			packages.push({
 				...row,
@@ -380,7 +398,10 @@ export class ProcurementService {
 		const quantity = decimal(input.quantity, 6, 'Quantity');
 		const targetUnitCost = optionalMoney(input.targetUnitCost, 'Target unit cost');
 		const salesItemTypeId = positiveInteger(input.salesItemTypeId, 'Sales item type');
-		const unitOfMeasureId = input.unitOfMeasureId == null ? null : positiveInteger(input.unitOfMeasureId, 'Unit of measure');
+		const unitOfMeasureId =
+			input.unitOfMeasureId == null
+				? null
+				: positiveInteger(input.unitOfMeasureId, 'Unit of measure');
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.requirePermission(actor, 'procurement.package.manage', trx);
@@ -391,9 +412,14 @@ export class ProcurementService {
 				repository.listSalesItemTypes(),
 				repository.listUnitsOfMeasure()
 			]);
-			if (!packageType) throw new ProcurementValidationError('The selected procurement package type is unavailable.');
-			if (!salesItemTypes.some((row) => row.id === salesItemTypeId)) throw new ProcurementValidationError('The selected item type is unavailable.');
-			if (unitOfMeasureId !== null && !units.some((row) => row.id === unitOfMeasureId)) throw new ProcurementValidationError('The selected unit is unavailable.');
+			if (!packageType)
+				throw new ProcurementValidationError(
+					'The selected procurement package type is unavailable.'
+				);
+			if (!salesItemTypes.some((row) => row.id === salesItemTypeId))
+				throw new ProcurementValidationError('The selected item type is unavailable.');
+			if (unitOfMeasureId !== null && !units.some((row) => row.id === unitOfMeasureId))
+				throw new ProcurementValidationError('The selected unit is unavailable.');
 			const packagePublicId = this.publicIdFactory();
 			const packageId = await repository.insertPackage({
 				organisationId: actor.organisationId,
@@ -445,8 +471,14 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.rfq.manage', trx);
 			const currentPackage = await this.requirePackage(actor, procurementPackage.publicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const packageItems = await repository.listPackageItems(actor.organisationId, currentPackage.id);
-			if (packageItems.length === 0) throw new ProcurementValidationError('The procurement package has no requirements to enquire.');
+			const packageItems = await repository.listPackageItems(
+				actor.organisationId,
+				currentPackage.id
+			);
+			if (packageItems.length === 0)
+				throw new ProcurementValidationError(
+					'The procurement package has no requirements to enquire.'
+				);
 			const rfqPublicId = this.publicIdFactory();
 			const rfqId = await repository.insertRfq({
 				organisationId: actor.organisationId,
@@ -493,7 +525,11 @@ export class ProcurementService {
 		});
 	}
 
-	async issueRfq(actor: TenantActorContext, rfqPublicIdInput: string, supplierPublicIdInput: string): Promise<void> {
+	async issueRfq(
+		actor: TenantActorContext,
+		rfqPublicIdInput: string,
+		supplierPublicIdInput: string
+	): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'procurement.rfq.issue');
 		const rfqPublicId = publicId(rfqPublicIdInput, 'RFQ');
@@ -506,15 +542,36 @@ export class ProcurementService {
 			if (!rfq) throw new ProcurementValidationError('RFQ not found.');
 			const procurementPackage = await repository.findPackageByPublicId(
 				actor.organisationId,
-				(await trx.selectFrom('procurement_packages').select('public_id').where('id', '=', rfq.packageId).where('organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow()).public_id
+				(
+					await trx
+						.selectFrom('procurement_packages')
+						.select('public_id')
+						.where('id', '=', rfq.packageId)
+						.where('organisation_id', '=', actor.organisationId)
+						.executeTakeFirstOrThrow()
+				).public_id
 			);
 			if (!procurementPackage?.projectPublicId) throw new TenantAccessError();
 			await this.requireProject(actor, procurementPackage.projectPublicId, trx);
-			const supplier = await repository.findEligibleSupplierByPublicId(actor.organisationId, supplierPublicId);
-			if (!supplier) throw new ProcurementValidationError('The selected CRM party is not an active supplier-side party.');
+			const supplier = await repository.findEligibleSupplierByPublicId(
+				actor.organisationId,
+				supplierPublicId
+			);
+			if (!supplier)
+				throw new ProcurementValidationError(
+					'The selected CRM party is not an active supplier-side party.'
+				);
 			const version = (await repository.listRfqVersions(actor.organisationId, rfq.id))[0];
-			if (!version || version.status !== 'draft') throw new ProcurementValidationError('Only the current draft RFQ version can be issued.');
-			if ((await repository.issueRfqVersion({ organisationId: actor.organisationId, versionId: version.id, memberId: membership.id })) !== 1) throw new ProcurementValidationError('The RFQ version changed before it could be issued.');
+			if (!version || version.status !== 'draft')
+				throw new ProcurementValidationError('Only the current draft RFQ version can be issued.');
+			if (
+				(await repository.issueRfqVersion({
+					organisationId: actor.organisationId,
+					versionId: version.id,
+					memberId: membership.id
+				})) !== 1
+			)
+				throw new ProcurementValidationError('The RFQ version changed before it could be issued.');
 			const issueEventId = await repository.insertRfqIssueEvent({
 				organisationId: actor.organisationId,
 				versionId: version.id,
@@ -530,7 +587,13 @@ export class ProcurementService {
 				recipientName: supplier.displayName,
 				recipientEmail: supplier.primaryEmail
 			});
-			await trx.updateTable('procurement_packages').set({ lifecycle_status: 'enquiring' }).where('id', '=', procurementPackage.id).where('organisation_id', '=', actor.organisationId).where('lifecycle_status', 'in', ['draft', 'planned', 'enquiring']).executeTakeFirst();
+			await trx
+				.updateTable('procurement_packages')
+				.set({ lifecycle_status: 'enquiring' })
+				.where('id', '=', procurementPackage.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.where('lifecycle_status', 'in', ['draft', 'planned', 'enquiring'])
+				.executeTakeFirst();
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -546,7 +609,10 @@ export class ProcurementService {
 		});
 	}
 
-	async createPurchaseOrder(actor: TenantActorContext, input: CreatePurchaseOrderInput): Promise<string> {
+	async createPurchaseOrder(
+		actor: TenantActorContext,
+		input: CreatePurchaseOrderInput
+	): Promise<string> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'procurement.po.manage');
 		const project = await this.requireProject(actor, input.projectPublicId);
@@ -557,8 +623,15 @@ export class ProcurementService {
 		const orderDate = dateOnly(input.orderDate, 'Order date');
 		const requiredBy = dateOnly(input.requiredByDate, 'Required-by date');
 		const salesItemTypeId = positiveInteger(input.salesItemTypeId, 'Sales item type');
-		const unitOfMeasureId = input.unitOfMeasureId == null ? null : positiveInteger(input.unitOfMeasureId, 'Unit of measure');
-		const lineDescription = requiredText(input.lineDescription, 'Purchase-order line description', 10_000);
+		const unitOfMeasureId =
+			input.unitOfMeasureId == null
+				? null
+				: positiveInteger(input.unitOfMeasureId, 'Unit of measure');
+		const lineDescription = requiredText(
+			input.lineDescription,
+			'Purchase-order line description',
+			10_000
+		);
 		const quantity = decimal(input.quantity, 6, 'Quantity');
 		const unitRate = decimal(input.unitRate, 4, 'Unit rate', true);
 		return this.db.transaction().execute(async (trx) => {
@@ -566,17 +639,34 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.po.manage', trx);
 			await this.requireProject(actor, project.publicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const supplier = await repository.findEligibleSupplierByPublicId(actor.organisationId, supplierPublicId);
-			if (!supplier) throw new ProcurementValidationError('The selected CRM party is not an active supplier-side party.');
-			const orderType = await repository.findPurchaseOrderTypeByCode(requiredText(input.purchaseOrderTypeCode, 'Purchase-order type', 64));
-			if (!orderType) throw new ProcurementValidationError('The selected purchase-order type is unavailable.');
+			const supplier = await repository.findEligibleSupplierByPublicId(
+				actor.organisationId,
+				supplierPublicId
+			);
+			if (!supplier)
+				throw new ProcurementValidationError(
+					'The selected CRM party is not an active supplier-side party.'
+				);
+			const orderType = await repository.findPurchaseOrderTypeByCode(
+				requiredText(input.purchaseOrderTypeCode, 'Purchase-order type', 64)
+			);
+			if (!orderType)
+				throw new ProcurementValidationError('The selected purchase-order type is unavailable.');
 			const salesItemTypes = await repository.listSalesItemTypes();
-			if (!salesItemTypes.some((row) => row.id === salesItemTypeId)) throw new ProcurementValidationError('The selected item type is unavailable.');
-			if (unitOfMeasureId !== null && !(await repository.listUnitsOfMeasure()).some((row) => row.id === unitOfMeasureId)) throw new ProcurementValidationError('The selected unit is unavailable.');
+			if (!salesItemTypes.some((row) => row.id === salesItemTypeId))
+				throw new ProcurementValidationError('The selected item type is unavailable.');
+			if (
+				unitOfMeasureId !== null &&
+				!(await repository.listUnitsOfMeasure()).some((row) => row.id === unitOfMeasureId)
+			)
+				throw new ProcurementValidationError('The selected unit is unavailable.');
 			let packageId: string | null = null;
 			if (input.packagePublicId?.trim()) {
 				const procurementPackage = await this.requirePackage(actor, input.packagePublicId, trx);
-				if (procurementPackage.projectId !== project.id) throw new ProcurementValidationError('The selected procurement package belongs to another project.');
+				if (procurementPackage.projectId !== project.id)
+					throw new ProcurementValidationError(
+						'The selected procurement package belongs to another project.'
+					);
 				packageId = procurementPackage.id;
 			}
 			const purchaseOrderPublicId = this.publicIdFactory();
@@ -621,13 +711,21 @@ export class ProcurementService {
 				subjectType: 'purchase_order',
 				subjectPublicId: purchaseOrderPublicId,
 				correlationId: actor.correlationId,
-				changeSummary: { supplierPublicId, quantity, unitRate, netAmount: lineAmount(quantity, unitRate) }
+				changeSummary: {
+					supplierPublicId,
+					quantity,
+					unitRate,
+					netAmount: lineAmount(quantity, unitRate)
+				}
 			});
 			return purchaseOrderPublicId;
 		});
 	}
 
-	async approvePurchaseOrder(actor: TenantActorContext, purchaseOrderPublicIdInput: string): Promise<void> {
+	async approvePurchaseOrder(
+		actor: TenantActorContext,
+		purchaseOrderPublicIdInput: string
+	): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'procurement.po.approve');
 		const purchaseOrderPublicId = publicId(purchaseOrderPublicIdInput, 'Purchase order');
@@ -636,9 +734,21 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.po.approve', trx);
 			const order = await this.requirePurchaseOrder(actor, purchaseOrderPublicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const version = (await repository.listPurchaseOrderVersions(actor.organisationId, order.id))[0];
-			if (!version || version.status !== 'draft') throw new ProcurementValidationError('Only the current draft purchase-order version can be approved.');
-			if ((await repository.approvePurchaseOrderVersion({ organisationId: actor.organisationId, versionId: version.id, memberId: membership.id })) !== 1) throw new ProcurementValidationError('The purchase-order version changed before approval.');
+			const version = (
+				await repository.listPurchaseOrderVersions(actor.organisationId, order.id)
+			)[0];
+			if (!version || version.status !== 'draft')
+				throw new ProcurementValidationError(
+					'Only the current draft purchase-order version can be approved.'
+				);
+			if (
+				(await repository.approvePurchaseOrderVersion({
+					organisationId: actor.organisationId,
+					versionId: version.id,
+					memberId: membership.id
+				})) !== 1
+			)
+				throw new ProcurementValidationError('The purchase-order version changed before approval.');
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -654,7 +764,10 @@ export class ProcurementService {
 		});
 	}
 
-	async issuePurchaseOrder(actor: TenantActorContext, purchaseOrderPublicIdInput: string): Promise<void> {
+	async issuePurchaseOrder(
+		actor: TenantActorContext,
+		purchaseOrderPublicIdInput: string
+	): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'procurement.po.issue');
 		const purchaseOrderPublicId = publicId(purchaseOrderPublicIdInput, 'Purchase order');
@@ -663,13 +776,34 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.po.issue', trx);
 			const order = await this.requirePurchaseOrder(actor, purchaseOrderPublicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const version = (await repository.listPurchaseOrderVersions(actor.organisationId, order.id))[0];
-			if (!version || version.status !== 'approved') throw new ProcurementValidationError('Only the current approved purchase-order version can be issued.');
+			const version = (
+				await repository.listPurchaseOrderVersions(actor.organisationId, order.id)
+			)[0];
+			if (!version || version.status !== 'approved')
+				throw new ProcurementValidationError(
+					'Only the current approved purchase-order version can be issued.'
+				);
 			const items = await repository.listPurchaseOrderItems(actor.organisationId, version.id);
-			if (items.length === 0) throw new ProcurementValidationError('A purchase order must contain at least one line before issue.');
-			const supplier = await repository.findEligibleSupplierByPublicId(actor.organisationId, order.supplierPublicId);
-			if (!supplier) throw new ProcurementValidationError('The purchase-order supplier is no longer an eligible supplier-side CRM party.');
-			if ((await repository.issuePurchaseOrderVersion({ organisationId: actor.organisationId, versionId: version.id, memberId: membership.id })) !== 1) throw new ProcurementValidationError('The purchase-order version changed before issue.');
+			if (items.length === 0)
+				throw new ProcurementValidationError(
+					'A purchase order must contain at least one line before issue.'
+				);
+			const supplier = await repository.findEligibleSupplierByPublicId(
+				actor.organisationId,
+				order.supplierPublicId
+			);
+			if (!supplier)
+				throw new ProcurementValidationError(
+					'The purchase-order supplier is no longer an eligible supplier-side CRM party.'
+				);
+			if (
+				(await repository.issuePurchaseOrderVersion({
+					organisationId: actor.organisationId,
+					versionId: version.id,
+					memberId: membership.id
+				})) !== 1
+			)
+				throw new ProcurementValidationError('The purchase-order version changed before issue.');
 			const supplierSnapshotId = await repository.insertPurchaseOrderSupplierSnapshot({
 				organisationId: actor.organisationId,
 				versionId: version.id,
@@ -677,7 +811,10 @@ export class ProcurementService {
 				displayName: supplier.displayName,
 				email: supplier.primaryEmail
 			});
-			const address = await repository.findPrimarySupplierAddress(actor.organisationId, supplier.id);
+			const address = await repository.findPrimarySupplierAddress(
+				actor.organisationId,
+				supplier.id
+			);
 			if (address) {
 				await repository.insertPurchaseOrderSnapshotAddress({
 					organisationId: actor.organisationId,
@@ -710,7 +847,21 @@ export class ProcurementService {
 				recipientEmail: supplier.primaryEmail
 			});
 			if (order.projectId) {
-				await trx.updateTable('procurement_packages').set({ lifecycle_status: 'ordered' }).where('organisation_id', '=', actor.organisationId).where('project_id', '=', order.projectId).where('id', 'in', trx.selectFrom('purchase_orders').select('procurement_package_id').where('id', '=', order.id).where('organisation_id', '=', actor.organisationId)).executeTakeFirst();
+				await trx
+					.updateTable('procurement_packages')
+					.set({ lifecycle_status: 'ordered' })
+					.where('organisation_id', '=', actor.organisationId)
+					.where('project_id', '=', order.projectId)
+					.where(
+						'id',
+						'in',
+						trx
+							.selectFrom('purchase_orders')
+							.select('procurement_package_id')
+							.where('id', '=', order.id)
+							.where('organisation_id', '=', actor.organisationId)
+					)
+					.executeTakeFirst();
 			}
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
@@ -736,8 +887,17 @@ export class ProcurementService {
 		const purchaseOrderPublicId = publicId(input.purchaseOrderPublicId, 'Purchase order');
 		const lineNumber = positiveInteger(input.lineNumber, 'Line number');
 		const quantityReceived = decimal(input.quantityReceived, 6, 'Quantity received');
-		const quantityRejected = decimal(input.quantityRejected?.trim() || '0', 6, 'Quantity rejected', true);
-		if (parseScaledDecimal(quantityRejected, 6, 'Quantity rejected') > parseScaledDecimal(quantityReceived, 6, 'Quantity received')) throw new ProcurementValidationError('Rejected quantity cannot exceed received quantity.');
+		const quantityRejected = decimal(
+			input.quantityRejected?.trim() || '0',
+			6,
+			'Quantity rejected',
+			true
+		);
+		if (
+			parseScaledDecimal(quantityRejected, 6, 'Quantity rejected') >
+			parseScaledDecimal(quantityReceived, 6, 'Quantity received')
+		)
+			throw new ProcurementValidationError('Rejected quantity cannot exceed received quantity.');
 		const type = receiptType(input.receiptType);
 		const supplierDeliveryReference = optionalText(input.supplierDeliveryReference, 160);
 		const notes = optionalText(input.notes, 10_000);
@@ -746,16 +906,24 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.receipt.manage', trx);
 			const order = await this.requirePurchaseOrder(actor, purchaseOrderPublicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const version = (await repository.listPurchaseOrderVersions(actor.organisationId, order.id))[0];
-			if (!version || version.status !== 'issued') throw new ProcurementValidationError('Receipts can only be recorded against the current issued purchase-order version.');
-			const item = (await repository.listPurchaseOrderItems(actor.organisationId, version.id)).find((row) => row.lineNumber === lineNumber);
-			if (!item) throw new ProcurementValidationError('Purchase-order line not found.');
-			const alreadyReceived = (await repository.receivedQuantityForItem(actor.organisationId, item.id)).reduce(
-				(total, value) => total + parseScaledDecimal(value, 6, 'Received quantity'),
-				0n
+			const version = (
+				await repository.listPurchaseOrderVersions(actor.organisationId, order.id)
+			)[0];
+			if (!version || version.status !== 'issued')
+				throw new ProcurementValidationError(
+					'Receipts can only be recorded against the current issued purchase-order version.'
+				);
+			const item = (await repository.listPurchaseOrderItems(actor.organisationId, version.id)).find(
+				(row) => row.lineNumber === lineNumber
 			);
-			const proposed = alreadyReceived + parseScaledDecimal(quantityReceived, 6, 'Quantity received');
-			if (proposed > parseScaledDecimal(item.quantity, 6, 'Ordered quantity')) throw new ProcurementValidationError('The receipt would exceed the ordered quantity.');
+			if (!item) throw new ProcurementValidationError('Purchase-order line not found.');
+			const alreadyReceived = (
+				await repository.receivedQuantityForItem(actor.organisationId, item.id)
+			).reduce((total, value) => total + parseScaledDecimal(value, 6, 'Received quantity'), 0n);
+			const proposed =
+				alreadyReceived + parseScaledDecimal(quantityReceived, 6, 'Quantity received');
+			if (proposed > parseScaledDecimal(item.quantity, 6, 'Ordered quantity'))
+				throw new ProcurementValidationError('The receipt would exceed the ordered quantity.');
 			const receiptPublicId = this.publicIdFactory();
 			const receiptId = await repository.insertReceipt({
 				organisationId: actor.organisationId,

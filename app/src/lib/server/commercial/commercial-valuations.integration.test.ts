@@ -6,7 +6,10 @@ import { closeDatabase, getDatabase, type Database } from '$lib/server/db/databa
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 import { ProcurementService } from '$lib/server/procurement/procurement-service';
 import { CommercialValuationRepository } from './commercial-valuation-repository';
-import { CommercialValuationService, CommercialValuationValidationError } from './commercial-valuation-service';
+import {
+	CommercialValuationService,
+	CommercialValuationValidationError
+} from './commercial-valuation-service';
 import { ProjectCommercialControlService } from './project-commercial-control-service';
 
 let db: Database;
@@ -28,7 +31,11 @@ beforeAll(async () => {
 	const userId = insertedId(
 		await db
 			.insertInto('users')
-			.values({ public_id: randomUUID(), display_name: 'Slice 4 Valuation Owner', status: 'active' })
+			.values({
+				public_id: randomUUID(),
+				display_name: 'Slice 4 Valuation Owner',
+				status: 'active'
+			})
 			.executeTakeFirstOrThrow()
 	);
 	organisationId = insertedId(

@@ -56,7 +56,8 @@ function requiredText(value: string, label: string, max = 500): string {
 
 function publicId(value: string, label: string): string {
 	const text = requiredText(value, label, 36);
-	if (!/^[0-9a-f-]{36}$/i.test(text)) throw new CommercialValuationValidationError(`${label} is invalid.`);
+	if (!/^[0-9a-f-]{36}$/i.test(text))
+		throw new CommercialValuationValidationError(`${label} is invalid.`);
 	return text;
 }
 
@@ -75,9 +76,11 @@ function money(value: string, label: string): string {
 
 function dateOnly(value: string, label: string): Date {
 	const text = requiredText(value, label, 10);
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new CommercialValuationValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new CommercialValuationValidationError(`${label} is invalid.`);
 	const date = new Date(`${text}T00:00:00.000Z`);
-	if (Number.isNaN(date.getTime())) throw new CommercialValuationValidationError(`${label} is invalid.`);
+	if (Number.isNaN(date.getTime()))
+		throw new CommercialValuationValidationError(`${label} is invalid.`);
 	return date;
 }
 
@@ -93,7 +96,9 @@ export class CommercialValuationService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -104,27 +109,41 @@ export class CommercialValuationService {
 		db: DatabaseExecutor = this.db
 	) {
 		const decision = await new PermissionService(db).decide(actor, permissionKey);
-		if (!decision.allowed) throw new TenantAccessError('This commercial valuation action is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('This commercial valuation action is not permitted.');
 	}
 
-	private async requireProject(actor: TenantActorContext, projectPublicId: string, db: DatabaseExecutor = this.db) {
+	private async requireProject(
+		actor: TenantActorContext,
+		projectPublicId: string,
+		db: DatabaseExecutor = this.db
+	) {
 		const project = await new ProjectRepository(db).findForMemberByPublicId(
 			actor.organisationId,
 			actor.memberId,
 			publicId(projectPublicId, 'Project')
 		);
-		if (!project) throw new TenantAccessError('The project is outside your effective project scope.');
+		if (!project)
+			throw new TenantAccessError('The project is outside your effective project scope.');
 		return project;
 	}
 
-	private async requireValuation(actor: TenantActorContext, valuationPublicId: string, db: DatabaseExecutor = this.db) {
+	private async requireValuation(
+		actor: TenantActorContext,
+		valuationPublicId: string,
+		db: DatabaseExecutor = this.db
+	) {
 		const valuation = await new CommercialValuationRepository(db).findByPublicId(
 			actor.organisationId,
 			publicId(valuationPublicId, 'Valuation')
 		);
 		if (!valuation) throw new CommercialValuationValidationError('Valuation not found.');
-		const projects = await new ProjectRepository(db).listForMember(actor.organisationId, actor.memberId);
-		if (!projects.some((project) => project.id === valuation.projectId)) throw new TenantAccessError();
+		const projects = await new ProjectRepository(db).listForMember(
+			actor.organisationId,
+			actor.memberId
+		);
+		if (!projects.some((project) => project.id === valuation.projectId))
+			throw new TenantAccessError();
 		return valuation;
 	}
 
@@ -138,7 +157,10 @@ export class CommercialValuationService {
 			'commercial.valuation.manage',
 			'commercial.valuation.assess'
 		]);
-		const projects = await new ProjectRepository(this.db).listForMember(actor.organisationId, actor.memberId);
+		const projects = await new ProjectRepository(this.db).listForMember(
+			actor.organisationId,
+			actor.memberId
+		);
 		let projectIds = projects.map((project) => project.id);
 		if (selectedProjectPublicId?.trim()) {
 			const selected = await this.requireProject(actor, selectedProjectPublicId);
@@ -150,7 +172,9 @@ export class CommercialValuationService {
 			valuations.push({
 				...row,
 				totalGrossValueToDate: sumMoney(
-					(await repository.listItems(actor.organisationId, row.id)).map((item) => item.grossValueToDate)
+					(await repository.listItems(actor.organisationId, row.id)).map(
+						(item) => item.grossValueToDate
+					)
 				)
 			});
 		}
@@ -182,22 +206,30 @@ export class CommercialValuationService {
 				purchaseOrderPublicId
 			);
 			if (!order || order.projectId !== project.id) {
-				throw new CommercialValuationValidationError('The selected purchase order belongs to another project.');
+				throw new CommercialValuationValidationError(
+					'The selected purchase order belongs to another project.'
+				);
 			}
-			const version = (await procurementRepository.listPurchaseOrderVersions(actor.organisationId, order.id))[0];
+			const version = (
+				await procurementRepository.listPurchaseOrderVersions(actor.organisationId, order.id)
+			)[0];
 			if (!version || version.status !== 'issued') {
-				throw new CommercialValuationValidationError('Supplier applications require a current issued purchase order.');
+				throw new CommercialValuationValidationError(
+					'Supplier applications require a current issued purchase order.'
+				);
 			}
 			const orderTotal = sumMoney(
-				(await procurementRepository.listPurchaseOrderItems(actor.organisationId, version.id)).map((item) =>
-					lineAmount(item.quantity, item.unitRate)
+				(await procurementRepository.listPurchaseOrderItems(actor.organisationId, version.id)).map(
+					(item) => lineAmount(item.quantity, item.unitRate)
 				)
 			);
 			if (
 				parseScaledDecimal(grossValueToDate, 4, 'Gross value to date') >
 				parseScaledDecimal(orderTotal, 4, 'Purchase-order total')
 			) {
-				throw new CommercialValuationValidationError('Gross value to date cannot exceed the issued purchase-order value.');
+				throw new CommercialValuationValidationError(
+					'Gross value to date cannot exceed the issued purchase-order value.'
+				);
 			}
 			let costCodeId: string | null = null;
 			if (input.costCodePublicId?.trim()) {
@@ -206,7 +238,9 @@ export class CommercialValuationService {
 					publicId(input.costCodePublicId, 'Cost code')
 				);
 				if (!costCode || costCode.projectId !== project.id || !costCode.isActive) {
-					throw new CommercialValuationValidationError('The selected cost code belongs to another project or is inactive.');
+					throw new CommercialValuationValidationError(
+						'The selected cost code belongs to another project or is inactive.'
+					);
 				}
 				costCodeId = costCode.id;
 			}
@@ -245,7 +279,11 @@ export class CommercialValuationService {
 				subjectType: 'commercial_valuation',
 				subjectPublicId: valuationPublicId,
 				correlationId: actor.correlationId,
-				changeSummary: { purchaseOrderPublicId, grossValueToDate, valuationKind: 'supplier_application' }
+				changeSummary: {
+					purchaseOrderPublicId,
+					grossValueToDate,
+					valuationKind: 'supplier_application'
+				}
 			});
 			return valuationPublicId;
 		});
@@ -260,9 +298,17 @@ export class CommercialValuationService {
 			const valuation = await this.requireValuation(actor, valuationPublicId, trx);
 			const repository = new CommercialValuationRepository(trx);
 			if ((await repository.listItems(actor.organisationId, valuation.id)).length === 0) {
-				throw new CommercialValuationValidationError('A valuation requires at least one item before submission.');
+				throw new CommercialValuationValidationError(
+					'A valuation requires at least one item before submission.'
+				);
 			}
-			if ((await repository.submit({ organisationId: actor.organisationId, valuationId: valuation.id, submittedAt: this.now() })) !== 1) {
+			if (
+				(await repository.submit({
+					organisationId: actor.organisationId,
+					valuationId: valuation.id,
+					submittedAt: this.now()
+				})) !== 1
+			) {
 				throw new CommercialValuationValidationError('Only a draft valuation can be submitted.');
 			}
 			await new AuditRepository(trx).append({

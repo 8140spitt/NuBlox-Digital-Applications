@@ -26,7 +26,8 @@
 		<h1>Purchasing</h1>
 		<p>
 			Project-scoped procurement from requirement through enquiry, controlled purchase-order issue
-			and receipt. Suppliers remain CRM parties; NuBlox does not maintain a duplicate supplier master.
+			and receipt. Suppliers remain CRM parties; NuBlox does not maintain a duplicate supplier
+			master.
 		</p>
 	</div>
 	{#if data.canManagePackages}<a class="header-action" href="#create-package">New package</a>{/if}
@@ -64,7 +65,9 @@
 		{#if data.packages.length === 0}
 			<div class="empty-state">
 				<h3>No procurement packages</h3>
-				<p>Create a package against a project to establish the requirement before enquiry or order.</p>
+				<p>
+					Create a package against a project to establish the requirement before enquiry or order.
+				</p>
 			</div>
 		{:else}
 			<div class="register-list">
@@ -81,8 +84,16 @@
 							<span class="status">{procurementPackage.status}</span>
 						</header>
 						<div class="metadata-row">
-							<span>{procurementPackage.itemCount} requirement{procurementPackage.itemCount === 1 ? '' : 's'}</span>
-							<span>{procurementPackage.rfqCount} enquiry record{procurementPackage.rfqCount === 1 ? '' : 's'}</span>
+							<span
+								>{procurementPackage.itemCount} requirement{procurementPackage.itemCount === 1
+									? ''
+									: 's'}</span
+							>
+							<span
+								>{procurementPackage.rfqCount} enquiry record{procurementPackage.rfqCount === 1
+									? ''
+									: 's'}</span
+							>
 							<span>Required · {date(procurementPackage.requiredByDate)}</span>
 						</div>
 						{#if procurementPackage.description}<p>{procurementPackage.description}</p>{/if}
@@ -101,7 +112,10 @@
 			<span class="count">{data.rfqs.length}</span>
 		</div>
 		{#if data.rfqs.length === 0}
-			<div class="empty-state"><h3>No enquiries yet</h3><p>Create an RFQ from a procurement package.</p></div>
+			<div class="empty-state">
+				<h3>No enquiries yet</h3>
+				<p>Create an RFQ from a procurement package.</p>
+			</div>
 		{:else}
 			<div class="register-list">
 				{#each data.rfqs as rfq}
@@ -127,7 +141,9 @@
 									Supplier
 									<select name="supplierPublicId" required>
 										<option value="">Select supplier</option>
-										{#each data.suppliers as supplier}<option value={supplier.publicId}>{supplier.displayName}</option>{/each}
+										{#each data.suppliers as supplier}<option value={supplier.publicId}
+												>{supplier.displayName}</option
+											>{/each}
 									</select>
 								</label>
 								<button type="submit">Issue enquiry</button>
@@ -148,7 +164,10 @@
 			<span class="count">{data.orders.length}</span>
 		</div>
 		{#if data.orders.length === 0}
-			<div class="empty-state"><h3>No purchase orders</h3><p>Create a supplier order against a project.</p></div>
+			<div class="empty-state">
+				<h3>No purchase orders</h3>
+				<p>Create a supplier order against a project.</p>
+			</div>
 		{:else}
 			<div class="register-list">
 				{#each data.orders as order}
@@ -189,13 +208,38 @@
 									<label>
 										Line
 										<select name="lineNumber" required>
-											{#each order.items as item}<option value={item.lineNumber}>{item.lineNumber} · {item.description}</option>{/each}
+											{#each order.items as item}<option value={item.lineNumber}
+													>{item.lineNumber} · {item.description}</option
+												>{/each}
 										</select>
 									</label>
-									<label>Receipt type<select name="receiptType"><option value="goods">Goods</option><option value="service">Service</option><option value="mixed">Mixed</option></select></label>
-									<label>Quantity received<input name="quantityReceived" inputmode="decimal" required value="1" /></label>
-									<label>Quantity rejected<input name="quantityRejected" inputmode="decimal" value="0" /></label>
-									<label>Supplier delivery reference<input name="supplierDeliveryReference" maxlength="160" /></label>
+									<label
+										>Receipt type<select name="receiptType"
+											><option value="goods">Goods</option><option value="service">Service</option
+											><option value="mixed">Mixed</option></select
+										></label
+									>
+									<label
+										>Quantity received<input
+											name="quantityReceived"
+											inputmode="decimal"
+											required
+											value="1"
+										/></label
+									>
+									<label
+										>Quantity rejected<input
+											name="quantityRejected"
+											inputmode="decimal"
+											value="0"
+										/></label
+									>
+									<label
+										>Supplier delivery reference<input
+											name="supplierDeliveryReference"
+											maxlength="160"
+										/></label
+									>
 									<label>Notes<textarea name="notes" rows="2"></textarea></label>
 									<button type="submit">Record confirmed receipt</button>
 								</form>
@@ -213,20 +257,46 @@
 			<h2>Create procurement package</h2>
 			<form method="POST" action="?/createPackage" class="stack-form">
 				<div class="two-up">
-					<label>Project<select name="projectPublicId" required><option value="">Select project</option>{#each data.projects as project}<option value={project.publicId}>{project.projectNumber} · {project.name}</option>{/each}</select></label>
-					<label>Package type<select name="packageTypeCode" required><option value="">Select type</option>{#each data.packageTypes as type}<option value={type.code}>{type.name}</option>{/each}</select></label>
+					<label
+						>Project<select name="projectPublicId" required
+							><option value="">Select project</option>{#each data.projects as project}<option
+									value={project.publicId}>{project.projectNumber} · {project.name}</option
+								>{/each}</select
+						></label
+					>
+					<label
+						>Package type<select name="packageTypeCode" required
+							><option value="">Select type</option>{#each data.packageTypes as type}<option
+									value={type.code}>{type.name}</option
+								>{/each}</select
+						></label
+					>
 				</div>
 				<label>Package title<input name="title" maxlength="255" required /></label>
 				<label>Description<textarea name="description" rows="3"></textarea></label>
 				<div class="three-up">
 					<label>Currency<input name="currencyCode" value="GBP" maxlength="3" required /></label>
 					<label>Required by<input type="date" name="requiredByDate" /></label>
-					<label>Item type<select name="salesItemTypeId" required><option value="">Select item type</option>{#each data.salesItemTypes as type}<option value={type.id}>{type.name}</option>{/each}</select></label>
+					<label
+						>Item type<select name="salesItemTypeId" required
+							><option value="">Select item type</option>{#each data.salesItemTypes as type}<option
+									value={type.id}>{type.name}</option
+								>{/each}</select
+						></label
+					>
 				</div>
-				<label>Requirement description<input name="lineDescription" maxlength="10000" required /></label>
+				<label
+					>Requirement description<input name="lineDescription" maxlength="10000" required /></label
+				>
 				<div class="three-up">
 					<label>Quantity<input name="quantity" inputmode="decimal" value="1" required /></label>
-					<label>Unit<select name="unitOfMeasureId"><option value="">No unit</option>{#each data.units as unit}<option value={unit.id}>{unit.code} · {unit.name}</option>{/each}</select></label>
+					<label
+						>Unit<select name="unitOfMeasureId"
+							><option value="">No unit</option>{#each data.units as unit}<option value={unit.id}
+									>{unit.code} · {unit.name}</option
+								>{/each}</select
+						></label
+					>
 					<label>Target unit cost<input name="targetUnitCost" inputmode="decimal" /></label>
 				</div>
 				<button type="submit">Create procurement package</button>
@@ -239,7 +309,14 @@
 			<p class="eyebrow">Supplier enquiry</p>
 			<h2>Create enquiry / RFQ</h2>
 			<form method="POST" action="?/createRfq" class="stack-form">
-				<label>Procurement package<select name="packagePublicId" required><option value="">Select package</option>{#each data.packages as procurementPackage}<option value={procurementPackage.publicId}>{procurementPackage.packageNumber} · {procurementPackage.title}</option>{/each}</select></label>
+				<label
+					>Procurement package<select name="packagePublicId" required
+						><option value="">Select package</option
+						>{#each data.packages as procurementPackage}<option value={procurementPackage.publicId}
+								>{procurementPackage.packageNumber} · {procurementPackage.title}</option
+							>{/each}</select
+					></label
+				>
 				<label>RFQ title<input name="title" maxlength="255" required /></label>
 				<label>Response deadline<input type="datetime-local" name="responseDeadlineAt" /></label>
 				<button type="submit">Create RFQ draft</button>
@@ -253,12 +330,38 @@
 			<h2>Create purchase order</h2>
 			<form method="POST" action="?/createPurchaseOrder" class="stack-form">
 				<div class="two-up">
-					<label>Project<select name="projectPublicId" required><option value="">Select project</option>{#each data.projects as project}<option value={project.publicId}>{project.projectNumber} · {project.name}</option>{/each}</select></label>
-					<label>Supplier<select name="supplierPublicId" required><option value="">Select supplier</option>{#each data.suppliers as supplier}<option value={supplier.publicId}>{supplier.displayName}</option>{/each}</select></label>
+					<label
+						>Project<select name="projectPublicId" required
+							><option value="">Select project</option>{#each data.projects as project}<option
+									value={project.publicId}>{project.projectNumber} · {project.name}</option
+								>{/each}</select
+						></label
+					>
+					<label
+						>Supplier<select name="supplierPublicId" required
+							><option value="">Select supplier</option>{#each data.suppliers as supplier}<option
+									value={supplier.publicId}>{supplier.displayName}</option
+								>{/each}</select
+						></label
+					>
 				</div>
 				<div class="two-up">
-					<label>Order type<select name="purchaseOrderTypeCode" required><option value="">Select type</option>{#each data.purchaseOrderTypes as type}<option value={type.code}>{type.name}</option>{/each}</select></label>
-					<label>Procurement package <small>optional</small><select name="packagePublicId"><option value="">Direct project order</option>{#each data.packages as procurementPackage}<option value={procurementPackage.publicId}>{procurementPackage.packageNumber} · {procurementPackage.title}</option>{/each}</select></label>
+					<label
+						>Order type<select name="purchaseOrderTypeCode" required
+							><option value="">Select type</option>{#each data.purchaseOrderTypes as type}<option
+									value={type.code}>{type.name}</option
+								>{/each}</select
+						></label
+					>
+					<label
+						>Procurement package <small>optional</small><select name="packagePublicId"
+							><option value="">Direct project order</option
+							>{#each data.packages as procurementPackage}<option
+									value={procurementPackage.publicId}
+									>{procurementPackage.packageNumber} · {procurementPackage.title}</option
+								>{/each}</select
+						></label
+					>
 				</div>
 				<label>Purchase-order title<input name="title" maxlength="255" required /></label>
 				<div class="three-up">
@@ -268,10 +371,24 @@
 				</div>
 				<div class="three-up">
 					<label>Currency<input name="currencyCode" value="GBP" maxlength="3" required /></label>
-					<label>Item type<select name="salesItemTypeId" required><option value="">Select item type</option>{#each data.salesItemTypes as type}<option value={type.id}>{type.name}</option>{/each}</select></label>
-					<label>Unit<select name="unitOfMeasureId"><option value="">No unit</option>{#each data.units as unit}<option value={unit.id}>{unit.code} · {unit.name}</option>{/each}</select></label>
+					<label
+						>Item type<select name="salesItemTypeId" required
+							><option value="">Select item type</option>{#each data.salesItemTypes as type}<option
+									value={type.id}>{type.name}</option
+								>{/each}</select
+						></label
+					>
+					<label
+						>Unit<select name="unitOfMeasureId"
+							><option value="">No unit</option>{#each data.units as unit}<option value={unit.id}
+									>{unit.code} · {unit.name}</option
+								>{/each}</select
+						></label
+					>
 				</div>
-				<label>Order line description<input name="lineDescription" maxlength="10000" required /></label>
+				<label
+					>Order line description<input name="lineDescription" maxlength="10000" required /></label
+				>
 				<div class="two-up">
 					<label>Quantity<input name="quantity" inputmode="decimal" value="1" required /></label>
 					<label>Unit rate<input name="unitRate" inputmode="decimal" required /></label>
@@ -291,57 +408,237 @@
 		gap: 1rem;
 		align-items: flex-start;
 	}
-	.page-header { margin-bottom: 1.5rem; align-items: end; }
-	.page-header > div { max-width: 72ch; }
-	.page-header h1 { margin: 0.15rem 0 0.45rem; font-size: clamp(2rem, 4vw, 3.2rem); letter-spacing: -0.04em; }
-	.page-header p:last-child { color: #5d6675; line-height: 1.55; }
-	.eyebrow { margin: 0; text-transform: uppercase; letter-spacing: 0.12em; font-size: 0.72rem; font-weight: 800; color: #667085; }
+	.page-header {
+		margin-bottom: 1.5rem;
+		align-items: end;
+	}
+	.page-header > div {
+		max-width: 72ch;
+	}
+	.page-header h1 {
+		margin: 0.15rem 0 0.45rem;
+		font-size: clamp(2rem, 4vw, 3.2rem);
+		letter-spacing: -0.04em;
+	}
+	.page-header p:last-child {
+		color: #5d6675;
+		line-height: 1.55;
+	}
+	.eyebrow {
+		margin: 0;
+		text-transform: uppercase;
+		letter-spacing: 0.12em;
+		font-size: 0.72rem;
+		font-weight: 800;
+		color: #667085;
+	}
 	.header-action,
-	button { font: inherit; font-weight: 750; border: 1px solid #111827; border-radius: 0.55rem; padding: 0.68rem 0.9rem; background: #111827; color: white; text-decoration: none; cursor: pointer; }
+	button {
+		font: inherit;
+		font-weight: 750;
+		border: 1px solid #111827;
+		border-radius: 0.55rem;
+		padding: 0.68rem 0.9rem;
+		background: #111827;
+		color: white;
+		text-decoration: none;
+		cursor: pointer;
+	}
 	.notice,
 	.workspace-section,
-	.action-panel { background: white; border: 1px solid #d9dde5; border-radius: 0.85rem; padding: 1.15rem; margin-bottom: 1rem; }
-	.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
-	.metrics article { background: white; border: 1px solid #d9dde5; border-radius: 0.75rem; padding: 1rem; display: grid; gap: 0.25rem; }
-	.metrics span { color: #667085; font-size: 0.82rem; }
-	.metrics strong { font-size: 1.55rem; }
-	.workspace-tabs { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; }
-	.workspace-tabs a { color: #344054; background: #f2f4f7; border-radius: 999px; padding: 0.45rem 0.75rem; text-decoration: none; font-weight: 700; }
-	.section-heading { align-items: center; margin-bottom: 0.9rem; }
+	.action-panel {
+		background: white;
+		border: 1px solid #d9dde5;
+		border-radius: 0.85rem;
+		padding: 1.15rem;
+		margin-bottom: 1rem;
+	}
+	.metrics {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: 0.75rem;
+		margin-bottom: 1rem;
+	}
+	.metrics article {
+		background: white;
+		border: 1px solid #d9dde5;
+		border-radius: 0.75rem;
+		padding: 1rem;
+		display: grid;
+		gap: 0.25rem;
+	}
+	.metrics span {
+		color: #667085;
+		font-size: 0.82rem;
+	}
+	.metrics strong {
+		font-size: 1.55rem;
+	}
+	.workspace-tabs {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		margin-bottom: 1rem;
+	}
+	.workspace-tabs a {
+		color: #344054;
+		background: #f2f4f7;
+		border-radius: 999px;
+		padding: 0.45rem 0.75rem;
+		text-decoration: none;
+		font-weight: 700;
+	}
+	.section-heading {
+		align-items: center;
+		margin-bottom: 0.9rem;
+	}
 	.section-heading h2,
-	.action-panel h2 { margin: 0.2rem 0 0; }
-	.count { min-width: 2rem; text-align: center; padding: 0.3rem 0.55rem; border-radius: 999px; background: #f2f4f7; font-weight: 750; }
-	.register-list { display: grid; gap: 0.75rem; }
-	.record-card { border: 1px solid #e4e7ec; border-radius: 0.75rem; padding: 1rem; }
-	.record-card h3 { margin: 0.1rem 0 0.3rem; }
-	.reference { margin: 0; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.08em; color: #475467; }
+	.action-panel h2 {
+		margin: 0.2rem 0 0;
+	}
+	.count {
+		min-width: 2rem;
+		text-align: center;
+		padding: 0.3rem 0.55rem;
+		border-radius: 999px;
+		background: #f2f4f7;
+		font-weight: 750;
+	}
+	.register-list {
+		display: grid;
+		gap: 0.75rem;
+	}
+	.record-card {
+		border: 1px solid #e4e7ec;
+		border-radius: 0.75rem;
+		padding: 1rem;
+	}
+	.record-card h3 {
+		margin: 0.1rem 0 0.3rem;
+	}
+	.reference {
+		margin: 0;
+		font-size: 0.78rem;
+		font-weight: 800;
+		letter-spacing: 0.08em;
+		color: #475467;
+	}
 	.muted,
-	.metadata-row { color: #667085; }
-	.metadata-row { display: flex; flex-wrap: wrap; gap: 0.85rem; font-size: 0.84rem; }
-	.status { text-transform: capitalize; font-size: 0.78rem; font-weight: 800; background: #f2f4f7; border-radius: 999px; padding: 0.35rem 0.6rem; }
-	.money-value { font-size: 1.25rem; font-weight: 800; margin: 0.6rem 0; }
-	.empty-state { border: 1px dashed #cfd4dc; border-radius: 0.7rem; padding: 1rem; color: #667085; }
-	.empty-state h3 { margin-top: 0; color: #344054; }
-	.stack-form { display: grid; gap: 0.8rem; margin-top: 0.9rem; }
-	.compact-form { max-width: 42rem; }
-	.two-up { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.75rem; }
-	.three-up { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.75rem; }
-	label { display: grid; gap: 0.35rem; font-size: 0.84rem; font-weight: 700; }
-	label small { font-weight: 500; color: #667085; }
+	.metadata-row {
+		color: #667085;
+	}
+	.metadata-row {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.85rem;
+		font-size: 0.84rem;
+	}
+	.status {
+		text-transform: capitalize;
+		font-size: 0.78rem;
+		font-weight: 800;
+		background: #f2f4f7;
+		border-radius: 999px;
+		padding: 0.35rem 0.6rem;
+	}
+	.money-value {
+		font-size: 1.25rem;
+		font-weight: 800;
+		margin: 0.6rem 0;
+	}
+	.empty-state {
+		border: 1px dashed #cfd4dc;
+		border-radius: 0.7rem;
+		padding: 1rem;
+		color: #667085;
+	}
+	.empty-state h3 {
+		margin-top: 0;
+		color: #344054;
+	}
+	.stack-form {
+		display: grid;
+		gap: 0.8rem;
+		margin-top: 0.9rem;
+	}
+	.compact-form {
+		max-width: 42rem;
+	}
+	.two-up {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+	.three-up {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+	label {
+		display: grid;
+		gap: 0.35rem;
+		font-size: 0.84rem;
+		font-weight: 700;
+	}
+	label small {
+		font-weight: 500;
+		color: #667085;
+	}
 	input,
 	select,
-	textarea { min-width: 0; font: inherit; border: 1px solid #b8c0cc; border-radius: 0.5rem; padding: 0.62rem; background: white; }
-	textarea { resize: vertical; }
-	.inline-form { display: flex; gap: 0.7rem; align-items: end; flex-wrap: wrap; margin-top: 0.8rem; }
-	.inline-form label { min-width: min(22rem, 100%); }
-	.inline-actions { display: flex; gap: 0.55rem; flex-wrap: wrap; margin-top: 0.75rem; }
-	.record-receipt { margin-top: 0.8rem; }
-	details summary { cursor: pointer; font-weight: 750; color: #344054; }
-	.error { border: 1px solid #f0a5a5; background: #fff1f1; color: #8a1c1c; padding: 0.75rem; border-radius: 0.65rem; margin-bottom: 1rem; }
+	textarea {
+		min-width: 0;
+		font: inherit;
+		border: 1px solid #b8c0cc;
+		border-radius: 0.5rem;
+		padding: 0.62rem;
+		background: white;
+	}
+	textarea {
+		resize: vertical;
+	}
+	.inline-form {
+		display: flex;
+		gap: 0.7rem;
+		align-items: end;
+		flex-wrap: wrap;
+		margin-top: 0.8rem;
+	}
+	.inline-form label {
+		min-width: min(22rem, 100%);
+	}
+	.inline-actions {
+		display: flex;
+		gap: 0.55rem;
+		flex-wrap: wrap;
+		margin-top: 0.75rem;
+	}
+	.record-receipt {
+		margin-top: 0.8rem;
+	}
+	details summary {
+		cursor: pointer;
+		font-weight: 750;
+		color: #344054;
+	}
+	.error {
+		border: 1px solid #f0a5a5;
+		background: #fff1f1;
+		color: #8a1c1c;
+		padding: 0.75rem;
+		border-radius: 0.65rem;
+		margin-bottom: 1rem;
+	}
 	@media (max-width: 800px) {
-		.page-header { display: grid; }
-		.metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.page-header {
+			display: grid;
+		}
+		.metrics {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
 		.two-up,
-		.three-up { grid-template-columns: 1fr; }
+		.three-up {
+			grid-template-columns: 1fr;
+		}
 	}
 </style>

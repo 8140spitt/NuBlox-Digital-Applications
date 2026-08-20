@@ -38,7 +38,8 @@ async function runAction(
 	try {
 		await operation(new CommercialValuationService(getDatabase()), actor);
 	} catch (error) {
-		if (error instanceof CommercialValuationValidationError) return fail(400, failure(error.message));
+		if (error instanceof CommercialValuationValidationError)
+			return fail(400, failure(error.message));
 		if (error instanceof TenantAccessError) {
 			return fail(403, failure('You do not have access to this commercial valuation action.'));
 		}
@@ -63,7 +64,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 	const db = getDatabase();
 	const projectPublicId = url.searchParams.get('project');
-	const commercial = await new ProjectCommercialControlService(db).getWorkspace(actor, projectPublicId);
+	const commercial = await new ProjectCommercialControlService(db).getWorkspace(
+		actor,
+		projectPublicId
+	);
 	if (!commercial.canView) {
 		return {
 			canView: false,

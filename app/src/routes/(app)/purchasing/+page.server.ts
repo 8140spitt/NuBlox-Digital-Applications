@@ -5,7 +5,10 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 import { ProcurementRepository } from '$lib/server/procurement/procurement-repository';
-import { ProcurementService, ProcurementValidationError } from '$lib/server/procurement/procurement-service';
+import {
+	ProcurementService,
+	ProcurementValidationError
+} from '$lib/server/procurement/procurement-service';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
@@ -85,7 +88,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 	);
 	const rfqs = [];
 	for (const row of rows) {
-		const procurementPackage = workspace.packages.find((candidate) => candidate.id === row.packageId);
+		const procurementPackage = workspace.packages.find(
+			(candidate) => candidate.id === row.packageId
+		);
 		if (!procurementPackage) continue;
 		rfqs.push({
 			...row,

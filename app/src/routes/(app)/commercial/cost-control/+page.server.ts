@@ -38,7 +38,10 @@ function redirectToProject(projectPublicId?: string) {
 
 async function runAction(
 	locals: App.Locals,
-	operation: (service: ProjectCommercialControlService, actor: TenantActorContext) => Promise<unknown>,
+	operation: (
+		service: ProjectCommercialControlService,
+		actor: TenantActorContext
+	) => Promise<unknown>,
 	returnProjectPublicId?: string
 ) {
 	const actor = actorFromLocals(locals);
@@ -46,9 +49,13 @@ async function runAction(
 	try {
 		await operation(new ProjectCommercialControlService(getDatabase()), actor);
 	} catch (error) {
-		if (error instanceof ProjectCommercialControlValidationError) return fail(400, failure(error.message));
+		if (error instanceof ProjectCommercialControlValidationError)
+			return fail(400, failure(error.message));
 		if (error instanceof TenantAccessError) {
-			return fail(403, failure('You do not have access to this project commercial-control action.'));
+			return fail(
+				403,
+				failure('You do not have access to this project commercial-control action.')
+			);
 		}
 		throw error;
 	}
@@ -65,7 +72,8 @@ async function runValuationAction(
 	try {
 		await operation(new CommercialValuationService(getDatabase()), actor);
 	} catch (error) {
-		if (error instanceof CommercialValuationValidationError) return fail(400, failure(error.message));
+		if (error instanceof CommercialValuationValidationError)
+			return fail(400, failure(error.message));
 		if (error instanceof TenantAccessError) {
 			return fail(403, failure('You do not have access to this project valuation action.'));
 		}
@@ -101,7 +109,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 	const db = getDatabase();
 	const projectPublicId = url.searchParams.get('project');
-	const workspace = await new ProjectCommercialControlService(db).getWorkspace(actor, projectPublicId);
+	const workspace = await new ProjectCommercialControlService(db).getWorkspace(
+		actor,
+		projectPublicId
+	);
 	if (!workspace.canView) {
 		return {
 			...workspace,
