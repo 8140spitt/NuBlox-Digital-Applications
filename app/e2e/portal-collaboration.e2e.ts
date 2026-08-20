@@ -79,7 +79,7 @@ test('owner explicitly shares controlled work and partner completes it through t
 		page.getByText(`${PROJECT_NUMBER} · ${PROJECT_NAME}`, { exact: false }).first()
 	).toBeVisible();
 
-	let partnerRfiCard = page.locator('.work-card').filter({ hasText: RFI_NUMBER });
+	const partnerRfiCard = page.locator('.work-card').filter({ hasText: RFI_NUMBER });
 	await expect(partnerRfiCard).toContainText('Confirm external opening size');
 	await partnerRfiCard.getByText('Respond to RFI', { exact: true }).click();
 	await partnerRfiCard.getByLabel('Response').fill('Use a 650 × 450 mm coordinated opening.');
@@ -87,7 +87,7 @@ test('owner explicitly shares controlled work and partner completes it through t
 	await expect(page).toHaveURL(/\/portal$/);
 	await expect(page.locator('.work-card').filter({ hasText: RFI_NUMBER })).toHaveCount(0);
 
-	let partnerSubmittalCard = page.locator('.work-card').filter({ hasText: SUBMITTAL_NUMBER });
+	const partnerSubmittalCard = page.locator('.work-card').filter({ hasText: SUBMITTAL_NUMBER });
 	await partnerSubmittalCard.getByText('Review submittal', { exact: true }).click();
 	await partnerSubmittalCard.getByLabel('Outcome').selectOption('approved_with_comments');
 	await partnerSubmittalCard
