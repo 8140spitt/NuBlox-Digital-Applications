@@ -23,6 +23,7 @@ test('owner controls document revision, RFI, submittal and instruction records t
 	const projectName = `Information acceptance ${suffix}`;
 	const documentNumber = `E2E-A-${suffix}`;
 	const documentTitle = `Containment coordination plan ${suffix}`;
+	const classificationCode = `E2E-CLASS-${suffix}`;
 	const rfiNumber = `RFI-${suffix}`;
 	const submittalNumber = `SUB-${suffix}`;
 	const instructionNumber = `PI-${suffix}`;
@@ -45,7 +46,7 @@ test('owner controls document revision, RFI, submittal and instruction records t
 	await documentPanel.getByLabel('Document number').fill(documentNumber);
 	await documentPanel.getByLabel('Title').fill(documentTitle);
 	await documentPanel.getByLabel('Discipline code').fill('E');
-	await documentPanel.getByLabel('Classification code').fill('EF_70_20');
+	await documentPanel.getByLabel('Classification code').fill(classificationCode);
 	await documentPanel.getByLabel('Initial revision').fill('P01');
 	await documentPanel.getByLabel('Suitability').fill('S3');
 	await documentPanel.getByLabel('Purpose').selectOption({ label: 'review · For review' });
@@ -136,7 +137,7 @@ test('owner controls document revision, RFI, submittal and instruction records t
 	await instructionPanel.getByLabel('Type').selectOption({ label: 'Project instruction' });
 	await instructionPanel.getByLabel('Subject').fill(`Proceed with coordinated route ${suffix}`);
 	await instructionPanel
-		.getByLabel('Instruction')
+		.locator('textarea[name="instructionText"]')
 		.fill('Proceed in accordance with the current coordinated containment information.');
 	await instructionPanel.getByRole('button', { name: 'Create instruction draft' }).click();
 	await expect(page).toHaveURL(/\/documents$/);
@@ -149,4 +150,13 @@ test('owner controls document revision, RFI, submittal and instruction records t
 		.locator('#instruction-register .workflow-card')
 		.filter({ hasText: instructionNumber });
 	await expect(instructionCard.getByText('issued', { exact: true })).toBeVisible();
+
+	await page.getByLabel('Search project information').fill(classificationCode);
+	await page.getByRole('button', { name: 'Search', exact: true }).click();
+	await expect(page.getByLabel('Search project information')).toHaveValue(classificationCode);
+	await expect(page.locator('.search-status')).toContainText('1 record matched');
+	await expect(page.locator('.document-card').filter({ hasText: documentNumber })).toBeVisible();
+	await expect(page.locator('#rfi-register .workflow-card')).toHaveCount(0);
+	await expect(page.locator('#submittal-register .workflow-card')).toHaveCount(0);
+	await expect(page.locator('#instruction-register .workflow-card')).toHaveCount(0);
 });

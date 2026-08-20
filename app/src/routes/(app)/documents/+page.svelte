@@ -48,6 +48,29 @@
 		<a href="#instruction-register">Instructions</a>
 	</nav>
 
+	<form class="information-search" method="GET" action="/documents">
+		<label>
+			Search project information
+			<input
+				type="search"
+				name="q"
+				value={data.query}
+				maxlength="200"
+				placeholder="Document, revision, file, project, RFI, submittal or instruction"
+			/>
+		</label>
+		<div class="search-actions">
+			<button type="submit">Search</button>
+			{#if data.searchActive}<a href="/documents">Clear</a>{/if}
+		</div>
+	</form>
+	{#if data.searchActive}
+		<p class="search-status" role="status">
+			{data.searchResultCount}
+			{data.searchResultCount === 1 ? 'record' : 'records'} matched “{data.query}”.
+		</p>
+	{/if}
+
 	<section class="workspace-section" id="document-register">
 		<div class="section-heading">
 			<div>
@@ -895,6 +918,36 @@
 		}
 		.compact-form {
 			width: 72vw;
+		}
+	}
+	.information-search {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.75rem;
+		align-items: end;
+		margin: 1rem 0 0.5rem;
+		padding: 1rem;
+		border: 1px solid var(--nublox-border, #d9dde5);
+		border-radius: 0.85rem;
+		background: var(--nublox-surface, #ffffff);
+	}
+	.information-search label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 700;
+	}
+	.search-actions {
+		display: flex;
+		gap: 0.6rem;
+		align-items: center;
+	}
+	.search-status {
+		margin: 0.25rem 0 1rem;
+		color: var(--nublox-text-muted, #5d6675);
+	}
+	@media (max-width: 720px) {
+		.information-search {
+			grid-template-columns: 1fr;
 		}
 	}
 </style>

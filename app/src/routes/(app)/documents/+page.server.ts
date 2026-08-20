@@ -27,6 +27,27 @@ function failure(error: string) {
 	return { error };
 }
 
+function normaliseSearch(value: string | null): string {
+	return (value ?? '').trim().slice(0, 200);
+}
+
+function searchable(value: unknown): string {
+	if (value === null || value === undefined) return '';
+	if (value instanceof Date) return value.toISOString();
+	if (Array.isArray(value)) return value.map(searchable).join(' ');
+	if (typeof value === 'object') {
+		return Object.values(value as Record<string, unknown>)
+			.map(searchable)
+			.join(' ');
+	}
+	return String(value);
+}
+
+function matchesSearch(value: unknown, tokens: string[]): boolean {
+	const haystack = searchable(value).toLocaleLowerCase('en-GB');
+	return tokens.every((token) => haystack.includes(token));
+}
+
 async function runAction(
 	locals: App.Locals,
 	operation: (service: InformationService, actor: TenantActorContext) => Promise<void>
@@ -45,7 +66,8 @@ async function runAction(
 	throw redirect(303, '/documents');
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
+	const query = normaliseSearch(url.searchParams.get('q'));
 	const actor = actorFromLocals(locals);
 	if (!actor) {
 		return {
@@ -59,6 +81,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 			canReviewSubmittals: false,
 			canManageInstructions: false,
 			canIssueInstructions: false,
+			query,
+			searchActive: Boolean(query),
+			searchResultCount: 0,
 			projects: [],
 			containerTypes: [],
 			purposeCodes: [],
@@ -70,7 +95,27 @@ export const load: PageServerLoad = async ({ locals }) => {
 			instructions: []
 		};
 	}
-	return new InformationService(getDatabase()).getWorkspace(actor);
+	const workspace = await new InformationService(getDatabase()).getWorkspace(actor);
+	if (!query) {
+		return { ...workspace, query, searchActive: false, searchResultCount: 0 };
+	}
+
+	const tokens = query.toLocaleLowerCase('en-GB').split(/\s+/).filter(Boolean);
+	const documents = workspace.documents.filter((row) => matchesSearch(row, tokens));
+	const rfis = workspace.rfis.filter((row) => matchesSearch(row, tokens));
+	const submittals = workspace.submittals.filter((row) => matchesSearch(row, tokens));
+	const instructions = workspace.instructions.filter((row) => matchesSearch(row, tokens));
+
+	return {
+		...workspace,
+		query,
+		searchActive: true,
+		searchResultCount: documents.length + rfis.length + submittals.length + instructions.length,
+		documents,
+		rfis,
+		submittals,
+		instructions
+	};
 };
 
 export const actions: Actions = {
