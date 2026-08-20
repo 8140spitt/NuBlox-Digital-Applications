@@ -651,11 +651,7 @@ export class SiteQualitySafetyRepository {
 		return rows;
 	}
 
-	async findEvidenceVersionByPublicId(
-		projectId: string,
-		organisationId: string,
-		publicId: string
-	) {
+	async findEvidenceVersionByPublicId(projectId: string, organisationId: string, publicId: string) {
 		return (
 			(await this.db
 				.selectFrom('information_container_versions')

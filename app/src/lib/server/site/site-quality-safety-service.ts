@@ -175,28 +175,33 @@ function requiredText(value: string, label: string, max = 500): string {
 function optionalText(value: string | null | undefined, max = 1000): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (text.length > max) throw new SiteQualitySafetyValidationError('A supplied value is too long.');
+	if (text.length > max)
+		throw new SiteQualitySafetyValidationError('A supplied value is too long.');
 	return text;
 }
 
 function publicId(value: string, label: string): string {
 	const text = requiredText(value, label, 36);
-	if (!/^[0-9a-f-]{36}$/i.test(text)) throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
+	if (!/^[0-9a-f-]{36}$/i.test(text))
+		throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
 	return text;
 }
 
 function safeId(value: string, label: string): string {
 	const text = requiredText(value, label, 24);
-	if (!/^\d+$/.test(text) || text === '0') throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
+	if (!/^\d+$/.test(text) || text === '0')
+		throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
 	return text;
 }
 
 function dateOnly(value: string | null | undefined, label: string): Date | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
 	const parsed = new Date(`${text}T00:00:00.000Z`);
-	if (Number.isNaN(parsed.getTime())) throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
+	if (Number.isNaN(parsed.getTime()))
+		throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
 	return parsed;
 }
 
@@ -204,21 +209,26 @@ function dateTime(value: string, label: string): Date {
 	const text = requiredText(value, label, 64);
 	const normalized = /(?:Z|[+-]\d{2}:\d{2})$/.test(text) ? text : `${text}:00.000Z`;
 	const parsed = new Date(normalized);
-	if (Number.isNaN(parsed.getTime())) throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
+	if (Number.isNaN(parsed.getTime()))
+		throw new SiteQualitySafetyValidationError(`${label} is invalid.`);
 	return parsed;
 }
 
 function severity(value: string): 'low' | 'medium' | 'high' | 'critical' {
-	if (value === 'low' || value === 'medium' || value === 'high' || value === 'critical') return value;
+	if (value === 'low' || value === 'medium' || value === 'high' || value === 'critical')
+		return value;
 	throw new SiteQualitySafetyValidationError('Severity is invalid.');
 }
 
 function responseResult(value: string): 'pass' | 'fail' | 'not_applicable' | 'observation' {
-	if (value === 'pass' || value === 'fail' || value === 'not_applicable' || value === 'observation') return value;
+	if (value === 'pass' || value === 'fail' || value === 'not_applicable' || value === 'observation')
+		return value;
 	throw new SiteQualitySafetyValidationError('Inspection result is invalid.');
 }
 
-function observationCategory(value: string): 'condition' | 'behaviour' | 'process' | 'housekeeping' | 'environment' | 'other' {
+function observationCategory(
+	value: string
+): 'condition' | 'behaviour' | 'process' | 'housekeeping' | 'environment' | 'other' {
 	if (
 		value === 'condition' ||
 		value === 'behaviour' ||
@@ -226,18 +236,22 @@ function observationCategory(value: string): 'condition' | 'behaviour' | 'proces
 		value === 'housekeeping' ||
 		value === 'environment' ||
 		value === 'other'
-	) return value;
+	)
+		return value;
 	throw new SiteQualitySafetyValidationError('Observation category is invalid.');
 }
 
-function safetyActionType(value: string): 'immediate' | 'corrective' | 'preventive' | 'investigation' | 'verification' {
+function safetyActionType(
+	value: string
+): 'immediate' | 'corrective' | 'preventive' | 'investigation' | 'verification' {
 	if (
 		value === 'immediate' ||
 		value === 'corrective' ||
 		value === 'preventive' ||
 		value === 'investigation' ||
 		value === 'verification'
-	) return value;
+	)
+		return value;
 	throw new SiteQualitySafetyValidationError('Safety action type is invalid.');
 }
 
@@ -268,7 +282,9 @@ export class SiteQualitySafetyService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -283,7 +299,8 @@ export class SiteQualitySafetyService {
 		db: DatabaseExecutor = this.db
 	): Promise<void> {
 		const decision = await new PermissionService(db).decide(actor, permissionKey);
-		if (!decision.allowed) throw new TenantAccessError('This site, quality or safety action is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('This site, quality or safety action is not permitted.');
 	}
 
 	private async requireProject(
@@ -296,7 +313,8 @@ export class SiteQualitySafetyService {
 			actor.memberId,
 			publicId(projectPublicIdInput, 'Project')
 		);
-		if (!project) throw new TenantAccessError('The project is outside your effective project scope.');
+		if (!project)
+			throw new TenantAccessError('The project is outside your effective project scope.');
 		return project;
 	}
 
@@ -310,7 +328,8 @@ export class SiteQualitySafetyService {
 			project.id,
 			publicId(sitePublicIdInput, 'Site')
 		);
-		if (!site || !site.isActive) throw new SiteQualitySafetyValidationError('Site is not available for this project.');
+		if (!site || !site.isActive)
+			throw new SiteQualitySafetyValidationError('Site is not available for this project.');
 		return site;
 	}
 
@@ -386,8 +405,8 @@ export class SiteQualitySafetyService {
 			actor.memberId
 		);
 		const selectedProject = selectedProjectPublicId
-			? projects.find((project) => project.publicId === selectedProjectPublicId) ?? null
-			: projects[0] ?? null;
+			? (projects.find((project) => project.publicId === selectedProjectPublicId) ?? null)
+			: (projects[0] ?? null);
 		if (!selectedProject) {
 			return {
 				canViewSite,
@@ -419,20 +438,41 @@ export class SiteQualitySafetyService {
 		}
 
 		const repository = new SiteQualitySafetyRepository(this.db);
-		const [sites, diaries, templates, rawInspections, findingTypes, defects, ncrs, rawSafetyEvents, evidenceVersions] =
-			await Promise.all([
-				repository.listSites(selectedProject.id),
-				canViewSite ? repository.listDiaries(selectedProject.id, actor.organisationId) : Promise.resolve([]),
-				canViewQuality ? repository.listPublishedTemplates(actor.organisationId) : Promise.resolve([]),
-				canViewQuality ? repository.listInspections(selectedProject.id, actor.organisationId) : Promise.resolve([]),
-				canViewQuality ? repository.listFindingTypes() : Promise.resolve([]),
-				canViewQuality ? repository.listDefects(selectedProject.id, actor.organisationId) : Promise.resolve([]),
-				canViewQuality ? repository.listNcrs(selectedProject.id, actor.organisationId) : Promise.resolve([]),
-				canViewSafety ? repository.listSafetyEvents(selectedProject.id, actor.organisationId) : Promise.resolve([]),
-				canViewInformation
-					? repository.listEvidenceVersions(selectedProject.id, actor.organisationId)
-					: Promise.resolve([])
-			]);
+		const [
+			sites,
+			diaries,
+			templates,
+			rawInspections,
+			findingTypes,
+			defects,
+			ncrs,
+			rawSafetyEvents,
+			evidenceVersions
+		] = await Promise.all([
+			repository.listSites(selectedProject.id),
+			canViewSite
+				? repository.listDiaries(selectedProject.id, actor.organisationId)
+				: Promise.resolve([]),
+			canViewQuality
+				? repository.listPublishedTemplates(actor.organisationId)
+				: Promise.resolve([]),
+			canViewQuality
+				? repository.listInspections(selectedProject.id, actor.organisationId)
+				: Promise.resolve([]),
+			canViewQuality ? repository.listFindingTypes() : Promise.resolve([]),
+			canViewQuality
+				? repository.listDefects(selectedProject.id, actor.organisationId)
+				: Promise.resolve([]),
+			canViewQuality
+				? repository.listNcrs(selectedProject.id, actor.organisationId)
+				: Promise.resolve([]),
+			canViewSafety
+				? repository.listSafetyEvents(selectedProject.id, actor.organisationId)
+				: Promise.resolve([]),
+			canViewInformation
+				? repository.listEvidenceVersions(selectedProject.id, actor.organisationId)
+				: Promise.resolve([])
+		]);
 
 		const inspectionIds = rawInspections.map((inspection) => inspection.id);
 		const [responses, findings] = await Promise.all([
@@ -441,7 +481,10 @@ export class SiteQualitySafetyService {
 		]);
 		const inspections: InspectionWorkspaceRecord[] = [];
 		for (const inspection of rawInspections) {
-			const items = await repository.listTemplateItems(actor.organisationId, inspection.templateVersionId);
+			const items = await repository.listTemplateItems(
+				actor.organisationId,
+				inspection.templateVersionId
+			);
 			inspections.push({
 				...inspection,
 				items: items.map((item) => ({
@@ -498,7 +541,9 @@ export class SiteQualitySafetyService {
 		await this.requirePermission(actor, 'site.manage');
 		const project = await this.requireProject(actor, input.projectPublicId);
 		if (project.owningOrganisationId !== actor.organisationId) {
-			throw new TenantAccessError('Project site identities are controlled by the project-owning organisation.');
+			throw new TenantAccessError(
+				'Project site identities are controlled by the project-owning organisation.'
+			);
 		}
 		const siteCode = requiredText(input.siteCode, 'Site code', 80);
 		const name = requiredText(input.name, 'Site name', 255);
@@ -525,7 +570,10 @@ export class SiteQualitySafetyService {
 					is_active: 1
 				})
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, project.id, 'site.create', 'project_site', id, { siteCode, name });
+			await this.audit(trx, actor, project.id, 'site.create', 'project_site', id, {
+				siteCode,
+				name
+			});
 		});
 		return id;
 	}
@@ -537,7 +585,11 @@ export class SiteQualitySafetyService {
 		const site = await this.requireSite(actor, project, input.sitePublicId);
 		const diaryDate = dateOnly(input.diaryDate, 'Diary date');
 		if (!diaryDate) throw new SiteQualitySafetyValidationError('Diary date is required.');
-		const activityDescription = requiredText(input.activityDescription, 'Activity description', 4000);
+		const activityDescription = requiredText(
+			input.activityDescription,
+			'Activity description',
+			4000
+		);
 		const diaryPublicId = this.publicIdFactory();
 		await this.db.transaction().execute(async (trx) => {
 			const diaryId = insertedId(
@@ -596,7 +648,10 @@ export class SiteQualitySafetyService {
 		target: 'submitted' | 'approved'
 	): Promise<void> {
 		await this.assertActiveActor(actor);
-		await this.requirePermission(actor, target === 'submitted' ? 'site.diary.submit' : 'site.diary.approve');
+		await this.requirePermission(
+			actor,
+			target === 'submitted' ? 'site.diary.submit' : 'site.diary.approve'
+		);
 		const diaryPublicId = publicId(diaryPublicIdInput, 'Site diary');
 		await this.db.transaction().execute(async (trx) => {
 			const diary = await trx
@@ -610,24 +665,34 @@ export class SiteQualitySafetyService {
 			const project = await this.requireProjectById(actor, diary.project_id, trx);
 			const now = this.now();
 			if (target === 'submitted') {
-				if (diary.status !== 'draft') throw new SiteQualitySafetyValidationError('Only a draft diary can be submitted.');
+				if (diary.status !== 'draft')
+					throw new SiteQualitySafetyValidationError('Only a draft diary can be submitted.');
 				await trx
 					.updateTable('site_diaries')
 					.set({ status: 'submitted', submitted_by_member_id: actor.memberId, submitted_at: now })
 					.where('id', '=', diary.id)
 					.executeTakeFirstOrThrow();
 			} else {
-				if (diary.status !== 'submitted') throw new SiteQualitySafetyValidationError('Only a submitted diary can be approved.');
+				if (diary.status !== 'submitted')
+					throw new SiteQualitySafetyValidationError('Only a submitted diary can be approved.');
 				await trx
 					.updateTable('site_diaries')
 					.set({ status: 'approved', approved_by_member_id: actor.memberId, approved_at: now })
 					.where('id', '=', diary.id)
 					.executeTakeFirstOrThrow();
 			}
-			await this.audit(trx, actor, project.id, `site.diary.${target}`, 'site_diary', diaryPublicId, {
-				fromStatus: diary.status,
-				toStatus: target
-			});
+			await this.audit(
+				trx,
+				actor,
+				project.id,
+				`site.diary.${target}`,
+				'site_diary',
+				diaryPublicId,
+				{
+					fromStatus: diary.status,
+					toStatus: target
+				}
+			);
 		});
 	}
 
@@ -643,8 +708,10 @@ export class SiteQualitySafetyService {
 			.split(/\r?\n/)
 			.map((prompt) => prompt.trim())
 			.filter(Boolean);
-		if (prompts.length === 0) throw new SiteQualitySafetyValidationError('At least one checklist prompt is required.');
-		if (prompts.length > 20) throw new SiteQualitySafetyValidationError('A V1 checklist may contain up to 20 prompts.');
+		if (prompts.length === 0)
+			throw new SiteQualitySafetyValidationError('At least one checklist prompt is required.');
+		if (prompts.length > 20)
+			throw new SiteQualitySafetyValidationError('A V1 checklist may contain up to 20 prompts.');
 		for (const prompt of prompts) requiredText(prompt, 'Checklist prompt', 1000);
 		const templatePublicId = this.publicIdFactory();
 		const versionPublicId = this.publicIdFactory();
@@ -713,11 +780,19 @@ export class SiteQualitySafetyService {
 					}))
 				)
 				.execute();
-			await this.audit(trx, actor, null, 'quality.template.publish', 'quality_inspection_template', templatePublicId, {
-				code,
-				versionPublicId,
-				itemCount: prompts.length
-			});
+			await this.audit(
+				trx,
+				actor,
+				null,
+				'quality.template.publish',
+				'quality_inspection_template',
+				templatePublicId,
+				{
+					code,
+					versionPublicId,
+					itemCount: prompts.length
+				}
+			);
 		});
 		return templatePublicId;
 	}
@@ -732,7 +807,9 @@ export class SiteQualitySafetyService {
 			publicId(input.templateVersionPublicId, 'Inspection template version')
 		);
 		if (!template || template.status !== 'published')
-			throw new SiteQualitySafetyValidationError('Inspection template must be a published exact version.');
+			throw new SiteQualitySafetyValidationError(
+				'Inspection template must be a published exact version.'
+			);
 		const inspectionPublicId = this.publicIdFactory();
 		const now = this.now();
 		await this.db.transaction().execute(async (trx) => {
@@ -754,10 +831,18 @@ export class SiteQualitySafetyService {
 					inspected_by_member_id: actor.memberId
 				})
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, project.id, 'quality.inspection.create', 'quality_inspection', inspectionPublicId, {
-				sitePublicId: site.publicId,
-				templateVersionPublicId: template.publicId
-			});
+			await this.audit(
+				trx,
+				actor,
+				project.id,
+				'quality.inspection.create',
+				'quality_inspection',
+				inspectionPublicId,
+				{
+					sitePublicId: site.publicId,
+					templateVersionPublicId: template.publicId
+				}
+			);
 		});
 		return inspectionPublicId;
 	}
@@ -782,15 +867,24 @@ export class SiteQualitySafetyService {
 			if (!inspection) throw new TenantAccessError('Inspection not found.');
 			await this.requireProjectById(actor, inspection.project_id, trx);
 			if (inspection.status !== 'in_progress')
-				throw new SiteQualitySafetyValidationError('Only an in-progress inspection can be updated.');
+				throw new SiteQualitySafetyValidationError(
+					'Only an in-progress inspection can be updated.'
+				);
 			const item = await trx
 				.selectFrom('quality_inspection_template_items')
 				.select(['id', 'quality_inspection_template_version_id'])
 				.where('id', '=', itemId)
 				.where('organisation_id', '=', actor.organisationId)
-				.where('quality_inspection_template_version_id', '=', inspection.quality_inspection_template_version_id)
+				.where(
+					'quality_inspection_template_version_id',
+					'=',
+					inspection.quality_inspection_template_version_id
+				)
 				.executeTakeFirst();
-			if (!item) throw new SiteQualitySafetyValidationError('Checklist item does not belong to this inspection definition.');
+			if (!item)
+				throw new SiteQualitySafetyValidationError(
+					'Checklist item does not belong to this inspection definition.'
+				);
 			const existing = await trx
 				.selectFrom('quality_inspection_responses')
 				.select('id')
@@ -820,7 +914,8 @@ export class SiteQualitySafetyService {
 					.values({
 						quality_inspection_id: inspection.id,
 						owning_organisation_id: actor.organisationId,
-						quality_inspection_template_version_id: inspection.quality_inspection_template_version_id,
+						quality_inspection_template_version_id:
+							inspection.quality_inspection_template_version_id,
 						quality_inspection_template_item_id: itemId,
 						result_code: resultCode,
 						response_text: null,
@@ -834,10 +929,18 @@ export class SiteQualitySafetyService {
 					})
 					.executeTakeFirstOrThrow();
 			}
-			await this.audit(trx, actor, inspection.project_id, 'quality.inspection.respond', 'quality_inspection', inspectionPublicId, {
-				itemId,
-				resultCode
-			});
+			await this.audit(
+				trx,
+				actor,
+				inspection.project_id,
+				'quality.inspection.respond',
+				'quality_inspection',
+				inspectionPublicId,
+				{
+					itemId,
+					resultCode
+				}
+			);
 		});
 	}
 
@@ -874,7 +977,10 @@ export class SiteQualitySafetyService {
 					.where('quality_inspection_id', '=', inspection.id)
 					.where('quality_inspection_template_item_id', '=', itemId)
 					.executeTakeFirst();
-				if (!response) throw new SiteQualitySafetyValidationError('Record the checklist response before raising a linked finding.');
+				if (!response)
+					throw new SiteQualitySafetyValidationError(
+						'Record the checklist response before raising a linked finding.'
+					);
 				responseId = response.id;
 			}
 			await trx
@@ -892,15 +998,26 @@ export class SiteQualitySafetyService {
 					raised_at: this.now()
 				})
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, inspection.project_id, 'quality.finding.raise', 'quality_inspection_finding', findingPublicId, {
-				inspectionPublicId,
-				findingType: input.findingTypeCode
-			});
+			await this.audit(
+				trx,
+				actor,
+				inspection.project_id,
+				'quality.finding.raise',
+				'quality_inspection_finding',
+				findingPublicId,
+				{
+					inspectionPublicId,
+					findingType: input.findingTypeCode
+				}
+			);
 		});
 		return findingPublicId;
 	}
 
-	async completeInspection(actor: TenantActorContext, inspectionPublicIdInput: string): Promise<void> {
+	async completeInspection(
+		actor: TenantActorContext,
+		inspectionPublicIdInput: string
+	): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'quality.inspection.manage');
 		const inspectionPublicId = publicId(inspectionPublicIdInput, 'Inspection');
@@ -914,12 +1031,19 @@ export class SiteQualitySafetyService {
 				.executeTakeFirst();
 			if (!inspection) throw new TenantAccessError('Inspection not found.');
 			await this.requireProjectById(actor, inspection.project_id, trx);
-			if (inspection.status !== 'in_progress') throw new SiteQualitySafetyValidationError('Only an in-progress inspection can be completed.');
+			if (inspection.status !== 'in_progress')
+				throw new SiteQualitySafetyValidationError(
+					'Only an in-progress inspection can be completed.'
+				);
 			const requiredItems = await trx
 				.selectFrom('quality_inspection_template_items')
 				.select('id')
 				.where('organisation_id', '=', actor.organisationId)
-				.where('quality_inspection_template_version_id', '=', inspection.quality_inspection_template_version_id)
+				.where(
+					'quality_inspection_template_version_id',
+					'=',
+					inspection.quality_inspection_template_version_id
+				)
 				.where('is_required', '=', 1)
 				.execute();
 			const responses = await trx
@@ -928,18 +1052,30 @@ export class SiteQualitySafetyService {
 				.where('quality_inspection_id', '=', inspection.id)
 				.execute();
 			const responded = new Set(
-				responses.filter((response) => response.result_code !== 'not_checked').map((response) => response.quality_inspection_template_item_id)
+				responses
+					.filter((response) => response.result_code !== 'not_checked')
+					.map((response) => response.quality_inspection_template_item_id)
 			);
 			if (requiredItems.some((item) => !responded.has(item.id)))
-				throw new SiteQualitySafetyValidationError('Complete every required checklist item before completing the inspection.');
+				throw new SiteQualitySafetyValidationError(
+					'Complete every required checklist item before completing the inspection.'
+				);
 			await trx
 				.updateTable('quality_inspections')
 				.set({ status: 'completed', completed_at: this.now() })
 				.where('id', '=', inspection.id)
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, inspection.project_id, 'quality.inspection.complete', 'quality_inspection', inspectionPublicId, {
-				itemCount: requiredItems.length
-			});
+			await this.audit(
+				trx,
+				actor,
+				inspection.project_id,
+				'quality.inspection.complete',
+				'quality_inspection',
+				inspectionPublicId,
+				{
+					itemCount: requiredItems.length
+				}
+			);
 		});
 	}
 
@@ -1005,9 +1141,17 @@ export class SiteQualitySafetyService {
 				.set({ status: 'closed', closed_by_member_id: actor.memberId, closed_at: this.now() })
 				.where('id', '=', defect.id)
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, defect.project_id, 'quality.defect.close', 'defect', defectPublicId, {
-				fromStatus: defect.status
-			});
+			await this.audit(
+				trx,
+				actor,
+				defect.project_id,
+				'quality.defect.close',
+				'defect',
+				defectPublicId,
+				{
+					fromStatus: defect.status
+				}
+			);
 		});
 	}
 
@@ -1030,7 +1174,11 @@ export class SiteQualitySafetyService {
 					ncr_number: reference('NCR', ncrPublicId, now),
 					source_inspection_finding_id: findingId,
 					title: requiredText(input.title, 'NCR title', 500),
-					nonconformance_statement: requiredText(input.statement, 'Non-conformance statement', 4000),
+					nonconformance_statement: requiredText(
+						input.statement,
+						'Non-conformance statement',
+						4000
+					),
 					severity: severity(input.severity),
 					immediate_containment: optionalText(input.immediateContainment, 4000),
 					root_cause: null,
@@ -1045,11 +1193,19 @@ export class SiteQualitySafetyService {
 					closed_at: null
 				})
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, project.id, 'quality.ncr.raise', 'nonconformance_report', ncrPublicId, {
-				sitePublicId: site.publicId,
-				severity: input.severity,
-				findingLinked: Boolean(findingId)
-			});
+			await this.audit(
+				trx,
+				actor,
+				project.id,
+				'quality.ncr.raise',
+				'nonconformance_report',
+				ncrPublicId,
+				{
+					sitePublicId: site.publicId,
+					severity: input.severity,
+					findingLinked: Boolean(findingId)
+				}
+			);
 		});
 		return ncrPublicId;
 	}
@@ -1075,9 +1231,17 @@ export class SiteQualitySafetyService {
 				.set({ status: 'closed', closed_by_member_id: actor.memberId, closed_at: this.now() })
 				.where('id', '=', ncr.id)
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, ncr.project_id, 'quality.ncr.close', 'nonconformance_report', ncrPublicId, {
-				fromStatus: ncr.status
-			});
+			await this.audit(
+				trx,
+				actor,
+				ncr.project_id,
+				'quality.ncr.close',
+				'nonconformance_report',
+				ncrPublicId,
+				{
+					fromStatus: ncr.status
+				}
+			);
 		});
 	}
 
@@ -1124,16 +1288,27 @@ export class SiteQualitySafetyService {
 					immediate_action_taken: optionalText(input.immediateActionTaken, 4000)
 				})
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, project.id, 'safety.observation.report', 'safety_event', eventPublicId, {
-				sitePublicId: site.publicId,
-				category: input.observationCategory,
-				positive: input.isPositiveObservation
-			});
+			await this.audit(
+				trx,
+				actor,
+				project.id,
+				'safety.observation.report',
+				'safety_event',
+				eventPublicId,
+				{
+					sitePublicId: site.publicId,
+					category: input.observationCategory,
+					positive: input.isPositiveObservation
+				}
+			);
 		});
 		return eventPublicId;
 	}
 
-	async createSafetyAction(actor: TenantActorContext, input: CreateSafetyActionInput): Promise<void> {
+	async createSafetyAction(
+		actor: TenantActorContext,
+		input: CreateSafetyActionInput
+	): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'safety.action.manage');
 		const eventPublicId = publicId(input.safetyEventPublicId, 'Safety event');
@@ -1148,7 +1323,9 @@ export class SiteQualitySafetyService {
 			if (!event) throw new TenantAccessError('Safety event not found.');
 			await this.requireProjectById(actor, event.project_id, trx);
 			if (event.status === 'closed' || event.status === 'cancelled')
-				throw new SiteQualitySafetyValidationError('Closed safety events cannot accept new actions.');
+				throw new SiteQualitySafetyValidationError(
+					'Closed safety events cannot accept new actions.'
+				);
 			await trx
 				.insertInto('safety_actions')
 				.values({
@@ -1167,11 +1344,23 @@ export class SiteQualitySafetyService {
 				})
 				.executeTakeFirstOrThrow();
 			if (event.status === 'reported') {
-				await trx.updateTable('safety_events').set({ status: 'action' }).where('id', '=', event.id).executeTakeFirstOrThrow();
+				await trx
+					.updateTable('safety_events')
+					.set({ status: 'action' })
+					.where('id', '=', event.id)
+					.executeTakeFirstOrThrow();
 			}
-			await this.audit(trx, actor, event.project_id, 'safety.action.create', 'safety_event', eventPublicId, {
-				actionType: input.actionType
-			});
+			await this.audit(
+				trx,
+				actor,
+				event.project_id,
+				'safety.action.create',
+				'safety_event',
+				eventPublicId,
+				{
+					actionType: input.actionType
+				}
+			);
 		});
 	}
 
@@ -1202,7 +1391,8 @@ export class SiteQualitySafetyService {
 				.where('event_owner_organisation_id', '=', actor.organisationId)
 				.forUpdate()
 				.executeTakeFirst();
-			if (!action) throw new SiteQualitySafetyValidationError('Safety action was not found for this event.');
+			if (!action)
+				throw new SiteQualitySafetyValidationError('Safety action was not found for this event.');
 			if (action.status === 'completed' || action.status === 'verified')
 				throw new SiteQualitySafetyValidationError('Safety action is already complete.');
 			await trx
@@ -1216,13 +1406,24 @@ export class SiteQualitySafetyService {
 				})
 				.where('id', '=', action.id)
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, event.project_id, 'safety.action.complete', 'safety_event', eventPublicId, {
-				actionId
-			});
+			await this.audit(
+				trx,
+				actor,
+				event.project_id,
+				'safety.action.complete',
+				'safety_event',
+				eventPublicId,
+				{
+					actionId
+				}
+			);
 		});
 	}
 
-	async closeSafetyEvent(actor: TenantActorContext, safetyEventPublicIdInput: string): Promise<void> {
+	async closeSafetyEvent(
+		actor: TenantActorContext,
+		safetyEventPublicIdInput: string
+	): Promise<void> {
 		await this.assertActiveActor(actor);
 		await this.requirePermission(actor, 'safety.event.manage');
 		const eventPublicId = publicId(safetyEventPublicIdInput, 'Safety event');
@@ -1246,15 +1447,26 @@ export class SiteQualitySafetyService {
 				.where('status', 'in', ['open', 'in_progress'])
 				.limit(1)
 				.executeTakeFirst();
-			if (openAction) throw new SiteQualitySafetyValidationError('Complete open safety actions before closing the event.');
+			if (openAction)
+				throw new SiteQualitySafetyValidationError(
+					'Complete open safety actions before closing the event.'
+				);
 			await trx
 				.updateTable('safety_events')
 				.set({ status: 'closed', closed_by_member_id: actor.memberId, closed_at: this.now() })
 				.where('id', '=', event.id)
 				.executeTakeFirstOrThrow();
-			await this.audit(trx, actor, event.project_id, 'safety.event.close', 'safety_event', eventPublicId, {
-				fromStatus: event.status
-			});
+			await this.audit(
+				trx,
+				actor,
+				event.project_id,
+				'safety.event.close',
+				'safety_event',
+				eventPublicId,
+				{
+					fromStatus: event.status
+				}
+			);
 		});
 	}
 
@@ -1277,54 +1489,105 @@ export class SiteQualitySafetyService {
 			actor.organisationId,
 			publicId(input.informationVersionPublicId, 'Information version')
 		);
-		if (!version) throw new SiteQualitySafetyValidationError('Evidence must be an issued or superseded project-information revision owned by your organisation.');
+		if (!version)
+			throw new SiteQualitySafetyValidationError(
+				'Evidence must be an issued or superseded project-information revision owned by your organisation.'
+			);
 		const subjectPublicId = publicId(input.subjectPublicId, 'Evidence subject');
 		await this.db.transaction().execute(async (trx) => {
 			if (input.subjectType === 'diary') {
-				const subject = await trx.selectFrom('site_diaries').select(['id', 'project_id']).where('owning_organisation_id', '=', actor.organisationId).where('public_id', '=', subjectPublicId).executeTakeFirst();
-				if (!subject || subject.project_id !== project.id) throw new TenantAccessError('Site diary is outside this project scope.');
-				await trx.insertInto('site_diary_information_links').ignore().values({
-					site_diary_id: subject.id,
-					diary_owner_organisation_id: actor.organisationId,
-					information_container_version_id: version.id,
-					version_owner_organisation_id: actor.organisationId,
-					link_role: input.linkRole
-				}).execute();
+				const subject = await trx
+					.selectFrom('site_diaries')
+					.select(['id', 'project_id'])
+					.where('owning_organisation_id', '=', actor.organisationId)
+					.where('public_id', '=', subjectPublicId)
+					.executeTakeFirst();
+				if (!subject || subject.project_id !== project.id)
+					throw new TenantAccessError('Site diary is outside this project scope.');
+				await trx
+					.insertInto('site_diary_information_links')
+					.ignore()
+					.values({
+						site_diary_id: subject.id,
+						diary_owner_organisation_id: actor.organisationId,
+						information_container_version_id: version.id,
+						version_owner_organisation_id: actor.organisationId,
+						link_role: input.linkRole
+					})
+					.execute();
 			} else if (input.subjectType === 'defect') {
-				const subject = await trx.selectFrom('defect_records').select(['id', 'project_id']).where('owning_organisation_id', '=', actor.organisationId).where('public_id', '=', subjectPublicId).executeTakeFirst();
-				if (!subject || subject.project_id !== project.id) throw new TenantAccessError('Defect is outside this project scope.');
-				await trx.insertInto('defect_information_links').ignore().values({
-					defect_record_id: subject.id,
-					defect_owner_organisation_id: actor.organisationId,
-					information_container_version_id: version.id,
-					version_owner_organisation_id: actor.organisationId,
-					link_role: input.linkRole
-				}).execute();
+				const subject = await trx
+					.selectFrom('defect_records')
+					.select(['id', 'project_id'])
+					.where('owning_organisation_id', '=', actor.organisationId)
+					.where('public_id', '=', subjectPublicId)
+					.executeTakeFirst();
+				if (!subject || subject.project_id !== project.id)
+					throw new TenantAccessError('Defect is outside this project scope.');
+				await trx
+					.insertInto('defect_information_links')
+					.ignore()
+					.values({
+						defect_record_id: subject.id,
+						defect_owner_organisation_id: actor.organisationId,
+						information_container_version_id: version.id,
+						version_owner_organisation_id: actor.organisationId,
+						link_role: input.linkRole
+					})
+					.execute();
 			} else if (input.subjectType === 'ncr') {
-				const subject = await trx.selectFrom('nonconformance_reports').select(['id', 'project_id']).where('owning_organisation_id', '=', actor.organisationId).where('public_id', '=', subjectPublicId).executeTakeFirst();
-				if (!subject || subject.project_id !== project.id) throw new TenantAccessError('NCR is outside this project scope.');
-				await trx.insertInto('ncr_information_links').ignore().values({
-					nonconformance_report_id: subject.id,
-					ncr_owner_organisation_id: actor.organisationId,
-					information_container_version_id: version.id,
-					version_owner_organisation_id: actor.organisationId,
-					link_role: input.linkRole
-				}).execute();
+				const subject = await trx
+					.selectFrom('nonconformance_reports')
+					.select(['id', 'project_id'])
+					.where('owning_organisation_id', '=', actor.organisationId)
+					.where('public_id', '=', subjectPublicId)
+					.executeTakeFirst();
+				if (!subject || subject.project_id !== project.id)
+					throw new TenantAccessError('NCR is outside this project scope.');
+				await trx
+					.insertInto('ncr_information_links')
+					.ignore()
+					.values({
+						nonconformance_report_id: subject.id,
+						ncr_owner_organisation_id: actor.organisationId,
+						information_container_version_id: version.id,
+						version_owner_organisation_id: actor.organisationId,
+						link_role: input.linkRole
+					})
+					.execute();
 			} else {
-				const subject = await trx.selectFrom('safety_events').select(['id', 'project_id']).where('owning_organisation_id', '=', actor.organisationId).where('public_id', '=', subjectPublicId).executeTakeFirst();
-				if (!subject || subject.project_id !== project.id) throw new TenantAccessError('Safety event is outside this project scope.');
-				await trx.insertInto('safety_event_information_links').ignore().values({
-					safety_event_id: subject.id,
-					event_owner_organisation_id: actor.organisationId,
-					information_container_version_id: version.id,
-					version_owner_organisation_id: actor.organisationId,
-					link_role: input.linkRole
-				}).execute();
+				const subject = await trx
+					.selectFrom('safety_events')
+					.select(['id', 'project_id'])
+					.where('owning_organisation_id', '=', actor.organisationId)
+					.where('public_id', '=', subjectPublicId)
+					.executeTakeFirst();
+				if (!subject || subject.project_id !== project.id)
+					throw new TenantAccessError('Safety event is outside this project scope.');
+				await trx
+					.insertInto('safety_event_information_links')
+					.ignore()
+					.values({
+						safety_event_id: subject.id,
+						event_owner_organisation_id: actor.organisationId,
+						information_container_version_id: version.id,
+						version_owner_organisation_id: actor.organisationId,
+						link_role: input.linkRole
+					})
+					.execute();
 			}
-			await this.audit(trx, actor, project.id, 'site.evidence.link', input.subjectType, subjectPublicId, {
-				informationVersionPublicId: version.public_id,
-				linkRole: input.linkRole
-			});
+			await this.audit(
+				trx,
+				actor,
+				project.id,
+				'site.evidence.link',
+				input.subjectType,
+				subjectPublicId,
+				{
+					informationVersionPublicId: version.public_id,
+					linkRole: input.linkRole
+				}
+			);
 		});
 	}
 
@@ -1338,13 +1601,19 @@ export class SiteQualitySafetyService {
 		if (!value) return null;
 		const finding = await db
 			.selectFrom('quality_inspection_findings as finding')
-			.innerJoin('quality_inspections as inspection', 'inspection.id', 'finding.quality_inspection_id')
+			.innerJoin(
+				'quality_inspections as inspection',
+				'inspection.id',
+				'finding.quality_inspection_id'
+			)
 			.select(['finding.id as id', 'inspection.project_id as projectId'])
 			.where('finding.owning_organisation_id', '=', actor.organisationId)
 			.where('finding.public_id', '=', publicId(value, 'Inspection finding'))
 			.executeTakeFirst();
 		if (!finding || finding.projectId !== projectId)
-			throw new SiteQualitySafetyValidationError('Inspection finding is outside this project scope.');
+			throw new SiteQualitySafetyValidationError(
+				'Inspection finding is outside this project scope.'
+			);
 		return finding.id;
 	}
 
@@ -1359,7 +1628,11 @@ export class SiteQualitySafetyService {
 			.innerJoin('project_members as member', (join) =>
 				join
 					.onRef('member.project_id', '=', 'participant.project_id')
-					.onRef('member.participant_organisation_id', '=', 'participant.participant_organisation_id')
+					.onRef(
+						'member.participant_organisation_id',
+						'=',
+						'participant.participant_organisation_id'
+					)
 			)
 			.select([
 				'project.id as id',
@@ -1380,7 +1653,8 @@ export class SiteQualitySafetyService {
 			.where('member.organisation_member_id', '=', actor.memberId)
 			.where('member.status', '=', 'active')
 			.executeTakeFirst();
-		if (!project) throw new TenantAccessError('The project is outside your effective project scope.');
+		if (!project)
+			throw new TenantAccessError('The project is outside your effective project scope.');
 		return project as ProjectRecord;
 	}
 

@@ -79,7 +79,10 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			evidenceVersions: []
 		};
 	}
-	return new SiteQualitySafetyService(getDatabase()).getWorkspace(actor, url.searchParams.get('project'));
+	return new SiteQualitySafetyService(getDatabase()).getWorkspace(
+		actor,
+		url.searchParams.get('project')
+	);
 };
 
 export const actions: Actions = {
@@ -111,11 +114,15 @@ export const actions: Actions = {
 	},
 	submitDiary: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, data, (service, actor) => service.submitDiary(actor, text(data, 'diaryPublicId')));
+		return runAction(locals, data, (service, actor) =>
+			service.submitDiary(actor, text(data, 'diaryPublicId'))
+		);
 	},
 	approveDiary: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, data, (service, actor) => service.approveDiary(actor, text(data, 'diaryPublicId')));
+		return runAction(locals, data, (service, actor) =>
+			service.approveDiary(actor, text(data, 'diaryPublicId'))
+		);
 	},
 	createTemplate: async ({ request, locals }) => {
 		const data = await request.formData();
@@ -166,7 +173,9 @@ export const actions: Actions = {
 	},
 	completeInspection: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, data, (service, actor) => service.completeInspection(actor, text(data, 'inspectionPublicId')));
+		return runAction(locals, data, (service, actor) =>
+			service.completeInspection(actor, text(data, 'inspectionPublicId'))
+		);
 	},
 	createDefect: async ({ request, locals }) => {
 		const data = await request.formData();
@@ -185,7 +194,9 @@ export const actions: Actions = {
 	},
 	closeDefect: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, data, (service, actor) => service.closeDefect(actor, text(data, 'defectPublicId')));
+		return runAction(locals, data, (service, actor) =>
+			service.closeDefect(actor, text(data, 'defectPublicId'))
+		);
 	},
 	createNcr: async ({ request, locals }) => {
 		const data = await request.formData();
@@ -204,7 +215,9 @@ export const actions: Actions = {
 	},
 	closeNcr: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, data, (service, actor) => service.closeNcr(actor, text(data, 'ncrPublicId')));
+		return runAction(locals, data, (service, actor) =>
+			service.closeNcr(actor, text(data, 'ncrPublicId'))
+		);
 	},
 	createSafetyObservation: async ({ request, locals }) => {
 		const data = await request.formData();
@@ -246,7 +259,9 @@ export const actions: Actions = {
 	},
 	closeSafetyEvent: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, data, (service, actor) => service.closeSafetyEvent(actor, text(data, 'safetyEventPublicId')));
+		return runAction(locals, data, (service, actor) =>
+			service.closeSafetyEvent(actor, text(data, 'safetyEventPublicId'))
+		);
 	},
 	linkEvidence: async ({ request, locals }) => {
 		const data = await request.formData();

@@ -288,7 +288,9 @@ describe('V1 site, quality and safety activation', () => {
 			checklistPrompts: 'Containment securely fixed\nRoutes match issued coordination drawing'
 		});
 		let workspace = await service.getWorkspace(actorOwner, projectPublicId);
-		const template = workspace.templates.find((row) => row.name === 'Containment first-fix checklist');
+		const template = workspace.templates.find(
+			(row) => row.name === 'Containment first-fix checklist'
+		);
 		expect(template).toBeTruthy();
 		inspectionPublicId = await service.createInspection(actorOwner, {
 			projectPublicId,
@@ -329,7 +331,9 @@ describe('V1 site, quality and safety activation', () => {
 			(row) => row.publicId === inspectionPublicId
 		)!;
 		expect(inspection.status).toBe('completed');
-		expect(inspection.findings).toContainEqual(expect.objectContaining({ publicId: findingPublicId }));
+		expect(inspection.findings).toContainEqual(
+			expect.objectContaining({ publicId: findingPublicId })
+		);
 
 		defectPublicId = await service.createDefect(actorOwner, {
 			projectPublicId,
@@ -346,7 +350,8 @@ describe('V1 site, quality and safety activation', () => {
 			sitePublicId,
 			findingPublicId,
 			title: 'Containment installation non-conformance',
-			statement: 'Installed support spacing does not comply with the project installation standard.',
+			statement:
+				'Installed support spacing does not comply with the project installation standard.',
 			severity: 'medium',
 			immediateContainment: 'Affected section identified and held from close-up.',
 			targetDate: '2026-08-26'
@@ -354,8 +359,16 @@ describe('V1 site, quality and safety activation', () => {
 		await service.closeDefect(actorOwner, defectPublicId);
 		await service.closeNcr(actorOwner, ncrPublicId);
 		const [defect, ncr] = await Promise.all([
-			db.selectFrom('defect_records').select(['status', 'closed_by_member_id']).where('public_id', '=', defectPublicId).executeTakeFirstOrThrow(),
-			db.selectFrom('nonconformance_reports').select(['status', 'closed_by_member_id']).where('public_id', '=', ncrPublicId).executeTakeFirstOrThrow()
+			db
+				.selectFrom('defect_records')
+				.select(['status', 'closed_by_member_id'])
+				.where('public_id', '=', defectPublicId)
+				.executeTakeFirstOrThrow(),
+			db
+				.selectFrom('nonconformance_reports')
+				.select(['status', 'closed_by_member_id'])
+				.where('public_id', '=', ncrPublicId)
+				.executeTakeFirstOrThrow()
 		]);
 		expect(defect).toMatchObject({ status: 'closed', closed_by_member_id: ownerMemberId });
 		expect(ncr).toMatchObject({ status: 'closed', closed_by_member_id: ownerMemberId });
@@ -393,7 +406,11 @@ describe('V1 site, quality and safety activation', () => {
 		});
 		const link = await db
 			.selectFrom('defect_information_links as link')
-			.innerJoin('information_container_versions as version', 'version.id', 'link.information_container_version_id')
+			.innerJoin(
+				'information_container_versions as version',
+				'version.id',
+				'link.information_container_version_id'
+			)
 			.select(['link.link_role as linkRole', 'version.public_id as versionPublicId'])
 			.where('version.public_id', '=', evidenceVersionPublicId)
 			.executeTakeFirstOrThrow();
@@ -470,7 +487,10 @@ describe('V1 site, quality and safety activation', () => {
 			memberId: viewerMemberId,
 			correlationId: `slice5-viewer-${randomUUID()}`
 		};
-		const workspace = await new SiteQualitySafetyService(db).getWorkspace(actorViewer, projectPublicId);
+		const workspace = await new SiteQualitySafetyService(db).getWorkspace(
+			actorViewer,
+			projectPublicId
+		);
 		expect(workspace).toMatchObject({
 			canViewSite: true,
 			canViewQuality: true,
@@ -483,7 +503,11 @@ describe('V1 site, quality and safety activation', () => {
 			canManageSafetyActions: false
 		});
 		expect(workspace.sites).toContainEqual(expect.objectContaining({ publicId: sitePublicId }));
-		expect(workspace.inspections).toContainEqual(expect.objectContaining({ publicId: inspectionPublicId }));
-		expect(workspace.safetyEvents).toContainEqual(expect.objectContaining({ publicId: safetyEventPublicId }));
+		expect(workspace.inspections).toContainEqual(
+			expect.objectContaining({ publicId: inspectionPublicId })
+		);
+		expect(workspace.safetyEvents).toContainEqual(
+			expect.objectContaining({ publicId: safetyEventPublicId })
+		);
 	});
 });
