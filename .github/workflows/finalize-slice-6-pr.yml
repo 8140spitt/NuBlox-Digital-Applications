@@ -1,0 +1,46 @@
+name: Finalize Slice 6 PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.head_ref == 'product/v1-assets-facilities-maintenance'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-assets-facilities-maintenance
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Apply cross-cutting Slice 6 patches
+        run: python .github/scripts/finalize-slice6.py
+      - name: Format changed Slice 6 files
+        working-directory: app
+        run: pnpm exec prettier --write src/lib/server/assets src/routes/'(app)'/assets src/lib/navigation/app-navigation.ts e2e/assets-maintenance.e2e.ts e2e/authenticated-workspaces.e2e.ts e2e/ui-permissions.e2e.ts ../docs/53-v1-slice-6-assets-facilities-maintenance.md ../database/migrations/20260820140500_assets_facilities_maintenance_permissions.sql
+      - name: Commit finalized Slice 6 files
+        run: |
+          if git diff --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app database docs
+          git commit -m "Finalize Slice 6 application wiring"
+          git push origin HEAD:product/v1-assets-facilities-maintenance
