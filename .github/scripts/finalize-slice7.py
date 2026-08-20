@@ -59,7 +59,7 @@ test_path.write_text(text)
 # Type the reusable Playwright helper.
 e2e_path = Path("app/e2e/portal-collaboration.e2e.ts")
 text = e2e_path.read_text()
-if "import type { Page }" not in text:
+if "type Page" not in text.splitlines()[0]:
     text = text.replace(
         "import { expect, test } from '@playwright/test';\n",
         "import { expect, test, type Page } from '@playwright/test';\n",
@@ -83,7 +83,7 @@ permissions_e2e = Path("app/e2e/ui-permissions.e2e.ts")
 text = permissions_e2e.read_text()
 portal_view_expectation = "\tawait expect(primaryNavigation.getByRole('link', { name: 'Portal', exact: true })).toBeVisible();\n"
 if portal_view_expectation not in text:
-    anchor = "\tawait expect(primaryNavigation.getByRole('link', { name: 'Assets / Facilities', exact: true })).toBeVisible();\n"
+    anchor = "\tawait expect(\n\t\tprimaryNavigation.getByRole('link', { name: 'Assets / Facilities', exact: true })\n\t).toBeVisible();\n"
     if anchor not in text:
         raise SystemExit("UI permissions Portal nav anchor not found")
     text = text.replace(anchor, anchor + portal_view_expectation, 1)
