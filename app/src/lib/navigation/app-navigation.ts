@@ -48,8 +48,35 @@ const navigationSections: readonly AppNavigationSection[] = [
 				href: '/commercial/estimates',
 				anyPermissionNamespaces: ['commercial.'],
 				children: [
-					{ id: 'estimates', label: 'Estimates', href: '/commercial/estimates' },
-					{ id: 'quotations', label: 'Quotations', href: '/commercial/quotations' }
+					{
+						id: 'estimates',
+						label: 'Estimates',
+						href: '/commercial/estimates',
+						anyPermissions: ['commercial.view', 'commercial.manage', 'commercial.estimate.manage']
+					},
+					{
+						id: 'quotations',
+						label: 'Quotations',
+						href: '/commercial/quotations',
+						anyPermissions: ['commercial.view', 'commercial.manage', 'commercial.quotation.manage']
+					},
+					{
+						id: 'project-cost-control',
+						label: 'Project cost control',
+						href: '/commercial/cost-control',
+						anyPermissionNamespaces: [
+							'commercial.cost_control.',
+							'commercial.cost_code.',
+							'commercial.budget.',
+							'commercial.variation.'
+						]
+					},
+					{
+						id: 'commercial-valuations',
+						label: 'Valuations',
+						href: '/commercial/valuations',
+						anyPermissionNamespaces: ['commercial.valuation.']
+					}
 				]
 			}
 		]
@@ -82,6 +109,25 @@ const navigationSections: readonly AppNavigationSection[] = [
 						label: 'Instructions',
 						href: '/documents#instruction-register'
 					}
+				]
+			},
+			{
+				id: 'purchasing',
+				label: 'Purchasing',
+				href: '/purchasing',
+				anyPermissionNamespaces: ['procurement.'],
+				children: [
+					{
+						id: 'procurement-packages',
+						label: 'Procurement packages',
+						href: '/purchasing#package-register'
+					},
+					{
+						id: 'procurement-enquiries',
+						label: 'Enquiries / RFQs',
+						href: '/purchasing#rfq-register'
+					},
+					{ id: 'purchase-orders', label: 'Purchase orders', href: '/purchasing#po-register' }
 				]
 			},
 			{
@@ -277,6 +323,34 @@ const quickActions: readonly AppQuickAction[] = [
 		href: '/documents#create-instruction',
 		description: 'Create a formal project instruction draft.',
 		anyPermissions: ['information.instruction.manage']
+	},
+	{
+		id: 'new-procurement-package',
+		label: 'Procurement package',
+		href: '/purchasing#create-package',
+		description: 'Create a project procurement requirement.',
+		anyPermissions: ['procurement.package.manage']
+	},
+	{
+		id: 'new-purchase-order',
+		label: 'Purchase order',
+		href: '/purchasing#create-po',
+		description: 'Create a controlled supplier commitment draft.',
+		anyPermissions: ['procurement.po.manage']
+	},
+	{
+		id: 'new-cost-code',
+		label: 'Project cost code',
+		href: '/commercial/cost-control#create-cost-code',
+		description: 'Create project commercial classification.',
+		anyPermissions: ['commercial.cost_code.manage']
+	},
+	{
+		id: 'new-commercial-variation',
+		label: 'Commercial variation',
+		href: '/commercial/cost-control#create-variation',
+		description: 'Create a controlled project change record.',
+		anyPermissions: ['commercial.variation.manage']
 	},
 	{
 		id: 'new-workforce-member',

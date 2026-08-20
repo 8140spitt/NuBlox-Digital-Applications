@@ -10,6 +10,7 @@ import {
 	OrganisationBootstrapService,
 	OrganisationBootstrapValidationError
 } from '$lib/server/organisations/bootstrap-service';
+import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';
 import { ORGANISATION_COOKIE } from '$lib/server/request-context';
 import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
 
@@ -48,7 +49,8 @@ export const actions: Actions = {
 			);
 			await Promise.all([
 				ensureWorkforceStandardRoleDefaults(db, created.organisationId),
-				ensureInformationStandardRoleDefaults(db, created.organisationId)
+				ensureInformationStandardRoleDefaults(db, created.organisationId),
+				ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId)
 			]);
 
 			cookies.set(ORGANISATION_COOKIE, created.organisationPublicId, {
