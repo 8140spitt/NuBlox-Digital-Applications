@@ -163,7 +163,9 @@ test('owner records and closes controlled site, quality and safety workflows thr
 	await expect(safetyCard.getByText('reported', { exact: true })).toBeVisible();
 	await safetyCard.locator('summary').filter({ hasText: 'Add safety action' }).click();
 	await safetyCard.getByLabel('Action type').selectOption('corrective');
-	await safetyCard.getByLabel('Action').fill('Install a protected temporary cable route.');
+	await safetyCard
+		.getByLabel('Action', { exact: true })
+		.fill('Install a protected temporary cable route.');
 	await safetyCard.getByRole('button', { name: 'Create safety action' }).click();
 	await expect(page).toHaveURL(siteUrl);
 	safetyCard = page.locator('#safety-register .safety-card').filter({ hasText: safetyTitle });
