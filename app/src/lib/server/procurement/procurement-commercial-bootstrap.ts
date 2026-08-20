@@ -16,7 +16,9 @@ const SLICE4_STANDARD_ROLE_PERMISSIONS = {
 		'commercial.budget.approve',
 		'commercial.variation.manage',
 		'commercial.variation.issue',
-		'commercial.variation.decide'
+		'commercial.variation.decide',
+		'commercial.valuation.manage',
+		'commercial.valuation.assess'
 	],
 	Administrator: [
 		'procurement.view',
@@ -33,7 +35,9 @@ const SLICE4_STANDARD_ROLE_PERMISSIONS = {
 		'commercial.budget.approve',
 		'commercial.variation.manage',
 		'commercial.variation.issue',
-		'commercial.variation.decide'
+		'commercial.variation.decide',
+		'commercial.valuation.manage',
+		'commercial.valuation.assess'
 	],
 	Manager: [
 		'procurement.view',
@@ -47,7 +51,9 @@ const SLICE4_STANDARD_ROLE_PERMISSIONS = {
 		'commercial.cost_code.manage',
 		'commercial.budget.manage',
 		'commercial.variation.manage',
-		'commercial.variation.issue'
+		'commercial.variation.issue',
+		'commercial.valuation.manage',
+		'commercial.valuation.assess'
 	],
 	'Finance/Commercial': [
 		'procurement.view',
@@ -64,7 +70,9 @@ const SLICE4_STANDARD_ROLE_PERMISSIONS = {
 		'commercial.budget.approve',
 		'commercial.variation.manage',
 		'commercial.variation.issue',
-		'commercial.variation.decide'
+		'commercial.variation.decide',
+		'commercial.valuation.manage',
+		'commercial.valuation.assess'
 	],
 	'Member/Professional': [
 		'procurement.view',
