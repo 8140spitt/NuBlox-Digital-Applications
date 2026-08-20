@@ -39,6 +39,7 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'Time', exact: true })).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Site', exact: true })).toBeVisible();
 	await expect(
 		primaryNavigation.getByRole('link', { name: 'Credit control', exact: true })
 	).toBeVisible();
@@ -58,6 +59,10 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('people');
 	await expect(page.locator('.search-results').getByRole('link', { name: /People/ })).toBeVisible();
+	await page.getByLabel('Find a workspace').fill('site');
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /Site/ }).first()
+	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('year-end');
 	await expect(
 		page.locator('.search-results').getByRole('link', { name: /Year-end close/ })
@@ -76,6 +81,9 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await expect(createPopover.getByRole('link', { name: /Purchase order/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Project cost code/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Commercial variation/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Site diary/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Quality inspection/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Safety observation/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Workforce member/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Scheduled work/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Timesheet/ })).toBeVisible();
@@ -95,6 +103,7 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 		'/purchasing',
 		'/contracts',
 		'/people',
+		'/site',
 		'/schedule',
 		'/time',
 		'/finance/invoices',

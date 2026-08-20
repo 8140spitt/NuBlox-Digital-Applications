@@ -47,6 +47,7 @@ test('read-only member can view workspaces without receiving mutation controls',
 	).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'Time', exact: true })).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Site', exact: true })).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'Finance', exact: true })).toBeVisible();
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Notifications' })).toBeDisabled();
@@ -128,6 +129,23 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(
 		page.locator('.identity-card').getByText('NuBlox E2E Viewer', { exact: true })
 	).toBeVisible();
+
+	await page.goto('/site');
+	await expect(
+		page.getByRole('heading', { name: 'Site, quality & safety', exact: true, level: 1 })
+	).toBeVisible();
+	await expect(page.locator('#create-site')).toHaveCount(0);
+	await expect(page.locator('#create-diary')).toHaveCount(0);
+	await expect(page.locator('#create-template')).toHaveCount(0);
+	await expect(page.locator('#create-inspection')).toHaveCount(0);
+	await expect(page.locator('#create-defect')).toHaveCount(0);
+	await expect(page.locator('#create-ncr')).toHaveCount(0);
+	await expect(page.locator('#create-safety-observation')).toHaveCount(0);
+	await expect(
+		page.getByRole('button', {
+			name: /Submit diary|Approve diary|Complete inspection|Close defect|Close NCR|Create safety action|Complete action|Close safety event/
+		})
+	).toHaveCount(0);
 
 	await page.goto('/finance/accounting/periods');
 	await expect(page.getByRole('heading', { name: 'Accounting periods', level: 1 })).toBeVisible();
