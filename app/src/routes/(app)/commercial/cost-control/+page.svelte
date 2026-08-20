@@ -63,7 +63,7 @@
 		<form method="GET">
 			<label>
 				Project
-				<select name="project" onchange="this.form?.requestSubmit()">
+				<select name="project" onchange={(event) => event.currentTarget.form?.requestSubmit()}>
 					{#each data.projects as project}
 						<option
 							value={project.publicId}
