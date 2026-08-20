@@ -144,3 +144,37 @@ jobs:
       - name: Run Playwright browser E2E suite
         working-directory: app
         run: pnpm exec playwright test
+
+  slice7-transmittal-fix:
+    if: github.event_name == 'pull_request' && github.head_ref == 'product/v1-portal-collaboration'
+    name: Temporary Slice 7 transmittal correction
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-portal-collaboration
+      - name: Remove non-existent transmittal recipient column
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/lib/server/portal/portal-collaboration-repository.ts')
+          text = path.read_text()
+          bad = "\t\t\t\tsource_party_owner_organisation_id: null,\n"
+          if bad in text:
+              path.write_text(text.replace(bad, '', 1))
+          elif 'source_party_owner_organisation_id' in text:
+              raise SystemExit('Unexpected Slice 7 transmittal column shape')
+          PY
+      - name: Commit transmittal correction
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/lib/server/portal/portal-collaboration-repository.ts
+          if git diff --cached --quiet; then
+            echo 'Transmittal correction already applied.'
+            exit 0
+          fi
+          git commit -m 'Fix Slice 7 transmittal recipient insert'
+          git push origin HEAD:product/v1-portal-collaboration
