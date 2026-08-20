@@ -90,7 +90,7 @@ test('owner procures, commits, values and controls project cost through the brow
 
 	const poPanel = page.locator('#create-po');
 	await poPanel.locator('select[name="projectPublicId"]').selectOption(projectPublicId);
-	await poPanel.getByLabel('Supplier').selectOption({ label: SUPPLIER });
+	await poPanel.locator('select[name="supplierPublicId"]').selectOption({ label: SUPPLIER });
 	await poPanel.locator('select[name="purchaseOrderTypeCode"]').selectOption({ index: 1 });
 	await poPanel.locator('select[name="packagePublicId"]').selectOption(packagePublicId);
 	await poPanel.getByLabel('Purchase-order title').fill(poTitle);
