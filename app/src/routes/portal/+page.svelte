@@ -28,7 +28,10 @@
 	);
 	let pendingInstructions = $derived(data.instructions.filter((row) => !row.acknowledgedAt));
 	let actionCount = $derived(
-		openRfis.length + pendingSubmittals.length + pendingInstructions.length + data.invitations.length
+		openRfis.length +
+			pendingSubmittals.length +
+			pendingInstructions.length +
+			data.invitations.length
 	);
 </script>
 
@@ -112,7 +115,9 @@
 			<p class="eyebrow">Action inbox</p>
 			<h2 id="actions-heading">What needs your team</h2>
 		</div>
-		<span class="count-badge">{openRfis.length + pendingSubmittals.length + pendingInstructions.length}</span>
+		<span class="count-badge"
+			>{openRfis.length + pendingSubmittals.length + pendingInstructions.length}</span
+		>
 	</div>
 
 	{#if !openRfis.length && !pendingSubmittals.length && !pendingInstructions.length}
@@ -170,7 +175,11 @@
 						<span><strong>Project</strong>{submittal.projectNumber} · {submittal.projectName}</span>
 						<span><strong>From</strong>{submittal.owningOrganisationName}</span>
 						<span><strong>Type</strong>{submittal.typeName}</span>
-						<span><strong>Review due</strong>{dateTime(submittal.reviewerDueAt ?? submittal.dueAt)}</span>
+						<span
+							><strong>Review due</strong>{dateTime(
+								submittal.reviewerDueAt ?? submittal.dueAt
+							)}</span
+						>
 					</div>
 					{#if form?.action === 'submittal' && form?.subjectPublicId === submittal.publicId}
 						<p class="inline-error" role="alert">{form.message}</p>
@@ -206,7 +215,9 @@
 					<h3>{instruction.subject}</h3>
 					<p class="question">{instruction.instructionText}</p>
 					<div class="meta-grid">
-						<span><strong>Project</strong>{instruction.projectNumber} · {instruction.projectName}</span>
+						<span
+							><strong>Project</strong>{instruction.projectNumber} · {instruction.projectName}</span
+						>
 						<span><strong>From</strong>{instruction.issuingOrganisationName}</span>
 						<span><strong>Type</strong>{instruction.typeName}</span>
 						<span><strong>Issued</strong>{dateTime(instruction.issuedAt)}</span>
@@ -262,7 +273,9 @@
 			{/each}
 		</div>
 	{:else}
-		<div class="empty-state"><p>No controlled information has been issued to this organisation yet.</p></div>
+		<div class="empty-state">
+			<p>No controlled information has been issued to this organisation yet.</p>
+		</div>
 	{/if}
 </section>
 
@@ -282,7 +295,11 @@
 						<span class="status-pill">{titleCase(project.status)}</span>
 					</div>
 					<h3>{project.name}</h3>
-					<p>{project.isOwnedByCurrentOrganisation ? 'Owned by your organisation' : `Owned by ${project.owningOrganisationName}`}</p>
+					<p>
+						{project.isOwnedByCurrentOrganisation
+							? 'Owned by your organisation'
+							: `Owned by ${project.owningOrganisationName}`}
+					</p>
 				</article>
 			{/each}
 		</div>

@@ -23,7 +23,10 @@
 		<label for="project">Project</label>
 		<select id="project" name="project" onchange="this.form?.submit()">
 			{#each data.projects as project (project.publicId)}
-				<option value={project.publicId} selected={data.selectedProject?.publicId === project.publicId}>
+				<option
+					value={project.publicId}
+					selected={data.selectedProject?.publicId === project.publicId}
+				>
 					{project.projectNumber} · {project.name}
 				</option>
 			{/each}
@@ -83,7 +86,9 @@
 					<h2>Assign an RFI</h2>
 				</div>
 			</div>
-			<p>Make one open RFI visible to a participating organisation so its portal members can respond.</p>
+			<p>
+				Make one open RFI visible to a participating organisation so its portal members can respond.
+			</p>
 			{#if data.rfis.length && data.participants.length}
 				<form method="POST" action="?/assignRfi">
 					<input type="hidden" name="projectPublicId" value={data.selectedProject.publicId} />
@@ -101,7 +106,9 @@
 						<select name="organisationPublicId" required>
 							<option value="">Choose participant</option>
 							{#each data.participants as participant (participant.organisationPublicId)}
-								<option value={participant.organisationPublicId}>{participant.organisationName}</option>
+								<option value={participant.organisationPublicId}
+									>{participant.organisationName}</option
+								>
 							{/each}
 						</select>
 					</label>
@@ -138,7 +145,9 @@
 						<select name="organisationPublicId" required>
 							<option value="">Choose participant</option>
 							{#each data.participants as participant (participant.organisationPublicId)}
-								<option value={participant.organisationPublicId}>{participant.organisationName}</option>
+								<option value={participant.organisationPublicId}
+									>{participant.organisationName}</option
+								>
 							{/each}
 						</select>
 					</label>
@@ -149,7 +158,9 @@
 					<button type="submit">Assign review</button>
 				</form>
 			{:else}
-				<p class="empty-inline">You need a submitted submittal and an active external participant.</p>
+				<p class="empty-inline">
+					You need a submitted submittal and an active external participant.
+				</p>
 			{/if}
 		</article>
 
@@ -170,7 +181,9 @@
 						<select name="instructionPublicId" required>
 							<option value="">Choose instruction</option>
 							{#each data.instructions as instruction (instruction.publicId)}
-								<option value={instruction.publicId}>{instruction.number} · {instruction.subject}</option>
+								<option value={instruction.publicId}
+									>{instruction.number} · {instruction.subject}</option
+								>
 							{/each}
 						</select>
 					</label>
@@ -179,14 +192,18 @@
 						<select name="organisationPublicId" required>
 							<option value="">Choose participant</option>
 							{#each data.participants as participant (participant.organisationPublicId)}
-								<option value={participant.organisationPublicId}>{participant.organisationName}</option>
+								<option value={participant.organisationPublicId}
+									>{participant.organisationName}</option
+								>
 							{/each}
 						</select>
 					</label>
 					<button type="submit">Add recipient</button>
 				</form>
 			{:else}
-				<p class="empty-inline">You need an issued instruction and an active external participant.</p>
+				<p class="empty-inline">
+					You need an issued instruction and an active external participant.
+				</p>
 			{/if}
 		</article>
 
@@ -221,7 +238,9 @@
 						<select name="organisationPublicId" required>
 							<option value="">Choose participant</option>
 							{#each data.participants as participant (participant.organisationPublicId)}
-								<option value={participant.organisationPublicId}>{participant.organisationName}</option>
+								<option value={participant.organisationPublicId}
+									>{participant.organisationName}</option
+								>
 							{/each}
 						</select>
 					</label>

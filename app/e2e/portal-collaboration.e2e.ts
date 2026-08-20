@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const OWNER_EMAIL = 'e2e-owner@example.test';
 const OWNER_PASSWORD = 'NuBlox-E2E-Password-2026!';
@@ -13,7 +13,7 @@ const SUBMITTAL_NUMBER = 'PORTAL-SUB-001';
 const INSTRUCTION_NUMBER = 'PORTAL-PI-001';
 const DOCUMENT_NUMBER = 'PORTAL-DOC-001';
 
-async function signIn(page, email: string, password: string, organisation: string) {
+async function signIn(page: Page, email: string, password: string, organisation: string) {
 	await page.goto('/signin');
 	await page.getByLabel('Email', { exact: true }).fill(email);
 	await page.getByLabel('Password', { exact: true }).fill(password);
@@ -75,7 +75,9 @@ test('owner explicitly shares controlled work and partner completes it through t
 	await page.goto('/portal');
 	await expect(page.getByRole('heading', { name: 'Shared work' })).toBeVisible();
 	await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toHaveCount(0);
-	await expect(page.getByText(`${PROJECT_NUMBER} · ${PROJECT_NAME}`, { exact: false }).first()).toBeVisible();
+	await expect(
+		page.getByText(`${PROJECT_NUMBER} · ${PROJECT_NAME}`, { exact: false }).first()
+	).toBeVisible();
 
 	let partnerRfiCard = page.locator('.work-card').filter({ hasText: RFI_NUMBER });
 	await expect(partnerRfiCard).toContainText('Confirm external opening size');

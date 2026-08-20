@@ -5,9 +5,16 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
-import { ProjectRepository, type ProjectParticipantOrganisation } from '$lib/server/projects/project-repository';
+import {
+	ProjectRepository,
+	type ProjectParticipantOrganisation
+} from '$lib/server/projects/project-repository';
 import {
 	PortalCollaborationRepository,
 	type PortalInstructionTask,
@@ -71,7 +78,8 @@ function requiredText(value: string, label: string, max = 500): string {
 function optionalText(value: string | null | undefined, max: number): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (text.length > max) throw new PortalCollaborationValidationError('A supplied value is too long.');
+	if (text.length > max)
+		throw new PortalCollaborationValidationError('A supplied value is too long.');
 	return text;
 }
 
@@ -79,7 +87,8 @@ function optionalDateTime(value: string | null | undefined, label: string): Date
 	const text = value?.trim() ?? '';
 	if (!text) return null;
 	const date = new Date(text.endsWith('Z') ? text : `${text}:00.000Z`);
-	if (Number.isNaN(date.getTime())) throw new PortalCollaborationValidationError(`${label} is invalid.`);
+	if (Number.isNaN(date.getTime()))
+		throw new PortalCollaborationValidationError(`${label} is invalid.`);
 	return date;
 }
 
@@ -91,7 +100,9 @@ export class PortalCollaborationService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -155,7 +166,9 @@ export class PortalCollaborationService {
 			throw new RecordNotFoundError('Owned project not found in your active project scope.');
 		}
 		if (['cancelled', 'archived'].includes(project.status)) {
-			throw new PortalCollaborationValidationError('This project is read-only for new collaboration.');
+			throw new PortalCollaborationValidationError(
+				'This project is read-only for new collaboration.'
+			);
 		}
 		return project;
 	}
@@ -211,8 +224,8 @@ export class PortalCollaborationService {
 			(project) => project.isOwnedByCurrentOrganisation
 		);
 		const selectedProject = selectedProjectPublicId
-			? projects.find((project) => project.publicId === selectedProjectPublicId) ?? null
-			: projects[0] ?? null;
+			? (projects.find((project) => project.publicId === selectedProjectPublicId) ?? null)
+			: (projects[0] ?? null);
 		if (!selectedProject) {
 			return {
 				canManage: true,
@@ -338,7 +351,10 @@ export class PortalCollaborationService {
 		});
 	}
 
-	async acknowledgeInstruction(actor: TenantActorContext, instructionPublicId: string): Promise<void> {
+	async acknowledgeInstruction(
+		actor: TenantActorContext,
+		instructionPublicId: string
+	): Promise<void> {
 		await this.db.transaction().execute(async (trx) => {
 			await this.assertActiveActor(actor, trx);
 			await this.requirePermission(actor, 'portal.respond', trx);
@@ -355,7 +371,14 @@ export class PortalCollaborationService {
 				throw new PortalCollaborationValidationError('This instruction cannot be acknowledged.');
 			}
 			const at = this.now();
-			if (!(await repository.acknowledgeInstruction(instruction.id, actor.organisationId, actor.memberId, at))) {
+			if (
+				!(await repository.acknowledgeInstruction(
+					instruction.id,
+					actor.organisationId,
+					actor.memberId,
+					at
+				))
+			) {
 				throw new ConcurrentUpdateError();
 			}
 			await repository.markInstructionAcknowledgedWhenComplete(instruction.id);
@@ -383,7 +406,9 @@ export class PortalCollaborationService {
 				requiredText(input.organisationPublicId, 'Participant organisation', 36)
 			);
 			if (!target || target.id === actor.organisationId) {
-				throw new PortalCollaborationValidationError('Select an active external project participant.');
+				throw new PortalCollaborationValidationError(
+					'Select an active external project participant.'
+				);
 			}
 			const rfi = await repository.findOwnedRfiForUpdate(
 				actor.organisationId,
@@ -391,15 +416,21 @@ export class PortalCollaborationService {
 				requiredText(input.rfiPublicId, 'RFI', 36)
 			);
 			if (!rfi || !['open', 'reopened'].includes(rfi.status)) {
-				throw new PortalCollaborationValidationError('Select an open RFI owned by this organisation.');
+				throw new PortalCollaborationValidationError(
+					'Select an open RFI owned by this organisation.'
+				);
 			}
-			if (!(await repository.addRfiAddressee({
-				projectId: project.id,
-				rfiId: rfi.id,
-				rfiOwnerOrganisationId: actor.organisationId,
-				addresseeOrganisationId: target.id
-			}))) {
-				throw new PortalCollaborationValidationError('That organisation is already an RFI addressee.');
+			if (
+				!(await repository.addRfiAddressee({
+					projectId: project.id,
+					rfiId: rfi.id,
+					rfiOwnerOrganisationId: actor.organisationId,
+					addresseeOrganisationId: target.id
+				}))
+			) {
+				throw new PortalCollaborationValidationError(
+					'That organisation is already an RFI addressee.'
+				);
 			}
 			await this.appendAudit(trx, actor, {
 				projectId: project.id,
@@ -431,7 +462,9 @@ export class PortalCollaborationService {
 				requiredText(input.organisationPublicId, 'Participant organisation', 36)
 			);
 			if (!target || target.id === actor.organisationId) {
-				throw new PortalCollaborationValidationError('Select an active external project participant.');
+				throw new PortalCollaborationValidationError(
+					'Select an active external project participant.'
+				);
 			}
 			const submittal = await repository.findOwnedSubmittalForUpdate(
 				actor.organisationId,
@@ -439,15 +472,19 @@ export class PortalCollaborationService {
 				requiredText(input.submittalPublicId, 'Submittal', 36)
 			);
 			if (!submittal || !['submitted', 'under_review'].includes(submittal.status)) {
-				throw new PortalCollaborationValidationError('Select a submitted submittal owned by this organisation.');
+				throw new PortalCollaborationValidationError(
+					'Select a submitted submittal owned by this organisation.'
+				);
 			}
-			if (!(await repository.addSubmittalReviewer({
-				projectId: project.id,
-				submittalId: submittal.id,
-				submittalOwnerOrganisationId: actor.organisationId,
-				reviewerOrganisationId: target.id,
-				dueAt: optionalDateTime(input.dueAt, 'Review due date')
-			}))) {
+			if (
+				!(await repository.addSubmittalReviewer({
+					projectId: project.id,
+					submittalId: submittal.id,
+					submittalOwnerOrganisationId: actor.organisationId,
+					reviewerOrganisationId: target.id,
+					dueAt: optionalDateTime(input.dueAt, 'Review due date')
+				}))
+			) {
 				throw new PortalCollaborationValidationError('That organisation is already a reviewer.');
 			}
 			await this.appendAudit(trx, actor, {
@@ -475,7 +512,9 @@ export class PortalCollaborationService {
 				requiredText(input.organisationPublicId, 'Participant organisation', 36)
 			);
 			if (!target || target.id === actor.organisationId) {
-				throw new PortalCollaborationValidationError('Select an active external project participant.');
+				throw new PortalCollaborationValidationError(
+					'Select an active external project participant.'
+				);
 			}
 			const instruction = await repository.findOwnedInstructionForUpdate(
 				actor.organisationId,
@@ -483,15 +522,21 @@ export class PortalCollaborationService {
 				requiredText(input.instructionPublicId, 'Instruction', 36)
 			);
 			if (!instruction || !['issued', 'acknowledged'].includes(instruction.status)) {
-				throw new PortalCollaborationValidationError('Select an issued instruction owned by this organisation.');
+				throw new PortalCollaborationValidationError(
+					'Select an issued instruction owned by this organisation.'
+				);
 			}
-			if (!(await repository.addInstructionRecipient({
-				projectId: project.id,
-				instructionId: instruction.id,
-				issuingOrganisationId: actor.organisationId,
-				recipientOrganisationId: target.id
-			}))) {
-				throw new PortalCollaborationValidationError('That organisation already receives this instruction.');
+			if (
+				!(await repository.addInstructionRecipient({
+					projectId: project.id,
+					instructionId: instruction.id,
+					issuingOrganisationId: actor.organisationId,
+					recipientOrganisationId: target.id
+				}))
+			) {
+				throw new PortalCollaborationValidationError(
+					'That organisation already receives this instruction.'
+				);
 			}
 			await this.appendAudit(trx, actor, {
 				projectId: project.id,
@@ -525,7 +570,9 @@ export class PortalCollaborationService {
 				requiredText(input.organisationPublicId, 'Participant organisation', 36)
 			);
 			if (!target || target.id === actor.organisationId) {
-				throw new PortalCollaborationValidationError('Select an active external project participant.');
+				throw new PortalCollaborationValidationError(
+					'Select an active external project participant.'
+				);
 			}
 			const version = await repository.findOwnedIssuedVersion(
 				actor.organisationId,
@@ -533,7 +580,9 @@ export class PortalCollaborationService {
 				requiredText(input.versionPublicId, 'Document revision', 36)
 			);
 			if (!version) {
-				throw new PortalCollaborationValidationError('Select an issued or superseded revision owned by this organisation.');
+				throw new PortalCollaborationValidationError(
+					'Select an issued or superseded revision owned by this organisation.'
+				);
 			}
 			const publicId = this.publicIdFactory();
 			const issuedAt = this.now();

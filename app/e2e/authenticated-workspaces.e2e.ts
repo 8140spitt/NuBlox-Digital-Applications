@@ -22,6 +22,7 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await expect(
 		primaryNavigation.getByRole('link', { name: 'Projects', exact: true })
 	).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Portal', exact: true })).toBeVisible();
 	await expect(
 		primaryNavigation.getByRole('link', { name: 'Documents', exact: true })
 	).toBeVisible();

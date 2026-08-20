@@ -92,6 +92,21 @@ const navigationSections: readonly AppNavigationSection[] = [
 				anyPermissionNamespaces: ['project.']
 			},
 			{
+				id: 'portal',
+				label: 'Portal',
+				href: '/portal',
+				anyPermissions: ['portal.view'],
+				children: [
+					{ id: 'portal-shared-work', label: 'Shared work', href: '/portal' },
+					{
+						id: 'portal-manage-sharing',
+						label: 'Manage sharing',
+						href: '/portal/manage',
+						anyPermissions: ['portal.manage']
+					}
+				]
+			},
+			{
 				id: 'documents',
 				label: 'Documents',
 				href: '/documents',

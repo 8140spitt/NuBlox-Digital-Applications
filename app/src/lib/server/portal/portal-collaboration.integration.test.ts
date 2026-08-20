@@ -264,7 +264,9 @@ describe('V1 portal and cross-organisation collaboration', () => {
 			organisationPublicId: partnerOrganisationPublicId,
 			roleKeys: []
 		});
-		expect((await new PortalCollaborationService(db).getWorkspace(partnerActor)).projects).toHaveLength(0);
+		expect(
+			(await new PortalCollaborationService(db).getWorkspace(partnerActor)).projects
+		).toHaveLength(0);
 		await new ProjectTeamService(db).respondToInvitation(partnerActor, {
 			projectPublicId,
 			response: 'accept'
@@ -401,7 +403,10 @@ describe('V1 portal and cross-organisation collaboration', () => {
 			instructionPublicId,
 			organisationPublicId: partnerOrganisationPublicId
 		});
-		await new PortalCollaborationService(db).acknowledgeInstruction(partnerActor, instructionPublicId);
+		await new PortalCollaborationService(db).acknowledgeInstruction(
+			partnerActor,
+			instructionPublicId
+		);
 		const acknowledgement = await db
 			.selectFrom('instruction_recipients as recipient')
 			.innerJoin(
@@ -443,9 +448,6 @@ describe('V1 portal and cross-organisation collaboration', () => {
 			issuingOrganisationId: ownerOrganisationId,
 			deliveryStatus: 'delivered'
 		});
-		expect(received?.items).toEqual([
-			expect.objectContaining({ publicId: undefined })
-		].filter(Boolean));
 		expect(received?.items).toHaveLength(1);
 		expect(received?.items[0]?.versionPublicId).toBe(issuedVersionPublicId);
 	});
@@ -461,7 +463,9 @@ describe('V1 portal and cross-organisation collaboration', () => {
 				final: true
 			})
 		).rejects.toBeInstanceOf(RecordNotFoundError);
-		const viewerWorkspace = await new PortalCollaborationService(db).getWorkspace(partnerViewerActor);
+		const viewerWorkspace = await new PortalCollaborationService(db).getWorkspace(
+			partnerViewerActor
+		);
 		expect(viewerWorkspace.canView).toBe(true);
 		expect(viewerWorkspace.canRespond).toBe(false);
 		await expect(

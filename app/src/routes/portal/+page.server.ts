@@ -2,8 +2,13 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import {
 	PortalCollaborationService,
 	PortalCollaborationValidationError
@@ -28,12 +33,7 @@ function field(data: FormData, name: string): string {
 	return typeof value === 'string' ? value : '';
 }
 
-function actionFailure(
-	status: number,
-	action: string,
-	subjectPublicId: string,
-	message: string
-) {
+function actionFailure(status: number, action: string, subjectPublicId: string, message: string) {
 	return fail(status, { action, subjectPublicId, message });
 }
 
@@ -41,9 +41,16 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw redirect(303, '/signin?returnTo=%2Fportal');
 	const db = getDatabase();
+	const invitationDecision = await new PermissionService(db).decideWithUmbrella(
+		actor,
+		'project.participation.manage',
+		'project.manage'
+	);
 	const [workspace, invitations] = await Promise.all([
 		new PortalCollaborationService(db).getWorkspace(actor),
-		new ProjectTeamService(db).listPendingInvitations(actor)
+		invitationDecision.allowed
+			? new ProjectTeamService(db).listPendingInvitations(actor)
+			: Promise.resolve([])
 	]);
 	return { ...workspace, invitations };
 };

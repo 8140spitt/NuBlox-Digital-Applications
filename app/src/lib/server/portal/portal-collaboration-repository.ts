@@ -169,10 +169,7 @@ function organisationName(row: { legalName: string; tradingName: string | null }
 export class PortalCollaborationRepository {
 	constructor(private readonly db: DatabaseExecutor) {}
 
-	async listProjects(
-		organisationId: string,
-		memberId: string
-	): Promise<PortalProjectSummary[]> {
+	async listProjects(organisationId: string, memberId: string): Promise<PortalProjectSummary[]> {
 		const rows = await this.db
 			.selectFrom('projects as project')
 			.innerJoin('project_organisations as participation', 'participation.project_id', 'project.id')
@@ -235,11 +232,7 @@ export class PortalCollaborationRepository {
 			.innerJoin('project_members as member', (join) =>
 				join
 					.onRef('member.project_id', '=', 'assignment.project_id')
-					.onRef(
-						'member.participant_organisation_id',
-						'=',
-						'assignment.addressee_organisation_id'
-					)
+					.onRef('member.participant_organisation_id', '=', 'assignment.addressee_organisation_id')
 			)
 			.innerJoin('organisations as owner', 'owner.id', 'rfi.owning_organisation_id')
 			.select([
@@ -333,11 +326,7 @@ export class PortalCollaborationRepository {
 			.innerJoin('project_members as member', (join) =>
 				join
 					.onRef('member.project_id', '=', 'assignment.project_id')
-					.onRef(
-						'member.participant_organisation_id',
-						'=',
-						'assignment.reviewer_organisation_id'
-					)
+					.onRef('member.participant_organisation_id', '=', 'assignment.reviewer_organisation_id')
 			)
 			.innerJoin('organisations as owner', 'owner.id', 'submittal.owning_organisation_id')
 			.select([
@@ -418,7 +407,11 @@ export class PortalCollaborationRepository {
 	): Promise<PortalInstructionTask[]> {
 		const rows = await this.db
 			.selectFrom('instruction_recipients as recipient')
-			.innerJoin('project_instructions as instruction', 'instruction.id', 'recipient.instruction_id')
+			.innerJoin(
+				'project_instructions as instruction',
+				'instruction.id',
+				'recipient.instruction_id'
+			)
 			.innerJoin('instruction_types as type', 'type.id', 'instruction.instruction_type_id')
 			.innerJoin('projects as project', 'project.id', 'recipient.project_id')
 			.innerJoin('project_organisations as participation', (join) =>
@@ -433,11 +426,7 @@ export class PortalCollaborationRepository {
 			.innerJoin('project_members as member', (join) =>
 				join
 					.onRef('member.project_id', '=', 'recipient.project_id')
-					.onRef(
-						'member.participant_organisation_id',
-						'=',
-						'recipient.recipient_organisation_id'
-					)
+					.onRef('member.participant_organisation_id', '=', 'recipient.recipient_organisation_id')
 			)
 			.innerJoin('organisations as issuer', 'issuer.id', 'instruction.issuing_organisation_id')
 			.select([
@@ -621,11 +610,7 @@ export class PortalCollaborationRepository {
 			.innerJoin('project_members as member', (join) =>
 				join
 					.onRef('member.project_id', '=', 'assignment.project_id')
-					.onRef(
-						'member.participant_organisation_id',
-						'=',
-						'assignment.addressee_organisation_id'
-					)
+					.onRef('member.participant_organisation_id', '=', 'assignment.addressee_organisation_id')
 			)
 			.select([
 				'rfi.id',
@@ -711,11 +696,7 @@ export class PortalCollaborationRepository {
 			.innerJoin('project_members as member', (join) =>
 				join
 					.onRef('member.project_id', '=', 'assignment.project_id')
-					.onRef(
-						'member.participant_organisation_id',
-						'=',
-						'assignment.reviewer_organisation_id'
-					)
+					.onRef('member.participant_organisation_id', '=', 'assignment.reviewer_organisation_id')
 			)
 			.select([
 				'submittal.id',
@@ -734,10 +715,7 @@ export class PortalCollaborationRepository {
 		return row ?? null;
 	}
 
-	async nextSubmittalReviewSequence(
-		submittalId: string,
-		organisationId: string
-	): Promise<number> {
+	async nextSubmittalReviewSequence(submittalId: string, organisationId: string): Promise<number> {
 		const row = await this.db
 			.selectFrom('submittal_reviews')
 			.select('review_sequence')
@@ -787,7 +765,11 @@ export class PortalCollaborationRepository {
 	): Promise<LockedPortalInstruction | null> {
 		const row = await this.db
 			.selectFrom('instruction_recipients as recipient')
-			.innerJoin('project_instructions as instruction', 'instruction.id', 'recipient.instruction_id')
+			.innerJoin(
+				'project_instructions as instruction',
+				'instruction.id',
+				'recipient.instruction_id'
+			)
 			.innerJoin('project_organisations as participation', (join) =>
 				join
 					.onRef('participation.project_id', '=', 'recipient.project_id')
@@ -800,11 +782,7 @@ export class PortalCollaborationRepository {
 			.innerJoin('project_members as member', (join) =>
 				join
 					.onRef('member.project_id', '=', 'recipient.project_id')
-					.onRef(
-						'member.participant_organisation_id',
-						'=',
-						'recipient.recipient_organisation_id'
-					)
+					.onRef('member.participant_organisation_id', '=', 'recipient.recipient_organisation_id')
 			)
 			.select([
 				'instruction.id',
@@ -886,13 +864,17 @@ export class PortalCollaborationRepository {
 		};
 	}
 
-	async listManageRfis(
-		organisationId: string,
-		projectId: string
-	): Promise<PortalManageRfi[]> {
+	async listManageRfis(organisationId: string, projectId: string): Promise<PortalManageRfi[]> {
 		return this.db
 			.selectFrom('rfis')
-			.select(['id', 'public_id as publicId', 'rfi_number as rfiNumber', 'subject', 'status', 'due_at as dueAt'])
+			.select([
+				'id',
+				'public_id as publicId',
+				'rfi_number as rfiNumber',
+				'subject',
+				'status',
+				'due_at as dueAt'
+			])
 			.where('project_id', '=', projectId)
 			.where('owning_organisation_id', '=', organisationId)
 			.where('status', 'in', ['open', 'reopened'])

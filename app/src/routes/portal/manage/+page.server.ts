@@ -3,7 +3,11 @@ import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import {
 	PortalCollaborationService,
 	PortalCollaborationValidationError
@@ -36,7 +40,11 @@ async function runAction(
 	locals: App.Locals,
 	request: Request,
 	action: string,
-	run: (service: PortalCollaborationService, actor: TenantActorContext, data: FormData) => Promise<void>
+	run: (
+		service: PortalCollaborationService,
+		actor: TenantActorContext,
+		data: FormData
+	) => Promise<void>
 ) {
 	const actor = actorFromLocals(locals);
 	const data = await request.formData();
