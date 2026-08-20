@@ -8,6 +8,7 @@ import { createPool } from 'mysql2/promise';
 
 import { getDatabase } from '$lib/server/db/database';
 import { getEmailDelivery } from '$lib/server/email/email-delivery';
+import { ensureInformationStandardRoleDefaults } from '$lib/server/information/information-bootstrap';
 import {
 	OrganisationBootstrapAccessError,
 	OrganisationBootstrapService
@@ -170,7 +171,10 @@ export const auth = betterAuth({
 							email: user.email,
 							displayName: user.name
 						});
-						await ensureWorkforceStandardRoleDefaults(db, created.organisationId);
+						await Promise.all([
+							ensureWorkforceStandardRoleDefaults(db, created.organisationId),
+							ensureInformationStandardRoleDefaults(db, created.organisationId)
+						]);
 					}
 				}
 			}

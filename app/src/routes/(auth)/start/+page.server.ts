@@ -5,6 +5,7 @@ import type { PageServerLoad } from './$types';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
 import { getDatabase } from '$lib/server/db/database';
+import { ensureInformationStandardRoleDefaults } from '$lib/server/information/information-bootstrap';
 import {
 	OrganisationBootstrapService,
 	OrganisationBootstrapValidationError
@@ -45,7 +46,10 @@ export const actions: Actions = {
 					defaultCurrencyCode: field(formData, 'defaultCurrencyCode')
 				}
 			);
-			await ensureWorkforceStandardRoleDefaults(db, created.organisationId);
+			await Promise.all([
+				ensureWorkforceStandardRoleDefaults(db, created.organisationId),
+				ensureInformationStandardRoleDefaults(db, created.organisationId)
+			]);
 
 			cookies.set(ORGANISATION_COOKIE, created.organisationPublicId, {
 				httpOnly: true,
