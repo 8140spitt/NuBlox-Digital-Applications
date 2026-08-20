@@ -4,6 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
+import { ProcurementRepository } from '$lib/server/procurement/procurement-repository';
 import { ProcurementService, ProcurementValidationError } from '$lib/server/procurement/procurement-service';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -70,10 +71,32 @@ export const load: PageServerLoad = async ({ locals }) => {
 			salesItemTypes: [],
 			units: [],
 			packages: [],
+			rfqs: [],
 			orders: []
 		};
 	}
-	return new ProcurementService(getDatabase()).getWorkspace(actor);
+	const db = getDatabase();
+	const workspace = await new ProcurementService(db).getWorkspace(actor);
+	if (!workspace.canView) return { ...workspace, rfqs: [] };
+	const repository = new ProcurementRepository(db);
+	const rows = await repository.listRfqsForPackages(
+		actor.organisationId,
+		workspace.packages.map((procurementPackage) => procurementPackage.id)
+	);
+	const rfqs = [];
+	for (const row of rows) {
+		const procurementPackage = workspace.packages.find((candidate) => candidate.id === row.packageId);
+		if (!procurementPackage) continue;
+		rfqs.push({
+			...row,
+			packagePublicId: procurementPackage.publicId,
+			packageNumber: procurementPackage.packageNumber,
+			packageTitle: procurementPackage.title,
+			projectPublicId: procurementPackage.projectPublicId,
+			latestVersion: (await repository.listRfqVersions(actor.organisationId, row.id))[0] ?? null
+		});
+	}
+	return { ...workspace, rfqs };
 };
 
 export const actions: Actions = {
