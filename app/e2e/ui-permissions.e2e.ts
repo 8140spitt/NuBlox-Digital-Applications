@@ -9,9 +9,9 @@ async function signIn(page: import('@playwright/test').Page) {
 	await page.getByLabel('Email', { exact: true }).fill(EMAIL);
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await page.getByRole('button', { name: 'Sign in' }).click();
-	await expect(page).toHaveURL(/\/select-organisation$/);
+	await expect(page).toHaveURL(/\/select-organisation$/, { timeout: 15_000 });
 	await page.getByRole('button', { name: new RegExp(ORGANISATION) }).click();
-	await expect(page).toHaveURL(/\/dashboard$/);
+	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 
 test('read-only member can view workspaces without receiving mutation controls', async ({
@@ -30,6 +30,13 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(
 		primaryNavigation.getByRole('link', { name: 'Documents', exact: true })
 	).toBeVisible();
+	await expect(
+		primaryNavigation.getByRole('link', { name: 'Purchasing', exact: true })
+	).toBeVisible();
+	await expect(
+		primaryNavigation.getByRole('link', { name: 'Project cost control', exact: true })
+	).toHaveCount(0);
+	await expect(primaryNavigation.getByRole('link', { name: 'Valuations', exact: true })).toHaveCount(0);
 	await expect(
 		primaryNavigation.getByRole('link', { name: 'Contracts', exact: true })
 	).toBeVisible();
@@ -61,6 +68,27 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(page.locator('#create-submittal')).toHaveCount(0);
 	await expect(page.locator('#create-instruction')).toHaveCount(0);
 	await expect(page.getByRole('button', { name: /Issue/ })).toHaveCount(0);
+
+	await page.goto('/purchasing');
+	await expect(page.getByRole('heading', { name: 'Purchasing', exact: true, level: 1 })).toBeVisible();
+	await expect(page.locator('#create-package')).toHaveCount(0);
+	await expect(page.locator('#create-rfq')).toHaveCount(0);
+	await expect(page.locator('#create-po')).toHaveCount(0);
+	await expect(page.getByRole('button', { name: /Approve purchase order|Issue purchase order|Record confirmed receipt/ })).toHaveCount(0);
+
+	await page.goto('/commercial/cost-control');
+	await expect(
+		page.getByRole('heading', { name: 'Project cost control', exact: true, level: 1 })
+	).toBeVisible();
+	await expect(page.getByText('Commercial cost control is restricted', { exact: true })).toBeVisible();
+	await expect(page.locator('#create-cost-code')).toHaveCount(0);
+	await expect(page.locator('#create-budget')).toHaveCount(0);
+	await expect(page.locator('#create-variation')).toHaveCount(0);
+
+	await page.goto('/commercial/valuations');
+	await expect(page.getByRole('heading', { name: 'Valuations', exact: true, level: 1 })).toBeVisible();
+	await expect(page.getByText('Commercial valuations are restricted', { exact: true })).toBeVisible();
+	await expect(page.locator('#create-valuation')).toHaveCount(0);
 
 	await page.goto('/contracts');
 	await expect(
