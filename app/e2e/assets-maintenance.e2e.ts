@@ -97,7 +97,7 @@ test('owner registers an asset and completes reactive, planned, service and comp
 		.fill('Intermittent outgoing breaker trip requires investigation.');
 	await requestPanel.getByRole('button', { name: 'Report request' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	let requestCard = page
+	const requestCard = page
 		.locator('#maintenance-request-register .request-card')
 		.filter({ hasText: requestTitle });
 	await expect(requestCard.getByText('new', { exact: true })).toBeVisible();

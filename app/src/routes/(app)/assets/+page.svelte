@@ -10,10 +10,6 @@
 		const row = data.facilities.find((candidate) => candidate.id === id);
 		return row ? `${row.facilityCode} · ${row.name}` : 'Facility';
 	}
-	function assetName(id: string) {
-		const row = data.assets.find((candidate) => candidate.id === id);
-		return row ? `${row.assetTag} · ${row.name}` : 'Asset';
-	}
 	function workOrderAssignments(id: string) {
 		return data.contractorAssignments.filter((row) => row.workOrderId === id);
 	}
