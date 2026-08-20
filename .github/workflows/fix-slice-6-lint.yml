@@ -1,0 +1,42 @@
+name: Fix Slice 6 lint
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.head_ref == 'product/v1-assets-facilities-maintenance'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-assets-facilities-maintenance
+      - name: Apply lint corrections
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          e2e = Path('app/e2e/assets-maintenance.e2e.ts')
+          text = e2e.read_text()
+          text = text.replace("\tlet requestCard = page\n", "\tconst requestCard = page\n", 1)
+          e2e.write_text(text)
+
+          page = Path('app/src/routes/(app)/assets/+page.svelte')
+          text = page.read_text()
+          block = "\tfunction assetName(id: string) {\n\t\tconst row = data.assets.find((candidate) => candidate.id === id);\n\t\treturn row ? `${row.assetTag} · ${row.name}` : 'Asset';\n\t}\n"
+          if block not in text:
+              raise SystemExit('assetName block not found')
+          page.write_text(text.replace(block, '', 1))
+          PY
+      - name: Commit lint corrections
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/e2e/assets-maintenance.e2e.ts "app/src/routes/(app)/assets/+page.svelte"
+          git commit -m "Fix Slice 6 lint defects"
+          git push origin HEAD:product/v1-assets-facilities-maintenance
