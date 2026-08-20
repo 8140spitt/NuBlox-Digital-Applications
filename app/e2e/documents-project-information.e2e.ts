@@ -130,7 +130,7 @@ test('owner controls document revision, RFI, submittal and instruction records t
 
 	const instructionPanel = page.locator('#create-instruction');
 	await instructionPanel
-		.getByLabel('Project', { exact: true })
+		.locator('select[name="projectPublicId"]')
 		.selectOption({ label: `${projectNumber} · ${projectName}` });
 	await instructionPanel.getByLabel('Instruction number').fill(instructionNumber);
 	await instructionPanel.getByLabel('Type').selectOption({ label: 'Project instruction' });
