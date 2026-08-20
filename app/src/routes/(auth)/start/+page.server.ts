@@ -2,6 +2,7 @@ import { dev } from '$app/environment';
 import { error, fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
+import { ensureAssetsMaintenanceStandardRoleDefaults } from '$lib/server/assets/assets-maintenance-bootstrap';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
 import { getDatabase } from '$lib/server/db/database';
@@ -52,7 +53,8 @@ export const actions: Actions = {
 				ensureWorkforceStandardRoleDefaults(db, created.organisationId),
 				ensureInformationStandardRoleDefaults(db, created.organisationId),
 				ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId),
-				ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId)
+				ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId),
+				ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId)
 			]);
 
 			cookies.set(ORGANISATION_COOKIE, created.organisationPublicId, {
