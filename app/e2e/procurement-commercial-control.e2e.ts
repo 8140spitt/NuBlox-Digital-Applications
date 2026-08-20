@@ -195,7 +195,7 @@ test('owner procures, commits, values and controls project cost through the brow
 		.locator('#variation-register .variation-card')
 		.filter({ hasText: variationTitle });
 	await variationCard.locator('summary').filter({ hasText: 'Record decision' }).click();
-	await variationCard.getByLabel('Decision').selectOption('accepted');
+	await variationCard.getByLabel('Decision', { exact: true }).selectOption('accepted');
 	await variationCard.getByRole('button', { name: 'Record variation decision' }).click();
 	await expect(page).toHaveURL(
 		new RegExp(`/commercial/cost-control\\?project=${projectPublicId}$`)
