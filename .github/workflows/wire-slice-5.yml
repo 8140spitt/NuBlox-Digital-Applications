@@ -1,0 +1,84 @@
+name: Wire Slice 5 Branch
+
+on:
+  push:
+    branches:
+      - product/v1-site-quality-safety
+
+permissions:
+  contents: write
+
+jobs:
+  wire:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-site-quality-safety
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Wire navigation and organisation bootstrap
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function replaceOnce(path, needle, replacement) {
+            const source = fs.readFileSync(path, 'utf8');
+            if (!source.includes(needle)) throw new Error(`Expected snippet not found in ${path}`);
+            const result = source.replace(needle, replacement);
+            if (result === source) throw new Error(`No replacement made in ${path}`);
+            fs.writeFileSync(path, result);
+          }
+
+          const nav = 'app/src/lib/navigation/app-navigation.ts';
+          replaceOnce(
+            nav,
+            `\t\t\t{\n\t\t\t\tid: 'people',\n\t\t\t\tlabel: 'People',\n\t\t\t\thref: '/people',\n\t\t\t\tanyPermissionNamespaces: ['workforce.']\n\t\t\t}`,
+            `\t\t\t{\n\t\t\t\tid: 'people',\n\t\t\t\tlabel: 'People',\n\t\t\t\thref: '/people',\n\t\t\t\tanyPermissionNamespaces: ['workforce.']\n\t\t\t},\n\t\t\t{\n\t\t\t\tid: 'site',\n\t\t\t\tlabel: 'Site',\n\t\t\t\thref: '/site',\n\t\t\t\tanyPermissionNamespaces: ['site.', 'quality.', 'safety.'],\n\t\t\t\tchildren: [\n\t\t\t\t\t{ id: 'site-diaries', label: 'Site diaries', href: '/site#diary-register', anyPermissionNamespaces: ['site.'] },\n\t\t\t\t\t{ id: 'quality-inspections', label: 'Quality', href: '/site#inspection-register', anyPermissionNamespaces: ['quality.'] },\n\t\t\t\t\t{ id: 'safety-observations', label: 'Safety', href: '/site#safety-register', anyPermissionNamespaces: ['safety.'] }\n\t\t\t\t]\n\t\t\t}`
+          );
+          replaceOnce(
+            nav,
+            `\t{\n\t\tid: 'new-workforce-member',`,
+            `\t{\n\t\tid: 'new-site-diary',\n\t\tlabel: 'Site diary',\n\t\thref: '/site#create-diary',\n\t\tdescription: 'Capture a controlled project field record.',\n\t\tanyPermissions: ['site.diary.manage']\n\t},\n\t{\n\t\tid: 'new-quality-inspection',\n\t\tlabel: 'Quality inspection',\n\t\thref: '/site#create-inspection',\n\t\tdescription: 'Start an inspection against a published checklist.',\n\t\tanyPermissions: ['quality.inspection.manage']\n\t},\n\t{\n\t\tid: 'new-safety-observation',\n\t\tlabel: 'Safety observation',\n\t\thref: '/site#create-safety-observation',\n\t\tdescription: 'Report a project safety observation from the field.',\n\t\tanyPermissions: ['safety.event.manage']\n\t},\n\t{\n\t\tid: 'new-workforce-member',`
+          );
+
+          for (const path of [
+            'app/src/routes/(auth)/start/+page.server.ts',
+            'app/src/lib/server/auth/better-auth.ts'
+          ]) {
+            replaceOnce(
+              path,
+              `import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';`,
+              `import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';\nimport { ensureSiteQualitySafetyStandardRoleDefaults } from '$lib/server/site/site-quality-safety-bootstrap';`
+            );
+            replaceOnce(
+              path,
+              `ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId)`,
+              `ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId),\n\t\t\t\tensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId)`
+            );
+          }
+          NODE
+      - name: Format wiring
+        working-directory: app
+        run: >-
+          pnpm exec prettier --write
+          src/lib/navigation/app-navigation.ts
+          'src/routes/(auth)/start/+page.server.ts'
+          src/lib/server/auth/better-auth.ts
+      - name: Commit wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/lib/navigation/app-navigation.ts app/src/routes/'(auth)'/start/+page.server.ts app/src/lib/server/auth/better-auth.ts
+          git commit -m "Wire Slice 5 navigation and bootstrap"
+          git push origin HEAD:product/v1-site-quality-safety
