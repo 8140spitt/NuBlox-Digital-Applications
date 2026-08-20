@@ -3,6 +3,10 @@ import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import {
+	CommercialValuationService,
+	CommercialValuationValidationError
+} from '$lib/server/commercial/commercial-valuation-service';
+import {
 	ProjectCommercialControlService,
 	ProjectCommercialControlValidationError
 } from '$lib/server/commercial/project-commercial-control-service';
@@ -27,6 +31,11 @@ function failure(error: string) {
 	return { error };
 }
 
+function redirectToProject(projectPublicId?: string) {
+	const suffix = projectPublicId ? `?project=${encodeURIComponent(projectPublicId)}` : '';
+	throw redirect(303, `/commercial/cost-control${suffix}`);
+}
+
 async function runAction(
 	locals: App.Locals,
 	operation: (service: ProjectCommercialControlService, actor: TenantActorContext) => Promise<unknown>,
@@ -43,8 +52,26 @@ async function runAction(
 		}
 		throw error;
 	}
-	const suffix = returnProjectPublicId ? `?project=${encodeURIComponent(returnProjectPublicId)}` : '';
-	throw redirect(303, `/commercial/cost-control${suffix}`);
+	redirectToProject(returnProjectPublicId);
+}
+
+async function runValuationAction(
+	locals: App.Locals,
+	operation: (service: CommercialValuationService, actor: TenantActorContext) => Promise<unknown>,
+	returnProjectPublicId?: string
+) {
+	const actor = actorFromLocals(locals);
+	if (!actor) return fail(401, failure('Authentication and organisation context are required.'));
+	try {
+		await operation(new CommercialValuationService(getDatabase()), actor);
+	} catch (error) {
+		if (error instanceof CommercialValuationValidationError) return fail(400, failure(error.message));
+		if (error instanceof TenantAccessError) {
+			return fail(403, failure('You do not have access to this project valuation action.'));
+		}
+		throw error;
+	}
+	redirectToProject(returnProjectPublicId);
 }
 
 export const load: PageServerLoad = async ({ locals, url }) => {
@@ -58,6 +85,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			canManageVariations: false,
 			canIssueVariations: false,
 			canDecideVariations: false,
+			canManageValuations: false,
+			canAssessValuations: false,
 			projects: [],
 			costCategories: [],
 			variationTypes: [],
@@ -65,14 +94,32 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			budgets: [],
 			purchaseOrders: [],
 			variations: [],
+			valuations: [],
 			selectedProjectPublicId: null,
 			position: null
 		};
 	}
-	return new ProjectCommercialControlService(getDatabase()).getWorkspace(
+	const db = getDatabase();
+	const projectPublicId = url.searchParams.get('project');
+	const workspace = await new ProjectCommercialControlService(db).getWorkspace(actor, projectPublicId);
+	if (!workspace.canView) {
+		return {
+			...workspace,
+			canManageValuations: false,
+			canAssessValuations: false,
+			valuations: []
+		};
+	}
+	const valuationWorkspace = await new CommercialValuationService(db).getWorkspace(
 		actor,
-		url.searchParams.get('project')
+		workspace.selectedProjectPublicId
 	);
+	return {
+		...workspace,
+		canManageValuations: valuationWorkspace.canManage,
+		canAssessValuations: valuationWorkspace.canAssess,
+		valuations: valuationWorkspace.valuations
+	};
 };
 
 export const actions: Actions = {
@@ -173,6 +220,39 @@ export const actions: Actions = {
 					text(data, 'decisionAmount'),
 					text(data, 'comments')
 				),
+			text(data, 'projectPublicId')
+		);
+	},
+	createSupplierApplication: async ({ request, locals }) => {
+		const data = await request.formData();
+		const projectPublicId = text(data, 'projectPublicId');
+		return runValuationAction(
+			locals,
+			(service, actor) =>
+				service.createSupplierApplication(actor, {
+					projectPublicId,
+					purchaseOrderPublicId: text(data, 'purchaseOrderPublicId'),
+					costCodePublicId: text(data, 'costCodePublicId'),
+					valuationDate: text(data, 'valuationDate'),
+					description: text(data, 'description'),
+					grossValueToDate: text(data, 'grossValueToDate')
+				}),
+			projectPublicId
+		);
+	},
+	submitValuation: async ({ request, locals }) => {
+		const data = await request.formData();
+		return runValuationAction(
+			locals,
+			(service, actor) => service.submit(actor, text(data, 'valuationPublicId')),
+			text(data, 'projectPublicId')
+		);
+	},
+	assessValuation: async ({ request, locals }) => {
+		const data = await request.formData();
+		return runValuationAction(
+			locals,
+			(service, actor) => service.assess(actor, text(data, 'valuationPublicId')),
 			text(data, 'projectPublicId')
 		);
 	}
