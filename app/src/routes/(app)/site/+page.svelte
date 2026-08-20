@@ -293,8 +293,7 @@
 							name="checklistPrompts"
 							rows="5"
 							required
-							placeholder={'Containment securely fixed\nRoutes match issued drawing\nFire stopping complete'}
-						></textarea></label
+							placeholder="One required checklist prompt per line"></textarea></label
 					>
 					<div class="form-actions wide"><button type="submit">Publish checklist v1</button></div>
 				</form>
