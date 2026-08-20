@@ -6,6 +6,7 @@ import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { createPool } from 'mysql2/promise';
 
+import { ensureAssetsMaintenanceStandardRoleDefaults } from '$lib/server/assets/assets-maintenance-bootstrap';
 import { getDatabase } from '$lib/server/db/database';
 import { getEmailDelivery } from '$lib/server/email/email-delivery';
 import { ensureInformationStandardRoleDefaults } from '$lib/server/information/information-bootstrap';
@@ -177,7 +178,8 @@ export const auth = betterAuth({
 							ensureWorkforceStandardRoleDefaults(db, created.organisationId),
 							ensureInformationStandardRoleDefaults(db, created.organisationId),
 							ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId),
-							ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId)
+							ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId),
+							ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId)
 						]);
 					}
 				}
