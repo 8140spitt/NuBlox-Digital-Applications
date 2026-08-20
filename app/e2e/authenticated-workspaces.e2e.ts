@@ -94,7 +94,7 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await expect(createPopover.getByRole('link', { name: /Site diary/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Quality inspection/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Safety observation/ })).toBeVisible();
-	await expect(createPopover.getByRole('link', { name: /^Asset$/ })).toBeVisible();
+	await expect(createPopover.locator('a[href="/assets#create-asset"]')).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Maintenance request/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Maintenance plan/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Workforce member/ })).toBeVisible();
