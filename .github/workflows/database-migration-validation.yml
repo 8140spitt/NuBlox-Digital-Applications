@@ -1,9 +1,10 @@
 name: Slice 4 Formatting
 
 on:
-  push:
-    branches:
-      - product/v1-procurement-commercial-control
+  pull_request:
+    paths:
+      - 'app/**'
+      - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
