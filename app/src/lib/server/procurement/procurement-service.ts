@@ -19,9 +19,7 @@ import {
 	type ProcurementPackageSummary,
 	type PurchaseOrderItemSummary,
 	type PurchaseOrderSummary,
-	type PurchaseOrderVersionSummary,
-	type RfqSummary,
-	type RfqVersionSummary
+	type PurchaseOrderVersionSummary
 } from './procurement-repository';
 
 export class ProcurementValidationError extends Error {

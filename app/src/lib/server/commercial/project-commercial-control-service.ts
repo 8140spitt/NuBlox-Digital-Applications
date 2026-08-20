@@ -451,12 +451,9 @@ export class ProjectCommercialControlService {
 			});
 		}
 
-		let selectedProject: ProjectRecord | null = null;
-		if (selectedProjectPublicIdInput?.trim()) {
-			selectedProject = await this.requireProject(actor, selectedProjectPublicIdInput);
-		} else {
-			selectedProject = projects[0] ?? null;
-		}
+		const selectedProject: ProjectRecord | null = selectedProjectPublicIdInput?.trim()
+			? await this.requireProject(actor, selectedProjectPublicIdInput)
+			: (projects[0] ?? null);
 		const position = selectedProject
 			? await this.calculatePosition(
 					actor,
