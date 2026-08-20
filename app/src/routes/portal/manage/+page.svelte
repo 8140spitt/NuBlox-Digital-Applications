@@ -21,7 +21,7 @@
 {#if data.projects.length}
 	<form class="project-switcher" method="GET">
 		<label for="project">Project</label>
-		<select id="project" name="project" onchange="this.form?.submit()">
+		<select id="project" name="project" onchange={(event) => event.currentTarget.form?.requestSubmit()}>
 			{#each data.projects as project (project.publicId)}
 				<option
 					value={project.publicId}
