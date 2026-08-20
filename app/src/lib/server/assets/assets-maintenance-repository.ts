@@ -187,8 +187,8 @@ export type ComplianceEventSummary = {
 export type EvidenceVersionSummary = {
 	id: string;
 	publicId: string;
-	containerPublicId: string;
-	containerReference: string;
+	projectId: string;
+	containerNumber: string;
 	title: string;
 	revisionCode: string;
 	versionStatus: string;
@@ -349,32 +349,24 @@ export class AssetsMaintenanceRepository {
 		return this.db
 			.selectFrom('assets as asset')
 			.innerJoin('asset_types as assetType', (join) =>
-				join.onRef('assetType.id', '=', 'asset.asset_type_id').onRef(
-					'assetType.organisation_id',
-					'=',
-					'asset.organisation_id'
-				)
+				join
+					.onRef('assetType.id', '=', 'asset.asset_type_id')
+					.onRef('assetType.organisation_id', '=', 'asset.organisation_id')
 			)
 			.leftJoin('facility_buildings as building', (join) =>
-				join.onRef('building.id', '=', 'asset.facility_building_id').onRef(
-					'building.organisation_id',
-					'=',
-					'asset.organisation_id'
-				)
+				join
+					.onRef('building.id', '=', 'asset.facility_building_id')
+					.onRef('building.organisation_id', '=', 'asset.organisation_id')
 			)
 			.leftJoin('building_levels as level', (join) =>
-				join.onRef('level.id', '=', 'asset.building_level_id').onRef(
-					'level.organisation_id',
-					'=',
-					'asset.organisation_id'
-				)
+				join
+					.onRef('level.id', '=', 'asset.building_level_id')
+					.onRef('level.organisation_id', '=', 'asset.organisation_id')
 			)
 			.leftJoin('facility_spaces as space', (join) =>
-				join.onRef('space.id', '=', 'asset.facility_space_id').onRef(
-					'space.organisation_id',
-					'=',
-					'asset.organisation_id'
-				)
+				join
+					.onRef('space.id', '=', 'asset.facility_space_id')
+					.onRef('space.organisation_id', '=', 'asset.organisation_id')
 			)
 			.select([
 				'asset.id as id',
@@ -455,7 +447,11 @@ export class AssetsMaintenanceRepository {
 	async listMaintenanceRequests(organisationId: string): Promise<MaintenanceRequestSummary[]> {
 		return this.db
 			.selectFrom('maintenance_requests as request')
-			.innerJoin('maintenance_priority_levels as priority', 'priority.id', 'request.maintenance_priority_level_id')
+			.innerJoin(
+				'maintenance_priority_levels as priority',
+				'priority.id',
+				'request.maintenance_priority_level_id'
+			)
 			.select([
 				'request.id as id',
 				'request.public_id as publicId',
@@ -486,7 +482,11 @@ export class AssetsMaintenanceRepository {
 	async listMaintenancePlans(organisationId: string): Promise<MaintenancePlanSummary[]> {
 		return this.db
 			.selectFrom('maintenance_plans as plan')
-			.innerJoin('maintenance_plan_types as planType', 'planType.id', 'plan.maintenance_plan_type_id')
+			.innerJoin(
+				'maintenance_plan_types as planType',
+				'planType.id',
+				'plan.maintenance_plan_type_id'
+			)
 			.select([
 				'plan.id as id',
 				'plan.public_id as publicId',
@@ -507,11 +507,10 @@ export class AssetsMaintenanceRepository {
 		const rows = await this.db
 			.selectFrom('maintenance_plan_tasks as task')
 			.leftJoin('maintenance_task_schedule_rules as rule', (join) =>
-				join.onRef('rule.maintenance_plan_task_id', '=', 'task.id').onRef(
-					'rule.organisation_id',
-					'=',
-					'task.organisation_id'
-				).on('rule.is_active', '=', 1)
+				join
+					.onRef('rule.maintenance_plan_task_id', '=', 'task.id')
+					.onRef('rule.organisation_id', '=', 'task.organisation_id')
+					.on('rule.is_active', '=', 1)
 			)
 			.select([
 				'task.id as id',
@@ -538,10 +537,15 @@ export class AssetsMaintenanceRepository {
 		return this.db
 			.selectFrom('maintenance_plan_tasks as task')
 			.innerJoin('maintenance_plans as plan', (join) =>
-				join.onRef('plan.id', '=', 'task.maintenance_plan_id').onRef('plan.organisation_id', '=', 'task.organisation_id')
+				join
+					.onRef('plan.id', '=', 'task.maintenance_plan_id')
+					.onRef('plan.organisation_id', '=', 'task.organisation_id')
 			)
 			.leftJoin('maintenance_task_schedule_rules as rule', (join) =>
-				join.onRef('rule.maintenance_plan_task_id', '=', 'task.id').onRef('rule.organisation_id', '=', 'task.organisation_id').on('rule.is_active', '=', 1)
+				join
+					.onRef('rule.maintenance_plan_task_id', '=', 'task.id')
+					.onRef('rule.organisation_id', '=', 'task.organisation_id')
+					.on('rule.is_active', '=', 1)
 			)
 			.select([
 				'task.id as id',
@@ -563,7 +567,11 @@ export class AssetsMaintenanceRepository {
 		return this.db
 			.selectFrom('work_orders as workOrder')
 			.innerJoin('work_order_types as type', 'type.id', 'workOrder.work_order_type_id')
-			.innerJoin('maintenance_priority_levels as priority', 'priority.id', 'workOrder.maintenance_priority_level_id')
+			.innerJoin(
+				'maintenance_priority_levels as priority',
+				'priority.id',
+				'workOrder.maintenance_priority_level_id'
+			)
 			.select([
 				'workOrder.id as id',
 				'workOrder.public_id as publicId',
@@ -599,10 +607,14 @@ export class AssetsMaintenanceRepository {
 		const rows = await this.db
 			.selectFrom('work_order_party_assignments as assignment')
 			.innerJoin('parties as party', (join) =>
-				join.onRef('party.id', '=', 'assignment.party_id').onRef('party.organisation_id', '=', 'assignment.organisation_id')
+				join
+					.onRef('party.id', '=', 'assignment.party_id')
+					.onRef('party.organisation_id', '=', 'assignment.organisation_id')
 			)
 			.innerJoin('party_organisations as partyOrganisation', (join) =>
-				join.onRef('partyOrganisation.party_id', '=', 'party.id').onRef('partyOrganisation.organisation_id', '=', 'party.organisation_id')
+				join
+					.onRef('partyOrganisation.party_id', '=', 'party.id')
+					.onRef('partyOrganisation.organisation_id', '=', 'party.organisation_id')
 			)
 			.select([
 				'assignment.work_order_id as workOrderId',
@@ -629,7 +641,9 @@ export class AssetsMaintenanceRepository {
 		return this.db
 			.selectFrom('asset_service_events as event')
 			.innerJoin('assets as asset', (join) =>
-				join.onRef('asset.id', '=', 'event.asset_id').onRef('asset.organisation_id', '=', 'event.organisation_id')
+				join
+					.onRef('asset.id', '=', 'event.asset_id')
+					.onRef('asset.organisation_id', '=', 'event.organisation_id')
 			)
 			.innerJoin('service_event_types as type', 'type.id', 'event.service_event_type_id')
 			.select([
@@ -649,12 +663,21 @@ export class AssetsMaintenanceRepository {
 			.execute();
 	}
 
-	async listComplianceRequirements(organisationId: string): Promise<ComplianceRequirementSummary[]> {
+	async listComplianceRequirements(
+		organisationId: string
+	): Promise<ComplianceRequirementSummary[]> {
 		return this.db
 			.selectFrom('compliance_requirements as requirement')
-			.innerJoin('compliance_requirement_categories as category', 'category.id', 'requirement.compliance_requirement_category_id')
+			.innerJoin(
+				'compliance_requirement_categories as category',
+				'category.id',
+				'requirement.compliance_requirement_category_id'
+			)
 			.leftJoin('compliance_requirement_versions as version', (join) =>
-				join.onRef('version.compliance_requirement_id', '=', 'requirement.id').onRef('version.organisation_id', '=', 'requirement.organisation_id').on('version.version_status', '=', 'published')
+				join
+					.onRef('version.compliance_requirement_id', '=', 'requirement.id')
+					.onRef('version.organisation_id', '=', 'requirement.organisation_id')
+					.on('version.version_status', '=', 'published')
 			)
 			.select([
 				'requirement.id as id',
@@ -677,7 +700,10 @@ export class AssetsMaintenanceRepository {
 		return this.db
 			.selectFrom('compliance_requirements as requirement')
 			.innerJoin('compliance_requirement_versions as version', (join) =>
-				join.onRef('version.compliance_requirement_id', '=', 'requirement.id').onRef('version.organisation_id', '=', 'requirement.organisation_id').on('version.version_status', '=', 'published')
+				join
+					.onRef('version.compliance_requirement_id', '=', 'requirement.id')
+					.onRef('version.organisation_id', '=', 'requirement.organisation_id')
+					.on('version.version_status', '=', 'published')
 			)
 			.select([
 				'requirement.id as id',
@@ -691,14 +717,20 @@ export class AssetsMaintenanceRepository {
 			.executeTakeFirst();
 	}
 
-	async listAssetComplianceAssignments(organisationId: string): Promise<AssetComplianceAssignmentSummary[]> {
+	async listAssetComplianceAssignments(
+		organisationId: string
+	): Promise<AssetComplianceAssignmentSummary[]> {
 		const rows = await this.db
 			.selectFrom('asset_compliance_assignments as assignment')
 			.innerJoin('assets as asset', (join) =>
-				join.onRef('asset.id', '=', 'assignment.asset_id').onRef('asset.organisation_id', '=', 'assignment.organisation_id')
+				join
+					.onRef('asset.id', '=', 'assignment.asset_id')
+					.onRef('asset.organisation_id', '=', 'assignment.organisation_id')
 			)
 			.innerJoin('compliance_requirements as requirement', (join) =>
-				join.onRef('requirement.id', '=', 'assignment.compliance_requirement_id').onRef('requirement.organisation_id', '=', 'assignment.organisation_id')
+				join
+					.onRef('requirement.id', '=', 'assignment.compliance_requirement_id')
+					.onRef('requirement.organisation_id', '=', 'assignment.organisation_id')
 			)
 			.select([
 				'assignment.id as id',
@@ -719,13 +751,20 @@ export class AssetsMaintenanceRepository {
 		return this.db
 			.selectFrom('asset_compliance_assignments as assignment')
 			.innerJoin('assets as asset', (join) =>
-				join.onRef('asset.id', '=', 'assignment.asset_id').onRef('asset.organisation_id', '=', 'assignment.organisation_id')
+				join
+					.onRef('asset.id', '=', 'assignment.asset_id')
+					.onRef('asset.organisation_id', '=', 'assignment.organisation_id')
 			)
 			.innerJoin('compliance_requirements as requirement', (join) =>
-				join.onRef('requirement.id', '=', 'assignment.compliance_requirement_id').onRef('requirement.organisation_id', '=', 'assignment.organisation_id')
+				join
+					.onRef('requirement.id', '=', 'assignment.compliance_requirement_id')
+					.onRef('requirement.organisation_id', '=', 'assignment.organisation_id')
 			)
 			.innerJoin('compliance_requirement_versions as version', (join) =>
-				join.onRef('version.compliance_requirement_id', '=', 'requirement.id').onRef('version.organisation_id', '=', 'requirement.organisation_id').on('version.version_status', '=', 'published')
+				join
+					.onRef('version.compliance_requirement_id', '=', 'requirement.id')
+					.onRef('version.organisation_id', '=', 'requirement.organisation_id')
+					.on('version.version_status', '=', 'published')
 			)
 			.select([
 				'assignment.id as id',
@@ -745,16 +784,24 @@ export class AssetsMaintenanceRepository {
 		return this.db
 			.selectFrom('compliance_events as event')
 			.innerJoin('compliance_requirement_versions as version', (join) =>
-				join.onRef('version.id', '=', 'event.compliance_requirement_version_id').onRef('version.organisation_id', '=', 'event.organisation_id')
+				join
+					.onRef('version.id', '=', 'event.compliance_requirement_version_id')
+					.onRef('version.organisation_id', '=', 'event.organisation_id')
 			)
 			.innerJoin('compliance_requirements as requirement', (join) =>
-				join.onRef('requirement.id', '=', 'version.compliance_requirement_id').onRef('requirement.organisation_id', '=', 'event.organisation_id')
+				join
+					.onRef('requirement.id', '=', 'version.compliance_requirement_id')
+					.onRef('requirement.organisation_id', '=', 'event.organisation_id')
 			)
 			.leftJoin('asset_compliance_assignments as assignment', (join) =>
-				join.onRef('assignment.id', '=', 'event.asset_compliance_assignment_id').onRef('assignment.organisation_id', '=', 'event.organisation_id')
+				join
+					.onRef('assignment.id', '=', 'event.asset_compliance_assignment_id')
+					.onRef('assignment.organisation_id', '=', 'event.organisation_id')
 			)
 			.leftJoin('assets as asset', (join) =>
-				join.onRef('asset.id', '=', 'assignment.asset_id').onRef('asset.organisation_id', '=', 'event.organisation_id')
+				join
+					.onRef('asset.id', '=', 'assignment.asset_id')
+					.onRef('asset.organisation_id', '=', 'event.organisation_id')
 			)
 			.select([
 				'event.id as id',
@@ -780,27 +827,25 @@ export class AssetsMaintenanceRepository {
 		if (projectIds.length === 0) return [];
 		return this.db
 			.selectFrom('information_container_versions as version')
-			.innerJoin('information_containers as container', (join) =>
-				join.onRef('container.id', '=', 'version.information_container_id').onRef(
-					'container.owning_organisation_id',
-					'=',
-					'version.owning_organisation_id'
-				)
+			.innerJoin(
+				'information_containers as container',
+				'container.id',
+				'version.information_container_id'
 			)
 			.select([
 				'version.id as id',
 				'version.public_id as publicId',
-				'container.public_id as containerPublicId',
-				'container.container_reference as containerReference',
-				'version.title as title',
+				'version.project_id as projectId',
+				'container.container_number as containerNumber',
+				'container.title as title',
 				'version.revision_code as revisionCode',
-				'version.status as versionStatus'
+				'version.version_status as versionStatus'
 			])
+			.where('version.project_id', 'in', [...projectIds])
 			.where('version.owning_organisation_id', '=', organisationId)
-			.where('container.project_id', 'in', projectIds)
-			.where('version.status', 'in', ['issued', 'superseded'])
-			.orderBy('container.container_reference')
-			.orderBy('version.revision_code', 'desc')
+			.where('version.version_status', 'in', ['issued', 'superseded'])
+			.orderBy('container.container_number')
+			.orderBy('version.version_sequence', 'desc')
 			.execute();
 	}
 
@@ -810,16 +855,15 @@ export class AssetsMaintenanceRepository {
 		publicId: string
 	) {
 		if (projectIds.length === 0) return null;
-		return this.db
-			.selectFrom('information_container_versions as version')
-			.innerJoin('information_containers as container', (join) =>
-				join.onRef('container.id', '=', 'version.information_container_id').onRef('container.owning_organisation_id', '=', 'version.owning_organisation_id')
-			)
-			.select(['version.id as id', 'version.public_id as publicId'])
-			.where('version.owning_organisation_id', '=', organisationId)
-			.where('version.public_id', '=', publicId)
-			.where('container.project_id', 'in', projectIds)
-			.where('version.status', 'in', ['issued', 'superseded'])
-			.executeTakeFirst();
+		return (
+			(await this.db
+				.selectFrom('information_container_versions')
+				.select(['id', 'public_id as publicId', 'project_id as projectId'])
+				.where('project_id', 'in', [...projectIds])
+				.where('owning_organisation_id', '=', organisationId)
+				.where('public_id', '=', publicId)
+				.where('version_status', 'in', ['issued', 'superseded'])
+				.executeTakeFirst()) ?? null
+		);
 	}
 }

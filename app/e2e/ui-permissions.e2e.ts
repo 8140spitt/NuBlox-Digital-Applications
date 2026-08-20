@@ -48,6 +48,9 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(primaryNavigation.getByRole('link', { name: 'Time', exact: true })).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'Site', exact: true })).toBeVisible();
+	await expect(
+		primaryNavigation.getByRole('link', { name: 'Assets / Facilities', exact: true })
+	).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'Finance', exact: true })).toBeVisible();
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Notifications' })).toBeDisabled();
@@ -144,6 +147,28 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(
 		page.getByRole('button', {
 			name: /Submit diary|Approve diary|Complete inspection|Close defect|Close NCR|Create safety action|Complete action|Close safety event/
+		})
+	).toHaveCount(0);
+
+	await page.goto('/assets');
+	await expect(
+		page.getByRole('heading', { name: 'Assets & facilities', exact: true, level: 1 })
+	).toBeVisible();
+	await expect(page.locator('#create-facility')).toHaveCount(0);
+	await expect(page.locator('#create-building')).toHaveCount(0);
+	await expect(page.locator('#create-level')).toHaveCount(0);
+	await expect(page.locator('#create-space')).toHaveCount(0);
+	await expect(page.locator('#create-asset-type')).toHaveCount(0);
+	await expect(page.locator('#create-asset')).toHaveCount(0);
+	await expect(page.locator('#create-maintenance-request')).toHaveCount(0);
+	await expect(page.locator('#create-maintenance-plan')).toHaveCount(0);
+	await expect(page.locator('#create-service-event')).toHaveCount(0);
+	await expect(page.locator('#create-compliance-requirement')).toHaveCount(0);
+	await expect(page.locator('#assign-compliance')).toHaveCount(0);
+	await expect(page.locator('#record-compliance-event')).toHaveCount(0);
+	await expect(
+		page.getByRole('button', {
+			name: /Register asset|Report request|Generate work order|Assign contractor|Complete work order|Record service event|Publish version 1|Assign requirement|Record compliance event|Update lifecycle/
 		})
 	).toHaveCount(0);
 

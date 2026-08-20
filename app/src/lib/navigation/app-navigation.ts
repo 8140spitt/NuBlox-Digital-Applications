@@ -193,6 +193,32 @@ const navigationSections: readonly AppNavigationSection[] = [
 						anyPermissionNamespaces: ['safety.']
 					}
 				]
+			},
+			{
+				id: 'assets',
+				label: 'Assets / Facilities',
+				href: '/assets',
+				anyPermissionNamespaces: ['assets.', 'facilities.', 'maintenance.', 'compliance.'],
+				children: [
+					{
+						id: 'asset-register',
+						label: 'Asset register',
+						href: '/assets#asset-register',
+						anyPermissionNamespaces: ['assets.']
+					},
+					{
+						id: 'maintenance-work-orders',
+						label: 'Work orders',
+						href: '/assets#work-order-register',
+						anyPermissionNamespaces: ['maintenance.']
+					},
+					{
+						id: 'asset-compliance',
+						label: 'Compliance',
+						href: '/assets#compliance-register',
+						anyPermissionNamespaces: ['compliance.']
+					}
+				]
 			}
 		]
 	},
@@ -433,6 +459,28 @@ const quickActions: readonly AppQuickAction[] = [
 		href: '/finance/invoices',
 		description: 'Create a controlled invoice draft.',
 		anyPermissions: ['finance.invoice.create', 'finance.manage']
+	},
+
+	{
+		id: 'new-asset',
+		label: 'Asset',
+		href: '/assets#create-asset',
+		description: 'Register a maintainable operational asset.',
+		anyPermissions: ['assets.manage']
+	},
+	{
+		id: 'new-maintenance-request',
+		label: 'Maintenance request',
+		href: '/assets#create-maintenance-request',
+		description: 'Report a reactive asset or facility issue.',
+		anyPermissions: ['maintenance.request.manage']
+	},
+	{
+		id: 'new-maintenance-plan',
+		label: 'Maintenance plan',
+		href: '/assets#create-maintenance-plan',
+		description: 'Create planned maintenance for an asset.',
+		anyPermissions: ['maintenance.plan.manage']
 	}
 ];
 

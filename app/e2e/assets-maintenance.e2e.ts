@@ -22,7 +22,9 @@ async function optionValueContaining(select: import('@playwright/test').Locator,
 	return value!;
 }
 
-test('owner registers an asset and completes reactive, planned, service and compliance lifecycle', async ({ page }) => {
+test('owner registers an asset and completes reactive, planned, service and compliance lifecycle', async ({
+	page
+}) => {
 	await signIn(page);
 	const suffix = Date.now().toString().slice(-7);
 	const facilityCode = `FAC-${suffix}`;
@@ -45,10 +47,14 @@ test('owner registers an asset and completes reactive, planned, service and comp
 	await facilityPanel.getByLabel('Timezone').fill('Europe/London');
 	await facilityPanel.getByRole('button', { name: 'Create facility' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	await expect(page.locator('#facility-register .record-card').filter({ hasText: facilityName })).toBeVisible();
+	await expect(
+		page.locator('#facility-register .record-card').filter({ hasText: facilityName })
+	).toBeVisible();
 
 	const buildingPanel = page.locator('#create-building');
-	await buildingPanel.getByLabel('Facility').selectOption({ label: `${facilityCode} · ${facilityName}` });
+	await buildingPanel
+		.getByLabel('Facility')
+		.selectOption({ label: `${facilityCode} · ${facilityName}` });
 	await buildingPanel.getByLabel('Building code').fill(`BLDG-${suffix}`);
 	await buildingPanel.getByLabel('Building name').fill(`Main building ${suffix}`);
 	await buildingPanel.getByRole('button', { name: 'Add building' }).click();
@@ -62,7 +68,9 @@ test('owner registers an asset and completes reactive, planned, service and comp
 	await expect(page).toHaveURL(/\/assets$/);
 
 	const assetPanel = page.locator('#create-asset');
-	await assetPanel.getByLabel('Facility').selectOption({ label: `${facilityCode} · ${facilityName}` });
+	await assetPanel
+		.getByLabel('Facility')
+		.selectOption({ label: `${facilityCode} · ${facilityName}` });
 	const assetTypeSelect = assetPanel.getByLabel('Asset type');
 	await assetTypeSelect.selectOption(await optionValueContaining(assetTypeSelect, typeName));
 	await assetPanel.getByLabel('Asset tag').fill(assetTag);
@@ -70,35 +78,56 @@ test('owner registers an asset and completes reactive, planned, service and comp
 	await assetPanel.getByLabel('Criticality').selectOption('high');
 	await assetPanel.getByRole('button', { name: 'Register asset' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	await expect(page.locator('#asset-register .asset-card').filter({ hasText: assetTag })).toContainText('active');
+	await expect(
+		page.locator('#asset-register .asset-card').filter({ hasText: assetTag })
+	).toContainText('active');
 
 	const requestPanel = page.locator('#create-maintenance-request');
-	await requestPanel.getByLabel('Facility').selectOption({ label: `${facilityCode} · ${facilityName}` });
-	await requestPanel.getByLabel('Affected asset').selectOption({ label: `${assetTag} · ${assetName}` });
+	await requestPanel
+		.getByLabel('Facility')
+		.selectOption({ label: `${facilityCode} · ${facilityName}` });
+	await requestPanel
+		.getByLabel('Affected asset')
+		.selectOption({ label: `${assetTag} · ${assetName}` });
 	await requestPanel.getByLabel('Type').selectOption('fault');
 	await requestPanel.getByLabel('Priority').selectOption('urgent');
 	await requestPanel.getByLabel('Title').fill(requestTitle);
-	await requestPanel.getByLabel('Description').fill('Intermittent outgoing breaker trip requires investigation.');
+	await requestPanel
+		.getByLabel('Description')
+		.fill('Intermittent outgoing breaker trip requires investigation.');
 	await requestPanel.getByRole('button', { name: 'Report request' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	let requestCard = page.locator('#maintenance-request-register .request-card').filter({ hasText: requestTitle });
+	let requestCard = page
+		.locator('#maintenance-request-register .request-card')
+		.filter({ hasText: requestTitle });
 	await expect(requestCard.getByText('new', { exact: true })).toBeVisible();
 	await requestCard.getByLabel('Asset').selectOption({ label: `${assetTag} · ${assetName}` });
 	await requestCard.getByRole('button', { name: 'Create reactive work order' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
 
-	let workOrder = page.locator('#work-order-register .work-order-card').filter({ hasText: requestTitle }).first();
+	let workOrder = page
+		.locator('#work-order-register .work-order-card')
+		.filter({ hasText: requestTitle })
+		.first();
 	await expect(workOrder.getByText('open', { exact: true })).toBeVisible();
 	const contractor = workOrder.getByLabel('Contractor');
 	await contractor.selectOption(await optionValueContaining(contractor, 'NuBlox E2E Supplier'));
 	await workOrder.getByRole('button', { name: 'Assign contractor' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	workOrder = page.locator('#work-order-register .work-order-card').filter({ hasText: requestTitle }).first();
+	workOrder = page
+		.locator('#work-order-register .work-order-card')
+		.filter({ hasText: requestTitle })
+		.first();
 	await expect(workOrder).toContainText('NuBlox E2E Supplier');
-	await workOrder.getByLabel('Completion summary').fill('Breaker tested, termination remade and circuit restored.');
+	await workOrder
+		.getByLabel('Completion summary')
+		.fill('Breaker tested, termination remade and circuit restored.');
 	await workOrder.getByRole('button', { name: 'Complete work order' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	workOrder = page.locator('#work-order-register .work-order-card').filter({ hasText: requestTitle }).first();
+	workOrder = page
+		.locator('#work-order-register .work-order-card')
+		.filter({ hasText: requestTitle })
+		.first();
 	await expect(workOrder.getByText('completed', { exact: true })).toBeVisible();
 
 	const servicePanel = page.locator('#create-service-event');
@@ -112,10 +141,14 @@ test('owner registers an asset and completes reactive, planned, service and comp
 	await servicePanel.getByLabel('Notes').fill('Functional and thermal checks passed.');
 	await servicePanel.getByRole('button', { name: 'Record service event' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	await expect(page.locator('#service-history .service-card').filter({ hasText: assetTag }).first()).toContainText('completed');
+	await expect(
+		page.locator('#service-history .service-card').filter({ hasText: assetTag }).first()
+	).toContainText('completed');
 
 	const planPanel = page.locator('#create-maintenance-plan');
-	await planPanel.getByLabel('Facility').selectOption({ label: `${facilityCode} · ${facilityName}` });
+	await planPanel
+		.getByLabel('Facility')
+		.selectOption({ label: `${facilityCode} · ${facilityName}` });
 	await planPanel.getByLabel('Asset').selectOption({ label: `${assetTag} · ${assetName}` });
 	await planPanel.getByLabel('Plan type').selectOption('ppm');
 	await planPanel.getByLabel('Plan name').fill(planName);
@@ -124,19 +157,26 @@ test('owner registers an asset and completes reactive, planned, service and comp
 	await planPanel.getByLabel('Unit').selectOption('month');
 	await planPanel.getByRole('button', { name: 'Create active maintenance plan' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	const planCard = page.locator('#maintenance-plan-register .record-card').filter({ hasText: planName });
+	const planCard = page
+		.locator('#maintenance-plan-register .record-card')
+		.filter({ hasText: planName });
 	await expect(planCard).toContainText('active');
 	await planCard.getByLabel('Asset').selectOption({ label: `${assetTag} · ${assetName}` });
 	await planCard.getByRole('button', { name: 'Generate work order' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	const plannedOrder = page.locator('#work-order-register .work-order-card').filter({ hasText: planTask }).first();
+	const plannedOrder = page
+		.locator('#work-order-register .work-order-card')
+		.filter({ hasText: planTask })
+		.first();
 	await expect(plannedOrder.getByText('open', { exact: true })).toBeVisible();
 
 	const requirementPanel = page.locator('#create-compliance-requirement');
 	await requirementPanel.getByLabel('Category').selectOption('electrical');
 	await requirementPanel.getByLabel('Requirement code').fill(requirementCode);
 	await requirementPanel.getByLabel('Name').fill(requirementName);
-	await requirementPanel.getByLabel('Requirement text').fill('Inspect LV distribution equipment and record condition.');
+	await requirementPanel
+		.getByLabel('Requirement text')
+		.fill('Inspect LV distribution equipment and record condition.');
 	await requirementPanel.getByLabel('Interval').fill('12');
 	await requirementPanel.getByLabel('Unit').selectOption('month');
 	await requirementPanel.getByRole('button', { name: 'Publish version 1' }).click();
@@ -145,7 +185,9 @@ test('owner registers an asset and completes reactive, planned, service and comp
 	const assignPanel = page.locator('#assign-compliance');
 	await assignPanel.getByLabel('Asset').selectOption({ label: `${assetTag} · ${assetName}` });
 	const requirementSelect = assignPanel.getByLabel('Requirement');
-	await requirementSelect.selectOption(await optionValueContaining(requirementSelect, requirementName));
+	await requirementSelect.selectOption(
+		await optionValueContaining(requirementSelect, requirementName)
+	);
 	await assignPanel.getByRole('button', { name: 'Assign requirement' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
 
@@ -157,5 +199,10 @@ test('owner registers an asset and completes reactive, planned, service and comp
 	await eventPanel.getByLabel('Findings').fill('Inspection passed with no defects.');
 	await eventPanel.getByRole('button', { name: 'Record compliance event' }).click();
 	await expect(page).toHaveURL(/\/assets$/);
-	await expect(page.locator('#compliance-register .compliance-event').filter({ hasText: requirementName }).first()).toContainText('pass');
+	await expect(
+		page
+			.locator('#compliance-register .compliance-event')
+			.filter({ hasText: requirementName })
+			.first()
+	).toContainText('pass');
 });
