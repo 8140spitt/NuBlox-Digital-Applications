@@ -262,7 +262,7 @@ describe('V1 portal and cross-organisation collaboration', () => {
 		await new ProjectTeamService(db).inviteParticipant(ownerActor, {
 			projectPublicId,
 			organisationPublicId: partnerOrganisationPublicId,
-			roleKeys: []
+			roleKeys: ['main_contractor']
 		});
 		expect(
 			(await new PortalCollaborationService(db).getWorkspace(partnerActor)).projects
