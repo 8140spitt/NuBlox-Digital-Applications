@@ -144,3 +144,49 @@ jobs:
       - name: Run Playwright browser E2E suite
         working-directory: app
         run: pnpm exec playwright test
+
+  slice7-finalize:
+    if: github.event_name == 'pull_request' && github.head_ref == 'product/v1-portal-collaboration'
+    name: Temporary Slice 7 wiring and formatting
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-portal-collaboration
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install application dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply Slice 7 cross-cutting wiring
+        run: python .github/scripts/finalize-slice7.py
+
+      - name: Format application files
+        working-directory: app
+        run: pnpm format
+
+      - name: Commit finalized Slice 7 files
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app database docs
+          if git diff --cached --quiet; then
+            echo 'Slice 7 finalizer produced no changes.'
+            exit 0
+          fi
+          git commit -m 'Finalize Slice 7 portal collaboration wiring'
+          git push origin HEAD:product/v1-portal-collaboration
