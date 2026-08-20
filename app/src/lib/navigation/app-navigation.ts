@@ -167,6 +167,32 @@ const navigationSections: readonly AppNavigationSection[] = [
 				label: 'People',
 				href: '/people',
 				anyPermissionNamespaces: ['workforce.']
+			},
+			{
+				id: 'site',
+				label: 'Site',
+				href: '/site',
+				anyPermissionNamespaces: ['site.', 'quality.', 'safety.'],
+				children: [
+					{
+						id: 'site-diaries',
+						label: 'Site diaries',
+						href: '/site#diary-register',
+						anyPermissionNamespaces: ['site.']
+					},
+					{
+						id: 'quality-inspections',
+						label: 'Quality',
+						href: '/site#inspection-register',
+						anyPermissionNamespaces: ['quality.']
+					},
+					{
+						id: 'safety-observations',
+						label: 'Safety',
+						href: '/site#safety-register',
+						anyPermissionNamespaces: ['safety.']
+					}
+				]
 			}
 		]
 	},
@@ -351,6 +377,27 @@ const quickActions: readonly AppQuickAction[] = [
 		href: '/commercial/cost-control#create-variation',
 		description: 'Create a controlled project change record.',
 		anyPermissions: ['commercial.variation.manage']
+	},
+	{
+		id: 'new-site-diary',
+		label: 'Site diary',
+		href: '/site#create-diary',
+		description: 'Capture a controlled project field record.',
+		anyPermissions: ['site.diary.manage']
+	},
+	{
+		id: 'new-quality-inspection',
+		label: 'Quality inspection',
+		href: '/site#create-inspection',
+		description: 'Start an inspection against a published checklist.',
+		anyPermissions: ['quality.inspection.manage']
+	},
+	{
+		id: 'new-safety-observation',
+		label: 'Safety observation',
+		href: '/site#create-safety-observation',
+		description: 'Report a project safety observation from the field.',
+		anyPermissions: ['safety.event.manage']
 	},
 	{
 		id: 'new-workforce-member',
