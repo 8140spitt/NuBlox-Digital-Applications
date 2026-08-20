@@ -1,0 +1,37 @@
+name: Slice 4 Supplier Locator Repair
+
+on:
+  push:
+    branches:
+      - product/v1-procurement-commercial-control
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-procurement-commercial-control
+      - name: Scope purchase-order supplier locator
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('app/e2e/procurement-commercial-control.e2e.ts')
+          text = path.read_text()
+          old = "\tawait poPanel.getByLabel('Supplier').selectOption({ label: SUPPLIER });\n"
+          new = "\tawait poPanel.locator('select[name=\"supplierPublicId\"]').selectOption({ label: SUPPLIER });\n"
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one supplier locator, found {text.count(old)}')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit browser repair
+        run: |
+          git config user.name '8140spitt'
+          git config user.email '56647740+8140spitt@users.noreply.github.com'
+          git add app/e2e/procurement-commercial-control.e2e.ts
+          git commit -m 'Scope Slice 4 purchase-order supplier locator'
+          git push origin HEAD:product/v1-procurement-commercial-control
