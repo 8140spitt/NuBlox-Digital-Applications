@@ -17,6 +17,7 @@ import {
 	InvitationAccessError,
 	OrganisationInvitationService
 } from '$lib/server/organisations/invitation-service';
+import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';
 import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from './bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
@@ -173,7 +174,8 @@ export const auth = betterAuth({
 						});
 						await Promise.all([
 							ensureWorkforceStandardRoleDefaults(db, created.organisationId),
-							ensureInformationStandardRoleDefaults(db, created.organisationId)
+							ensureInformationStandardRoleDefaults(db, created.organisationId),
+							ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId)
 						]);
 					}
 				}
