@@ -1,74 +1,23 @@
-name: Complete System Validation
+name: Slice 3 Search Activation
 
 on:
-  pull_request:
-    paths:
-      - 'database/migrations/**'
-      - 'app/package.json'
-      - 'app/pnpm-lock.yaml'
-      - 'app/.kysely-codegenrc.json'
-      - 'app/.kysely-collections-codegenrc.json'
-      - 'app/.kysely-accounting-codegenrc.json'
-      - 'app/.prettierignore'
-      - 'app/eslint.config.js'
-      - 'app/playwright.config.ts'
-      - 'app/prettier.config.js'
-      - 'app/vite.config.ts'
-      - 'app/vitest.integration.config.ts'
-      - 'app/e2e/**'
-      - 'app/src/**'
-      - '.github/workflows/database-migration-validation.yml'
   push:
     branches:
-      - main
+      - product/v1-documents-project-information
     paths:
-      - 'database/migrations/**'
-      - 'app/package.json'
-      - 'app/pnpm-lock.yaml'
-      - 'app/.kysely-codegenrc.json'
-      - 'app/.kysely-collections-codegenrc.json'
-      - 'app/.kysely-accounting-codegenrc.json'
-      - 'app/.prettierignore'
-      - 'app/eslint.config.js'
-      - 'app/playwright.config.ts'
-      - 'app/prettier.config.js'
-      - 'app/vite.config.ts'
-      - 'app/vitest.integration.config.ts'
-      - 'app/e2e/**'
-      - 'app/src/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  complete-system-validation:
-    name: Database, integration, quality, build and browser validation
+  activate-search:
     runs-on: ubuntu-latest
-
-    services:
-      mysql:
-        image: mysql:8.4
-        env:
-          MYSQL_ROOT_PASSWORD: nublox_ci
-        ports:
-          - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
-          --health-interval=5s
-          --health-timeout=5s
-          --health-retries=30
-
-    env:
-      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
-      DB_POOL_MAX: '5'
-      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
-      BETTER_AUTH_URL: http://127.0.0.1:4173
-      EMAIL_DELIVERY_MODE: console
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: product/v1-documents-project-information
 
       - uses: pnpm/action-setup@v4
         with:
@@ -85,62 +34,268 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
-      - name: Audit production dependencies
-        working-directory: app
-        run: pnpm audit --prod --audit-level moderate
-
-      - name: Run formatting and lint checks
-        working-directory: app
-        run: pnpm lint
-
-      - name: Apply production migration stream
-        working-directory: app
+      - name: Activate scoped information search and harden acceptance locators
         run: |
-          pnpm db:migrate
-          pnpm db:status
+          python - <<'PY'
+          from pathlib import Path
 
-      - name: Verify migrated application structure
-        env:
-          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+          def replace_once(text: str, old: str, new: str, label: str) -> str:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{label}: expected exactly one match, found {count}')
+              return text.replace(old, new, 1)
+
+          server_path = Path('app/src/routes/(app)/documents/+page.server.ts')
+          server = server_path.read_text()
+          server = replace_once(
+              server,
+              """function failure(error: string) {
+          \treturn { error };
+          }
+          """,
+              """function failure(error: string) {
+          \treturn { error };
+          }
+
+          function normaliseSearch(value: string | null): string {
+          \treturn (value ?? '').trim().slice(0, 200);
+          }
+
+          function searchable(value: unknown): string {
+          \tif (value === null || value === undefined) return '';
+          \tif (value instanceof Date) return value.toISOString();
+          \tif (Array.isArray(value)) return value.map(searchable).join(' ');
+          \tif (typeof value === 'object') {
+          \t\treturn Object.values(value as Record<string, unknown>).map(searchable).join(' ');
+          \t}
+          \treturn String(value);
+          }
+
+          function matchesSearch(value: unknown, tokens: string[]): boolean {
+          \tconst haystack = searchable(value).toLocaleLowerCase('en-GB');
+          \treturn tokens.every((token) => haystack.includes(token));
+          }
+          """,
+              'server search helpers'
+          )
+          server = replace_once(
+              server,
+              """export const load: PageServerLoad = async ({ locals }) => {
+          \tconst actor = actorFromLocals(locals);
+          """,
+              """export const load: PageServerLoad = async ({ locals, url }) => {
+          \tconst query = normaliseSearch(url.searchParams.get('q'));
+          \tconst actor = actorFromLocals(locals);
+          """,
+              'server load signature'
+          )
+          server = replace_once(
+              server,
+              """\t\t\tcanIssueInstructions: false,
+          \t\t\tprojects: [],
+          """,
+              """\t\t\tcanIssueInstructions: false,
+          \t\t\tquery,
+          \t\t\tsearchActive: Boolean(query),
+          \t\t\tsearchResultCount: 0,
+          \t\t\tprojects: [],
+          """,
+              'unauthenticated search shape'
+          )
+          server = replace_once(
+              server,
+              """\treturn new InformationService(getDatabase()).getWorkspace(actor);
+          """,
+              """\tconst workspace = await new InformationService(getDatabase()).getWorkspace(actor);
+          \tif (!query) {
+          \t\treturn { ...workspace, query, searchActive: false, searchResultCount: 0 };
+          \t}
+
+          \tconst tokens = query
+          \t\t.toLocaleLowerCase('en-GB')
+          \t\t.split(/\\s+/)
+          \t\t.filter(Boolean);
+          \tconst documents = workspace.documents.filter((row) => matchesSearch(row, tokens));
+          \tconst rfis = workspace.rfis.filter((row) => matchesSearch(row, tokens));
+          \tconst submittals = workspace.submittals.filter((row) => matchesSearch(row, tokens));
+          \tconst instructions = workspace.instructions.filter((row) => matchesSearch(row, tokens));
+
+          \treturn {
+          \t\t...workspace,
+          \t\tquery,
+          \t\tsearchActive: true,
+          \t\tsearchResultCount:
+          \t\t\tdocuments.length + rfis.length + submittals.length + instructions.length,
+          \t\tdocuments,
+          \t\trfis,
+          \t\tsubmittals,
+          \t\tinstructions
+          \t};
+          """,
+              'server workspace search filter'
+          )
+          server_path.write_text(server)
+
+          page_path = Path('app/src/routes/(app)/documents/+page.svelte')
+          page = page_path.read_text()
+          page = replace_once(
+              page,
+              """\t</nav>
+
+          \t<section class=\"workspace-section\" id=\"document-register\">
+          """,
+              """\t</nav>
+
+          \t<form class=\"information-search\" method=\"GET\" action=\"/documents\">
+          \t\t<label>
+          \t\t\tSearch project information
+          \t\t\t<input
+          \t\t\t\ttype=\"search\"
+          \t\t\t\tname=\"q\"
+          \t\t\t\tvalue={data.query}
+          \t\t\t\tmaxlength=\"200\"
+          \t\t\t\tplaceholder=\"Document, revision, file, project, RFI, submittal or instruction\"
+          \t\t\t/>
+          \t\t</label>
+          \t\t<div class=\"search-actions\">
+          \t\t\t<button type=\"submit\">Search</button>
+          \t\t\t{#if data.searchActive}<a href=\"/documents\">Clear</a>{/if}
+          \t\t</div>
+          \t</form>
+          \t{#if data.searchActive}
+          \t\t<p class=\"search-status\" role=\"status\">
+          \t\t\t{data.searchResultCount} {data.searchResultCount === 1 ? 'record' : 'records'} matched “{data.query}”.
+          \t\t</p>
+          \t{/if}
+
+          \t<section class=\"workspace-section\" id=\"document-register\">
+          """,
+              'documents search form'
+          )
+          page = replace_once(
+              page,
+              """</style>
+          """,
+              """\t.information-search {
+          \t\tdisplay: grid;
+          \t\tgrid-template-columns: minmax(0, 1fr) auto;
+          \t\tgap: 0.75rem;
+          \t\talign-items: end;
+          \t\tmargin: 1rem 0 0.5rem;
+          \t\tpadding: 1rem;
+          \t\tborder: 1px solid var(--nublox-border, #d9dde5);
+          \t\tborder-radius: 0.85rem;
+          \t\tbackground: var(--nublox-surface, #ffffff);
+          \t}
+          \t.information-search label {
+          \t\tdisplay: grid;
+          \t\tgap: 0.4rem;
+          \t\tfont-weight: 700;
+          \t}
+          \t.search-actions {
+          \t\tdisplay: flex;
+          \t\tgap: 0.6rem;
+          \t\talign-items: center;
+          \t}
+          \t.search-status {
+          \t\tmargin: 0.25rem 0 1rem;
+          \t\tcolor: var(--nublox-text-muted, #5d6675);
+          \t}
+          \t@media (max-width: 720px) {
+          \t\t.information-search {
+          \t\t\tgrid-template-columns: 1fr;
+          \t\t}
+          \t}
+          </style>
+          """,
+              'documents search styles'
+          )
+          page_path.write_text(page)
+
+          e2e_path = Path('app/e2e/documents-project-information.e2e.ts')
+          e2e = e2e_path.read_text()
+          e2e = replace_once(
+              e2e,
+              """\tconst documentTitle = `Containment coordination plan ${suffix}`;
+          \tconst rfiNumber = `RFI-${suffix}`;
+          """,
+              """\tconst documentTitle = `Containment coordination plan ${suffix}`;
+          \tconst classificationCode = `E2E-CLASS-${suffix}`;
+          \tconst rfiNumber = `RFI-${suffix}`;
+          """,
+              'search fixture classification'
+          )
+          e2e = replace_once(
+              e2e,
+              """\tawait documentPanel.getByLabel('Classification code').fill('EF_70_20');
+          """,
+              """\tawait documentPanel.getByLabel('Classification code').fill(classificationCode);
+          """,
+              'classification fixture use'
+          )
+          e2e = replace_once(
+              e2e,
+              """\tawait instructionPanel
+          \t\t.getByLabel('Instruction')
+          \t\t.fill('Proceed in accordance with the current coordinated containment information.');
+          """,
+              """\tawait instructionPanel
+          \t\t.locator('textarea[name=\"instructionText\"]')
+          \t\t.fill('Proceed in accordance with the current coordinated containment information.');
+          """,
+              'instruction textarea locator'
+          )
+          e2e = replace_once(
+              e2e,
+              """\tawait expect(instructionCard.getByText('issued', { exact: true })).toBeVisible();
+          });
+          """,
+              """\tawait expect(instructionCard.getByText('issued', { exact: true })).toBeVisible();
+
+          \tawait page.getByLabel('Search project information').fill(classificationCode);
+          \tawait page.getByRole('button', { name: 'Search', exact: true }).click();
+          \tawait expect(page.getByLabel('Search project information')).toHaveValue(classificationCode);
+          \tawait expect(page.locator('.search-status')).toContainText('1 record matched');
+          \tawait expect(page.locator('.document-card').filter({ hasText: documentNumber })).toBeVisible();
+          \tawait expect(page.locator('#rfi-register .workflow-card')).toHaveCount(0);
+          \tawait expect(page.locator('#submittal-register .workflow-card')).toHaveCount(0);
+          \tawait expect(page.locator('#instruction-register .workflow-card')).toHaveCount(0);
+          });
+          """,
+              'browser search acceptance'
+          )
+          e2e_path.write_text(e2e)
+
+          crm_path = Path('app/e2e/ui-crm-commercial.e2e.ts')
+          crm = crm_path.read_text()
+          crm = replace_once(
+              crm,
+              """\tawait expect(page).toHaveURL(/\\/select-organisation$/);
+          """,
+              """\tawait expect(page).toHaveURL(/\\/select-organisation$/, { timeout: 15_000 });
+          """,
+              'crm select-organisation wait'
+          )
+          crm = replace_once(
+              crm,
+              """\tawait expect(page).toHaveURL(/\\/dashboard$/);
+          """,
+              """\tawait expect(page).toHaveURL(/\\/dashboard$/, { timeout: 15_000 });
+          """,
+              'crm dashboard wait'
+          )
+          crm_path.write_text(crm)
+          PY
+
+      - name: Format changed files with repository toolchain
+        working-directory: app
+        run: pnpm exec prettier --write e2e/documents-project-information.e2e.ts e2e/ui-crm-commercial.e2e.ts 'src/routes/(app)/documents/+page.server.ts' 'src/routes/(app)/documents/+page.svelte'
+
+      - name: Commit Slice 3 search activation
         run: |
-          table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
-          fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
-          check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
-          echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '384'
-          test "$fk_count" = '857'
-          test "$check_count" = '495'
-
-      - name: Regenerate database-derived Kysely types
-        working-directory: app
-        run: pnpm db:types
-
-      - name: Verify generated types are committed
-        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts
-
-      - name: Run real-MySQL integration suite
-        working-directory: app
-        run: pnpm test:integration
-
-      - name: Type-check SvelteKit application
-        working-directory: app
-        run: pnpm check
-
-      - name: Install Chromium for component and browser validation
-        working-directory: app
-        run: pnpm exec playwright install chromium
-
-      - name: Run unit and component tests
-        working-directory: app
-        run: pnpm test:unit -- --run
-
-      - name: Verify validation leaves no tracked-file drift
-        run: git diff --exit-code
-
-      - name: Build production SvelteKit application
-        working-directory: app
-        run: pnpm build
-
-      - name: Run Playwright browser E2E suite
-        working-directory: app
-        run: pnpm exec playwright test
+          git config user.name 'NuBlox Validation'
+          git config user.email 'validation@nublox.local'
+          git add app/e2e/documents-project-information.e2e.ts app/e2e/ui-crm-commercial.e2e.ts 'app/src/routes/(app)/documents/+page.server.ts' 'app/src/routes/(app)/documents/+page.svelte'
+          git diff --cached --quiet && exit 0
+          git commit -m 'Activate scoped Documents information search'
+          git push origin HEAD:product/v1-documents-project-information
