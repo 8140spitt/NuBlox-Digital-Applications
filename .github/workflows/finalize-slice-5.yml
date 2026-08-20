@@ -1,0 +1,97 @@
+name: Finalize Slice 5 Branch
+
+on:
+  push:
+    branches:
+      - product/v1-site-quality-safety
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-site-quality-safety
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Apply final Slice 5 acceptance wiring
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+
+          function replaceOnce(path, needle, replacement) {
+            const source = fs.readFileSync(path, 'utf8');
+            if (!source.includes(needle)) throw new Error(`Expected snippet not found in ${path}: ${needle.slice(0, 80)}`);
+            fs.writeFileSync(path, source.replace(needle, replacement));
+          }
+
+          const sitePage = 'app/src/routes/(app)/site/+page.svelte';
+          replaceOnce(
+            sitePage,
+            `placeholder={'Containment securely fixed\\nRoutes match issued drawing\\nFire stopping complete'}`,
+            `placeholder="One required checklist prompt per line"`
+          );
+
+          const ownerE2e = 'app/e2e/authenticated-workspaces.e2e.ts';
+          replaceOnce(
+            ownerE2e,
+            `\tawait expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();`,
+            `\tawait expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();\n\tawait expect(primaryNavigation.getByRole('link', { name: 'Site', exact: true })).toBeVisible();`
+          );
+          replaceOnce(
+            ownerE2e,
+            `\tawait page.getByLabel('Find a workspace').fill('people');\n\tawait expect(page.locator('.search-results').getByRole('link', { name: /People/ })).toBeVisible();`,
+            `\tawait page.getByLabel('Find a workspace').fill('people');\n\tawait expect(page.locator('.search-results').getByRole('link', { name: /People/ })).toBeVisible();\n\tawait page.getByLabel('Find a workspace').fill('site');\n\tawait expect(page.locator('.search-results').getByRole('link', { name: /Site/ }).first()).toBeVisible();`
+          );
+          replaceOnce(
+            ownerE2e,
+            `\tawait expect(createPopover.getByRole('link', { name: /Commercial variation/ })).toBeVisible();`,
+            `\tawait expect(createPopover.getByRole('link', { name: /Commercial variation/ })).toBeVisible();\n\tawait expect(createPopover.getByRole('link', { name: /Site diary/ })).toBeVisible();\n\tawait expect(createPopover.getByRole('link', { name: /Quality inspection/ })).toBeVisible();\n\tawait expect(createPopover.getByRole('link', { name: /Safety observation/ })).toBeVisible();`
+          );
+          replaceOnce(
+            ownerE2e,
+            `\t\t'/people',\n\t\t'/schedule',`,
+            `\t\t'/people',\n\t\t'/site',\n\t\t'/schedule',`
+          );
+
+          const viewerE2e = 'app/e2e/ui-permissions.e2e.ts';
+          replaceOnce(
+            viewerE2e,
+            `\tawait expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();`,
+            `\tawait expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();\n\tawait expect(primaryNavigation.getByRole('link', { name: 'Site', exact: true })).toBeVisible();`
+          );
+          replaceOnce(
+            viewerE2e,
+            `\tawait page.goto('/finance/accounting/periods');`,
+            `\tawait page.goto('/site');\n\tawait expect(\n\t\tpage.getByRole('heading', { name: 'Site, quality & safety', exact: true, level: 1 })\n\t).toBeVisible();\n\tawait expect(page.locator('#create-site')).toHaveCount(0);\n\tawait expect(page.locator('#create-diary')).toHaveCount(0);\n\tawait expect(page.locator('#create-template')).toHaveCount(0);\n\tawait expect(page.locator('#create-inspection')).toHaveCount(0);\n\tawait expect(page.locator('#create-defect')).toHaveCount(0);\n\tawait expect(page.locator('#create-ncr')).toHaveCount(0);\n\tawait expect(page.locator('#create-safety-observation')).toHaveCount(0);\n\tawait expect(\n\t\tpage.getByRole('button', {\n\t\t\tname: /Submit diary|Approve diary|Complete inspection|Close defect|Close NCR|Create safety action|Complete action|Close safety event/\n\t\t})\n\t).toHaveCount(0);\n\n\tawait page.goto('/finance/accounting/periods');`
+          );
+          NODE
+      - name: Format final Slice 5 files
+        working-directory: app
+        run: >-
+          pnpm exec prettier --write
+          'src/routes/(app)/site/+page.svelte'
+          e2e/site-quality-safety.e2e.ts
+          e2e/authenticated-workspaces.e2e.ts
+          e2e/ui-permissions.e2e.ts
+          ../docs/52-v1-slice-5-site-quality-safety.md
+      - name: Commit final acceptance wiring
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/routes/'(app)'/site/+page.svelte app/e2e docs/52-v1-slice-5-site-quality-safety.md
+          git commit -m "Finalize Slice 5 browser acceptance and documentation"
+          git push origin HEAD:product/v1-site-quality-safety
