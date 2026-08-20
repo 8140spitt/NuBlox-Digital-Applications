@@ -43,10 +43,10 @@ jobs:
           valuation_href = "href: '/commercial/valuations'"
           if valuation_href not in text:
               needle = """\t\t\t\t\t{\n\t\t\t\t\t\tid: 'project-cost-control',\n\t\t\t\t\t\tlabel: 'Project cost control',\n\t\t\t\t\t\thref: '/commercial/cost-control',\n\t\t\t\t\t\tanyPermissionNamespaces: ['commercial.cost_control.', 'commercial.cost_code.', 'commercial.budget.', 'commercial.variation.']\n\t\t\t\t\t}\n"""
-              replacement = needle[:-2] + ",\n" + """\t\t\t\t\t{\n\t\t\t\t\t\tid: 'commercial-valuations',\n\t\t\t\t\t\tlabel: 'Valuations',\n\t\t\t\t\t\thref: '/commercial/valuations',\n\t\t\t\t\t\tanyPermissionNamespaces: ['commercial.valuation.']\n\t\t\t\t\t}\n"""
-              if needle not in text:
+              valuation = """\t\t\t\t\t{\n\t\t\t\t\t\tid: 'commercial-valuations',\n\t\t\t\t\t\tlabel: 'Valuations',\n\t\t\t\t\t\thref: '/commercial/valuations',\n\t\t\t\t\t\tanyPermissionNamespaces: ['commercial.valuation.']\n\t\t\t\t\t}\n"""
+              if text.count(needle) != 1:
                   raise SystemExit('Project cost-control navigation block was not found exactly once.')
-              text = text.replace(needle, replacement, 1)
+              text = text.replace(needle, needle.rstrip('\n') + ',\n' + valuation, 1)
               path.write_text(text)
           PY
 
