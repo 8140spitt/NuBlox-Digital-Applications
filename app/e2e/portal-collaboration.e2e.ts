@@ -92,7 +92,9 @@ test('owner explicitly shares controlled work and partner completes it through t
 	const partnerRfiCard = page.locator('.work-card').filter({ hasText: RFI_NUMBER });
 	await expect(partnerRfiCard).toContainText('Confirm external opening size');
 	await partnerRfiCard.getByText('Respond to RFI', { exact: true }).click();
-	await partnerRfiCard.getByLabel('Response').fill('Use a 650 × 450 mm coordinated opening.');
+	await partnerRfiCard
+		.getByRole('textbox', { name: 'Response' })
+		.fill('Use a 650 × 450 mm coordinated opening.');
 	await partnerRfiCard.getByRole('button', { name: 'Send response' }).click();
 	await expect(page).toHaveURL(/\/portal$/);
 	await expect(page.locator('.work-card').filter({ hasText: RFI_NUMBER })).toHaveCount(0);
