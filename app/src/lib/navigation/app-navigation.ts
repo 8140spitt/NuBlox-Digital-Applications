@@ -22,218 +22,196 @@ export type AppQuickAction = {
 	anyPermissions: readonly string[];
 };
 
-const navigationSections: readonly AppNavigationSection[] = [
+export type ProjectContextNavigationItem = {
+	id: string;
+	label: string;
+	href: string;
+};
+
+const primaryNavigationSections: readonly AppNavigationSection[] = [
 	{
-		id: 'home',
-		label: 'Home',
-		items: [{ id: 'dashboard', label: 'Dashboard', href: '/dashboard' }]
-	},
-	{
-		id: 'pipeline',
-		label: 'Pipeline',
+		id: 'work',
+		label: 'Work',
 		items: [
-			{
-				id: 'crm',
-				label: 'CRM',
-				href: '/crm',
-				anyPermissionNamespaces: ['crm.'],
-				children: [
-					{ id: 'crm-overview', label: 'Organisations & people', href: '/crm' },
-					{ id: 'opportunities', label: 'Opportunities', href: '/crm/opportunities' }
-				]
-			},
-			{
-				id: 'commercial',
-				label: 'Commercial',
-				href: '/commercial/estimates',
-				anyPermissionNamespaces: ['commercial.'],
-				children: [
-					{
-						id: 'estimates',
-						label: 'Estimates',
-						href: '/commercial/estimates',
-						anyPermissions: ['commercial.view', 'commercial.manage', 'commercial.estimate.manage']
-					},
-					{
-						id: 'quotations',
-						label: 'Quotations',
-						href: '/commercial/quotations',
-						anyPermissions: ['commercial.view', 'commercial.manage', 'commercial.quotation.manage']
-					},
-					{
-						id: 'project-cost-control',
-						label: 'Project cost control',
-						href: '/commercial/cost-control',
-						anyPermissionNamespaces: [
-							'commercial.cost_control.',
-							'commercial.cost_code.',
-							'commercial.budget.',
-							'commercial.variation.'
-						]
-					},
-					{
-						id: 'commercial-valuations',
-						label: 'Valuations',
-						href: '/commercial/valuations',
-						anyPermissionNamespaces: ['commercial.valuation.']
-					}
-				]
-			}
-		]
-	},
-	{
-		id: 'delivery',
-		label: 'Delivery',
-		items: [
+			{ id: 'dashboard', label: 'Home', href: '/dashboard' },
+			{ id: 'my-work', label: 'My work', href: '/my-work' },
 			{
 				id: 'projects',
 				label: 'Projects',
 				href: '/projects',
 				anyPermissionNamespaces: ['project.']
+			}
+		]
+	},
+	{
+		id: 'relationships',
+		label: 'Business',
+		items: [
+			{
+				id: 'customers',
+				label: 'Customers',
+				href: '/crm',
+				anyPermissionNamespaces: ['crm.']
+			},
+			{
+				id: 'suppliers',
+				label: 'Suppliers',
+				href: '/purchasing',
+				anyPermissionNamespaces: ['procurement.']
+			},
+			{
+				id: 'assets',
+				label: 'Assets',
+				href: '/assets',
+				anyPermissionNamespaces: ['assets.', 'facilities.', 'maintenance.', 'compliance.']
+			},
+			{
+				id: 'finance',
+				label: 'Finance',
+				href: '/finance/invoices',
+				anyPermissionNamespaces: ['finance.']
 			},
 			{
 				id: 'portal',
 				label: 'Portal',
 				href: '/portal',
-				anyPermissions: ['portal.view'],
-				children: [
-					{ id: 'portal-shared-work', label: 'Shared work', href: '/portal' },
-					{
-						id: 'portal-manage-sharing',
-						label: 'Manage sharing',
-						href: '/portal/manage',
-						anyPermissions: ['portal.manage']
-					}
-				]
+				anyPermissions: ['portal.view']
+			}
+		]
+	},
+	{
+		id: 'more',
+		label: 'Explore',
+		items: [{ id: 'more-workspaces', label: 'More', href: '/more' }]
+	}
+];
+
+const workspaceDirectorySections: readonly AppNavigationSection[] = [
+	{
+		id: 'relationships',
+		label: 'Customers & pipeline',
+		items: [
+			{
+				id: 'crm',
+				label: 'Customers & contacts',
+				href: '/crm',
+				description: 'Organisations, people and relationship records.',
+				anyPermissionNamespaces: ['crm.']
 			},
 			{
-				id: 'documents',
-				label: 'Documents',
-				href: '/documents',
-				anyPermissionNamespaces: ['information.'],
-				children: [
-					{
-						id: 'document-register',
-						label: 'Document register',
-						href: '/documents#document-register'
-					},
-					{ id: 'rfi-register', label: 'RFIs', href: '/documents#rfi-register' },
-					{ id: 'submittal-register', label: 'Submittals', href: '/documents#submittal-register' },
-					{
-						id: 'instruction-register',
-						label: 'Instructions',
-						href: '/documents#instruction-register'
-					}
-				]
+				id: 'opportunities',
+				label: 'Opportunities',
+				href: '/crm/opportunities',
+				description: 'Pipeline opportunities and activity.',
+				anyPermissionNamespaces: ['crm.']
 			},
 			{
-				id: 'purchasing',
-				label: 'Purchasing',
-				href: '/purchasing',
-				anyPermissionNamespaces: ['procurement.'],
-				children: [
-					{
-						id: 'procurement-packages',
-						label: 'Procurement packages',
-						href: '/purchasing#package-register'
-					},
-					{
-						id: 'procurement-enquiries',
-						label: 'Enquiries / RFQs',
-						href: '/purchasing#rfq-register'
-					},
-					{ id: 'purchase-orders', label: 'Purchase orders', href: '/purchasing#po-register' }
-				]
+				id: 'estimates',
+				label: 'Estimates',
+				href: '/commercial/estimates',
+				description: 'Build controlled commercial estimates.',
+				anyPermissions: ['commercial.view', 'commercial.manage', 'commercial.estimate.manage']
+			},
+			{
+				id: 'quotations',
+				label: 'Quotations',
+				href: '/commercial/quotations',
+				description: 'Issue and manage customer quotations.',
+				anyPermissions: ['commercial.view', 'commercial.manage', 'commercial.quotation.manage']
 			},
 			{
 				id: 'contracts',
 				label: 'Contracts',
 				href: '/contracts',
+				description: 'Contract formation and amendments.',
 				anyPermissionNamespaces: ['contract.']
 			}
 		]
 	},
 	{
+		id: 'project-delivery',
+		label: 'Project delivery',
+		items: [
+			{
+				id: 'documents',
+				label: 'Documents',
+				href: '/documents',
+				description: 'Controlled documents, RFIs, submittals and instructions.',
+				anyPermissionNamespaces: ['information.']
+			},
+			{
+				id: 'purchasing',
+				label: 'Procurement',
+				href: '/purchasing',
+				description: 'Packages, RFQs, suppliers and purchase orders.',
+				anyPermissionNamespaces: ['procurement.']
+			},
+			{
+				id: 'project-cost-control',
+				label: 'Project cost control',
+				href: '/commercial/cost-control',
+				description: 'Cost codes, budgets and project change control.',
+				anyPermissionNamespaces: [
+					'commercial.cost_control.',
+					'commercial.cost_code.',
+					'commercial.budget.',
+					'commercial.variation.'
+				]
+			},
+			{
+				id: 'commercial-valuations',
+				label: 'Valuations',
+				href: '/commercial/valuations',
+				description: 'Project valuation and assessment workflows.',
+				anyPermissionNamespaces: ['commercial.valuation.']
+			},
+			{
+				id: 'site',
+				label: 'Site, quality & safety',
+				href: '/site',
+				description: 'Site diaries, quality inspections and safety observations.',
+				anyPermissionNamespaces: ['site.', 'quality.', 'safety.']
+			},
+			{
+				id: 'portal',
+				label: 'Portal',
+				href: '/portal',
+				description: 'Shared work with external project organisations.',
+				anyPermissions: ['portal.view']
+			}
+		]
+	},
+	{
 		id: 'operations',
-		label: 'Operations',
+		label: 'People & operations',
 		items: [
 			{
 				id: 'schedule',
 				label: 'Schedule',
 				href: '/schedule',
-				anyPermissionNamespaces: ['schedule.', 'timesheet.'],
-				children: [
-					{
-						id: 'schedule-planning',
-						label: 'Schedule',
-						href: '/schedule',
-						anyPermissionNamespaces: ['schedule.']
-					},
-					{
-						id: 'time',
-						label: 'Time',
-						href: '/time',
-						anyPermissionNamespaces: ['timesheet.']
-					}
-				]
+				description: 'Plan visits, shifts and scheduled work.',
+				anyPermissionNamespaces: ['schedule.']
+			},
+			{
+				id: 'time',
+				label: 'Time',
+				href: '/time',
+				description: 'Personal and project timesheets.',
+				anyPermissionNamespaces: ['timesheet.']
 			},
 			{
 				id: 'people',
 				label: 'People',
 				href: '/people',
+				description: 'Workforce records and assignments.',
 				anyPermissionNamespaces: ['workforce.']
 			},
 			{
-				id: 'site',
-				label: 'Site',
-				href: '/site',
-				anyPermissionNamespaces: ['site.', 'quality.', 'safety.'],
-				children: [
-					{
-						id: 'site-diaries',
-						label: 'Site diaries',
-						href: '/site#diary-register',
-						anyPermissionNamespaces: ['site.']
-					},
-					{
-						id: 'quality-inspections',
-						label: 'Quality',
-						href: '/site#inspection-register',
-						anyPermissionNamespaces: ['quality.']
-					},
-					{
-						id: 'safety-observations',
-						label: 'Safety',
-						href: '/site#safety-register',
-						anyPermissionNamespaces: ['safety.']
-					}
-				]
-			},
-			{
 				id: 'assets',
-				label: 'Assets / Facilities',
+				label: 'Assets & facilities',
 				href: '/assets',
-				anyPermissionNamespaces: ['assets.', 'facilities.', 'maintenance.', 'compliance.'],
-				children: [
-					{
-						id: 'asset-register',
-						label: 'Asset register',
-						href: '/assets#asset-register',
-						anyPermissionNamespaces: ['assets.']
-					},
-					{
-						id: 'maintenance-work-orders',
-						label: 'Work orders',
-						href: '/assets#work-order-register',
-						anyPermissionNamespaces: ['maintenance.']
-					},
-					{
-						id: 'asset-compliance',
-						label: 'Compliance',
-						href: '/assets#compliance-register',
-						anyPermissionNamespaces: ['compliance.']
-					}
-				]
+				description: 'Assets, maintenance, facilities and compliance.',
+				anyPermissionNamespaces: ['assets.', 'facilities.', 'maintenance.', 'compliance.']
 			}
 		]
 	},
@@ -242,109 +220,102 @@ const navigationSections: readonly AppNavigationSection[] = [
 		label: 'Finance',
 		items: [
 			{
-				id: 'finance',
-				label: 'Finance',
+				id: 'invoices',
+				label: 'Invoices',
 				href: '/finance/invoices',
-				anyPermissionNamespaces: ['finance.'],
-				children: [
-					{
-						id: 'invoices',
-						label: 'Invoices',
-						href: '/finance/invoices',
-						anyPermissions: ['finance.view', 'finance.manage']
-					},
-					{
-						id: 'credit-notes',
-						label: 'Credit notes',
-						href: '/finance/credit-notes',
-						anyPermissions: ['finance.view', 'finance.manage']
-					},
-					{
-						id: 'payments',
-						label: 'Payments',
-						href: '/finance/payments',
-						anyPermissions: ['finance.view', 'finance.manage']
-					},
-					{
-						id: 'receivables',
-						label: 'Receivables',
-						href: '/finance/receivables',
-						anyPermissions: ['finance.view', 'finance.manage']
-					},
-					{
-						id: 'collections',
-						label: 'Collections',
-						href: '/finance/collections',
-						anyPermissions: ['finance.collections.view', 'finance.manage']
-					},
-					{
-						id: 'collections-automation',
-						label: 'Collections automation',
-						href: '/finance/collections/automation',
-						anyPermissions: ['finance.collections.view', 'finance.manage']
-					},
-					{
-						id: 'credit-control',
-						label: 'Credit control',
-						href: '/finance/credit-control',
-						anyPermissions: ['finance.credit_control.view', 'finance.manage']
-					},
-					{
-						id: 'bad-debt',
-						label: 'Bad debt',
-						href: '/finance/bad-debt',
-						anyPermissions: ['finance.bad_debt.view', 'finance.manage']
-					},
-					{
-						id: 'tax-relief',
-						label: 'VAT bad-debt relief',
-						href: '/finance/tax-relief',
-						anyPermissions: ['finance.tax_relief.view', 'finance.manage']
-					},
-					{
-						id: 'accounting',
-						label: 'Accounting',
-						href: '/finance/accounting',
-						anyPermissions: ['finance.accounting.view', 'finance.manage']
-					},
-					{
-						id: 'accounting-periods',
-						label: 'Accounting periods',
-						href: '/finance/accounting/periods',
-						anyPermissions: ['finance.accounting.view', 'finance.manage']
-					},
-					{
-						id: 'financial-reports',
-						label: 'Financial reports',
-						href: '/finance/accounting/reports',
-						anyPermissions: ['finance.accounting.view', 'finance.manage']
-					},
-					{
-						id: 'year-end',
-						label: 'Year-end close',
-						href: '/finance/accounting/year-end',
-						anyPermissions: ['finance.accounting.view', 'finance.manage']
-					},
-					{
-						id: 'billing-settings',
-						label: 'Billing settings',
-						href: '/finance/billing',
-						anyPermissions: ['finance.view', 'finance.manage', 'finance.billing.manage']
-					},
-					{
-						id: 'tax-settings',
-						label: 'Tax settings',
-						href: '/finance/tax',
-						anyPermissions: ['finance.view', 'finance.manage']
-					}
-				]
+				anyPermissions: ['finance.view', 'finance.manage']
+			},
+			{
+				id: 'credit-notes',
+				label: 'Credit notes',
+				href: '/finance/credit-notes',
+				anyPermissions: ['finance.view', 'finance.manage']
+			},
+			{
+				id: 'payments',
+				label: 'Payments',
+				href: '/finance/payments',
+				anyPermissions: ['finance.view', 'finance.manage']
+			},
+			{
+				id: 'receivables',
+				label: 'Receivables',
+				href: '/finance/receivables',
+				anyPermissions: ['finance.view', 'finance.manage']
+			},
+			{
+				id: 'collections',
+				label: 'Collections',
+				href: '/finance/collections',
+				anyPermissions: ['finance.collections.view', 'finance.manage']
+			},
+			{
+				id: 'credit-control',
+				label: 'Credit control',
+				href: '/finance/credit-control',
+				anyPermissions: ['finance.credit_control.view', 'finance.manage']
+			},
+			{
+				id: 'bad-debt',
+				label: 'Bad debt',
+				href: '/finance/bad-debt',
+				anyPermissions: ['finance.bad_debt.view', 'finance.manage']
+			},
+			{
+				id: 'tax-relief',
+				label: 'VAT bad-debt relief',
+				href: '/finance/tax-relief',
+				anyPermissions: ['finance.tax_relief.view', 'finance.manage']
+			},
+			{
+				id: 'accounting',
+				label: 'Accounting',
+				href: '/finance/accounting',
+				anyPermissions: ['finance.accounting.view', 'finance.manage']
+			},
+			{
+				id: 'accounting-periods',
+				label: 'Accounting periods',
+				href: '/finance/accounting/periods',
+				anyPermissions: ['finance.accounting.view', 'finance.manage']
+			},
+			{
+				id: 'financial-reports',
+				label: 'Financial reports',
+				href: '/finance/accounting/reports',
+				anyPermissions: ['finance.accounting.view', 'finance.manage']
+			},
+			{
+				id: 'year-end',
+				label: 'Year-end close',
+				href: '/finance/accounting/year-end',
+				anyPermissions: ['finance.accounting.view', 'finance.manage']
+			},
+			{
+				id: 'billing-settings',
+				label: 'Billing settings',
+				href: '/finance/billing',
+				anyPermissions: ['finance.view', 'finance.manage', 'finance.billing.manage']
+			},
+			{
+				id: 'tax-settings',
+				label: 'Tax settings',
+				href: '/finance/tax',
+				anyPermissions: ['finance.view', 'finance.manage']
 			}
 		]
 	},
 	{
 		id: 'administration',
 		label: 'Administration',
-		items: [{ id: 'organisation', label: 'Organisation', href: '/organisation' }]
+		items: [
+			{
+				id: 'organisation',
+				label: 'Organisation settings',
+				href: '/organisation',
+				description: 'Membership, roles and organisation controls.'
+			}
+		]
 	}
 ];
 
@@ -475,7 +446,6 @@ const quickActions: readonly AppQuickAction[] = [
 		description: 'Create a controlled invoice draft.',
 		anyPermissions: ['finance.invoice.create', 'finance.manage']
 	},
-
 	{
 		id: 'new-asset',
 		label: 'Asset',
@@ -521,21 +491,65 @@ function canRenderItem(item: AppNavigationItem, allowed: ReadonlySet<string>): b
 	return true;
 }
 
-export function resolveAppNavigation(
+function resolveSections(
+	sections: readonly AppNavigationSection[],
 	allowedPermissionKeys: readonly string[]
 ): AppNavigationSection[] {
 	const allowed = new Set(allowedPermissionKeys);
-	return navigationSections
+	return sections
 		.map((section) => ({
 			...section,
-			items: section.items
-				.filter((item) => canRenderItem(item, allowed))
-				.map((item) => ({
-					...item,
-					children: item.children?.filter((child) => canRenderItem(child, allowed))
-				}))
+			items: section.items.filter((item) => canRenderItem(item, allowed))
 		}))
 		.filter((section) => section.items.length > 0);
+}
+
+export function resolveAppNavigation(
+	allowedPermissionKeys: readonly string[]
+): AppNavigationSection[] {
+	return resolveSections(primaryNavigationSections, allowedPermissionKeys);
+}
+
+export function resolveWorkspaceDirectory(
+	allowedPermissionKeys: readonly string[]
+): AppNavigationSection[] {
+	return resolveSections(workspaceDirectorySections, allowedPermissionKeys);
+}
+
+export function resolveProjectContextNavigation(
+	allowedPermissionKeys: readonly string[],
+	projectPublicId: string
+): ProjectContextNavigationItem[] {
+	const allowed = new Set(allowedPermissionKeys);
+	const query = `?project=${encodeURIComponent(projectPublicId)}`;
+	const links: ProjectContextNavigationItem[] = [
+		{
+			id: 'overview',
+			label: 'Overview',
+			href: `/projects/${encodeURIComponent(projectPublicId)}${query}`
+		}
+	];
+	if (hasAnyNamespace(allowed, ['information.']))
+		links.push({ id: 'documents', label: 'Documents', href: `/documents${query}` });
+	if (hasAnyNamespace(allowed, ['procurement.']))
+		links.push({ id: 'procurement', label: 'Procurement', href: `/purchasing${query}` });
+	if (hasAnyNamespace(allowed, ['commercial.'])) {
+		links.push({ id: 'commercial', label: 'Commercial', href: `/commercial/cost-control${query}` });
+	}
+	if (hasAnyNamespace(allowed, ['site.', 'quality.', 'safety.']))
+		links.push({ id: 'site', label: 'Site', href: `/site${query}` });
+	if (hasAnyNamespace(allowed, ['schedule.', 'timesheet.']))
+		links.push({ id: 'schedule', label: 'Schedule', href: `/schedule${query}` });
+	if (hasAnyNamespace(allowed, ['assets.', 'facilities.', 'maintenance.', 'compliance.']))
+		links.push({ id: 'assets', label: 'Assets', href: `/assets${query}` });
+	if (allowed.has('portal.view')) {
+		links.push({
+			id: 'portal',
+			label: 'Portal',
+			href: allowed.has('portal.manage') ? `/portal/manage${query}` : `/portal${query}`
+		});
+	}
+	return links;
 }
 
 export function resolveQuickActions(allowedPermissionKeys: readonly string[]): AppQuickAction[] {

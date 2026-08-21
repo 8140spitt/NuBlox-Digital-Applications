@@ -1,13 +1,27 @@
 import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
-import { resolveAppNavigation, resolveQuickActions } from '$lib/navigation/app-navigation';
+import {
+	resolveAppNavigation,
+	resolveProjectContextNavigation,
+	resolveQuickActions,
+	resolveWorkspaceDirectory
+} from '$lib/navigation/app-navigation';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
+import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
+import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 
 function returnTo(pathname: string): string {
 	return `/signin?returnTo=${encodeURIComponent(pathname)}`;
+}
+
+function projectPublicIdFromUrl(url: URL): string | null {
+	const selected = url.searchParams.get('project')?.trim();
+	if (selected) return selected;
+	const match = /^\/projects\/([^/]+)$/.exec(url.pathname);
+	return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
@@ -34,6 +48,34 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	]);
 	if (!organisation) throw redirect(303, '/select-organisation');
 
+	const requestedProjectPublicId = projectPublicIdFromUrl(url);
+	let projectContext: {
+		publicId: string;
+		projectNumber: string;
+		name: string;
+		status: string;
+		links: ReturnType<typeof resolveProjectContextNavigation>;
+	} | null = null;
+
+	if (requestedProjectPublicId) {
+		try {
+			const workspace = await new ProjectWorkspaceService(db).getWorkspace(
+				actorContext,
+				requestedProjectPublicId
+			);
+			projectContext = {
+				publicId: workspace.project.publicId,
+				projectNumber: workspace.project.projectNumber,
+				name: workspace.project.name,
+				status: workspace.project.status,
+				links: resolveProjectContextNavigation(allowedPermissionKeys, workspace.project.publicId)
+			};
+		} catch (cause) {
+			if (!(cause instanceof RecordNotFoundError) && !(cause instanceof TenantAccessError))
+				throw cause;
+		}
+	}
+
 	return {
 		actor: {
 			displayName: locals.actor.displayName,
@@ -44,6 +86,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 			name: organisation.tradingName ?? organisation.legalName
 		},
 		navigation: resolveAppNavigation(allowedPermissionKeys),
-		quickActions: resolveQuickActions(allowedPermissionKeys)
+		workspaceDirectory: resolveWorkspaceDirectory(allowedPermissionKeys),
+		quickActions: resolveQuickActions(allowedPermissionKeys),
+		projectContext
 	};
 };

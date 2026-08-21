@@ -4,9 +4,7 @@ const EMAIL = 'e2e-owner@example.test';
 const PASSWORD = 'NuBlox-E2E-Password-2026!';
 const ORGANISATION = 'NuBlox E2E Organisation';
 
-test('verified owner signs in, selects a tenant and opens the complete workspace surface', async ({
-	page
-}) => {
+test('verified owner signs in and uses the context-first workspace surface', async ({ page }) => {
 	await page.goto('/signin');
 	await page.getByLabel('Email', { exact: true }).fill(EMAIL);
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
@@ -18,40 +16,36 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 
 	await expect(page.getByRole('link', { name: 'NuBlox dashboard' })).toBeVisible();
 	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
-	await expect(primaryNavigation.getByRole('link', { name: 'CRM', exact: true })).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Projects', exact: true })
-	).toBeVisible();
-	await expect(primaryNavigation.getByRole('link', { name: 'Portal', exact: true })).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Documents', exact: true })
-	).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Purchasing', exact: true })
-	).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Project cost control', exact: true })
-	).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Valuations', exact: true })
-	).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Schedule', exact: true }).first()
-	).toBeVisible();
-	await expect(primaryNavigation.getByRole('link', { name: 'Time', exact: true })).toBeVisible();
-	await expect(primaryNavigation.getByRole('link', { name: 'People', exact: true })).toBeVisible();
-	await expect(primaryNavigation.getByRole('link', { name: 'Site', exact: true })).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Assets / Facilities', exact: true })
-	).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Credit control', exact: true })
-	).toBeVisible();
+	for (const label of [
+		'Home',
+		'My work',
+		'Projects',
+		'Customers',
+		'Suppliers',
+		'Assets',
+		'Finance',
+		'Portal',
+		'More'
+	]) {
+		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
+	}
+
+	for (const specialistLabel of [
+		'Documents',
+		'Project cost control',
+		'Valuations',
+		'Site, quality & safety',
+		'People'
+	]) {
+		await expect(
+			primaryNavigation.getByRole('link', { name: specialistLabel, exact: true })
+		).toHaveCount(0);
+	}
 
 	await page.getByText('Search', { exact: true }).click();
-	await page.getByLabel('Find a workspace').fill('purchasing');
+	await page.getByLabel('Find a workspace').fill('procurement');
 	await expect(
-		page.locator('.search-results').getByRole('link', { name: /Purchasing/ })
+		page.locator('.search-results').getByRole('link', { name: /Procurement/ })
 	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('valuations');
 	await expect(
@@ -65,20 +59,28 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 	await expect(page.locator('.search-results').getByRole('link', { name: /People/ })).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('site');
 	await expect(
-		page.locator('.search-results').getByRole('link', { name: /Site/ }).first()
-	).toBeVisible();
-	await page.getByLabel('Find a workspace').fill('assets');
-	await expect(
-		page
-			.locator('.search-results')
-			.getByRole('link', { name: /Assets \/ Facilities/ })
-			.first()
+		page.locator('.search-results').getByRole('link', { name: /Site, quality & safety/ })
 	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('year-end');
 	await expect(
 		page.locator('.search-results').getByRole('link', { name: /Year-end close/ })
 	).toBeVisible();
 	await page.getByText('Search', { exact: true }).click();
+
+	await page.goto('/more');
+	await expect(page.getByRole('heading', { name: 'More workspaces', level: 1 })).toBeVisible();
+	for (const label of [
+		'Documents',
+		'Project cost control',
+		'Valuations',
+		'Site, quality & safety',
+		'Schedule',
+		'Time',
+		'People',
+		'Year-end close'
+	]) {
+		await expect(page.getByRole('link', { name: new RegExp(label) }).first()).toBeVisible();
+	}
 
 	await page.getByText('Create', { exact: true }).click();
 	const createPopover = page.locator('.create-popover');
@@ -106,6 +108,8 @@ test('verified owner signs in, selects a tenant and opens the complete workspace
 
 	const workspacePaths = [
 		'/dashboard',
+		'/my-work',
+		'/more',
 		'/crm',
 		'/crm/opportunities',
 		'/commercial/estimates',
