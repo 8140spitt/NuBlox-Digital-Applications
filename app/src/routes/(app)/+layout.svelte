@@ -146,7 +146,9 @@
 
 			<details class="account-menu">
 				<summary>
-					<span class="avatar" aria-hidden="true">{data.actor.displayName.slice(0, 1).toUpperCase()}</span>
+					<span class="avatar" aria-hidden="true"
+						>{data.actor.displayName.slice(0, 1).toUpperCase()}</span
+					>
 					<span class="account-summary">
 						<strong>{data.actor.displayName}</strong>
 						<small>{data.actor.email}</small>
@@ -164,7 +166,9 @@
 				<div class="project-identity">
 					<span class="context-label">Current project</span>
 					<div class="project-title-line">
-						<strong id="project-context-heading">{data.projectContext.projectNumber} · {data.projectContext.name}</strong>
+						<strong id="project-context-heading"
+							>{data.projectContext.projectNumber} · {data.projectContext.name}</strong
+						>
 						<span class="project-status">{data.projectContext.status.replace('_', ' ')}</span>
 					</div>
 				</div>
@@ -258,7 +262,9 @@
 		font-size: 0.91rem;
 		font-weight: 700;
 		text-decoration: none;
-		transition: background 120ms ease, color 120ms ease;
+		transition:
+			background 120ms ease,
+			color 120ms ease;
 	}
 
 	.nav-link:hover,

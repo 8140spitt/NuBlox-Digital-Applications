@@ -71,7 +71,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				links: resolveProjectContextNavigation(allowedPermissionKeys, workspace.project.publicId)
 			};
 		} catch (cause) {
-			if (!(cause instanceof RecordNotFoundError) && !(cause instanceof TenantAccessError)) throw cause;
+			if (!(cause instanceof RecordNotFoundError) && !(cause instanceof TenantAccessError))
+				throw cause;
 		}
 	}
 

@@ -30,7 +30,13 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
 	}
 
-	for (const specialistLabel of ['Documents', 'Project cost control', 'Valuations', 'Site, quality & safety', 'People']) {
+	for (const specialistLabel of [
+		'Documents',
+		'Project cost control',
+		'Valuations',
+		'Site, quality & safety',
+		'People'
+	]) {
 		await expect(
 			primaryNavigation.getByRole('link', { name: specialistLabel, exact: true })
 		).toHaveCount(0);
@@ -38,11 +44,17 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 
 	await page.getByText('Search', { exact: true }).click();
 	await page.getByLabel('Find a workspace').fill('procurement');
-	await expect(page.locator('.search-results').getByRole('link', { name: /Procurement/ })).toBeVisible();
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /Procurement/ })
+	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('valuations');
-	await expect(page.locator('.search-results').getByRole('link', { name: /Valuations/ })).toBeVisible();
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /Valuations/ })
+	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('documents');
-	await expect(page.locator('.search-results').getByRole('link', { name: /Documents/ })).toBeVisible();
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /Documents/ })
+	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('people');
 	await expect(page.locator('.search-results').getByRole('link', { name: /People/ })).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('site');
@@ -50,12 +62,23 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 		page.locator('.search-results').getByRole('link', { name: /Site, quality & safety/ })
 	).toBeVisible();
 	await page.getByLabel('Find a workspace').fill('year-end');
-	await expect(page.locator('.search-results').getByRole('link', { name: /Year-end close/ })).toBeVisible();
+	await expect(
+		page.locator('.search-results').getByRole('link', { name: /Year-end close/ })
+	).toBeVisible();
 	await page.getByText('Search', { exact: true }).click();
 
 	await page.goto('/more');
 	await expect(page.getByRole('heading', { name: 'More workspaces', level: 1 })).toBeVisible();
-	for (const label of ['Documents', 'Project cost control', 'Valuations', 'Site, quality & safety', 'Schedule', 'Time', 'People', 'Year-end close']) {
+	for (const label of [
+		'Documents',
+		'Project cost control',
+		'Valuations',
+		'Site, quality & safety',
+		'Schedule',
+		'Time',
+		'People',
+		'Year-end close'
+	]) {
 		await expect(page.getByRole('link', { name: new RegExp(label) }).first()).toBeVisible();
 	}
 

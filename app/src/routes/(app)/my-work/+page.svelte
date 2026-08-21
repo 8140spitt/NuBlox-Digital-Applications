@@ -11,7 +11,9 @@
 	};
 
 	function workspace(id: string) {
-		return data.workspaceDirectory.flatMap((section) => section.items).find((item) => item.id === id);
+		return data.workspaceDirectory
+			.flatMap((section) => section.items)
+			.find((item) => item.id === id);
 	}
 
 	const queueIds = ['portal', 'schedule', 'time', 'documents', 'site', 'purchasing'];
@@ -37,7 +39,10 @@
 		<div>
 			<p class="eyebrow">Project context</p>
 			<h2 id="continue-heading">Continue in a project</h2>
-			<p>Opening a project pins it above the workspace so Documents, Procurement, Commercial and Site stay connected.</p>
+			<p>
+				Opening a project pins it above the workspace so Documents, Procurement, Commercial and Site
+				stay connected.
+			</p>
 		</div>
 		<a href="/projects">All projects</a>
 	</div>
@@ -50,7 +55,9 @@
 	{:else if data.projects.length === 0}
 		<div class="empty-state">
 			<strong>No projects are currently in your member scope.</strong>
-			<p>Once you create or join a project, it will become the primary route into delivery work here.</p>
+			<p>
+				Once you create or join a project, it will become the primary route into delivery work here.
+			</p>
 		</div>
 	{:else}
 		<div class="project-list">
@@ -60,7 +67,9 @@
 						<span class="project-number">{project.projectNumber}</span>
 						<strong>{project.name}</strong>
 					</div>
-					<span class={`status status-${project.status}`}>{statusLabels[project.status] ?? project.status}</span>
+					<span class={`status status-${project.status}`}
+						>{statusLabels[project.status] ?? project.status}</span
+					>
 					<span class="open-label">Open workspace →</span>
 				</a>
 			{/each}
@@ -73,7 +82,10 @@
 		<div>
 			<p class="eyebrow">Cross-project work</p>
 			<h2 id="queues-heading">Work queues</h2>
-			<p>Use these when the job is genuinely cross-project. Project-specific work should start from the project above.</p>
+			<p>
+				Use these when the job is genuinely cross-project. Project-specific work should start from
+				the project above.
+			</p>
 		</div>
 	</div>
 
@@ -95,7 +107,10 @@
 	<div>
 		<p class="eyebrow">Everything else</p>
 		<h2>Need a specialist workspace?</h2>
-		<p>Accounting, contracts, estimates, workforce and other specialist functions are grouped in one directory instead of filling the sidebar.</p>
+		<p>
+			Accounting, contracts, estimates, workforce and other specialist functions are grouped in one
+			directory instead of filling the sidebar.
+		</p>
 	</div>
 	<a href="/more">Browse more workspaces</a>
 </section>
