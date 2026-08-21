@@ -1,0 +1,361 @@
+name: UX anomaly refinement helper
+
+on:
+  push:
+    branches:
+      - product/v1-ux-anomaly-refinement
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-ux-anomaly-refinement
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Apply contextual workflow refinements
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"Expected text not found in {path}: {old[:120]!r}")
+              if text.count(old) != 1:
+                  raise SystemExit(f"Expected one match in {path}, found {text.count(old)}")
+              p.write_text(text.replace(old, new, 1))
+
+          migration = Path('database/migrations/20260821122500_crm_platform_organisation_links.sql')
+          migration.write_text("""-- NuBlox CRM-to-platform organisation linkage for controlled collaboration\n-- A tenant-private CRM organisation may explicitly reference one NuBlox platform organisation.\n-- No company-name matching or unrestricted platform directory is introduced.\n-- migrate:up transaction:false\n\nALTER TABLE party_organisations\n    ADD COLUMN linked_organisation_id BIGINT UNSIGNED NULL AFTER trading_name,\n    ADD UNIQUE KEY uq_party_organisations_linked_org (organisation_id, linked_organisation_id),\n    ADD KEY idx_party_organisations_linked_org (linked_organisation_id),\n    ADD CONSTRAINT fk_party_organisations_linked_org\n        FOREIGN KEY (linked_organisation_id)\n        REFERENCES organisations (id)\n        ON UPDATE RESTRICT\n        ON DELETE RESTRICT,\n    ADD CONSTRAINT ck_party_organisations_not_self\n        CHECK (linked_organisation_id IS NULL OR linked_organisation_id <> organisation_id);\n\n-- migrate:down transaction:false\n-- Released CRM collaboration links are forward-only because project invitation and audit\n-- history may depend on the explicit association. Non-production environments are rebuilt.\nSELECT 1;\n""")
+
+          replace_once(
+              'app/src/lib/server/db/generated/database.d.ts',
+              '''export interface PartyOrganisations {\n  created_at: Generated<Date>;\n  legal_name: string;\n  organisation_id: string;\n  party_id: string;\n  trading_name: string | null;\n}''',
+              '''export interface PartyOrganisations {\n  created_at: Generated<Date>;\n  legal_name: string;\n  linked_organisation_id: string | null;\n  organisation_id: string;\n  party_id: string;\n  trading_name: string | null;\n}'''
+          )
+
+          replace_once(
+              'app/src/lib/server/crm/crm-repository.ts',
+              '''export type CrmPersonAffiliation = {\n\torganisationPartyId: string;\n\torganisationPublicId: string;\n\torganisationName: string;\n\torganisationStatus: CrmPartyStatus;\n\tjobTitle: string | null;\n\tdepartment: string | null;\n\tisPrimaryContact: boolean;\n\tstartedOn: Date | null;\n};''',
+              '''export type CrmPersonAffiliation = {\n\torganisationPartyId: string;\n\torganisationPublicId: string;\n\torganisationName: string;\n\torganisationStatus: CrmPartyStatus;\n\tjobTitle: string | null;\n\tdepartment: string | null;\n\tisPrimaryContact: boolean;\n\tstartedOn: Date | null;\n};\n\nexport type CrmPlatformOrganisationLink = {\n\torganisationId: string;\n\torganisationPublicId: string;\n\torganisationName: string;\n\tstatus: string;\n};\n\nexport type CrmCollaborationOrganisation = {\n\tpartyId: string;\n\tpartyPublicId: string;\n\tdisplayName: string;\n\tlinkedOrganisationId: string | null;\n\tlinkedOrganisationPublicId: string | null;\n\tlinkedOrganisationName: string | null;\n\tlinkedOrganisationStatus: string | null;\n};'''
+          )
+
+          crm_repo_marker = '''\tasync listOrganisationContacts(\n\t\torganisationId: string,\n\t\torganisationPartyId: string\n\t): Promise<CrmOrganisationContact[]> {'''
+          crm_repo_methods = '''\tasync findPlatformOrganisationLink(\n\t\torganisationId: string,\n\t\tpartyId: string\n\t): Promise<CrmPlatformOrganisationLink | null> {\n\t\tconst row = await this.db\n\t\t\t.selectFrom('party_organisations as company')\n\t\t\t.innerJoin('organisations as linked', 'linked.id', 'company.linked_organisation_id')\n\t\t\t.select([\n\t\t\t\t'linked.id as organisationId',\n\t\t\t\t'linked.public_id as organisationPublicId',\n\t\t\t\t'linked.legal_name as legalName',\n\t\t\t\t'linked.trading_name as tradingName',\n\t\t\t\t'linked.status as status'\n\t\t\t])\n\t\t\t.where('company.organisation_id', '=', organisationId)\n\t\t\t.where('company.party_id', '=', partyId)\n\t\t\t.executeTakeFirst();\n\t\treturn row\n\t\t\t? {\n\t\t\t\t\torganisationId: row.organisationId,\n\t\t\t\t\torganisationPublicId: row.organisationPublicId,\n\t\t\t\t\torganisationName: row.tradingName?.trim() || row.legalName,\n\t\t\t\t\tstatus: row.status\n\t\t\t\t}\n\t\t\t: null;\n\t}\n\n\tasync findActivePlatformOrganisationByPublicId(\n\t\tpublicId: string\n\t): Promise<CrmPlatformOrganisationLink | null> {\n\t\tconst row = await this.db\n\t\t\t.selectFrom('organisations')\n\t\t\t.select(['id', 'public_id', 'legal_name', 'trading_name', 'status'])\n\t\t\t.where('public_id', '=', publicId)\n\t\t\t.where('status', '=', 'active')\n\t\t\t.executeTakeFirst();\n\t\treturn row\n\t\t\t? {\n\t\t\t\t\torganisationId: row.id,\n\t\t\t\t\torganisationPublicId: row.public_id,\n\t\t\t\t\torganisationName: row.trading_name?.trim() || row.legal_name,\n\t\t\t\t\tstatus: row.status\n\t\t\t\t}\n\t\t\t: null;\n\t}\n\n\tasync findCrmOrganisationByLinkedOrganisationId(\n\t\torganisationId: string,\n\t\tlinkedOrganisationId: string\n\t): Promise<{ partyPublicId: string; displayName: string } | null> {\n\t\tconst row = await this.db\n\t\t\t.selectFrom('party_organisations as company')\n\t\t\t.innerJoin('parties as party', (join) =>\n\t\t\t\tjoin\n\t\t\t\t\t.onRef('party.id', '=', 'company.party_id')\n\t\t\t\t\t.onRef('party.organisation_id', '=', 'company.organisation_id')\n\t\t\t)\n\t\t\t.select([\n\t\t\t\t'party.public_id as partyPublicId',\n\t\t\t\t'company.legal_name as legalName',\n\t\t\t\t'company.trading_name as tradingName'\n\t\t\t])\n\t\t\t.where('company.organisation_id', '=', organisationId)\n\t\t\t.where('company.linked_organisation_id', '=', linkedOrganisationId)\n\t\t\t.executeTakeFirst();\n\t\treturn row\n\t\t\t? {\n\t\t\t\t\tpartyPublicId: row.partyPublicId,\n\t\t\t\t\tdisplayName: organisationDisplayName(row)\n\t\t\t\t}\n\t\t\t: null;\n\t}\n\n\tasync setPlatformOrganisationLink(\n\t\torganisationId: string,\n\t\tpartyId: string,\n\t\tlinkedOrganisationId: string | null\n\t): Promise<void> {\n\t\tawait this.db\n\t\t\t.updateTable('party_organisations')\n\t\t\t.set({ linked_organisation_id: linkedOrganisationId })\n\t\t\t.where('organisation_id', '=', organisationId)\n\t\t\t.where('party_id', '=', partyId)\n\t\t\t.executeTakeFirstOrThrow();\n\t}\n\n\tasync listCollaborationOrganisations(\n\t\torganisationId: string\n\t): Promise<CrmCollaborationOrganisation[]> {\n\t\tconst rows = await this.db\n\t\t\t.selectFrom('parties as party')\n\t\t\t.innerJoin('party_organisations as company', (join) =>\n\t\t\t\tjoin\n\t\t\t\t\t.onRef('company.party_id', '=', 'party.id')\n\t\t\t\t\t.onRef('company.organisation_id', '=', 'party.organisation_id')\n\t\t\t)\n\t\t\t.leftJoin('organisations as linked', 'linked.id', 'company.linked_organisation_id')\n\t\t\t.select([\n\t\t\t\t'party.id as partyId',\n\t\t\t\t'party.public_id as partyPublicId',\n\t\t\t\t'company.legal_name as legalName',\n\t\t\t\t'company.trading_name as tradingName',\n\t\t\t\t'linked.id as linkedOrganisationId',\n\t\t\t\t'linked.public_id as linkedOrganisationPublicId',\n\t\t\t\t'linked.legal_name as linkedLegalName',\n\t\t\t\t'linked.trading_name as linkedTradingName',\n\t\t\t\t'linked.status as linkedOrganisationStatus'\n\t\t\t])\n\t\t\t.where('party.organisation_id', '=', organisationId)\n\t\t\t.where('party.party_kind', '=', 'organisation')\n\t\t\t.where('party.status', '=', 'active')\n\t\t\t.orderBy('company.legal_name', 'asc')\n\t\t\t.execute();\n\t\treturn rows.map((row) => ({\n\t\t\tpartyId: row.partyId,\n\t\t\tpartyPublicId: row.partyPublicId,\n\t\t\tdisplayName: organisationDisplayName(row),\n\t\t\tlinkedOrganisationId: row.linkedOrganisationId,\n\t\t\tlinkedOrganisationPublicId: row.linkedOrganisationPublicId,\n\t\t\tlinkedOrganisationName:\n\t\t\t\trow.linkedLegalName === null\n\t\t\t\t\t? null\n\t\t\t\t\t: row.linkedTradingName?.trim() || row.linkedLegalName,\n\t\t\tlinkedOrganisationStatus: row.linkedOrganisationStatus\n\t\t}));\n\t}\n\n\tasync findCollaborationOrganisationByPublicId(\n\t\torganisationId: string,\n\t\tpartyPublicId: string\n\t): Promise<CrmCollaborationOrganisation | null> {\n\t\tconst organisations = await this.listCollaborationOrganisations(organisationId);\n\t\treturn organisations.find((candidate) => candidate.partyPublicId === partyPublicId) ?? null;\n\t}\n\n'''
+          replace_once('app/src/lib/server/crm/crm-repository.ts', crm_repo_marker, crm_repo_methods + crm_repo_marker)
+
+          replace_once(
+              'app/src/lib/server/crm/crm-service.ts',
+              '''\ttype CrmOrganisationContact,\n\ttype CrmPartyDetail,''',
+              '''\ttype CrmOrganisationContact,\n\ttype CrmPlatformOrganisationLink,\n\ttype CrmPartyDetail,'''
+          )
+          replace_once(
+              'app/src/lib/server/crm/crm-service.ts',
+              '''\tcontactCandidates: CrmPartySummary[];\n};''',
+              '''\tcontactCandidates: CrmPartySummary[];\n\tplatformOrganisationLink: CrmPlatformOrganisationLink | null;\n};'''
+          )
+          replace_once(
+              'app/src/lib/server/crm/crm-service.ts',
+              '''\t\tconst candidatesPromise =\n\t\t\tparty.kind === 'organisation' && canManageContacts\n\t\t\t\t? repository.listParties(actor.organisationId, { kind: 'person', status: 'active' })\n\t\t\t\t: Promise.resolve([]);\n\t\tconst [roleTypes, contacts, affiliations, candidateRows] = await Promise.all([\n\t\t\troleTypesPromise,\n\t\t\tcontactsPromise,\n\t\t\taffiliationsPromise,\n\t\t\tcandidatesPromise\n\t\t]);''',
+              '''\t\tconst candidatesPromise =\n\t\t\tparty.kind === 'organisation' && canManageContacts\n\t\t\t\t? repository.listParties(actor.organisationId, { kind: 'person', status: 'active' })\n\t\t\t\t: Promise.resolve([]);\n\t\tconst platformOrganisationLinkPromise =\n\t\t\tparty.kind === 'organisation'\n\t\t\t\t? repository.findPlatformOrganisationLink(actor.organisationId, party.id)\n\t\t\t\t: Promise.resolve(null);\n\t\tconst [roleTypes, contacts, affiliations, candidateRows, platformOrganisationLink] =\n\t\t\tawait Promise.all([\n\t\t\t\troleTypesPromise,\n\t\t\t\tcontactsPromise,\n\t\t\t\taffiliationsPromise,\n\t\t\t\tcandidatesPromise,\n\t\t\t\tplatformOrganisationLinkPromise\n\t\t\t]);'''
+          )
+          replace_once(
+              'app/src/lib/server/crm/crm-service.ts',
+              '''\t\t\tcontacts,\n\t\t\taffiliations,\n\t\t\tcontactCandidates: candidateRows.filter((candidate) => !currentPersonIds.has(candidate.id))\n\t\t};''',
+              '''\t\t\tcontacts,\n\t\t\taffiliations,\n\t\t\tcontactCandidates: candidateRows.filter((candidate) => !currentPersonIds.has(candidate.id)),\n\t\t\tplatformOrganisationLink\n\t\t};'''
+          )
+
+          crm_service_marker = '''\tasync createOrganisationContact(\n\t\tactor: TenantActorContext,'''
+          crm_service_methods = '''\tasync linkPlatformOrganisation(\n\t\tactor: TenantActorContext,\n\t\tinput: { partyPublicId: string; organisationPublicId: string }\n\t): Promise<void> {\n\t\tawait this.assertActiveActor(actor);\n\t\tawait this.assertManage(actor, 'crm.party.manage');\n\t\tconst partyPublicId = normalisePublicId(input.partyPublicId, 'CRM party ID');\n\t\tconst organisationPublicId = normalisePublicId(\n\t\t\tinput.organisationPublicId,\n\t\t\t'NuBlox organisation ID'\n\t\t);\n\t\treturn this.db.transaction().execute(async (trx) => {\n\t\t\tconst membership = await this.assertActiveActor(actor, trx);\n\t\t\tawait this.assertManage(actor, 'crm.party.manage', trx);\n\t\t\tconst repository = new CrmRepository(trx);\n\t\t\tconst party = await repository.findPartyByPublicId(actor.organisationId, partyPublicId);\n\t\t\tif (!party || party.kind !== 'organisation')\n\t\t\t\tthrow new RecordNotFoundError('CRM organisation not found.');\n\t\t\tif (party.status === 'archived')\n\t\t\t\tthrow new CrmValidationError('An archived CRM organisation cannot be linked for collaboration.');\n\t\t\tconst target = await repository.findActivePlatformOrganisationByPublicId(organisationPublicId);\n\t\t\tif (!target)\n\t\t\t\tthrow new CrmValidationError('No active NuBlox organisation matches that exact organisation ID.');\n\t\t\tif (target.organisationId === actor.organisationId)\n\t\t\t\tthrow new CrmValidationError('A CRM organisation cannot be linked to your own NuBlox organisation.');\n\t\t\tconst existing = await repository.findCrmOrganisationByLinkedOrganisationId(\n\t\t\t\tactor.organisationId,\n\t\t\t\ttarget.organisationId\n\t\t\t);\n\t\t\tif (existing && existing.partyPublicId !== partyPublicId)\n\t\t\t\tthrow new CrmValidationError(\n\t\t\t\t\t`That NuBlox organisation is already linked to ${existing.displayName}.`\n\t\t\t\t);\n\t\t\tawait repository.setPlatformOrganisationLink(\n\t\t\t\tactor.organisationId,\n\t\t\t\tparty.id,\n\t\t\t\ttarget.organisationId\n\t\t\t);\n\t\t\tawait new AuditRepository(trx).append({\n\t\t\t\teventPublicId: this.publicIdFactory(),\n\t\t\t\tactingOrganisationId: actor.organisationId,\n\t\t\t\tactorUserId: actor.userId,\n\t\t\t\tactorMemberId: membership.id,\n\t\t\t\tactionKey: 'crm.party.platform_organisation_linked',\n\t\t\t\tsubjectType: 'crm_party',\n\t\t\t\tsubjectPublicId: partyPublicId,\n\t\t\t\tcorrelationId: actor.correlationId,\n\t\t\t\tchangeSummary: {\n\t\t\t\t\torganisationPublicId: target.organisationPublicId,\n\t\t\t\t\torganisationName: target.organisationName\n\t\t\t\t}\n\t\t\t});\n\t\t});\n\t}\n\n\tasync unlinkPlatformOrganisation(\n\t\tactor: TenantActorContext,\n\t\tpartyPublicIdInput: string\n\t): Promise<void> {\n\t\tawait this.assertActiveActor(actor);\n\t\tawait this.assertManage(actor, 'crm.party.manage');\n\t\tconst partyPublicId = normalisePublicId(partyPublicIdInput, 'CRM party ID');\n\t\treturn this.db.transaction().execute(async (trx) => {\n\t\t\tconst membership = await this.assertActiveActor(actor, trx);\n\t\t\tawait this.assertManage(actor, 'crm.party.manage', trx);\n\t\t\tconst repository = new CrmRepository(trx);\n\t\t\tconst party = await repository.findPartyByPublicId(actor.organisationId, partyPublicId);\n\t\t\tif (!party || party.kind !== 'organisation')\n\t\t\t\tthrow new RecordNotFoundError('CRM organisation not found.');\n\t\t\tconst current = await repository.findPlatformOrganisationLink(actor.organisationId, party.id);\n\t\t\tif (!current) throw new CrmValidationError('This CRM organisation is not linked to NuBlox.');\n\t\t\tawait repository.setPlatformOrganisationLink(actor.organisationId, party.id, null);\n\t\t\tawait new AuditRepository(trx).append({\n\t\t\t\teventPublicId: this.publicIdFactory(),\n\t\t\t\tactingOrganisationId: actor.organisationId,\n\t\t\t\tactorUserId: actor.userId,\n\t\t\t\tactorMemberId: membership.id,\n\t\t\t\tactionKey: 'crm.party.platform_organisation_unlinked',\n\t\t\t\tsubjectType: 'crm_party',\n\t\t\t\tsubjectPublicId: partyPublicId,\n\t\t\t\tcorrelationId: actor.correlationId,\n\t\t\t\tchangeSummary: { organisationPublicId: current.organisationPublicId }\n\t\t\t});\n\t\t});\n\t}\n\n'''
+          replace_once('app/src/lib/server/crm/crm-service.ts', crm_service_marker, crm_service_methods + crm_service_marker)
+
+          replace_once(
+              'app/src/routes/(app)/crm/[partyPublicId]/+page.server.ts',
+              '''\tcreateContact: async ({ request, locals, params }) => {''',
+              '''\tlinkPlatformOrganisation: async ({ request, locals, params }) => {\n\t\tconst actor = actorFromLocals(locals);\n\t\tif (!actor)\n\t\t\treturn fail(401, {\n\t\t\t\tplatformLinkError: 'Authentication and organisation context are required.'\n\t\t\t});\n\t\tconst data = await request.formData();\n\t\ttry {\n\t\t\tawait new CrmService(getDatabase()).linkPlatformOrganisation(actor, {\n\t\t\t\tpartyPublicId: params.partyPublicId,\n\t\t\t\torganisationPublicId: String(data.get('organisationPublicId') ?? '')\n\t\t\t});\n\t\t} catch (error) {\n\t\t\treturn mutationFailure(error, 'platformLinkError');\n\t\t}\n\t\tthrow redirect(303, `/crm/${encodeURIComponent(params.partyPublicId)}#nublox-link`);\n\t},\n\n\tunlinkPlatformOrganisation: async ({ locals, params }) => {\n\t\tconst actor = actorFromLocals(locals);\n\t\tif (!actor)\n\t\t\treturn fail(401, {\n\t\t\t\tplatformLinkError: 'Authentication and organisation context are required.'\n\t\t\t});\n\t\ttry {\n\t\t\tawait new CrmService(getDatabase()).unlinkPlatformOrganisation(actor, params.partyPublicId);\n\t\t} catch (error) {\n\t\t\treturn mutationFailure(error, 'platformLinkError');\n\t\t}\n\t\tthrow redirect(303, `/crm/${encodeURIComponent(params.partyPublicId)}#nublox-link`);\n\t},\n\n\tcreateContact: async ({ request, locals, params }) => {'''
+          )
+
+          replace_once(
+              'app/src/routes/(app)/crm/+page.svelte',
+              '''<svelte:head>\n\t<title>CRM · NuBlox</title>\n</svelte:head>''',
+              '''<svelte:head>\n\t<title>Customers · NuBlox</title>\n</svelte:head>'''
+          )
+          replace_once(
+              'app/src/routes/(app)/crm/+page.svelte',
+              '''\t\t<p class="eyebrow">Relationships</p>\n\t\t<h1>CRM</h1>''',
+              '''\t\t<p class="eyebrow">Customers &amp; pipeline</p>\n\t\t<h1>Customers &amp; contacts</h1>'''
+          )
+          replace_once(
+              'app/src/routes/(app)/crm/+page.svelte',
+              '''{#if data.canManage}<a class="header-action" href="#new-party">Add CRM record</a>{/if}''',
+              '''{#if data.canManage}<a class="header-action" href="#new-party">Add customer or contact</a>{/if}'''
+          )
+
+          replace_once(
+              'app/src/routes/(app)/crm/[partyPublicId]/+page.svelte',
+              '''\t<title>{data.party.displayName} · CRM · NuBlox</title>''',
+              '''\t<title>{data.party.displayName} · Customers · NuBlox</title>'''
+          )
+          replace_once(
+              'app/src/routes/(app)/crm/[partyPublicId]/+page.svelte',
+              '''\t<a href="/crm">CRM</a>''',
+              '''\t<a href="/crm">Customers</a>'''
+          )
+          collaboration_panel = '''\n\t{#if data.party.kind === 'organisation'}\n\t\t<section id="nublox-link" class="panel full-width collaboration-link">\n\t\t\t<div class="panel-heading">\n\t\t\t\t<div>\n\t\t\t\t\t<p class="eyebrow">Collaboration</p>\n\t\t\t\t\t<h2>NuBlox organisation link</h2>\n\t\t\t\t</div>\n\t\t\t</div>\n\t\t\t<p class="muted">\n\t\t\t\tLink this private CRM organisation to its NuBlox account once. Project invitations then use\n\t\t\t\tthis customer record instead of asking users to copy platform IDs.\n\t\t\t</p>\n\t\t\t{#if form?.platformLinkError}<p class="error" role="alert">{form.platformLinkError}</p>{/if}\n\t\t\t{#if data.platformOrganisationLink}\n\t\t\t\t<div class="platform-link-summary">\n\t\t\t\t\t<div>\n\t\t\t\t\t\t<strong>{data.platformOrganisationLink.organisationName}</strong>\n\t\t\t\t\t\t<span>NuBlox account · {data.platformOrganisationLink.status}</span>\n\t\t\t\t\t</div>\n\t\t\t\t\t{#if data.canManage}\n\t\t\t\t\t\t<form method="POST" action="?/unlinkPlatformOrganisation">\n\t\t\t\t\t\t\t<button class="danger-button" type="submit">Remove NuBlox link</button>\n\t\t\t\t\t\t</form>\n\t\t\t\t\t{/if}\n\t\t\t\t</div>\n\t\t\t{:else if data.canManage}\n\t\t\t\t<form method="POST" action="?/linkPlatformOrganisation" class="platform-link-form">\n\t\t\t\t\t<label>\n\t\t\t\t\t\t<span>NuBlox organisation ID</span>\n\t\t\t\t\t\t<input\n\t\t\t\t\t\t\tname="organisationPublicId"\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t\tmaxlength="64"\n\t\t\t\t\t\t\tplaceholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"\n\t\t\t\t\t\t/>\n\t\t\t\t\t</label>\n\t\t\t\t\t<button type="submit">Link NuBlox organisation</button>\n\t\t\t\t</form>\n\t\t\t{/if}\n\t\t</section>\n\t{/if}\n'''
+          replace_once(
+              'app/src/routes/(app)/crm/[partyPublicId]/+page.svelte',
+              '''\n\t{#if data.party.kind === 'organisation'}\n\t\t<section id="contacts" class="panel contacts full-width">''',
+              collaboration_panel + '''\n\t{#if data.party.kind === 'organisation'}\n\t\t<section id="contacts" class="panel contacts full-width">'''
+          )
+          replace_once(
+              'app/src/routes/(app)/crm/[partyPublicId]/+page.svelte',
+              '''\t.full-width {\n\t\tgrid-column: 1 / -1;\n\t}''',
+              '''\t.full-width {\n\t\tgrid-column: 1 / -1;\n\t}\n\t.platform-link-summary {\n\t\tdisplay: flex;\n\t\talign-items: center;\n\t\tjustify-content: space-between;\n\t\tgap: 1rem;\n\t\tpadding: 0.85rem;\n\t\tborder: 1px solid #dcdcd5;\n\t\tborder-radius: 0.55rem;\n\t\tbackground: #fafaf7;\n\t}\n\t.platform-link-summary > div {\n\t\tdisplay: grid;\n\t\tgap: 0.2rem;\n\t}\n\t.platform-link-summary span {\n\t\tcolor: #666;\n\t\tfont-size: 0.82rem;\n\t\ttext-transform: capitalize;\n\t}\n\t.platform-link-form {\n\t\tdisplay: grid;\n\t\tgrid-template-columns: minmax(16rem, 1fr) auto;\n\t\talign-items: end;\n\t\tgap: 0.75rem;\n\t\tmax-width: 46rem;\n\t}\n\t.platform-link-form label {\n\t\tdisplay: grid;\n\t\tgap: 0.35rem;\n\t\tfont-size: 0.84rem;\n\t\tfont-weight: 650;\n\t}\n\t.platform-link-form input {\n\t\tmin-width: 0;\n\t\tfont: inherit;\n\t\tborder: 1px solid #b9b9b1;\n\t\tborder-radius: 0.45rem;\n\t\tpadding: 0.64rem;\n\t\tbackground: white;\n\t}'''
+          )
+
+          replace_once(
+              'app/src/lib/server/projects/project-team-service.ts',
+              '''import { PermissionService } from '$lib/server/capabilities/permission-service';''',
+              '''import { PermissionService } from '$lib/server/capabilities/permission-service';\nimport {\n\tCrmRepository,\n\ttype CrmCollaborationOrganisation\n} from '$lib/server/crm/crm-repository';'''
+          )
+          replace_once(
+              'app/src/lib/server/projects/project-team-service.ts',
+              '''\troleTypes: ProjectRoleTypeSummary[];\n\townOrganisationPublicId: string | null;''',
+              '''\troleTypes: ProjectRoleTypeSummary[];\n\tinvitationCandidates: CrmCollaborationOrganisation[];\n\townOrganisationPublicId: string | null;'''
+          )
+          replace_once(
+              'app/src/lib/server/projects/project-team-service.ts',
+              '''\t\tconst [teamDecision, participantDecision, participationDecision] = await Promise.all([\n\t\t\tpermissionService.decideWithUmbrella(actor, 'project.team.manage', 'project.manage', {\n\t\t\t\tprojectId: project.id\n\t\t\t}),\n\t\t\tpermissionService.decideWithUmbrella(actor, 'project.participant.manage', 'project.manage', {\n\t\t\t\tprojectId: project.id\n\t\t\t}),\n\t\t\tpermissionService.decideWithUmbrella(\n\t\t\t\tactor,\n\t\t\t\t'project.participation.manage',\n\t\t\t\t'project.manage',\n\t\t\t\t{\n\t\t\t\t\tprojectId: project.id\n\t\t\t\t}\n\t\t\t)\n\t\t]);''',
+              '''\t\tconst [teamDecision, participantDecision, participationDecision, crmViewDecision] =\n\t\t\tawait Promise.all([\n\t\t\t\tpermissionService.decideWithUmbrella(actor, 'project.team.manage', 'project.manage', {\n\t\t\t\t\tprojectId: project.id\n\t\t\t\t}),\n\t\t\t\tpermissionService.decideWithUmbrella(\n\t\t\t\t\tactor,\n\t\t\t\t\t'project.participant.manage',\n\t\t\t\t\t'project.manage',\n\t\t\t\t\t{ projectId: project.id }\n\t\t\t\t),\n\t\t\t\tpermissionService.decideWithUmbrella(\n\t\t\t\t\tactor,\n\t\t\t\t\t'project.participation.manage',\n\t\t\t\t\t'project.manage',\n\t\t\t\t\t{ projectId: project.id }\n\t\t\t\t),\n\t\t\t\tpermissionService.decide(actor, 'crm.view')\n\t\t\t]);'''
+          )
+          replace_once(
+              'app/src/lib/server/projects/project-team-service.ts',
+              '''\t\tconst ownParticipant = allParticipants.find(\n\t\t\t(participant) => participant.organisationId === actor.organisationId\n\t\t);\n\n\t\treturn {''',
+              '''\t\tconst ownParticipant = allParticipants.find(\n\t\t\t(participant) => participant.organisationId === actor.organisationId\n\t\t);\n\t\tconst collaborationOrganisations =\n\t\t\tcanManageParticipants && crmViewDecision.allowed\n\t\t\t\t? await new CrmRepository(this.db).listCollaborationOrganisations(actor.organisationId)\n\t\t\t\t: [];\n\t\tconst occupiedOrganisationIds = new Set(\n\t\t\tallParticipants\n\t\t\t\t.filter((participant) => participant.status === 'active' || participant.status === 'invited')\n\t\t\t\t.map((participant) => participant.organisationId)\n\t\t);\n\n\t\treturn {'''
+          )
+          replace_once(
+              'app/src/lib/server/projects/project-team-service.ts',
+              '''\t\t\tavailableMembers: organisationMembers.filter(\n\t\t\t\t(member) => !activeProjectMemberIds.has(member.id)\n\t\t\t),\n\t\t\troleTypes,\n\t\t\townOrganisationPublicId: ownParticipant?.organisationPublicId ?? null''',
+              '''\t\t\tavailableMembers: organisationMembers.filter(\n\t\t\t\t(member) => !activeProjectMemberIds.has(member.id)\n\t\t\t),\n\t\t\troleTypes,\n\t\t\tinvitationCandidates: collaborationOrganisations.filter(\n\t\t\t\t(candidate) =>\n\t\t\t\t\t!candidate.linkedOrganisationId ||\n\t\t\t\t\t!occupiedOrganisationIds.has(candidate.linkedOrganisationId)\n\t\t\t),\n\t\t\townOrganisationPublicId: ownParticipant?.organisationPublicId ?? null'''
+          )
+          project_invite_marker = '''\tasync inviteParticipant(\n\t\tactor: TenantActorContext,'''
+          project_invite_method = '''\tasync inviteCrmParticipant(\n\t\tactor: TenantActorContext,\n\t\tinput: { projectPublicId: string; crmPartyPublicId: string; roleKeys: readonly string[] }\n\t): Promise<void> {\n\t\tawait this.assertActiveActor(actor);\n\t\tconst crmDecision = await new PermissionService(this.db).decide(actor, 'crm.view');\n\t\tif (!crmDecision.allowed)\n\t\t\tthrow new TenantAccessError('CRM access is required to invite a customer organisation.');\n\t\tconst crmPartyPublicId = normalisePublicId(input.crmPartyPublicId, 'CRM organisation');\n\t\tconst candidate = await new CrmRepository(this.db).findCollaborationOrganisationByPublicId(\n\t\t\tactor.organisationId,\n\t\t\tcrmPartyPublicId\n\t\t);\n\t\tif (!candidate) throw new ProjectTeamValidationError('Select an active CRM organisation.');\n\t\tif (\n\t\t\t!candidate.linkedOrganisationPublicId ||\n\t\t\tcandidate.linkedOrganisationStatus !== 'active'\n\t\t) {\n\t\t\tthrow new ProjectTeamValidationError(\n\t\t\t\t'Link that CRM organisation to an active NuBlox organisation before inviting it.'\n\t\t\t);\n\t\t}\n\t\tawait this.inviteParticipant(actor, {\n\t\t\tprojectPublicId: input.projectPublicId,\n\t\t\torganisationPublicId: candidate.linkedOrganisationPublicId,\n\t\t\troleKeys: input.roleKeys\n\t\t});\n\t}\n\n'''
+          replace_once('app/src/lib/server/projects/project-team-service.ts', project_invite_marker, project_invite_method + project_invite_marker)
+
+          replace_once(
+              'app/src/routes/(app)/projects/[projectPublicId]/+page.server.ts',
+              '''\t\t\tawait new ProjectTeamService(getDatabase()).inviteParticipant(actor, {\n\t\t\t\tprojectPublicId: params.projectPublicId,\n\t\t\t\torganisationPublicId: String(data.get('organisationPublicId') ?? ''),\n\t\t\t\troleKeys: roleKeys(data)\n\t\t\t});''',
+              '''\t\t\tawait new ProjectTeamService(getDatabase()).inviteCrmParticipant(actor, {\n\t\t\t\tprojectPublicId: params.projectPublicId,\n\t\t\t\tcrmPartyPublicId: String(data.get('crmPartyPublicId') ?? ''),\n\t\t\t\troleKeys: roleKeys(data)\n\t\t\t});'''
+          )
+
+          old_invite_form = '''\t\t{#if data.team.canManageParticipants}\n\t\t\t<form method="POST" action="?/inviteParticipant" class="invite-form">\n\t\t\t\t<h3>Invite organisation</h3>\n\t\t\t\t<p class="hint">\n\t\t\t\t\tUse the organisation's exact NuBlox public ID. NuBlox does not expose an unrestricted\n\t\t\t\t\torganisation directory here.\n\t\t\t\t</p>\n\t\t\t\t<label>\n\t\t\t\t\t<span>Organisation ID</span>\n\t\t\t\t\t<input\n\t\t\t\t\t\tname="organisationPublicId"\n\t\t\t\t\t\trequired\n\t\t\t\t\t\tmaxlength="64"\n\t\t\t\t\t\tplaceholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"\n\t\t\t\t\t/>\n\t\t\t\t</label>\n\t\t\t\t<label>\n\t\t\t\t\t<span>Project roles</span>\n\t\t\t\t\t<select name="roleKeys" multiple size="6" required>\n\t\t\t\t\t\t{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option\n\t\t\t\t\t\t\t>{/each}\n\t\t\t\t\t</select>\n\t\t\t\t</label>\n\t\t\t\t<button type="submit">Send project invitation</button>\n\t\t\t</form>\n\t\t{/if}'''
+          new_invite_form = '''\t\t{#if data.team.canManageParticipants}\n\t\t\t<form method="POST" action="?/inviteParticipant" class="invite-form">\n\t\t\t\t<h3>Invite organisation</h3>\n\t\t\t\t<p class="hint">\n\t\t\t\t\tSelect an organisation from Customers. Linked NuBlox accounts can be invited without\n\t\t\t\t\tcopying platform IDs into the project.\n\t\t\t\t</p>\n\t\t\t\t{#if data.team.invitationCandidates.length === 0}\n\t\t\t\t\t<p class="hint">\n\t\t\t\t\t\tNo active CRM organisations are available.\n\t\t\t\t\t\t<a href="/crm?kind=organisation&status=active">Open Customers</a> to maintain them.\n\t\t\t\t\t</p>\n\t\t\t\t{:else}\n\t\t\t\t\t<label>\n\t\t\t\t\t\t<span>Organisation</span>\n\t\t\t\t\t\t<select name="crmPartyPublicId" required>\n\t\t\t\t\t\t\t<option value="">Select CRM organisation</option>\n\t\t\t\t\t\t\t{#each data.team.invitationCandidates as candidate}\n\t\t\t\t\t\t\t\t<option\n\t\t\t\t\t\t\t\t\tvalue={candidate.partyPublicId}\n\t\t\t\t\t\t\t\t\tdisabled={!candidate.linkedOrganisationId || candidate.linkedOrganisationStatus !== 'active'}\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t\t\t{candidate.displayName} · {candidate.linkedOrganisationStatus === 'active'\n\t\t\t\t\t\t\t\t\t\t? (candidate.linkedOrganisationName ?? 'Linked NuBlox organisation')\n\t\t\t\t\t\t\t\t\t\t: candidate.linkedOrganisationId\n\t\t\t\t\t\t\t\t\t\t\t? 'NuBlox account unavailable'\n\t\t\t\t\t\t\t\t\t\t\t: 'Not linked to NuBlox'}\n\t\t\t\t\t\t\t\t</option>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</label>\n\t\t\t\t\t<label>\n\t\t\t\t\t\t<span>Project roles</span>\n\t\t\t\t\t\t<select name="roleKeys" multiple size="6" required>\n\t\t\t\t\t\t\t{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option\n\t\t\t\t\t\t\t\t>{/each}\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</label>\n\t\t\t\t\t<button\n\t\t\t\t\t\ttype="submit"\n\t\t\t\t\t\tdisabled={!data.team.invitationCandidates.some(\n\t\t\t\t\t\t\t(candidate) => candidate.linkedOrganisationStatus === 'active'\n\t\t\t\t\t\t)}\n\t\t\t\t\t\t>Send project invitation</button\n\t\t\t\t\t>\n\t\t\t\t{/if}\n\t\t\t</form>\n\t\t{/if}'''
+          replace_once('app/src/routes/(app)/projects/[projectPublicId]/+page.svelte', old_invite_form, new_invite_form)
+          replace_once(
+              'app/src/routes/(app)/projects/[projectPublicId]/+page.svelte',
+              '''\t<section class="panel team">''',
+              '''\t<section id="team" class="panel team">'''
+          )
+
+          replace_once(
+              'app/src/lib/navigation/app-navigation.ts',
+              '''\t\t\t\tid: 'finance',\n\t\t\t\tlabel: 'Finance',\n\t\t\t\thref: '/finance/invoices',''',
+              '''\t\t\t\tid: 'finance',\n\t\t\t\tlabel: 'Finance',\n\t\t\t\thref: '/finance','''
+          )
+          replace_once(
+              'app/src/lib/navigation/app-navigation.ts',
+              '''\t{\n\t\tid: 'new-crm-record',\n\t\tlabel: 'CRM record',\n\t\thref: '/crm',\n\t\tdescription: 'Create an organisation or person record.',\n\t\tanyPermissions: ['crm.party.manage', 'crm.manage']\n\t},\n\t{\n\t\tid: 'new-estimate',\n\t\tlabel: 'Estimate',\n\t\thref: '/commercial/estimates',''',
+              '''\t{\n\t\tid: 'new-crm-record',\n\t\tlabel: 'Customer / contact',\n\t\thref: '/crm#new-party',\n\t\tdescription: 'Create an organisation or person record.',\n\t\tanyPermissions: ['crm.party.manage', 'crm.manage']\n\t},\n\t{\n\t\tid: 'new-opportunity',\n\t\tlabel: 'Opportunity',\n\t\thref: '/crm/opportunities#new-opportunity',\n\t\tdescription: 'Capture prospective work against a customer.',\n\t\tanyPermissions: ['crm.opportunity.manage', 'crm.manage']\n\t},\n\t{\n\t\tid: 'new-estimate',\n\t\tlabel: 'Estimate',\n\t\thref: '/commercial/estimates#new-estimate','''
+          )
+          old_project_nav = '''\tconst links: ProjectContextNavigationItem[] = [\n\t\t{\n\t\t\tid: 'overview',\n\t\t\tlabel: 'Overview',\n\t\t\thref: `/projects/${encodeURIComponent(projectPublicId)}${query}`\n\t\t}\n\t];\n\tif (hasAnyNamespace(allowed, ['information.']))\n\t\tlinks.push({ id: 'documents', label: 'Documents', href: `/documents${query}` });\n\tif (hasAnyNamespace(allowed, ['procurement.']))\n\t\tlinks.push({ id: 'procurement', label: 'Procurement', href: `/purchasing${query}` });\n\tif (hasAnyNamespace(allowed, ['commercial.'])) {\n\t\tlinks.push({ id: 'commercial', label: 'Commercial', href: `/commercial/cost-control${query}` });\n\t}\n\tif (hasAnyNamespace(allowed, ['site.', 'quality.', 'safety.']))\n\t\tlinks.push({ id: 'site', label: 'Site', href: `/site${query}` });\n\tif (hasAnyNamespace(allowed, ['schedule.', 'timesheet.']))\n\t\tlinks.push({ id: 'schedule', label: 'Schedule', href: `/schedule${query}` });\n\tif (hasAnyNamespace(allowed, ['assets.', 'facilities.', 'maintenance.', 'compliance.']))\n\t\tlinks.push({ id: 'assets', label: 'Assets', href: `/assets${query}` });'''
+          new_project_nav = '''\tconst projectHref = `/projects/${encodeURIComponent(projectPublicId)}${query}`;\n\tconst links: ProjectContextNavigationItem[] = [\n\t\t{ id: 'overview', label: 'Overview', href: projectHref },\n\t\t{ id: 'team', label: 'Team', href: `${projectHref}#team` }\n\t];\n\tif (hasAnyNamespace(allowed, ['information.']))\n\t\tlinks.push({ id: 'documents', label: 'Documents', href: `/documents${query}` });\n\tif (hasAnyNamespace(allowed, ['procurement.']))\n\t\tlinks.push({ id: 'procurement', label: 'Procurement', href: `/purchasing${query}` });\n\tif (\n\t\tallowed.has('commercial.manage') ||\n\t\thasAnyNamespace(allowed, [\n\t\t\t'commercial.cost_control.',\n\t\t\t'commercial.cost_code.',\n\t\t\t'commercial.budget.',\n\t\t\t'commercial.variation.'\n\t\t])\n\t)\n\t\tlinks.push({ id: 'costs', label: 'Costs', href: `/commercial/cost-control${query}` });\n\tif (allowed.has('commercial.manage') || hasAnyNamespace(allowed, ['commercial.valuation.']))\n\t\tlinks.push({ id: 'valuations', label: 'Valuations', href: `/commercial/valuations${query}` });\n\tif (hasAnyNamespace(allowed, ['site.', 'quality.', 'safety.']))\n\t\tlinks.push({ id: 'site', label: 'Site', href: `/site${query}` });\n\tif (hasAnyNamespace(allowed, ['schedule.']))\n\t\tlinks.push({ id: 'schedule', label: 'Schedule', href: `/schedule${query}` });\n\tif (hasAnyNamespace(allowed, ['timesheet.']))\n\t\tlinks.push({ id: 'time', label: 'Time', href: `/time${query}` });\n\tif (hasAnyNamespace(allowed, ['assets.', 'facilities.', 'maintenance.', 'compliance.']))\n\t\tlinks.push({ id: 'assets', label: 'Assets', href: `/assets${query}` });'''
+          replace_once('app/src/lib/navigation/app-navigation.ts', old_project_nav, new_project_nav)
+
+          replace_once(
+              'app/src/routes/(app)/crm/opportunities/+page.svelte',
+              '''\t\t\t<section class="panel create-panel">''',
+              '''\t\t\t<section id="new-opportunity" class="panel create-panel">'''
+          )
+          replace_once(
+              'app/src/routes/(app)/commercial/estimates/+page.svelte',
+              '''\t\t\t<section class="panel create-panel">''',
+              '''\t\t\t<section id="new-estimate" class="panel create-panel">'''
+          )
+
+          layout = 'app/src/routes/(app)/+layout.svelte'
+          replace_once(
+              layout,
+              '''\tlet pathname = $derived(page.url.pathname);''',
+              '''\tlet pathname = $derived(page.url.pathname);\n\n\tfunction resolveBusinessContext(): AppNavigationSection | null {\n\t\tif (data.projectContext) return null;\n\t\tconst sectionId =\n\t\t\tpathname.startsWith('/crm') ||\n\t\t\tpathname.startsWith('/commercial/estimates') ||\n\t\t\tpathname.startsWith('/commercial/quotations') ||\n\t\t\tpathname.startsWith('/contracts')\n\t\t\t\t? 'relationships'\n\t\t\t\t: pathname === '/finance' || pathname.startsWith('/finance/')\n\t\t\t\t\t? 'finance'\n\t\t\t\t\t: null;\n\t\treturn sectionId\n\t\t\t? (data.workspaceDirectory.find((section) => section.id === sectionId) ?? null)\n\t\t\t: null;\n\t}\n\n\tlet businessContext = $derived(resolveBusinessContext());'''
+          )
+          replace_once(
+              layout,
+              '''\tfunction isActive(href: string): boolean {\n\t\tconst hrefPath = pathFromHref(href);\n\t\tif (hrefPath === '/dashboard' || hrefPath === '/my-work' || hrefPath === '/more') {\n\t\t\treturn pathname === hrefPath;\n\t\t}\n\t\treturn pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);\n\t}\n''',
+              '''\tfunction isActive(href: string): boolean {\n\t\tconst hrefPath = pathFromHref(href);\n\t\tif (hrefPath === '/dashboard' || hrefPath === '/my-work' || hrefPath === '/more') {\n\t\t\treturn pathname === hrefPath;\n\t\t}\n\t\treturn pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);\n\t}\n\n\tfunction isPrimaryActive(item: AppNavigationItem): boolean {\n\t\tif (item.id === 'projects' && data.projectContext) return true;\n\t\tif (item.id === 'customers' && businessContext?.id === 'relationships') return true;\n\t\tif (item.id === 'finance' && businessContext?.id === 'finance') return true;\n\t\treturn isActive(item.href);\n\t}\n\n\tfunction isBusinessActive(item: AppNavigationItem): boolean {\n\t\tif (!businessContext) return false;\n\t\tconst matches = businessContext.items\n\t\t\t.filter((candidate) => {\n\t\t\t\tconst candidatePath = pathFromHref(candidate.href);\n\t\t\t\treturn pathname === candidatePath || pathname.startsWith(`${candidatePath}/`);\n\t\t\t})\n\t\t\t.sort((a, b) => pathFromHref(b.href).length - pathFromHref(a.href).length);\n\t\treturn matches[0]?.id === item.id;\n\t}\n\n\tfunction isProjectActive(item: { id: string; href: string }): boolean {\n\t\tif (item.id === 'team') return isActive(item.href) && page.url.hash === '#team';\n\t\tif (item.id === 'overview') return isActive(item.href) && page.url.hash !== '#team';\n\t\treturn isActive(item.href);\n\t}\n'''
+          )
+          replace_once(
+              layout,
+              '''\t\t\t\t\t\t\t\t\tclass:active={isActive(item.href)}\n\t\t\t\t\t\t\t\t\thref={item.href}\n\t\t\t\t\t\t\t\t\taria-current={isActive(item.href) ? 'page' : undefined}''',
+              '''\t\t\t\t\t\t\t\t\tclass:active={isPrimaryActive(item)}\n\t\t\t\t\t\t\t\t\thref={item.href}\n\t\t\t\t\t\t\t\t\taria-current={isPrimaryActive(item) ? 'page' : undefined}'''
+          )
+          replace_once(
+              layout,
+              '''\t\t\t\t\t{#each data.projectContext.links as item (item.id)}\n\t\t\t\t\t\t<a class:active={isActive(item.href)} href={item.href}>{item.label}</a>\n\t\t\t\t\t{/each}''',
+              '''\t\t\t\t\t{#each data.projectContext.links as item (item.id)}\n\t\t\t\t\t\t<a class:active={isProjectActive(item)} href={item.href}>{item.label}</a>\n\t\t\t\t\t{/each}'''
+          )
+          replace_once(
+              layout,
+              '''\t\t{#if data.projectContext}\n\t\t\t<section class="project-context" aria-labelledby="project-context-heading">\n\t\t\t\t<div class="project-identity">\n\t\t\t\t\t<span class="context-label">Current project</span>\n\t\t\t\t\t<div class="project-title-line">\n\t\t\t\t\t\t<strong id="project-context-heading"\n\t\t\t\t\t\t\t>{data.projectContext.projectNumber} · {data.projectContext.name}</strong\n\t\t\t\t\t\t>\n\t\t\t\t\t\t<span class="project-status">{data.projectContext.status.replace('_', ' ')}</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<nav class="project-nav" aria-label="Project workspace">\n\t\t\t\t\t{#each data.projectContext.links as item (item.id)}\n\t\t\t\t\t\t<a class:active={isProjectActive(item)} href={item.href}>{item.label}</a>\n\t\t\t\t\t{/each}\n\t\t\t\t</nav>\n\t\t\t\t<a class="exit-context" href="/projects">All projects</a>\n\t\t\t</section>\n\t\t{/if}''',
+              '''\t\t{#if data.projectContext}\n\t\t\t<section class="project-context" aria-labelledby="project-context-heading">\n\t\t\t\t<div class="project-identity">\n\t\t\t\t\t<span class="context-label">Current project</span>\n\t\t\t\t\t<div class="project-title-line">\n\t\t\t\t\t\t<strong id="project-context-heading"\n\t\t\t\t\t\t\t>{data.projectContext.projectNumber} · {data.projectContext.name}</strong\n\t\t\t\t\t\t>\n\t\t\t\t\t\t<span class="project-status">{data.projectContext.status.replace('_', ' ')}</span>\n\t\t\t\t\t</div>\n\t\t\t\t</div>\n\t\t\t\t<nav class="project-nav" aria-label="Project workspace">\n\t\t\t\t\t{#each data.projectContext.links as item (item.id)}\n\t\t\t\t\t\t<a class:active={isProjectActive(item)} href={item.href}>{item.label}</a>\n\t\t\t\t\t{/each}\n\t\t\t\t</nav>\n\t\t\t\t<a class="exit-context" href="/projects">All projects</a>\n\t\t\t</section>\n\t\t{:else if businessContext}\n\t\t\t<section class="business-context" aria-labelledby="business-context-heading">\n\t\t\t\t<div class="business-identity">\n\t\t\t\t\t<span class="context-label">Business workspace</span>\n\t\t\t\t\t<strong id="business-context-heading">{businessContext.label}</strong>\n\t\t\t\t</div>\n\t\t\t\t<nav class="business-nav" aria-label="Business workspace">\n\t\t\t\t\t{#each businessContext.items as item (item.id)}\n\t\t\t\t\t\t<a class:active={isBusinessActive(item)} href={item.href}>{item.label}</a>\n\t\t\t\t\t{/each}\n\t\t\t\t</nav>\n\t\t\t</section>\n\t\t{/if}'''
+          )
+          replace_once(
+              layout,
+              '''\t.project-context {\n\t\tdisplay: grid;''',
+              '''\t.project-context,\n\t.business-context {\n\t\tdisplay: grid;'''
+          )
+          replace_once(
+              layout,
+              '''\t.project-identity {\n\t\tmin-width: 0;\n\t\tdisplay: grid;\n\t\tgap: 0.3rem;\n\t}''',
+              '''\t.project-identity,\n\t.business-identity {\n\t\tmin-width: 0;\n\t\tdisplay: grid;\n\t\tgap: 0.3rem;\n\t}\n\n\t.business-context {\n\t\tgrid-template-columns: minmax(11rem, 0.45fr) minmax(0, 2fr);\n\t}\n\n\t.business-identity strong {\n\t\tfont-size: 0.86rem;\n\t}'''
+          )
+          replace_once(
+              layout,
+              '''\t.project-nav {\n\t\tdisplay: flex;''',
+              '''\t.project-nav,\n\t.business-nav {\n\t\tdisplay: flex;'''
+          )
+          replace_once(
+              layout,
+              '''\t.project-nav a {\n\t\tflex: 0 0 auto;''',
+              '''\t.project-nav a,\n\t.business-nav a {\n\t\tflex: 0 0 auto;'''
+          )
+          replace_once(
+              layout,
+              '''\t.project-nav a:hover,\n\t.project-nav a:focus-visible,\n\t.project-nav a.active {''',
+              '''\t.project-nav a:hover,\n\t.project-nav a:focus-visible,\n\t.project-nav a.active,\n\t.business-nav a:hover,\n\t.business-nav a:focus-visible,\n\t.business-nav a.active {'''
+          )
+          replace_once(
+              layout,
+              '''\t.project-nav a.active {\n\t\tbox-shadow: inset 0 -2px 0 var(--nb-blue);\n\t}''',
+              '''\t.project-nav a.active,\n\t.business-nav a.active {\n\t\tbox-shadow: inset 0 -2px 0 var(--nb-blue);\n\t}'''
+          )
+          replace_once(
+              layout,
+              '''\t\t.project-context {\n\t\t\tgrid-template-columns: minmax(12rem, 1fr) auto;\n\t\t}\n\n\t\t.project-nav {''',
+              '''\t\t.project-context,\n\t\t.business-context {\n\t\t\tgrid-template-columns: minmax(12rem, 1fr) auto;\n\t\t}\n\n\t\t.project-nav,\n\t\t.business-nav {'''
+          )
+          replace_once(
+              layout,
+              '''\t\t.project-context {\n\t\t\tposition: static;\n\t\t\tdisplay: grid;\n\t\t\tgrid-template-columns: 1fr auto;\n\t\t\tpadding: 0.75rem 1rem;\n\t\t}\n\n\t\t.project-nav {''',
+              '''\t\t.project-context,\n\t\t.business-context {\n\t\t\tposition: static;\n\t\t\tdisplay: grid;\n\t\t\tgrid-template-columns: 1fr auto;\n\t\t\tpadding: 0.75rem 1rem;\n\t\t}\n\n\t\t.project-nav,\n\t\t.business-nav {'''
+          )
+
+          finance_page = Path('app/src/routes/(app)/finance/+page.svelte')
+          finance_page.write_text('''<script lang="ts">\n\tlet { data } = $props();\n\tconst finance = $derived(data.workspaceDirectory.find((section) => section.id === 'finance'));\n</script>\n\n<svelte:head><title>Finance · NuBlox</title></svelte:head>\n\n<section class="page-heading">\n\t<p class="eyebrow">Business workspace</p>\n\t<h1>Finance</h1>\n\t<p>Move between billing, receivables, collections and accounting without returning to the global menu.</p>\n</section>\n\n{#if finance}\n\t<section class="workspace-grid" aria-label="Finance workspaces">\n\t\t{#each finance.items as item (item.id)}\n\t\t\t<a class="workspace-card" href={item.href}>\n\t\t\t\t<strong>{item.label}</strong>\n\t\t\t\t<span>{item.description ?? 'Open finance workspace'}</span>\n\t\t\t</a>\n\t\t{/each}\n\t</section>\n{:else}\n\t<section class="notice">\n\t\t<h2>Finance access is not enabled</h2>\n\t\t<p>Your current organisation role does not expose a finance workspace.</p>\n\t</section>\n{/if}\n\n<style>\n\t.page-heading { max-width: 52rem; margin-bottom: 1.25rem; }\n\t.page-heading h1 { margin: 0.15rem 0 0.35rem; font-size: clamp(2rem, 5vw, 3rem); letter-spacing: -0.045em; }\n\t.page-heading p:last-child { margin: 0; color: var(--nb-text-muted); line-height: 1.55; }\n\t.eyebrow { margin: 0; color: var(--nb-text-muted); font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }\n\t.workspace-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 0.8rem; }\n\t.workspace-card, .notice { border: 1px solid var(--nb-border); border-radius: var(--nb-radius-md); background: var(--nb-white); }\n\t.workspace-card { display: grid; gap: 0.35rem; padding: 1rem; color: var(--nb-text); text-decoration: none; }\n\t.workspace-card:hover, .workspace-card:focus-visible { border-color: var(--nb-border-strong); box-shadow: 0 8px 24px rgb(7 24 46 / 0.08); }\n\t.workspace-card span { color: var(--nb-text-muted); font-size: 0.82rem; line-height: 1.45; }\n\t.notice { padding: 1rem; }\n</style>\n''')
+
+          test_path = 'app/src/lib/server/projects/project-team-administration.integration.test.ts'
+          replace_once(
+              test_path,
+              '''let organisationBPublicId = '';''',
+              '''let organisationBPublicId = '';\nlet crmOrganisationBPublicId = '';'''
+          )
+          replace_once(
+              test_path,
+              '''\tif (organisationIds.length > 0) {\n\t\tawait db\n\t\t\t.deleteFrom('audit_events')''',
+              '''\tif (organisationIds.length > 0) {\n\t\tawait db\n\t\t\t.deleteFrom('party_organisations')\n\t\t\t.where('organisation_id', 'in', organisationIds)\n\t\t\t.execute();\n\t\tawait db.deleteFrom('parties').where('organisation_id', 'in', organisationIds).execute();\n\t\tawait db\n\t\t\t.deleteFrom('audit_events')'''
+          )
+          replace_once(
+              test_path,
+              '''\tawait assignPermissionRole(organisationAId, memberAId, 'Owner', [\n\t\t'project.create',\n\t\t'project.view',\n\t\t'project.manage'\n\t]);''',
+              '''\tawait assignPermissionRole(organisationAId, memberAId, 'Owner', [\n\t\t'project.create',\n\t\t'project.view',\n\t\t'project.manage',\n\t\t'crm.view'\n\t]);\n\n\tcrmOrganisationBPublicId = randomUUID();\n\tconst crmOrganisationBPartyId = insertedId(\n\t\tawait db\n\t\t\t.insertInto('parties')\n\t\t\t.values({\n\t\t\t\torganisation_id: organisationAId,\n\t\t\t\tpublic_id: crmOrganisationBPublicId,\n\t\t\t\tparty_kind: 'organisation',\n\t\t\t\taccount_owner_member_id: memberAId,\n\t\t\t\tstatus: 'active'\n\t\t\t})\n\t\t\t.executeTakeFirstOrThrow()\n\t);\n\tawait db\n\t\t.insertInto('party_organisations')\n\t\t.values({\n\t\t\tparty_id: crmOrganisationBPartyId,\n\t\t\torganisation_id: organisationAId,\n\t\t\tlegal_name: `${PREFIX}Organisation B CRM`,\n\t\t\ttrading_name: null,\n\t\t\tlinked_organisation_id: organisationBId\n\t\t})\n\t\t.executeTakeFirstOrThrow();'''
+          )
+          replace_once(
+              test_path,
+              '''\tit('invites an organisation by exact public ID without granting project scope before acceptance', async () => {\n\t\tconst service = new ProjectTeamService(db);\n\t\tawait service.inviteParticipant(actorA, {\n\t\t\tprojectPublicId,\n\t\t\torganisationPublicId: organisationBPublicId,\n\t\t\troleKeys: ['main_contractor']\n\t\t});''',
+              '''\tit('invites a linked CRM organisation without granting project scope before acceptance', async () => {\n\t\tconst service = new ProjectTeamService(db);\n\t\tconst team = await service.getTeamView(actorA, projectPublicId);\n\t\texpect(team.invitationCandidates).toContainEqual(\n\t\t\texpect.objectContaining({\n\t\t\t\tpartyPublicId: crmOrganisationBPublicId,\n\t\t\t\tlinkedOrganisationPublicId: organisationBPublicId,\n\t\t\t\tlinkedOrganisationStatus: 'active'\n\t\t\t})\n\t\t);\n\t\tawait service.inviteCrmParticipant(actorA, {\n\t\t\tprojectPublicId,\n\t\t\tcrmPartyPublicId: crmOrganisationBPublicId,\n\t\t\troleKeys: ['main_contractor']\n\t\t});'''
+          )
+
+          e2e = 'app/e2e/authenticated-workspaces.e2e.ts'
+          replace_once(
+              e2e,
+              '''\tawait page.goto('/more');''',
+              '''\tawait page.goto('/crm');\n\tconst customerWorkspace = page.getByRole('navigation', { name: 'Business workspace' });\n\tfor (const label of ['Customers & contacts', 'Opportunities', 'Estimates', 'Quotations', 'Contracts']) {\n\t\tawait expect(customerWorkspace.getByRole('link', { name: label, exact: true })).toBeVisible();\n\t}\n\tawait customerWorkspace.getByRole('link', { name: 'Estimates', exact: true }).click();\n\tawait expect(page).toHaveURL('/commercial/estimates');\n\tawait expect(page.getByRole('navigation', { name: 'Business workspace' })).toBeVisible();\n\tawait expect(\n\t\tprimaryNavigation.getByRole('link', { name: 'Customers', exact: true })\n\t).toHaveAttribute('aria-current', 'page');\n\n\tawait page.goto('/finance');\n\tawait expect(page.getByRole('heading', { name: 'Finance', level: 1 })).toBeVisible();\n\tconst financeWorkspace = page.getByRole('navigation', { name: 'Business workspace' });\n\tfor (const label of ['Invoices', 'Payments', 'Receivables', 'Collections', 'Accounting']) {\n\t\tawait expect(financeWorkspace.getByRole('link', { name: label, exact: true })).toBeVisible();\n\t}\n\n\tawait page.goto('/more');'''
+          )
+          replace_once(
+              e2e,
+              '''\tawait expect(createPopover.getByRole('link', { name: /CRM record/ })).toBeVisible();\n\tawait expect(createPopover.getByRole('link', { name: /Estimate/ })).toBeVisible();''',
+              '''\tawait expect(createPopover.getByRole('link', { name: /Customer \/ contact/ })).toBeVisible();\n\tawait expect(createPopover.getByRole('link', { name: /Opportunity/ })).toBeVisible();\n\tawait expect(createPopover.getByRole('link', { name: /Estimate/ })).toBeVisible();'''
+          )
+          replace_once(
+              e2e,
+              '''\t\t'/time',\n\t\t'/finance/invoices',''',
+              '''\t\t'/time',\n\t\t'/finance',\n\t\t'/finance/invoices','''
+          )
+
+          context_e2e = 'app/e2e/contextual-workspaces.e2e.ts'
+          replace_once(
+              context_e2e,
+              '''\tawait expect(page.getByText(new RegExp(PROJECT_NUMBER)).first()).toBeVisible();\n\n\tawait projectWorkspace.getByRole('link', { name: 'Documents', exact: true }).click();''',
+              '''\tawait expect(page.getByText(new RegExp(PROJECT_NUMBER)).first()).toBeVisible();\n\tawait expect(projectWorkspace.getByRole('link', { name: 'Team', exact: true })).toBeVisible();\n\tawait expect(projectWorkspace.getByRole('link', { name: 'Costs', exact: true })).toBeVisible();\n\tawait expect(projectWorkspace.getByRole('link', { name: 'Valuations', exact: true })).toBeVisible();\n\n\tawait projectWorkspace.getByRole('link', { name: 'Documents', exact: true }).click();'''
+          )
+          replace_once(
+              context_e2e,
+              '''\t\t.getByRole('link', { name: 'Commercial', exact: true })\n\t\t.click();\n\tawait expect(page).toHaveURL(`/commercial/cost-control?project=${projectPublicId}`);''',
+              '''\t\t.getByRole('link', { name: 'Costs', exact: true })\n\t\t.click();\n\tawait expect(page).toHaveURL(`/commercial/cost-control?project=${projectPublicId}`);'''
+          )
+
+          docs = Path('docs/56-v1-ux-anomaly-refinement.md')
+          docs.write_text('''# V1 UX anomaly refinement\n\n## Goal\n\nCorrect the discoverability and context anomalies found after the context-first navigation release without reopening domain boundaries or weakening server-side authority.\n\n## Business workspace navigation\n\n- Customers is the parent workspace for Customers & contacts, Opportunities, Estimates, Quotations and Contracts.\n- Finance now lands on a finance workspace rather than arbitrarily opening Invoices, and finance functions remain visible in a permission-filtered secondary navigation.\n- The global sidebar remains compact. Specialist functions remain searchable and available from More.\n- Create exposes workflow entry points only where the domain supports direct creation. Opportunities and Estimates are direct entry points; Quotations remain controlled outputs of finalised estimate revisions and Contracts remain downstream of accepted quotation/project formation.\n\n## Project workspace refinement\n\nThe persistent project context separates Team, Costs, Valuations, Schedule and Time rather than collapsing distinct high-frequency workflows behind broad labels. Project context remains permission-filtered and carries the selected project query through compatible legacy workspaces.\n\n## CRM-backed project invitations\n\nA private CRM organisation can optionally link to one active NuBlox platform organisation through an explicit foreign key. The link is not inferred from legal or trading names and does not create a platform-wide organisation directory.\n\nProject invitation forms now select tenant CRM organisations. Only CRM organisations with an explicit active NuBlox link can be submitted. The server resolves the CRM record within the actor tenant and then calls the existing controlled project-participant invitation service with the linked platform identity.\n\nSecurity invariants remain unchanged:\n\n- project participant authority remains server-side;\n- only the project-owning organisation can invite participants;\n- project lifecycle restrictions still apply;\n- CRM records stay tenant-private;\n- exact NuBlox IDs are used only while explicitly linking a CRM record, not during routine project work;\n- no organisation is matched by name;\n- navigation visibility never grants permission.\n\n## Acceptance\n\nBrowser acceptance covers persistent Customers and Finance business navigation, restored Opportunity/Estimate creation entry points, and refined project workstream navigation. Integration coverage verifies that a project invitation can be initiated through an explicitly linked CRM organisation while preserving the existing invitation/acceptance scope boundary.\n''')
+          PY
+
+      - name: Install app dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Format changed sources
+        working-directory: app
+        run: >-
+          pnpm exec prettier --write
+          src/lib/server/db/generated/database.d.ts
+          src/lib/server/crm/crm-repository.ts
+          src/lib/server/crm/crm-service.ts
+          src/lib/server/projects/project-team-service.ts
+          src/lib/server/projects/project-team-administration.integration.test.ts
+          src/lib/navigation/app-navigation.ts
+          'src/routes/(app)/+layout.svelte'
+          'src/routes/(app)/finance/+page.svelte'
+          'src/routes/(app)/crm/+page.svelte'
+          'src/routes/(app)/crm/[partyPublicId]/+page.server.ts'
+          'src/routes/(app)/crm/[partyPublicId]/+page.svelte'
+          'src/routes/(app)/crm/opportunities/+page.svelte'
+          'src/routes/(app)/commercial/estimates/+page.svelte'
+          'src/routes/(app)/projects/[projectPublicId]/+page.server.ts'
+          'src/routes/(app)/projects/[projectPublicId]/+page.svelte'
+          e2e/authenticated-workspaces.e2e.ts
+          e2e/contextual-workspaces.e2e.ts
+
+      - name: Remove helper and commit refinement
+        shell: bash
+        run: |
+          rm .github/workflows/ux-anomaly-refinement-helper.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Refine contextual business workflows"
+          git push origin HEAD:product/v1-ux-anomaly-refinement
