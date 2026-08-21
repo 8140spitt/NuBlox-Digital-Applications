@@ -2,81 +2,117 @@
 
 ## Product vision
 
-NuBlox will be a multi-tenant business and operational platform for the construction and built-environment ecosystem. It is intended to support businesses ranging from sole traders to multidisciplinary consultancies, contractors, suppliers and property/facilities organisations.
+NuBlox is being designed as the **world-class native ERP and operating platform for construction and the built environment**.
 
-The product must solve two connected problems:
+The target is not a collection of construction modules and not a project-management application with accounting attached. NuBlox must be capable of running the complete enterprise and built-asset lifecycle for organisations across construction, engineering, surveying, property, infrastructure, facilities, maintenance, building products and specialist trades.
 
-1. **Run the business** — customers, opportunities, quotations, contracts, people, procurement, time, invoicing, reporting and compliance.
-2. **Perform built-environment work** — projects, sites, design information, commercial control, inspections, quality, safety, certification, assets, maintenance and handover.
+The canonical lifecycle is:
 
-Profession-specific functionality must be delivered through reusable capabilities rather than 84 disconnected applications.
+**Market → Lead → Opportunity → Bid → Estimate → Proposal → Quote → Contract → Design → Plan → Procure → Produce → Construct → Control → Invoice → Account → Handover → Operate → Maintain → Refurbish → Dispose**
+
+The platform must solve two connected problems as one system:
+
+1. **Run the enterprise** — customers, sales, finance, people, payroll, procurement, supply chain, materials, inventory, logistics, production, property, assets, service, governance and reporting.
+2. **Perform built-environment work** — portfolios, projects, programmes, design, BIM, commercial management, site operations, quality, safety, commissioning, handover, facilities, maintenance and asset lifecycle management.
+
+Profession-specific functionality must be delivered through reusable native capabilities rather than disconnected applications.
+
+## World-class product standard
+
+NuBlox is acceptable only if a construction or built-environment organisation can operate its material business processes without depending on another ERP or operational product for missing core capability.
+
+SAP and other enterprise systems are capability benchmarks, not dependencies. Where a materially relevant enterprise capability exists in a leading ERP, NuBlox must either provide the equivalent natively or have an explicit native implementation boundary in the product architecture.
+
+NuBlox must then exceed generic ERP capability in construction and built-environment depth by understanding native industry concepts such as tenders, estimates, contracts, work packages, RFIs, submittals, instructions, variations, valuations, applications, retention, defects, commissioning, handover, assets and maintenance as first-class records.
+
+## Native-first rule
+
+Core business capability is owned by NuBlox.
+
+NuBlox must not use integration as a substitute for a missing core ERP module. External connectivity may support statutory exchange, banking rails, communications transport, identity federation, open-standard interchange, migration or customer-requested coexistence, but the canonical business process, records, permissions, workflow and audit trail remain native to NuBlox.
+
+Examples:
+
+- accounting integrations must not replace the NuBlox ledger;
+- payroll integrations must not replace the NuBlox payroll capability;
+- BIM/CDE integrations must not replace NuBlox design and information-management capability;
+- e-signature providers must not own NuBlox contract lifecycle or approval evidence;
+- external scheduling, CRM, procurement, FM or asset systems must not be required to complete NuBlox workflows.
 
 ## Target users
 
-The canonical launch taxonomy contains **84 National Careers Service construction and built-environment career profiles**. These careers are grouped into reusable professional domains and capability packs.
+The canonical sector taxonomy contains **84 National Careers Service construction and built-environment career profiles**. The taxonomy spans physical trades, design, engineering, construction management, surveying, property, environmental sustainability, plant, infrastructure and facilities roles.
 
-The product must support:
+NuBlox must support organisations ranging from sole traders to large multi-entity groups, including:
 
-- sole traders and micro-businesses;
-- specialist subcontractors;
-- main contractors;
-- design and engineering consultancies;
+- specialist subcontractors and trades;
+- main contractors and construction managers;
+- developers and asset owners;
+- architecture, engineering and multidisciplinary consultancies;
 - surveying and commercial practices;
-- suppliers and merchants;
-- facilities/property operators;
-- clients and developers;
-- external project participants with controlled access.
+- suppliers, merchants and building-product businesses;
+- plant, fleet and equipment operators;
+- property, estate and facilities organisations;
+- infrastructure and utilities delivery organisations;
+- external project and supply-chain participants with controlled access.
 
 ## Product layers
 
-1. **Identity and Organisation Kernel**
-2. **Business OS**
-3. **Built Environment OS**
-4. **Professional Capability Packs**
-5. **Collaboration / NuBlox Network**
-6. **Reporting, automation and AI assistance**
+1. **Enterprise, Identity and Master Data Kernel**
+2. **Customer, Sales and Commercial ERP**
+3. **Finance, Planning and Control ERP**
+4. **People, Workforce and Payroll ERP**
+5. **Procurement, Materials, Production and Logistics ERP**
+6. **Projects, Design, BIM and Delivery OS**
+7. **Site, Quality, Safety and Environmental OS**
+8. **Plant, Assets, Property, Facilities and Service OS**
+9. **Collaboration / NuBlox Network**
+10. **Reporting, Workflow, Automation and Intelligence**
+11. **Professional Capability Packs**
 
-## Business outcome
+## Canonical-data principle
 
-A customer should not need separate products for CRM, project administration, job management, document records, inspection evidence and profession-specific workflows where those functions can be safely consolidated into one coherent data model.
+NuBlox uses one authoritative enterprise model rather than module-specific copies.
+
+A customer is one party reused by CRM, estimating, contracts, projects, invoicing and service. The same principle applies to suppliers, people, projects, contracts, assets, properties, materials and cost structures.
+
+Business events should propagate through the model rather than require duplicate manual entry. For example, an approved project change can affect commitments, programme, forecast, valuation, revenue, subcontract exposure and margin through controlled linked records.
 
 ## Strategic design principles
 
+- Native ERP capability before external dependency.
+- One canonical source of truth per business entity and domain.
 - Modular monolith before microservices.
 - Multi-tenancy is foundational, not a retrofit.
 - Capabilities are distinct from careers and permissions.
-- Files are versioned records, not loose attachments.
-- Auditability applies to material business, contractual and compliance actions.
+- Context-first workspaces are preferred over module-hopping.
+- Files and models are controlled, versioned records rather than loose attachments.
+- Auditability applies to material business, contractual, financial and compliance actions.
 - Structured records are preferred over unsearchable document-only workflows.
-- Shared projects permit controlled cross-organisation participation.
-- Mobile/responsive workflows are first-class for field users.
+- Shared projects permit controlled cross-organisation participation without weakening tenant boundaries.
+- Mobile/responsive field workflows are first-class.
 - Accessibility target: WCAG 2.2 AA.
-- Privacy and security are designed in from inception.
-- Regional legislation and terminology must be configurable.
+- Privacy, security, segregation of duties and financial control are designed in from inception.
+- Regional legislation, accounting, tax, payroll and terminology must be configurable.
+- Open standards and external APIs support interoperability without surrendering system-of-record ownership.
+- AI assists governed business processes; it does not bypass permissions, evidence or human accountability.
 
-## Initial product success measures
+## Programme success test
 
-During pilot operation the product should demonstrate:
+The long-term programme passes only when a built-environment enterprise can use NuBlox as its primary system for:
 
-- a business can onboard, configure its organisation and invite staff without developer intervention;
-- users see workspaces appropriate to their careers and permissions;
-- a project can be created once and support multiple participating organisations;
-- commercial, document, site, quality and asset records preserve history;
-- all security-sensitive and material business actions are auditable;
-- the same platform can support three deliberately different pilot profiles: Quantity Surveyor, Electrician and Facilities Manager;
-- adding another career primarily means configuration/composition of capabilities, not cloning the application.
+- customer acquisition and sales;
+- estimating, tendering and contracting;
+- project and programme delivery;
+- design and information management;
+- commercial and cost control;
+- finance and statutory accounting;
+- people, workforce and payroll;
+- procurement, materials, inventory and logistics;
+- production/fabrication where applicable;
+- site, quality, safety and environmental management;
+- plant, fleet and equipment;
+- property, facilities and service;
+- reporting, planning, governance and decision support.
 
-## Explicit non-goals for the first production release
-
-Unless separately commissioned:
-
-- full statutory accounting ledger;
-- payroll engine;
-- native BIM authoring;
-- CAD authoring;
-- replacement for specialist engineering calculation software;
-- replacement for regulated certification bodies or government submission portals;
-- autonomous AI approval of contractual, safety or regulatory decisions;
-- microservice decomposition.
-
-NuBlox may integrate with specialist systems in these areas.
+The detailed capability model and implementation gate are defined in `57-world-class-native-erp-architecture.md`.
