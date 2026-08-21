@@ -36,7 +36,7 @@
 
 	function searchResults(): AppNavigationItem[] {
 		const query = searchQuery.trim().toLocaleLowerCase();
-		const items = workspaceItems([...data.navigation, ...data.workspaceDirectory]);
+		const items = workspaceItems([...data.workspaceDirectory, ...data.navigation]);
 		if (!query) return items.slice(0, 9);
 		return items
 			.filter((item) =>
