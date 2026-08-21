@@ -39,6 +39,14 @@ jobs:
           end = next(i for i in range(run_line + 1, len(source)) if source[i].startswith('      - name: '))
           script_lines = source[run_line + 1:end]
           script = '\n'.join(line[10:] if line.startswith('          ') else line for line in script_lines) + '\n'
+          block_start = script.index("replace_once(\n    'app/src/lib/server/db/generated/database.d.ts',")
+          block_end = script.index('\n\n', block_start)
+          generated_patch = """replace_once(
+              'app/src/lib/server/db/generated/database.d.ts',
+              'export interface PartyOrganisations {\\n  created_at: Generated<Date>;\\n  legal_name: string;\\n',
+              'export interface PartyOrganisations {\\n  created_at: Generated<Date>;\\n  legal_name: string;\\n  linked_organisation_id: string | null;\\n'
+          )"""
+          script = script[:block_start] + generated_patch + script[block_end:]
           Path('/tmp/apply-ux-refinement.sh').write_text(script)
           PY
           bash /tmp/apply-ux-refinement.sh
