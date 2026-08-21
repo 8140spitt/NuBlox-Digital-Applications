@@ -56,6 +56,23 @@ export type CrmPersonAffiliation = {
 	startedOn: Date | null;
 };
 
+export type CrmPlatformOrganisationLink = {
+	organisationId: string;
+	organisationPublicId: string;
+	organisationName: string;
+	status: string;
+};
+
+export type CrmCollaborationOrganisation = {
+	partyId: string;
+	partyPublicId: string;
+	displayName: string;
+	linkedOrganisationId: string | null;
+	linkedOrganisationPublicId: string | null;
+	linkedOrganisationName: string | null;
+	linkedOrganisationStatus: string | null;
+};
+
 function partyKind(value: string): CrmPartyKind {
 	if (value === 'person' || value === 'organisation') return value;
 	throw new Error(`Unexpected CRM party kind: ${value}`);
@@ -546,6 +563,139 @@ export class CrmRepository {
 				is_primary: 1
 			})
 			.executeTakeFirstOrThrow();
+	}
+
+	async findPlatformOrganisationLink(
+		organisationId: string,
+		partyId: string
+	): Promise<CrmPlatformOrganisationLink | null> {
+		const row = await this.db
+			.selectFrom('party_organisations as company')
+			.innerJoin('organisations as linked', 'linked.id', 'company.linked_organisation_id')
+			.select([
+				'linked.id as organisationId',
+				'linked.public_id as organisationPublicId',
+				'linked.legal_name as legalName',
+				'linked.trading_name as tradingName',
+				'linked.status as status'
+			])
+			.where('company.organisation_id', '=', organisationId)
+			.where('company.party_id', '=', partyId)
+			.executeTakeFirst();
+		return row
+			? {
+					organisationId: row.organisationId,
+					organisationPublicId: row.organisationPublicId,
+					organisationName: row.tradingName?.trim() || row.legalName,
+					status: row.status
+				}
+			: null;
+	}
+
+	async findActivePlatformOrganisationByPublicId(
+		publicId: string
+	): Promise<CrmPlatformOrganisationLink | null> {
+		const row = await this.db
+			.selectFrom('organisations')
+			.select(['id', 'public_id', 'legal_name', 'trading_name', 'status'])
+			.where('public_id', '=', publicId)
+			.where('status', '=', 'active')
+			.executeTakeFirst();
+		return row
+			? {
+					organisationId: row.id,
+					organisationPublicId: row.public_id,
+					organisationName: row.trading_name?.trim() || row.legal_name,
+					status: row.status
+				}
+			: null;
+	}
+
+	async findCrmOrganisationByLinkedOrganisationId(
+		organisationId: string,
+		linkedOrganisationId: string
+	): Promise<{ partyPublicId: string; displayName: string } | null> {
+		const row = await this.db
+			.selectFrom('party_organisations as company')
+			.innerJoin('parties as party', (join) =>
+				join
+					.onRef('party.id', '=', 'company.party_id')
+					.onRef('party.organisation_id', '=', 'company.organisation_id')
+			)
+			.select([
+				'party.public_id as partyPublicId',
+				'company.legal_name as legalName',
+				'company.trading_name as tradingName'
+			])
+			.where('company.organisation_id', '=', organisationId)
+			.where('company.linked_organisation_id', '=', linkedOrganisationId)
+			.executeTakeFirst();
+		return row
+			? {
+					partyPublicId: row.partyPublicId,
+					displayName: organisationDisplayName(row)
+				}
+			: null;
+	}
+
+	async setPlatformOrganisationLink(
+		organisationId: string,
+		partyId: string,
+		linkedOrganisationId: string | null
+	): Promise<void> {
+		await this.db
+			.updateTable('party_organisations')
+			.set({ linked_organisation_id: linkedOrganisationId })
+			.where('organisation_id', '=', organisationId)
+			.where('party_id', '=', partyId)
+			.executeTakeFirstOrThrow();
+	}
+
+	async listCollaborationOrganisations(
+		organisationId: string
+	): Promise<CrmCollaborationOrganisation[]> {
+		const rows = await this.db
+			.selectFrom('parties as party')
+			.innerJoin('party_organisations as company', (join) =>
+				join
+					.onRef('company.party_id', '=', 'party.id')
+					.onRef('company.organisation_id', '=', 'party.organisation_id')
+			)
+			.leftJoin('organisations as linked', 'linked.id', 'company.linked_organisation_id')
+			.select([
+				'party.id as partyId',
+				'party.public_id as partyPublicId',
+				'company.legal_name as legalName',
+				'company.trading_name as tradingName',
+				'linked.id as linkedOrganisationId',
+				'linked.public_id as linkedOrganisationPublicId',
+				'linked.legal_name as linkedLegalName',
+				'linked.trading_name as linkedTradingName',
+				'linked.status as linkedOrganisationStatus'
+			])
+			.where('party.organisation_id', '=', organisationId)
+			.where('party.party_kind', '=', 'organisation')
+			.where('party.status', '=', 'active')
+			.orderBy('company.legal_name', 'asc')
+			.execute();
+		return rows.map((row) => ({
+			partyId: row.partyId,
+			partyPublicId: row.partyPublicId,
+			displayName: organisationDisplayName(row),
+			linkedOrganisationId: row.linkedOrganisationId,
+			linkedOrganisationPublicId: row.linkedOrganisationPublicId,
+			linkedOrganisationName:
+				row.linkedLegalName === null ? null : row.linkedTradingName?.trim() || row.linkedLegalName,
+			linkedOrganisationStatus: row.linkedOrganisationStatus
+		}));
+	}
+
+	async findCollaborationOrganisationByPublicId(
+		organisationId: string,
+		partyPublicId: string
+	): Promise<CrmCollaborationOrganisation | null> {
+		const organisations = await this.listCollaborationOrganisations(organisationId);
+		return organisations.find((candidate) => candidate.partyPublicId === partyPublicId) ?? null;
 	}
 
 	async listOrganisationContacts(

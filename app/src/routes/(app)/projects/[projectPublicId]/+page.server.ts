@@ -187,9 +187,9 @@ export const actions: Actions = {
 			);
 		const data = await request.formData();
 		try {
-			await new ProjectTeamService(getDatabase()).inviteParticipant(actor, {
+			await new ProjectTeamService(getDatabase()).inviteCrmParticipant(actor, {
 				projectPublicId: params.projectPublicId,
-				organisationPublicId: String(data.get('organisationPublicId') ?? ''),
+				crmPartyPublicId: String(data.get('crmPartyPublicId') ?? ''),
 				roleKeys: roleKeys(data)
 			});
 		} catch (cause) {

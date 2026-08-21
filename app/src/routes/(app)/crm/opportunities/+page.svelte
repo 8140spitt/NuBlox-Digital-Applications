@@ -102,7 +102,7 @@
 		</section>
 
 		{#if data.canManageOpportunities}
-			<section class="panel create-panel">
+			<section id="new-opportunity" class="panel create-panel">
 				<p class="eyebrow">New opportunity</p>
 				<h2>Capture prospective work</h2>
 				{#if data.pipelines.length === 0}

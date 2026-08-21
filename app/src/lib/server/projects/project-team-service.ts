@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto';
 import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
+import { CrmRepository, type CrmCollaborationOrganisation } from '$lib/server/crm/crm-repository';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import {
 	ConcurrentUpdateError,
@@ -32,6 +33,7 @@ export type ProjectTeamView = {
 	teamMembers: ProjectMemberAdmin[];
 	availableMembers: OrganisationMemberProjectCandidate[];
 	roleTypes: ProjectRoleTypeSummary[];
+	invitationCandidates: CrmCollaborationOrganisation[];
 	ownOrganisationPublicId: string | null;
 };
 
@@ -153,22 +155,25 @@ export class ProjectTeamService {
 		await this.assertActiveActor(actor);
 		const project = await this.loadScopedProject(actor, projectPublicId);
 		const permissionService = new PermissionService(this.db);
-		const [teamDecision, participantDecision, participationDecision] = await Promise.all([
-			permissionService.decideWithUmbrella(actor, 'project.team.manage', 'project.manage', {
-				projectId: project.id
-			}),
-			permissionService.decideWithUmbrella(actor, 'project.participant.manage', 'project.manage', {
-				projectId: project.id
-			}),
-			permissionService.decideWithUmbrella(
-				actor,
-				'project.participation.manage',
-				'project.manage',
-				{
+		const [teamDecision, participantDecision, participationDecision, crmViewDecision] =
+			await Promise.all([
+				permissionService.decideWithUmbrella(actor, 'project.team.manage', 'project.manage', {
 					projectId: project.id
-				}
-			)
-		]);
+				}),
+				permissionService.decideWithUmbrella(
+					actor,
+					'project.participant.manage',
+					'project.manage',
+					{ projectId: project.id }
+				),
+				permissionService.decideWithUmbrella(
+					actor,
+					'project.participation.manage',
+					'project.manage',
+					{ projectId: project.id }
+				),
+				permissionService.decide(actor, 'crm.view')
+			]);
 		const canManageTeam = teamDecision.allowed;
 		const canManageParticipants =
 			participantDecision.allowed && project.owningOrganisationId === actor.organisationId;
@@ -188,6 +193,17 @@ export class ProjectTeamService {
 		const ownParticipant = allParticipants.find(
 			(participant) => participant.organisationId === actor.organisationId
 		);
+		const collaborationOrganisations =
+			canManageParticipants && crmViewDecision.allowed
+				? await new CrmRepository(this.db).listCollaborationOrganisations(actor.organisationId)
+				: [];
+		const occupiedOrganisationIds = new Set(
+			allParticipants
+				.filter(
+					(participant) => participant.status === 'active' || participant.status === 'invited'
+				)
+				.map((participant) => participant.organisationId)
+		);
 
 		return {
 			canManageTeam,
@@ -202,8 +218,39 @@ export class ProjectTeamService {
 				(member) => !activeProjectMemberIds.has(member.id)
 			),
 			roleTypes,
+			invitationCandidates: collaborationOrganisations.filter(
+				(candidate) =>
+					!candidate.linkedOrganisationId ||
+					!occupiedOrganisationIds.has(candidate.linkedOrganisationId)
+			),
 			ownOrganisationPublicId: ownParticipant?.organisationPublicId ?? null
 		};
+	}
+
+	async inviteCrmParticipant(
+		actor: TenantActorContext,
+		input: { projectPublicId: string; crmPartyPublicId: string; roleKeys: readonly string[] }
+	): Promise<void> {
+		await this.assertActiveActor(actor);
+		const crmDecision = await new PermissionService(this.db).decide(actor, 'crm.view');
+		if (!crmDecision.allowed)
+			throw new TenantAccessError('CRM access is required to invite a customer organisation.');
+		const crmPartyPublicId = normalisePublicId(input.crmPartyPublicId, 'CRM organisation');
+		const candidate = await new CrmRepository(this.db).findCollaborationOrganisationByPublicId(
+			actor.organisationId,
+			crmPartyPublicId
+		);
+		if (!candidate) throw new ProjectTeamValidationError('Select an active CRM organisation.');
+		if (!candidate.linkedOrganisationPublicId || candidate.linkedOrganisationStatus !== 'active') {
+			throw new ProjectTeamValidationError(
+				'Link that CRM organisation to an active NuBlox organisation before inviting it.'
+			);
+		}
+		await this.inviteParticipant(actor, {
+			projectPublicId: input.projectPublicId,
+			organisationPublicId: candidate.linkedOrganisationPublicId,
+			roleKeys: input.roleKeys
+		});
 	}
 
 	async inviteParticipant(

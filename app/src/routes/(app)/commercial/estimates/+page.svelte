@@ -67,7 +67,7 @@
 		</section>
 
 		{#if data.canManageEstimates}
-			<section class="panel create-panel">
+			<section id="new-estimate" class="panel create-panel">
 				<p class="eyebrow">New estimate</p>
 				<h2>Price an opportunity</h2>
 				{#if data.opportunities.length === 0}

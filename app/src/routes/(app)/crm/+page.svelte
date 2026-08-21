@@ -10,19 +10,19 @@
 </script>
 
 <svelte:head>
-	<title>CRM · NuBlox</title>
+	<title>Customers · NuBlox</title>
 </svelte:head>
 
 <section class="page-header">
 	<div>
-		<p class="eyebrow">Relationships</p>
-		<h1>CRM</h1>
+		<p class="eyebrow">Customers &amp; pipeline</p>
+		<h1>Customers &amp; contacts</h1>
 		<p>
 			Private organisations and people known to this NuBlox organisation. CRM records are not a
 			public NuBlox directory.
 		</p>
 	</div>
-	{#if data.canManage}<a class="header-action" href="#new-party">Add CRM record</a>{/if}
+	{#if data.canManage}<a class="header-action" href="#new-party">Add customer or contact</a>{/if}
 </section>
 
 {#if !data.canView}

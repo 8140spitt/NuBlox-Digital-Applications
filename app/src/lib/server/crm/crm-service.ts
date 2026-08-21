@@ -10,6 +10,7 @@ import { OrganisationMembershipRepository } from '$lib/server/organisations/memb
 import {
 	CrmRepository,
 	type CrmOrganisationContact,
+	type CrmPlatformOrganisationLink,
 	type CrmPartyDetail,
 	type CrmPartyKind,
 	type CrmPartyStatus,
@@ -58,6 +59,7 @@ export type CrmPartyWorkspace = {
 	contacts: CrmOrganisationContact[];
 	affiliations: CrmPersonAffiliation[];
 	contactCandidates: CrmPartySummary[];
+	platformOrganisationLink: CrmPlatformOrganisationLink | null;
 };
 
 export type CrmContactInput = {
@@ -270,12 +272,18 @@ export class CrmService {
 			party.kind === 'organisation' && canManageContacts
 				? repository.listParties(actor.organisationId, { kind: 'person', status: 'active' })
 				: Promise.resolve([]);
-		const [roleTypes, contacts, affiliations, candidateRows] = await Promise.all([
-			roleTypesPromise,
-			contactsPromise,
-			affiliationsPromise,
-			candidatesPromise
-		]);
+		const platformOrganisationLinkPromise =
+			party.kind === 'organisation'
+				? repository.findPlatformOrganisationLink(actor.organisationId, party.id)
+				: Promise.resolve(null);
+		const [roleTypes, contacts, affiliations, candidateRows, platformOrganisationLink] =
+			await Promise.all([
+				roleTypesPromise,
+				contactsPromise,
+				affiliationsPromise,
+				candidatesPromise,
+				platformOrganisationLinkPromise
+			]);
 		const currentPersonIds = new Set(contacts.map((contact) => contact.personPartyId));
 		return {
 			party,
@@ -284,7 +292,8 @@ export class CrmService {
 			roleTypes,
 			contacts,
 			affiliations,
-			contactCandidates: candidateRows.filter((candidate) => !currentPersonIds.has(candidate.id))
+			contactCandidates: candidateRows.filter((candidate) => !currentPersonIds.has(candidate.id)),
+			platformOrganisationLink
 		};
 	}
 
@@ -410,6 +419,99 @@ export class CrmService {
 			if (!updated)
 				throw new Error('Updated CRM party could not be reloaded inside its transaction.');
 			return updated;
+		});
+	}
+
+	async linkPlatformOrganisation(
+		actor: TenantActorContext,
+		input: { partyPublicId: string; organisationPublicId: string }
+	): Promise<void> {
+		await this.assertActiveActor(actor);
+		await this.assertManage(actor, 'crm.party.manage');
+		const partyPublicId = normalisePublicId(input.partyPublicId, 'CRM party ID');
+		const organisationPublicId = normalisePublicId(
+			input.organisationPublicId,
+			'NuBlox organisation ID'
+		);
+		return this.db.transaction().execute(async (trx) => {
+			const membership = await this.assertActiveActor(actor, trx);
+			await this.assertManage(actor, 'crm.party.manage', trx);
+			const repository = new CrmRepository(trx);
+			const party = await repository.findPartyByPublicId(actor.organisationId, partyPublicId);
+			if (!party || party.kind !== 'organisation')
+				throw new RecordNotFoundError('CRM organisation not found.');
+			if (party.status === 'archived')
+				throw new CrmValidationError(
+					'An archived CRM organisation cannot be linked for collaboration.'
+				);
+			const target =
+				await repository.findActivePlatformOrganisationByPublicId(organisationPublicId);
+			if (!target)
+				throw new CrmValidationError(
+					'No active NuBlox organisation matches that exact organisation ID.'
+				);
+			if (target.organisationId === actor.organisationId)
+				throw new CrmValidationError(
+					'A CRM organisation cannot be linked to your own NuBlox organisation.'
+				);
+			const existing = await repository.findCrmOrganisationByLinkedOrganisationId(
+				actor.organisationId,
+				target.organisationId
+			);
+			if (existing && existing.partyPublicId !== partyPublicId)
+				throw new CrmValidationError(
+					`That NuBlox organisation is already linked to ${existing.displayName}.`
+				);
+			await repository.setPlatformOrganisationLink(
+				actor.organisationId,
+				party.id,
+				target.organisationId
+			);
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				actionKey: 'crm.party.platform_organisation_linked',
+				subjectType: 'crm_party',
+				subjectPublicId: partyPublicId,
+				correlationId: actor.correlationId,
+				changeSummary: {
+					organisationPublicId: target.organisationPublicId,
+					organisationName: target.organisationName
+				}
+			});
+		});
+	}
+
+	async unlinkPlatformOrganisation(
+		actor: TenantActorContext,
+		partyPublicIdInput: string
+	): Promise<void> {
+		await this.assertActiveActor(actor);
+		await this.assertManage(actor, 'crm.party.manage');
+		const partyPublicId = normalisePublicId(partyPublicIdInput, 'CRM party ID');
+		return this.db.transaction().execute(async (trx) => {
+			const membership = await this.assertActiveActor(actor, trx);
+			await this.assertManage(actor, 'crm.party.manage', trx);
+			const repository = new CrmRepository(trx);
+			const party = await repository.findPartyByPublicId(actor.organisationId, partyPublicId);
+			if (!party || party.kind !== 'organisation')
+				throw new RecordNotFoundError('CRM organisation not found.');
+			const current = await repository.findPlatformOrganisationLink(actor.organisationId, party.id);
+			if (!current) throw new CrmValidationError('This CRM organisation is not linked to NuBlox.');
+			await repository.setPlatformOrganisationLink(actor.organisationId, party.id, null);
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				actionKey: 'crm.party.platform_organisation_unlinked',
+				subjectType: 'crm_party',
+				subjectPublicId: partyPublicId,
+				correlationId: actor.correlationId,
+				changeSummary: { organisationPublicId: current.organisationPublicId }
+			});
 		});
 	}
 

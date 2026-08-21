@@ -32,6 +32,11 @@ test('project context stays pinned while moving between business functions', asy
 	const projectWorkspace = page.getByRole('navigation', { name: 'Project workspace' });
 	await expect(projectWorkspace).toBeVisible();
 	await expect(page.getByText(new RegExp(PROJECT_NUMBER)).first()).toBeVisible();
+	await expect(projectWorkspace.getByRole('link', { name: 'Team', exact: true })).toBeVisible();
+	await expect(projectWorkspace.getByRole('link', { name: 'Costs', exact: true })).toBeVisible();
+	await expect(
+		projectWorkspace.getByRole('link', { name: 'Valuations', exact: true })
+	).toBeVisible();
 
 	await projectWorkspace.getByRole('link', { name: 'Documents', exact: true }).click();
 	await expect(page).toHaveURL(`/documents?project=${projectPublicId}`);
@@ -40,7 +45,7 @@ test('project context stays pinned while moving between business functions', asy
 
 	await page
 		.getByRole('navigation', { name: 'Project workspace' })
-		.getByRole('link', { name: 'Commercial', exact: true })
+		.getByRole('link', { name: 'Costs', exact: true })
 		.click();
 	await expect(page).toHaveURL(`/commercial/cost-control?project=${projectPublicId}`);
 	await expect(page.getByRole('navigation', { name: 'Project workspace' })).toBeVisible();

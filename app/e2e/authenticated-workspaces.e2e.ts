@@ -67,6 +67,31 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	).toBeVisible();
 	await page.getByText('Search', { exact: true }).click();
 
+	await page.goto('/crm');
+	const customerWorkspace = page.getByRole('navigation', { name: 'Business workspace' });
+	for (const label of [
+		'Customers & contacts',
+		'Opportunities',
+		'Estimates',
+		'Quotations',
+		'Contracts'
+	]) {
+		await expect(customerWorkspace.getByRole('link', { name: label, exact: true })).toBeVisible();
+	}
+	await customerWorkspace.getByRole('link', { name: 'Estimates', exact: true }).click();
+	await expect(page).toHaveURL('/commercial/estimates');
+	await expect(page.getByRole('navigation', { name: 'Business workspace' })).toBeVisible();
+	await expect(
+		primaryNavigation.getByRole('link', { name: 'Customers', exact: true })
+	).toHaveAttribute('aria-current', 'page');
+
+	await page.goto('/finance');
+	await expect(page.getByRole('heading', { name: 'Finance', level: 1 })).toBeVisible();
+	const financeWorkspace = page.getByRole('navigation', { name: 'Business workspace' });
+	for (const label of ['Invoices', 'Payments', 'Receivables', 'Collections', 'Accounting']) {
+		await expect(financeWorkspace.getByRole('link', { name: label, exact: true })).toBeVisible();
+	}
+
 	await page.goto('/more');
 	await expect(page.getByRole('heading', { name: 'More workspaces', level: 1 })).toBeVisible();
 	for (const label of [
@@ -84,7 +109,8 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 
 	await page.getByText('Create', { exact: true }).click();
 	const createPopover = page.locator('.create-popover');
-	await expect(createPopover.getByRole('link', { name: /CRM record/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Customer \/ contact/ })).toBeVisible();
+	await expect(createPopover.getByRole('link', { name: /Opportunity/ })).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Estimate/ })).toBeVisible();
 	await expect(createPopover.locator('a[href="/projects"]')).toBeVisible();
 	await expect(createPopover.getByRole('link', { name: /Controlled document/ })).toBeVisible();
@@ -125,6 +151,7 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 		'/assets',
 		'/schedule',
 		'/time',
+		'/finance',
 		'/finance/invoices',
 		'/finance/payments',
 		'/finance/receivables',

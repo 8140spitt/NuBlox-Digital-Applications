@@ -9,6 +9,24 @@
 	let searchQuery = $state('');
 	let pathname = $derived(page.url.pathname);
 
+	function resolveBusinessContext(): AppNavigationSection | null {
+		if (data.projectContext) return null;
+		const sectionId =
+			pathname.startsWith('/crm') ||
+			pathname.startsWith('/commercial/estimates') ||
+			pathname.startsWith('/commercial/quotations') ||
+			pathname.startsWith('/contracts')
+				? 'relationships'
+				: pathname === '/finance' || pathname.startsWith('/finance/')
+					? 'finance'
+					: null;
+		return sectionId
+			? (data.workspaceDirectory.find((section) => section.id === sectionId) ?? null)
+			: null;
+	}
+
+	let businessContext = $derived(resolveBusinessContext());
+
 	function pathFromHref(href: string): string {
 		return href.split(/[?#]/, 1)[0] ?? href;
 	}
@@ -19,6 +37,30 @@
 			return pathname === hrefPath;
 		}
 		return pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
+	}
+
+	function isPrimaryActive(item: AppNavigationItem): boolean {
+		if (item.id === 'projects' && data.projectContext) return true;
+		if (item.id === 'customers' && businessContext?.id === 'relationships') return true;
+		if (item.id === 'finance' && businessContext?.id === 'finance') return true;
+		return isActive(item.href);
+	}
+
+	function isBusinessActive(item: AppNavigationItem): boolean {
+		if (!businessContext) return false;
+		const matches = businessContext.items
+			.filter((candidate) => {
+				const candidatePath = pathFromHref(candidate.href);
+				return pathname === candidatePath || pathname.startsWith(`${candidatePath}/`);
+			})
+			.sort((a, b) => pathFromHref(b.href).length - pathFromHref(a.href).length);
+		return matches[0]?.id === item.id;
+	}
+
+	function isProjectActive(item: { id: string; href: string }): boolean {
+		if (item.id === 'team') return isActive(item.href) && page.url.hash === '#team';
+		if (item.id === 'overview') return isActive(item.href) && page.url.hash !== '#team';
+		return isActive(item.href);
 	}
 
 	function workspaceItems(sections: AppNavigationSection[]): AppNavigationItem[] {
@@ -68,9 +110,9 @@
 							{#each section.items as item (item.id)}
 								<a
 									class="nav-link"
-									class:active={isActive(item.href)}
+									class:active={isPrimaryActive(item)}
 									href={item.href}
-									aria-current={isActive(item.href) ? 'page' : undefined}
+									aria-current={isPrimaryActive(item) ? 'page' : undefined}
 								>
 									{item.label}
 								</a>
@@ -174,10 +216,22 @@
 				</div>
 				<nav class="project-nav" aria-label="Project workspace">
 					{#each data.projectContext.links as item (item.id)}
-						<a class:active={isActive(item.href)} href={item.href}>{item.label}</a>
+						<a class:active={isProjectActive(item)} href={item.href}>{item.label}</a>
 					{/each}
 				</nav>
 				<a class="exit-context" href="/projects">All projects</a>
+			</section>
+		{:else if businessContext}
+			<section class="business-context" aria-labelledby="business-context-heading">
+				<div class="business-identity">
+					<span class="context-label">Business workspace</span>
+					<strong id="business-context-heading">{businessContext.label}</strong>
+				</div>
+				<nav class="business-nav" aria-label="Business workspace">
+					{#each businessContext.items as item (item.id)}
+						<a class:active={isBusinessActive(item)} href={item.href}>{item.label}</a>
+					{/each}
+				</nav>
 			</section>
 		{/if}
 
@@ -572,7 +626,8 @@
 		background: var(--nb-surface-muted);
 	}
 
-	.project-context {
+	.project-context,
+	.business-context {
 		display: grid;
 		grid-template-columns: minmax(13rem, 0.75fr) minmax(0, 2fr) auto;
 		align-items: center;
@@ -585,10 +640,19 @@
 		z-index: 20;
 	}
 
-	.project-identity {
+	.project-identity,
+	.business-identity {
 		min-width: 0;
 		display: grid;
 		gap: 0.3rem;
+	}
+
+	.business-context {
+		grid-template-columns: minmax(11rem, 0.45fr) minmax(0, 2fr);
+	}
+
+	.business-identity strong {
+		font-size: 0.86rem;
 	}
 
 	.project-title-line {
@@ -616,7 +680,8 @@
 		text-transform: capitalize;
 	}
 
-	.project-nav {
+	.project-nav,
+	.business-nav {
 		display: flex;
 		align-items: center;
 		gap: 0.2rem;
@@ -625,7 +690,8 @@
 		padding: 0.15rem;
 	}
 
-	.project-nav a {
+	.project-nav a,
+	.business-nav a {
 		flex: 0 0 auto;
 		padding: 0.5rem 0.62rem;
 		border-radius: var(--nb-radius-sm);
@@ -637,12 +703,16 @@
 
 	.project-nav a:hover,
 	.project-nav a:focus-visible,
-	.project-nav a.active {
+	.project-nav a.active,
+	.business-nav a:hover,
+	.business-nav a:focus-visible,
+	.business-nav a.active {
 		background: var(--nb-surface-muted);
 		color: var(--nb-text);
 	}
 
-	.project-nav a.active {
+	.project-nav a.active,
+	.business-nav a.active {
 		box-shadow: inset 0 -2px 0 var(--nb-blue);
 	}
 
@@ -663,11 +733,13 @@
 			grid-row: 2;
 		}
 
-		.project-context {
+		.project-context,
+		.business-context {
 			grid-template-columns: minmax(12rem, 1fr) auto;
 		}
 
-		.project-nav {
+		.project-nav,
+		.business-nav {
 			grid-column: 1 / -1;
 			grid-row: 2;
 		}
@@ -759,14 +831,16 @@
 			display: none;
 		}
 
-		.project-context {
+		.project-context,
+		.business-context {
 			position: static;
 			display: grid;
 			grid-template-columns: 1fr auto;
 			padding: 0.75rem 1rem;
 		}
 
-		.project-nav {
+		.project-nav,
+		.business-nav {
 			grid-column: 1 / -1;
 			grid-row: 2;
 		}
