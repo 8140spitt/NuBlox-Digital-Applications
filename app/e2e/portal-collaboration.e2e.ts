@@ -38,7 +38,9 @@ test('owner explicitly shares controlled work and partner completes it through t
 	expect(projectPublicId).toBeTruthy();
 	await projectSelect.selectOption(projectPublicId!);
 	await expect(page).toHaveURL(new RegExp(`/portal/manage\\?project=${projectPublicId}$`));
-	await expect(page.getByText(PARTNER_ORGANISATION, { exact: true })).toBeVisible();
+	await expect(
+		page.getByLabel('Who you can share with').getByText(PARTNER_ORGANISATION, { exact: true })
+	).toBeVisible();
 
 	const rfiCard = page.locator('.share-card').filter({ hasText: 'Assign an RFI' });
 	await rfiCard.getByLabel('RFI').selectOption({ label: new RegExp(RFI_NUMBER) });
