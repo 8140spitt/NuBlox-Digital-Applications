@@ -18,6 +18,7 @@ import {
 	InvitationAccessError,
 	OrganisationInvitationService
 } from '$lib/server/organisations/invitation-service';
+import { ensurePortalCollaborationStandardRoleDefaults } from '$lib/server/portal/portal-collaboration-bootstrap';
 import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';
 import { ensureSiteQualitySafetyStandardRoleDefaults } from '$lib/server/site/site-quality-safety-bootstrap';
 import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
@@ -179,7 +180,8 @@ export const auth = betterAuth({
 							ensureInformationStandardRoleDefaults(db, created.organisationId),
 							ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId),
 							ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId),
-							ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId)
+							ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId),
+							ensurePortalCollaborationStandardRoleDefaults(db, created.organisationId)
 						]);
 					}
 				}

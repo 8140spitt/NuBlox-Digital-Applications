@@ -11,6 +11,7 @@ import {
 	OrganisationBootstrapService,
 	OrganisationBootstrapValidationError
 } from '$lib/server/organisations/bootstrap-service';
+import { ensurePortalCollaborationStandardRoleDefaults } from '$lib/server/portal/portal-collaboration-bootstrap';
 import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';
 import { ensureSiteQualitySafetyStandardRoleDefaults } from '$lib/server/site/site-quality-safety-bootstrap';
 import { ORGANISATION_COOKIE } from '$lib/server/request-context';
@@ -54,7 +55,8 @@ export const actions: Actions = {
 				ensureInformationStandardRoleDefaults(db, created.organisationId),
 				ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId),
 				ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId),
-				ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId)
+				ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId),
+				ensurePortalCollaborationStandardRoleDefaults(db, created.organisationId)
 			]);
 
 			cookies.set(ORGANISATION_COOKIE, created.organisationPublicId, {

@@ -51,6 +51,7 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(
 		primaryNavigation.getByRole('link', { name: 'Assets / Facilities', exact: true })
 	).toBeVisible();
+	await expect(primaryNavigation.getByRole('link', { name: 'Portal', exact: true })).toBeVisible();
 	await expect(primaryNavigation.getByRole('link', { name: 'Finance', exact: true })).toBeVisible();
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Notifications' })).toBeDisabled();
@@ -176,4 +177,7 @@ test('read-only member can view workspaces without receiving mutation controls',
 	await expect(page.getByRole('heading', { name: 'Accounting periods', level: 1 })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create financial year' })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Soft close' })).toHaveCount(0);
+	await page.goto('/portal');
+	await expect(page.getByRole('heading', { name: 'Shared work' })).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Manage sharing' })).toHaveCount(0);
 });
