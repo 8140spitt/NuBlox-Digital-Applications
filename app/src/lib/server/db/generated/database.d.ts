@@ -1977,6 +1977,7 @@ export interface PartyOrganisationContacts {
 export interface PartyOrganisations {
   created_at: Generated<Date>;
   legal_name: string;
+  linked_organisation_id: string | null;
   organisation_id: string;
   party_id: string;
   trading_name: string | null;

@@ -26,6 +26,7 @@ let memberBManagerPublicId = '';
 let memberBTeammatePublicId = '';
 let memberCPublicId = '';
 let organisationBPublicId = '';
+let crmOrganisationBPublicId = '';
 let actorA: TenantActorContext;
 let actorBManager: TenantActorContext;
 let actorBTeammate: TenantActorContext;
@@ -64,6 +65,11 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length > 0) {
+		await db
+			.deleteFrom('party_organisations')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db.deleteFrom('parties').where('organisation_id', 'in', organisationIds).execute();
 		await db
 			.deleteFrom('audit_events')
 			.where('acting_organisation_id', 'in', organisationIds)
@@ -209,8 +215,33 @@ beforeAll(async () => {
 	await assignPermissionRole(organisationAId, memberAId, 'Owner', [
 		'project.create',
 		'project.view',
-		'project.manage'
+		'project.manage',
+		'crm.view'
 	]);
+
+	crmOrganisationBPublicId = randomUUID();
+	const crmOrganisationBPartyId = insertedId(
+		await db
+			.insertInto('parties')
+			.values({
+				organisation_id: organisationAId,
+				public_id: crmOrganisationBPublicId,
+				party_kind: 'organisation',
+				account_owner_member_id: memberAId,
+				status: 'active'
+			})
+			.executeTakeFirstOrThrow()
+	);
+	await db
+		.insertInto('party_organisations')
+		.values({
+			party_id: crmOrganisationBPartyId,
+			organisation_id: organisationAId,
+			legal_name: `${PREFIX}Organisation B CRM`,
+			trading_name: null,
+			linked_organisation_id: organisationBId
+		})
+		.executeTakeFirstOrThrow();
 	await assignPermissionRole(organisationBId, memberBManagerId, 'External Manager', [
 		'project.view',
 		'project.manage'
@@ -253,11 +284,19 @@ afterAll(async () => {
 });
 
 describe('project participant and team administration', () => {
-	it('invites an organisation by exact public ID without granting project scope before acceptance', async () => {
+	it('invites a linked CRM organisation without granting project scope before acceptance', async () => {
 		const service = new ProjectTeamService(db);
-		await service.inviteParticipant(actorA, {
+		const team = await service.getTeamView(actorA, projectPublicId);
+		expect(team.invitationCandidates).toContainEqual(
+			expect.objectContaining({
+				partyPublicId: crmOrganisationBPublicId,
+				linkedOrganisationPublicId: organisationBPublicId,
+				linkedOrganisationStatus: 'active'
+			})
+		);
+		await service.inviteCrmParticipant(actorA, {
 			projectPublicId,
-			organisationPublicId: organisationBPublicId,
+			crmPartyPublicId: crmOrganisationBPublicId,
 			roleKeys: ['main_contractor']
 		});
 

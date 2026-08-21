@@ -68,7 +68,7 @@ const primaryNavigationSections: readonly AppNavigationSection[] = [
 			{
 				id: 'finance',
 				label: 'Finance',
-				href: '/finance/invoices',
+				href: '/finance',
 				anyPermissionNamespaces: ['finance.']
 			},
 			{
@@ -322,15 +322,22 @@ const workspaceDirectorySections: readonly AppNavigationSection[] = [
 const quickActions: readonly AppQuickAction[] = [
 	{
 		id: 'new-crm-record',
-		label: 'CRM record',
-		href: '/crm',
+		label: 'Customer / contact',
+		href: '/crm#new-party',
 		description: 'Create an organisation or person record.',
 		anyPermissions: ['crm.party.manage', 'crm.manage']
 	},
 	{
+		id: 'new-opportunity',
+		label: 'Opportunity',
+		href: '/crm/opportunities#new-opportunity',
+		description: 'Capture prospective work against a customer.',
+		anyPermissions: ['crm.opportunity.manage', 'crm.manage']
+	},
+	{
 		id: 'new-estimate',
 		label: 'Estimate',
-		href: '/commercial/estimates',
+		href: '/commercial/estimates#new-estimate',
 		description: 'Start a new commercial estimate.',
 		anyPermissions: ['commercial.estimate.manage', 'commercial.manage']
 	},
@@ -522,24 +529,33 @@ export function resolveProjectContextNavigation(
 ): ProjectContextNavigationItem[] {
 	const allowed = new Set(allowedPermissionKeys);
 	const query = `?project=${encodeURIComponent(projectPublicId)}`;
+	const projectHref = `/projects/${encodeURIComponent(projectPublicId)}${query}`;
 	const links: ProjectContextNavigationItem[] = [
-		{
-			id: 'overview',
-			label: 'Overview',
-			href: `/projects/${encodeURIComponent(projectPublicId)}${query}`
-		}
+		{ id: 'overview', label: 'Overview', href: projectHref },
+		{ id: 'team', label: 'Team', href: `${projectHref}#team` }
 	];
 	if (hasAnyNamespace(allowed, ['information.']))
 		links.push({ id: 'documents', label: 'Documents', href: `/documents${query}` });
 	if (hasAnyNamespace(allowed, ['procurement.']))
 		links.push({ id: 'procurement', label: 'Procurement', href: `/purchasing${query}` });
-	if (hasAnyNamespace(allowed, ['commercial.'])) {
-		links.push({ id: 'commercial', label: 'Commercial', href: `/commercial/cost-control${query}` });
-	}
+	if (
+		allowed.has('commercial.manage') ||
+		hasAnyNamespace(allowed, [
+			'commercial.cost_control.',
+			'commercial.cost_code.',
+			'commercial.budget.',
+			'commercial.variation.'
+		])
+	)
+		links.push({ id: 'costs', label: 'Costs', href: `/commercial/cost-control${query}` });
+	if (allowed.has('commercial.manage') || hasAnyNamespace(allowed, ['commercial.valuation.']))
+		links.push({ id: 'valuations', label: 'Valuations', href: `/commercial/valuations${query}` });
 	if (hasAnyNamespace(allowed, ['site.', 'quality.', 'safety.']))
 		links.push({ id: 'site', label: 'Site', href: `/site${query}` });
-	if (hasAnyNamespace(allowed, ['schedule.', 'timesheet.']))
+	if (hasAnyNamespace(allowed, ['schedule.']))
 		links.push({ id: 'schedule', label: 'Schedule', href: `/schedule${query}` });
+	if (hasAnyNamespace(allowed, ['timesheet.']))
+		links.push({ id: 'time', label: 'Time', href: `/time${query}` });
 	if (hasAnyNamespace(allowed, ['assets.', 'facilities.', 'maintenance.', 'compliance.']))
 		links.push({ id: 'assets', label: 'Assets', href: `/assets${query}` });
 	if (allowed.has('portal.view')) {

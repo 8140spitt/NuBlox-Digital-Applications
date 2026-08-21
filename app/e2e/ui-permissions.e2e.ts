@@ -54,8 +54,10 @@ test('read-only member can navigate context-first workspaces without receiving m
 	await expect(page.getByRole('link', { name: /Valuations/ })).toHaveCount(0);
 
 	await page.goto('/crm');
-	await expect(page.getByRole('heading', { name: 'CRM', exact: true, level: 1 })).toBeVisible();
-	await expect(page.getByRole('button', { name: 'Create CRM record' })).toHaveCount(0);
+	await expect(
+		page.getByRole('heading', { name: 'Customers & contacts', exact: true, level: 1 })
+	).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Add customer or contact' })).toHaveCount(0);
 
 	await page.goto('/commercial/estimates');
 	await expect(

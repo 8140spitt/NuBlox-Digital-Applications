@@ -174,31 +174,53 @@
 			<form method="POST" action="?/inviteParticipant" class="invite-form">
 				<h3>Invite organisation</h3>
 				<p class="hint">
-					Use the organisation's exact NuBlox public ID. NuBlox does not expose an unrestricted
-					organisation directory here.
+					Select an organisation from Customers. Linked NuBlox accounts can be invited without
+					copying platform IDs into the project.
 				</p>
-				<label>
-					<span>Organisation ID</span>
-					<input
-						name="organisationPublicId"
-						required
-						maxlength="64"
-						placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-					/>
-				</label>
-				<label>
-					<span>Project roles</span>
-					<select name="roleKeys" multiple size="6" required>
-						{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option
-							>{/each}
-					</select>
-				</label>
-				<button type="submit">Send project invitation</button>
+				{#if data.team.invitationCandidates.length === 0}
+					<p class="hint">
+						No active CRM organisations are available.
+						<a href="/crm?kind=organisation&status=active">Open Customers</a> to maintain them.
+					</p>
+				{:else}
+					<label>
+						<span>Organisation</span>
+						<select name="crmPartyPublicId" required>
+							<option value="">Select CRM organisation</option>
+							{#each data.team.invitationCandidates as candidate}
+								<option
+									value={candidate.partyPublicId}
+									disabled={!candidate.linkedOrganisationId ||
+										candidate.linkedOrganisationStatus !== 'active'}
+								>
+									{candidate.displayName} · {candidate.linkedOrganisationStatus === 'active'
+										? (candidate.linkedOrganisationName ?? 'Linked NuBlox organisation')
+										: candidate.linkedOrganisationId
+											? 'NuBlox account unavailable'
+											: 'Not linked to NuBlox'}
+								</option>
+							{/each}
+						</select>
+					</label>
+					<label>
+						<span>Project roles</span>
+						<select name="roleKeys" multiple size="6" required>
+							{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option
+								>{/each}
+						</select>
+					</label>
+					<button
+						type="submit"
+						disabled={!data.team.invitationCandidates.some(
+							(candidate) => candidate.linkedOrganisationStatus === 'active'
+						)}>Send project invitation</button
+					>
+				{/if}
 			</form>
 		{/if}
 	</section>
 
-	<section class="panel team">
+	<section id="team" class="panel team">
 		<div class="panel-heading">
 			<div>
 				<p class="eyebrow">Team</p>
