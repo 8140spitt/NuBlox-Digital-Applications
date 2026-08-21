@@ -103,7 +103,7 @@ test('owner explicitly shares controlled work and partner completes it through t
 	await partnerSubmittalCard.getByText('Review submittal', { exact: true }).click();
 	await partnerSubmittalCard.getByLabel('Outcome').selectOption('approved_with_comments');
 	await partnerSubmittalCard
-		.getByLabel('Comments')
+		.getByRole('textbox', { name: 'Comments optional' })
 		.fill('Coordinate sleeve position before construction release.');
 	await partnerSubmittalCard.getByRole('button', { name: 'Submit review' }).click();
 	await expect(page.locator('.work-card').filter({ hasText: SUBMITTAL_NUMBER })).toHaveCount(0);
