@@ -1,0 +1,49 @@
+name: Contextual Workspaces Lint Fix
+
+on:
+  push:
+    branches:
+      - product/v1-contextual-workspaces
+    paths:
+      - '.github/workflows/contextual-workspaces-lint-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: product/v1-contextual-workspaces
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Replace non-reactive Set usage
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/routes/(app)/+layout.svelte')
+          text = path.read_text()
+          text = text.replace('const seenHrefs = new Set<string>();', 'const seenHrefs: string[] = [];')
+          text = text.replace('if (seenHrefs.has(item.href)) continue;\n\t\t\t\tseenHrefs.add(item.href);', 'if (seenHrefs.includes(item.href)) continue;\n\t\t\t\tseenHrefs.push(item.href);')
+          path.write_text(text)
+          PY
+      - name: Install and format
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write 'src/routes/(app)/+layout.svelte'
+      - name: Commit lint fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'app/src/routes/(app)/+layout.svelte'
+          git commit -m "Fix contextual workspace Svelte lint" || exit 0
+          git push origin HEAD:product/v1-contextual-workspaces
