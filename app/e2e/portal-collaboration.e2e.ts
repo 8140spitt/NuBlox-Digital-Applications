@@ -24,7 +24,11 @@ async function signIn(page: Page, email: string, password: string, organisation:
 }
 
 async function selectOptionContaining(select: Locator, text: string) {
-	const optionValue = await select.locator('option').filter({ hasText: text }).first().getAttribute('value');
+	const optionValue = await select
+		.locator('option')
+		.filter({ hasText: text })
+		.first()
+		.getAttribute('value');
 	expect(optionValue).toBeTruthy();
 	await select.selectOption(optionValue!);
 }
