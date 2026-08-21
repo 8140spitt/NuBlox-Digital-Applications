@@ -19,7 +19,7 @@ The persistent project context separates Team, Costs, Valuations, Schedule and T
 
 A private CRM organisation can optionally link to one active NuBlox platform organisation through an explicit foreign key. The link is not inferred from legal or trading names and does not create a platform-wide organisation directory.
 
-Project invitation forms now select tenant CRM organisations. Only CRM organisations with an explicit active NuBlox link can be submitted. The server resolves the CRM record within the actor tenant and then calls the existing controlled project-participant invitation service with the linked platform identity.
+The explicit NuBlox account link is maintained from the CRM organisation record. Project invitation forms then select tenant CRM organisations; only CRM organisations with an explicit active NuBlox link can be submitted. The server resolves the CRM record within the actor tenant and calls the existing controlled project-participant invitation service with the linked platform identity.
 
 Security invariants remain unchanged:
 
