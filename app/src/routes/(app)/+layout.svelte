@@ -9,21 +9,26 @@
 	let searchQuery = $state('');
 	let pathname = $derived(page.url.pathname);
 
+	function pathFromHref(href: string): string {
+		return href.split(/[?#]/, 1)[0] ?? href;
+	}
+
 	function isActive(href: string): boolean {
-		if (href === '/dashboard') return pathname === href;
-		return pathname === href || pathname.startsWith(`${href}/`);
+		const hrefPath = pathFromHref(href);
+		if (hrefPath === '/dashboard' || hrefPath === '/my-work' || hrefPath === '/more') {
+			return pathname === hrefPath;
+		}
+		return pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
 	}
 
 	function workspaceItems(sections: AppNavigationSection[]): AppNavigationItem[] {
 		const items: AppNavigationItem[] = [];
-		const seenHrefs: string[] = [];
+		const seenHrefs = new Set<string>();
 		for (const section of sections) {
 			for (const item of section.items) {
-				for (const candidate of [item, ...(item.children ?? [])]) {
-					if (seenHrefs.includes(candidate.href)) continue;
-					seenHrefs.push(candidate.href);
-					items.push(candidate);
-				}
+				if (seenHrefs.has(item.href)) continue;
+				seenHrefs.add(item.href);
+				items.push(item);
 			}
 		}
 		return items;
@@ -31,9 +36,13 @@
 
 	function searchResults(): AppNavigationItem[] {
 		const query = searchQuery.trim().toLocaleLowerCase();
-		const items = workspaceItems(data.navigation);
-		if (!query) return items.slice(0, 8);
-		return items.filter((item) => item.label.toLocaleLowerCase().includes(query)).slice(0, 8);
+		const items = workspaceItems([...data.navigation, ...data.workspaceDirectory]);
+		if (!query) return items.slice(0, 9);
+		return items
+			.filter((item) =>
+				`${item.label} ${item.description ?? ''}`.toLocaleLowerCase().includes(query)
+			)
+			.slice(0, 9);
 	}
 
 	async function signOut() {
@@ -65,20 +74,6 @@
 								>
 									{item.label}
 								</a>
-								{#if item.children?.length}
-									<div class="nav-children">
-										{#each item.children as child (child.id)}
-											<a
-												class="nav-child"
-												class:active={isActive(child.href)}
-												href={child.href}
-												aria-current={isActive(child.href) ? 'page' : undefined}
-											>
-												{child.label}
-											</a>
-										{/each}
-									</div>
-								{/if}
 							{/each}
 						</div>
 					</section>
@@ -86,102 +81,118 @@
 			</nav>
 		</details>
 
-		<div class="sidebar-footer" aria-hidden="true">
-			<span>Built Environment OS</span>
-			<small>V1 platform foundation</small>
+		<div class="sidebar-footer">
+			<strong>Stay in context</strong>
+			<span>Open a project once, then move between its workstreams without leaving it behind.</span>
 		</div>
 	</aside>
 
-	<header class="topbar">
-		<div class="organisation-context">
-			<span class="context-label">Organisation</span>
-			<strong>{data.organisation.name}</strong>
-			<a href="/select-organisation">Switch</a>
-		</div>
+	<div class="workspace-stage">
+		<header class="topbar">
+			<div class="organisation-context">
+				<span class="context-label">Organisation</span>
+				<strong>{data.organisation.name}</strong>
+				<a href="/select-organisation">Switch</a>
+			</div>
 
-		<div class="shell-tools" aria-label="Workspace tools">
-			<details class="tool-menu search-menu">
-				<summary>Search</summary>
-				<div class="tool-popover search-popover">
-					<label for="workspace-search">Find a workspace</label>
-					<input
-						id="workspace-search"
-						type="search"
-						placeholder="CRM, invoices, projects…"
-						bind:value={searchQuery}
-					/>
-					<div class="search-results" aria-live="polite">
-						{#each searchResults() as item (item.id)}
-							<a href={item.href}>
-								<strong>{item.label}</strong>
-								<small>{item.href}</small>
-							</a>
-						{:else}
-							<p>No matching workspaces.</p>
-						{/each}
-					</div>
-				</div>
-			</details>
-
-			{#if data.quickActions.length}
-				<details class="tool-menu create-menu">
-					<summary class="primary-tool">Create</summary>
-					<div class="tool-popover create-popover">
-						<p class="popover-title">Create new</p>
-						{#each data.quickActions as action (action.id)}
-							<a href={action.href}>
-								<strong>{action.label}</strong>
-								<small>{action.description}</small>
-							</a>
-						{/each}
+			<div class="shell-tools" aria-label="Workspace tools">
+				<details class="tool-menu search-menu">
+					<summary>Search</summary>
+					<div class="tool-popover search-popover">
+						<label for="workspace-search">Find a workspace</label>
+						<input
+							id="workspace-search"
+							type="search"
+							placeholder="Projects, documents, valuations…"
+							bind:value={searchQuery}
+						/>
+						<div class="search-results" aria-live="polite">
+							{#each searchResults() as item (item.id)}
+								<a href={item.href}>
+									<strong>{item.label}</strong>
+									<small>{item.description ?? item.href}</small>
+								</a>
+							{:else}
+								<p>No matching workspaces.</p>
+							{/each}
+						</div>
 					</div>
 				</details>
-			{/if}
 
-			<button
-				class="tool-button reserved-tool"
-				type="button"
-				disabled
-				title="The notification centre will activate with the shared notification slice."
-			>
-				Notifications
-			</button>
-		</div>
+				{#if data.quickActions.length}
+					<details class="tool-menu create-menu">
+						<summary class="primary-tool">Create</summary>
+						<div class="tool-popover create-popover">
+							<p class="popover-title">Create new</p>
+							{#each data.quickActions as action (action.id)}
+								<a href={action.href}>
+									<strong>{action.label}</strong>
+									<small>{action.description}</small>
+								</a>
+							{/each}
+						</div>
+					</details>
+				{/if}
 
-		<details class="account-menu">
-			<summary>
-				<span class="avatar" aria-hidden="true"
-					>{data.actor.displayName.slice(0, 1).toUpperCase()}</span
+				<button
+					class="tool-button reserved-tool"
+					type="button"
+					disabled
+					title="The notification centre will activate with the shared notification slice."
 				>
-				<span class="account-summary">
-					<strong>{data.actor.displayName}</strong>
-					<small>{data.actor.email}</small>
-				</span>
-			</summary>
-			<div class="account-popover">
-				<a href="/organisation">Organisation settings</a>
-				<button type="button" onclick={signOut}>Sign out</button>
+					Notifications
+				</button>
 			</div>
-		</details>
-	</header>
 
-	<main class="content">
-		{@render children()}
-	</main>
+			<details class="account-menu">
+				<summary>
+					<span class="avatar" aria-hidden="true">{data.actor.displayName.slice(0, 1).toUpperCase()}</span>
+					<span class="account-summary">
+						<strong>{data.actor.displayName}</strong>
+						<small>{data.actor.email}</small>
+					</span>
+				</summary>
+				<div class="account-popover">
+					<a href="/organisation">Organisation settings</a>
+					<button type="button" onclick={signOut}>Sign out</button>
+				</div>
+			</details>
+		</header>
+
+		{#if data.projectContext}
+			<section class="project-context" aria-labelledby="project-context-heading">
+				<div class="project-identity">
+					<span class="context-label">Current project</span>
+					<div class="project-title-line">
+						<strong id="project-context-heading">{data.projectContext.projectNumber} · {data.projectContext.name}</strong>
+						<span class="project-status">{data.projectContext.status.replace('_', ' ')}</span>
+					</div>
+				</div>
+				<nav class="project-nav" aria-label="Project workspace">
+					{#each data.projectContext.links as item (item.id)}
+						<a class:active={isActive(item.href)} href={item.href}>{item.label}</a>
+					{/each}
+				</nav>
+				<a class="exit-context" href="/projects">All projects</a>
+			</section>
+		{/if}
+
+		<main class="content">
+			{@render children()}
+		</main>
+	</div>
 </div>
 
 <style>
 	.app-shell {
 		min-height: 100vh;
 		display: grid;
-		grid-template-columns: 17rem minmax(0, 1fr);
-		grid-template-rows: 4.5rem minmax(0, 1fr);
+		grid-template-columns: 15.5rem minmax(0, 1fr);
 		background: var(--nb-cloud);
 		color: var(--nb-text);
 	}
 
 	.sidebar {
-		grid-row: 1 / -1;
 		min-width: 0;
 		height: 100vh;
 		position: sticky;
@@ -221,115 +232,94 @@
 
 	.navigation nav {
 		display: grid;
-		gap: 1.15rem;
-	}
-
-	.nav-section {
-		min-width: 0;
+		gap: 1.1rem;
 	}
 
 	.nav-heading {
 		margin: 0 0 0.35rem;
 		padding: 0 0.7rem;
-		color: rgb(255 255 255 / 0.5);
-		font-size: 0.69rem;
+		color: rgb(255 255 255 / 0.48);
+		font-size: 0.67rem;
 		font-weight: 800;
 		letter-spacing: 0.11em;
 		text-transform: uppercase;
 	}
 
-	.nav-items,
-	.nav-children {
+	.nav-items {
 		display: grid;
-		gap: 0.2rem;
-	}
-
-	.nav-link,
-	.nav-child {
-		min-width: 0;
-		border-radius: var(--nb-radius-sm);
-		text-decoration: none;
-		transition:
-			background 120ms ease,
-			color 120ms ease;
+		gap: 0.18rem;
 	}
 
 	.nav-link {
-		padding: 0.62rem 0.7rem;
-		color: rgb(255 255 255 / 0.88);
+		min-width: 0;
+		padding: 0.68rem 0.72rem;
+		border-radius: var(--nb-radius-sm);
+		color: rgb(255 255 255 / 0.86);
 		font-size: 0.91rem;
-		font-weight: 720;
-	}
-
-	.nav-child {
-		margin-left: 0.8rem;
-		padding: 0.45rem 0.7rem;
-		color: rgb(255 255 255 / 0.6);
-		font-size: 0.82rem;
-		font-weight: 600;
+		font-weight: 700;
+		text-decoration: none;
+		transition: background 120ms ease, color 120ms ease;
 	}
 
 	.nav-link:hover,
-	.nav-link:focus-visible,
-	.nav-child:hover,
-	.nav-child:focus-visible {
+	.nav-link:focus-visible {
 		background: rgb(255 255 255 / 0.08);
 		color: white;
 	}
 
-	.nav-link.active,
-	.nav-child.active {
-		background: rgb(20 110 245 / 0.19);
+	.nav-link.active {
+		background: rgb(20 110 245 / 0.18);
 		color: white;
 		box-shadow: inset 3px 0 0 var(--nb-cyan);
 	}
 
-	.nav-children {
-		margin-top: 0.15rem;
-	}
-
 	.sidebar-footer {
 		display: grid;
-		gap: 0.2rem;
+		gap: 0.3rem;
 		padding: 1rem 1.25rem 1.2rem;
 		border-top: 1px solid rgb(255 255 255 / 0.1);
-		color: rgb(255 255 255 / 0.72);
-		font-size: 0.76rem;
-		font-weight: 700;
+		color: rgb(255 255 255 / 0.56);
+		font-size: 0.72rem;
+		line-height: 1.45;
 	}
 
-	.sidebar-footer small {
-		color: rgb(255 255 255 / 0.42);
-		font-size: 0.7rem;
-		font-weight: 550;
+	.sidebar-footer strong {
+		color: rgb(255 255 255 / 0.82);
+		font-size: 0.74rem;
+	}
+
+	.workspace-stage {
+		min-width: 0;
 	}
 
 	.topbar {
-		grid-column: 2;
 		min-width: 0;
 		display: grid;
 		grid-template-columns: minmax(12rem, 1fr) auto auto;
 		align-items: center;
 		gap: 1rem;
+		min-height: 4.5rem;
 		padding: 0.65rem 1.5rem;
 		border-bottom: 1px solid var(--nb-border);
-		background: rgb(255 255 255 / 0.96);
+		background: rgb(255 255 255 / 0.97);
 		box-shadow: 0 1px 0 rgb(7 24 46 / 0.02);
-		z-index: 20;
+		position: sticky;
+		top: 0;
+		z-index: 30;
 	}
 
 	.organisation-context {
 		min-width: 0;
 		display: grid;
-		grid-template-columns: auto minmax(0, max-content) auto;
+		grid-template-columns: minmax(0, max-content) auto;
 		align-items: center;
-		gap: 0.45rem 0.65rem;
+		gap: 0.3rem 0.65rem;
 	}
 
 	.context-label {
 		grid-column: 1 / -1;
 		color: var(--nb-text-muted);
-		font-size: 0.68rem;
+		font-size: 0.66rem;
 		font-weight: 800;
 		letter-spacing: 0.09em;
 		line-height: 1;
@@ -341,18 +331,21 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
-		font-size: 0.92rem;
+		font-size: 0.9rem;
 	}
 
-	.organisation-context a {
+	.organisation-context a,
+	.exit-context {
 		color: var(--nb-blue);
-		font-size: 0.79rem;
+		font-size: 0.78rem;
 		font-weight: 700;
 		text-decoration: none;
 	}
 
 	.organisation-context a:hover,
-	.organisation-context a:focus-visible {
+	.organisation-context a:focus-visible,
+	.exit-context:hover,
+	.exit-context:focus-visible {
 		text-decoration: underline;
 	}
 
@@ -406,12 +399,6 @@
 		color: white;
 	}
 
-	.tool-menu > summary.primary-tool:hover,
-	.tool-menu > summary.primary-tool:focus-visible {
-		border-color: #0b5cda;
-		background: #0b5cda;
-	}
-
 	.reserved-tool {
 		color: var(--nb-text-muted);
 		opacity: 0.7;
@@ -423,7 +410,7 @@
 		position: absolute;
 		top: calc(100% + 0.55rem);
 		right: 0;
-		z-index: 50;
+		z-index: 60;
 		border: 1px solid var(--nb-border);
 		border-radius: var(--nb-radius-md);
 		background: var(--nb-white);
@@ -431,7 +418,7 @@
 	}
 
 	.search-popover {
-		width: min(24rem, calc(100vw - 2rem));
+		width: min(25rem, calc(100vw - 2rem));
 		padding: 0.9rem;
 	}
 
@@ -459,6 +446,8 @@
 		display: grid;
 		gap: 0.2rem;
 		margin-top: 0.55rem;
+		max-height: 28rem;
+		overflow-y: auto;
 	}
 
 	.search-results a,
@@ -494,6 +483,8 @@
 	.create-popover {
 		width: min(19rem, calc(100vw - 2rem));
 		padding: 0.65rem;
+		max-height: min(70vh, 34rem);
+		overflow-y: auto;
 	}
 
 	.popover-title {
@@ -575,14 +566,87 @@
 		background: var(--nb-surface-muted);
 	}
 
+	.project-context {
+		display: grid;
+		grid-template-columns: minmax(13rem, 0.75fr) minmax(0, 2fr) auto;
+		align-items: center;
+		gap: 1rem;
+		padding: 0.8rem 1.5rem;
+		border-bottom: 1px solid var(--nb-border);
+		background: var(--nb-white);
+		position: sticky;
+		top: 4.5rem;
+		z-index: 20;
+	}
+
+	.project-identity {
+		min-width: 0;
+		display: grid;
+		gap: 0.3rem;
+	}
+
+	.project-title-line {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		min-width: 0;
+	}
+
+	.project-title-line strong {
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		font-size: 0.86rem;
+	}
+
+	.project-status {
+		flex: 0 0 auto;
+		padding: 0.18rem 0.42rem;
+		border-radius: 999px;
+		background: var(--nb-surface-muted);
+		color: var(--nb-text-muted);
+		font-size: 0.65rem;
+		font-weight: 750;
+		text-transform: capitalize;
+	}
+
+	.project-nav {
+		display: flex;
+		align-items: center;
+		gap: 0.2rem;
+		min-width: 0;
+		overflow-x: auto;
+		padding: 0.15rem;
+	}
+
+	.project-nav a {
+		flex: 0 0 auto;
+		padding: 0.5rem 0.62rem;
+		border-radius: var(--nb-radius-sm);
+		color: var(--nb-text-muted);
+		font-size: 0.75rem;
+		font-weight: 700;
+		text-decoration: none;
+	}
+
+	.project-nav a:hover,
+	.project-nav a:focus-visible,
+	.project-nav a.active {
+		background: var(--nb-surface-muted);
+		color: var(--nb-text);
+	}
+
+	.project-nav a.active {
+		box-shadow: inset 0 -2px 0 var(--nb-blue);
+	}
+
 	.content {
-		grid-column: 2;
 		min-width: 0;
 		width: 100%;
 		padding: clamp(1rem, 2.2vw, 2rem);
 	}
 
-	@media (max-width: 1040px) {
+	@media (max-width: 1100px) {
 		.topbar {
 			grid-template-columns: minmax(10rem, 1fr) auto;
 			gap: 0.7rem;
@@ -593,12 +657,13 @@
 			grid-row: 2;
 		}
 
-		.app-shell {
-			grid-template-rows: auto minmax(0, 1fr);
+		.project-context {
+			grid-template-columns: minmax(12rem, 1fr) auto;
 		}
 
-		.topbar {
-			padding-block: 0.55rem;
+		.project-nav {
+			grid-column: 1 / -1;
+			grid-row: 2;
 		}
 	}
 
@@ -663,6 +728,7 @@
 			flex-wrap: wrap;
 			align-items: center;
 			gap: 0.65rem;
+			min-height: auto;
 			padding: 0.7rem 1rem;
 			position: sticky;
 			top: 0;
@@ -687,13 +753,25 @@
 			display: none;
 		}
 
+		.project-context {
+			position: static;
+			display: grid;
+			grid-template-columns: 1fr auto;
+			padding: 0.75rem 1rem;
+		}
+
+		.project-nav {
+			grid-column: 1 / -1;
+			grid-row: 2;
+		}
+
 		.content {
 			padding: 1rem;
 		}
 	}
 
 	@media (max-width: 480px) {
-		.context-label,
+		.organisation-context .context-label,
 		.organisation-context a {
 			display: none;
 		}
@@ -707,6 +785,11 @@
 			min-height: 2.2rem;
 			padding-inline: 0.65rem;
 			font-size: 0.76rem;
+		}
+
+		.project-title-line {
+			align-items: flex-start;
+			flex-direction: column;
 		}
 	}
 </style>
