@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const OWNER_EMAIL = 'e2e-owner@example.test';
 const OWNER_PASSWORD = 'NuBlox-E2E-Password-2026!';
@@ -23,6 +23,12 @@ async function signIn(page: Page, email: string, password: string, organisation:
 	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 
+async function selectOptionContaining(select: Locator, text: string) {
+	const optionValue = await select.locator('option').filter({ hasText: text }).first().getAttribute('value');
+	expect(optionValue).toBeTruthy();
+	await select.selectOption(optionValue!);
+}
+
 test('owner explicitly shares controlled work and partner completes it through the focused portal', async ({
 	page
 }) => {
@@ -43,28 +49,26 @@ test('owner explicitly shares controlled work and partner completes it through t
 	).toBeVisible();
 
 	const rfiCard = page.locator('.share-card').filter({ hasText: 'Assign an RFI' });
-	await rfiCard.getByLabel('RFI').selectOption({ label: new RegExp(RFI_NUMBER) });
+	await selectOptionContaining(rfiCard.getByLabel('RFI'), RFI_NUMBER);
 	await rfiCard.getByLabel('Organisation').selectOption({ label: PARTNER_ORGANISATION });
 	await rfiCard.getByRole('button', { name: 'Assign RFI' }).click();
 	await expect(page).toHaveURL(new RegExp(`/portal/manage\\?project=${projectPublicId}$`));
 
 	const submittalCard = page.locator('.share-card').filter({ hasText: 'Assign a submittal' });
-	await submittalCard.getByLabel('Submittal').selectOption({ label: new RegExp(SUBMITTAL_NUMBER) });
+	await selectOptionContaining(submittalCard.getByLabel('Submittal'), SUBMITTAL_NUMBER);
 	await submittalCard.getByLabel('Organisation').selectOption({ label: PARTNER_ORGANISATION });
 	await submittalCard.getByLabel('Review due').fill('2026-08-30T17:00');
 	await submittalCard.getByRole('button', { name: 'Assign review' }).click();
 	await expect(page).toHaveURL(new RegExp(`/portal/manage\\?project=${projectPublicId}$`));
 
 	const instructionCard = page.locator('.share-card').filter({ hasText: 'Send an instruction' });
-	await instructionCard
-		.getByLabel('Instruction')
-		.selectOption({ label: new RegExp(INSTRUCTION_NUMBER) });
+	await selectOptionContaining(instructionCard.getByLabel('Instruction'), INSTRUCTION_NUMBER);
 	await instructionCard.getByLabel('Organisation').selectOption({ label: PARTNER_ORGANISATION });
 	await instructionCard.getByRole('button', { name: 'Add recipient' }).click();
 	await expect(page).toHaveURL(new RegExp(`/portal/manage\\?project=${projectPublicId}$`));
 
 	const transmittalCard = page.locator('.share-card').filter({ hasText: 'Issue a revision' });
-	await transmittalCard.getByLabel('Revision').selectOption({ label: new RegExp(DOCUMENT_NUMBER) });
+	await selectOptionContaining(transmittalCard.getByLabel('Revision'), DOCUMENT_NUMBER);
 	await transmittalCard.getByLabel('Organisation').selectOption({ label: PARTNER_ORGANISATION });
 	await transmittalCard.getByLabel('Transmittal number').fill('PORTAL-TR-001');
 	await transmittalCard.getByLabel('Purpose').fill('For construction');
