@@ -4,6 +4,7 @@ import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
+import { enqueueOutboxEvent } from '$lib/server/jobs/outbox';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from './membership-repository';
 import {
@@ -250,6 +251,14 @@ export class OrganisationService {
 				correlationId: actor.correlationId,
 				changeSummary: identifier
 			});
+			await enqueueOutboxEvent(trx, {
+				organisationId: actor.organisationId,
+				topic: 'organisation.identifier.added',
+				aggregateType: 'organisation',
+				aggregatePublicId: organisation.publicId,
+				payload: identifier,
+				correlationId: actor.correlationId
+			});
 		});
 	}
 
@@ -284,6 +293,11 @@ export class OrganisationService {
 			if (!existing) throw new OrganisationIdentifierNotFoundError();
 
 			await repository.deleteIdentifier(actor.organisationId, existing.id);
+			const removedIdentifier = {
+				identifierType: existing.identifierType,
+				identifierValue: existing.identifierValue,
+				issuingCountryCode: existing.issuingCountryCode
+			};
 			await new AuditRepository(trx).append({
 				eventPublicId: randomUUID(),
 				actingOrganisationId: actor.organisationId,
@@ -293,11 +307,15 @@ export class OrganisationService {
 				subjectType: 'organisation',
 				subjectPublicId: organisation.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: {
-					identifierType: existing.identifierType,
-					identifierValue: existing.identifierValue,
-					issuingCountryCode: existing.issuingCountryCode
-				}
+				changeSummary: removedIdentifier
+			});
+			await enqueueOutboxEvent(trx, {
+				organisationId: actor.organisationId,
+				topic: 'organisation.identifier.removed',
+				aggregateType: 'organisation',
+				aggregatePublicId: organisation.publicId,
+				payload: removedIdentifier,
+				correlationId: actor.correlationId
 			});
 		});
 	}
