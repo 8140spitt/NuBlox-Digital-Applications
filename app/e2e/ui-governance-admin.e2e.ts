@@ -128,14 +128,15 @@ test('owner maintains canonical legal identifiers through the browser', async ({
 	await addForm.getByLabel('Issuing country').fill('GB');
 	await addForm.getByRole('button', { name: 'Add identifier' }).click();
 
-	await expect(page.getByText('vat_number', { exact: true })).toBeVisible();
-	await expect(page.getByText('GB999999973', { exact: true })).toBeVisible();
-	await expect(page.getByText('GB', { exact: true })).toBeVisible();
+	const identifiersPanel = page.locator('section[aria-labelledby="registered-heading"]');
+	await expect(identifiersPanel.getByText('vat_number', { exact: true })).toBeVisible();
+	await expect(identifiersPanel.getByText('GB999999973', { exact: true })).toBeVisible();
+	await expect(identifiersPanel.getByText('GB', { exact: true })).toBeVisible();
 
-	await page.getByRole('button', { name: 'Remove' }).click();
-	await expect(page.getByText('GB999999973', { exact: true })).toHaveCount(0);
+	await identifiersPanel.getByRole('button', { name: 'Remove' }).click();
+	await expect(identifiersPanel.getByText('GB999999973', { exact: true })).toHaveCount(0);
 	await expect(
-		page.getByText('No legal or regulatory identifiers have been recorded.')
+		identifiersPanel.getByText('No legal or regulatory identifiers have been recorded.')
 	).toBeVisible();
 });
 
@@ -148,20 +149,27 @@ test('owner controls explicit member permission exceptions through the browser',
 	await expect(page).toHaveURL(/\/organisation\/permissions$/);
 
 	const overrideForm = page.locator('form[action="?/setOverride"]');
-	await overrideForm.getByLabel('Member').selectOption({ label: 'NuBlox E2E Viewer · active' });
-	await overrideForm.getByLabel('Permission key').fill('crm.view');
-	await overrideForm.getByLabel('Effect').selectOption('deny');
-	await overrideForm.getByLabel('Reason').fill('E2E explicit deny exception.');
+	await overrideForm
+		.locator('select[name="memberPublicId"]')
+		.selectOption({ label: 'NuBlox E2E Viewer · active' });
+	await overrideForm.locator('input[name="permissionKey"]').fill('crm.view');
+	await overrideForm.locator('select[name="effect"]').selectOption('deny');
+	await overrideForm.locator('textarea[name="reason"]').fill('E2E explicit deny exception.');
 	await overrideForm.getByRole('button', { name: 'Set permission exception' }).click();
 
-	await expect(page.getByText('NuBlox E2E Viewer', { exact: true })).toBeVisible();
-	await expect(page.getByText('crm.view', { exact: true })).toBeVisible();
-	await expect(page.getByText('deny', { exact: true })).toBeVisible();
-	await expect(page.getByText('E2E explicit deny exception.', { exact: true })).toBeVisible();
-
-	await page.getByRole('button', { name: 'Remove' }).click();
-	await expect(page.getByText('E2E explicit deny exception.', { exact: true })).toHaveCount(0);
+	const overridesPanel = page.locator('section[aria-labelledby="current-overrides-heading"]');
+	await expect(overridesPanel.getByText('NuBlox E2E Viewer', { exact: true })).toBeVisible();
+	await expect(overridesPanel.getByText('crm.view', { exact: true })).toBeVisible();
+	await expect(overridesPanel.getByText('deny', { exact: true })).toBeVisible();
 	await expect(
-		page.getByText('No explicit member permission exceptions are active.')
+		overridesPanel.getByText('E2E explicit deny exception.', { exact: true })
+	).toBeVisible();
+
+	await overridesPanel.getByRole('button', { name: 'Remove' }).click();
+	await expect(
+		overridesPanel.getByText('E2E explicit deny exception.', { exact: true })
+	).toHaveCount(0);
+	await expect(
+		overridesPanel.getByText('No explicit member permission exceptions are active.')
 	).toBeVisible();
 });
