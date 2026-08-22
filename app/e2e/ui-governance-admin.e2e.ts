@@ -78,3 +78,21 @@ test('owner creates a role and controls an invitation through the browser', asyn
 	await page.getByRole('button', { name: 'Revoke' }).click();
 	await expect(page.getByText('Revoked', { exact: true }).first()).toBeVisible();
 });
+
+test('owner maintains the canonical organisation profile through the browser', async ({ page }) => {
+	await signIn(page);
+	await page.goto('/organisation');
+	await page.getByRole('link', { name: 'Organisation profile' }).click();
+	await expect(page).toHaveURL(/\/organisation\/profile$/);
+
+	const profileForm = page.locator('form[action="?/update"]');
+	await expect(profileForm.getByLabel('Legal name')).toHaveValue(ORGANISATION);
+	await profileForm.getByLabel('Trading name').fill('NuBlox E2E Trading Name');
+	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
+	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
+	await expect(profileForm.getByLabel('Trading name')).toHaveValue('NuBlox E2E Trading Name');
+
+	await profileForm.getByLabel('Trading name').fill('');
+	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
+	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
+});
