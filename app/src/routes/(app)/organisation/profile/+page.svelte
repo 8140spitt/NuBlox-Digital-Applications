@@ -1,6 +1,5 @@
 <script lang="ts">
 	let { data, form } = $props();
-	let profileSuccess = $derived(form?.profileSuccess ?? data.profileSuccess);
 </script>
 
 <svelte:head>
@@ -18,8 +17,8 @@
 {#if form?.profileError}
 	<p class="notice error" role="alert">{form.profileError}</p>
 {/if}
-{#if profileSuccess}
-	<p class="notice success" role="status">{profileSuccess}</p>
+{#if data.profileSuccess}
+	<p class="notice success" role="status">{data.profileSuccess}</p>
 {/if}
 
 <section class="panel" aria-labelledby="profile-heading">
