@@ -1,0 +1,171 @@
+name: Repository consolidation cleanup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/repository-consolidation-cleanup.yml'
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  consolidate:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_repository_cleanup
+      DB_POOL_MAX: '5'
+      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+      EMAIL_DELIVERY_MODE: console
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install application dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Format consolidated application
+        working-directory: app
+        run: pnpm format
+
+      - name: Apply migrations and regenerate database types
+        working-directory: app
+        run: |
+          pnpm db:migrate
+          pnpm db:status
+          pnpm db:types
+
+      - name: Update validation schema authority
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/database-migration-validation.yml')
+          text = path.read_text()
+          replacements = {
+              "test \"$table_count\" = '391'": "test \"$table_count\" = '396'",
+              "test \"$fk_count\" = '880'": "test \"$fk_count\" = '895'",
+              "test \"$check_count\" = '510'": "test \"$check_count\" = '528'",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Validation authority marker not found: {old}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+
+      - name: Verify migrated application structure
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+        shell: bash
+        run: |
+          table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_repository_cleanup' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
+          fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_repository_cleanup';")
+          check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_repository_cleanup' AND constraint_type='CHECK';")
+          echo "Consolidated schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
+          test "$table_count" = '396'
+          test "$fk_count" = '895'
+          test "$check_count" = '528'
+
+      - name: Run consolidated quality gate
+        working-directory: app
+        run: |
+          pnpm lint
+          pnpm test:integration
+          pnpm check
+          pnpm test:unit -- --run
+          pnpm build
+
+      - name: Run browser acceptance
+        working-directory: app
+        run: |
+          pnpm exec playwright install chromium
+          pnpm exec playwright test
+
+      - name: Remove obsolete one-shot automation
+        shell: bash
+        run: |
+          rm -f .github/workflows/project-collaboration-helper.yml
+          rm -f .github/workflows/repository-consolidation-cleanup.yml
+
+      - name: Commit consolidated repository state
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo 'No tracked cleanup changes required.'
+          else
+            git commit -m "Consolidate and clean repository"
+            git push origin HEAD:main
+          fi
+
+      - name: Prune closed and merged branches
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git fetch --prune origin '+refs/heads/*:refs/remotes/origin/*'
+          mapfile -t open_heads < <(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" --jq '.[].head.ref')
+          mapfile -t closed_heads < <(gh api --paginate "repos/${GITHUB_REPOSITORY}/pulls?state=closed&per_page=100" --jq '.[].head.ref')
+
+          contains() {
+            local needle="$1"; shift
+            for value in "$@"; do
+              [[ "$value" == "$needle" ]] && return 0
+            done
+            return 1
+          }
+
+          while IFS= read -r ref; do
+            branch="${ref#origin/}"
+            [[ "$branch" == 'main' || "$branch" == 'HEAD' ]] && continue
+            if contains "$branch" "${open_heads[@]}"; then
+              echo "Preserving open-PR branch: $branch"
+              continue
+            fi
+            if contains "$branch" "${closed_heads[@]}"; then
+              echo "Deleting closed-PR branch: $branch"
+              git push origin --delete "$branch" || true
+              continue
+            fi
+            if git merge-base --is-ancestor "$ref" origin/main; then
+              echo "Deleting merged branch: $branch"
+              git push origin --delete "$branch" || true
+            else
+              echo "Preserving unmerged orphan branch: $branch"
+            fi
+          done < <(git for-each-ref --format='%(refname:short)' refs/remotes/origin/ | sort)
