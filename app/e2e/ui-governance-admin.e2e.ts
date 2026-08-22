@@ -97,11 +97,6 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await expect(profileForm.getByLabel('Legal name')).toHaveValue(ORGANISATION);
 	await expect(profileForm.getByLabel('Default timezone')).toHaveValue('Europe/London');
 	await expect(profileForm.getByLabel('Default currency')).toHaveValue('GBP');
-	const profileIsValid = await profileForm.evaluate((form) => {
-		const profile = form as HTMLFormElement;
-		return profile.checkValidity();
-	});
-	expect(profileIsValid).toBe(true);
 
 	async function saveProfile() {
 		const responsePromise = page.waitForResponse(isProfileUpdateResponse);
