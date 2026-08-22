@@ -59,8 +59,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			defaultTimezone: organisation.defaultTimezone,
 			defaultCurrencyCode: organisation.defaultCurrencyCode
 		},
-		profileSuccess:
-			url.searchParams.get('updated') === '1' ? 'Organisation profile updated.' : null
+		profileSuccess: url.searchParams.get('updated') === '1' ? 'Organisation profile updated.' : null
 	};
 };
 
