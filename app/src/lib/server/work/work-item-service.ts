@@ -12,6 +12,7 @@ import {
 	TenantAccessError
 } from '$lib/server/kernel/errors';
 import { enqueueOutboxEvent } from '$lib/server/jobs/outbox';
+import { ensureWorkKernelStandardRoleDefaults } from './work-item-bootstrap';
 import {
 	WorkItemRepository,
 	type WorkItemAssignmentScope,
@@ -130,6 +131,7 @@ export class WorkItemService {
 		permissionKey: string,
 		projectId?: string | null
 	): Promise<void> {
+		await ensureWorkKernelStandardRoleDefaults(this.db, actor.organisationId);
 		const decision = await new PermissionService(this.db).decideWithUmbrella(
 			actor,
 			permissionKey,
@@ -145,6 +147,7 @@ export class WorkItemService {
 		actor: TenantActorContext,
 		projectId?: string | null
 	): Promise<void> {
+		await ensureWorkKernelStandardRoleDefaults(this.db, actor.organisationId);
 		const decision = await new PermissionService(this.db).decide(
 			actor,
 			'work.manage',
