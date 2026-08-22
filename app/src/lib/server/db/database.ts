@@ -4,9 +4,10 @@ import { createPool } from 'mysql2';
 import type { DB as CoreDB } from './generated/database.js';
 import type { DB as CollectionsDB } from './generated/collections.js';
 import type { DB as AccountingDB } from './generated/accounting.js';
+import type { DB as AccountsPayableDB } from './generated/accounts-payable.js';
 import { getDatabaseRuntimeConfig } from './config.js';
 
-export type DatabaseSchema = CoreDB & CollectionsDB & AccountingDB;
+export type DatabaseSchema = CoreDB & CollectionsDB & AccountingDB & AccountsPayableDB;
 export type Database = Kysely<DatabaseSchema>;
 
 type DatabaseGlobal = typeof globalThis & {

@@ -9,9 +9,16 @@
 	<p class="eyebrow">Business workspace</p>
 	<h1>Finance</h1>
 	<p>
-		Move between billing, receivables, collections and accounting without returning to the global
-		menu.
+		Move between accounts payable, billing, receivables, collections and accounting without returning
+		to the global menu.
 	</p>
+</section>
+
+<section class="featured" aria-label="Procure to pay">
+	<a class="workspace-card featured-card" href="/finance/accounts-payable">
+		<strong>Accounts Payable</strong>
+		<span>Supplier invoices, three-way matching, exceptions and maker/checker approval.</span>
+	</a>
 </section>
 
 {#if finance}
@@ -53,6 +60,9 @@
 		letter-spacing: 0.1em;
 		text-transform: uppercase;
 	}
+	.featured {
+		margin-bottom: 0.8rem;
+	}
 	.workspace-grid {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
@@ -70,6 +80,10 @@
 		padding: 1rem;
 		color: var(--nb-text);
 		text-decoration: none;
+	}
+	.featured-card {
+		border-color: var(--nb-border-strong);
+		background: linear-gradient(135deg, var(--nb-white), var(--nb-surface-muted));
 	}
 	.workspace-card:hover,
 	.workspace-card:focus-visible {
