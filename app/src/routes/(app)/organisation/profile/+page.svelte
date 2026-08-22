@@ -1,6 +1,4 @@
 <script lang="ts">
-	import { enhance } from '$app/forms';
-
 	let { data, form } = $props();
 </script>
 
@@ -19,8 +17,8 @@
 {#if form?.profileError}
 	<p class="notice error" role="alert">{form.profileError}</p>
 {/if}
-{#if form?.profileSuccess}
-	<p class="notice success" role="status">{form.profileSuccess}</p>
+{#if data.profileSuccess}
+	<p class="notice success" role="status">{data.profileSuccess}</p>
 {/if}
 
 <section class="panel" aria-labelledby="profile-heading">
@@ -35,7 +33,7 @@
 		</p>
 	</div>
 
-	<form method="POST" use:enhance class="form-grid">
+	<form method="POST" class="form-grid">
 		<label class="wide">
 			<span>Legal name</span>
 			<input
