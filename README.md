@@ -1,6 +1,16 @@
 # NuBlox: Digital Applications
 
-NuBlox is a natively engineered **construction and built-environment operating system**: a world-class ERP and operational platform connecting commercial, project, field, financial, workforce, asset and property lifecycles in one governed system.
+NuBlox is a natively engineered **Construction and Built Environment enterprise operating system**: one complete platform intended to replace the fragmented combination of ERP, PLM, PDM, CDE/BIM, project controls, finance, workforce, supply-chain, asset, property and service applications normally required to run the sector end to end.
+
+## One complete product
+
+**NuBlox: Digital Applications for the Construction and the Built Environment ships as one complete application suite.**
+
+Customers do not select a set of functional modules to construct their product. Core capability is included by default and the experience adapts through organisation context, career/professional context, role, explicit permission, project/contract/site/property/asset context and jurisdiction.
+
+Market labels such as **ERP, PLM, PDM, PPM/EPPM, PMIS, CDE, BIM/VDC, SCM, WMS, MES, HCM, QMS/EHS, EAM/CMMS/APM, IWMS/CAFM, FSM, GIS/digital twin, BI and workflow/AI** are world-class coverage benchmarks over the native NuBlox architecture — not separate NuBlox products.
+
+See [`docs/architecture/bottom-up/platform-coverage-contract.md`](docs/architecture/bottom-up/platform-coverage-contract.md).
 
 ## Architecture: bottom up
 
@@ -21,7 +31,7 @@ Primitives & invariants
 
 Start with [`docs/architecture/bottom-up/README.md`](docs/architecture/bottom-up/README.md).
 
-This architecture enforces a simple rule: **an upper layer may compose lower layers, but it may not invent contradictory semantics**. A workspace cannot invent permission, a process cannot invent duplicate master data, and a capability cannot bypass its owning domain service.
+This architecture enforces a simple rule: **an upper layer may compose lower layers, but it may not invent contradictory semantics**. A workspace cannot invent permission, a process cannot invent duplicate master data, a market software category cannot become a parallel product architecture, and a capability cannot bypass its owning domain service.
 
 ## Construction and Built Environment
 
@@ -37,7 +47,15 @@ The product supports organisations ranging from sole traders to multi-entity gro
 
 NuBlox has 19 native capability domains covering enterprise/master data, CRM, estimating/sales, contracts/commercial, projects, design/BIM, finance, management accounting/planning, procurement, materials/logistics, production, people/payroll, site, QHSE, plant/EAM, property/FM, service, sustainability and platform data/workflow/intelligence.
 
+Those domains converge capabilities that the market usually separates into many systems. The world-class category coverage and complete built-environment digital-thread requirement are defined in [`platform-coverage-contract.md`](docs/architecture/bottom-up/platform-coverage-contract.md).
+
 The separate enterprise function taxonomy contains 29 functions, 353 sub-functions and 1,510 source activities. It describes **work performed**; capability domains describe **product capability owned**. They are mapped many-to-many.
+
+## Digital thread
+
+NuBlox must preserve controlled continuity from client need and requirement through estimate, design, product/system definition, procurement/fabrication, installation, commissioning and handed-over asset into operations, maintenance, refurbishment and disposal.
+
+The thread connects commercial, schedule, cost, document/model revision, configuration, quality, safety, provenance, carbon, asset condition, service and accounting evidence instead of leaving those facts in disconnected applications.
 
 ## Security model
 
@@ -77,7 +95,7 @@ database/
   docs/                      durable schema-package references
   seeds/                     controlled seed/reference data
 docs/
-  architecture/bottom-up/    governing architecture layers
+  architecture/bottom-up/    governing architecture layers and platform coverage contract
   architecture/taxonomy/     enterprise function/activity taxonomy
   adr/                       Architecture Decision Records
   branding/                  NuBlox brand system
@@ -86,6 +104,8 @@ docs/
 ## Engineering definition of done
 
 A material capability is not complete because a screen or table exists. It must trace through canonical records, invariants, permissions, lifecycle, service boundary, workflow/evidence, process consequences, reporting/integration, usable experience and automated validation.
+
+A software-category claim such as PLM, PMIS, EAM or digital twin additionally requires proof that its capabilities participate in the common NuBlox digital thread rather than existing as an isolated mini-application.
 
 See [`docs/architecture/bottom-up/layer-9-completeness-validation.md`](docs/architecture/bottom-up/layer-9-completeness-validation.md).
 

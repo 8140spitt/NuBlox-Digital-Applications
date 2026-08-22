@@ -31,6 +31,13 @@ An upper layer may compose lower layers, but it **must not redefine them**.
 - A capability cannot bypass Layer 4 boundaries.
 - A sector overlay cannot fork the canonical enterprise model.
 - A career or project role cannot become an implicit permission.
+- A market category such as ERP, PLM or EAM cannot become a parallel product architecture.
+
+## Product-scope invariant
+
+NuBlox is **one complete Construction and Built Environment product**. ERP, PLM, PDM, CDE, BIM, PPM/PMIS, SCM, HCM, QMS/EHS, EAM/CMMS, IWMS/FM, FSM, GIS/digital-twin and related market labels are completeness benchmarks over the native domains, not products the customer assembles.
+
+See [`platform-coverage-contract.md`](platform-coverage-contract.md).
 
 ## Authority
 
@@ -53,6 +60,8 @@ When an implementation conflicts with a governing invariant, the conflict must b
 | 8 | [`layer-8-experience-workspaces.md`](layer-8-experience-workspaces.md) | How is capability composed into usable workspaces? |
 | 9 | [`layer-9-completeness-validation.md`](layer-9-completeness-validation.md) | How do we prove a capability is actually complete? |
 
+Layer 6 is supplemented by [`platform-coverage-contract.md`](platform-coverage-contract.md), which maps the broad software-market categories NuBlox must subsume into its native domains and digital thread.
+
 ## Design sequence for new work
 
 Before creating a route, table or feature package, answer in this order:
@@ -67,8 +76,9 @@ Before creating a route, table or feature package, answer in this order:
 8. What work, event and audit evidence must be produced?
 9. Which end-to-end process uses it?
 10. Which capability domain and sector overlay expose it?
-11. Which workspace makes it usable?
-12. What tests prove all lower layers remain correct?
+11. Which market-category completeness requirement does it satisfy, if any?
+12. Which workspace makes it usable?
+13. What tests prove all lower layers remain correct?
 
 If the answer begins with “create a screen” or “create a module”, the design is starting at the wrong layer.
 
@@ -78,6 +88,6 @@ If the answer begins with “create a screen” or “create a module”, the de
 
 Likewise:
 
-**Enterprise function ≠ Capability domain ≠ Lifecycle stage ≠ Workspace.**
+**Enterprise function ≠ Capability domain ≠ Lifecycle stage ≠ Workspace ≠ Market software category.**
 
 Mappings between these dimensions are explicit, versioned and governed.
