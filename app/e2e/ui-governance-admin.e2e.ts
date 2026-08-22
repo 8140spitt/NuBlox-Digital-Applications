@@ -115,3 +115,24 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await saveProfile();
 	await expect(profileForm.getByLabel('Trading name')).toHaveValue('');
 });
+
+test('owner maintains canonical legal identifiers through the browser', async ({ page }) => {
+	await signIn(page);
+	await page.goto('/organisation');
+	await page.getByRole('link', { name: 'Legal identity' }).click();
+	await expect(page).toHaveURL(/\/organisation\/identity$/);
+
+	const addForm = page.locator('form[action="?/addIdentifier"]');
+	await addForm.getByLabel('Identifier type').fill('vat_number');
+	await addForm.getByLabel('Identifier value').fill('GB999999973');
+	await addForm.getByLabel('Issuing country').fill('GB');
+	await addForm.getByRole('button', { name: 'Add identifier' }).click();
+
+	await expect(page.getByText('vat_number', { exact: true })).toBeVisible();
+	await expect(page.getByText('GB999999973', { exact: true })).toBeVisible();
+	await expect(page.getByText('GB', { exact: true })).toBeVisible();
+
+	await page.getByRole('button', { name: 'Remove' }).click();
+	await expect(page.getByText('GB999999973', { exact: true })).toHaveCount(0);
+	await expect(page.getByText('No legal or regulatory identifiers have been recorded.')).toBeVisible();
+});
