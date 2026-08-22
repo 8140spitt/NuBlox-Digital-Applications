@@ -57,6 +57,20 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
+      - name: Apply consolidation code repairs
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path('app/src/lib/server/projects/project-collaboration-invitation-service.ts')
+          text = path.read_text()
+          old = "import { ProjectTeamService, ProjectTeamValidationError } from './project-team-service';"
+          new = "import { ProjectTeamService } from './project-team-service';"
+          if old not in text:
+              raise SystemExit('Expected unused ProjectTeamValidationError import was not found.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
       - name: Format consolidated application
         working-directory: app
         run: pnpm format
