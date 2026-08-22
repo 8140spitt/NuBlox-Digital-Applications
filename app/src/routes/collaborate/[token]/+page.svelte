@@ -1,8 +1,9 @@
 <script lang="ts">
+	import { untrack } from 'svelte';
 	import { authClient } from '$lib/auth-client';
 
 	let { data, form } = $props();
-	let displayName = $state(data.invitation.contactName);
+	let displayName = $state(untrack(() => data.invitation.contactName));
 	let password = $state('');
 	let submitting = $state(false);
 	let submitted = $state(false);
