@@ -1,3 +1,16 @@
 {
-  "task.allowAutomaticTasks": "on"
+  "task.allowAutomaticTasks": "on",
+  "terminal.integrated.profiles.osx": {
+    "NuBlox Logged Terminal": {
+      "path": "${workspaceFolder}/scripts/start-logged-terminal.sh",
+      "overrideName": true,
+      "icon": "terminal"
+    }
+  },
+  "terminal.integrated.defaultProfile.osx": "NuBlox Logged Terminal",
+  "terminal.integrated.cwd": "${workspaceFolder}/app",
+  "terminal.integrated.automationProfile.osx": {
+    "path": "/bin/zsh",
+    "args": ["-l"]
+  }
 }
