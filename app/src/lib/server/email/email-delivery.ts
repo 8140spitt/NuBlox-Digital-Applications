@@ -12,12 +12,21 @@ export type EmailDelivery = {
 	send(message: TransactionalEmail): Promise<void>;
 };
 
+function redactSensitiveEmailText(text: string): string {
+	return text
+		.replace(
+			/([?&](?:token|code|key|secret|signature)=)[^&\s]+/gi,
+			'$1[REDACTED]'
+		)
+		.replace(/(\/(?:invite|collaborate)\/)[^/?#\s]+/gi, '$1[REDACTED]');
+}
+
 class ConsoleEmailDelivery implements EmailDelivery {
 	async send(message: TransactionalEmail): Promise<void> {
 		console.info('[NuBlox email]', {
 			to: message.to,
 			subject: message.subject,
-			text: message.text,
+			text: redactSensitiveEmailText(message.text),
 			idempotencyKey: message.idempotencyKey ?? null
 		});
 	}
@@ -30,6 +39,9 @@ class ConsoleEmailDelivery implements EmailDelivery {
  * Production must select and configure a real provider adapter in a later ADR.
  * Unsupported/unconfigured modes fail at service construction so invitation state
  * is never committed before discovering that delivery is unavailable.
+ *
+ * Console delivery intentionally redacts secret-bearing URL components before
+ * writing message bodies to persistent development/test logs.
  *
  * Callers that may retry an externally visible business message should supply a
  * stable `idempotencyKey`. A production adapter must use that key when its provider
