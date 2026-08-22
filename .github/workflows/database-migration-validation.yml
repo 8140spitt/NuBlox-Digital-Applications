@@ -134,7 +134,7 @@ jobs:
 
       - name: Run unit and component tests
         working-directory: app
-        run: pnpm test:unit -- --run
+        run: pnpm test:unit
 
       - name: Verify validation leaves no tracked-file drift
         run: git diff --exit-code
