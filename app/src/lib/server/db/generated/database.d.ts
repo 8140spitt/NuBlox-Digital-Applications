@@ -1889,6 +1889,26 @@ export interface Organisations {
   updated_at: Generated<Date>;
 }
 
+export interface OutboxEvents {
+  aggregate_public_id: string | null;
+  aggregate_type: string | null;
+  attempt_count: Generated<number>;
+  available_at: Generated<Date>;
+  correlation_id: string;
+  created_at: Generated<Date>;
+  deduplication_key: string | null;
+  delivery_status: Generated<string>;
+  event_public_id: string;
+  id: Generated<string>;
+  last_error: string | null;
+  lock_token: string | null;
+  locked_at: Date | null;
+  organisation_id: string | null;
+  payload: Json;
+  published_at: Date | null;
+  topic: string;
+}
+
 export interface Parties {
   account_owner_member_id: string | null;
   created_at: Generated<Date>;
@@ -2393,6 +2413,34 @@ export interface ProjectChangeEventTypes {
   id: Generated<number>;
   is_active: Generated<number>;
   name: string;
+}
+
+export interface ProjectCollaborationInvitationRoles {
+  assigned_at: Generated<Date>;
+  project_collaboration_invitation_id: string;
+  project_id: string;
+  project_role_type_id: string;
+}
+
+export interface ProjectCollaborationInvitations {
+  accepted_at: Date | null;
+  auth_user_id: string | null;
+  created_at: Generated<Date>;
+  crm_contact_party_id: string;
+  crm_organisation_party_id: string;
+  expires_at: Date;
+  id: Generated<string>;
+  invite_email: string;
+  invited_by_member_id: string;
+  inviting_organisation_id: string;
+  pending_crm_organisation_party_id: string | null;
+  project_id: string;
+  public_id: string;
+  revoked_at: Date | null;
+  status: Generated<string>;
+  target_organisation_id: string | null;
+  token_hash: string;
+  updated_at: Generated<Date>;
 }
 
 export interface ProjectCostCodes {
@@ -4048,6 +4096,72 @@ export interface WorkforceEngagementTypes {
   name: string;
 }
 
+export interface WorkItemAssignments {
+  assigned_at: Generated<Date>;
+  assigned_by_member_id: string;
+  assigned_member_id: string | null;
+  assigned_organisation_id: string;
+  assigned_team_id: string | null;
+  assignment_note: string | null;
+  assignment_scope: string;
+  ended_at: Date | null;
+  ended_by_member_id: string | null;
+  id: Generated<string>;
+  work_item_id: string;
+  work_item_owner_organisation_id: string;
+}
+
+export interface WorkItemDecisions {
+  decided_at: Generated<Date>;
+  decided_by_member_id: string;
+  decision: string;
+  decision_note: string | null;
+  id: Generated<string>;
+  work_item_id: string;
+  work_item_owner_organisation_id: string;
+}
+
+export interface WorkItemEvents {
+  acting_organisation_id: string | null;
+  actor_member_id: string | null;
+  correlation_id: string;
+  event_metadata: Json | null;
+  event_public_id: string;
+  event_type: string;
+  from_status: string | null;
+  id: Generated<string>;
+  occurred_at: Generated<Date>;
+  reason: string | null;
+  to_status: string | null;
+  work_item_id: string;
+  work_item_owner_organisation_id: string;
+}
+
+export interface WorkItems {
+  cancelled_at: Date | null;
+  cancelled_by_member_id: string | null;
+  completed_at: Date | null;
+  completed_by_member_id: string | null;
+  completion_note: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  description: string | null;
+  due_at: Date | null;
+  id: Generated<string>;
+  owning_organisation_id: string;
+  priority: Generated<string>;
+  project_id: string | null;
+  public_id: string;
+  source_domain: string;
+  source_public_id: string | null;
+  source_type: string | null;
+  started_at: Date | null;
+  status: Generated<string>;
+  title: string;
+  updated_at: Generated<Date>;
+  work_item_kind: Generated<string>;
+}
+
 export interface WorkOrderAssets {
   asset_id: string;
   created_at: Generated<Date>;
@@ -4317,6 +4431,7 @@ export interface DB {
   organisation_members: OrganisationMembers;
   organisation_roles: OrganisationRoles;
   organisations: Organisations;
+  outbox_events: OutboxEvents;
   parties: Parties;
   party_addresses: PartyAddresses;
   party_billing_settings: PartyBillingSettings;
@@ -4361,6 +4476,8 @@ export interface DB {
   project_budgets: ProjectBudgets;
   project_change_event_types: ProjectChangeEventTypes;
   project_change_events: ProjectChangeEvents;
+  project_collaboration_invitation_roles: ProjectCollaborationInvitationRoles;
+  project_collaboration_invitations: ProjectCollaborationInvitations;
   project_cost_codes: ProjectCostCodes;
   project_direct_cost_reversals: ProjectDirectCostReversals;
   project_direct_costs: ProjectDirectCosts;
@@ -4487,6 +4604,10 @@ export interface DB {
   warranty_types: WarrantyTypes;
   work_calendar_weekdays: WorkCalendarWeekdays;
   work_calendars: WorkCalendars;
+  work_item_assignments: WorkItemAssignments;
+  work_item_decisions: WorkItemDecisions;
+  work_item_events: WorkItemEvents;
+  work_items: WorkItems;
   work_order_assets: WorkOrderAssets;
   work_order_information_links: WorkOrderInformationLinks;
   work_order_party_assignments: WorkOrderPartyAssignments;
