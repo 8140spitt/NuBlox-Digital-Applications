@@ -45,8 +45,10 @@ try {
 	]);
 
 	const [organisation] = await db.execute(
-		'INSERT INTO organisations (public_id, legal_name, status) VALUES (?, ?, ?)',
-		[organisationPublicId, E2E_ORGANISATION, 'active']
+		`INSERT INTO organisations
+		(public_id, legal_name, default_timezone, default_currency_code, status)
+		VALUES (?, ?, ?, ?, ?)`,
+		[organisationPublicId, E2E_ORGANISATION, 'Europe/London', 'GBP', 'active']
 	);
 	const organisationId = String(organisation.insertId);
 
