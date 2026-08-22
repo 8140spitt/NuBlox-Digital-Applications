@@ -10,6 +10,9 @@
 	<a href="/organisation/profile" class:active={pathname === '/organisation/profile'}>
 		Organisation profile
 	</a>
+	<a href="/organisation/identity" class:active={pathname === '/organisation/identity'}>
+		Legal identity
+	</a>
 </nav>
 
 {@render children()}
