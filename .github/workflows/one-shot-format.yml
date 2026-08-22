@@ -1,0 +1,76 @@
+name: One-shot source formatter
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/one-shot-format.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Install application dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Format Domain 1 batch
+        working-directory: app
+        run: |
+          pnpm exec prettier --write \
+            e2e/ui-governance-admin.e2e.ts \
+            src/lib/server/organisations/member-permission-override-service.ts \
+            src/lib/server/organisations/member-permission-overrides.integration.test.ts \
+            src/lib/server/organisations/organisation-identifiers.integration.test.ts \
+            src/lib/server/organisations/organisation-location-repository.ts \
+            src/lib/server/organisations/organisation-location-service.ts \
+            src/lib/server/organisations/organisation-service.ts \
+            src/lib/server/organisations/organisation-team-service.ts \
+            src/lib/server/organisations/organisation-teams.integration.test.ts \
+            'src/routes/(app)/organisation/identity/+page.svelte' \
+            'src/routes/(app)/organisation/locations/+page.server.ts' \
+            'src/routes/(app)/organisation/locations/+page.svelte' \
+            'src/routes/(app)/organisation/permissions/+page.svelte' \
+            'src/routes/(app)/organisation/teams/+page.svelte'
+
+      - name: Package formatted sources
+        working-directory: app
+        run: |
+          tar -czf ../formatted-sources.tar.gz \
+            e2e/ui-governance-admin.e2e.ts \
+            src/lib/server/organisations/member-permission-override-service.ts \
+            src/lib/server/organisations/member-permission-overrides.integration.test.ts \
+            src/lib/server/organisations/organisation-identifiers.integration.test.ts \
+            src/lib/server/organisations/organisation-location-repository.ts \
+            src/lib/server/organisations/organisation-location-service.ts \
+            src/lib/server/organisations/organisation-service.ts \
+            src/lib/server/organisations/organisation-team-service.ts \
+            src/lib/server/organisations/organisation-teams.integration.test.ts \
+            'src/routes/(app)/organisation/identity/+page.svelte' \
+            'src/routes/(app)/organisation/locations/+page.server.ts' \
+            'src/routes/(app)/organisation/locations/+page.svelte' \
+            'src/routes/(app)/organisation/permissions/+page.svelte' \
+            'src/routes/(app)/organisation/teams/+page.svelte'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formatted-domain-1-sources
+          path: formatted-sources.tar.gz
+          if-no-files-found: error
