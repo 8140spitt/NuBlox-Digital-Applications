@@ -19,6 +19,10 @@ function redactSensitiveEmailText(text: string): string {
 }
 
 function includeSensitiveConsoleEmailBody(): boolean {
+	// Interactive local development must expose one-time links so invitation,
+	// verification, collaboration and recovery flows can be exercised manually.
+	// Validation/test/CI/production environments remain redacted by default.
+	if (process.env.NODE_ENV === 'development') return true;
 	return env.EMAIL_CONSOLE_INCLUDE_SECRETS?.trim().toLowerCase() === 'true';
 }
 
@@ -43,10 +47,11 @@ class ConsoleEmailDelivery implements EmailDelivery {
  * Unsupported/unconfigured modes fail at service construction so invitation state
  * is never committed before discovering that delivery is unavailable.
  *
- * Console delivery redacts secret-bearing URL components by default before writing
- * message bodies to persistent development/test logs. A developer may explicitly
- * opt in to full local console bodies for manual link testing, but that should not
- * be enabled while retaining terminal logs.
+ * Interactive local development prints full console email bodies so one-time links
+ * can be exercised manually. Test, validation, CI and production environments redact
+ * secret-bearing URL components by default before writing message bodies to logs.
+ * Non-development environments may explicitly opt in with
+ * `EMAIL_CONSOLE_INCLUDE_SECRETS=true` for deliberate manual testing only.
  *
  * Callers that may retry an externally visible business message should supply a
  * stable `idempotencyKey`. A production adapter must use that key when its provider
