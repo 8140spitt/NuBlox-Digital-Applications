@@ -13,6 +13,7 @@
 	<a href="/organisation/identity" class:active={pathname === '/organisation/identity'}>
 		Legal identity
 	</a>
+	<a href="/organisation/teams" class:active={pathname === '/organisation/teams'}>Teams</a>
 	<a href="/organisation/permissions" class:active={pathname === '/organisation/permissions'}>
 		Permission exceptions
 	</a>
