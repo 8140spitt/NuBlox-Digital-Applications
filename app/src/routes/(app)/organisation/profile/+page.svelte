@@ -33,7 +33,7 @@
 		</p>
 	</div>
 
-	<form method="POST" class="form-grid">
+	<form method="POST" class="form-grid" novalidate>
 		<label class="wide">
 			<span>Legal name</span>
 			<input
