@@ -1,299 +1,125 @@
 # NuBlox: Digital Applications
 
-NuBlox is a proposed **Built Environment Business Operating System** for businesses and professionals across construction and the built environment.
+NuBlox is a natively engineered **construction and built-environment operating system**: a world-class ERP and operational platform intended to connect the commercial, project, field, financial, workforce, asset and property lifecycle in one governed system.
 
-It combines a shared business-management core, a built-environment project/site/asset core, profession-specific capability packs, controlled cross-organisation collaboration and structured workflow/automation across the building lifecycle.
+The product is designed around canonical business records, explicit organisational and project context, server-authoritative permissions, controlled workflows, durable evidence and end-to-end process integrity. External ERP products are benchmarks for coverage and control quality, not runtime dependencies.
 
-## Fixed technology direction
+## Product direction
 
-- **Frontend:** Svelte 5
-- **Application framework:** SvelteKit
-- **Authentication:** Better Auth 1.6.25
-- **Primary persistence:** MySQL 8.4 / InnoDB
-- **Runtime query layer:** Kysely 0.29.5 + mysql2
-- **Production migrations:** Dbmate plain SQL
-- **Database type generation:** kysely-codegen from migrated MySQL
-- **Architecture:** modular monolith with explicit domain boundaries
-- **Database design:** normalised relational model, targeting 3NF by default
-- **Schema authority:** committed MySQL SQL migrations; generated TypeScript types are derivative
+NuBlox targets the built-environment lifecycle:
 
-Architecture decisions are under [`docs/adr`](docs/adr/README.md).
+**Market → Lead → Opportunity → Bid → Estimate → Proposal → Quote → Contract → Design → Plan → Procure → Produce → Construct → Control → Invoice → Account → Handover → Operate → Maintain → Refurbish → Dispose**
 
-## Governing security rule
+The governing architecture defines 19 native capability domains spanning enterprise master data, CRM, estimating, commercial management, projects, BIM/information management, finance, procurement, materials, production, workforce, field operations, QHSE, plant, property/facilities, service, sustainability and platform intelligence.
 
-> **Career ≠ Organisation Role ≠ Project Role ≠ Permission.**
+See [`docs/57-world-class-native-erp-architecture.md`](docs/57-world-class-native-erp-architecture.md) for the governing product architecture and [`docs/built-environment-erp-capability-blueprint.md`](docs/built-environment-erp-capability-blueprint.md) for the capability model.
 
-```text
-explicit member deny
-    > explicit member allow
-    > active role grant
-    > default deny
-```
+## Current platform foundation
 
-A granular key is resolved before its same-domain umbrella. The umbrella applies only on granular default-deny, so an explicit granular deny cannot be bypassed.
+The current `main` line includes native foundations across:
 
-```text
-project.manage
-crm.manage
-commercial.manage
-contract.manage
-finance.manage
-```
+- multi-tenant identity, authentication, organisation membership, roles and granular permissions;
+- CRM organisations, contacts, opportunities and activity history;
+- estimating, quotations, contract formation and amendments;
+- projects, project participants and invite-first cross-organisation collaboration;
+- project information/document controls and portal collaboration;
+- procurement, purchasing and project commercial control;
+- workforce, time and scheduling foundations;
+- site, quality and safety controls;
+- assets, facilities and maintenance foundations;
+- receivables, collections, credit control, tax-relief workflows, accounting, period close, reporting and year-end close;
+- native Accounts Payable matching and approval foundations;
+- a horizontal Work Kernel for actions, assignments, approvals, decisions, lifecycle evidence and durable outbox events;
+- a permission-aware construction command centre and contextual application shell.
 
-Umbrellas never cross domains.
+Capability presence is not treated as proof of product completeness. A world-class capability also requires canonical records, workflow and state controls, permissions and segregation of duties, audit/correction semantics, reporting, integration boundaries and end-to-end validation.
 
-## Current production database
+## Database baseline
 
-The validated 001–010 baseline contains:
+A clean MySQL 8.4 rebuild of the consolidated migration stream on **22 August 2026** measured:
 
-```text
-337 base tables
-739 foreign keys
-427 CHECK constraints
-```
+| Measure | Current baseline |
+| --- | ---: |
+| Dbmate migrations | 35 |
+| Pending migrations | 0 |
+| Application tables | 398 |
+| Foreign keys | 904 |
+| CHECK constraints | 530 |
 
-Package 004O candidate stream:
+Committed MySQL migrations in [`database/migrations/`](database/migrations/) are the schema authority. Generated Kysely types are derivative application artefacts.
 
-```text
-25 production migrations
-384 base tables
-857 foreign keys
-495 CHECK constraints
-```
+## Technology
 
-Latest migration:
+- **Application:** Svelte 5 / SvelteKit
+- **Authentication:** Better Auth
+- **Database:** MySQL 8.4 / InnoDB
+- **SQL access:** Kysely + `mysql2`
+- **Migrations:** Dbmate
+- **Validation:** Vitest, Svelte Check, ESLint/Prettier and Playwright
+- **Architecture:** modular monolith with explicit domain boundaries and a normalised relational model by default
 
-```text
-20260818170000_year_end_close_retained_earnings.sql
-```
+## Core security model
 
-Database material:
+The governing separation is:
 
-- [Database workflow](database/README.md)
-- [Database package documentation](database/docs/README.md)
-- [SQL package index](database/schema/README.md)
-- [Production migration stream](database/migrations/README.md)
-- [Database validation](database/validation/README.md)
+**Career ≠ Organisation Role ≠ Project Role ≠ Permission**
 
-## Implemented business chain
+Effective permission precedence is:
+
+**explicit member deny → explicit member allow → active role grant → default deny**
+
+Umbrella permissions do not cross capability domains. Tenant and project boundaries are enforced server-side; UI visibility is never the authority for access control.
+
+## Repository structure
 
 ```text
-CRM Opportunity
-    ↓
-Estimate
-    ↓
-Quotation
-    ↓
-Accepted Quotation
-    ↓
-Credit-Control Commitment Gate
-    ↓
-Project Conversion
-    ↓
-Controlled Contract Formation / Execution
-    ↓
-Contract Amendments
-    ↓
-Billing Settings + Tenant Tax Configuration
-    ↓
-Draft / Issued Invoice
-    ↓
-Credit Note / Exceptional Invoice Void
-    ↓
-Payment Receipt + Allocation / Reversal
-    ↓
-Derived Receivable + Statements / Aging
-    ↓
-Collections + Dunning + Credit Control
-    ↓
-Bad-Debt Assessment / Write-off / Recovery
-    ↓
-VAT Bad-Debt Relief Evidence
-    ↓
-Controlled Accounting Journal Posting / Reversal
-    ↓
-Checksum-backed Accounting Export Evidence
-    ↓
-Controlled Accounting Period / Close Governance
-    ↓
-Trial Balance + P&L + Balance-Sheet Reporting
-    ↓
-Controlled Year-End Close + Retained Earnings
+app/                 SvelteKit application and server domain code
+database/
+  migrations/        Authoritative MySQL migration stream
+  docs/              Durable schema-package design references
+  seeds/             Controlled seed/reference data
+docs/
+  adr/               Architecture Decision Records
+  architecture/      Enterprise architecture and taxonomy
+  branding/          NuBlox brand system
+  README.md          Documentation authority and index
 ```
 
-Detailed finance specifications:
+## Documentation
 
-- [`docs/35-accounts-receivable-invoices.md`](docs/35-accounts-receivable-invoices.md)
-- [`docs/36-receivable-corrections.md`](docs/36-receivable-corrections.md)
-- [`docs/37-payment-receipt-allocation.md`](docs/37-payment-receipt-allocation.md)
-- [`docs/38-customer-statements-aged-receivables.md`](docs/38-customer-statements-aged-receivables.md)
-- [`docs/39-controlled-collections-dunning.md`](docs/39-controlled-collections-dunning.md)
-- [`docs/40-collections-automation-policy.md`](docs/40-collections-automation-policy.md)
-- [`docs/41-controlled-credit-limits-holds.md`](docs/41-controlled-credit-limits-holds.md)
-- [`docs/42-invoice-tax-settings.md`](docs/42-invoice-tax-settings.md)
-- [`docs/43-controlled-bad-debt-writeoff-recovery.md`](docs/43-controlled-bad-debt-writeoff-recovery.md)
-- [`docs/44-controlled-vat-bad-debt-relief.md`](docs/44-controlled-vat-bad-debt-relief.md)
-- [`docs/45-controlled-accounting-posting-export.md`](docs/45-controlled-accounting-posting-export.md)
-- [`docs/46-controlled-accounting-period-close.md`](docs/46-controlled-accounting-period-close.md)
-- [`docs/47-controlled-trial-balance-financial-reporting.md`](docs/47-controlled-trial-balance-financial-reporting.md)
-- [`docs/48-controlled-year-end-close-retained-earnings.md`](docs/48-controlled-year-end-close-retained-earnings.md)
+Start with [`docs/README.md`](docs/README.md). It defines documentation precedence and the active reference set.
 
-## Authoritative accounts receivable
+Key documents:
 
-```text
-Invoice Outstanding
-= Issued Invoice Gross
-− Issued Credit Note Gross
-− Active Payment Allocations
-− Active Write-offs
-```
+- [`docs/57-world-class-native-erp-architecture.md`](docs/57-world-class-native-erp-architecture.md) — governing product architecture.
+- [`docs/built-environment-erp-capability-blueprint.md`](docs/built-environment-erp-capability-blueprint.md) — native ERP capability blueprint.
+- [`docs/architecture/taxonomy/README.md`](docs/architecture/taxonomy/README.md) — enterprise function taxonomy.
+- [`docs/work-kernel-foundation.md`](docs/work-kernel-foundation.md) — horizontal work execution model.
+- [`docs/01-product-requirements-document.md`](docs/01-product-requirements-document.md) — product requirements.
+- [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md) — tenancy and authorisation model.
+- [`docs/11-security-privacy-compliance.md`](docs/11-security-privacy-compliance.md) — security and compliance controls.
+- [`database/docs/`](database/docs/) — schema design references.
 
-No reporting, collections, credit-control, bad-debt, VAT-relief or accounting package stores a mutable duplicate receivable balance.
+Implementation history, delivery sequencing and superseded plans belong in Git history and GitHub issues rather than the active architecture documentation set.
 
-## Package 004L — controlled accounting evidence
-
-Protected routes:
-
-```text
-/finance/accounting
-/finance/accounting/exports/[exportPublicId]
-```
-
-Package 004L derives balanced journals from immutable operational finance events and supports additive journal reversal plus checksum-backed generic CSV export/reversal evidence. There is no ordinary freehand journal UI.
-
-## Package 004M — controlled accounting periods and close governance
-
-Protected route:
-
-```text
-/finance/accounting/periods
-```
-
-Package 004M adds tenant financial years, non-overlapping accounting periods and additive period-status evidence.
-
-```text
-open -> soft_closed -> hard_closed
- ^                         |
- +------- reasoned reopen--+
-```
-
-Server-side accounting controls require open periods for journal posting/reversal, exact closed-period ranges for export, export completeness before hard close, and explicit reopen before reversing hard-closed export evidence.
-
-## Package 004N — controlled trial balance and financial reporting
-
-Protected route:
-
-```text
-/finance/accounting/reports
-```
-
-Package 004N is a migration-free reporting activation under the existing `finance.view` + `finance.accounting.view` boundary.
-
-Every report is tenant-, period- and currency-specific and derives only from immutable accounting journal lines. Trial balance and balance sheet include controlled year-end close/reversal journals; operating P&L excludes those close mechanics so historical operating performance remains visible after retained-earnings transfer.
-
-Open-period reporting is explicitly provisional because later journals dated in the period can still change the result.
-
-See [`docs/47-controlled-trial-balance-financial-reporting.md`](docs/47-controlled-trial-balance-financial-reporting.md).
-
-## Package 004O — controlled year-end close and retained earnings
-
-Protected route:
-
-```text
-/finance/accounting/year-end
-```
-
-Package 004O requires complete financial-year coverage by accounting periods and requires every period to be `hard_closed` before preparation. An active `retained_earnings` mapping must point to an equity account.
-
-The close flow is additive and authority-separated:
-
-```text
-Hard-closed financial year
-    ↓
-Fingerprint immutable journal evidence
-    ↓
-Prepare close evidence
-    ↓
-Different member authorises
-    ↓
-Balanced year_end_close journal
-    ↓
-Revenue / expense balances -> retained earnings
-```
-
-The source fingerprint is re-derived under the organisation accounting mutex before authorisation. Concurrent authorisations serialize so only one active close can win. Corrections use an additive reversal journal and reversal provenance; prior journals, period history and close evidence are never rewritten.
-
-Permissions:
-
-```text
-finance.accounting.year_end.prepare
-finance.accounting.year_end.authorise
-finance.accounting.year_end.reverse
-```
-
-Owner and Administrator receive all three for existing and future organisations. Finance/Commercial remains accounting-view only by default. Explicit granular deny continues to override `finance.manage` fallback.
-
-See [`docs/48-controlled-year-end-close-retained-earnings.md`](docs/48-controlled-year-end-close-retained-earnings.md).
-
-## Database-derived types
-
-Kysely generation remains partitioned across:
-
-```text
-app/src/lib/server/db/generated/database.d.ts
-app/src/lib/server/db/generated/collections.d.ts
-app/src/lib/server/db/generated/accounting.d.ts
-```
-
-All are derivative of migrated MySQL.
-
-## Deliberate finance exclusions
-
-Still not claimed implemented:
-
-- statutory financial statements and Companies House filing;
-- consolidated/group reporting;
-- cash-flow statement, budgets and forecasts;
-- provider-specific Sage/Xero/QuickBooks integration;
-- bank feeds and bank reconciliation;
-- purchase-ledger/AP expansion beyond current operational sources;
-- FX revaluation/translation or reporting-currency consolidation;
-- direct HMRC VAT Return / MTD submission;
-- construction domestic reverse-charge invoice workflow;
-- expected-credit-loss/provisioning accounting;
-- credit-note void/reversal.
-
-## Validation
+## Local validation
 
 From `app/`:
 
 ```bash
+pnpm install
 pnpm db:migrate
 pnpm db:status
 pnpm db:types
+pnpm lint
 pnpm test:integration
 pnpm check
+pnpm test:unit -- --run
+pnpm build
 ```
 
-Package 004O release target:
+Browser acceptance requires Playwright/Chromium and the repository's test environment configuration.
 
-```text
-25 migrations applied / 0 pending
-384 tables / 857 foreign keys / 495 CHECK constraints
-zero Kysely drift across core + collections + accounting outputs
-40 integration files / 158 real-MySQL tests
-accounting year-end: 3 / 3
-accounting year-end bootstrap + explicit deny: 1 / 1
-accounting reporting: 4 / 4
-accounting periods: 6 / 6
-accounting period bootstrap + explicit deny: 1 / 1
-accounting core: 5 / 5
-accounting concurrency: 1 / 1
-svelte-check: 0 errors / 0 warnings
-```
+## Engineering rule
 
-The exact documentation-synchronised PR head must reproduce this gate before merge.
-
-The next accounting boundary is **Controlled Statutory Financial Statements**.
-
-For detailed authorization rules see [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md).
+A NuBlox domain is not complete because a screen exists. It is complete only when the system owns its canonical records and invariants, authoritative permissions, controlled lifecycle, audit/correction evidence, usable workflow, reporting and integration semantics, and validated end-to-end process behaviour.
