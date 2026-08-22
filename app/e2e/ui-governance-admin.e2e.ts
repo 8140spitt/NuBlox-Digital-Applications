@@ -5,10 +5,9 @@ const PASSWORD = 'NuBlox-E2E-Password-2026!';
 const ORGANISATION = 'NuBlox E2E Organisation';
 
 function isProfileUpdateResponse(response: Response) {
-	return (
-		response.request().method() === 'POST' &&
-		new URL(response.url()).pathname === '/organisation/profile'
-	);
+	const requestMethod = response.request().method();
+	const responsePathname = new URL(response.url()).pathname;
+	return requestMethod === 'POST' && responsePathname === '/organisation/profile';
 }
 
 async function signIn(page: import('@playwright/test').Page) {
@@ -98,9 +97,10 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await expect(profileForm.getByLabel('Legal name')).toHaveValue(ORGANISATION);
 	await expect(profileForm.getByLabel('Default timezone')).toHaveValue('Europe/London');
 	await expect(profileForm.getByLabel('Default currency')).toHaveValue('GBP');
-	const profileIsValid = await profileForm.evaluate(
-		(form) => (form as HTMLFormElement).checkValidity()
-	);
+	const profileIsValid = await profileForm.evaluate((form) => {
+		const profile = form as HTMLFormElement;
+		return profile.checkValidity();
+	});
 	expect(profileIsValid).toBe(true);
 
 	async function saveProfile() {
