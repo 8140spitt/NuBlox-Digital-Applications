@@ -1,7 +1,7 @@
 # NuBlox Enterprise Function Taxonomy
 
 **Status:** Architecture working dataset  
-**Purpose:** provide a machine-readable enterprise operating-model taxonomy beneath the governing world-class native ERP architecture in `docs/57-world-class-native-erp-architecture.md`.
+**Purpose:** provide the machine-readable enterprise operating-model taxonomy beneath [`docs/construction-and-built-environment.md`](../../construction-and-built-environment.md).
 
 ## Structure
 
@@ -18,7 +18,7 @@ The current dataset contains:
 
 ## Repository source files
 
-The complete taxonomy is intentionally split into diffable JSON shards:
+The complete taxonomy is split into diffable JSON shards:
 
 - `taxonomy-f01-f08.json`
 - `taxonomy-f09-f15.json`
@@ -26,30 +26,36 @@ The complete taxonomy is intentionally split into diffable JSON shards:
 - `taxonomy-f23-f29.json`
 - `lifecycle-stages.json`
 
-Together the four taxonomy shards contain every F01-F29 function, its sub-functions and its source activity list. The lifecycle file provides the normalized enterprise action lifecycle used when activities are later classified for workflow design.
+Together the four taxonomy shards contain every F01–F29 function, its sub-functions and its source activity list. The lifecycle file provides the normalised enterprise action lifecycle used when activities are classified for workflow design.
 
-Spreadsheet/CSV exports are derived review artefacts rather than the canonical Git source. This avoids making a binary workbook the architecture source of truth while preserving a clean path to regenerate human-review outputs.
+Spreadsheet/CSV exports are derived review artefacts rather than the canonical Git source.
 
-## Planned mapping layer
+## Governing distinction
 
-The taxonomy is designed to support deliberate mapping of each activity to:
+This taxonomy answers **what work an enterprise performs**.
 
+[`construction-and-built-environment.md`](../../construction-and-built-environment.md) answers **what Construction and Built Environment capability NuBlox must own, the canonical sector concepts it must model, and how those capabilities work across the asset lifecycle**.
+
+The 29 enterprise functions and the 19 NuBlox capability domains are therefore orthogonal taxonomies. They must not be forced into a one-to-one mapping.
+
+## Mapping layer
+
+Each enterprise activity may be deliberately mapped to:
+
+- Construction and Built Environment lifecycle stage;
+- one or more of the 19 NuBlox native capability domains;
 - inputs and outputs;
-- roles and responsibilities;
-- NuBlox native capabilities;
 - canonical data objects;
+- organisation/project roles and responsibilities;
+- granular permissions;
+- Work Kernel execution patterns;
 - policies and controls;
-- risks;
-- KPIs and measurable outcomes;
-- workflow states and permissions;
-- audit evidence.
+- risks and compliance obligations;
+- audit evidence;
+- KPIs and measurable outcomes.
 
-Those mappings are not inferred automatically from the source catalogue. They must be governed additions so NuBlox does not create unsupported relationships simply to fill a matrix.
+Those mappings must be governed additions. NuBlox must not invent unsupported relationships simply to fill a matrix.
 
-## Architectural role
+## Sector extension rule
 
-This taxonomy complements, rather than replaces, the 19 ERP capability domains in `docs/57-world-class-native-erp-architecture.md`.
-
-The ERP domains answer **what native capability NuBlox must own**. This taxonomy answers **what work an enterprise performs**. The next architecture layer maps enterprise activities to NuBlox capabilities, canonical data objects, permissions, controls, workflows, roles and measurable outcomes.
-
-The cross-industry taxonomy must also be extended with construction and built-environment-specific value-chain processes; those sector processes remain first-class NuBlox requirements.
+The generic enterprise taxonomy is not sufficient on its own. Construction and built-environment processes — including design/information management, estimating, project controls, commercial management, site production, temporary works, QHSE, commissioning, handover, asset management, facilities and whole-life operation — remain first-class requirements under the governing sector model.
