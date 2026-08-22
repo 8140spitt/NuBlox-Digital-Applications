@@ -85,9 +85,8 @@ export class OrganisationService {
 		const profile = validateProfile(input);
 
 		return this.db.transaction().execute(async (trx) => {
-			const membership = await new OrganisationMembershipRepository(trx).findActiveActorMembership(
-				actor
-			);
+			const membershipRepository = new OrganisationMembershipRepository(trx);
+			const membership = await membershipRepository.findActiveActorMembership(actor);
 			if (!membership) throw new TenantAccessError();
 
 			const decision = await new PermissionService(trx).decide(actor, 'organisation.manage');
