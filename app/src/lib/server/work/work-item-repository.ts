@@ -157,6 +157,31 @@ const WORK_ITEM_COLUMNS = sql.raw(`
 	updated_at
 `);
 
+const QUALIFIED_WORK_ITEM_COLUMNS = sql.raw(`
+	wi.id,
+	wi.owning_organisation_id,
+	wi.public_id,
+	wi.project_id,
+	wi.work_item_kind,
+	wi.source_domain,
+	wi.source_type,
+	wi.source_public_id,
+	wi.title,
+	wi.description,
+	wi.priority,
+	wi.status,
+	wi.due_at,
+	wi.created_by_member_id,
+	wi.started_at,
+	wi.completed_by_member_id,
+	wi.completed_at,
+	wi.cancelled_by_member_id,
+	wi.cancelled_at,
+	wi.completion_note,
+	wi.created_at,
+	wi.updated_at
+`);
+
 export class WorkItemRepository {
 	constructor(private readonly db: DatabaseExecutor) {}
 
@@ -219,12 +244,7 @@ export class WorkItemRepository {
 	): Promise<WorkItemRecord[]> {
 		const safeLimit = Math.max(1, Math.min(Math.trunc(limit), 250));
 		const result = await sql<WorkItemRow>`
-			SELECT ${sql.raw(
-				WORK_ITEM_COLUMNS.sql
-					.split(',')
-					.map((column) => `wi.${column.trim()}`)
-					.join(', ')
-			)}
+			SELECT ${QUALIFIED_WORK_ITEM_COLUMNS}
 			FROM work_items AS wi
 			INNER JOIN work_item_assignments AS assignment
 				ON assignment.work_item_id = wi.id
