@@ -7,7 +7,11 @@
 
 <nav class="organisation-nav" aria-label="Organisation settings">
 	<a href="/organisation" class:active={pathname === '/organisation'}>Access & roles</a>
-	<a href="/organisation/profile" class:active={pathname === '/organisation/profile'}>Organisation profile</a>
+	<a
+		href="/organisation/profile"
+		class:active={pathname === '/organisation/profile'}
+		>Organisation profile</a
+	>
 </nav>
 
 {@render children()}
