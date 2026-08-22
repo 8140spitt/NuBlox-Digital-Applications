@@ -85,7 +85,9 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await page.getByRole('link', { name: 'Organisation profile' }).click();
 	await expect(page).toHaveURL(/\/organisation\/profile$/);
 
-	const profileForm = page.locator('form[action="?/update"]');
+	const profileForm = page.locator('form').filter({
+		has: page.getByRole('button', { name: 'Save organisation profile' })
+	});
 	await expect(profileForm.getByLabel('Legal name')).toHaveValue(ORGANISATION);
 	await expect(profileForm.getByLabel('Default timezone')).toHaveValue('Europe/London');
 	await expect(profileForm.getByLabel('Default currency')).toHaveValue('GBP');
@@ -99,4 +101,5 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
 	await expect(page).toHaveURL(/\/organisation\/profile$/);
 	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
+	await expect(profileForm.getByLabel('Trading name')).toHaveValue('');
 });
