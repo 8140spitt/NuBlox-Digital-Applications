@@ -1,3 +1,4 @@
 Repository consolidation cleanup trigger.
 Schema authority: 398 / 904 / 530.
 Lint repair: remove unused ProjectTeamValidationError import.
+Work Kernel test correlation IDs: UUID format.
