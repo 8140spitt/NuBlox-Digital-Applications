@@ -1,4 +1,4 @@
-import { error, fail, redirect, type Actions } from '@sveltejs/kit';
+import { error, fail, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
@@ -9,8 +9,6 @@ import {
 	OrganisationProfileValidationError,
 	OrganisationService
 } from '$lib/server/organisations/organisation-service';
-
-const PROFILE_SUCCESS_COOKIE = 'nublox_organisation_profile_notice';
 
 type LocalsLike = {
 	actor: { userId: string } | null;
@@ -44,17 +42,12 @@ function stringField(formData: FormData, name: string): string {
 	return typeof value === 'string' ? value.trim() : '';
 }
 
-export const load: PageServerLoad = async ({ locals, cookies }) => {
+export const load: PageServerLoad = async ({ locals }) => {
 	const actor = actorFromLocals(locals);
 	const db = getDatabase();
 	const decision = await new PermissionService(db).decide(actor, 'organisation.manage');
 	if (!decision.allowed) {
 		throw error(403, 'You do not have organisation profile management access.');
-	}
-
-	const profileUpdated = cookies.get(PROFILE_SUCCESS_COOKIE) === 'updated';
-	if (profileUpdated) {
-		cookies.delete(PROFILE_SUCCESS_COOKIE, { path: '/organisation/profile' });
 	}
 
 	const organisation = await new OrganisationService(db).getCurrentOrganisation(actor);
@@ -65,13 +58,12 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 			tradingName: organisation.tradingName,
 			defaultTimezone: organisation.defaultTimezone,
 			defaultCurrencyCode: organisation.defaultCurrencyCode
-		},
-		profileSuccess: profileUpdated ? 'Organisation profile updated.' : null
+		}
 	};
 };
 
 export const actions: Actions = {
-	update: async ({ request, locals, cookies, url }) => {
+	default: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
 		const formData = await request.formData();
 		const service = new OrganisationService(getDatabase());
@@ -82,6 +74,7 @@ export const actions: Actions = {
 				defaultTimezone: stringField(formData, 'defaultTimezone'),
 				defaultCurrencyCode: stringField(formData, 'defaultCurrencyCode')
 			});
+			return { profileSuccess: 'Organisation profile updated.' };
 		} catch (cause) {
 			if (cause instanceof OrganisationProfileValidationError) {
 				return fail(400, { profileError: cause.message });
@@ -91,14 +84,5 @@ export const actions: Actions = {
 			}
 			throw cause;
 		}
-
-		cookies.set(PROFILE_SUCCESS_COOKIE, 'updated', {
-			path: '/organisation/profile',
-			httpOnly: true,
-			sameSite: 'lax',
-			secure: url.protocol === 'https:',
-			maxAge: 60
-		});
-		redirect(303, '/organisation/profile');
 	}
 };
