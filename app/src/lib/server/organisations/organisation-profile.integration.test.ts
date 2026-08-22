@@ -64,15 +64,29 @@ async function cleanup(): Promise<void> {
 	if (!db) return;
 	const organisationIds = [organisationId, otherOrganisationId].filter(Boolean);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 	const userIds = [managerUserId, memberUserId].filter(Boolean);
-	if (userIds.length > 0) await db.deleteFrom('users').where('id', 'in', userIds).execute();
+	if (userIds.length > 0) {
+		await db.deleteFrom('users').where('id', 'in', userIds).execute();
+	}
 }
 
 async function createFixture(): Promise<void> {
@@ -158,7 +172,8 @@ describe('organisation profile governance', () => {
 
 	it('updates the canonical organisation profile with permission and audit evidence', async () => {
 		const manager = actor(managerUserId, managerMemberId);
-		const updated = await new OrganisationService(db).updateCurrentOrganisationProfile(manager, {
+		const service = new OrganisationService(db);
+		const updated = await service.updateCurrentOrganisationProfile(manager, {
 			legalName: '  NuBlox Profile Test Ltd  ',
 			tradingName: '  NuBlox Profile Test  ',
 			defaultTimezone: 'Europe/Paris',
@@ -201,8 +216,9 @@ describe('organisation profile governance', () => {
 	});
 
 	it('requires organisation.manage and the full active membership tuple', async () => {
+		const service = new OrganisationService(db);
 		await expect(
-			new OrganisationService(db).updateCurrentOrganisationProfile(actor(memberUserId, memberId), {
+			service.updateCurrentOrganisationProfile(actor(memberUserId, memberId), {
 				legalName: 'Unauthorised change',
 				tradingName: null,
 				defaultTimezone: 'Europe/London',
@@ -211,7 +227,7 @@ describe('organisation profile governance', () => {
 		).rejects.toBeInstanceOf(TenantAccessError);
 
 		await expect(
-			new OrganisationService(db).updateCurrentOrganisationProfile(
+			service.updateCurrentOrganisationProfile(
 				{
 					organisationId: otherOrganisationId,
 					userId: managerUserId,
@@ -230,8 +246,9 @@ describe('organisation profile governance', () => {
 
 	it('rejects invalid organisation master-data values before mutation', async () => {
 		const manager = actor(managerUserId, managerMemberId);
+		const service = new OrganisationService(db);
 		await expect(
-			new OrganisationService(db).updateCurrentOrganisationProfile(manager, {
+			service.updateCurrentOrganisationProfile(manager, {
 				legalName: '',
 				tradingName: null,
 				defaultTimezone: 'Europe/London',
@@ -240,7 +257,7 @@ describe('organisation profile governance', () => {
 		).rejects.toBeInstanceOf(OrganisationProfileValidationError);
 
 		await expect(
-			new OrganisationService(db).updateCurrentOrganisationProfile(manager, {
+			service.updateCurrentOrganisationProfile(manager, {
 				legalName: 'Valid legal name',
 				tradingName: null,
 				defaultTimezone: 'Not/A-Timezone',
@@ -249,7 +266,7 @@ describe('organisation profile governance', () => {
 		).rejects.toBeInstanceOf(OrganisationProfileValidationError);
 
 		await expect(
-			new OrganisationService(db).updateCurrentOrganisationProfile(manager, {
+			service.updateCurrentOrganisationProfile(manager, {
 				legalName: 'Valid legal name',
 				tradingName: null,
 				defaultTimezone: 'Europe/London',
