@@ -26,8 +26,12 @@ export async function enqueueOutboxEvent(
 	event: OutboxEvent
 ): Promise<string> {
 	const eventPublicId = randomUUID();
-	const aggregateType = event.aggregateType ?? null;
-	const aggregatePublicId = event.aggregatePublicId ?? null;
+	const topic = event.topic.trim();
+	if (!topic) throw new Error('Outbox topic is required.');
+	if (topic.length > 160) throw new Error('Outbox topic must be 160 characters or fewer.');
+
+	const aggregateType = event.aggregateType?.trim() || null;
+	const aggregatePublicId = event.aggregatePublicId?.trim() || null;
 	if ((aggregateType === null) !== (aggregatePublicId === null)) {
 		throw new Error('Outbox aggregateType and aggregatePublicId must be supplied together.');
 	}
@@ -47,7 +51,7 @@ export async function enqueueOutboxEvent(
 		VALUES (
 			${eventPublicId},
 			${event.organisationId ?? null},
-			${event.topic.trim()},
+			${topic},
 			${aggregateType},
 			${aggregatePublicId},
 			${JSON.stringify(event.payload)},
