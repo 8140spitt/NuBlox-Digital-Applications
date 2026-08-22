@@ -1,8 +1,15 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Response } from '@playwright/test';
 
 const EMAIL = 'e2e-owner@example.test';
 const PASSWORD = 'NuBlox-E2E-Password-2026!';
 const ORGANISATION = 'NuBlox E2E Organisation';
+
+function isProfileUpdateResponse(response: Response) {
+	return (
+		response.request().method() === 'POST' &&
+		new URL(response.url()).pathname === '/organisation/profile'
+	);
+}
 
 async function signIn(page: import('@playwright/test').Page) {
 	await page.goto('/signin');
@@ -91,17 +98,15 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await expect(profileForm.getByLabel('Legal name')).toHaveValue(ORGANISATION);
 	await expect(profileForm.getByLabel('Default timezone')).toHaveValue('Europe/London');
 	await expect(profileForm.getByLabel('Default currency')).toHaveValue('GBP');
-	expect(await profileForm.evaluate((form) => (form as HTMLFormElement).checkValidity())).toBe(true);
+	const profileIsValid = await profileForm.evaluate(
+		(form) => (form as HTMLFormElement).checkValidity()
+	);
+	expect(profileIsValid).toBe(true);
 
 	async function saveProfile() {
-		const [response] = await Promise.all([
-			page.waitForResponse(
-				(response) =>
-					response.request().method() === 'POST' &&
-					new URL(response.url()).pathname === '/organisation/profile'
-			),
-			profileForm.getByRole('button', { name: 'Save organisation profile' }).click()
-		]);
+		const responsePromise = page.waitForResponse(isProfileUpdateResponse);
+		await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
+		const response = await responsePromise;
 		expect(response.status()).toBe(303);
 		await expect(page).toHaveURL(/\/organisation\/profile\?updated=1$/);
 		await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
