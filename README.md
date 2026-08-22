@@ -1,120 +1,93 @@
 # NuBlox: Digital Applications
 
-NuBlox is a natively engineered **construction and built-environment operating system**: a world-class ERP and operational platform connecting the commercial, project, design, field, financial, workforce, asset, property and service lifecycle in one governed system.
+NuBlox is a natively engineered **construction and built-environment operating system**: a world-class ERP and operational platform connecting commercial, project, field, financial, workforce, asset and property lifecycles in one governed system.
 
-The product is designed around canonical business records, explicit organisation/project context, server-authoritative permissions, controlled workflows, durable evidence and end-to-end process integrity.
+## Architecture: bottom up
 
-## Governing Construction and Built Environment model
+NuBlox is not designed from screens or modules downward. The governing architecture starts from irreducible business semantics and builds upward:
 
-The single governing sector and product model is:
+```text
+Primitives & invariants
+→ Canonical records & relationships
+→ Trust, tenancy & authorisation
+→ State, work, events & evidence
+→ Domain services & boundaries
+→ End-to-end business processes
+→ Native capability domains
+→ Construction & Built Environment overlays
+→ Experience & workspaces
+→ Completeness & validation
+```
 
-**[`docs/construction-and-built-environment.md`](docs/construction-and-built-environment.md)**
+Start with [`docs/architecture/bottom-up/README.md`](docs/architecture/bottom-up/README.md).
 
-It defines:
+This architecture enforces a simple rule: **an upper layer may compose lower layers, but it may not invent contradictory semantics**. A workspace cannot invent permission, a process cannot invent duplicate master data, and a capability cannot bypass its owning domain service.
 
-- the complete built-asset and organisation boundary;
-- the whole-life lifecycle from market and feasibility through design, construction, operation, refurbishment and disposal;
-- canonical enterprise, project, information, commercial, asset and financial records;
-- the 19 stable NuBlox native capability domains;
-- specialist overlays for design, engineering, surveying, contracting, trades, infrastructure, manufacturing, property, FM, service and regulation;
-- cross-domain process chains and completion criteria;
-- BIM/CDE, project controls, QHSE, building safety, workforce, supply chain, carbon and asset-management semantics;
-- standards and interoperability treatment;
-- the capability completeness gate for world-class delivery.
+## Construction and Built Environment
 
-The canonical lifecycle is:
+The sector model covers the enterprise and whole built-asset lifecycle:
 
 **Market → Lead → Opportunity → Bid → Estimate → Proposal → Quote → Contract → Design → Plan → Procure → Produce → Construct → Control → Invoice → Account → Handover → Operate → Maintain → Refurbish → Dispose**
 
-## Current platform foundation
+See [`docs/construction-and-built-environment.md`](docs/construction-and-built-environment.md).
 
-The current `main` line includes native foundations across:
+The product supports organisations ranging from sole traders to multi-entity groups across development/ownership, contracting, specialist trades, design/engineering, surveying/commercial, manufacturing, merchants/logistics, plant/fleet, infrastructure/utilities, property/FM and maintenance/service.
 
-- multi-tenant identity, authentication, organisation membership, roles and granular permissions;
-- CRM organisations, contacts, opportunities and activity history;
-- estimating, quotations, contract formation and amendments;
-- projects, project participants and invite-first cross-organisation collaboration;
-- project information/document controls and portal collaboration;
-- procurement, purchasing and project commercial control;
-- workforce, time and scheduling foundations;
-- site, quality and safety controls;
-- assets, facilities and maintenance foundations;
-- receivables, collections, credit control, tax-relief workflows, accounting, period close, reporting and year-end close;
-- native Accounts Payable matching and approval foundations;
-- a horizontal Work Kernel for actions, assignments, approvals, decisions, lifecycle evidence and durable outbox events;
-- a permission-aware construction command centre and contextual application shell.
+## Native capability architecture
 
-Capability presence is not treated as product completeness. A world-class capability also requires canonical records, lifecycle controls, permissions and segregation of duties, audit/correction semantics, reporting, integration boundaries and validated end-to-end behaviour.
+NuBlox has 19 native capability domains covering enterprise/master data, CRM, estimating/sales, contracts/commercial, projects, design/BIM, finance, management accounting/planning, procurement, materials/logistics, production, people/payroll, site, QHSE, plant/EAM, property/FM, service, sustainability and platform data/workflow/intelligence.
 
-## Database baseline
+The separate enterprise function taxonomy contains 29 functions, 353 sub-functions and 1,510 source activities. It describes **work performed**; capability domains describe **product capability owned**. They are mapped many-to-many.
 
-A clean MySQL 8.4 rebuild of the consolidated migration stream on **22 August 2026** measured:
-
-| Measure | Current baseline |
-| --- | ---: |
-| Dbmate migrations | 35 |
-| Pending migrations | 0 |
-| Application tables | 398 |
-| Foreign keys | 904 |
-| CHECK constraints | 530 |
-
-Committed MySQL migrations in [`database/migrations/`](database/migrations/) are the implemented schema authority. Generated Kysely types are derivative application artefacts.
-
-## Technology
-
-- **Application:** Svelte 5 / SvelteKit
-- **Authentication:** Better Auth
-- **Database:** MySQL 8.4 / InnoDB
-- **SQL access:** Kysely + `mysql2`
-- **Migrations:** Dbmate
-- **Validation:** Vitest, Svelte Check, ESLint/Prettier and Playwright
-- **Architecture:** modular monolith with explicit domain boundaries and a normalised relational model by default
-
-## Core security model
-
-The governing separation is:
+## Security model
 
 **Career ≠ Organisation Role ≠ Project Role ≠ Permission**
 
-Effective permission precedence is:
+Permission precedence:
 
-**explicit member deny → explicit member allow → active role grant → default deny**
+```text
+explicit member deny
+> explicit member allow
+> active role grant
+> default deny
+```
 
-Umbrella permissions do not cross capability domains. Tenant and project boundaries are enforced server-side; UI visibility is never the authority for access control.
+Tenant/project/record scope, lifecycle policy, delegated authority and segregation of duties are evaluated server-side. UI visibility is never authority.
+
+## Data and implementation authority
+
+- **Database:** MySQL 8.4 / InnoDB
+- **Migrations:** Dbmate plain SQL
+- **Runtime SQL:** Kysely + `mysql2`
+- **Application:** Svelte 5 / SvelteKit
+- **Authentication:** Better Auth
+- **Architecture:** modular monolith with explicit domain boundaries
+- **Data model:** relational and normalised to 3NF by default
+
+Committed SQL migrations in [`database/migrations/`](database/migrations/) are the implemented schema authority. Generated Kysely types are derivative.
+
+The last clean consolidated migration baseline measured on 22 August 2026 was 35 applied / 0 pending, 398 application tables, 904 foreign keys and 530 CHECK constraints. These are baseline observations, not permanent architecture invariants.
 
 ## Repository structure
 
 ```text
-app/                 SvelteKit application and server domain code
+app/                         SvelteKit application and server domain code
 database/
-  migrations/        Authoritative MySQL migration stream
-  docs/              Durable schema-package design references
-  seeds/             Controlled seed/reference data
+  migrations/                authoritative MySQL migration stream
+  docs/                      durable schema-package references
+  seeds/                     controlled seed/reference data
 docs/
-  construction-and-built-environment.md
-                      Governing sector and product model
-  adr/               Architecture Decision Records
-  architecture/      Enterprise architecture and taxonomy
-  branding/          NuBlox brand system
-  README.md          Documentation authority and index
+  architecture/bottom-up/    governing architecture layers
+  architecture/taxonomy/     enterprise function/activity taxonomy
+  adr/                       Architecture Decision Records
+  branding/                  NuBlox brand system
 ```
 
-## Documentation
+## Engineering definition of done
 
-Start with [`docs/README.md`](docs/README.md). It defines documentation precedence and the active reference set.
+A material capability is not complete because a screen or table exists. It must trace through canonical records, invariants, permissions, lifecycle, service boundary, workflow/evidence, process consequences, reporting/integration, usable experience and automated validation.
 
-Key references:
-
-- [`docs/construction-and-built-environment.md`](docs/construction-and-built-environment.md) — governing Construction and Built Environment model.
-- [`docs/architecture/taxonomy/README.md`](docs/architecture/taxonomy/README.md) — enterprise function taxonomy.
-- [`docs/work-kernel-foundation.md`](docs/work-kernel-foundation.md) — horizontal work execution model.
-- [`docs/01-product-requirements-document.md`](docs/01-product-requirements-document.md) — product requirements.
-- [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md) — tenancy and authorisation model.
-- [`docs/11-security-privacy-compliance.md`](docs/11-security-privacy-compliance.md) — security and compliance controls.
-- [`docs/17-sources-and-standards.md`](docs/17-sources-and-standards.md) — current source and standards register.
-- [`database/docs/`](database/docs/) — schema design references.
-
-Implementation history, delivery sequencing and superseded plans belong in Git history and GitHub issues rather than the active architecture documentation set.
+See [`docs/architecture/bottom-up/layer-9-completeness-validation.md`](docs/architecture/bottom-up/layer-9-completeness-validation.md).
 
 ## Local validation
 
@@ -132,8 +105,4 @@ pnpm test:unit -- --run
 pnpm build
 ```
 
-Browser acceptance requires Playwright/Chromium and the repository test environment configuration.
-
-## Engineering rule
-
-A NuBlox domain is not complete because a screen exists. It is complete only when the system owns its canonical records and invariants, authoritative permissions, controlled lifecycle, audit/correction evidence, usable workflow, reporting and integration semantics, and validated end-to-end process behaviour.
+Browser acceptance requires the repository Playwright test environment.
