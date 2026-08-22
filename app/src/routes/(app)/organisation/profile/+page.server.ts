@@ -12,7 +12,11 @@ import {
 
 type LocalsLike = {
 	actor: { userId: string } | null;
-	tenant: { membershipVerified: boolean; organisationId: string | null; memberId: string | null };
+	tenant: {
+		membershipVerified: boolean;
+		organisationId: string | null;
+		memberId: string | null;
+	};
 	correlationId: string;
 };
 
@@ -40,10 +44,13 @@ function stringField(formData: FormData, name: string): string {
 
 export const load: PageServerLoad = async ({ locals }) => {
 	const actor = actorFromLocals(locals);
-	const decision = await new PermissionService(getDatabase()).decide(actor, 'organisation.manage');
-	if (!decision.allowed) throw error(403, 'You do not have organisation profile management access.');
+	const db = getDatabase();
+	const decision = await new PermissionService(db).decide(actor, 'organisation.manage');
+	if (!decision.allowed) {
+		throw error(403, 'You do not have organisation profile management access.');
+	}
 
-	const organisation = await new OrganisationService(getDatabase()).getCurrentOrganisation(actor);
+	const organisation = await new OrganisationService(db).getCurrentOrganisation(actor);
 	return {
 		profile: {
 			publicId: organisation.publicId,
@@ -59,8 +66,9 @@ export const actions: Actions = {
 	update: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
 		const formData = await request.formData();
+		const service = new OrganisationService(getDatabase());
 		try {
-			await new OrganisationService(getDatabase()).updateCurrentOrganisationProfile(actor, {
+			await service.updateCurrentOrganisationProfile(actor, {
 				legalName: stringField(formData, 'legalName'),
 				tradingName: stringField(formData, 'tradingName'),
 				defaultTimezone: stringField(formData, 'defaultTimezone'),
