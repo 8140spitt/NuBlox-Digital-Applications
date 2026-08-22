@@ -9,7 +9,6 @@ import { TenantAccessError } from '$lib/server/kernel/errors';
 import { WorkItemService, WorkKernelValidationError } from './work-item-service';
 
 const TEST_NAME_PREFIX = 'Work Kernel Integration ';
-const TEST_CORRELATION_PREFIX = 'work-kernel-it-';
 
 let db: Database;
 
@@ -147,7 +146,7 @@ async function createFixture(): Promise<WorkFixture> {
 			organisationId: organisationAId,
 			userId,
 			memberId: memberAId,
-			correlationId: `${TEST_CORRELATION_PREFIX}${randomUUID()}`
+			correlationId: randomUUID()
 		}
 	};
 }
