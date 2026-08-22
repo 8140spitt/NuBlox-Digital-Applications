@@ -49,9 +49,7 @@ function validateProfile(input: OrganisationProfileInput): Required<Organisation
 
 	const defaultCurrencyCode = input.defaultCurrencyCode.trim().toUpperCase();
 	if (!/^[A-Z]{3}$/.test(defaultCurrencyCode)) {
-		throw new OrganisationProfileValidationError(
-			'Currency code must be a three-letter ISO code.'
-		);
+		throw new OrganisationProfileValidationError('Currency code must be a three-letter ISO code.');
 	}
 
 	return {
