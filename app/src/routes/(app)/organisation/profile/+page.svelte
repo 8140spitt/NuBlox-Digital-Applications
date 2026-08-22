@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
+
 	let { data, form } = $props();
 </script>
 
@@ -33,7 +35,7 @@
 		</p>
 	</div>
 
-	<form method="POST" class="form-grid">
+	<form method="POST" use:enhance class="form-grid">
 		<label class="wide">
 			<span>Legal name</span>
 			<input
