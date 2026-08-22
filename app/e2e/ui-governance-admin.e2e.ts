@@ -149,9 +149,11 @@ test('owner controls explicit member permission exceptions through the browser',
 	await expect(page).toHaveURL(/\/organisation\/permissions$/);
 
 	const overrideForm = page.locator('form[action="?/setOverride"]');
-	await overrideForm
-		.locator('select[name="memberPublicId"]')
-		.selectOption({ label: 'NuBlox E2E Viewer · active' });
+	const memberSelect = overrideForm.locator('select[name="memberPublicId"]');
+	const viewerOption = memberSelect.locator('option', { hasText: 'NuBlox E2E Viewer' });
+	const viewerPublicId = await viewerOption.getAttribute('value');
+	expect(viewerPublicId).not.toBeNull();
+	await memberSelect.selectOption(viewerPublicId ?? '');
 	await overrideForm.locator('input[name="permissionKey"]').fill('crm.view');
 	await overrideForm.locator('select[name="effect"]').selectOption('deny');
 	await overrideForm.locator('textarea[name="reason"]').fill('E2E explicit deny exception.');
