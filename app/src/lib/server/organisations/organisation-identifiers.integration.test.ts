@@ -64,6 +64,7 @@ async function cleanup(): Promise<void> {
 	if (!db) return;
 	const organisationIds = [organisationId, otherOrganisationId].filter(Boolean);
 	if (organisationIds.length > 0) {
+		await db.deleteFrom('outbox_events').where('organisation_id', 'in', organisationIds).execute();
 		await db
 			.deleteFrom('audit_events')
 			.where('acting_organisation_id', 'in', organisationIds)
@@ -169,7 +170,7 @@ describe('organisation identifier governance', () => {
 		await closeDatabase();
 	});
 
-	it('adds, lists and removes canonical legal identifiers with audit evidence', async () => {
+	it('adds, lists and removes canonical legal identifiers with audit and outbox evidence', async () => {
 		const manager = actor(managerUserId, managerMemberId);
 		const service = new OrganisationService(db);
 
@@ -199,6 +200,18 @@ describe('organisation identifier governance', () => {
 			actor_member_id: managerMemberId
 		});
 
+		const addedEvent = await db
+			.selectFrom('outbox_events')
+			.select(['topic', 'aggregate_type', 'aggregate_public_id'])
+			.where('organisation_id', '=', organisationId)
+			.where('topic', '=', 'organisation.identifier.added')
+			.executeTakeFirstOrThrow();
+		expect(addedEvent).toEqual({
+			topic: 'organisation.identifier.added',
+			aggregate_type: 'organisation',
+			aggregate_public_id: organisationPublicId
+		});
+
 		await service.removeCurrentOrganisationIdentifier(manager, {
 			identifierType: 'vat_number',
 			identifierValue: 'GB123456789'
@@ -212,6 +225,14 @@ describe('organisation identifier governance', () => {
 			.where('action_key', '=', 'organisation.identifier.remove')
 			.executeTakeFirstOrThrow();
 		expect(removedAudit.action_key).toBe('organisation.identifier.remove');
+
+		const removedEvent = await db
+			.selectFrom('outbox_events')
+			.select('topic')
+			.where('organisation_id', '=', organisationId)
+			.where('topic', '=', 'organisation.identifier.removed')
+			.executeTakeFirstOrThrow();
+		expect(removedEvent.topic).toBe('organisation.identifier.removed');
 	});
 
 	it('rejects duplicates and invalid identifier values before mutation', async () => {
