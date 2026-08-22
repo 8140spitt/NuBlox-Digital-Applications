@@ -48,10 +48,16 @@ export class OrganisationLocationNotFoundError extends Error {
 	}
 }
 
-function optionalText(value: string | null | undefined, maximum: number, label: string): string | null {
+function optionalText(
+	value: string | null | undefined,
+	maximum: number,
+	label: string
+): string | null {
 	const normalised = value?.trim() ?? '';
 	if (normalised.length > maximum) {
-		throw new OrganisationLocationValidationError(`${label} must not exceed ${maximum} characters.`);
+		throw new OrganisationLocationValidationError(
+			`${label} must not exceed ${maximum} characters.`
+		);
 	}
 	return normalised || null;
 }
@@ -70,7 +76,9 @@ function validateTimezone(value: string | null | undefined): string | null {
 	return timezone;
 }
 
-function validateAddress(input: OrganisationLocationInput['address']): OrganisationAddressInput | null {
+function validateAddress(
+	input: OrganisationLocationInput['address']
+): OrganisationAddressInput | null {
 	if (!input) return null;
 	const values = [
 		input.line1,
@@ -152,7 +160,9 @@ export class OrganisationLocationService {
 
 	async load(actor: TenantActorContext) {
 		await this.requireManager(actor);
-		const organisation = await new OrganisationRepository(this.db).findActiveById(actor.organisationId);
+		const organisation = await new OrganisationRepository(this.db).findActiveById(
+			actor.organisationId
+		);
 		if (!organisation) throw new TenantAccessError('The requested organisation is not active.');
 		const locations = await new OrganisationLocationRepository(this.db).listLocations(
 			actor.organisationId
@@ -160,7 +170,10 @@ export class OrganisationLocationService {
 		return { organisation, locations };
 	}
 
-	async createLocation(actor: TenantActorContext, input: OrganisationLocationInput): Promise<string> {
+	async createLocation(
+		actor: TenantActorContext,
+		input: OrganisationLocationInput
+	): Promise<string> {
 		const location = validateLocation(input);
 		const publicId = randomUUID();
 
@@ -252,7 +265,10 @@ export class OrganisationLocationService {
 			if (!organisation) throw new TenantAccessError('The requested organisation is not active.');
 
 			const repository = new OrganisationLocationRepository(trx);
-			const current = await repository.findLocationForUpdate(actor.organisationId, locationPublicId);
+			const current = await repository.findLocationForUpdate(
+				actor.organisationId,
+				locationPublicId
+			);
 			if (!current) throw new OrganisationLocationNotFoundError();
 			if (
 				await repository.findNameConflict(actor.organisationId, location.name, current.publicId)
@@ -339,9 +355,9 @@ export class OrganisationLocationService {
 	}
 
 	private async requireManager(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(
-			actor
-		);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 		const decision = await new PermissionService(this.db).decide(actor, 'organisation.manage');
 		if (!decision.allowed) {

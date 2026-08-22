@@ -94,7 +94,9 @@
 			<p class="eyebrow">Effective exceptions</p>
 			<h2 id="current-overrides-heading">Current member overrides</h2>
 		</div>
-		<p>Removing an exception returns permission evaluation to the next rule in the precedence chain.</p>
+		<p>
+			Removing an exception returns permission evaluation to the next rule in the precedence chain.
+		</p>
 	</div>
 
 	{#if data.overrides.length === 0}
@@ -119,7 +121,11 @@
 								<code>{override.permissionKey}</code>
 								<small>{override.permissionName}</small>
 							</td>
-							<td><span class:deny={override.effect === 'deny'} class="effect">{override.effect}</span></td>
+							<td
+								><span class:deny={override.effect === 'deny'} class="effect"
+									>{override.effect}</span
+								></td
+							>
 							<td>{override.reason}</td>
 							<td class="row-action">
 								<form method="POST" action="?/removeOverride">

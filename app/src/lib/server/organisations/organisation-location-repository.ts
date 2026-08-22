@@ -123,7 +123,10 @@ export class OrganisationLocationRepository {
 		};
 	}
 
-	async findAddress(addressId: string, organisationId: string): Promise<OrganisationAddressSummary | null> {
+	async findAddress(
+		addressId: string,
+		organisationId: string
+	): Promise<OrganisationAddressSummary | null> {
 		const row = await this.db
 			.selectFrom('addresses')
 			.select([

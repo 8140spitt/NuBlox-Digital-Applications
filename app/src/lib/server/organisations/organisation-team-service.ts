@@ -232,9 +232,9 @@ export class OrganisationTeamService {
 		executor: DatabaseExecutor,
 		actor: TenantActorContext
 	): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(executor).findActiveActorMembership(
-			actor
-		);
+		const membership = await new OrganisationMembershipRepository(
+			executor
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 
 		const decisions = await new PermissionService(executor).decideMany(actor, [

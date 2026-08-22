@@ -138,7 +138,8 @@ export class OrganisationService {
 		actor: TenantActorContext
 	): Promise<OrganisationIdentifierSummary[]> {
 		const membershipRepository = new OrganisationMembershipRepository(this.db);
-		if (!(await membershipRepository.findActiveActorMembership(actor))) throw new TenantAccessError();
+		if (!(await membershipRepository.findActiveActorMembership(actor)))
+			throw new TenantAccessError();
 
 		const decision = await new PermissionService(this.db).decide(actor, 'organisation.manage');
 		if (!decision.allowed) {

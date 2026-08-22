@@ -100,7 +100,8 @@ export class MemberPermissionOverrideService {
 
 			const repository = new MemberPermissionOverrideRepository(trx);
 			const member = await repository.findMemberForUpdate(actor.organisationId, memberPublicId);
-			if (!member) throw new MemberPermissionOverrideNotFoundError('Organisation member not found.');
+			if (!member)
+				throw new MemberPermissionOverrideNotFoundError('Organisation member not found.');
 			if (member.id === actor.memberId) {
 				throw new MemberPermissionOverrideValidationError(
 					'You cannot change your own explicit permission overrides from this administration screen.'
@@ -192,7 +193,8 @@ export class MemberPermissionOverrideService {
 
 			const repository = new MemberPermissionOverrideRepository(trx);
 			const member = await repository.findMemberForUpdate(actor.organisationId, memberPublicId);
-			if (!member) throw new MemberPermissionOverrideNotFoundError('Organisation member not found.');
+			if (!member)
+				throw new MemberPermissionOverrideNotFoundError('Organisation member not found.');
 			if (member.id === actor.memberId) {
 				throw new MemberPermissionOverrideValidationError(
 					'You cannot change your own explicit permission overrides from this administration screen.'
@@ -208,7 +210,8 @@ export class MemberPermissionOverrideService {
 				member.id,
 				permission.id
 			);
-			if (!existing) throw new MemberPermissionOverrideNotFoundError('Permission override not found.');
+			if (!existing)
+				throw new MemberPermissionOverrideNotFoundError('Permission override not found.');
 
 			await repository.deleteOverride(actor.organisationId, member.id, permission.id);
 			if (permissionKey === 'organisation.manage' && member.status === 'active') {
@@ -247,9 +250,9 @@ export class MemberPermissionOverrideService {
 		executor: DatabaseExecutor,
 		actor: TenantActorContext
 	): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(executor).findActiveActorMembership(
-			actor
-		);
+		const membership = await new OrganisationMembershipRepository(
+			executor
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 		const decision = await new PermissionService(executor).decide(actor, 'organisation.manage');
 		if (!decision.allowed) {
@@ -262,7 +265,9 @@ export class MemberPermissionOverrideService {
 		actor: TenantActorContext
 	): Promise<void> {
 		const repository = new MemberPermissionOverrideRepository(executor);
-		const activeMembers = await repository.listActiveMembersForPermissionCheck(actor.organisationId);
+		const activeMembers = await repository.listActiveMembersForPermissionCheck(
+			actor.organisationId
+		);
 		for (const member of activeMembers) {
 			const decision = await new PermissionService(executor).decide(
 				{

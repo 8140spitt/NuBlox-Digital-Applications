@@ -4,10 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
-import {
-	OrganisationIdentifierValidationError,
-	OrganisationService
-} from './organisation-service';
+import { OrganisationIdentifierValidationError, OrganisationService } from './organisation-service';
 
 const PREFIX = 'Organisation Identifier Integration ';
 

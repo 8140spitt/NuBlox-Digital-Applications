@@ -84,9 +84,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			},
 			locations: data.locations.map(({ id: _id, address, ...location }) => ({
 				...location,
-				address: address
-					? (({ id: _addressId, ...publicAddress }) => publicAddress)(address)
-					: null
+				address: address ? (({ id: _addressId, ...publicAddress }) => publicAddress)(address) : null
 			}))
 		};
 	} catch (cause) {

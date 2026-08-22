@@ -5,7 +5,10 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
-import { OrganisationTeamService, OrganisationTeamValidationError } from './organisation-team-service';
+import {
+	OrganisationTeamService,
+	OrganisationTeamValidationError
+} from './organisation-team-service';
 
 const PREFIX = 'Organisation Team Integration ';
 

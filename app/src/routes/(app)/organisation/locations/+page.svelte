@@ -15,8 +15,8 @@
 <section class="correction-note" aria-label="Address correction policy">
 	<strong>Address corrections preserve history.</strong>
 	<span>
-		When an address changes, NuBlox relinks the location to a new canonical address record rather than
-		mutating an address that may be referenced elsewhere.
+		When an address changes, NuBlox relinks the location to a new canonical address record rather
+		than mutating an address that may be referenced elsewhere.
 	</span>
 </section>
 
@@ -125,7 +125,9 @@
 					<summary>
 						<span>
 							<strong>{location.name}</strong>
-							<small>{location.locationType}{location.timezone ? ` · ${location.timezone}` : ''}</small>
+							<small
+								>{location.locationType}{location.timezone ? ` · ${location.timezone}` : ''}</small
+							>
 						</span>
 						<span class:inactive={!location.isActive} class="status">
 							{location.isActive ? 'Active' : 'Inactive'}
@@ -184,11 +186,19 @@
 								</label>
 								<label>
 									<span>Postal code</span>
-									<input name="postalCode" maxlength="32" value={location.address?.postalCode ?? ''} />
+									<input
+										name="postalCode"
+										maxlength="32"
+										value={location.address?.postalCode ?? ''}
+									/>
 								</label>
 								<label>
 									<span>Country code</span>
-									<input name="countryCode" maxlength="2" value={location.address?.countryCode ?? ''} />
+									<input
+										name="countryCode"
+										maxlength="2"
+										value={location.address?.countryCode ?? ''}
+									/>
 								</label>
 							</div>
 						</fieldset>

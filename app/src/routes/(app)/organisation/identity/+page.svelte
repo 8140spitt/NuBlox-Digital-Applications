@@ -45,12 +45,7 @@
 		</label>
 		<label>
 			<span>Issuing country</span>
-			<input
-				type="text"
-				name="issuingCountryCode"
-				maxlength="2"
-				placeholder="GB"
-			/>
+			<input type="text" name="issuingCountryCode" maxlength="2" placeholder="GB" />
 			<small>Optional two-letter ISO country code.</small>
 		</label>
 		<div class="action-cell">
@@ -65,7 +60,10 @@
 			<p class="eyebrow">Registered identifiers</p>
 			<h2 id="registered-heading">Current legal identifiers</h2>
 		</div>
-		<p>Corrections are remove-and-replace operations so both changes remain explicit in audit history.</p>
+		<p>
+			Corrections are remove-and-replace operations so both changes remain explicit in audit
+			history.
+		</p>
 	</div>
 
 	{#if data.identifiers.length === 0}
@@ -90,11 +88,7 @@
 							<td class="row-action">
 								<form method="POST" action="?/removeIdentifier">
 									<input type="hidden" name="identifierType" value={identifier.identifierType} />
-									<input
-										type="hidden"
-										name="identifierValue"
-										value={identifier.identifierValue}
-									/>
+									<input type="hidden" name="identifierValue" value={identifier.identifierValue} />
 									<button class="secondary" type="submit">Remove</button>
 								</form>
 							</td>

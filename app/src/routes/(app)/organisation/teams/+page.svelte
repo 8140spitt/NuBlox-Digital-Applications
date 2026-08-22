@@ -95,7 +95,9 @@
 							</label>
 							<label>
 								<span>Description</span>
-								<textarea name="description" maxlength="4000" rows="3">{team.description ?? ''}</textarea>
+								<textarea name="description" maxlength="4000" rows="3"
+									>{team.description ?? ''}</textarea
+								>
 							</label>
 						</div>
 

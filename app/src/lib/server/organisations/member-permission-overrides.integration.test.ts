@@ -50,7 +50,10 @@ async function createUser(name: string): Promise<string> {
 	);
 }
 
-async function createMember(userId: string, name: string): Promise<{ id: string; publicId: string }> {
+async function createMember(
+	userId: string,
+	name: string
+): Promise<{ id: string; publicId: string }> {
 	const publicId = randomUUID();
 	const id = insertedId(
 		await db
@@ -91,7 +94,10 @@ async function cleanup(): Promise<void> {
 			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('role_permissions').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db
 			.deleteFrom('organisation_members')
 			.where('organisation_id', '=', organisationId)
