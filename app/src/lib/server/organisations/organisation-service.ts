@@ -6,7 +6,11 @@ import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from './membership-repository';
-import { OrganisationRepository, type OrganisationSummary } from './organisation-repository';
+import {
+	OrganisationRepository,
+	type OrganisationIdentifierSummary,
+	type OrganisationSummary
+} from './organisation-repository';
 
 export type OrganisationProfileInput = {
 	legalName: string;
@@ -15,12 +19,36 @@ export type OrganisationProfileInput = {
 	defaultCurrencyCode: string;
 };
 
+export type OrganisationIdentifierInput = {
+	identifierType: string;
+	identifierValue: string;
+	issuingCountryCode?: string | null;
+};
+
 export class OrganisationProfileValidationError extends Error {
 	readonly code = 'ORGANISATION_PROFILE_VALIDATION';
 
 	constructor(message: string) {
 		super(message);
 		this.name = 'OrganisationProfileValidationError';
+	}
+}
+
+export class OrganisationIdentifierValidationError extends Error {
+	readonly code = 'ORGANISATION_IDENTIFIER_VALIDATION';
+
+	constructor(message: string) {
+		super(message);
+		this.name = 'OrganisationIdentifierValidationError';
+	}
+}
+
+export class OrganisationIdentifierNotFoundError extends Error {
+	readonly code = 'ORGANISATION_IDENTIFIER_NOT_FOUND';
+
+	constructor() {
+		super('Organisation identifier not found.');
+		this.name = 'OrganisationIdentifierNotFoundError';
 	}
 }
 
@@ -60,6 +88,35 @@ function validateProfile(input: OrganisationProfileInput): Required<Organisation
 	};
 }
 
+function validateIdentifier(input: OrganisationIdentifierInput) {
+	const identifierType = input.identifierType.trim().toLowerCase();
+	if (!/^[a-z][a-z0-9._-]{0,63}$/.test(identifierType)) {
+		throw new OrganisationIdentifierValidationError(
+			'Identifier type must be a stable key using letters, numbers, dots, underscores or hyphens.'
+		);
+	}
+
+	const identifierValue = input.identifierValue.trim();
+	if (!identifierValue || identifierValue.length > 160) {
+		throw new OrganisationIdentifierValidationError(
+			'Identifier value must be between 1 and 160 characters.'
+		);
+	}
+
+	const countryValue = input.issuingCountryCode?.trim().toUpperCase() ?? '';
+	if (countryValue && !/^[A-Z]{2}$/.test(countryValue)) {
+		throw new OrganisationIdentifierValidationError(
+			'Issuing country must be a two-letter ISO country code.'
+		);
+	}
+
+	return {
+		identifierType,
+		identifierValue,
+		issuingCountryCode: countryValue || null
+	};
+}
+
 export class OrganisationService {
 	constructor(private readonly db: Database = getDatabase()) {}
 
@@ -74,6 +131,25 @@ export class OrganisationService {
 		if (!organisation) throw new TenantAccessError('The requested organisation is not active.');
 
 		return organisation;
+	}
+
+	async listCurrentOrganisationIdentifiers(
+		actor: TenantActorContext
+	): Promise<OrganisationIdentifierSummary[]> {
+		const membershipRepository = new OrganisationMembershipRepository(this.db);
+		if (!(await membershipRepository.findActiveActorMembership(actor))) throw new TenantAccessError();
+
+		const decision = await new PermissionService(this.db).decide(actor, 'organisation.manage');
+		if (!decision.allowed) {
+			throw new TenantAccessError('Organisation identifier management is not permitted.');
+		}
+
+		const organisation = await new OrganisationRepository(this.db).findActiveById(
+			actor.organisationId
+		);
+		if (!organisation) throw new TenantAccessError('The requested organisation is not active.');
+
+		return new OrganisationRepository(this.db).listIdentifiers(actor.organisationId);
 	}
 
 	async updateCurrentOrganisationProfile(
@@ -128,6 +204,101 @@ export class OrganisationService {
 				...current,
 				...profile
 			};
+		});
+	}
+
+	async addCurrentOrganisationIdentifier(
+		actor: TenantActorContext,
+		input: OrganisationIdentifierInput
+	): Promise<void> {
+		const identifier = validateIdentifier(input);
+
+		await this.db.transaction().execute(async (trx) => {
+			const membershipRepository = new OrganisationMembershipRepository(trx);
+			const membership = await membershipRepository.findActiveActorMembership(actor);
+			if (!membership) throw new TenantAccessError();
+
+			const decision = await new PermissionService(trx).decide(actor, 'organisation.manage');
+			if (!decision.allowed) {
+				throw new TenantAccessError('Organisation identifier management is not permitted.');
+			}
+
+			const repository = new OrganisationRepository(trx);
+			const organisation = await repository.findActiveForUpdate(actor.organisationId);
+			if (!organisation) throw new TenantAccessError('The requested organisation is not active.');
+
+			const existing = await repository.findIdentifierForUpdate(
+				actor.organisationId,
+				identifier.identifierType,
+				identifier.identifierValue
+			);
+			if (existing) {
+				throw new OrganisationIdentifierValidationError(
+					'This identifier already exists for the organisation.'
+				);
+			}
+
+			await repository.createIdentifier(actor.organisationId, identifier);
+			await new AuditRepository(trx).append({
+				eventPublicId: randomUUID(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				actionKey: 'organisation.identifier.add',
+				subjectType: 'organisation',
+				subjectPublicId: organisation.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: identifier
+			});
+		});
+	}
+
+	async removeCurrentOrganisationIdentifier(
+		actor: TenantActorContext,
+		input: Pick<OrganisationIdentifierInput, 'identifierType' | 'identifierValue'>
+	): Promise<void> {
+		const identifier = validateIdentifier({
+			...input,
+			issuingCountryCode: null
+		});
+
+		await this.db.transaction().execute(async (trx) => {
+			const membershipRepository = new OrganisationMembershipRepository(trx);
+			const membership = await membershipRepository.findActiveActorMembership(actor);
+			if (!membership) throw new TenantAccessError();
+
+			const decision = await new PermissionService(trx).decide(actor, 'organisation.manage');
+			if (!decision.allowed) {
+				throw new TenantAccessError('Organisation identifier management is not permitted.');
+			}
+
+			const repository = new OrganisationRepository(trx);
+			const organisation = await repository.findActiveForUpdate(actor.organisationId);
+			if (!organisation) throw new TenantAccessError('The requested organisation is not active.');
+
+			const existing = await repository.findIdentifierForUpdate(
+				actor.organisationId,
+				identifier.identifierType,
+				identifier.identifierValue
+			);
+			if (!existing) throw new OrganisationIdentifierNotFoundError();
+
+			await repository.deleteIdentifier(actor.organisationId, existing.id);
+			await new AuditRepository(trx).append({
+				eventPublicId: randomUUID(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: membership.id,
+				actionKey: 'organisation.identifier.remove',
+				subjectType: 'organisation',
+				subjectPublicId: organisation.publicId,
+				correlationId: actor.correlationId,
+				changeSummary: {
+					identifierType: existing.identifierType,
+					identifierValue: existing.identifierValue,
+					issuingCountryCode: existing.issuingCountryCode
+				}
+			});
 		});
 	}
 }
