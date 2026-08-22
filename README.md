@@ -1,18 +1,30 @@
 # NuBlox: Digital Applications
 
-NuBlox is a natively engineered **construction and built-environment operating system**: a world-class ERP and operational platform intended to connect the commercial, project, field, financial, workforce, asset and property lifecycle in one governed system.
+NuBlox is a natively engineered **construction and built-environment operating system**: a world-class ERP and operational platform connecting the commercial, project, design, field, financial, workforce, asset, property and service lifecycle in one governed system.
 
-The product is designed around canonical business records, explicit organisational and project context, server-authoritative permissions, controlled workflows, durable evidence and end-to-end process integrity. External ERP products are benchmarks for coverage and control quality, not runtime dependencies.
+The product is designed around canonical business records, explicit organisation/project context, server-authoritative permissions, controlled workflows, durable evidence and end-to-end process integrity.
 
-## Product direction
+## Governing Construction and Built Environment model
 
-NuBlox targets the built-environment lifecycle:
+The single governing sector and product model is:
+
+**[`docs/construction-and-built-environment.md`](docs/construction-and-built-environment.md)**
+
+It defines:
+
+- the complete built-asset and organisation boundary;
+- the whole-life lifecycle from market and feasibility through design, construction, operation, refurbishment and disposal;
+- canonical enterprise, project, information, commercial, asset and financial records;
+- the 19 stable NuBlox native capability domains;
+- specialist overlays for design, engineering, surveying, contracting, trades, infrastructure, manufacturing, property, FM, service and regulation;
+- cross-domain process chains and completion criteria;
+- BIM/CDE, project controls, QHSE, building safety, workforce, supply chain, carbon and asset-management semantics;
+- standards and interoperability treatment;
+- the capability completeness gate for world-class delivery.
+
+The canonical lifecycle is:
 
 **Market → Lead → Opportunity → Bid → Estimate → Proposal → Quote → Contract → Design → Plan → Procure → Produce → Construct → Control → Invoice → Account → Handover → Operate → Maintain → Refurbish → Dispose**
-
-The governing architecture defines 19 native capability domains spanning enterprise master data, CRM, estimating, commercial management, projects, BIM/information management, finance, procurement, materials, production, workforce, field operations, QHSE, plant, property/facilities, service, sustainability and platform intelligence.
-
-See [`docs/57-world-class-native-erp-architecture.md`](docs/57-world-class-native-erp-architecture.md) for the governing product architecture and [`docs/built-environment-erp-capability-blueprint.md`](docs/built-environment-erp-capability-blueprint.md) for the capability model.
 
 ## Current platform foundation
 
@@ -32,7 +44,7 @@ The current `main` line includes native foundations across:
 - a horizontal Work Kernel for actions, assignments, approvals, decisions, lifecycle evidence and durable outbox events;
 - a permission-aware construction command centre and contextual application shell.
 
-Capability presence is not treated as proof of product completeness. A world-class capability also requires canonical records, workflow and state controls, permissions and segregation of duties, audit/correction semantics, reporting, integration boundaries and end-to-end validation.
+Capability presence is not treated as product completeness. A world-class capability also requires canonical records, lifecycle controls, permissions and segregation of duties, audit/correction semantics, reporting, integration boundaries and validated end-to-end behaviour.
 
 ## Database baseline
 
@@ -46,7 +58,7 @@ A clean MySQL 8.4 rebuild of the consolidated migration stream on **22 August 20
 | Foreign keys | 904 |
 | CHECK constraints | 530 |
 
-Committed MySQL migrations in [`database/migrations/`](database/migrations/) are the schema authority. Generated Kysely types are derivative application artefacts.
+Committed MySQL migrations in [`database/migrations/`](database/migrations/) are the implemented schema authority. Generated Kysely types are derivative application artefacts.
 
 ## Technology
 
@@ -79,6 +91,8 @@ database/
   docs/              Durable schema-package design references
   seeds/             Controlled seed/reference data
 docs/
+  construction-and-built-environment.md
+                      Governing sector and product model
   adr/               Architecture Decision Records
   architecture/      Enterprise architecture and taxonomy
   branding/          NuBlox brand system
@@ -89,15 +103,15 @@ docs/
 
 Start with [`docs/README.md`](docs/README.md). It defines documentation precedence and the active reference set.
 
-Key documents:
+Key references:
 
-- [`docs/57-world-class-native-erp-architecture.md`](docs/57-world-class-native-erp-architecture.md) — governing product architecture.
-- [`docs/built-environment-erp-capability-blueprint.md`](docs/built-environment-erp-capability-blueprint.md) — native ERP capability blueprint.
+- [`docs/construction-and-built-environment.md`](docs/construction-and-built-environment.md) — governing Construction and Built Environment model.
 - [`docs/architecture/taxonomy/README.md`](docs/architecture/taxonomy/README.md) — enterprise function taxonomy.
 - [`docs/work-kernel-foundation.md`](docs/work-kernel-foundation.md) — horizontal work execution model.
 - [`docs/01-product-requirements-document.md`](docs/01-product-requirements-document.md) — product requirements.
 - [`docs/07-auth-permissions-multitenancy.md`](docs/07-auth-permissions-multitenancy.md) — tenancy and authorisation model.
 - [`docs/11-security-privacy-compliance.md`](docs/11-security-privacy-compliance.md) — security and compliance controls.
+- [`docs/17-sources-and-standards.md`](docs/17-sources-and-standards.md) — current source and standards register.
 - [`database/docs/`](database/docs/) — schema design references.
 
 Implementation history, delivery sequencing and superseded plans belong in Git history and GitHub issues rather than the active architecture documentation set.
@@ -118,7 +132,7 @@ pnpm test:unit -- --run
 pnpm build
 ```
 
-Browser acceptance requires Playwright/Chromium and the repository's test environment configuration.
+Browser acceptance requires Playwright/Chromium and the repository test environment configuration.
 
 ## Engineering rule
 
