@@ -48,25 +48,28 @@ export const actions: Actions = {
 		const orderLineToken = String(data.get('purchaseOrderLine') ?? '').trim();
 		const [purchaseOrderPublicId = '', lineNumberText = ''] = orderLineToken.split('|');
 		try {
-			const created = await new AccountsPayableService(getDatabase()).createSupplierDocument(actor, {
-				documentType: String(data.get('documentType') ?? 'invoice') as 'invoice' | 'credit_note',
-				supplierPublicId: String(data.get('supplierPublicId') ?? ''),
-				purchaseOrderPublicId: purchaseOrderPublicId || null,
-				supplierDocumentNumber: String(data.get('supplierDocumentNumber') ?? ''),
-				invoiceDate: String(data.get('invoiceDate') ?? ''),
-				taxDate: String(data.get('taxDate') ?? ''),
-				dueDate: String(data.get('dueDate') ?? ''),
-				currencyCode: String(data.get('currencyCode') ?? ''),
-				lines: [
-					{
-						description: String(data.get('description') ?? ''),
-						quantity: String(data.get('quantity') ?? ''),
-						unitRate: String(data.get('unitRate') ?? ''),
-						purchaseOrderLineNumber: lineNumberText ? Number(lineNumberText) : null,
-						taxCategoryPublicId: String(data.get('taxCategoryPublicId') ?? '') || null
-					}
-				]
-			});
+			const created = await new AccountsPayableService(getDatabase()).createSupplierDocument(
+				actor,
+				{
+					documentType: String(data.get('documentType') ?? 'invoice') as 'invoice' | 'credit_note',
+					supplierPublicId: String(data.get('supplierPublicId') ?? ''),
+					purchaseOrderPublicId: purchaseOrderPublicId || null,
+					supplierDocumentNumber: String(data.get('supplierDocumentNumber') ?? ''),
+					invoiceDate: String(data.get('invoiceDate') ?? ''),
+					taxDate: String(data.get('taxDate') ?? ''),
+					dueDate: String(data.get('dueDate') ?? ''),
+					currencyCode: String(data.get('currencyCode') ?? ''),
+					lines: [
+						{
+							description: String(data.get('description') ?? ''),
+							quantity: String(data.get('quantity') ?? ''),
+							unitRate: String(data.get('unitRate') ?? ''),
+							purchaseOrderLineNumber: lineNumberText ? Number(lineNumberText) : null,
+							taxCategoryPublicId: String(data.get('taxCategoryPublicId') ?? '') || null
+						}
+					]
+				}
+			);
 			throw redirect(303, `/finance/accounts-payable#ap-${encodeURIComponent(created)}`);
 		} catch (cause) {
 			return actionFailure(cause);

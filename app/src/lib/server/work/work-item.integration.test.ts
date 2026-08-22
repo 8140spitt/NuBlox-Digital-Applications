@@ -225,7 +225,12 @@ describe('NuBlox Work Kernel', () => {
 
 		const started = await service.transition(fixture.actorA, created.publicId, 'in_progress');
 		expect(started.status).toBe('in_progress');
-		await service.recordDecision(fixture.actorA, created.publicId, 'approved', 'Evidence reviewed.');
+		await service.recordDecision(
+			fixture.actorA,
+			created.publicId,
+			'approved',
+			'Evidence reviewed.'
+		);
 		const completed = await service.transition(
 			fixture.actorA,
 			created.publicId,

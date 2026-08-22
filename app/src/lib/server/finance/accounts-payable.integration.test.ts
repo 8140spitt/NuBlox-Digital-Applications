@@ -370,7 +370,10 @@ describe('Wave A native accounts payable foundation', () => {
 		let document = await repository.findDocumentByPublicId(organisationAId, documentPublicId);
 		expect(document).toMatchObject({ status: 'submitted', grossAmount: '500.0000' });
 		const items = await repository.listDocumentItems(organisationAId, document!.id);
-		const allocations = await repository.listAllocationsForDocumentItem(organisationAId, items[0]!.id);
+		const allocations = await repository.listAllocationsForDocumentItem(
+			organisationAId,
+			items[0]!.id
+		);
 		expect(allocations).toHaveLength(1);
 		expect(allocations[0]?.matchedQuantity).toBe('4.000000');
 
@@ -445,7 +448,9 @@ describe('Wave A native accounts payable foundation', () => {
 		let document = await repository.findDocumentByPublicId(organisationAId, documentPublicId);
 		expect(document?.status).toBe('exception');
 		const item = (await repository.listDocumentItems(organisationAId, document!.id))[0]!;
-		expect(await repository.listAllocationsForDocumentItem(organisationAId, item.id)).toHaveLength(1);
+		expect(await repository.listAllocationsForDocumentItem(organisationAId, item.id)).toHaveLength(
+			1
+		);
 		const exception = (await repository.listExceptions(organisationAId, document!.id)).find(
 			(row) => row.code === 'UNIT_RATE_MISMATCH' && row.status === 'open'
 		);
@@ -493,6 +498,8 @@ describe('Wave A native accounts payable foundation', () => {
 		).rejects.toBeInstanceOf(FinanceValidationError);
 		const otherWorkspace = await service.getWorkspace(actorOtherTenant);
 		expect(otherWorkspace.documents).toHaveLength(0);
-		expect(otherWorkspace.suppliers.some((supplier) => supplier.publicId === supplierPublicId)).toBe(false);
+		expect(
+			otherWorkspace.suppliers.some((supplier) => supplier.publicId === supplierPublicId)
+		).toBe(false);
 	});
 });

@@ -10,7 +10,9 @@
 		return new Intl.DateTimeFormat('en-GB', { dateStyle: 'medium' }).format(new Date(value));
 	}
 
-	const draftCount = $derived(data.documents.filter((document) => document.matchState === 'draft').length);
+	const draftCount = $derived(
+		data.documents.filter((document) => document.matchState === 'draft').length
+	);
 	const exceptionCount = $derived(
 		data.documents.filter((document) => document.matchState === 'exception').length
 	);
@@ -30,7 +32,8 @@
 		<h1>Accounts Payable</h1>
 		<p>
 			Capture supplier invoices against the CRM supplier, purchase-order and receipt facts. NuBlox
-			keeps the match, exception and approval evidence together before accounting posting or payment.
+			keeps the match, exception and approval evidence together before accounting posting or
+			payment.
 		</p>
 	</div>
 	<div class="heading-actions">
@@ -54,8 +57,8 @@
 			<p class="eyebrow">Supplier document</p>
 			<h2>Capture invoice or credit note</h2>
 			<p class="muted">
-				PO-backed lines are matched to issued order and accepted receipt quantities. Leave the PO line
-				blank only for a deliberate non-PO invoice; NuBlox will raise a controlled exception.
+				PO-backed lines are matched to issued order and accepted receipt quantities. Leave the PO
+				line blank only for a deliberate non-PO invoice; NuBlox will raise a controlled exception.
 			</p>
 		</div>
 	</div>
@@ -94,22 +97,25 @@
 					{/each}
 				</select>
 			</label>
-			<label>Invoice date<input type="date" name="invoiceDate" value={data.today} required /></label>
+			<label>Invoice date<input type="date" name="invoiceDate" value={data.today} required /></label
+			>
 			<label>Tax date<input type="date" name="taxDate" /></label>
 			<label>Due date<input type="date" name="dueDate" /></label>
 			<label>Currency<input name="currencyCode" maxlength="3" placeholder="GBP" required /></label>
-			<label class="wide"
-				>Description<input name="description" maxlength="10000" required /></label
-			>
+			<label class="wide">Description<input name="description" maxlength="10000" required /></label>
 			<label>Quantity<input name="quantity" inputmode="decimal" value="1" required /></label>
-			<label>Unit rate<input name="unitRate" inputmode="decimal" placeholder="0.00" required /></label>
+			<label
+				>Unit rate<input name="unitRate" inputmode="decimal" placeholder="0.00" required /></label
+			>
 			<label class="wide"
 				>Input tax category
 				<select name="taxCategoryPublicId">
 					<option value="">No tax / select later</option>
 					{#each data.taxCategories as category}
 						<option value={category.publicId}>
-							{category.code} · {category.name}{category.ratePercent ? ` · ${category.ratePercent}%` : ''}
+							{category.code} · {category.name}{category.ratePercent
+								? ` · ${category.ratePercent}%`
+								: ''}
 						</option>
 					{/each}
 				</select>
@@ -140,23 +146,35 @@
 							<strong>{document.supplierName}</strong>
 							<span>{document.supplierDocumentNumber} · {date(document.invoiceDate)}</span>
 							<small>
-								{document.purchaseOrderNumber ? `PO ${document.purchaseOrderNumber}` : 'Non-PO'}{document.projectNumber
-									? ` · Project ${document.projectNumber}`
-									: ''}
+								{document.purchaseOrderNumber
+									? `PO ${document.purchaseOrderNumber}`
+									: 'Non-PO'}{document.projectNumber ? ` · Project ${document.projectNumber}` : ''}
 							</small>
 						</div>
 						<div class="amount">
 							<strong>{money(document.grossAmount, document.currencyCode)}</strong>
-							<small>{money(document.netAmount, document.currencyCode)} net · {money(document.taxAmount, document.currencyCode)} tax</small>
+							<small
+								>{money(document.netAmount, document.currencyCode)} net · {money(
+									document.taxAmount,
+									document.currencyCode
+								)} tax</small
+							>
 						</div>
-						<span class={`status status-${document.matchState}`}>{document.matchState.replace('_', ' ')}</span>
+						<span class={`status status-${document.matchState}`}
+							>{document.matchState.replace('_', ' ')}</span
+						>
 					</header>
 
 					<div class="line-list">
 						{#each document.items as item}
 							<div>
 								<span>Line {item.lineNumber} · {item.description}</span>
-								<small>{item.quantity} × {money(item.unitRate, document.currencyCode)} = {money(item.netAmount, document.currencyCode)}</small>
+								<small
+									>{item.quantity} × {money(item.unitRate, document.currencyCode)} = {money(
+										item.netAmount,
+										document.currencyCode
+									)}</small
+								>
 							</div>
 						{/each}
 					</div>
@@ -168,13 +186,24 @@
 									<div>
 										<strong>{exception.code.replaceAll('_', ' ')}</strong>
 										<span>{exception.message}</span>
-										<small>{exception.status}{exception.resolutionNote ? ` · ${exception.resolutionNote}` : ''}</small>
+										<small
+											>{exception.status}{exception.resolutionNote
+												? ` · ${exception.resolutionNote}`
+												: ''}</small
+										>
 									</div>
 									{#if exception.status === 'open' && data.canResolveExceptions}
 										<form method="POST" action="?/resolve" class="exception-form">
 											<input type="hidden" name="exceptionPublicId" value={exception.publicId} />
-											<input name="note" maxlength="1000" placeholder="Decision evidence" required />
-											<button type="submit" name="waive" value="false" class="secondary">Resolve</button>
+											<input
+												name="note"
+												maxlength="1000"
+												placeholder="Decision evidence"
+												required
+											/>
+											<button type="submit" name="waive" value="false" class="secondary"
+												>Resolve</button
+											>
 											<button type="submit" name="waive" value="true">Waive with authority</button>
 										</form>
 									{/if}

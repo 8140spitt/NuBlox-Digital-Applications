@@ -50,7 +50,10 @@ function collaborationFailure(cause: unknown) {
 	throw cause;
 }
 
-function setOrganisationCookie(cookies: Parameters<Actions[string]>[0]['cookies'], publicId: string) {
+function setOrganisationCookie(
+	cookies: Parameters<Actions[string]>[0]['cookies'],
+	publicId: string
+) {
 	cookies.set(ORGANISATION_COOKIE, publicId, {
 		httpOnly: true,
 		secure: !dev,
@@ -69,7 +72,8 @@ function clearSignupCookies(cookies: Parameters<Actions[string]>[0]['cookies']) 
 export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 	const service = new ProjectCollaborationInvitationService(getDatabase());
 	const invitation = await service.getPendingInvitation(params.token);
-	if (!invitation) throw error(404, 'This project collaboration invitation is invalid or has expired.');
+	if (!invitation)
+		throw error(404, 'This project collaboration invitation is invalid or has expired.');
 
 	const remainingSeconds = Math.max(
 		60,
@@ -93,7 +97,10 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 			.where('status', '=', 'active')
 			.executeTakeFirst();
 		if (organisation) {
-			const decision = await new PermissionService(getDatabase()).decide(actor, 'organisation.manage');
+			const decision = await new PermissionService(getDatabase()).decide(
+				actor,
+				'organisation.manage'
+			);
 			currentOrganisation = {
 				publicId: organisation.public_id,
 				name: organisation.trading_name?.trim() || organisation.legal_name,
@@ -121,7 +128,8 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 export const actions: Actions = {
 	acceptCurrent: async ({ params, locals, cookies }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor || !locals.actor) return fail(401, { message: 'Sign in and select an organisation first.' });
+		if (!actor || !locals.actor)
+			return fail(401, { message: 'Sign in and select an organisation first.' });
 		try {
 			const projectPublicId = await new ProjectCollaborationInvitationService(
 				getDatabase()
@@ -134,19 +142,23 @@ export const actions: Actions = {
 				`/projects/${encodeURIComponent(projectPublicId)}?project=${encodeURIComponent(projectPublicId)}`
 			);
 		} catch (cause) {
-			if (cause && typeof cause === 'object' && 'status' in cause && 'location' in cause) throw cause;
+			if (cause && typeof cause === 'object' && 'status' in cause && 'location' in cause)
+				throw cause;
 			return collaborationFailure(cause);
 		}
 	},
 
 	createOrganisation: async ({ params, locals, cookies }) => {
-		if (!locals.actor) return fail(401, { message: 'Sign in before creating the invited organisation.' });
+		if (!locals.actor)
+			return fail(401, { message: 'Sign in before creating the invited organisation.' });
 		const db = getDatabase();
 		const collaboration = new ProjectCollaborationInvitationService(db);
 		const invitation = await collaboration.getPendingInvitation(params.token);
 		if (!invitation) return fail(404, { message: 'This invitation is no longer available.' });
 		if (normaliseEmail(locals.actor.email) !== normaliseEmail(invitation.email)) {
-			return fail(403, { message: 'This invitation is addressed to a different verified email address.' });
+			return fail(403, {
+				message: 'This invitation is addressed to a different verified email address.'
+			});
 		}
 
 		try {
@@ -184,7 +196,8 @@ export const actions: Actions = {
 				`/projects/${encodeURIComponent(projectPublicId)}?project=${encodeURIComponent(projectPublicId)}`
 			);
 		} catch (cause) {
-			if (cause && typeof cause === 'object' && 'status' in cause && 'location' in cause) throw cause;
+			if (cause && typeof cause === 'object' && 'status' in cause && 'location' in cause)
+				throw cause;
 			return collaborationFailure(cause);
 		}
 	}

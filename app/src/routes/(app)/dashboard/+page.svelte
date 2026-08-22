@@ -236,9 +236,7 @@
 		align-items: end;
 		padding: clamp(1.25rem, 3vw, 2.25rem);
 		border-radius: var(--nb-radius-lg);
-		background:
-			linear-gradient(120deg, rgb(20 110 245 / 0.16), transparent 48%),
-			var(--nb-ink);
+		background: linear-gradient(120deg, rgb(20 110 245 / 0.16), transparent 48%), var(--nb-ink);
 		color: var(--nb-white);
 		box-shadow: var(--nb-shadow-sm);
 	}

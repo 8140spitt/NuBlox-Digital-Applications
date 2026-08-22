@@ -80,7 +80,7 @@
 						This invitation was sent to {data.invitation.email}. Sign in with that verified email
 						address to accept it.
 					</div>
-			{:else}
+				{:else}
 					<div class="choices">
 						{#if data.currentOrganisation}
 							<article>
@@ -106,8 +106,8 @@
 								<p class="eyebrow">New NuBlox organisation</p>
 								<h3>{data.invitation.crmOrganisationName}</h3>
 								<p>
-									Create the invited organisation from the CRM identity, connect it automatically and
-									join the project as its initial owner.
+									Create the invited organisation from the CRM identity, connect it automatically
+									and join the project as its initial owner.
 								</p>
 							</div>
 							<form method="POST" action="?/createOrganisation">
@@ -118,7 +118,9 @@
 
 					<p class="switch-copy">
 						Need a different existing organisation?
-						<a href={`/select-organisation?returnTo=${encodeURIComponent(data.returnTo)}`}>Switch organisation</a>
+						<a href={`/select-organisation?returnTo=${encodeURIComponent(data.returnTo)}`}
+							>Switch organisation</a
+						>
 					</p>
 				{/if}
 			</section>
@@ -162,7 +164,9 @@
 					<div class="organisation-preview">
 						<span>Organisation to create</span>
 						<strong>{data.invitation.crmLegalName}</strong>
-						{#if data.invitation.crmTradingName}<small>Trading as {data.invitation.crmTradingName}</small>{/if}
+						{#if data.invitation.crmTradingName}<small
+								>Trading as {data.invitation.crmTradingName}</small
+							>{/if}
 					</div>
 					{#if message}<p class="error" role="alert">{message}</p>{/if}
 					<button class="primary" type="submit" disabled={submitting}>
@@ -183,36 +187,167 @@
 </main>
 
 <style>
-	.shell { min-height: 100vh; display: grid; place-items: center; padding: 2rem; background: #f5f5f2; }
-	.card { width: min(100%, 52rem); background: white; border: 1px solid #d9d9d2; border-radius: 1rem; padding: 2rem; box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.06); }
-	.brand { margin: 0 0 1.8rem; font-weight: 850; letter-spacing: -0.02em; }
-	.eyebrow { margin: 0 0 0.35rem; color: #62625c; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; }
-	h1 { margin: 0; font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -0.045em; }
-	h2, h3 { margin: 0; }
-	.lede, .muted, .switch-copy, footer { color: #5c5c56; line-height: 1.55; }
-	.invitation-summary { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0.7rem; margin: 1.5rem 0; }
-	.invitation-summary > div, .organisation-preview { display: grid; gap: 0.2rem; padding: 0.85rem; border: 1px solid #deded7; border-radius: 0.6rem; background: #fafaf7; }
-	.invitation-summary span, .organisation-preview span { color: #6b6b65; font-size: 0.75rem; }
-	.choice-section { border-top: 1px solid #e1e1da; padding-top: 1.5rem; }
-	.choices { display: grid; gap: 0.8rem; margin-top: 1rem; }
-	.choices article { display: flex; align-items: center; justify-content: space-between; gap: 1.25rem; padding: 1rem; border: 1px solid #d8d8d1; border-radius: 0.7rem; }
-	.choices article p { margin: 0.35rem 0 0; color: #5c5c56; line-height: 1.45; }
-	.stack { display: grid; gap: 1rem; margin-top: 1.2rem; }
-	label { display: grid; gap: 0.4rem; font-weight: 650; }
-	input { min-width: 0; font: inherit; border: 1px solid #b9b9b1; border-radius: 0.55rem; padding: 0.75rem 0.85rem; }
-	input[readonly] { background: #f3f3ef; color: #555; }
-	button { font: inherit; font-weight: 750; border-radius: 0.55rem; padding: 0.75rem 0.95rem; cursor: pointer; }
-	.primary { border: 1px solid #111; background: #111; color: white; }
-	.secondary { border: 1px solid #777; background: white; color: #111; }
-	button:disabled { opacity: 0.55; cursor: wait; }
-	.notice { margin: 1.2rem 0; padding: 1rem; border-radius: 0.65rem; line-height: 1.5; }
-	.notice.success { background: #e8f6eb; }
-	.notice.warning { background: #fff5d9; }
-	.error { color: #9b1c1c; }
-	a { color: inherit; font-weight: 750; }
-	footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e1e1da; font-size: 0.78rem; }
+	.shell {
+		min-height: 100vh;
+		display: grid;
+		place-items: center;
+		padding: 2rem;
+		background: #f5f5f2;
+	}
+	.card {
+		width: min(100%, 52rem);
+		background: white;
+		border: 1px solid #d9d9d2;
+		border-radius: 1rem;
+		padding: 2rem;
+		box-shadow: 0 1rem 3rem rgb(0 0 0 / 0.06);
+	}
+	.brand {
+		margin: 0 0 1.8rem;
+		font-weight: 850;
+		letter-spacing: -0.02em;
+	}
+	.eyebrow {
+		margin: 0 0 0.35rem;
+		color: #62625c;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+	h1 {
+		margin: 0;
+		font-size: clamp(2rem, 6vw, 3rem);
+		letter-spacing: -0.045em;
+	}
+	h2,
+	h3 {
+		margin: 0;
+	}
+	.lede,
+	.muted,
+	.switch-copy,
+	footer {
+		color: #5c5c56;
+		line-height: 1.55;
+	}
+	.invitation-summary {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.7rem;
+		margin: 1.5rem 0;
+	}
+	.invitation-summary > div,
+	.organisation-preview {
+		display: grid;
+		gap: 0.2rem;
+		padding: 0.85rem;
+		border: 1px solid #deded7;
+		border-radius: 0.6rem;
+		background: #fafaf7;
+	}
+	.invitation-summary span,
+	.organisation-preview span {
+		color: #6b6b65;
+		font-size: 0.75rem;
+	}
+	.choice-section {
+		border-top: 1px solid #e1e1da;
+		padding-top: 1.5rem;
+	}
+	.choices {
+		display: grid;
+		gap: 0.8rem;
+		margin-top: 1rem;
+	}
+	.choices article {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1.25rem;
+		padding: 1rem;
+		border: 1px solid #d8d8d1;
+		border-radius: 0.7rem;
+	}
+	.choices article p {
+		margin: 0.35rem 0 0;
+		color: #5c5c56;
+		line-height: 1.45;
+	}
+	.stack {
+		display: grid;
+		gap: 1rem;
+		margin-top: 1.2rem;
+	}
+	label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 650;
+	}
+	input {
+		min-width: 0;
+		font: inherit;
+		border: 1px solid #b9b9b1;
+		border-radius: 0.55rem;
+		padding: 0.75rem 0.85rem;
+	}
+	input[readonly] {
+		background: #f3f3ef;
+		color: #555;
+	}
+	button {
+		font: inherit;
+		font-weight: 750;
+		border-radius: 0.55rem;
+		padding: 0.75rem 0.95rem;
+		cursor: pointer;
+	}
+	.primary {
+		border: 1px solid #111;
+		background: #111;
+		color: white;
+	}
+	.secondary {
+		border: 1px solid #777;
+		background: white;
+		color: #111;
+	}
+	button:disabled {
+		opacity: 0.55;
+		cursor: wait;
+	}
+	.notice {
+		margin: 1.2rem 0;
+		padding: 1rem;
+		border-radius: 0.65rem;
+		line-height: 1.5;
+	}
+	.notice.success {
+		background: #e8f6eb;
+	}
+	.notice.warning {
+		background: #fff5d9;
+	}
+	.error {
+		color: #9b1c1c;
+	}
+	a {
+		color: inherit;
+		font-weight: 750;
+	}
+	footer {
+		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid #e1e1da;
+		font-size: 0.78rem;
+	}
 	@media (max-width: 680px) {
-		.invitation-summary { grid-template-columns: 1fr; }
-		.choices article { align-items: stretch; flex-direction: column; }
+		.invitation-summary {
+			grid-template-columns: 1fr;
+		}
+		.choices article {
+			align-items: stretch;
+			flex-direction: column;
+		}
 	}
 </style>

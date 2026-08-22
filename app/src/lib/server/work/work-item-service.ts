@@ -102,7 +102,9 @@ function assertAssignmentTarget(input: AssignWorkItemInput): void {
 	const hasMember = Boolean(input.assignedMemberId);
 	const hasTeam = Boolean(input.assignedTeamId);
 	if (input.scope === 'organisation' && (hasMember || hasTeam)) {
-		throw new WorkKernelValidationError('Organisation assignment cannot include member or team IDs.');
+		throw new WorkKernelValidationError(
+			'Organisation assignment cannot include member or team IDs.'
+		);
 	}
 	if (input.scope === 'member' && (!hasMember || hasTeam)) {
 		throw new WorkKernelValidationError('Member assignment requires only assignedMemberId.');
@@ -139,7 +141,9 @@ export class WorkItemService {
 			projectId ? { projectId } : {}
 		);
 		if (!decision.allowed) {
-			throw new TenantAccessError(`Permission '${permissionKey}' is required for this work operation.`);
+			throw new TenantAccessError(
+				`Permission '${permissionKey}' is required for this work operation.`
+			);
 		}
 	}
 
@@ -360,7 +364,12 @@ export class WorkItemService {
 			}
 
 			const normalizedNote = note?.trim() || null;
-			const changed = await repository.transition(current, toStatus, actor.memberId, normalizedNote);
+			const changed = await repository.transition(
+				current,
+				toStatus,
+				actor.memberId,
+				normalizedNote
+			);
 			if (!changed) throw new ConcurrentUpdateError();
 
 			await this.appendEvidence(trx, actor, current, {

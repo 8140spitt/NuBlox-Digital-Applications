@@ -7,7 +7,11 @@ import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { CrmRepository } from '$lib/server/crm/crm-repository';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import { getEmailDelivery, type EmailDelivery } from '$lib/server/email/email-delivery';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectTeamRepository } from './project-team-repository';
 import { ProjectTeamService, ProjectTeamValidationError } from './project-team-service';
@@ -17,7 +21,9 @@ const TERMINAL_PROJECT_STATUSES = new Set(['cancelled', 'archived']);
 
 export class ProjectCollaborationInvitationAccessError extends Error {
 	readonly code = 'PROJECT_COLLABORATION_INVITATION_ACCESS_DENIED';
-	constructor(message = 'This project collaboration invitation is invalid, expired or unavailable.') {
+	constructor(
+		message = 'This project collaboration invitation is invalid, expired or unavailable.'
+	) {
 		super(message);
 		this.name = 'ProjectCollaborationInvitationAccessError';
 	}
@@ -85,14 +91,17 @@ function normaliseRoleKeys(input: readonly string[]): string[] {
 		throw new ProjectCollaborationInvitationValidationError('Select at least one project role.');
 	}
 	if (roleKeys.length > 12 || roleKeys.some((key) => !/^[a-z0-9_]{1,80}$/.test(key))) {
-		throw new ProjectCollaborationInvitationValidationError('One or more project roles are invalid.');
+		throw new ProjectCollaborationInvitationValidationError(
+			'One or more project roles are invalid.'
+		);
 	}
 	return roleKeys;
 }
 
 function applicationBaseUrl(): string {
 	const value = env.BETTER_AUTH_URL?.trim();
-	if (!value) throw new Error('BETTER_AUTH_URL is required to build collaboration invitation links.');
+	if (!value)
+		throw new Error('BETTER_AUTH_URL is required to build collaboration invitation links.');
 	return value;
 }
 
@@ -120,7 +129,9 @@ export class ProjectCollaborationInvitationService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -200,7 +211,8 @@ export class ProjectCollaborationInvitationService {
 				'project.manage',
 				{ projectId: project.id }
 			);
-			if (!decision.allowed) throw new TenantAccessError('Project administration is not permitted.');
+			if (!decision.allowed)
+				throw new TenantAccessError('Project administration is not permitted.');
 			if (TERMINAL_PROJECT_STATUSES.has(project.status)) {
 				throw new ProjectCollaborationInvitationValidationError(
 					'New collaboration cannot be added to a cancelled or archived project.'
@@ -228,7 +240,9 @@ export class ProjectCollaborationInvitationService {
 				.forUpdate()
 				.executeTakeFirst();
 			if (!lockedCrmParty || lockedCrmParty.partyStatus !== 'active') {
-				throw new ProjectCollaborationInvitationValidationError('The CRM organisation is unavailable.');
+				throw new ProjectCollaborationInvitationValidationError(
+					'The CRM organisation is unavailable.'
+				);
 			}
 			if (lockedCrmParty.linkedOrganisationId) {
 				throw new ProjectCollaborationInvitationValidationError(
@@ -315,7 +329,8 @@ export class ProjectCollaborationInvitationService {
 					revoked_at: null
 				})
 				.executeTakeFirstOrThrow();
-			if (inserted.insertId === undefined) throw new Error('Collaboration invitation insert did not return an ID.');
+			if (inserted.insertId === undefined)
+				throw new Error('Collaboration invitation insert did not return an ID.');
 			const invitationId = inserted.insertId.toString();
 			await trx
 				.insertInto('project_collaboration_invitation_roles')
@@ -394,7 +409,9 @@ export class ProjectCollaborationInvitationService {
 		return { mode: 'onboarding', invitation };
 	}
 
-	async getPendingInvitation(rawToken: string): Promise<ProjectCollaborationInvitationSummary | null> {
+	async getPendingInvitation(
+		rawToken: string
+	): Promise<ProjectCollaborationInvitationSummary | null> {
 		const row = await this.findPendingInvitation({ tokenHash: hashToken(rawToken) });
 		return row ? this.summaryFromRow(row) : null;
 	}
@@ -460,7 +477,11 @@ export class ProjectCollaborationInvitationService {
 		}));
 	}
 
-	async bindSignupAuthUser(rawToken: string, emailInput: string, authUserId: string): Promise<void> {
+	async bindSignupAuthUser(
+		rawToken: string,
+		emailInput: string,
+		authUserId: string
+	): Promise<void> {
 		const email = normaliseEmail(emailInput);
 		const tokenHash = hashToken(rawToken);
 		const row = await this.db
@@ -615,7 +636,11 @@ export class ProjectCollaborationInvitationService {
 		return query.executeTakeFirst();
 	}
 
-	private async summaryFromRow(row: NonNullable<Awaited<ReturnType<ProjectCollaborationInvitationService['findPendingInvitation']>>>): Promise<ProjectCollaborationInvitationSummary> {
+	private async summaryFromRow(
+		row: NonNullable<
+			Awaited<ReturnType<ProjectCollaborationInvitationService['findPendingInvitation']>>
+		>
+	): Promise<ProjectCollaborationInvitationSummary> {
 		const roles = await this.db
 			.selectFrom('project_collaboration_invitation_roles as assignment')
 			.innerJoin('project_role_types as role', 'role.id', 'assignment.project_role_type_id')
@@ -656,7 +681,10 @@ export class ProjectCollaborationInvitationService {
 		const actorEmail = normaliseEmail(actorEmailInput);
 		return this.db.transaction().execute(async (trx) => {
 			const actorMembership = await this.assertActiveActor(actor, trx);
-			const organisationManage = await new PermissionService(trx).decide(actor, 'organisation.manage');
+			const organisationManage = await new PermissionService(trx).decide(
+				actor,
+				'organisation.manage'
+			);
 			if (!organisationManage.allowed) {
 				throw new ProjectCollaborationInvitationAccessError(
 					'Organisation administrator authority is required to connect this company to NuBlox.'
@@ -735,9 +763,14 @@ export class ProjectCollaborationInvitationService {
 				.forUpdate()
 				.executeTakeFirst();
 			if (!targetOrganisation || targetOrganisation.status !== 'active') {
-				throw new ProjectCollaborationInvitationAccessError('The selected NuBlox organisation is not active.');
+				throw new ProjectCollaborationInvitationAccessError(
+					'The selected NuBlox organisation is not active.'
+				);
 			}
-			if (invitation.linkedOrganisationId && invitation.linkedOrganisationId !== actor.organisationId) {
+			if (
+				invitation.linkedOrganisationId &&
+				invitation.linkedOrganisationId !== actor.organisationId
+			) {
 				throw new ProjectCollaborationInvitationValidationError(
 					'This CRM organisation has already been connected to another NuBlox organisation.'
 				);
@@ -747,11 +780,14 @@ export class ProjectCollaborationInvitationService {
 				.select('party_id')
 				.where('organisation_id', '=', invitation.invitingOrganisationId)
 				.where('linked_organisation_id', '=', actor.organisationId)
-				.where('party_id', '!=', trx
-					.selectFrom('parties')
-					.select('id')
-					.where('organisation_id', '=', invitation.invitingOrganisationId)
-					.where('public_id', '=', invitation.crmOrganisationPartyPublicId)
+				.where(
+					'party_id',
+					'!=',
+					trx
+						.selectFrom('parties')
+						.select('id')
+						.where('organisation_id', '=', invitation.invitingOrganisationId)
+						.where('public_id', '=', invitation.crmOrganisationPartyPublicId)
 				)
 				.executeTakeFirst();
 			if (conflictingLink) {
@@ -763,11 +799,14 @@ export class ProjectCollaborationInvitationService {
 				.updateTable('party_organisations')
 				.set({ linked_organisation_id: actor.organisationId })
 				.where('organisation_id', '=', invitation.invitingOrganisationId)
-				.where('party_id', '=', trx
-					.selectFrom('parties')
-					.select('id')
-					.where('organisation_id', '=', invitation.invitingOrganisationId)
-					.where('public_id', '=', invitation.crmOrganisationPartyPublicId)
+				.where(
+					'party_id',
+					'=',
+					trx
+						.selectFrom('parties')
+						.select('id')
+						.where('organisation_id', '=', invitation.invitingOrganisationId)
+						.where('public_id', '=', invitation.crmOrganisationPartyPublicId)
 				)
 				.executeTakeFirstOrThrow();
 

@@ -9,8 +9,8 @@
 	<p class="eyebrow">Business workspace</p>
 	<h1>Finance</h1>
 	<p>
-		Move between accounts payable, billing, receivables, collections and accounting without returning
-		to the global menu.
+		Move between accounts payable, billing, receivables, collections and accounting without
+		returning to the global menu.
 	</p>
 </section>
 

@@ -18,10 +18,14 @@ type Body = {
 
 export const POST: RequestHandler = async ({ request, cookies, locals }) => {
 	if (locals.actor) {
-		throw error(409, 'You are already signed in. Accept this invitation with an existing organisation or create another organisation from the invitation page.');
+		throw error(
+			409,
+			'You are already signed in. Accept this invitation with an existing organisation or create another organisation from the invitation page.'
+		);
 	}
 	const collaborationToken = cookies.get(PROJECT_COLLABORATION_SIGNUP_COOKIE)?.trim() ?? '';
-	if (!collaborationToken) throw error(403, 'A valid project collaboration invitation is required.');
+	if (!collaborationToken)
+		throw error(403, 'A valid project collaboration invitation is required.');
 
 	const body = (await request.json()) as Body;
 	if (body.defaultTimezone !== undefined && typeof body.defaultTimezone !== 'string') {

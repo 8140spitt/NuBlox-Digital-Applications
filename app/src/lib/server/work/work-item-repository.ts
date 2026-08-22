@@ -3,12 +3,7 @@ import { sql } from 'kysely';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type WorkItemKind =
-	| 'action'
-	| 'task'
-	| 'approval'
-	| 'review'
-	| 'decision'
-	| 'acknowledgement';
+	'action' | 'task' | 'approval' | 'review' | 'decision' | 'acknowledgement';
 
 export type WorkItemPriority = 'low' | 'normal' | 'high' | 'urgent' | 'critical';
 export type WorkItemStatus = 'open' | 'in_progress' | 'blocked' | 'completed' | 'cancelled';
@@ -387,9 +382,7 @@ export class WorkItemRepository {
 				${event.actorMemberId ?? null},
 				${event.correlationId},
 				${event.reason ?? null},
-				${event.metadata === undefined || event.metadata === null
-					? null
-					: JSON.stringify(event.metadata)}
+				${event.metadata === undefined || event.metadata === null ? null : JSON.stringify(event.metadata)}
 			)
 		`.execute(this.db);
 	}

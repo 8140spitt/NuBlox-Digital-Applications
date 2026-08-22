@@ -88,9 +88,9 @@ export type AccountsPayableWorkspace = {
 function isDuplicateKeyError(error: unknown): boolean {
 	return Boolean(
 		error &&
-			typeof error === 'object' &&
-			'code' in error &&
-			(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
+		typeof error === 'object' &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
 	);
 }
 
@@ -138,16 +138,25 @@ export class AccountsPayableService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
 
-	private async decision(actor: TenantActorContext, permissionKey: string, db: DatabaseExecutor = this.db) {
+	private async decision(
+		actor: TenantActorContext,
+		permissionKey: string,
+		db: DatabaseExecutor = this.db
+	) {
 		return new PermissionService(db).decideWithUmbrella(actor, permissionKey, 'finance.manage');
 	}
 
-	private async requireView(actor: TenantActorContext, db: DatabaseExecutor = this.db): Promise<void> {
+	private async requireView(
+		actor: TenantActorContext,
+		db: DatabaseExecutor = this.db
+	): Promise<void> {
 		await this.assertActiveActor(actor, db);
 		if (!(await this.decision(actor, 'finance.ap.view', db)).allowed) {
 			throw new TenantAccessError('Accounts-payable access is not permitted.');
@@ -180,10 +189,13 @@ export class AccountsPayableService {
 		return document;
 	}
 
-	private matchState(document: AccountsPayableDocumentRecord): AccountsPayableWorkspaceDocument['matchState'] {
+	private matchState(
+		document: AccountsPayableDocumentRecord
+	): AccountsPayableWorkspaceDocument['matchState'] {
 		if (document.status === 'draft') return 'draft';
 		if (document.status === 'exception') return 'exception';
-		if (document.status === 'submitted' || document.status === 'matching') return 'awaiting_approval';
+		if (document.status === 'submitted' || document.status === 'matching')
+			return 'awaiting_approval';
 		if (document.status === 'approved') return 'approved';
 		return 'closed';
 	}
@@ -192,19 +204,29 @@ export class AccountsPayableService {
 		await this.requireView(actor);
 		const repository = new AccountsPayableRepository(this.db);
 		const procurement = new ProcurementRepository(this.db);
-		const [documents, suppliers, purchaseOrders, taxCategories, canCreate, canSubmit, canMatch, canResolve, canApprove, canVoid] =
-			await Promise.all([
-				repository.listDocuments(actor.organisationId),
-				procurement.listEligibleSuppliers(actor.organisationId),
-				repository.listIssuedPurchaseOrders(actor.organisationId),
-				repository.listActiveTaxCategories(actor.organisationId),
-				this.decision(actor, AP_MUTATION_PERMISSIONS.create),
-				this.decision(actor, AP_MUTATION_PERMISSIONS.submit),
-				this.decision(actor, AP_MUTATION_PERMISSIONS.match),
-				this.decision(actor, AP_MUTATION_PERMISSIONS.resolve),
-				this.decision(actor, AP_MUTATION_PERMISSIONS.approve),
-				this.decision(actor, AP_MUTATION_PERMISSIONS.void)
-			]);
+		const [
+			documents,
+			suppliers,
+			purchaseOrders,
+			taxCategories,
+			canCreate,
+			canSubmit,
+			canMatch,
+			canResolve,
+			canApprove,
+			canVoid
+		] = await Promise.all([
+			repository.listDocuments(actor.organisationId),
+			procurement.listEligibleSuppliers(actor.organisationId),
+			repository.listIssuedPurchaseOrders(actor.organisationId),
+			repository.listActiveTaxCategories(actor.organisationId),
+			this.decision(actor, AP_MUTATION_PERMISSIONS.create),
+			this.decision(actor, AP_MUTATION_PERMISSIONS.submit),
+			this.decision(actor, AP_MUTATION_PERMISSIONS.match),
+			this.decision(actor, AP_MUTATION_PERMISSIONS.resolve),
+			this.decision(actor, AP_MUTATION_PERMISSIONS.approve),
+			this.decision(actor, AP_MUTATION_PERMISSIONS.void)
+		]);
 		const orderWorkspaces = [];
 		for (const order of purchaseOrders) {
 			orderWorkspaces.push({
@@ -271,7 +293,10 @@ export class AccountsPayableService {
 					actor.organisationId,
 					supplierPublicId
 				);
-				if (!supplier) throw new FinanceValidationError('The selected CRM organisation is not an active supplier.');
+				if (!supplier)
+					throw new FinanceValidationError(
+						'The selected CRM organisation is not an active supplier.'
+					);
 
 				let purchaseOrder: IssuedPurchaseOrder | null = null;
 				let purchaseOrderItems: PurchaseOrderItemForMatching[] = [];
@@ -281,11 +306,17 @@ export class AccountsPayableService {
 						purchaseOrderPublicId
 					);
 					if (!purchaseOrder)
-						throw new FinanceValidationError('The selected purchase order is not an active issued order.');
+						throw new FinanceValidationError(
+							'The selected purchase order is not an active issued order.'
+						);
 					if (purchaseOrder.supplierPartyId !== supplier.id)
-						throw new FinanceValidationError('Supplier invoice and purchase-order supplier do not match.');
+						throw new FinanceValidationError(
+							'Supplier invoice and purchase-order supplier do not match.'
+						);
 					if (purchaseOrder.currencyCode !== currencyCode)
-						throw new FinanceValidationError('Supplier invoice and purchase-order currencies do not match.');
+						throw new FinanceValidationError(
+							'Supplier invoice and purchase-order currencies do not match.'
+						);
 					purchaseOrderItems = await repository.listPurchaseOrderItems(
 						actor.organisationId,
 						purchaseOrder.versionId
@@ -311,12 +342,19 @@ export class AccountsPayableService {
 					let purchaseOrderItem: PurchaseOrderItemForMatching | null = null;
 					if (purchaseOrder) {
 						if (!poLineNumber)
-							throw new FinanceValidationError('A purchase-order line is required for every PO-backed invoice line.');
-						purchaseOrderItem = purchaseOrderItems.find((row) => row.lineNumber === poLineNumber) ?? null;
+							throw new FinanceValidationError(
+								'A purchase-order line is required for every PO-backed invoice line.'
+							);
+						purchaseOrderItem =
+							purchaseOrderItems.find((row) => row.lineNumber === poLineNumber) ?? null;
 						if (!purchaseOrderItem)
-							throw new FinanceValidationError(`Purchase-order line ${poLineNumber} is unavailable.`);
+							throw new FinanceValidationError(
+								`Purchase-order line ${poLineNumber} is unavailable.`
+							);
 					} else if (poLineNumber) {
-						throw new FinanceValidationError('A purchase-order line cannot be used without a purchase order.');
+						throw new FinanceValidationError(
+							'A purchase-order line cannot be used without a purchase order.'
+						);
 					}
 					const netAmount = lineAmount(quantity, unitRate);
 					let taxCategoryId: string | null = null;
@@ -328,10 +366,13 @@ export class AccountsPayableService {
 							publicId(line.taxCategoryPublicId, 'Tax category'),
 							taxDate ?? invoiceDate
 						);
-						if (!category) throw new FinanceValidationError('The selected tax category is unavailable.');
+						if (!category)
+							throw new FinanceValidationError('The selected tax category is unavailable.');
 						taxCategoryId = category.id;
 						if (category.treatment === 'taxable' && category.ratePercent === null)
-							throw new FinanceValidationError(`Tax category ${category.name} has no effective rate.`);
+							throw new FinanceValidationError(
+								`Tax category ${category.name} has no effective rate.`
+							);
 						taxRate = category.ratePercent ?? '0.0000';
 						taxAmount = percentageAmount(netAmount, taxRate);
 					}
@@ -417,7 +458,9 @@ export class AccountsPayableService {
 			});
 		} catch (cause) {
 			if (isDuplicateKeyError(cause)) {
-				throw new FinanceValidationError('This supplier document number is already recorded for the supplier.');
+				throw new FinanceValidationError(
+					'This supplier document number is already recorded for the supplier.'
+				);
 			}
 			throw cause;
 		}
@@ -468,7 +511,8 @@ export class AccountsPayableService {
 	): Promise<void> {
 		const open = await repository.listExceptions(actor.organisationId, documentId);
 		for (const exception of open) {
-			if (exception.status !== 'open' || !AUTOMATIC_MATCH_EXCEPTION_CODES.has(exception.code)) continue;
+			if (exception.status !== 'open' || !AUTOMATIC_MATCH_EXCEPTION_CODES.has(exception.code))
+				continue;
 			await repository.resolveException({
 				organisationId: actor.organisationId,
 				exceptionId: exception.id,
@@ -499,19 +543,34 @@ export class AccountsPayableService {
 				'NON_PO_REQUIRES_APPROVAL',
 				'No purchase order is linked. An authorised exception decision is required before approval.'
 			);
-			return { matched: false, openBlockingExceptions: await repository.countOpenBlockingExceptions(actor.organisationId, document.id) };
+			return {
+				matched: false,
+				openBlockingExceptions: await repository.countOpenBlockingExceptions(
+					actor.organisationId,
+					document.id
+				)
+			};
 		}
 		const purchaseOrder = await repository.findIssuedPurchaseOrderByPublicId(
 			actor.organisationId,
 			document.purchaseOrderPublicId
 		);
 		if (!purchaseOrder || purchaseOrder.id !== document.purchaseOrderId)
-			throw new FinanceValidationError('The linked purchase order is no longer an active issued order.');
+			throw new FinanceValidationError(
+				'The linked purchase order is no longer an active issued order.'
+			);
 		if (purchaseOrder.supplierPartyId !== document.supplierPartyId)
-			throw new FinanceValidationError('The supplier document no longer matches the purchase-order supplier.');
+			throw new FinanceValidationError(
+				'The supplier document no longer matches the purchase-order supplier.'
+			);
 		if (purchaseOrder.currencyCode !== document.currencyCode)
-			throw new FinanceValidationError('The supplier document no longer matches the purchase-order currency.');
-		const poItems = await repository.listPurchaseOrderItems(actor.organisationId, purchaseOrder.versionId);
+			throw new FinanceValidationError(
+				'The supplier document no longer matches the purchase-order currency.'
+			);
+		const poItems = await repository.listPurchaseOrderItems(
+			actor.organisationId,
+			purchaseOrder.versionId
+		);
 
 		for (const item of items) {
 			if (!item.purchaseOrderItemId) {
@@ -616,7 +675,9 @@ export class AccountsPayableService {
 				availableReceiptQuantity += available;
 				receiptAvailability.push({ id: receipt.id, available: formatScaledDecimal(available, 6) });
 			}
-			if (availableReceiptQuantity < parseScaledDecimal(quantityStillToMatch, 6, 'Quantity to match')) {
+			if (
+				availableReceiptQuantity < parseScaledDecimal(quantityStillToMatch, 6, 'Quantity to match')
+			) {
 				await this.ensureException(
 					repository,
 					actor,
@@ -660,7 +721,11 @@ export class AccountsPayableService {
 			const document = await this.requireDocument(actor, documentPublicId, trx, true);
 			if (document.status !== 'draft')
 				throw new FinanceValidationError('Only a draft supplier document can be submitted.');
-			const snapshot = await this.supplierSnapshot(trx, actor.organisationId, document.supplierPartyId);
+			const snapshot = await this.supplierSnapshot(
+				trx,
+				actor.organisationId,
+				document.supplierPartyId
+			);
 			await repository.insertSupplierSnapshot({
 				organisationId: actor.organisationId,
 				documentId: document.id,
@@ -691,7 +756,12 @@ export class AccountsPayableService {
 			)
 				throw new FinanceValidationError('The supplier document changed before submission.');
 			const matchingDocument = { ...document, status: 'matching', submittedAt: this.now() };
-			const result = await this.matchDocumentInTransaction(trx, actor, membership.id, matchingDocument);
+			const result = await this.matchDocumentInTransaction(
+				trx,
+				actor,
+				membership.id,
+				matchingDocument
+			);
 			await repository.setDocumentStatus({
 				organisationId: actor.organisationId,
 				documentId: document.id,
@@ -708,7 +778,10 @@ export class AccountsPayableService {
 				subjectType: 'accounts_payable_document',
 				subjectPublicId: document.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { matched: result.matched, openBlockingExceptions: result.openBlockingExceptions }
+				changeSummary: {
+					matched: result.matched,
+					openBlockingExceptions: result.openBlockingExceptions
+				}
 			});
 		});
 	}
@@ -720,7 +793,9 @@ export class AccountsPayableService {
 			const repository = new AccountsPayableRepository(trx);
 			const document = await this.requireDocument(actor, documentPublicId, trx, true);
 			if (document.status !== 'submitted' && document.status !== 'exception')
-				throw new FinanceValidationError('Only a submitted or exception supplier document can be matched.');
+				throw new FinanceValidationError(
+					'Only a submitted or exception supplier document can be matched.'
+				);
 			const result = await this.matchDocumentInTransaction(trx, actor, membership.id, document);
 			await repository.setDocumentStatus({
 				organisationId: actor.organisationId,
@@ -754,9 +829,14 @@ export class AccountsPayableService {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.requireMutation(actor, AP_MUTATION_PERMISSIONS.resolve, trx);
 			const repository = new AccountsPayableRepository(trx);
-			const exception = await repository.findExceptionByPublicId(actor.organisationId, exceptionPublicId, true);
+			const exception = await repository.findExceptionByPublicId(
+				actor.organisationId,
+				exceptionPublicId,
+				true
+			);
 			if (!exception) throw new RecordNotFoundError('Accounts-payable exception not found.');
-			if (exception.status !== 'open') throw new FinanceValidationError('Only an open exception can be resolved.');
+			if (exception.status !== 'open')
+				throw new FinanceValidationError('Only an open exception can be resolved.');
 			const status = input.waive ? 'waived' : 'resolved';
 			if (
 				(await repository.resolveException({
@@ -769,7 +849,12 @@ export class AccountsPayableService {
 				})) !== 1
 			)
 				throw new FinanceValidationError('The exception changed before it could be resolved.');
-			if ((await repository.countOpenBlockingExceptions(actor.organisationId, exception.documentId)) === 0) {
+			if (
+				(await repository.countOpenBlockingExceptions(
+					actor.organisationId,
+					exception.documentId
+				)) === 0
+			) {
 				await repository.setDocumentStatus({
 					organisationId: actor.organisationId,
 					documentId: exception.documentId,
@@ -804,21 +889,32 @@ export class AccountsPayableService {
 			const repository = new AccountsPayableRepository(trx);
 			const document = await this.requireDocument(actor, documentPublicId, trx, true);
 			if (document.status !== 'submitted')
-				throw new FinanceValidationError('Only a fully matched or authorised supplier document can be approved.');
+				throw new FinanceValidationError(
+					'Only a fully matched or authorised supplier document can be approved.'
+				);
 			if (document.createdByMemberId === membership.id)
-				throw new TenantAccessError('Maker/checker control prevents the document creator from approving it.');
+				throw new TenantAccessError(
+					'Maker/checker control prevents the document creator from approving it.'
+				);
 			if ((await repository.countOpenBlockingExceptions(actor.organisationId, document.id)) !== 0)
-				throw new FinanceValidationError('Open blocking exceptions must be resolved before approval.');
+				throw new FinanceValidationError(
+					'Open blocking exceptions must be resolved before approval.'
+				);
 			const items = await repository.listDocumentItems(actor.organisationId, document.id);
 			if (document.purchaseOrderId) {
 				for (const item of items) {
-					const allocations = await repository.listAllocationsForDocumentItem(actor.organisationId, item.id);
+					const allocations = await repository.listAllocationsForDocumentItem(
+						actor.organisationId,
+						item.id
+					);
 					const allocated = allocations.reduce(
 						(total, row) => total + parseScaledDecimal(row.matchedQuantity, 6, 'Matched quantity'),
 						0n
 					);
 					if (allocated !== parseScaledDecimal(item.quantity, 6, 'Invoice quantity')) {
-						throw new FinanceValidationError(`Invoice line ${item.lineNumber} is not fully matched to receipt evidence.`);
+						throw new FinanceValidationError(
+							`Invoice line ${item.lineNumber} is not fully matched to receipt evidence.`
+						);
 					}
 				}
 			}
@@ -871,7 +967,9 @@ export class AccountsPayableService {
 					status: 'void'
 				})) !== 1
 			)
-				throw new FinanceValidationError('The supplier document changed before it could be voided.');
+				throw new FinanceValidationError(
+					'The supplier document changed before it could be voided.'
+				);
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,

@@ -1,0 +1,23 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "NuBlox Logged Terminal",
+			"type": "shell",
+			"command": "mkdir -p \"${workspaceFolder}/.logs\" && cd \"${workspaceFolder}/app\" && exec script -F \"${workspaceFolder}/.logs/terminal-$(date '+%Y-%m-%d_%H-%M-%S').log\"",
+			"isBackground": true,
+			"problemMatcher": [],
+			"presentation": {
+				"reveal": "always",
+				"focus": true,
+				"panel": "new",
+				"showReuseMessage": false,
+				"clear": false
+			},
+			"runOptions": {
+				"runOn": "folderOpen",
+				"instanceLimit": 1
+			}
+		}
+	]
+}

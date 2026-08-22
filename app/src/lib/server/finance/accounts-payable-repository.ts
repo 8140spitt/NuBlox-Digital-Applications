@@ -356,7 +356,11 @@ export class AccountsPayableRepository {
 		organisationId: string,
 		publicId: string
 	): Promise<IssuedPurchaseOrder | null> {
-		return (await this.listIssuedPurchaseOrders(organisationId)).find((row) => row.publicId === publicId) ?? null;
+		return (
+			(await this.listIssuedPurchaseOrders(organisationId)).find(
+				(row) => row.publicId === publicId
+			) ?? null
+		);
 	}
 
 	async listPurchaseOrderItems(
@@ -667,7 +671,10 @@ export class AccountsPayableRepository {
 		return Number(result.numUpdatedRows);
 	}
 
-	async listActiveAllocationsForPurchaseOrderItem(organisationId: string, purchaseOrderItemId: string) {
+	async listActiveAllocationsForPurchaseOrderItem(
+		organisationId: string,
+		purchaseOrderItemId: string
+	) {
 		return this.db
 			.selectFrom('accounts_payable_match_allocations as allocation')
 			.innerJoin('accounts_payable_document_items as item', (join) =>
