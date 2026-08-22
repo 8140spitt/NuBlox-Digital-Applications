@@ -10,6 +10,8 @@ import {
 	OrganisationService
 } from '$lib/server/organisations/organisation-service';
 
+const PROFILE_SUCCESS_COOKIE = 'nublox_organisation_profile_notice';
+
 type LocalsLike = {
 	actor: { userId: string } | null;
 	tenant: {
@@ -42,12 +44,17 @@ function stringField(formData: FormData, name: string): string {
 	return typeof value === 'string' ? value.trim() : '';
 }
 
-export const load: PageServerLoad = async ({ locals, url }) => {
+export const load: PageServerLoad = async ({ locals, cookies }) => {
 	const actor = actorFromLocals(locals);
 	const db = getDatabase();
 	const decision = await new PermissionService(db).decide(actor, 'organisation.manage');
 	if (!decision.allowed) {
 		throw error(403, 'You do not have organisation profile management access.');
+	}
+
+	const profileUpdated = cookies.get(PROFILE_SUCCESS_COOKIE) === 'updated';
+	if (profileUpdated) {
+		cookies.delete(PROFILE_SUCCESS_COOKIE, { path: '/organisation/profile' });
 	}
 
 	const organisation = await new OrganisationService(db).getCurrentOrganisation(actor);
@@ -59,12 +66,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 			defaultTimezone: organisation.defaultTimezone,
 			defaultCurrencyCode: organisation.defaultCurrencyCode
 		},
-		profileSuccess: url.searchParams.get('updated') === '1' ? 'Organisation profile updated.' : null
+		profileSuccess: profileUpdated ? 'Organisation profile updated.' : null
 	};
 };
 
 export const actions: Actions = {
-	update: async ({ request, locals }) => {
+	update: async ({ request, locals, cookies, url }) => {
 		const actor = actorFromLocals(locals);
 		const formData = await request.formData();
 		const service = new OrganisationService(getDatabase());
@@ -84,6 +91,14 @@ export const actions: Actions = {
 			}
 			throw cause;
 		}
-		redirect(303, '/organisation/profile?updated=1');
+
+		cookies.set(PROFILE_SUCCESS_COOKIE, 'updated', {
+			path: '/organisation/profile',
+			httpOnly: true,
+			sameSite: 'lax',
+			secure: url.protocol === 'https:',
+			maxAge: 60
+		});
+		redirect(303, '/organisation/profile');
 	}
 };
