@@ -14,19 +14,22 @@ export type EmailDelivery = {
 
 function redactSensitiveEmailText(text: string): string {
 	return text
-		.replace(
-			/([?&](?:token|code|key|secret|signature)=)[^&\s]+/gi,
-			'$1[REDACTED]'
-		)
+		.replace(/([?&](?:token|code|key|secret|signature)=)[^&\s]+/gi, '$1[REDACTED]')
 		.replace(/(\/(?:invite|collaborate)\/)[^/?#\s]+/gi, '$1[REDACTED]');
+}
+
+function includeSensitiveConsoleEmailBody(): boolean {
+	return env.EMAIL_CONSOLE_INCLUDE_SECRETS?.trim().toLowerCase() === 'true';
 }
 
 class ConsoleEmailDelivery implements EmailDelivery {
 	async send(message: TransactionalEmail): Promise<void> {
+		const includeSecrets = includeSensitiveConsoleEmailBody();
 		console.info('[NuBlox email]', {
 			to: message.to,
 			subject: message.subject,
-			text: redactSensitiveEmailText(message.text),
+			text: includeSecrets ? message.text : redactSensitiveEmailText(message.text),
+			secretsRedacted: !includeSecrets,
 			idempotencyKey: message.idempotencyKey ?? null
 		});
 	}
@@ -40,8 +43,10 @@ class ConsoleEmailDelivery implements EmailDelivery {
  * Unsupported/unconfigured modes fail at service construction so invitation state
  * is never committed before discovering that delivery is unavailable.
  *
- * Console delivery intentionally redacts secret-bearing URL components before
- * writing message bodies to persistent development/test logs.
+ * Console delivery redacts secret-bearing URL components by default before writing
+ * message bodies to persistent development/test logs. A developer may explicitly
+ * opt in to full local console bodies for manual link testing, but that should not
+ * be enabled while retaining terminal logs.
  *
  * Callers that may retry an externally visible business message should supply a
  * stable `idempotencyKey`. A production adapter must use that key when its provider
