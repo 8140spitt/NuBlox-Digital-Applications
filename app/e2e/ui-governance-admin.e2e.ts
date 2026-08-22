@@ -87,6 +87,8 @@ test('owner maintains the canonical organisation profile through the browser', a
 
 	const profileForm = page.locator('form[action="?/update"]');
 	await expect(profileForm.getByLabel('Legal name')).toHaveValue(ORGANISATION);
+	await expect(profileForm.getByLabel('Default timezone')).toHaveValue('Europe/London');
+	await expect(profileForm.getByLabel('Default currency')).toHaveValue('GBP');
 	await profileForm.getByLabel('Trading name').fill('NuBlox E2E Trading Name');
 	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
 	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
