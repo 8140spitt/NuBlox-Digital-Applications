@@ -4,6 +4,7 @@ import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
+import type { DatabaseExecutor } from '$lib/server/db/executor';
 import {
 	ConcurrentUpdateError,
 	InvalidLifecycleTransitionError,
@@ -51,6 +52,24 @@ export type AssignWorkItemInput = {
 	replaceExisting?: boolean;
 };
 
+type EvidenceInput = {
+	eventType: string;
+	actionKey: string;
+	fromStatus?: WorkItemStatus | null;
+	toStatus?: WorkItemStatus | null;
+	reason?: string | null;
+	metadata?: Record<string, unknown>;
+	changeSummary?: Record<string, unknown>;
+	outboxPayload?: Record<string, unknown>;
+};
+
+const DECISION_CAPABLE_KINDS: readonly WorkItemKind[] = [
+	'approval',
+	'review',
+	'decision',
+	'acknowledgement'
+];
+
 const TRANSITIONS: Readonly<Record<WorkItemStatus, readonly WorkItemStatus[]>> = {
 	open: ['in_progress', 'cancelled'],
 	in_progress: ['blocked', 'completed', 'cancelled'],
@@ -89,6 +108,17 @@ function assertAssignmentTarget(input: AssignWorkItemInput): void {
 	}
 	if (input.scope === 'team' && (hasMember || !hasTeam)) {
 		throw new WorkKernelValidationError('Team assignment requires only assignedTeamId.');
+	}
+}
+
+function assertDecisionCapable(workItem: WorkItemRecord): void {
+	if (!DECISION_CAPABLE_KINDS.includes(workItem.kind)) {
+		throw new WorkKernelValidationError(
+			'Decisions may only be recorded against decision-capable work items.'
+		);
+	}
+	if (workItem.status === 'completed' || workItem.status === 'cancelled') {
+		throw new WorkKernelValidationError('A decision cannot be added to a closed work item.');
 	}
 }
 
@@ -137,6 +167,53 @@ export class WorkItemService {
 		return workItem;
 	}
 
+	private async appendEvidence(
+		db: DatabaseExecutor,
+		actor: TenantActorContext,
+		workItem: WorkItemRecord,
+		input: EvidenceInput
+	): Promise<void> {
+		await new WorkItemRepository(db).appendEvent({
+			workItemId: workItem.id,
+			workItemOwnerOrganisationId: workItem.owningOrganisationId,
+			eventPublicId: randomUUID(),
+			eventType: input.eventType,
+			fromStatus: input.fromStatus ?? null,
+			toStatus: input.toStatus ?? null,
+			actingOrganisationId: actor.organisationId,
+			actorMemberId: actor.memberId,
+			correlationId: actor.correlationId,
+			reason: input.reason ?? null,
+			metadata: input.metadata
+		});
+
+		await new AuditRepository(db).append({
+			eventPublicId: randomUUID(),
+			actingOrganisationId: actor.organisationId,
+			actorUserId: actor.userId,
+			actorMemberId: actor.memberId,
+			projectId: workItem.projectId,
+			actionKey: input.actionKey,
+			subjectType: 'work_item',
+			subjectPublicId: workItem.publicId,
+			correlationId: actor.correlationId,
+			changeSummary: input.changeSummary
+		});
+
+		await enqueueOutboxEvent(db, {
+			organisationId: actor.organisationId,
+			topic: input.actionKey,
+			aggregateType: 'work_item',
+			aggregatePublicId: workItem.publicId,
+			correlationId: actor.correlationId,
+			payload: {
+				workItemPublicId: workItem.publicId,
+				projectId: workItem.projectId,
+				...(input.outboxPayload ?? {})
+			}
+		});
+	}
+
 	async create(actor: TenantActorContext, input: CreateWorkItemInput): Promise<WorkItemRecord> {
 		assertSourcePair(input.sourceType, input.sourcePublicId);
 		const sourceDomain = assertText(input.sourceDomain, 'sourceDomain', 64);
@@ -145,9 +222,8 @@ export class WorkItemService {
 
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new WorkItemRepository(trx);
-			const publicId = randomUUID();
 			const created = await repository.create({
-				publicId,
+				publicId: randomUUID(),
 				owningOrganisationId: actor.organisationId,
 				projectId: input.projectId ?? null,
 				kind: input.kind ?? 'action',
@@ -161,40 +237,13 @@ export class WorkItemService {
 				createdByMemberId: actor.memberId
 			});
 
-			await repository.appendEvent({
-				workItemId: created.id,
-				workItemOwnerOrganisationId: created.owningOrganisationId,
-				eventPublicId: randomUUID(),
+			await this.appendEvidence(trx, actor, created, {
 				eventType: 'created',
-				toStatus: 'open',
-				actingOrganisationId: actor.organisationId,
-				actorMemberId: actor.memberId,
-				correlationId: actor.correlationId,
-				metadata: { sourceDomain: created.sourceDomain, kind: created.kind }
-			});
-
-			await new AuditRepository(trx).append({
-				eventPublicId: randomUUID(),
-				actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId,
-				actorMemberId: actor.memberId,
-				projectId: created.projectId,
 				actionKey: 'work.item.created',
-				subjectType: 'work_item',
-				subjectPublicId: created.publicId,
-				correlationId: actor.correlationId,
-				changeSummary: { status: 'open', title: created.title }
-			});
-
-			await enqueueOutboxEvent(trx, {
-				organisationId: actor.organisationId,
-				topic: 'work.item.created',
-				aggregateType: 'work_item',
-				aggregatePublicId: created.publicId,
-				correlationId: actor.correlationId,
-				payload: {
-					workItemPublicId: created.publicId,
-					projectId: created.projectId,
+				toStatus: 'open',
+				metadata: { sourceDomain: created.sourceDomain, kind: created.kind },
+				changeSummary: { status: 'open', title: created.title },
+				outboxPayload: {
 					kind: created.kind,
 					priority: created.priority,
 					dueAt: created.dueAt?.toISOString() ?? null
@@ -220,6 +269,12 @@ export class WorkItemService {
 		input: AssignWorkItemInput
 	): Promise<WorkItemRecord> {
 		assertAssignmentTarget(input);
+		if (input.assignedOrganisationId !== actor.organisationId) {
+			throw new WorkKernelValidationError(
+				'Cross-organisation work assignment is not activated until project/portal participant validation is implemented.'
+			);
+		}
+
 		const workItem = await this.getOwnedWorkItem(actor, workItemPublicId);
 		await this.requirePermission(actor, 'work.assign', workItem.projectId);
 
@@ -232,7 +287,11 @@ export class WorkItemService {
 			}
 
 			if (input.replaceExisting) {
-				await repository.endActiveAssignments(current.id, current.owningOrganisationId, actor.memberId);
+				await repository.endActiveAssignments(
+					current.id,
+					current.owningOrganisationId,
+					actor.memberId
+				);
 			}
 			await repository.assign({
 				workItemId: current.id,
@@ -245,43 +304,20 @@ export class WorkItemService {
 				note: input.note?.trim() || null
 			});
 
-			await repository.appendEvent({
-				workItemId: current.id,
-				workItemOwnerOrganisationId: current.owningOrganisationId,
-				eventPublicId: randomUUID(),
+			await this.appendEvidence(trx, actor, current, {
 				eventType: 'assigned',
-				actingOrganisationId: actor.organisationId,
-				actorMemberId: actor.memberId,
-				correlationId: actor.correlationId,
+				actionKey: 'work.item.assigned',
 				metadata: {
 					scope: input.scope,
 					assignedOrganisationId: input.assignedOrganisationId,
 					assignedMemberId: input.assignedMemberId ?? null,
 					assignedTeamId: input.assignedTeamId ?? null
-				}
-			});
-
-			await new AuditRepository(trx).append({
-				eventPublicId: randomUUID(),
-				actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId,
-				actorMemberId: actor.memberId,
-				projectId: current.projectId,
-				actionKey: 'work.item.assigned',
-				subjectType: 'work_item',
-				subjectPublicId: current.publicId,
-				correlationId: actor.correlationId,
-				changeSummary: { scope: input.scope, assignedOrganisationId: input.assignedOrganisationId }
-			});
-
-			await enqueueOutboxEvent(trx, {
-				organisationId: actor.organisationId,
-				topic: 'work.item.assigned',
-				aggregateType: 'work_item',
-				aggregatePublicId: current.publicId,
-				correlationId: actor.correlationId,
-				payload: {
-					workItemPublicId: current.publicId,
+				},
+				changeSummary: {
+					scope: input.scope,
+					assignedOrganisationId: input.assignedOrganisationId
+				},
+				outboxPayload: {
 					scope: input.scope,
 					assignedOrganisationId: input.assignedOrganisationId,
 					assignedMemberId: input.assignedMemberId ?? null,
@@ -320,46 +356,18 @@ export class WorkItemService {
 				throw new InvalidLifecycleTransitionError(current.status, toStatus);
 			}
 
-			const changed = await repository.transition(current, toStatus, actor.memberId, note?.trim() || null);
+			const normalizedNote = note?.trim() || null;
+			const changed = await repository.transition(current, toStatus, actor.memberId, normalizedNote);
 			if (!changed) throw new ConcurrentUpdateError();
 
-			await repository.appendEvent({
-				workItemId: current.id,
-				workItemOwnerOrganisationId: current.owningOrganisationId,
-				eventPublicId: randomUUID(),
+			await this.appendEvidence(trx, actor, current, {
 				eventType: 'status_changed',
+				actionKey: 'work.item.status_changed',
 				fromStatus: current.status,
 				toStatus,
-				actingOrganisationId: actor.organisationId,
-				actorMemberId: actor.memberId,
-				correlationId: actor.correlationId,
-				reason: note?.trim() || null
-			});
-
-			await new AuditRepository(trx).append({
-				eventPublicId: randomUUID(),
-				actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId,
-				actorMemberId: actor.memberId,
-				projectId: current.projectId,
-				actionKey: 'work.item.status_changed',
-				subjectType: 'work_item',
-				subjectPublicId: current.publicId,
-				correlationId: actor.correlationId,
-				changeSummary: { from: current.status, to: toStatus, note: note?.trim() || null }
-			});
-
-			await enqueueOutboxEvent(trx, {
-				organisationId: actor.organisationId,
-				topic: 'work.item.status_changed',
-				aggregateType: 'work_item',
-				aggregatePublicId: current.publicId,
-				correlationId: actor.correlationId,
-				payload: {
-					workItemPublicId: current.publicId,
-					fromStatus: current.status,
-					toStatus
-				}
+				reason: normalizedNote,
+				changeSummary: { from: current.status, to: toStatus, note: normalizedNote },
+				outboxPayload: { fromStatus: current.status, toStatus }
 			});
 
 			const updated = await repository.findByPublicId(actor.organisationId, workItemPublicId);
@@ -375,51 +383,24 @@ export class WorkItemService {
 		note?: string | null
 	): Promise<WorkItemRecord> {
 		const workItem = await this.getOwnedWorkItem(actor, workItemPublicId);
-		if (!['approval', 'review', 'decision', 'acknowledgement'].includes(workItem.kind)) {
-			throw new WorkKernelValidationError('Decisions may only be recorded against decision-capable work items.');
-		}
-		if (workItem.status === 'completed' || workItem.status === 'cancelled') {
-			throw new WorkKernelValidationError('A decision cannot be added to a closed work item.');
-		}
+		assertDecisionCapable(workItem);
 		await this.requirePermission(actor, 'work.approve', workItem.projectId);
 
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new WorkItemRepository(trx);
 			const current = await repository.findByPublicId(actor.organisationId, workItemPublicId);
 			if (!current) throw new RecordNotFoundError('The requested work item was not found.');
-			await repository.recordDecision(current, decision, actor.memberId, note?.trim() || null);
-			await repository.appendEvent({
-				workItemId: current.id,
-				workItemOwnerOrganisationId: current.owningOrganisationId,
-				eventPublicId: randomUUID(),
+			assertDecisionCapable(current);
+
+			const normalizedNote = note?.trim() || null;
+			await repository.recordDecision(current, decision, actor.memberId, normalizedNote);
+			await this.appendEvidence(trx, actor, current, {
 				eventType: 'decision_recorded',
-				actingOrganisationId: actor.organisationId,
-				actorMemberId: actor.memberId,
-				correlationId: actor.correlationId,
-				reason: note?.trim() || null,
-				metadata: { decision }
-			});
-
-			await new AuditRepository(trx).append({
-				eventPublicId: randomUUID(),
-				actingOrganisationId: actor.organisationId,
-				actorUserId: actor.userId,
-				actorMemberId: actor.memberId,
-				projectId: current.projectId,
 				actionKey: 'work.item.decision_recorded',
-				subjectType: 'work_item',
-				subjectPublicId: current.publicId,
-				correlationId: actor.correlationId,
-				changeSummary: { decision, note: note?.trim() || null }
-			});
-
-			await enqueueOutboxEvent(trx, {
-				organisationId: actor.organisationId,
-				topic: 'work.item.decision_recorded',
-				aggregateType: 'work_item',
-				aggregatePublicId: current.publicId,
-				correlationId: actor.correlationId,
-				payload: { workItemPublicId: current.publicId, decision }
+				reason: normalizedNote,
+				metadata: { decision },
+				changeSummary: { decision, note: normalizedNote },
+				outboxPayload: { decision }
 			});
 
 			return current;
