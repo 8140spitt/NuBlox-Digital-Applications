@@ -1,0 +1,65 @@
+sap_no,sap_reference,classification,nublox_domain,current_state,target_slice,notes
+1,Advanced Planning & Optimization (APO),functional,E14 Supply-chain planning,planned,20,Demand supply capacity and material planning plus project resource planning
+2,Business Intelligence (BI),functional,E24 Data analytics planning integration platform,partial,21,Finance reporting exists; cross-domain BI and dashboards remain
+3,Business Planning and Consolidation (BPC),functional,E24/E08 Planning and finance,planned,21,Scenario planning budgeting and consolidation foundations
+4,Cash Management (CM),functional,E09 Treasury cash financial risk,planned,13,Cash position forecasting banking and liquidity
+5,Convergent Charging (CC),industry-functional,E08/E17 Finance and service,planned,12,Recurring or usage billing where service/utility models require it
+6,Controlling (CO),functional,E07 Commercial management controlling,partial,13,Project cost control exists; cost/profit centre and enterprise profitability remain
+7,Customer Relationship Management (CRM),functional,E03 CRM work winning account management,activated,8,CRM parties contacts opportunities and activities exist
+8,Customer Service (CS),functional,E17 Service field service,planned,12,Customer requests callouts SLAs dispatch and service history
+9,Data Services (DS),technical-platform,E24 Data integration platform,planned,22,ETL import export data quality and migration framework
+10,Environment Health and Safety (EHS),functional,E20 EHS sustainability,partial,17,Site safety foundations exist; RAMS permits incidents environmental depth remain
+11,Enterprise Asset Management (EAM),functional,E18/E22 Asset maintenance facilities,partial,18,Asset maintenance foundations exist; enterprise lifecycle and handover continuity remain
+12,Event Management (EM),platform-functional,E24 Automation events notifications,partial,22,Audit/outbox foundations exist; enterprise business-event monitoring remains
+13,Extended Financial Management (EFM),functional,E08/E09 Finance treasury,partial,13,Strong AR/accounting depth; AP banking treasury gaps remain
+14,Extended Warehouse Management (EWM),functional,E12 Warehouse logistics execution,planned,10,No warehouse runtime at baseline
+15,Flexible Real Estate Management (RE-FX),functional,E22 Real estate facilities occupancy,planned,19,No lease occupancy estate runtime at baseline
+16,Financial Accounting (FI),functional,E08 Finance accounting tax,partial,13,AR GL periods reporting year end exist; AP banking fixed-asset accounting remain
+17,Funds Management (FM),functional,E08/E07 Finance controlling,planned,21,Fund accounting and public-sector budget control extension
+18,Global Trade Services (GTS),industry-functional,E23/E12/E13 Compliance logistics transport,planned,22,Cross-border trade compliance extension
+19,Governance Risk and Compliance (GRC),functional,E23 Governance risk compliance,partial,21,RBAC and audit exist; SoD policy and enterprise GRC remain
+20,Human Capital Management (HCM),functional,E16 HCM competence expenses,partial,14,Workforce time schedule foundations exist; full lifecycle training leave expenses payroll integration remain
+21,Incentive and Commission Management (ICM),industry-functional,E16/E04 HCM sales,planned,21,Commission and incentive extension
+22,Integrated Business Planning (IBP),functional,E14/E24 Supply-chain planning,planned,20,Integrated demand supply capacity and scenario planning
+23,Integrated Product and Process Engineering (IPPE),functional,E21/E15 Engineering PLM production,planned,15,Engineering information exists partially; product/process engineering remains
+24,Library / Documentation,functional-platform,E21 Information management,partial,15,Controlled project documents exist; enterprise knowledge/library layer remains
+25,Master Data Governance (MDG),functional,E02 Master data governance,partial,8,Canonical parties exist; stewardship duplicate/merge/governance remain
+26,MDG for Material Data (MDG-M),functional,E02/E11 Master data materials,planned,10,Material/product master required
+27,MDG for Supplier Data (MDG-S),functional,E02/E10 Master data procurement,partial,8,Supplier parties exist; governed lifecycle onboarding/performance remain
+28,Materials Management (MM),functional,E10/E11 Procurement materials inventory,partial,10,Procurement exists; inventory goods movement and stores remain
+29,Multi-Resource Scheduling (MRS),functional,E06/E16/E17/E18 Resource scheduling,partial,11,People schedule exists; plant service and cross-resource planning remain
+30,NetWeaver,technical-platform,E24 Platform integration,partial,22,NuBlox platform exists; extensible enterprise integration/runtime operations remain
+31,Oil & Gas,industry-extension,E13/E18/E20/E21 Infrastructure energy extension,planned,23,Applicable as energy/utilities/infrastructure professional extension
+32,Plant Maintenance (PM),functional,E18 Asset plant maintenance,partial,18,PPM/reactive foundations exist; plant/fleet and lifecycle depth remain
+33,Point of Sale (POS),industry-extension,E04/E11/E12/E08 Merchant sales inventory finance,planned,20,Builders merchant branch-sales extension
+34,Portfolio and Project Management (PPM),functional,E06 Project programme portfolio,partial,11,Projects exist; portfolio WBS programme baseline risk and resource controls remain
+35,Predictive Analytics,platform-functional,E24 Analytics AI,planned,21,Forecasting anomaly/risk prediction after governed data maturity
+36,Process Integration (PI),technical-platform,E24 API integrations automation,planned,22,Versioned APIs webhooks adapters orchestration required
+37,Product Lifecycle Management (PLM),functional,E21 Design engineering information PLM,partial,15,Documents and project info exist; PLM/BIM/design responsibility depth remains
+38,Production Planning (PP),functional,E15/E14 Manufacturing planning,planned,20,BOM routing work-centre fabrication and capacity planning required
+39,Project System (PS),functional,E06/E07 Project system commercial control,partial,11,Project/commercial foundations exist; WBS programme progress and portfolio depth remain
+40,Quality Management (QM),functional,E19 Quality testing certification,partial,17,Inspection/defect foundations exist; ITP testing calibration certification depth remain
+41,Real Estate Management (RE),functional,E22 Property estate occupancy,planned,19,Property/lease/occupancy domain required
+42,Real-Time Offer Management (RTOM),functional,E04 Estimating CPQ sales,partial,12,Estimates quotations exist; dynamic offer/pricing extension remains
+43,Retail,industry-extension,E03/E04/E11/E12/E08 Merchant distribution,planned,20,Builders merchant/distribution extension
+44,S/4HANA Finance,functional,E08/E09 Finance treasury,partial,13,Strong accounting/AR; AP treasury banking cash gaps remain
+45,S/4HANA Supply Chain,functional,E10-E15 Supply chain,partial,20,Procurement exists; inventory warehouse transport planning manufacturing remain
+46,Sales and Distribution (SD),functional,E03/E04/E12 Sales order delivery,partial,12,CRM estimates quotes exist; sales/service order and logistics execution remain
+47,Service Parts Planning (SPP),functional,E11/E14/E17 Service parts,planned,12,Parts planning linked to field service/inventory required
+48,Solution Manager (SolMan),technical-platform,E24 Platform operations observability,partial,22,CI/testing exists; enterprise runtime observability/admin/change operations remain
+49,Strategic Enterprise Management (SEM),functional,E24/E08/E07 Enterprise performance,partial,21,Financial reporting exists; executive performance/planning remains
+50,SEM Integrated Planning (SEM-IP),functional,E24/E07/E08 Planning forecasting,planned,21,Integrated budgets forecasts scenarios required
+51,Supplier Lifecycle Management (SLC),functional,E10 Supplier lifecycle,partial,8,Supplier records/procurement exist; qualification onboarding performance and risk remain
+52,Supplier Relationship Management (SRM),functional,E10 Supplier sourcing relationships,partial,9,RFQ/PO foundations exist; strategic sourcing and lifecycle depth remain
+53,Supply Chain Management (SCM),functional,E10-E15 Supply chain,partial,20,Major materials inventory warehouse transport planning production gaps remain
+54,Test Data Migration Server (TDMS),technical-platform,E24 Data migration test data,planned,22,Controlled migration masking test-data/environment tooling required
+55,Time and Attendance Management (TAM),functional,E16 HCM time attendance,partial,14,Time foundations exist; attendance leave approvals and workforce lifecycle remain
+56,Trade Promotion Management (TPM),industry-extension,E04 Sales pricing promotions,planned,20,Merchant/distribution promotion extension
+57,Transportation Management (TM),functional,E13 Transportation fleet logistics,planned,16,Delivery route fleet and project-logistics planning required
+58,Treasury and Risk Management (TRM),functional,E09 Treasury cash risk,planned,13,Treasury liquidity financial risk and bank controls required
+59,Travel Management,functional,E16 HCM expenses travel,planned,14,Expenses travel approvals and reimbursement required
+60,User Experience (UX),technical-platform,E24 Experience platform,partial,22,Context-first shell exists; full task-first responsive accessibility standard continues
+61,Variant Configuration (VC),functional,E04/E15 CPQ production,planned,20,Configurable products assemblies and productised-service options
+62,Vehicle Management System (VMS),functional,E13/E18 Fleet vehicle management,partial,16,Generic asset foundation exists; vehicle/fleet lifecycle and logistics remain
+63,Warehouse Management (WM),functional,E12 Warehouse stores,planned,10,No warehouse runtime at baseline
+64,Xapps / Cross-Applications,technical-platform,E24 Extension framework,partial,22,Shared cross-domain application foundation exists; supported extension framework remains
