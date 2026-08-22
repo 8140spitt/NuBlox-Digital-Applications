@@ -62,13 +62,24 @@ jobs:
         run: |
           python <<'PY'
           from pathlib import Path
-          path = Path('app/src/lib/server/projects/project-collaboration-invitation-service.ts')
-          text = path.read_text()
+
+          collaboration = Path('app/src/lib/server/projects/project-collaboration-invitation-service.ts')
+          text = collaboration.read_text()
           old = "import { ProjectTeamService, ProjectTeamValidationError } from './project-team-service';"
           new = "import { ProjectTeamService } from './project-team-service';"
           if old not in text:
               raise SystemExit('Expected unused ProjectTeamValidationError import was not found.')
-          path.write_text(text.replace(old, new, 1))
+          collaboration.write_text(text.replace(old, new, 1))
+
+          work_test = Path('app/src/lib/server/work/work-item.integration.test.ts')
+          text = work_test.read_text()
+          prefix = "const TEST_CORRELATION_PREFIX = 'work-kernel-it-';\n"
+          correlation = 'correlationId: `${TEST_CORRELATION_PREFIX}${randomUUID()}`'
+          if prefix not in text or correlation not in text:
+              raise SystemExit('Expected Work Kernel correlation test fixture markers were not found.')
+          text = text.replace(prefix, '', 1)
+          text = text.replace(correlation, 'correlationId: randomUUID()', 1)
+          work_test.write_text(text)
           PY
 
       - name: Format consolidated application
