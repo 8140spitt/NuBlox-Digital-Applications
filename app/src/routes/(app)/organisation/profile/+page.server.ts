@@ -1,4 +1,4 @@
-import { error, fail, type Actions } from '@sveltejs/kit';
+import { error, fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
@@ -42,7 +42,7 @@ function stringField(formData: FormData, name: string): string {
 	return typeof value === 'string' ? value.trim() : '';
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const actor = actorFromLocals(locals);
 	const db = getDatabase();
 	const decision = await new PermissionService(db).decide(actor, 'organisation.manage');
@@ -58,7 +58,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 			tradingName: organisation.tradingName,
 			defaultTimezone: organisation.defaultTimezone,
 			defaultCurrencyCode: organisation.defaultCurrencyCode
-		}
+		},
+		profileSuccess:
+			url.searchParams.get('updated') === '1' ? 'Organisation profile updated.' : null
 	};
 };
 
@@ -74,7 +76,6 @@ export const actions: Actions = {
 				defaultTimezone: stringField(formData, 'defaultTimezone'),
 				defaultCurrencyCode: stringField(formData, 'defaultCurrencyCode')
 			});
-			return { profileSuccess: 'Organisation profile updated.' };
 		} catch (cause) {
 			if (cause instanceof OrganisationProfileValidationError) {
 				return fail(400, { profileError: cause.message });
@@ -84,5 +85,6 @@ export const actions: Actions = {
 			}
 			throw cause;
 		}
+		redirect(303, '/organisation/profile?updated=1');
 	}
 };
