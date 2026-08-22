@@ -4,10 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
-import {
-	OrganisationProfileValidationError,
-	OrganisationService
-} from './organisation-service';
+import { OrganisationProfileValidationError, OrganisationService } from './organisation-service';
 
 const PREFIX = 'Organisation Profile Integration ';
 
@@ -84,9 +81,7 @@ async function cleanup(): Promise<void> {
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 	const userIds = [managerUserId, memberUserId].filter(Boolean);
-	if (userIds.length > 0) {
-		await db.deleteFrom('users').where('id', 'in', userIds).execute();
-	}
+	if (userIds.length > 0) await db.deleteFrom('users').where('id', 'in', userIds).execute();
 }
 
 async function createFixture(): Promise<void> {
