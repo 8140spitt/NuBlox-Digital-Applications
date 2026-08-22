@@ -16,12 +16,12 @@ run_step() {
 }
 
 finish() {
-  local status=$?
-  if (( status == 0 )); then
+  local exit_code=$?
+  if (( exit_code == 0 )); then
     printf '\n✓ NuBlox validation completed successfully.\n'
   else
     printf '\n✗ NuBlox validation stopped at: %s\n' "$CURRENT_STEP" >&2
-    printf '  Exit code: %d\n' "$status" >&2
+    printf '  Exit code: %d\n' "$exit_code" >&2
     printf '  The VS Code terminal remains open because validation runs in its own process.\n' >&2
   fi
 }
