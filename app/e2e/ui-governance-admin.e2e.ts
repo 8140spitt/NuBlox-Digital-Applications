@@ -91,10 +91,12 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await expect(profileForm.getByLabel('Default currency')).toHaveValue('GBP');
 	await profileForm.getByLabel('Trading name').fill('NuBlox E2E Trading Name');
 	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
+	await expect(page).toHaveURL(/\/organisation\/profile\?updated=1$/);
 	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
 	await expect(profileForm.getByLabel('Trading name')).toHaveValue('NuBlox E2E Trading Name');
 
 	await profileForm.getByLabel('Trading name').fill('');
 	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
+	await expect(page).toHaveURL(/\/organisation\/profile\?updated=1$/);
 	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
 });
