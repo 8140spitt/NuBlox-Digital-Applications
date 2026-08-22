@@ -14,7 +14,7 @@ import {
 } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectTeamRepository } from './project-team-repository';
-import { ProjectTeamService, ProjectTeamValidationError } from './project-team-service';
+import { ProjectTeamService } from './project-team-service';
 
 const INVITATION_LIFETIME_MS = 7 * 24 * 60 * 60 * 1000;
 const TERMINAL_PROJECT_STATUSES = new Set(['cancelled', 'archived']);
@@ -387,8 +387,8 @@ export class ProjectCollaborationInvitationService {
 				subjectPublicId: publicId,
 				correlationId: actor.correlationId,
 				changeSummary: {
-					crmOrganisationPartyPublicId,
-					contactPartyPublicId,
+					crmOrganisationPartyPublicId: lockedCrmParty.partyPublicId,
+					contactPartyPublicId: lockedContact.partyPublicId,
 					email,
 					roleKeys,
 					expiresAt: expiresAt.toISOString()
@@ -896,7 +896,7 @@ export class ProjectCollaborationInvitationService {
 				eventPublicId: randomUUID(),
 				actingOrganisationId: invitation.invitingOrganisationId,
 				actorUserId: actor.userId,
-				actorMemberId: null,
+				actorMemberId: actorMembership.id,
 				projectId: invitation.projectId,
 				actionKey: 'crm.party.platform_organisation_linked_by_collaboration',
 				subjectType: 'crm_party',
