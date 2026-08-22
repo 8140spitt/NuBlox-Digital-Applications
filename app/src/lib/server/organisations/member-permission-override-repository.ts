@@ -127,7 +127,9 @@ export class MemberPermissionOverrideRepository {
 		return row ?? null;
 	}
 
-	async findActivePermission(permissionKey: string): Promise<MemberPermissionOverridePermission | null> {
+	async findActivePermission(
+		permissionKey: string
+	): Promise<MemberPermissionOverridePermission | null> {
 		const row = await this.db
 			.selectFrom('permissions')
 			.select(['id', 'permission_key as key', 'name', 'description'])
@@ -189,7 +191,11 @@ export class MemberPermissionOverrideRepository {
 			.executeTakeFirstOrThrow();
 	}
 
-	async deleteOverride(organisationId: string, memberId: string, permissionId: string): Promise<void> {
+	async deleteOverride(
+		organisationId: string,
+		memberId: string,
+		permissionId: string
+	): Promise<void> {
 		await this.db
 			.deleteFrom('member_permission_overrides')
 			.where('organisation_id', '=', organisationId)
