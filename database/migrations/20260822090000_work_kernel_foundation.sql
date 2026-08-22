@@ -69,7 +69,7 @@ CREATE TABLE work_items (
             OR (source_type IS NOT NULL AND source_public_id IS NOT NULL)
         ),
     CONSTRAINT ck_work_items_started
-        CHECK (started_at IS NULL OR status IN ('in_progress', 'blocked', 'completed')),
+        CHECK (started_at IS NULL OR status IN ('in_progress', 'blocked', 'completed', 'cancelled')),
     CONSTRAINT ck_work_items_completed
         CHECK (
             (status = 'completed' AND completed_at IS NOT NULL AND completed_by_member_id IS NOT NULL)
@@ -247,7 +247,7 @@ CREATE TABLE outbox_events (
     CONSTRAINT ck_outbox_events_lock
         CHECK (
             (delivery_status = 'processing' AND locked_at IS NOT NULL AND lock_token IS NOT NULL)
-            OR (delivery_status <> 'processing')
+            OR (delivery_status <> 'processing' AND locked_at IS NULL AND lock_token IS NULL)
         ),
     CONSTRAINT ck_outbox_events_published
         CHECK (
