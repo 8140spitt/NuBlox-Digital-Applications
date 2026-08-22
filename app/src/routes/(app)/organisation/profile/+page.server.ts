@@ -10,8 +10,6 @@ import {
 	OrganisationService
 } from '$lib/server/organisations/organisation-service';
 
-const PROFILE_SUCCESS_COOKIE = 'nublox_organisation_profile_updated';
-
 type LocalsLike = {
 	actor: { userId: string } | null;
 	tenant: {
@@ -44,7 +42,7 @@ function stringField(formData: FormData, name: string): string {
 	return typeof value === 'string' ? value.trim() : '';
 }
 
-export const load: PageServerLoad = async ({ locals, cookies }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	const actor = actorFromLocals(locals);
 	const db = getDatabase();
 	const decision = await new PermissionService(db).decide(actor, 'organisation.manage');
@@ -53,11 +51,6 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 	}
 
 	const organisation = await new OrganisationService(db).getCurrentOrganisation(actor);
-	const profileUpdated = cookies.get(PROFILE_SUCCESS_COOKIE) === '1';
-	if (profileUpdated) {
-		cookies.delete(PROFILE_SUCCESS_COOKIE, { path: '/organisation/profile' });
-	}
-
 	return {
 		profile: {
 			publicId: organisation.publicId,
@@ -66,12 +59,13 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 			defaultTimezone: organisation.defaultTimezone,
 			defaultCurrencyCode: organisation.defaultCurrencyCode
 		},
-		profileSuccess: profileUpdated ? 'Organisation profile updated.' : null
+		profileSuccess:
+			url.searchParams.get('updated') === '1' ? 'Organisation profile updated.' : null
 	};
 };
 
 export const actions: Actions = {
-	default: async ({ request, locals, cookies, url }) => {
+	default: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
 		const formData = await request.formData();
 		const service = new OrganisationService(getDatabase());
@@ -92,13 +86,6 @@ export const actions: Actions = {
 			throw cause;
 		}
 
-		cookies.set(PROFILE_SUCCESS_COOKIE, '1', {
-			path: '/organisation/profile',
-			httpOnly: true,
-			sameSite: 'lax',
-			secure: url.protocol === 'https:',
-			maxAge: 60
-		});
-		throw redirect(303, '/organisation/profile');
+		redirect(303, '/organisation/profile?updated=1');
 	}
 };
