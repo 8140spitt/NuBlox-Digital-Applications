@@ -7,6 +7,7 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import { enqueueOutboxEvent } from '$lib/server/jobs/outbox';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from './membership-repository';
+import { normaliseOrganisationProfile } from './organisation-profile-validation';
 import {
 	OrganisationRepository,
 	type OrganisationIdentifierSummary,
@@ -54,39 +55,9 @@ export class OrganisationIdentifierNotFoundError extends Error {
 }
 
 function validateProfile(input: OrganisationProfileInput): Required<OrganisationProfileInput> {
-	const legalName = input.legalName.trim();
-	if (!legalName || legalName.length > 255) {
-		throw new OrganisationProfileValidationError(
-			'Legal name must be between 1 and 255 characters.'
-		);
-	}
-
-	const tradingNameValue = input.tradingName?.trim() ?? '';
-	if (tradingNameValue.length > 255) {
-		throw new OrganisationProfileValidationError('Trading name must not exceed 255 characters.');
-	}
-
-	const defaultTimezone = input.defaultTimezone.trim();
-	if (!defaultTimezone || defaultTimezone.length > 64) {
-		throw new OrganisationProfileValidationError('A valid IANA timezone is required.');
-	}
-	try {
-		new Intl.DateTimeFormat('en-GB', { timeZone: defaultTimezone }).format(new Date());
-	} catch {
-		throw new OrganisationProfileValidationError('A valid IANA timezone is required.');
-	}
-
-	const defaultCurrencyCode = input.defaultCurrencyCode.trim().toUpperCase();
-	if (!/^[A-Z]{3}$/.test(defaultCurrencyCode)) {
-		throw new OrganisationProfileValidationError('Currency code must be a three-letter ISO code.');
-	}
-
-	return {
-		legalName,
-		tradingName: tradingNameValue || null,
-		defaultTimezone,
-		defaultCurrencyCode
-	};
+	return normaliseOrganisationProfile(input, (message) => {
+		throw new OrganisationProfileValidationError(message);
+	});
 }
 
 function validateIdentifier(input: OrganisationIdentifierInput) {
