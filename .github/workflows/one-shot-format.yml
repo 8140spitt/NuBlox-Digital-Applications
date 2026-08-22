@@ -8,7 +8,7 @@ on:
       - '.github/workflows/one-shot-format.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   format:
@@ -50,27 +50,14 @@ jobs:
             'src/routes/(app)/organisation/permissions/+page.svelte' \
             'src/routes/(app)/organisation/teams/+page.svelte'
 
-      - name: Package formatted sources
-        working-directory: app
+      - name: Commit exact formatter output
         run: |
-          tar -czf ../formatted-sources.tar.gz \
-            e2e/ui-governance-admin.e2e.ts \
-            src/lib/server/organisations/member-permission-override-service.ts \
-            src/lib/server/organisations/member-permission-overrides.integration.test.ts \
-            src/lib/server/organisations/organisation-identifiers.integration.test.ts \
-            src/lib/server/organisations/organisation-location-repository.ts \
-            src/lib/server/organisations/organisation-location-service.ts \
-            src/lib/server/organisations/organisation-service.ts \
-            src/lib/server/organisations/organisation-team-service.ts \
-            src/lib/server/organisations/organisation-teams.integration.test.ts \
-            'src/routes/(app)/organisation/identity/+page.svelte' \
-            'src/routes/(app)/organisation/locations/+page.server.ts' \
-            'src/routes/(app)/organisation/locations/+page.svelte' \
-            'src/routes/(app)/organisation/permissions/+page.svelte' \
-            'src/routes/(app)/organisation/teams/+page.svelte'
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: formatted-domain-1-sources
-          path: formatted-sources.tar.gz
-          if-no-files-found: error
+          if git diff --quiet; then
+            echo 'Formatter produced no changes.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/e2e/ui-governance-admin.e2e.ts app/src/lib/server/organisations 'app/src/routes/(app)/organisation'
+          git commit -m 'Format Domain 1 source batch'
+          git push
