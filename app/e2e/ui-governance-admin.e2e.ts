@@ -85,6 +85,23 @@ test('owner creates a role and controls an invitation through the browser', asyn
 	await expect(page.getByText('Revoked', { exact: true }).first()).toBeVisible();
 });
 
+test('organisation settings expose every governed Domain 1 workspace', async ({ page }) => {
+	await signIn(page);
+	await page.goto('/organisation');
+
+	const navigation = page.getByRole('navigation', { name: 'Organisation settings' });
+	await expect(navigation.getByRole('link', { name: 'Access & roles' })).toBeVisible();
+	await expect(navigation.getByRole('link', { name: 'Organisation profile' })).toBeVisible();
+	await expect(navigation.getByRole('link', { name: 'Legal identity' })).toBeVisible();
+	await expect(navigation.getByRole('link', { name: 'Locations' })).toBeVisible();
+	await expect(navigation.getByRole('link', { name: 'Teams' })).toBeVisible();
+	await expect(navigation.getByRole('link', { name: 'Permission exceptions' })).toBeVisible();
+
+	await navigation.getByRole('link', { name: 'Locations' }).click();
+	await expect(page).toHaveURL(/\/organisation\/locations$/);
+	await expect(page.getByRole('heading', { name: 'Locations', level: 1 })).toBeVisible();
+});
+
 test('owner maintains the canonical organisation profile through the browser', async ({ page }) => {
 	await signIn(page);
 	await page.goto('/organisation');
