@@ -76,7 +76,6 @@
 				name="defaultCurrencyCode"
 				minlength="3"
 				maxlength="3"
-				pattern="[A-Za-z]{3}"
 				required
 				value={data.profile.defaultCurrencyCode}
 				placeholder="GBP"
