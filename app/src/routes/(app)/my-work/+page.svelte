@@ -1,5 +1,5 @@
 <script lang="ts">
-	let { data } = $props();
+	let { data, form } = $props();
 
 	const statusLabels: Record<string, string> = {
 		proposed: 'Proposed',
@@ -7,13 +7,29 @@
 		on_hold: 'On hold',
 		completed: 'Completed',
 		cancelled: 'Cancelled',
-		archived: 'Archived'
+		archived: 'Archived',
+		open: 'Open',
+		in_progress: 'In progress',
+		blocked: 'Blocked'
 	};
 
 	function workspace(id: string) {
 		return data.workspaceDirectory
 			.flatMap((section) => section.items)
 			.find((item) => item.id === id);
+	}
+
+	function formatDueDate(value: Date | null): string {
+		if (!value) return 'No due date';
+		return new Intl.DateTimeFormat('en-GB', {
+			day: '2-digit',
+			month: 'short',
+			year: 'numeric'
+		}).format(new Date(value));
+	}
+
+	function workType(value: string): string {
+		return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 	}
 
 	const queueIds = ['portal', 'schedule', 'time', 'documents', 'site', 'purchasing'];
@@ -28,10 +44,107 @@
 		<p class="eyebrow">Your starting point</p>
 		<h1>My work</h1>
 		<p>
-			Start with the thing you are working on, then move through its business functions without
-			losing context.
+			Start with accountable work or the project you are working on, then move through its business
+			functions without losing context.
 		</p>
 	</div>
+</section>
+
+{#if form?.workError}
+	<p class="notice error" role="alert">{form.workError}</p>
+{:else if data.workUpdated}
+	<p class="notice success" role="status">Work item updated.</p>
+{/if}
+
+<section class="work-section" aria-labelledby="assigned-work-heading">
+	<div class="section-heading">
+		<div>
+			<p class="eyebrow">Work Kernel</p>
+			<h2 id="assigned-work-heading">Assigned work</h2>
+			<p>
+				Canonical actions, tasks, reviews and approvals assigned directly to you across NuBlox.
+			</p>
+		</div>
+		{#if data.canViewWork}
+			<div class="work-summary" aria-label="Assigned work summary">
+				<span><strong>{data.workSummary.total}</strong> active</span>
+				<span><strong>{data.workSummary.overdue}</strong> overdue</span>
+				<span><strong>{data.workSummary.critical}</strong> critical</span>
+			</div>
+		{/if}
+	</div>
+
+	{#if !data.canViewWork}
+		<div class="empty-state">
+			<strong>Assigned Work Kernel items are not available for this role.</strong>
+			<p>Project and workspace navigation remain available below.</p>
+		</div>
+	{:else if data.workItems.length === 0}
+		<div class="empty-state">
+			<strong>No active Work Kernel items are assigned directly to you.</strong>
+			<p>New actions, tasks, reviews and approvals will appear here when they are assigned.</p>
+		</div>
+	{:else}
+		<div class="assigned-work-list">
+			{#each data.workItems as workItem (workItem.publicId)}
+				<article class="work-card" class:overdue={workItem.isOverdue}>
+					<div class="work-card-main">
+						<div class="work-meta">
+							<span class={`status status-${workItem.status}`}
+								>{statusLabels[workItem.status] ?? workItem.status}</span
+							>
+							<span class={`priority priority-${workItem.priority}`}>{workType(workItem.priority)}</span>
+							<span>{workType(workItem.kind)}</span>
+						</div>
+						<h3>{workItem.title}</h3>
+						{#if workItem.description}
+							<p>{workItem.description}</p>
+						{/if}
+						<div class="work-provenance">
+							<span>{workType(workItem.sourceDomain)}</span>
+							{#if workItem.sourceType}
+								<span>{workType(workItem.sourceType)}</span>
+							{/if}
+							<span class:due-overdue={workItem.isOverdue}>{formatDueDate(workItem.dueAt)}</span>
+						</div>
+					</div>
+
+					{#if workItem.canProgress || workItem.canComplete}
+						<div class="work-actions" aria-label={`Actions for ${workItem.title}`}>
+							{#if workItem.status === 'open' && workItem.canProgress}
+								<form method="POST" action="?/transitionWork">
+									<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+									<input type="hidden" name="toStatus" value="in_progress" />
+									<button type="submit">Start</button>
+								</form>
+							{:else if workItem.status === 'in_progress'}
+								{#if workItem.canProgress}
+									<form method="POST" action="?/transitionWork">
+										<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+										<input type="hidden" name="toStatus" value="blocked" />
+										<button class="secondary" type="submit">Block</button>
+									</form>
+								{/if}
+								{#if workItem.canComplete}
+									<form method="POST" action="?/transitionWork">
+										<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+										<input type="hidden" name="toStatus" value="completed" />
+										<button type="submit">Complete</button>
+									</form>
+								{/if}
+							{:else if workItem.status === 'blocked' && workItem.canProgress}
+								<form method="POST" action="?/transitionWork">
+									<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+									<input type="hidden" name="toStatus" value="in_progress" />
+									<button type="submit">Resume</button>
+								</form>
+							{/if}
+						</div>
+					{/if}
+				</article>
+			{/each}
+		</div>
+	{/if}
 </section>
 
 <section class="work-section" aria-labelledby="continue-heading">
@@ -136,13 +249,41 @@
 		letter-spacing: -0.04em;
 	}
 
+	h3 {
+		margin: 0;
+		font-size: 1rem;
+		color: var(--nb-ink);
+	}
+
 	.page-header p:last-child,
 	.section-heading p,
 	.empty-state p,
 	.directory-callout p,
-	.queue-card span {
+	.queue-card span,
+	.work-card-main > p {
 		color: var(--nb-text-muted);
 		line-height: 1.55;
+	}
+
+	.notice {
+		margin: 0 0 1rem;
+		padding: 0.8rem 1rem;
+		border: 1px solid;
+		border-radius: var(--nb-radius-sm);
+		font-size: 0.86rem;
+		font-weight: 700;
+	}
+
+	.notice.error {
+		border-color: #e1aaaa;
+		background: #fff2f2;
+		color: #8d1717;
+	}
+
+	.notice.success {
+		border-color: #a7d5b9;
+		background: #effaf3;
+		color: #08643c;
 	}
 
 	.work-section,
@@ -186,6 +327,122 @@
 		font-size: 0.82rem;
 		font-weight: 750;
 		text-decoration: none;
+	}
+
+	.work-summary {
+		display: flex;
+		flex-wrap: wrap;
+		justify-content: flex-end;
+		gap: 0.45rem;
+	}
+
+	.work-summary span {
+		padding: 0.4rem 0.58rem;
+		border-radius: 999px;
+		background: var(--nb-surface-muted);
+		color: var(--nb-text-muted);
+		font-size: 0.72rem;
+		white-space: nowrap;
+	}
+
+	.work-summary strong {
+		color: var(--nb-ink);
+	}
+
+	.assigned-work-list {
+		display: grid;
+		gap: 0.55rem;
+	}
+
+	.work-card {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 1rem;
+		align-items: center;
+		padding: 1rem;
+		border: 1px solid var(--nb-border);
+		border-radius: var(--nb-radius-sm);
+		background: var(--nb-white);
+	}
+
+	.work-card.overdue {
+		border-left: 3px solid #a54123;
+	}
+
+	.work-card-main {
+		min-width: 0;
+		display: grid;
+		gap: 0.5rem;
+	}
+
+	.work-card-main > p {
+		margin: 0;
+		font-size: 0.84rem;
+	}
+
+	.work-meta,
+	.work-provenance,
+	.work-actions {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.4rem;
+	}
+
+	.work-meta > span:not(.status):not(.priority),
+	.work-provenance span {
+		color: var(--nb-text-muted);
+		font-size: 0.7rem;
+		font-weight: 700;
+	}
+
+	.priority {
+		padding: 0.2rem 0.45rem;
+		border-radius: 999px;
+		background: var(--nb-surface-muted);
+		color: var(--nb-text-muted);
+		font-size: 0.67rem;
+		font-weight: 800;
+	}
+
+	.priority-critical,
+	.priority-urgent {
+		background: #fff0ed;
+		color: #8d2e18;
+	}
+
+	.priority-high {
+		background: #fff3d6;
+		color: #805900;
+	}
+
+	.due-overdue {
+		color: #a54123 !important;
+	}
+
+	.work-actions {
+		justify-content: flex-end;
+	}
+
+	.work-actions form {
+		margin: 0;
+	}
+
+	.work-actions button {
+		border: 1px solid var(--nb-ink);
+		border-radius: var(--nb-radius-sm);
+		background: var(--nb-ink);
+		color: var(--nb-white);
+		padding: 0.5rem 0.7rem;
+		font: inherit;
+		font-size: 0.76rem;
+		font-weight: 800;
+		cursor: pointer;
+	}
+
+	.work-actions button.secondary {
+		background: var(--nb-white);
+		color: var(--nb-ink);
 	}
 
 	.project-list {
@@ -240,12 +497,14 @@
 		font-weight: 750;
 	}
 
-	.status-active {
+	.status-active,
+	.status-in_progress {
 		color: #08643c;
 		background: #e5f6ed;
 	}
 
-	.status-on_hold {
+	.status-on_hold,
+	.status-blocked {
 		color: #805900;
 		background: #fff3d6;
 	}
@@ -304,6 +563,18 @@
 		.section-heading,
 		.directory-callout {
 			flex-direction: column;
+		}
+
+		.work-summary {
+			justify-content: flex-start;
+		}
+
+		.work-card {
+			grid-template-columns: 1fr;
+		}
+
+		.work-actions {
+			justify-content: flex-start;
 		}
 
 		.project-row {
