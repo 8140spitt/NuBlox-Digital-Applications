@@ -91,15 +91,27 @@ test('owner maintains the canonical organisation profile through the browser', a
 	await expect(profileForm.getByLabel('Legal name')).toHaveValue(ORGANISATION);
 	await expect(profileForm.getByLabel('Default timezone')).toHaveValue('Europe/London');
 	await expect(profileForm.getByLabel('Default currency')).toHaveValue('GBP');
+	expect(await profileForm.evaluate((form) => (form as HTMLFormElement).checkValidity())).toBe(true);
+
+	async function saveProfile() {
+		const [response] = await Promise.all([
+			page.waitForResponse(
+				(response) =>
+					response.request().method() === 'POST' &&
+					new URL(response.url()).pathname === '/organisation/profile'
+			),
+			profileForm.getByRole('button', { name: 'Save organisation profile' }).click()
+		]);
+		expect(response.status()).toBe(303);
+		await expect(page).toHaveURL(/\/organisation\/profile\?updated=1$/);
+		await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
+	}
+
 	await profileForm.getByLabel('Trading name').fill('NuBlox E2E Trading Name');
-	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
-	await expect(page).toHaveURL(/\/organisation\/profile$/);
-	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
+	await saveProfile();
 	await expect(profileForm.getByLabel('Trading name')).toHaveValue('NuBlox E2E Trading Name');
 
 	await profileForm.getByLabel('Trading name').fill('');
-	await profileForm.getByRole('button', { name: 'Save organisation profile' }).click();
-	await expect(page).toHaveURL(/\/organisation\/profile$/);
-	await expect(page.getByRole('status')).toHaveText('Organisation profile updated.');
+	await saveProfile();
 	await expect(profileForm.getByLabel('Trading name')).toHaveValue('');
 });
