@@ -19,6 +19,20 @@
         "instanceLimit": 1,
         "instancePolicy": "silent"
       }
+    },
+    {
+      "label": "NuBlox: Validate System",
+      "type": "process",
+      "command": "/bin/zsh",
+      "args": ["${workspaceFolder}/scripts/validate-system.sh"],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "focus": true,
+        "panel": "dedicated",
+        "showReuseMessage": true,
+        "clear": true
+      }
     }
   ]
 }
