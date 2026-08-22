@@ -17,6 +17,23 @@ export type OrganisationProfileUpdate = {
 	defaultCurrencyCode: string;
 };
 
+export type OrganisationIdentifierSummary = {
+	identifierType: string;
+	identifierValue: string;
+	issuingCountryCode: string | null;
+	createdAt: Date;
+};
+
+export type OrganisationIdentifierCreate = {
+	identifierType: string;
+	identifierValue: string;
+	issuingCountryCode: string | null;
+};
+
+type OrganisationIdentifierRow = OrganisationIdentifierSummary & {
+	id: string;
+};
+
 function toSummary(row: {
 	id: string;
 	public_id: string;
@@ -34,6 +51,20 @@ function toSummary(row: {
 		defaultTimezone: row.default_timezone,
 		defaultCurrencyCode: row.default_currency_code,
 		status: row.status
+	};
+}
+
+function toIdentifierSummary(row: {
+	identifier_type: string;
+	identifier_value: string;
+	issuing_country_code: string | null;
+	created_at: Date;
+}): OrganisationIdentifierSummary {
+	return {
+		identifierType: row.identifier_type,
+		identifierValue: row.identifier_value,
+		issuingCountryCode: row.issuing_country_code,
+		createdAt: row.created_at
 	};
 }
 
@@ -90,6 +121,58 @@ export class OrganisationRepository {
 			})
 			.where('id', '=', organisationId)
 			.where('status', '=', 'active')
+			.executeTakeFirstOrThrow();
+	}
+
+	async listIdentifiers(organisationId: string): Promise<OrganisationIdentifierSummary[]> {
+		const rows = await this.db
+			.selectFrom('organisation_identifiers')
+			.select(['identifier_type', 'identifier_value', 'issuing_country_code', 'created_at'])
+			.where('organisation_id', '=', organisationId)
+			.orderBy('identifier_type', 'asc')
+			.orderBy('identifier_value', 'asc')
+			.execute();
+
+		return rows.map(toIdentifierSummary);
+	}
+
+	async findIdentifierForUpdate(
+		organisationId: string,
+		identifierType: string,
+		identifierValue: string
+	): Promise<OrganisationIdentifierRow | null> {
+		const row = await this.db
+			.selectFrom('organisation_identifiers')
+			.select(['id', 'identifier_type', 'identifier_value', 'issuing_country_code', 'created_at'])
+			.where('organisation_id', '=', organisationId)
+			.where('identifier_type', '=', identifierType)
+			.where('identifier_value', '=', identifierValue)
+			.forUpdate()
+			.executeTakeFirst();
+
+		return row ? { id: row.id, ...toIdentifierSummary(row) } : null;
+	}
+
+	async createIdentifier(
+		organisationId: string,
+		input: OrganisationIdentifierCreate
+	): Promise<void> {
+		await this.db
+			.insertInto('organisation_identifiers')
+			.values({
+				organisation_id: organisationId,
+				identifier_type: input.identifierType,
+				identifier_value: input.identifierValue,
+				issuing_country_code: input.issuingCountryCode
+			})
+			.executeTakeFirstOrThrow();
+	}
+
+	async deleteIdentifier(organisationId: string, identifierId: string): Promise<void> {
+		await this.db
+			.deleteFrom('organisation_identifiers')
+			.where('organisation_id', '=', organisationId)
+			.where('id', '=', identifierId)
 			.executeTakeFirstOrThrow();
 	}
 }
