@@ -24,7 +24,7 @@ test('owner maintains organisation teams through the browser', async ({ page }) 
 	const createForm = page.locator('form[action="?/createTeam"]');
 	await createForm.getByLabel('Name').fill('E2E Delivery Team');
 	await createForm.getByLabel('Description').fill('Browser acceptance organisation team.');
-	await createForm.getByText('NuBlox E2E Viewer', { exact: true }).click();
+	await createForm.getByRole('checkbox', { name: /NuBlox E2E Viewer/ }).check();
 	await createForm.getByRole('button', { name: 'Create team' }).click();
 
 	const team = page.locator('details').filter({ hasText: 'E2E Delivery Team' });
