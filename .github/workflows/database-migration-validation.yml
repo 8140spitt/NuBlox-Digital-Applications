@@ -2,38 +2,147 @@ name: Complete System Validation
 
 on:
   pull_request:
+    paths:
+      - 'database/migrations/**'
+      - 'app/package.json'
+      - 'app/pnpm-lock.yaml'
+      - 'app/.kysely-codegenrc.json'
+      - 'app/.kysely-collections-codegenrc.json'
+      - 'app/.kysely-accounting-codegenrc.json'
+      - 'app/.kysely-accounts-payable-codegenrc.json'
+      - 'app/.prettierignore'
+      - 'app/eslint.config.js'
+      - 'app/playwright.config.ts'
+      - 'app/prettier.config.js'
+      - 'app/vite.config.ts'
+      - 'app/vitest.integration.config.ts'
+      - 'app/e2e/**'
+      - 'app/src/**'
+      - '.github/workflows/database-migration-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'database/migrations/**'
+      - 'app/package.json'
+      - 'app/pnpm-lock.yaml'
+      - 'app/.kysely-codegenrc.json'
+      - 'app/.kysely-collections-codegenrc.json'
+      - 'app/.kysely-accounting-codegenrc.json'
+      - 'app/.kysely-accounts-payable-codegenrc.json'
+      - 'app/.prettierignore'
+      - 'app/eslint.config.js'
+      - 'app/playwright.config.ts'
+      - 'app/prettier.config.js'
+      - 'app/vite.config.ts'
+      - 'app/vitest.integration.config.ts'
+      - 'app/e2e/**'
+      - 'app/src/**'
+      - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   complete-system-validation:
-    name: Fix project plan integration cleanup
+    name: Database, integration, quality, build and browser validation
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
+      DB_POOL_MAX: '5'
+      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+      EMAIL_DELIVERY_MODE: console
+
     steps:
       - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
         with:
-          ref: feat/project-controls-plan-baselines
+          version: 10.14.0
+          run_install: false
 
-      - name: Detach WBS parents before fixture deletion
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          path = Path('app/src/lib/server/projects/project-plan.integration.test.ts')
-          text = path.read_text()
-          old = "\t\tawait db.deleteFrom('project_plan_activities').where('project_id', 'in', projectIds).execute();\n\t\tawait db.deleteFrom('project_wbs_nodes').where('project_id', 'in', projectIds).execute();"
-          new = "\t\tawait db.deleteFrom('project_plan_activities').where('project_id', 'in', projectIds).execute();\n\t\tawait db\n\t\t\t.updateTable('project_wbs_nodes')\n\t\t\t.set({ parent_wbs_node_id: null })\n\t\t\t.where('project_id', 'in', projectIds)\n\t\t\t.execute();\n\t\tawait db.deleteFrom('project_wbs_nodes').where('project_id', 'in', projectIds).execute();"
-          count = text.count(old)
-          if count != 1:
-              raise SystemExit(f'Expected one cleanup anchor, found {count}')
-          path.write_text(text.replace(old, new))
-          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
 
-      - name: Commit cleanup fix
+      - name: Install application dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Audit production dependencies
+        working-directory: app
+        run: pnpm audit --prod --audit-level moderate
+
+      - name: Run formatting and lint checks
+        working-directory: app
+        run: pnpm lint
+
+      - name: Apply authoritative migration stream
+        working-directory: app
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/src/lib/server/projects/project-plan.integration.test.ts
-          git commit -m "Fix project plan integration cleanup"
-          git push origin HEAD:feat/project-controls-plan-baselines
+          pnpm db:migrate
+          pnpm db:status
+
+      - name: Verify migrated application structure
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+        run: |
+          table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
+          fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
+          check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
+          echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
+          test "$table_count" = '407'
+          test "$fk_count" = '936'
+          test "$check_count" = '549'
+
+      - name: Regenerate database-derived Kysely types
+        working-directory: app
+        run: pnpm db:types
+
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts
+
+      - name: Run real-MySQL integration suite
+        working-directory: app
+        run: pnpm test:integration
+
+      - name: Type-check SvelteKit application
+        working-directory: app
+        run: pnpm check
+
+      - name: Install Chromium for component and browser validation
+        working-directory: app
+        run: pnpm exec playwright install chromium
+
+      - name: Run unit and component tests
+        working-directory: app
+        run: pnpm test:unit
+
+      - name: Verify validation leaves no tracked-file drift
+        run: git diff --exit-code
+
+      - name: Build production SvelteKit application
+        working-directory: app
+        run: pnpm build
+
+      - name: Run Playwright browser E2E suite
+        working-directory: app
+        run: pnpm exec playwright test
