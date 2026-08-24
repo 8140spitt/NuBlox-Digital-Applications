@@ -26,13 +26,17 @@
 					<label>
 						<span class="sr-only">Programme for {project.name}</span>
 						<select name="programmePublicId" aria-label={`Programme for ${project.name}`}>
-							<option value="" selected={!project.hierarchy?.programmePublicId}>Standalone project</option>
+							<option value="" selected={!project.hierarchy?.programmePublicId}
+								>Standalone project</option
+							>
 							{#each programmes as programme}
 								<option
 									value={programme.publicId}
 									selected={project.hierarchy?.programmePublicId === programme.publicId}
 								>
-									{programme.portfolioNumber ? `${programme.portfolioNumber} / ` : ''}{programme.programmeNumber} · {programme.name}
+									{programme.portfolioNumber
+										? `${programme.portfolioNumber} / `
+										: ''}{programme.programmeNumber} · {programme.name}
 								</option>
 							{/each}
 						</select>

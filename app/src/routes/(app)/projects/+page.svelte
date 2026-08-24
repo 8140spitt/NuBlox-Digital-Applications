@@ -1,4 +1,6 @@
 <script lang="ts">
+	import ProjectHierarchyAssignments from '$lib/components/projects/ProjectHierarchyAssignments.svelte';
+
 	let { data, form } = $props();
 
 	const statusLabels: Record<string, string> = {
@@ -243,6 +245,14 @@
 				</form>
 			{/if}
 		</div>
+	{/if}
+
+	{#if data.hierarchy.canManageProgrammes}
+		<ProjectHierarchyAssignments
+			projects={data.projects}
+			programmes={data.hierarchy.programmes}
+			{form}
+		/>
 	{/if}
 </section>
 
