@@ -43,13 +43,13 @@ export async function ensureProjectHierarchyStandardRoleDefaults(
 	if (roles.length === 0) return;
 
 	const rows = roles.flatMap((role) => {
-		const permittedKeys = new Set(
+		const permissionKeys: readonly string[] =
 			role.name === 'Owner' || role.name === 'Administrator' || role.name === 'Manager'
 				? MANAGE_PERMISSION_KEYS
-				: VIEW_PERMISSION_KEYS
-		);
+				: VIEW_PERMISSION_KEYS;
+		const permittedKeys = new Set<string>(permissionKeys);
 		return permissions
-			.filter((permission) => permittedKeys.has(permission.permission_key as never))
+			.filter((permission) => permittedKeys.has(permission.permission_key))
 			.map((permission) => ({
 				organisation_id: organisationId,
 				organisation_role_id: role.id,
