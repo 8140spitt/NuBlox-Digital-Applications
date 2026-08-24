@@ -66,7 +66,10 @@ async function cleanup(): Promise<void> {
 			.deleteFrom('commercial_reporting_periods')
 			.where('project_id', 'in', projectIds)
 			.execute();
-		await db.deleteFrom('project_direct_cost_reversals').where('organisation_id', '=', organisationAId || '0').execute();
+		await db
+			.deleteFrom('project_direct_cost_reversals')
+			.where('organisation_id', '=', organisationAId || '0')
+			.execute();
 		await db.deleteFrom('project_direct_costs').where('project_id', 'in', projectIds).execute();
 		const budgets = await db
 			.selectFrom('project_budgets')
@@ -82,16 +85,25 @@ async function cleanup(): Promise<void> {
 				.execute();
 			const versionIds = versions.map((row) => row.id);
 			if (versionIds.length > 0) {
-				await db.deleteFrom('project_budget_lines').where('project_budget_version_id', 'in', versionIds).execute();
+				await db
+					.deleteFrom('project_budget_lines')
+					.where('project_budget_version_id', 'in', versionIds)
+					.execute();
 			}
-			await db.deleteFrom('project_budget_versions').where('project_budget_id', 'in', budgetIds).execute();
+			await db
+				.deleteFrom('project_budget_versions')
+				.where('project_budget_id', 'in', budgetIds)
+				.execute();
 			await db.deleteFrom('project_budgets').where('id', 'in', budgetIds).execute();
 		}
 		await db.deleteFrom('project_cost_codes').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('audit_events').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_member_roles').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_members').where('project_id', 'in', projectIds).execute();
-		await db.deleteFrom('project_organisation_roles').where('project_id', 'in', projectIds).execute();
+		await db
+			.deleteFrom('project_organisation_roles')
+			.where('project_id', 'in', projectIds)
+			.execute();
 		await db.deleteFrom('project_organisations').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('projects').where('id', 'in', projectIds).execute();
 	}
@@ -103,12 +115,27 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('member_permission_overrides')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	}
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
@@ -469,9 +496,9 @@ describe('project financial control', () => {
 		expect(workspace.activeForecast?.forecastAtCompletion).toBe('1000.0000');
 		expect(workspace.activeForecast?.forecastMargin).toBe('500.0000');
 
-		await expect(service.approveForecast(preparer, projectPublicId, forecastPublicId)).rejects.toBeInstanceOf(
-			TenantAccessError
-		);
+		await expect(
+			service.approveForecast(preparer, projectPublicId, forecastPublicId)
+		).rejects.toBeInstanceOf(TenantAccessError);
 
 		await service.addCashFlowLine(preparer, {
 			projectPublicId,
@@ -483,9 +510,9 @@ describe('project financial control', () => {
 			amount: '800.00',
 			commentary: 'Initial under-phased forecast.'
 		});
-		await expect(service.approveForecast(approver, projectPublicId, forecastPublicId)).rejects.toThrow(
-			ProjectFinancialControlValidationError
-		);
+		await expect(
+			service.approveForecast(approver, projectPublicId, forecastPublicId)
+		).rejects.toThrow(ProjectFinancialControlValidationError);
 
 		workspace = await service.getWorkspace(preparer, projectPublicId, null, forecastPublicId);
 		const firstCashLine = workspace.activeForecast?.cashFlowLines[0];
@@ -534,10 +561,14 @@ describe('project financial control', () => {
 
 		await service.closeReportingPeriod(approver, projectPublicId, periodPublicId);
 		workspace = await service.getWorkspace(viewer, projectPublicId, null, forecastPublicId);
-		expect(workspace.periods.find((period) => period.publicId === periodPublicId)?.status).toBe('closed');
+		expect(workspace.periods.find((period) => period.publicId === periodPublicId)?.status).toBe(
+			'closed'
+		);
 		await service.reopenReportingPeriod(approver, projectPublicId, periodPublicId);
 		workspace = await service.getWorkspace(viewer, projectPublicId, null, forecastPublicId);
-		expect(workspace.periods.find((period) => period.publicId === periodPublicId)?.status).toBe('reopened');
+		expect(workspace.periods.find((period) => period.publicId === periodPublicId)?.status).toBe(
+			'reopened'
+		);
 
 		const auditActions = await db
 			.selectFrom('audit_events')

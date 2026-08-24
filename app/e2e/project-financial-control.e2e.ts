@@ -14,7 +14,9 @@ async function signIn(page: import('@playwright/test').Page) {
 	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 
-test('owner snapshots project financial position and approves reconciled cash flow', async ({ page }) => {
+test('owner snapshots project financial position and approves reconciled cash flow', async ({
+	page
+}) => {
 	await signIn(page);
 	const suffix = Date.now().toString().slice(-7);
 	const projectNumber = `E2E-FIN-${suffix}`;
@@ -43,7 +45,9 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	);
 
 	const budgetPanel = page.locator('#create-budget');
-	await budgetPanel.getByLabel('Cost code').selectOption({ label: `${costCode} · Forecast materials` });
+	await budgetPanel
+		.getByLabel('Cost code')
+		.selectOption({ label: `${costCode} · Forecast materials` });
 	await budgetPanel.getByLabel('Budget name').fill(`Forecast baseline ${suffix}`);
 	await budgetPanel.getByLabel('Budget amount').fill('5000.00');
 	await budgetPanel.getByRole('button', { name: 'Create budget draft' }).click();
@@ -63,10 +67,12 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	await expect(budgetCard.getByText('approved', { exact: true })).toBeVisible();
 
 	await page.goto(`/projects/${projectPublicId}/financials`);
-	await expect(page.getByRole('heading', { name: 'Project financial control', level: 1 })).toBeVisible();
-	await expect(page.locator('.metrics article').filter({ hasText: 'Control budget' })).toContainText(
-		'£5,000.00'
-	);
+	await expect(
+		page.getByRole('heading', { name: 'Project financial control', level: 1 })
+	).toBeVisible();
+	await expect(
+		page.locator('.metrics article').filter({ hasText: 'Control budget' })
+	).toContainText('£5,000.00');
 
 	const periodForm = page.locator('#create-financial-period');
 	await periodForm.getByLabel('Period label').fill(`August ${suffix}`);
@@ -74,10 +80,14 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	await periodForm.getByLabel('End').fill('2026-08-31');
 	await periodForm.getByRole('button', { name: 'Create reporting period' }).click();
 	await expect(page).toHaveURL(`/projects/${projectPublicId}/financials`);
-	await expect(page.locator('.period-list').getByText(`August ${suffix}`, { exact: true })).toBeVisible();
+	await expect(
+		page.locator('.period-list').getByText(`August ${suffix}`, { exact: true })
+	).toBeVisible();
 
 	const forecastForm = page.locator('#create-financial-forecast');
-	await forecastForm.getByLabel('Open reporting period').selectOption({ label: `August ${suffix}` });
+	await forecastForm
+		.getByLabel('Open reporting period')
+		.selectOption({ label: `August ${suffix}` });
 	await forecastForm.getByLabel('Forecast project revenue').fill('7500.00');
 	await forecastForm.getByRole('button', { name: 'Create forecast snapshot' }).click();
 	await expect(page).toHaveURL(/\/financials\?forecast=[0-9a-f-]+$/i);
@@ -94,20 +104,26 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	await cashForm.getByLabel('Date').fill('2026-09-30');
 	await cashForm.getByLabel('Direction').selectOption('outflow');
 	await cashForm.getByLabel('Category').selectOption('material');
-	await cashForm.getByLabel('Cost code (optional)').selectOption({ label: `${costCode} · Forecast materials` });
+	await cashForm
+		.getByLabel('Cost code (optional)')
+		.selectOption({ label: `${costCode} · Forecast materials` });
 	await cashForm.getByLabel('Amount').fill('5000.00');
 	await cashForm.getByLabel('Cash-flow commentary').fill('Completion materials forecast.');
 	await cashForm.getByRole('button', { name: 'Add cash-flow line' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`);
-	await expect(page.locator('.cash-metrics article').filter({ hasText: 'Outflow vs FTC' })).toContainText(
-		'Reconciled'
+	await expect(page).toHaveURL(
+		`/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`
 	);
+	await expect(
+		page.locator('.cash-metrics article').filter({ hasText: 'Outflow vs FTC' })
+	).toContainText('Reconciled');
 
 	await page.getByRole('button', { name: 'Approve & lock forecast' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`);
-	await expect(page.getByText('approved', { exact: true }).first()).toBeVisible();
-	await expect(page.locator('.cash-metrics article').filter({ hasText: 'Planned outflow' })).toContainText(
-		'£5,000.00'
+	await expect(page).toHaveURL(
+		`/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`
 	);
+	await expect(page.getByText('approved', { exact: true }).first()).toBeVisible();
+	await expect(
+		page.locator('.cash-metrics article').filter({ hasText: 'Planned outflow' })
+	).toContainText('£5,000.00');
 	await expect(page.locator('.forecast-line')).toContainText('EAC £5,000.00');
 });

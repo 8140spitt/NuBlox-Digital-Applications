@@ -38,6 +38,10 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'commercial.quotation.manage',
 	'commercial.quotation.issue',
 	'commercial.quotation.response.record',
+	'commercial.forecast.view',
+	'commercial.forecast.manage',
+	'commercial.forecast.approve',
+	'commercial.cash_flow.manage',
 	'contract.view',
 	'contract.manage',
 	'contract.create',
@@ -188,6 +192,10 @@ const OWNER_CORE_KEYS = [
 	'commercial.quotation.manage',
 	'commercial.quotation.issue',
 	'commercial.quotation.response.record',
+	'commercial.forecast.view',
+	'commercial.forecast.manage',
+	'commercial.forecast.approve',
+	'commercial.cash_flow.manage',
 	'contract.view',
 	'contract.manage',
 	'contract.create',
@@ -235,7 +243,11 @@ const STANDARD_ROLES = [
 			'project.participation.manage',
 			'crm.view',
 			'crm.party.manage',
-			'crm.contact.manage'
+			'crm.contact.manage',
+			'commercial.forecast.view',
+			'commercial.forecast.manage',
+			'commercial.forecast.approve',
+			'commercial.cash_flow.manage'
 		]
 	},
 	{
@@ -284,7 +296,10 @@ const STANDARD_ROLES = [
 			'finance.bad_debt.recovery.reverse',
 			'finance.tax_relief.view',
 			'finance.tax_relief.prepare',
-			'finance.accounting.view'
+			'finance.accounting.view',
+			'commercial.forecast.view',
+			'commercial.forecast.manage',
+			'commercial.cash_flow.manage'
 		]
 	},
 	{
@@ -313,7 +328,8 @@ const STANDARD_ROLES = [
 			'project.programme.view',
 			'project.plan.view',
 			'project.resource.view',
-			'crm.view'
+			'crm.view',
+			'commercial.forecast.view'
 		]
 	}
 ] as const;

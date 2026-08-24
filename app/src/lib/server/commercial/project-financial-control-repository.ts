@@ -1,7 +1,8 @@
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 function insertedId(result: { insertId?: bigint }, label: string): string {
-	if (result.insertId === undefined) throw new Error(`MySQL did not return the inserted ${label} ID.`);
+	if (result.insertId === undefined)
+		throw new Error(`MySQL did not return the inserted ${label} ID.`);
 	return result.insertId.toString();
 }
 
@@ -128,7 +129,10 @@ export type CashFlowLineRecord = {
 export class ProjectFinancialControlRepository {
 	constructor(private readonly db: DatabaseExecutor) {}
 
-	async listCostCodes(organisationId: string, projectId: string): Promise<FinancialCostCodeRecord[]> {
+	async listCostCodes(
+		organisationId: string,
+		projectId: string
+	): Promise<FinancialCostCodeRecord[]> {
 		return this.db
 			.selectFrom('project_cost_codes as costCode')
 			.innerJoin(
@@ -240,7 +244,9 @@ export class ProjectFinancialControlRepository {
 			.where('purchaseOrder.project_id', '=', projectId)
 			.where('purchaseOrder.lifecycle_status', '=', 'active')
 			.where('version.version_status', '=', 'issued')
-			.where((eb) => eb.or([eb('version.order_date', 'is', null), eb('version.order_date', '<=', cutoff)]))
+			.where((eb) =>
+				eb.or([eb('version.order_date', 'is', null), eb('version.order_date', '<=', cutoff)])
+			)
 			.execute();
 	}
 
@@ -343,10 +349,7 @@ export class ProjectFinancialControlRepository {
 		if (directCostIds.length === 0) return [];
 		return this.db
 			.selectFrom('project_direct_cost_reversals')
-			.select([
-				'project_direct_cost_id as directCostId',
-				'reversal_amount as reversalAmount'
-			])
+			.select(['project_direct_cost_id as directCostId', 'reversal_amount as reversalAmount'])
 			.where('organisation_id', '=', organisationId)
 			.where('project_direct_cost_id', 'in', directCostIds)
 			.where('reversed_at', '<=', cutoffEnd)

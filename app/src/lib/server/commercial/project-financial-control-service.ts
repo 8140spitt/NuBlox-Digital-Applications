@@ -27,7 +27,6 @@ import {
 
 const MONEY_SCALE = 4;
 const QUANTITY_SCALE = 6;
-const DAY_MS = 86_400_000;
 
 export class ProjectFinancialControlValidationError extends Error {
 	readonly code = 'PROJECT_FINANCIAL_CONTROL_VALIDATION';
@@ -173,26 +172,30 @@ function validDate(value: Date, label: string): Date {
 function text(value: string, label: string, max: number): string {
 	const result = value.trim();
 	if (!result) throw new ProjectFinancialControlValidationError(`${label} is required.`);
-	if (result.length > max) throw new ProjectFinancialControlValidationError(`${label} is too long.`);
+	if (result.length > max)
+		throw new ProjectFinancialControlValidationError(`${label} is too long.`);
 	return result;
 }
 
 function optionalText(value: string | null | undefined, max = 2000): string | null {
 	const result = value?.trim() ?? '';
 	if (!result) return null;
-	if (result.length > max) throw new ProjectFinancialControlValidationError('A supplied value is too long.');
+	if (result.length > max)
+		throw new ProjectFinancialControlValidationError('A supplied value is too long.');
 	return result;
 }
 
 function nonnegativeMoney(value: string, label: string): string {
 	const parsed = money(value, label);
-	if (parsed < 0n) throw new ProjectFinancialControlValidationError(`${label} must not be negative.`);
+	if (parsed < 0n)
+		throw new ProjectFinancialControlValidationError(`${label} must not be negative.`);
 	return moneyText(parsed);
 }
 
 function positiveMoney(value: string, label: string): string {
 	const parsed = money(value, label);
-	if (parsed <= 0n) throw new ProjectFinancialControlValidationError(`${label} must be greater than zero.`);
+	if (parsed <= 0n)
+		throw new ProjectFinancialControlValidationError(`${label} must be greater than zero.`);
 	return moneyText(parsed);
 }
 
@@ -211,10 +214,6 @@ function percentage(numerator: bigint, denominator: bigint): number | null {
 	return Number((numerator * 10_000n) / denominator) / 100;
 }
 
-function nextDay(value: Date): Date {
-	return new Date(value.getTime() + DAY_MS);
-}
-
 export class ProjectFinancialControlService {
 	constructor(
 		private readonly db: Database = getDatabase(),
@@ -223,7 +222,9 @@ export class ProjectFinancialControlService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 	}
 
@@ -239,13 +240,21 @@ export class ProjectFinancialControlService {
 			projectPublicId.trim()
 		);
 		if (!project || project.owningOrganisationId !== actor.organisationId) {
-			throw new RecordNotFoundError('Project financial control not found in the active member scope.');
+			throw new RecordNotFoundError(
+				'Project financial control not found in the active member scope.'
+			);
 		}
 		const permissionService = new PermissionService(this.db);
-		const projectView = await permissionService.decide(actor, 'project.view', { projectId: project.id });
-		const financialView = await permissionService.decide(actor, permission, { projectId: project.id });
+		const projectView = await permissionService.decide(actor, 'project.view', {
+			projectId: project.id
+		});
+		const financialView = await permissionService.decide(actor, permission, {
+			projectId: project.id
+		});
 		if (!projectView.allowed || !financialView.allowed) {
-			throw new TenantAccessError('Project financial control is outside your effective permission scope.');
+			throw new TenantAccessError(
+				'Project financial control is outside your effective permission scope.'
+			);
 		}
 		return project;
 	}
@@ -356,7 +365,11 @@ export class ProjectFinancialControlService {
 		const procurementActual = new Map<string, bigint>();
 		let unclassifiedCommitment = 0n;
 		let unclassifiedProcurementActual = 0n;
-		const items = await repository.listIssuedCommitmentItems(actor.organisationId, project.id, asOf);
+		const items = await repository.listIssuedCommitmentItems(
+			actor.organisationId,
+			project.id,
+			asOf
+		);
 		for (const item of items) currencies.add(item.currencyCode);
 		const itemIds = items.map((item) => item.itemId);
 		const allocations = await repository.listCommitmentAllocations(actor.organisationId, itemIds);
@@ -413,7 +426,11 @@ export class ProjectFinancialControlService {
 		}
 
 		const directActual = new Map<string, bigint>();
-		const directCosts = await repository.listPostedDirectCosts(actor.organisationId, project.id, asOf);
+		const directCosts = await repository.listPostedDirectCosts(
+			actor.organisationId,
+			project.id,
+			asOf
+		);
 		for (const fact of directCosts) currencies.add(fact.currencyCode);
 		const reversalFacts = await repository.listDirectCostReversals(
 			actor.organisationId,
@@ -457,9 +474,19 @@ export class ProjectFinancialControlService {
 				costVariance: null
 			};
 		});
-		const sum = (key: keyof Pick<FinancialCostPosition,
-			'baselineBudget' | 'budgetAdjustments' | 'controlBudget' | 'commitment' | 'actualCost' | 'remainingCommitment' | 'approvedChange' | 'pendingChangeExposure'>) =>
-			positions.reduce((total, row) => total + money(row[key] as string), 0n);
+		const sum = (
+			key: keyof Pick<
+				FinancialCostPosition,
+				| 'baselineBudget'
+				| 'budgetAdjustments'
+				| 'controlBudget'
+				| 'commitment'
+				| 'actualCost'
+				| 'remainingCommitment'
+				| 'approvedChange'
+				| 'pendingChangeExposure'
+			>
+		) => positions.reduce((total, row) => total + money(row[key] as string), 0n);
 		return {
 			currencyCodes: [...currencies].sort(),
 			costCodes: positions,
@@ -469,7 +496,10 @@ export class ProjectFinancialControlService {
 				controlBudget: moneyText(sum('controlBudget')),
 				commitment: moneyText(sum('commitment') + unclassifiedCommitment),
 				actualCost: moneyText(sum('actualCost') + unclassifiedProcurementActual),
-				remainingCommitment: moneyText(sum('remainingCommitment') + positive(unclassifiedCommitment - unclassifiedProcurementActual)),
+				remainingCommitment: moneyText(
+					sum('remainingCommitment') +
+						positive(unclassifiedCommitment - unclassifiedProcurementActual)
+				),
 				approvedChange: moneyText(sum('approvedChange')),
 				pendingChangeExposure: moneyText(sum('pendingChangeExposure')),
 				unclassifiedCommitment: moneyText(unclassifiedCommitment),
@@ -536,7 +566,7 @@ export class ProjectFinancialControlService {
 			repository.listForecasts(actor.organisationId, project.id)
 		]);
 		const requested = forecastPublicId
-			? forecasts.find((row) => row.publicId === forecastPublicId) ?? null
+			? (forecasts.find((row) => row.publicId === forecastPublicId) ?? null)
 			: null;
 		const active =
 			requested ??
@@ -576,17 +606,27 @@ export class ProjectFinancialControlService {
 		actor: TenantActorContext,
 		input: CreateReportingPeriodInput
 	): Promise<string> {
-		const project = await this.resolveProject(actor, input.projectPublicId, 'commercial.forecast.manage');
+		const project = await this.resolveProject(
+			actor,
+			input.projectPublicId,
+			'commercial.forecast.manage'
+		);
 		const periodLabel = text(input.periodLabel, 'Period label', 120);
 		const periodStart = validDate(input.periodStart, 'Period start');
 		const periodEnd = validDate(input.periodEnd, 'Period end');
 		if (periodEnd < periodStart) {
-			throw new ProjectFinancialControlValidationError('Period end must be on or after period start.');
+			throw new ProjectFinancialControlValidationError(
+				'Period end must be on or after period start.'
+			);
 		}
 		const repository = new ProjectFinancialControlRepository(this.db);
 		const existing = await repository.listReportingPeriods(actor.organisationId, project.id);
-		if (existing.some((period) => periodStart <= period.periodEnd && periodEnd >= period.periodStart)) {
-			throw new ProjectFinancialControlValidationError('Commercial reporting periods must not overlap.');
+		if (
+			existing.some((period) => periodStart <= period.periodEnd && periodEnd >= period.periodStart)
+		) {
+			throw new ProjectFinancialControlValidationError(
+				'Commercial reporting periods must not overlap.'
+			);
 		}
 		const publicId = this.publicIdFactory();
 		await this.db.transaction().execute(async (transaction) => {
@@ -608,14 +648,22 @@ export class ProjectFinancialControlService {
 				subjectType: 'commercial_reporting_period',
 				subjectPublicId: publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { periodLabel, periodStart: dateOnlyText(periodStart), periodEnd: dateOnlyText(periodEnd) }
+				changeSummary: {
+					periodLabel,
+					periodStart: dateOnlyText(periodStart),
+					periodEnd: dateOnlyText(periodEnd)
+				}
 			});
 		});
 		return publicId;
 	}
 
 	async createForecast(actor: TenantActorContext, input: CreateForecastInput): Promise<string> {
-		const project = await this.resolveProject(actor, input.projectPublicId, 'commercial.forecast.manage');
+		const project = await this.resolveProject(
+			actor,
+			input.projectPublicId,
+			'commercial.forecast.manage'
+		);
 		const repository = new ProjectFinancialControlRepository(this.db);
 		const period = await repository.findReportingPeriodByPublicId(
 			actor.organisationId,
@@ -623,14 +671,20 @@ export class ProjectFinancialControlService {
 			input.periodPublicId.trim()
 		);
 		if (!period || !['open', 'reopened'].includes(period.status)) {
-			throw new ProjectFinancialControlValidationError('The selected reporting period is not open for forecasting.');
+			throw new ProjectFinancialControlValidationError(
+				'The selected reporting period is not open for forecasting.'
+			);
 		}
 		const position = await this.calculatePosition(actor, project, period.periodEnd);
 		if (position.costCodes.length === 0) {
-			throw new ProjectFinancialControlValidationError('Create at least one project cost code before forecasting.');
+			throw new ProjectFinancialControlValidationError(
+				'Create at least one project cost code before forecasting.'
+			);
 		}
 		if (position.currencyCodes.length !== 1) {
-			throw new ProjectFinancialControlValidationError('Forecast creation requires one project reporting currency.');
+			throw new ProjectFinancialControlValidationError(
+				'Forecast creation requires one project reporting currency.'
+			);
 		}
 		if (
 			money(position.totals.unclassifiedCommitment) !== 0n ||
@@ -713,20 +767,33 @@ export class ProjectFinancialControlService {
 		);
 		if (!forecast) throw new RecordNotFoundError('Project financial forecast not found.');
 		if (forecast.status !== 'draft') {
-			throw new ProjectFinancialControlValidationError('Approved or superseded forecasts are immutable. Create a new version instead.');
+			throw new ProjectFinancialControlValidationError(
+				'Approved or superseded forecasts are immutable. Create a new version instead.'
+			);
 		}
 		return forecast;
 	}
 
-	async updateForecastLine(actor: TenantActorContext, input: UpdateForecastLineInput): Promise<void> {
-		const project = await this.resolveProject(actor, input.projectPublicId, 'commercial.forecast.manage');
+	async updateForecastLine(
+		actor: TenantActorContext,
+		input: UpdateForecastLineInput
+	): Promise<void> {
+		const project = await this.resolveProject(
+			actor,
+			input.projectPublicId,
+			'commercial.forecast.manage'
+		);
 		const forecast = await this.draftForecast(actor, project, input.forecastPublicId);
 		const repository = new ProjectFinancialControlRepository(this.db);
 		const costCode = (await repository.listCostCodes(actor.organisationId, project.id)).find(
 			(row) => row.publicId === input.costCodePublicId.trim()
 		);
-		if (!costCode) throw new ProjectFinancialControlValidationError('The selected cost code is invalid.');
-		const forecastToCompleteAmount = nonnegativeMoney(input.forecastToCompleteAmount, 'Forecast to complete');
+		if (!costCode)
+			throw new ProjectFinancialControlValidationError('The selected cost code is invalid.');
+		const forecastToCompleteAmount = nonnegativeMoney(
+			input.forecastToCompleteAmount,
+			'Forecast to complete'
+		);
 		const updated = await repository.updateDraftForecastLine({
 			organisationId: actor.organisationId,
 			forecastId: forecast.id,
@@ -738,18 +805,34 @@ export class ProjectFinancialControlService {
 	}
 
 	async addCashFlowLine(actor: TenantActorContext, input: CreateCashFlowLineInput): Promise<void> {
-		const project = await this.resolveProject(actor, input.projectPublicId, 'commercial.cash_flow.manage');
+		const project = await this.resolveProject(
+			actor,
+			input.projectPublicId,
+			'commercial.cash_flow.manage'
+		);
 		const forecast = await this.draftForecast(actor, project, input.forecastPublicId);
 		const flowDate = validDate(input.flowDate, 'Cash-flow date');
 		if (flowDate <= forecast.periodEnd) {
-			throw new ProjectFinancialControlValidationError('Forecast cash flow must fall after the reporting cut-off.');
+			throw new ProjectFinancialControlValidationError(
+				'Forecast cash flow must fall after the reporting cut-off.'
+			);
 		}
 		if (!['inflow', 'outflow'].includes(input.direction)) {
 			throw new ProjectFinancialControlValidationError('Cash-flow direction is invalid.');
 		}
 		const categories = [
-			'revenue', 'labour', 'material', 'plant', 'subcontract', 'professional_fee',
-			'overhead', 'preliminaries', 'retention', 'tax', 'contingency', 'other'
+			'revenue',
+			'labour',
+			'material',
+			'plant',
+			'subcontract',
+			'professional_fee',
+			'overhead',
+			'preliminaries',
+			'retention',
+			'tax',
+			'contingency',
+			'other'
 		];
 		if (!categories.includes(input.category)) {
 			throw new ProjectFinancialControlValidationError('Cash-flow category is invalid.');
@@ -760,7 +843,10 @@ export class ProjectFinancialControlService {
 			const costCode = (await repository.listCostCodes(actor.organisationId, project.id)).find(
 				(row) => row.publicId === input.costCodePublicId!.trim()
 			);
-			if (!costCode) throw new ProjectFinancialControlValidationError('The selected cash-flow cost code is invalid.');
+			if (!costCode)
+				throw new ProjectFinancialControlValidationError(
+					'The selected cash-flow cost code is invalid.'
+				);
 			costCodeId = costCode.id;
 		}
 		const existing = await repository.listCashFlowLines(actor.organisationId, forecast.id);
@@ -785,7 +871,11 @@ export class ProjectFinancialControlService {
 		forecastPublicId: string,
 		lineNumber: number
 	): Promise<void> {
-		const project = await this.resolveProject(actor, projectPublicId, 'commercial.cash_flow.manage');
+		const project = await this.resolveProject(
+			actor,
+			projectPublicId,
+			'commercial.cash_flow.manage'
+		);
 		const forecast = await this.draftForecast(actor, project, forecastPublicId);
 		if (!Number.isInteger(lineNumber) || lineNumber <= 0) {
 			throw new ProjectFinancialControlValidationError('Cash-flow line is invalid.');
@@ -803,14 +893,19 @@ export class ProjectFinancialControlService {
 		projectPublicId: string,
 		forecastPublicId: string
 	): Promise<void> {
-		const project = await this.resolveProject(actor, projectPublicId, 'commercial.forecast.approve');
+		const project = await this.resolveProject(
+			actor,
+			projectPublicId,
+			'commercial.forecast.approve'
+		);
 		const forecast = await this.draftForecast(actor, project, forecastPublicId);
 		const repository = new ProjectFinancialControlRepository(this.db);
 		const [lines, cashFlowLines] = await Promise.all([
 			repository.listForecastLines(actor.organisationId, forecast.id),
 			repository.listCashFlowLines(actor.organisationId, forecast.id)
 		]);
-		if (lines.length === 0) throw new ProjectFinancialControlValidationError('A forecast requires cost-code lines.');
+		if (lines.length === 0)
+			throw new ProjectFinancialControlValidationError('A forecast requires cost-code lines.');
 		const ftc = lines.reduce((sum, line) => sum + money(line.forecastToCompleteAmount), 0n);
 		const cashOutflow = cashFlowLines
 			.filter((line) => line.direction === 'outflow')
@@ -824,7 +919,9 @@ export class ProjectFinancialControlService {
 			.filter((line) => line.direction === 'inflow')
 			.reduce((sum, line) => sum + money(line.amount), 0n);
 		if (cashInflow > money(forecast.forecastRevenueAmount)) {
-			throw new ProjectFinancialControlValidationError('Forecast cash inflow cannot exceed forecast project revenue.');
+			throw new ProjectFinancialControlValidationError(
+				'Forecast cash inflow cannot exceed forecast project revenue.'
+			);
 		}
 		const approvedAt = this.now();
 		await this.db.transaction().execute(async (transaction) => {
@@ -841,7 +938,10 @@ export class ProjectFinancialControlService {
 				memberId: actor.memberId,
 				approvedAt
 			});
-			if (!approved) throw new ProjectFinancialControlValidationError('Forecast is no longer available for approval.');
+			if (!approved)
+				throw new ProjectFinancialControlValidationError(
+					'Forecast is no longer available for approval.'
+				);
 			await new AuditRepository(transaction).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -868,7 +968,11 @@ export class ProjectFinancialControlService {
 		projectPublicId: string,
 		periodPublicId: string
 	): Promise<void> {
-		const project = await this.resolveProject(actor, projectPublicId, 'commercial.forecast.approve');
+		const project = await this.resolveProject(
+			actor,
+			projectPublicId,
+			'commercial.forecast.approve'
+		);
 		const repository = new ProjectFinancialControlRepository(this.db);
 		const period = await repository.findReportingPeriodByPublicId(
 			actor.organisationId,
@@ -877,18 +981,27 @@ export class ProjectFinancialControlService {
 		);
 		if (!period) throw new RecordNotFoundError('Commercial reporting period not found.');
 		const forecasts = await repository.listForecasts(actor.organisationId, project.id);
-		if (!forecasts.some((forecast) => forecast.periodId === period.id && forecast.status === 'approved')) {
-			throw new ProjectFinancialControlValidationError('Approve a forecast for the reporting period before closing it.');
+		if (
+			!forecasts.some(
+				(forecast) => forecast.periodId === period.id && forecast.status === 'approved'
+			)
+		) {
+			throw new ProjectFinancialControlValidationError(
+				'Approve a forecast for the reporting period before closing it.'
+			);
 		}
 		const closedAt = this.now();
 		await this.db.transaction().execute(async (transaction) => {
-			const changed = await new ProjectFinancialControlRepository(transaction).closeReportingPeriod({
-				organisationId: actor.organisationId,
-				periodId: period.id,
-				memberId: actor.memberId,
-				closedAt
-			});
-			if (!changed) throw new ProjectFinancialControlValidationError('Reporting period is not open.');
+			const changed = await new ProjectFinancialControlRepository(transaction).closeReportingPeriod(
+				{
+					organisationId: actor.organisationId,
+					periodId: period.id,
+					memberId: actor.memberId,
+					closedAt
+				}
+			);
+			if (!changed)
+				throw new ProjectFinancialControlValidationError('Reporting period is not open.');
 			await new AuditRepository(transaction).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -909,7 +1022,11 @@ export class ProjectFinancialControlService {
 		projectPublicId: string,
 		periodPublicId: string
 	): Promise<void> {
-		const project = await this.resolveProject(actor, projectPublicId, 'commercial.forecast.approve');
+		const project = await this.resolveProject(
+			actor,
+			projectPublicId,
+			'commercial.forecast.approve'
+		);
 		const repository = new ProjectFinancialControlRepository(this.db);
 		const period = await repository.findReportingPeriodByPublicId(
 			actor.organisationId,
@@ -918,11 +1035,16 @@ export class ProjectFinancialControlService {
 		);
 		if (!period) throw new RecordNotFoundError('Commercial reporting period not found.');
 		await this.db.transaction().execute(async (transaction) => {
-			const changed = await new ProjectFinancialControlRepository(transaction).reopenReportingPeriod({
+			const changed = await new ProjectFinancialControlRepository(
+				transaction
+			).reopenReportingPeriod({
 				organisationId: actor.organisationId,
 				periodId: period.id
 			});
-			if (!changed) throw new ProjectFinancialControlValidationError('Only a closed reporting period can be reopened.');
+			if (!changed)
+				throw new ProjectFinancialControlValidationError(
+					'Only a closed reporting period can be reopened.'
+				);
 			await new AuditRepository(transaction).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,

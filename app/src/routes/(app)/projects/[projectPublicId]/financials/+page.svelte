@@ -82,9 +82,9 @@
 		<div class="alert alert-warning">
 			<strong>One reporting currency is required for forecasting.</strong>
 			<span>
-				This project currently contains values in {data.currencyCodes.join(', ')}. Live source
-				facts remain visible, but a governed forecast cannot be created until an explicit FX
-				policy exists or the project facts use one currency.
+				This project currently contains values in {data.currencyCodes.join(', ')}. Live source facts
+				remain visible, but a governed forecast cannot be created until an explicit FX policy exists
+				or the project facts use one currency.
 			</span>
 		</div>
 	{/if}
@@ -255,7 +255,12 @@
 			</div>
 
 			{#if data.canManageForecasts}
-				<form method="POST" action="?/createForecast" id="create-financial-forecast" class="stack-form">
+				<form
+					method="POST"
+					action="?/createForecast"
+					id="create-financial-forecast"
+					class="stack-form"
+				>
 					<label>
 						<span>Open reporting period</span>
 						<select name="periodPublicId" required>
@@ -326,21 +331,29 @@
 				</article>
 				<article>
 					<span>Cost variance</span>
-					<strong class:negative={Number(active.costVariance) < 0}>{money(active.costVariance)}</strong>
+					<strong class:negative={Number(active.costVariance) < 0}
+						>{money(active.costVariance)}</strong
+					>
 					<small>Control budget − EAC</small>
 				</article>
 				<article>
 					<span>Forecast margin</span>
-					<strong class:negative={Number(active.forecastMargin) < 0}>{money(active.forecastMargin)}</strong>
-					<small>{active.marginPercent === null ? 'No revenue baseline' : `${active.marginPercent.toFixed(2)}% margin`}</small>
+					<strong class:negative={Number(active.forecastMargin) < 0}
+						>{money(active.forecastMargin)}</strong
+					>
+					<small
+						>{active.marginPercent === null
+							? 'No revenue baseline'
+							: `${active.marginPercent.toFixed(2)}% margin`}</small
+					>
 				</article>
 			</div>
 
 			<div class="snapshot-note">
 				<strong>Snapshot semantics</strong>
 				<span>
-					Budget, actual, remaining commitment and change values below are the facts captured at this
-					forecast cut-off. Editing FTC never changes those source records.
+					Budget, actual, remaining commitment and change values below are the facts captured at
+					this forecast cut-off. Editing FTC never changes those source records.
 				</span>
 			</div>
 
@@ -351,12 +364,15 @@
 							<div>
 								<strong>{line.costCode} · {line.costCodeName}</strong>
 								<span>
-									Budget {money(line.controlBudgetSnapshot)} · Actual {money(line.actualCostSnapshot)} ·
-									Remaining commitment {money(line.remainingCommitmentSnapshot)}
+									Budget {money(line.controlBudgetSnapshot)} · Actual {money(
+										line.actualCostSnapshot
+									)} · Remaining commitment {money(line.remainingCommitmentSnapshot)}
 								</span>
 							</div>
 							<strong>
-								EAC {money(String(Number(line.actualCostSnapshot) + Number(line.forecastToCompleteAmount)))}
+								EAC {money(
+									String(Number(line.actualCostSnapshot) + Number(line.forecastToCompleteAmount))
+								)}
 							</strong>
 						</div>
 						{#if active.forecast.status === 'draft' && data.canManageForecasts}
@@ -410,7 +426,9 @@
 				<article>
 					<span>Outflow vs FTC</span>
 					<strong class:negative={Number(active.cashOutflowVarianceToFtc) !== 0}>
-						{Number(active.cashOutflowVarianceToFtc) === 0 ? 'Reconciled' : absoluteMoney(active.cashOutflowVarianceToFtc)}
+						{Number(active.cashOutflowVarianceToFtc) === 0
+							? 'Reconciled'
+							: absoluteMoney(active.cashOutflowVarianceToFtc)}
 					</strong>
 					<small>Approval requires exact reconciliation</small>
 				</article>
@@ -488,7 +506,11 @@
 								<td>
 									{#if active.forecast.status === 'draft' && data.canManageCashFlow}
 										<form method="POST" action="?/removeCashFlow">
-											<input type="hidden" name="forecastPublicId" value={active.forecast.publicId} />
+											<input
+												type="hidden"
+												name="forecastPublicId"
+												value={active.forecast.publicId}
+											/>
 											<input type="hidden" name="lineNumber" value={line.lineNumber} />
 											<button type="submit" class="text-button">Remove</button>
 										</form>

@@ -56,9 +56,7 @@ function handleFinancialActionError(cause: unknown, financialAction: string) {
 }
 
 function redirectToFinancials(projectPublicId: string, forecastPublicId?: string | null): never {
-	const query = forecastPublicId
-		? `?forecast=${encodeURIComponent(forecastPublicId)}`
-		: '';
+	const query = forecastPublicId ? `?forecast=${encodeURIComponent(forecastPublicId)}` : '';
 	throw redirect(303, `/projects/${encodeURIComponent(projectPublicId)}/financials${query}`);
 }
 
@@ -104,17 +102,17 @@ export const actions: Actions = {
 
 	createForecast: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, financialFailure('create-forecast', 'Authentication is required.'));
+		if (!actor)
+			return fail(401, financialFailure('create-forecast', 'Authentication is required.'));
 		const data = await request.formData();
 		try {
-			const forecastPublicId = await new ProjectFinancialControlService(getDatabase()).createForecast(
-				actor,
-				{
-					projectPublicId: params.projectPublicId,
-					periodPublicId: String(data.get('periodPublicId') ?? ''),
-					forecastRevenueAmount: String(data.get('forecastRevenueAmount') ?? '')
-				}
-			);
+			const forecastPublicId = await new ProjectFinancialControlService(
+				getDatabase()
+			).createForecast(actor, {
+				projectPublicId: params.projectPublicId,
+				periodPublicId: String(data.get('periodPublicId') ?? ''),
+				forecastRevenueAmount: String(data.get('forecastRevenueAmount') ?? '')
+			});
 			redirectToFinancials(params.projectPublicId, forecastPublicId);
 		} catch (cause) {
 			return handleFinancialActionError(cause, 'create-forecast');
@@ -123,7 +121,8 @@ export const actions: Actions = {
 
 	updateForecastLine: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, financialFailure('update-forecast-line', 'Authentication is required.'));
+		if (!actor)
+			return fail(401, financialFailure('update-forecast-line', 'Authentication is required.'));
 		const data = await request.formData();
 		const forecastPublicId = String(data.get('forecastPublicId') ?? '');
 		try {
@@ -164,7 +163,8 @@ export const actions: Actions = {
 
 	removeCashFlow: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, financialFailure('remove-cash-flow', 'Authentication is required.'));
+		if (!actor)
+			return fail(401, financialFailure('remove-cash-flow', 'Authentication is required.'));
 		const data = await request.formData();
 		const forecastPublicId = String(data.get('forecastPublicId') ?? '');
 		try {
@@ -182,7 +182,8 @@ export const actions: Actions = {
 
 	approveForecast: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, financialFailure('approve-forecast', 'Authentication is required.'));
+		if (!actor)
+			return fail(401, financialFailure('approve-forecast', 'Authentication is required.'));
 		const data = await request.formData();
 		const forecastPublicId = String(data.get('forecastPublicId') ?? '');
 		try {

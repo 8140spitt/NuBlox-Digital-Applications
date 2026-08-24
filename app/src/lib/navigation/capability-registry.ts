@@ -123,7 +123,7 @@ const nativeCapabilityDomains: readonly NativeCapabilityDomain[] = [
 		description: 'Project governance, planning, work, schedule, risk, change and project controls.',
 		maturity: 'partial',
 		maturityNote:
-			'Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, projects and Work Kernel are native; risk, earned value and deeper project-controls integration remain.',
+			'Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, governed project financial control/EAC/cash flow, projects and Work Kernel are native; risk, earned value and controlled cross-domain change remain.',
 		permissionNamespaces: ['project.', 'schedule.', 'work.'],
 		routes: [
 			{ label: 'Projects', href: '/projects', anyPermissionNamespaces: ['project.'] },
@@ -168,8 +168,14 @@ const nativeCapabilityDomains: readonly NativeCapabilityDomain[] = [
 			'Cost control, budgets, forecasts, cash flow, profitability and management reporting.',
 		maturity: 'partial',
 		maturityNote:
-			'Project budgets/cost control and financial reporting foundations exist; treasury, consolidation and planning depth remain.',
-		permissionNamespaces: ['commercial.cost_control.', 'commercial.budget.', 'finance.accounting.'],
+			'Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native; treasury, consolidation and enterprise-planning depth remain.',
+		permissionNamespaces: [
+			'commercial.cost_control.',
+			'commercial.budget.',
+			'commercial.forecast.',
+			'commercial.cash_flow.',
+			'finance.accounting.'
+		],
 		routes: [
 			{
 				label: 'Project cost control',
