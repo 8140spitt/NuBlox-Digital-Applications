@@ -1,10 +1,14 @@
 import { randomUUID } from 'node:crypto';
 
-import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { AuditRepository } from '$lib/server/audit/audit-repository';
+import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import {
 	ProjectHierarchyRepository,
@@ -12,6 +16,7 @@ import {
 	type ProgrammeRecord,
 	type ProjectHierarchyContext
 } from './project-hierarchy-repository';
+import { ensureProjectHierarchyStandardRoleDefaults } from './project-hierarchy-role-defaults';
 import { ProjectRepository } from './project-repository';
 
 export type ProjectHierarchyAccess = {
@@ -89,8 +94,11 @@ export class ProjectHierarchyService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
+		await ensureProjectHierarchyStandardRoleDefaults(this.db, actor.organisationId);
 	}
 
 	async listHierarchy(actor: TenantActorContext): Promise<ProjectHierarchyAccess> {
@@ -211,7 +219,9 @@ export class ProjectHierarchyService {
 			? await repository.findPortfolioByPublicId(actor.organisationId, portfolioPublicId)
 			: null;
 		if (portfolioPublicId && !portfolio) {
-			throw new ProjectHierarchyValidationError('The selected portfolio is not available in this organisation.');
+			throw new ProjectHierarchyValidationError(
+				'The selected portfolio is not available in this organisation.'
+			);
 		}
 
 		const publicId = this.publicIdFactory();
@@ -287,7 +297,9 @@ export class ProjectHierarchyService {
 			? await repository.findProgrammeByPublicId(actor.organisationId, programmePublicId)
 			: null;
 		if (programmePublicId && !programme) {
-			throw new ProjectHierarchyValidationError('The selected programme is not available in this organisation.');
+			throw new ProjectHierarchyValidationError(
+				'The selected programme is not available in this organisation.'
+			);
 		}
 
 		return this.db.transaction().execute(async (transaction) => {
