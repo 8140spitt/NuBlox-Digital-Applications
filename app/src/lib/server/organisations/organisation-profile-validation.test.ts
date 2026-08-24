@@ -28,11 +28,10 @@ describe('canonical organisation profile validation', () => {
 
 	it('supports explicit bootstrap defaults without weakening validation', () => {
 		expect(
-			normaliseOrganisationProfile(
-				{ legalName: 'NuBlox Ltd' },
-				fail,
-				{ defaultTimezone: 'Europe/London', defaultCurrencyCode: 'GBP' }
-			)
+			normaliseOrganisationProfile({ legalName: 'NuBlox Ltd' }, fail, {
+				defaultTimezone: 'Europe/London',
+				defaultCurrencyCode: 'GBP'
+			})
 		).toEqual({
 			legalName: 'NuBlox Ltd',
 			tradingName: null,

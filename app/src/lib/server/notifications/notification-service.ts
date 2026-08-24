@@ -64,7 +64,9 @@ export class NotificationService {
 		if (candidates.length === 0) return [];
 
 		const permissionService = new PermissionService(this.db);
-		const scopeKeys = Array.from(new Set(candidates.map((candidate) => candidate.projectId ?? 'organisation')));
+		const scopeKeys = Array.from(
+			new Set(candidates.map((candidate) => candidate.projectId ?? 'organisation'))
+		);
 		const allowedByScope = new Map<string, boolean>();
 
 		await Promise.all(

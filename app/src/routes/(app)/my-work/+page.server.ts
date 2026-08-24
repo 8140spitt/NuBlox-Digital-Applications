@@ -11,10 +11,7 @@ import {
 	TenantAccessError
 } from '$lib/server/kernel/errors';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
-import type {
-	WorkItemDecision,
-	WorkItemStatus
-} from '$lib/server/work/work-item-repository';
+import type { WorkItemDecision, WorkItemStatus } from '$lib/server/work/work-item-repository';
 import { WorkItemService, WorkKernelValidationError } from '$lib/server/work/work-item-service';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -152,7 +149,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 export const actions: Actions = {
 	transitionWork: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { workError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { workError: 'Authentication and organisation context are required.' });
 
 		const data = await request.formData();
 		const workItemPublicId = text(data, 'workItemPublicId');
@@ -169,14 +167,19 @@ export const actions: Actions = {
 				return fail(403, { workError: 'You are not authorised to perform this work transition.' });
 			}
 			if (error instanceof RecordNotFoundError) {
-				return fail(404, { workError: 'The work item is no longer available in this organisation.' });
+				return fail(404, {
+					workError: 'The work item is no longer available in this organisation.'
+				});
 			}
 			if (error instanceof ConcurrentUpdateError) {
 				return fail(409, {
 					workError: 'The work item changed while you were updating it. Reload and retry.'
 				});
 			}
-			if (error instanceof InvalidLifecycleTransitionError || error instanceof WorkKernelValidationError) {
+			if (
+				error instanceof InvalidLifecycleTransitionError ||
+				error instanceof WorkKernelValidationError
+			) {
 				return fail(400, { workError: error.message });
 			}
 			throw error;
@@ -187,7 +190,8 @@ export const actions: Actions = {
 
 	decideWork: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { workError: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { workError: 'Authentication and organisation context are required.' });
 
 		const data = await request.formData();
 		const workItemPublicId = text(data, 'workItemPublicId');
@@ -198,13 +202,20 @@ export const actions: Actions = {
 		}
 
 		try {
-			await new WorkItemService(getDatabase()).recordDecision(actor, workItemPublicId, decision, note);
+			await new WorkItemService(getDatabase()).recordDecision(
+				actor,
+				workItemPublicId,
+				decision,
+				note
+			);
 		} catch (error) {
 			if (error instanceof TenantAccessError) {
 				return fail(403, { workError: 'You are not authorised to record this work decision.' });
 			}
 			if (error instanceof RecordNotFoundError) {
-				return fail(404, { workError: 'The work item is no longer available in this organisation.' });
+				return fail(404, {
+					workError: 'The work item is no longer available in this organisation.'
+				});
 			}
 			if (error instanceof WorkKernelValidationError) {
 				return fail(400, { workError: error.message });

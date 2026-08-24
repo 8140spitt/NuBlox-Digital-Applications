@@ -3,9 +3,7 @@ import { sql } from 'kysely';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type NotificationEventTopic =
-	| 'work.item.assigned'
-	| 'work.item.status_changed'
-	| 'work.item.decision_recorded';
+	'work.item.assigned' | 'work.item.status_changed' | 'work.item.decision_recorded';
 
 export type NotificationEventRecord = {
 	eventPublicId: string;

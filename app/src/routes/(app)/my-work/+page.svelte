@@ -33,7 +33,9 @@
 	}
 
 	function isDecisionWork(kind: string): boolean {
-		return kind === 'approval' || kind === 'review' || kind === 'decision' || kind === 'acknowledgement';
+		return (
+			kind === 'approval' || kind === 'review' || kind === 'decision' || kind === 'acknowledgement'
+		);
 	}
 
 	const queueIds = ['portal', 'schedule', 'time', 'documents', 'site', 'purchasing'];
@@ -65,9 +67,7 @@
 		<div>
 			<p class="eyebrow">Work Kernel</p>
 			<h2 id="assigned-work-heading">Assigned work</h2>
-			<p>
-				Canonical actions, tasks, reviews and approvals assigned directly to you across NuBlox.
-			</p>
+			<p>Canonical actions, tasks, reviews and approvals assigned directly to you across NuBlox.</p>
 		</div>
 		{#if data.canViewWork}
 			<div class="work-summary" aria-label="Assigned work summary">
@@ -97,7 +97,9 @@
 							<span class={`status status-${workItem.status}`}
 								>{statusLabels[workItem.status] ?? workItem.status}</span
 							>
-							<span class={`priority priority-${workItem.priority}`}>{workType(workItem.priority)}</span>
+							<span class={`priority priority-${workItem.priority}`}
+								>{workType(workItem.priority)}</span
+							>
 							<span>{workType(workItem.kind)}</span>
 						</div>
 						<h3>{workItem.title}</h3>
