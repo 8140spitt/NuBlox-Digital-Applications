@@ -23,7 +23,7 @@ let projectPublicId = '';
 let owner: TenantActorContext;
 let viewer: TenantActorContext;
 let external: TenantActorContext;
-let rootWbsPublicId = '';
+let _rootWbsPublicId = '';
 let tradeWbsPublicId = '';
 let activityAPublicId = '';
 let milestoneBPublicId = '';
@@ -310,7 +310,7 @@ describe('governed project-controls plan', () => {
 			name: 'Delivery works',
 			sortOrder: 10
 		});
-		rootWbsPublicId = root.publicId;
+		_rootWbsPublicId = root.publicId;
 		const trade = await service.createWbsNode(owner, {
 			projectPublicId,
 			parentWbsNodePublicId: root.publicId,
