@@ -24,12 +24,13 @@ test('owner staffs, schedules and records a complete work session through the UI
 	const workTitle = `Install containment ${suffix}`;
 
 	await page.goto('/projects#create-project');
-	await page.getByLabel('Project number').fill(projectNumber);
-	await page.getByLabel('Project name').fill(projectName);
-	await page
+	const projectForm = page.locator('form[action="?/create"]');
+	await projectForm.getByLabel('Project number').fill(projectNumber);
+	await projectForm.getByLabel('Project name').fill(projectName);
+	await projectForm
 		.getByLabel(/Description/)
 		.fill('Browser acceptance project for workforce scheduling and time.');
-	await page.getByRole('button', { name: 'Create project' }).click();
+	await projectForm.getByRole('button', { name: 'Create project' }).click();
 	await expect(page).toHaveURL(/\/projects\/[0-9a-f-]+$/i);
 
 	await page.goto('/people');
