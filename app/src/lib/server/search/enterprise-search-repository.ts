@@ -176,42 +176,36 @@ export class EnterpriseSearchRepository {
 		]);
 
 		return [
-			...projects.rows.map(
-				(row): EnterpriseSearchCandidate => ({
-					kind: 'project',
-					projectId: row.project_id,
-					publicId: row.public_id,
-					reference: row.project_number,
-					title: row.name,
-					description: row.description,
-					status: row.status
-				})
-			),
-			...documents.rows.map(
-				(row): EnterpriseSearchCandidate => ({
-					kind: 'document',
-					projectId: row.project_id,
-					projectPublicId: row.project_public_id,
-					publicId: row.public_id,
-					reference: row.container_number,
-					title: row.title,
-					description: row.type_name,
-					status: row.status
-				})
-			),
-			...workItems.rows.map(
-				(row): EnterpriseSearchCandidate => ({
-					kind: 'work',
-					projectId: row.project_id,
-					publicId: row.public_id,
-					reference: row.work_item_kind,
-					title: row.title,
-					description: row.description,
-					status: row.status,
-					priority: row.priority,
-					sourceDomain: row.source_domain
-				})
-			)
+			...projects.rows.map((row): EnterpriseSearchCandidate => ({
+				kind: 'project',
+				projectId: row.project_id,
+				publicId: row.public_id,
+				reference: row.project_number,
+				title: row.name,
+				description: row.description,
+				status: row.status
+			})),
+			...documents.rows.map((row): EnterpriseSearchCandidate => ({
+				kind: 'document',
+				projectId: row.project_id,
+				projectPublicId: row.project_public_id,
+				publicId: row.public_id,
+				reference: row.container_number,
+				title: row.title,
+				description: row.type_name,
+				status: row.status
+			})),
+			...workItems.rows.map((row): EnterpriseSearchCandidate => ({
+				kind: 'work',
+				projectId: row.project_id,
+				publicId: row.public_id,
+				reference: row.work_item_kind,
+				title: row.title,
+				description: row.description,
+				status: row.status,
+				priority: row.priority,
+				sourceDomain: row.source_domain
+			}))
 		];
 	}
 }

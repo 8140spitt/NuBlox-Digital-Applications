@@ -52,7 +52,9 @@ test('read-only member can navigate context-first workspaces without receiving m
 	await expect(
 		page.getByText('Recent governed Work Kernel activity', { exact: true })
 	).toBeVisible();
-	await expect(notificationMenu.getByRole('link', { name: 'Open My work', exact: true })).toBeVisible();
+	await expect(
+		notificationMenu.getByRole('link', { name: 'Open My work', exact: true })
+	).toBeVisible();
 
 	await page.goto('/more');
 	await expect(page.getByRole('heading', { name: 'More workspaces', level: 1 })).toBeVisible();

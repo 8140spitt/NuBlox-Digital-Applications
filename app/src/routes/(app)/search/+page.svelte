@@ -30,7 +30,9 @@
 			<h2 id="search-heading">Search authorised records</h2>
 		</div>
 		{#if data.searched && !data.searchError}
-			<span class="result-count">{data.results.length} result{data.results.length === 1 ? '' : 's'}</span>
+			<span class="result-count"
+				>{data.results.length} result{data.results.length === 1 ? '' : 's'}</span
+			>
 		{/if}
 	</div>
 
@@ -48,7 +50,9 @@
 			/>
 			<button type="submit">Search</button>
 		</div>
-		<small>Enter at least two characters. Search never bypasses tenant or project permissions.</small>
+		<small
+			>Enter at least two characters. Search never bypasses tenant or project permissions.</small
+		>
 	</form>
 </section>
 
