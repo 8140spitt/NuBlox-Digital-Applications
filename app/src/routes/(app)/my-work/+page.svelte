@@ -32,6 +32,10 @@
 		return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 	}
 
+	function isDecisionWork(kind: string): boolean {
+		return kind === 'approval' || kind === 'review' || kind === 'decision' || kind === 'acknowledgement';
+	}
+
 	const queueIds = ['portal', 'schedule', 'time', 'documents', 'site', 'purchasing'];
 </script>
 
@@ -109,8 +113,34 @@
 						</div>
 					</div>
 
-					{#if workItem.canProgress || workItem.canComplete}
+					{#if workItem.canProgress || workItem.canComplete || (workItem.canApprove && isDecisionWork(workItem.kind))}
 						<div class="work-actions" aria-label={`Actions for ${workItem.title}`}>
+							{#if workItem.canApprove && isDecisionWork(workItem.kind)}
+								{#if workItem.kind === 'acknowledgement'}
+									<form method="POST" action="?/decideWork">
+										<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+										<input type="hidden" name="decision" value="acknowledged" />
+										<button type="submit">Acknowledge</button>
+									</form>
+								{:else}
+									<form method="POST" action="?/decideWork">
+										<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+										<input type="hidden" name="decision" value="approved" />
+										<button type="submit">Approve</button>
+									</form>
+									<form method="POST" action="?/decideWork">
+										<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+										<input type="hidden" name="decision" value="returned" />
+										<button class="secondary" type="submit">Return</button>
+									</form>
+									<form method="POST" action="?/decideWork">
+										<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
+										<input type="hidden" name="decision" value="rejected" />
+										<button class="danger" type="submit">Reject</button>
+									</form>
+								{/if}
+							{/if}
+
 							{#if workItem.status === 'open' && workItem.canProgress}
 								<form method="POST" action="?/transitionWork">
 									<input type="hidden" name="workItemPublicId" value={workItem.publicId} />
@@ -443,6 +473,12 @@
 	.work-actions button.secondary {
 		background: var(--nb-white);
 		color: var(--nb-ink);
+	}
+
+	.work-actions button.danger {
+		border-color: #8d1717;
+		background: var(--nb-white);
+		color: #8d1717;
 	}
 
 	.project-list {
