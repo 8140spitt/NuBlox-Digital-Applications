@@ -65,10 +65,6 @@ function withPreference(
 	};
 }
 
-function openHref(kind: ContextKind, publicId: string): string {
-	return `/contexts/open?kind=${encodeURIComponent(kind)}&id=${encodeURIComponent(publicId)}`;
-}
-
 export class ContextShortcutService {
 	constructor(
 		private readonly db: Database = getDatabase(),
@@ -137,7 +133,7 @@ export class ContextShortcutService {
 					label: facility.name,
 					reference: facility.facilityCode,
 					status: facility.operationalStatus,
-					href: `/assets?facility=${encodeURIComponent(facility.publicId)}#facility-${encodeURIComponent(facility.publicId)}`
+					href: `/assets?facility=${encodeURIComponent(facility.publicId)}#facility-register`
 				})
 			),
 			...assets.map(
@@ -148,7 +144,7 @@ export class ContextShortcutService {
 					label: asset.name,
 					reference: asset.assetTag,
 					status: asset.lifecycleStatus,
-					href: `/assets?asset=${encodeURIComponent(asset.publicId)}#asset-${encodeURIComponent(asset.publicId)}`
+					href: `/assets?asset=${encodeURIComponent(asset.publicId)}#asset-register`
 				})
 			)
 		];
@@ -203,28 +199,6 @@ export class ContextShortcutService {
 		return shortcuts;
 	}
 
-	async recordRecent(
-		actor: TenantActorContext,
-		kind: ContextKind,
-		publicId: string
-	): Promise<ContextShortcut> {
-		const candidate = await this.resolveCandidate(actor, kind, publicId);
-		await new ContextPreferenceRepository(this.db).recordRecent({
-			organisationId: actor.organisationId,
-			memberId: actor.memberId,
-			kind,
-			publicId,
-			openedAt: this.now()
-		});
-		return withPreference(candidate, {
-			kind,
-			publicId,
-			isFavourite: false,
-			isPinned: false,
-			lastOpenedAt: this.now()
-		});
-	}
-
 	async setPreference(
 		actor: TenantActorContext,
 		input: {
@@ -256,9 +230,5 @@ export class ContextShortcutService {
 			openedAt: this.now()
 		});
 		return candidate.href;
-	}
-
-	static openHref(kind: ContextKind, publicId: string): string {
-		return openHref(kind, publicId);
 	}
 }
