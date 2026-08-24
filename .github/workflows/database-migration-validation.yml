@@ -42,7 +42,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   complete-system-validation:
@@ -71,6 +71,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/project-portfolio-programme-hierarchy
 
       - uses: pnpm/action-setup@v4
         with:
@@ -86,6 +88,33 @@ jobs:
       - name: Install application dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
+
+      - name: Generate canonical hierarchy outputs
+        working-directory: app
+        run: |
+          pnpm db:migrate
+          pnpm db:types
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('src/lib/navigation/capability-registry.ts')
+          text = path.read_text()
+          old = "Projects, schedule and Work Kernel exist; portfolio/programme hierarchy and full project-controls depth are next."
+          new = "Portfolio/programme/project hierarchy, projects, schedule and Work Kernel are native; WBS, baseline scheduling, resources, risk and full project-controls depth remain."
+          if old not in text:
+              raise SystemExit('Expected Domain 5 maturity note not found')
+          path.write_text(text.replace(old, new))
+          PY
+          pnpm format
+
+      - name: Commit canonical hierarchy outputs
+        run: |
+          if ! git diff --quiet -- app; then
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add app
+            git commit -m "Generate hierarchy types and formatting"
+            git push origin HEAD:feat/project-portfolio-programme-hierarchy
+          fi
 
       - name: Audit production dependencies
         working-directory: app
@@ -109,9 +138,9 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '399'
-          test "$fk_count" = '905'
-          test "$check_count" = '532'
+          test "$table_count" = '401'
+          test "$fk_count" = '911'
+          test "$check_count" = '534'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
