@@ -2357,6 +2357,25 @@ export interface Programmes {
   updated_at: Generated<Date>;
 }
 
+export interface ProjectActivityResourceAllocations {
+  allocation_status: Generated<string>;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  load_finish_on: Date;
+  load_start_on: Date;
+  notes: string | null;
+  organisation_id: string;
+  planned_effort_minutes: number;
+  project_id: string;
+  project_plan_activity_id: string;
+  project_resource_assignment_id: string;
+  public_id: string;
+  removed_at: Date | null;
+  removed_by_member_id: string | null;
+  worker_id: string;
+}
+
 export interface ProjectBudgetAdjustmentItems {
   adjustment_amount: Decimal;
   created_at: Generated<Date>;
@@ -4608,6 +4627,7 @@ export interface DB {
   procurement_packages: ProcurementPackages;
   professional_domains: ProfessionalDomains;
   programmes: Programmes;
+  project_activity_resource_allocations: ProjectActivityResourceAllocations;
   project_budget_adjustment_items: ProjectBudgetAdjustmentItems;
   project_budget_adjustments: ProjectBudgetAdjustments;
   project_budget_line_estimate_sources: ProjectBudgetLineEstimateSources;

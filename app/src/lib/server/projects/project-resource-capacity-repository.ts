@@ -161,10 +161,7 @@ export class ProjectResourceCapacityRepository {
 		return row ? mapPool(row) : null;
 	}
 
-	async lockProjectResourceAssignment(
-		projectId: string,
-		assignmentId: string
-	): Promise<void> {
+	async lockProjectResourceAssignment(projectId: string, assignmentId: string): Promise<void> {
 		await this.db
 			.selectFrom('project_resource_assignments')
 			.select('id')
@@ -369,12 +366,7 @@ export class ProjectResourceCapacityRepository {
 		if (workerIds.length === 0) return [];
 		return this.db
 			.selectFrom('worker_unavailability')
-			.select([
-				'worker_id as workerId',
-				'starts_at as startsAt',
-				'ends_at as endsAt',
-				'status'
-			])
+			.select(['worker_id as workerId', 'starts_at as startsAt', 'ends_at as endsAt', 'status'])
 			.where('organisation_id', '=', organisationId)
 			.where('worker_id', 'in', [...workerIds])
 			.where('starts_at', '<', startsBefore)

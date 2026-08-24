@@ -138,7 +138,8 @@
 					</label>
 					<label class="wide">
 						Planning note
-						<textarea name="notes" rows="2" placeholder="Discipline, assumption or planning note"></textarea>
+						<textarea name="notes" rows="2" placeholder="Discipline, assumption or planning note"
+						></textarea>
 					</label>
 					<div class="wide form-actions">
 						<button type="submit">Add resource load</button>
@@ -146,7 +147,8 @@
 				</form>
 			{:else if !data.resourcePool.length}
 				<p class="empty-state">
-					No project resources are assigned yet. Add workers to the canonical project resource pool in
+					No project resources are assigned yet. Add workers to the canonical project resource pool
+					in
 					<a href="/people">People</a> before loading activity effort.
 				</p>
 			{:else}
@@ -241,7 +243,11 @@
 										{#if day.plannedLoadMinutes > 0 || day.projectCapacityMinutes > 0 || day.unavailableMinutes > 0}
 											<tr class:overloaded={day.overloaded === true}>
 												<td>{day.date}</td>
-												<td>{day.capacityConfigured ? hours(day.grossCapacityMinutes) : 'Not configured'}</td>
+												<td
+													>{day.capacityConfigured
+														? hours(day.grossCapacityMinutes)
+														: 'Not configured'}</td
+												>
 												<td>{day.capacityConfigured ? hours(day.unavailableMinutes) : '—'}</td>
 												<td>{day.capacityConfigured ? hours(day.projectCapacityMinutes) : '—'}</td>
 												<td>{hours(day.plannedLoadMinutes)}</td>

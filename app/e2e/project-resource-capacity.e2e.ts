@@ -49,7 +49,9 @@ test('owner staffs a project-plan activity and inspects governed capacity', asyn
 	await page.goto('/people');
 	const staffingForm = page.locator('form[action="?/assignProject"]');
 	await staffingForm.getByLabel('Worker').selectOption({ label: 'NuBlox E2E Owner' });
-	await staffingForm.getByLabel('Project').selectOption({ label: `${projectNumber} · ${projectName}` });
+	await staffingForm
+		.getByLabel('Project')
+		.selectOption({ label: `${projectNumber} · ${projectName}` });
 	await staffingForm.getByLabel('Starts').fill('2026-09-01');
 	await staffingForm.getByLabel('Ends').fill('2026-09-30');
 	await staffingForm.getByLabel('Planned allocation %').fill('50');
@@ -63,7 +65,9 @@ test('owner staffs a project-plan activity and inspects governed capacity', asyn
 	await expect(page.getByText('NuBlox E2E Owner', { exact: true }).first()).toBeVisible();
 
 	const loadForm = page.locator('form[action="?/createAllocation"]');
-	await loadForm.getByLabel('Activity').selectOption({ label: /R100 · Install resource-loaded scope/ });
+	await loadForm
+		.getByLabel('Activity')
+		.selectOption({ label: /R100 · Install resource-loaded scope/ });
 	const resourceSelect = loadForm.getByLabel('Project resource');
 	const resourceOption = resourceSelect.locator('option', { hasText: 'NuBlox E2E Owner' });
 	const resourceAssignmentPublicId = await resourceOption.getAttribute('value');
@@ -80,9 +84,9 @@ test('owner staffs a project-plan activity and inspects governed capacity', asyn
 	await expect(allocation).toContainText('NuBlox E2E Owner');
 	await expect(allocation).toContainText('20 h planned effort');
 	await expect(page.getByText('Capacity calendar not configured', { exact: true })).toBeVisible();
-	await expect(page.locator('.summary-grid article').filter({ hasText: 'Planned load' })).toContainText(
-		'20 h'
-	);
+	await expect(
+		page.locator('.summary-grid article').filter({ hasText: 'Planned load' })
+	).toContainText('20 h');
 	await expect(
 		page.locator('.summary-grid article').filter({ hasText: 'Capacity not configured' })
 	).toContainText('1');

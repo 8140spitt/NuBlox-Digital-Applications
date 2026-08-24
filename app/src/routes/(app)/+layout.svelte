@@ -459,7 +459,6 @@
 	}
 
 	.tool-menu > summary,
-	.tool-button,
 	.account-menu > summary {
 		list-style: none;
 		cursor: pointer;
@@ -470,8 +469,7 @@
 		display: none;
 	}
 
-	.tool-menu > summary,
-	.tool-button {
+	.tool-menu > summary {
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -1003,8 +1001,7 @@
 			display: block;
 		}
 
-		.tool-menu > summary,
-		.tool-button {
+		.tool-menu > summary {
 			min-height: 2.2rem;
 			padding-inline: 0.65rem;
 			font-size: 0.76rem;

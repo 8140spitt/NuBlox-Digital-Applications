@@ -534,6 +534,11 @@ export function resolveProjectContextNavigation(
 		{ id: 'overview', label: 'Overview', href: projectHref },
 		{ id: 'team', label: 'Team', href: `${projectHref}#team` }
 	];
+	const projectRoot = `/projects/${encodeURIComponent(projectPublicId)}`;
+	if (hasAnyNamespace(allowed, ['project.plan.']))
+		links.push({ id: 'plan', label: 'Plan', href: `${projectRoot}/plan` });
+	if (hasAnyNamespace(allowed, ['project.resource.']))
+		links.push({ id: 'resources', label: 'Resources', href: `${projectRoot}/resources` });
 	if (hasAnyNamespace(allowed, ['information.']))
 		links.push({ id: 'documents', label: 'Documents', href: `/documents${query}` });
 	if (hasAnyNamespace(allowed, ['procurement.']))
