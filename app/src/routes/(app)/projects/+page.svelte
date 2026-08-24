@@ -139,12 +139,16 @@
 			{#if data.hierarchy.portfolios.length === 0 && data.hierarchy.programmes.length === 0}
 				<div class="hierarchy-empty">
 					<strong>No portfolio or programme structure yet</strong>
-					<p>Create only the levels your organisation actually needs. Existing projects remain valid.</p>
+					<p>
+						Create only the levels your organisation actually needs. Existing projects remain valid.
+					</p>
 				</div>
 			{/if}
 		</div>
 	{:else}
-		<p class="muted">Your current role does not grant organisation-wide portfolio or programme visibility.</p>
+		<p class="muted">
+			Your current role does not grant organisation-wide portfolio or programme visibility.
+		</p>
 	{/if}
 
 	{#if data.hierarchy.canManagePortfolios || data.hierarchy.canManageProgrammes}
@@ -174,7 +178,11 @@
 					</label>
 					<label>
 						<span>Description <small>optional</small></span>
-						<textarea name="portfolioDescription" maxlength="10000" rows="3">{form?.hierarchyAction === 'create-portfolio' ? form.portfolioDescription : ''}</textarea>
+						<textarea name="portfolioDescription" maxlength="10000" rows="3"
+							>{form?.hierarchyAction === 'create-portfolio'
+								? form.portfolioDescription
+								: ''}</textarea
+						>
 					</label>
 					{#if form?.hierarchyError && form.hierarchyAction === 'create-portfolio'}
 						<p class="error" role="alert">{form.hierarchyError}</p>
@@ -213,15 +221,20 @@
 							{#each data.hierarchy.portfolios as portfolio}
 								<option
 									value={portfolio.publicId}
-									selected={form?.hierarchyAction === 'create-programme' && form.portfolioPublicId === portfolio.publicId}
-								>{portfolio.portfolioNumber} · {portfolio.name}</option
+									selected={form?.hierarchyAction === 'create-programme' &&
+										form.portfolioPublicId === portfolio.publicId}
+									>{portfolio.portfolioNumber} · {portfolio.name}</option
 								>
 							{/each}
 						</select>
 					</label>
 					<label>
 						<span>Description <small>optional</small></span>
-						<textarea name="programmeDescription" maxlength="10000" rows="3">{form?.hierarchyAction === 'create-programme' ? form.programmeDescription : ''}</textarea>
+						<textarea name="programmeDescription" maxlength="10000" rows="3"
+							>{form?.hierarchyAction === 'create-programme'
+								? form.programmeDescription
+								: ''}</textarea
+						>
 					</label>
 					{#if form?.hierarchyError && form.hierarchyAction === 'create-programme'}
 						<p class="error" role="alert">{form.hierarchyError}</p>

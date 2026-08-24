@@ -139,7 +139,10 @@ export class ProjectHierarchyService {
 		return new ProjectHierarchyRepository(this.db).listProjectContexts(projectIds);
 	}
 
-	async createPortfolio(actor: TenantActorContext, input: CreatePortfolioInput): Promise<PortfolioRecord> {
+	async createPortfolio(
+		actor: TenantActorContext,
+		input: CreatePortfolioInput
+	): Promise<PortfolioRecord> {
 		await this.assertActiveActor(actor);
 		const decision = await new PermissionService(this.db).decideWithUmbrella(
 			actor,
@@ -196,7 +199,10 @@ export class ProjectHierarchyService {
 		}
 	}
 
-	async createProgramme(actor: TenantActorContext, input: CreateProgrammeInput): Promise<ProgrammeRecord> {
+	async createProgramme(
+		actor: TenantActorContext,
+		input: CreateProgrammeInput
+	): Promise<ProgrammeRecord> {
 		await this.assertActiveActor(actor);
 		const decision = await new PermissionService(this.db).decideWithUmbrella(
 			actor,

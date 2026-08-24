@@ -38,7 +38,9 @@ test('owner creates native portfolio and programme structure from Projects', asy
 	const programmeForm = page.locator('form[action="?/createProgramme"]');
 	await programmeForm.getByLabel('Programme number').fill(programmeNumber);
 	await programmeForm.getByLabel('Programme name').fill(programmeName);
-	await programmeForm.getByLabel('Portfolio').selectOption({ label: `${portfolioNumber} · ${portfolioName}` });
+	await programmeForm
+		.getByLabel('Portfolio')
+		.selectOption({ label: `${portfolioNumber} · ${portfolioName}` });
 	await programmeForm.getByRole('button', { name: 'Create programme' }).click();
 
 	const portfolioCard = page.locator('.portfolio-card').filter({ hasText: portfolioName });

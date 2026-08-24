@@ -176,7 +176,9 @@ export class ProjectWorkspaceService {
 			{ projectId: project.id }
 		);
 		const isOwningOrganisation = project.owningOrganisationId === actor.organisationId;
-		const [hierarchy] = await new ProjectHierarchyRepository(this.db).listProjectContexts([project.id]);
+		const [hierarchy] = await new ProjectHierarchyRepository(this.db).listProjectContexts([
+			project.id
+		]);
 
 		return {
 			project,

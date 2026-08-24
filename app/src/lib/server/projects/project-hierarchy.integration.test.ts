@@ -3,7 +3,10 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
-import { ProjectHierarchyService, ProjectHierarchyValidationError } from './project-hierarchy-service';
+import {
+	ProjectHierarchyService,
+	ProjectHierarchyValidationError
+} from './project-hierarchy-service';
 import { ProjectRepository } from './project-repository';
 import { ProjectWorkspaceService } from './project-workspace-service';
 
@@ -120,7 +123,10 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const organisationIds = organisations.map((row) => row.id);
 	if (organisationIds.length > 0) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', 'in', organisationIds)
+			.execute();
 
 		const projects = await db
 			.selectFrom('projects')
@@ -147,8 +153,14 @@ async function cleanup(): Promise<void> {
 			.where('organisation_id', 'in', organisationIds)
 			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
 		await db
 			.deleteFrom('organisation_members')
 			.where('organisation_id', 'in', organisationIds)
@@ -251,7 +263,10 @@ describe('portfolio, programme and project hierarchy', () => {
 			portfolioName: portfolio.name
 		});
 
-		const workspace = await new ProjectWorkspaceService(db).getWorkspace(ownerActor, project.publicId);
+		const workspace = await new ProjectWorkspaceService(db).getWorkspace(
+			ownerActor,
+			project.publicId
+		);
 		expect(workspace.hierarchy?.programmePublicId).toBe(programme.publicId);
 		expect(workspace.hierarchy?.portfolioPublicId).toBe(portfolio.publicId);
 
@@ -301,7 +316,9 @@ describe('portfolio, programme and project hierarchy', () => {
 
 	it('can return an assigned project to standalone status without deleting hierarchy records', async () => {
 		const projects = await new ProjectWorkspaceService(db).listProjects(ownerActor);
-		const project = projects.projects.find((candidate) => candidate.projectNumber === `${PROJECT_PREFIX}001`);
+		const project = projects.projects.find(
+			(candidate) => candidate.projectNumber === `${PROJECT_PREFIX}001`
+		);
 		expect(project).toBeDefined();
 		const context = await new ProjectHierarchyService(db).assignProjectToProgramme(ownerActor, {
 			projectPublicId: project!.publicId,
