@@ -1689,6 +1689,19 @@ export interface MemberCareers {
   primary_member_id: string | null;
 }
 
+export interface MemberContextPreferences {
+  context_kind: string;
+  context_public_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  is_favourite: Generated<number>;
+  is_pinned: Generated<number>;
+  last_opened_at: Date | null;
+  organisation_id: string;
+  organisation_member_id: string;
+  updated_at: Generated<Date>;
+}
+
 export interface MemberPermissionOverrides {
   created_at: Generated<Date>;
   effect: string;
@@ -4414,6 +4427,7 @@ export interface DB {
   maintenance_requests: MaintenanceRequests;
   maintenance_task_schedule_rules: MaintenanceTaskScheduleRules;
   member_careers: MemberCareers;
+  member_context_preferences: MemberContextPreferences;
   member_permission_overrides: MemberPermissionOverrides;
   member_roles: MemberRoles;
   meter_types: MeterTypes;
