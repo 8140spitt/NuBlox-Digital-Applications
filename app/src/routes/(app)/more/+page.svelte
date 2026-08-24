@@ -13,7 +13,7 @@
 		<p>
 			Specialist business functions live here instead of permanently occupying the sidebar. Use
 			enterprise search to find authorised records across NuBlox, keep important contexts close at
-			hand, or open a specialist workspace below.
+			hand, inspect native capability coverage, or open a specialist workspace below.
 		</p>
 	</div>
 </section>
@@ -37,6 +37,15 @@
 			>
 		</div>
 		<small>Open contexts →</small>
+	</a>
+
+	<a class="utility-card" href="/capabilities">
+		<div>
+			<p class="eyebrow">Product architecture</p>
+			<strong>Capability map</strong>
+			<span>Inspect the 19 native domains, implementation maturity and your authorised routes.</span>
+		</div>
+		<small>View capabilities →</small>
 	</a>
 </div>
 
@@ -88,7 +97,7 @@
 
 	.utility-grid {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(3, minmax(0, 1fr));
 		gap: 0.75rem;
 		margin-bottom: 1rem;
 	}
@@ -187,7 +196,7 @@
 		font-weight: 750;
 	}
 
-	@media (max-width: 760px) {
+	@media (max-width: 960px) {
 		.utility-grid {
 			grid-template-columns: 1fr;
 		}
