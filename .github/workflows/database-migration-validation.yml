@@ -4,13 +4,45 @@ on:
   pull_request:
     paths:
       - 'database/migrations/**'
-      - 'app/**'
-      - 'docs/**'
+      - 'app/package.json'
+      - 'app/pnpm-lock.yaml'
+      - 'app/.kysely-codegenrc.json'
+      - 'app/.kysely-collections-codegenrc.json'
+      - 'app/.kysely-accounting-codegenrc.json'
+      - 'app/.kysely-accounts-payable-codegenrc.json'
+      - 'app/.prettierignore'
+      - 'app/eslint.config.js'
+      - 'app/playwright.config.ts'
+      - 'app/prettier.config.js'
+      - 'app/vite.config.ts'
+      - 'app/vitest.integration.config.ts'
+      - 'app/e2e/**'
+      - 'app/src/**'
+      - '.github/workflows/database-migration-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'database/migrations/**'
+      - 'app/package.json'
+      - 'app/pnpm-lock.yaml'
+      - 'app/.kysely-codegenrc.json'
+      - 'app/.kysely-collections-codegenrc.json'
+      - 'app/.kysely-accounting-codegenrc.json'
+      - 'app/.kysely-accounts-payable-codegenrc.json'
+      - 'app/.prettierignore'
+      - 'app/eslint.config.js'
+      - 'app/playwright.config.ts'
+      - 'app/prettier.config.js'
+      - 'app/vite.config.ts'
+      - 'app/vitest.integration.config.ts'
+      - 'app/e2e/**'
+      - 'app/src/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   complete-system-validation:
@@ -39,8 +71,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feat/project-financial-control
 
       - uses: pnpm/action-setup@v4
         with:
@@ -57,99 +87,62 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
-      - name: Prepare project financial-control outputs
+      - name: Audit production dependencies
+        working-directory: app
+        run: pnpm audit --prod --audit-level moderate
+
+      - name: Run formatting and lint checks
+        working-directory: app
+        run: pnpm lint
+
+      - name: Apply authoritative migration stream
+        working-directory: app
         run: |
-          python <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('app/src/lib/navigation/app-navigation.ts')
-          text = path.read_text()
-          anchor = "\tif (hasAnyNamespace(allowed, ['project.resource.']))\n\t\tlinks.push({ id: 'resources', label: 'Resources', href: `${projectRoot}/resources` });\n"
-          addition = anchor + "\tif (hasAnyNamespace(allowed, ['commercial.forecast.', 'commercial.cash_flow.', 'commercial.cost_control.', 'commercial.budget.']))\n\t\tlinks.push({ id: 'financials', label: 'Financials', href: `${projectRoot}/financials` });\n"
-          if "id: 'financials'" not in text:
-              if anchor not in text:
-                  raise SystemExit('project Financials navigation anchor not found')
-              text = text.replace(anchor, addition, 1)
-          path.write_text(text)
-
-          path = Path('app/src/lib/navigation/capability-registry.ts')
-          text = path.read_text()
-          old = "Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, projects and Work Kernel are native; risk, earned value and deeper project-controls integration remain."
-          new = "Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, governed project financial control/EAC/cash flow, projects and Work Kernel are native; risk, earned value and controlled cross-domain change remain."
-          if old in text:
-              text = text.replace(old, new, 1)
-          old = "Project budgets/cost control and financial reporting foundations exist; treasury, consolidation and planning depth remain."
-          new = "Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native; treasury, consolidation and enterprise-planning depth remain."
-          if old in text:
-              text = text.replace(old, new, 1)
-          text = text.replace(
-              "permissionNamespaces: ['commercial.cost_control.', 'commercial.budget.', 'finance.accounting.'],",
-              "permissionNamespaces: ['commercial.cost_control.', 'commercial.budget.', 'commercial.forecast.', 'commercial.cash_flow.', 'finance.accounting.'],",
-              1,
-          )
-          path.write_text(text)
-
-          path = Path('app/src/lib/server/organisations/bootstrap-service.ts')
-          text = path.read_text()
-          forecast_all = (
-              "\t'commercial.forecast.view',\n"
-              "\t'commercial.forecast.manage',\n"
-              "\t'commercial.forecast.approve',\n"
-              "\t'commercial.cash_flow.manage',\n"
-          )
-          if text.count("'commercial.forecast.view'") == 0:
-              anchor = "\t'commercial.quotation.response.record',\n\t'contract.view',"
-              replacement = "\t'commercial.quotation.response.record',\n" + forecast_all + "\t'contract.view',"
-              if text.count(anchor) != 2:
-                  raise SystemExit(f'expected two bootstrap/owner commercial anchors, found {text.count(anchor)}')
-              text = text.replace(anchor, replacement, 2)
-
-              manager_pattern = re.compile(r"(name: 'Manager'.*?permissionKeys: \[)(.*?)(\n\t\t\])", re.S)
-              match = manager_pattern.search(text)
-              if not match:
-                  raise SystemExit('Manager role block not found')
-              body = match.group(2)
-              body += ",\n\t\t\t'commercial.forecast.view',\n\t\t\t'commercial.forecast.manage',\n\t\t\t'commercial.forecast.approve',\n\t\t\t'commercial.cash_flow.manage',"
-              text = text[:match.start(2)] + body + text[match.end(2):]
-
-              finance_pattern = re.compile(r"(name: 'Finance/Commercial'.*?permissionKeys: \[)(.*?)(\n\t\t\])", re.S)
-              match = finance_pattern.search(text)
-              if not match:
-                  raise SystemExit('Finance/Commercial role block not found')
-              body = match.group(2)
-              body += ",\n\t\t\t'commercial.forecast.view',\n\t\t\t'commercial.forecast.manage',\n\t\t\t'commercial.cash_flow.manage',"
-              text = text[:match.start(2)] + body + text[match.end(2):]
-
-              readonly_pattern = re.compile(r"(name: 'Read Only'.*?permissionKeys: \[)(.*?)(\n\t\t\])", re.S)
-              match = readonly_pattern.search(text)
-              if not match:
-                  raise SystemExit('Read Only role block not found')
-              body = match.group(2)
-              body += ",\n\t\t\t'commercial.forecast.view',"
-              text = text[:match.start(2)] + body + text[match.end(2):]
-          path.write_text(text)
-
-          path = Path('app/src/lib/server/commercial/project-financial-control-service.ts')
-          text = path.read_text()
-          text = text.replace(
-              "\nfunction nextDay(value: Date): Date {\n\treturn new Date(value.getTime() + DAY_MS);\n}\n",
-              "\n",
-          )
-          text = text.replace("const DAY_MS = 86_400_000;\n", "")
-          path.write_text(text)
-          PY
-
-          cd app
           pnpm db:migrate
-          pnpm db:types
-          pnpm format
-          cd ..
+          pnpm db:status
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app database docs
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: generate project financial control outputs"
-            git push origin HEAD:feat/project-financial-control
-          fi
+      - name: Verify migrated application structure
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+        run: |
+          table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
+          fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
+          check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
+          echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
+          test "$table_count" = '409'
+          test "$fk_count" = '944'
+          test "$check_count" = '556'
+
+      - name: Regenerate database-derived Kysely types
+        working-directory: app
+        run: pnpm db:types
+
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts
+
+      - name: Run real-MySQL integration suite
+        working-directory: app
+        run: pnpm test:integration
+
+      - name: Type-check SvelteKit application
+        working-directory: app
+        run: pnpm check
+
+      - name: Install Chromium for component and browser validation
+        working-directory: app
+        run: pnpm exec playwright install chromium
+
+      - name: Run unit and component tests
+        working-directory: app
+        run: pnpm test:unit
+
+      - name: Verify validation leaves no tracked-file drift
+        run: git diff --exit-code
+
+      - name: Build production SvelteKit application
+        working-directory: app
+        run: pnpm build
+
+      - name: Run Playwright browser E2E suite
+        working-directory: app
+        run: pnpm exec playwright test
