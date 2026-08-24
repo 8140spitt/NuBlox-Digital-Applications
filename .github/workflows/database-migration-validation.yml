@@ -96,13 +96,30 @@ jobs:
           pnpm db:types
           python - <<'PY'
           from pathlib import Path
-          path = Path('src/lib/navigation/capability-registry.ts')
-          text = path.read_text()
-          old = "Projects, schedule and Work Kernel exist; portfolio/programme hierarchy and full project-controls depth are next."
-          new = "Portfolio/programme/project hierarchy, projects, schedule and Work Kernel are native; WBS, baseline scheduling, resources, risk and full project-controls depth remain."
-          if old not in text:
-              raise SystemExit('Expected Domain 5 maturity note not found')
-          path.write_text(text.replace(old, new))
+
+          capability_path = Path('src/lib/navigation/capability-registry.ts')
+          capability_text = capability_path.read_text()
+          old_note = "Projects, schedule and Work Kernel exist; portfolio/programme hierarchy and full project-controls depth are next."
+          new_note = "Portfolio/programme/project hierarchy, projects, schedule and Work Kernel are native; WBS, baseline scheduling, resources, risk and full project-controls depth remain."
+          if old_note in capability_text:
+              capability_path.write_text(capability_text.replace(old_note, new_note))
+
+          page_path = Path('src/routes/(app)/projects/+page.svelte')
+          page_text = page_path.read_text()
+          component_import = "\timport ProjectHierarchyAssignments from '$lib/components/projects/ProjectHierarchyAssignments.svelte';\n"
+          if component_import not in page_text:
+              page_text = page_text.replace(
+                  '<script lang="ts">\n',
+                  '<script lang="ts">\n' + component_import + '\n',
+                  1
+              )
+          marker = '\t{/if}\n</section>\n\n{#if !data.canView}'
+          assignment = """\t{/if}\n\n\t{#if data.hierarchy.canManageProgrammes}\n\t\t<ProjectHierarchyAssignments\n\t\t\tprojects={data.projects}\n\t\t\tprogrammes={data.hierarchy.programmes}\n\t\t\t{form}\n\t\t/>\n\t{/if}\n</section>\n\n{#if !data.canView}"""
+          if 'ProjectHierarchyAssignments\n' not in page_text.split('</script>', 1)[1]:
+              if marker not in page_text:
+                  raise SystemExit('Expected project hierarchy insertion marker not found')
+              page_text = page_text.replace(marker, assignment, 1)
+          page_path.write_text(page_text)
           PY
           pnpm format
 
