@@ -63,7 +63,6 @@ jobs:
           from pathlib import Path
           import re
 
-          # Project-context navigation: keep Financials inside the project workspace.
           path = Path('app/src/lib/navigation/app-navigation.ts')
           text = path.read_text()
           anchor = "\tif (hasAnyNamespace(allowed, ['project.resource.']))\n\t\tlinks.push({ id: 'resources', label: 'Resources', href: `${projectRoot}/resources` });\n"
@@ -74,7 +73,6 @@ jobs:
               text = text.replace(anchor, addition, 1)
           path.write_text(text)
 
-          # Capability evidence: project controls now includes governed financial control.
           path = Path('app/src/lib/navigation/capability-registry.ts')
           text = path.read_text()
           old = "Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, projects and Work Kernel are native; risk, earned value and deeper project-controls integration remain."
@@ -92,7 +90,6 @@ jobs:
           )
           path.write_text(text)
 
-          # Fresh-organisation role bootstrap must match migration defaults.
           path = Path('app/src/lib/server/organisations/bootstrap-service.ts')
           text = path.read_text()
           forecast_all = (
@@ -113,7 +110,7 @@ jobs:
               if not match:
                   raise SystemExit('Manager role block not found')
               body = match.group(2)
-              body += "\n\t\t\t'commercial.forecast.view',\n\t\t\t'commercial.forecast.manage',\n\t\t\t'commercial.forecast.approve',\n\t\t\t'commercial.cash_flow.manage',"
+              body += ",\n\t\t\t'commercial.forecast.view',\n\t\t\t'commercial.forecast.manage',\n\t\t\t'commercial.forecast.approve',\n\t\t\t'commercial.cash_flow.manage',"
               text = text[:match.start(2)] + body + text[match.end(2):]
 
               finance_pattern = re.compile(r"(name: 'Finance/Commercial'.*?permissionKeys: \[)(.*?)(\n\t\t\])", re.S)
@@ -121,7 +118,7 @@ jobs:
               if not match:
                   raise SystemExit('Finance/Commercial role block not found')
               body = match.group(2)
-              body += "\n\t\t\t'commercial.forecast.view',\n\t\t\t'commercial.forecast.manage',\n\t\t\t'commercial.cash_flow.manage',"
+              body += ",\n\t\t\t'commercial.forecast.view',\n\t\t\t'commercial.forecast.manage',\n\t\t\t'commercial.cash_flow.manage',"
               text = text[:match.start(2)] + body + text[match.end(2):]
 
               readonly_pattern = re.compile(r"(name: 'Read Only'.*?permissionKeys: \[)(.*?)(\n\t\t\])", re.S)
@@ -129,11 +126,10 @@ jobs:
               if not match:
                   raise SystemExit('Read Only role block not found')
               body = match.group(2)
-              body += "\n\t\t\t'commercial.forecast.view',"
+              body += ",\n\t\t\t'commercial.forecast.view',"
               text = text[:match.start(2)] + body + text[match.end(2):]
           path.write_text(text)
 
-          # Remove private helper that is no longer required by the final service.
           path = Path('app/src/lib/server/commercial/project-financial-control-service.ts')
           text = path.read_text()
           text = text.replace(
