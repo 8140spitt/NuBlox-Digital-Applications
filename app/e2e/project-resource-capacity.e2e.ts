@@ -65,9 +65,13 @@ test('owner staffs a project-plan activity and inspects governed capacity', asyn
 	await expect(page.getByText('NuBlox E2E Owner', { exact: true }).first()).toBeVisible();
 
 	const loadForm = page.locator('form[action="?/createAllocation"]');
-	await loadForm
-		.getByLabel('Activity')
-		.selectOption({ label: /R100 · Install resource-loaded scope/ });
+	const activitySelect = loadForm.getByLabel('Activity');
+	const activityOption = activitySelect.locator('option', {
+		hasText: 'R100 · Install resource-loaded scope'
+	});
+	const activityPublicId = await activityOption.getAttribute('value');
+	expect(activityPublicId).toBeTruthy();
+	await activitySelect.selectOption(activityPublicId ?? '');
 	const resourceSelect = loadForm.getByLabel('Project resource');
 	const resourceOption = resourceSelect.locator('option', { hasText: 'NuBlox E2E Owner' });
 	const resourceAssignmentPublicId = await resourceOption.getAttribute('value');
