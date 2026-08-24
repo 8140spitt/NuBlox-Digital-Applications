@@ -7,7 +7,10 @@ import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
 function kindFrom(value: string | null): ContextKind | null {
-	return value === 'organisation' || value === 'project' || value === 'facility' || value === 'asset'
+	return value === 'organisation' ||
+		value === 'project' ||
+		value === 'facility' ||
+		value === 'asset'
 		? value
 		: null;
 }

@@ -14,7 +14,9 @@ async function signIn(page: import('@playwright/test').Page) {
 	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 
-test('personal contexts are discoverable, favouritable and record recent opens', async ({ page }) => {
+test('personal contexts are discoverable, favouritable and record recent opens', async ({
+	page
+}) => {
 	await signIn(page);
 	await page.goto('/more');
 	await expect(page.getByRole('link', { name: /Contexts/ })).toBeVisible();

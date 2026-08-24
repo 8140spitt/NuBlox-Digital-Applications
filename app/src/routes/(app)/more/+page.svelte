@@ -32,7 +32,9 @@
 		<div>
 			<p class="eyebrow">Personal context</p>
 			<strong>Contexts</strong>
-			<span>Switch quickly between pinned, favourite and recent projects, properties and assets.</span>
+			<span
+				>Switch quickly between pinned, favourite and recent projects, properties and assets.</span
+			>
 		</div>
 		<small>Open contexts →</small>
 	</a>

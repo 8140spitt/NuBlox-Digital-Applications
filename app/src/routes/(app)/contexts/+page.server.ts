@@ -21,7 +21,10 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 }
 
 function contextKind(value: FormDataEntryValue | null): ContextKind | null {
-	return value === 'organisation' || value === 'project' || value === 'facility' || value === 'asset'
+	return value === 'organisation' ||
+		value === 'project' ||
+		value === 'facility' ||
+		value === 'asset'
 		? value
 		: null;
 }
@@ -46,7 +49,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 export const actions: Actions = {
 	preference: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+		if (!actor)
+			return fail(401, { error: 'Authentication and organisation context are required.' });
 
 		const data = await request.formData();
 		const kind = contextKind(data.get('kind'));

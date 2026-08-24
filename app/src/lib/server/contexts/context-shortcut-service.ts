@@ -114,39 +114,33 @@ export class ContextShortcutService {
 				status: organisation.status,
 				href: '/organisation'
 			},
-			...projects.map(
-				(project): ContextCandidate => ({
-					id: keyOf('project', project.publicId),
-					kind: 'project',
-					publicId: project.publicId,
-					label: project.name,
-					reference: project.projectNumber,
-					status: project.status,
-					href: `/projects/${encodeURIComponent(project.publicId)}`
-				})
-			),
-			...facilities.map(
-				(facility): ContextCandidate => ({
-					id: keyOf('facility', facility.publicId),
-					kind: 'facility',
-					publicId: facility.publicId,
-					label: facility.name,
-					reference: facility.facilityCode,
-					status: facility.operationalStatus,
-					href: `/assets?facility=${encodeURIComponent(facility.publicId)}#facility-register`
-				})
-			),
-			...assets.map(
-				(asset): ContextCandidate => ({
-					id: keyOf('asset', asset.publicId),
-					kind: 'asset',
-					publicId: asset.publicId,
-					label: asset.name,
-					reference: asset.assetTag,
-					status: asset.lifecycleStatus,
-					href: `/assets?asset=${encodeURIComponent(asset.publicId)}#asset-register`
-				})
-			)
+			...projects.map((project): ContextCandidate => ({
+				id: keyOf('project', project.publicId),
+				kind: 'project',
+				publicId: project.publicId,
+				label: project.name,
+				reference: project.projectNumber,
+				status: project.status,
+				href: `/projects/${encodeURIComponent(project.publicId)}`
+			})),
+			...facilities.map((facility): ContextCandidate => ({
+				id: keyOf('facility', facility.publicId),
+				kind: 'facility',
+				publicId: facility.publicId,
+				label: facility.name,
+				reference: facility.facilityCode,
+				status: facility.operationalStatus,
+				href: `/assets?facility=${encodeURIComponent(facility.publicId)}#facility-register`
+			})),
+			...assets.map((asset): ContextCandidate => ({
+				id: keyOf('asset', asset.publicId),
+				kind: 'asset',
+				publicId: asset.publicId,
+				label: asset.name,
+				reference: asset.assetTag,
+				status: asset.lifecycleStatus,
+				href: `/assets?asset=${encodeURIComponent(asset.publicId)}#asset-register`
+			}))
 		];
 	}
 
@@ -158,17 +152,15 @@ export class ContextShortcutService {
 		const candidate = (await this.listCandidates(actor)).find(
 			(item) => item.kind === kind && item.publicId === publicId
 		);
-		if (!candidate) throw new RecordNotFoundError('Context is not available in your effective scope.');
+		if (!candidate)
+			throw new RecordNotFoundError('Context is not available in your effective scope.');
 		return candidate;
 	}
 
 	async getCentre(actor: TenantActorContext): Promise<ContextCentre> {
 		const [candidates, preferences] = await Promise.all([
 			this.listCandidates(actor),
-			new ContextPreferenceRepository(this.db).listForMember(
-				actor.organisationId,
-				actor.memberId
-			)
+			new ContextPreferenceRepository(this.db).listForMember(actor.organisationId, actor.memberId)
 		]);
 		const preferenceByContext = new Map(
 			preferences.map((preference) => [keyOf(preference.kind, preference.publicId), preference])
@@ -181,7 +173,10 @@ export class ContextShortcutService {
 			items,
 			pinned: items.filter((item) => item.isPinned).sort(byContextLabel),
 			favourites: items.filter((item) => item.isFavourite).sort(byContextLabel),
-			recent: items.filter((item) => item.lastOpenedAt).sort(byRecent).slice(0, 12)
+			recent: items
+				.filter((item) => item.lastOpenedAt)
+				.sort(byRecent)
+				.slice(0, 12)
 		};
 	}
 

@@ -260,10 +260,7 @@ describe('personal context shortcuts', () => {
 		await createProject(other, 'Secret');
 		await createFacilityAndAsset(other, 'Secret');
 
-		const service = new ContextShortcutService(
-			db,
-			() => new Date('2026-08-24T10:00:00.000Z')
-		);
+		const service = new ContextShortcutService(db, () => new Date('2026-08-24T10:00:00.000Z'));
 		const initial = await service.getCentre(allowed.actor);
 		expect(initial.items.map((item) => item.kind)).toEqual([
 			'organisation',
