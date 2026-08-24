@@ -87,6 +87,16 @@
 			.slice(0, 9);
 	}
 
+	function formatNotificationTime(value: Date | string): string {
+		const date = value instanceof Date ? value : new Date(value);
+		return new Intl.DateTimeFormat('en-GB', {
+			day: 'numeric',
+			month: 'short',
+			hour: '2-digit',
+			minute: '2-digit'
+		}).format(date);
+	}
+
 	async function signOut() {
 		await fetch('/api/tenant/select', { method: 'DELETE' });
 		await authClient.signOut();
@@ -176,14 +186,42 @@
 					</details>
 				{/if}
 
-				<button
-					class="tool-button reserved-tool"
-					type="button"
-					disabled
-					title="The notification centre will activate with the shared notification slice."
-				>
-					Notifications
-				</button>
+				<details class="tool-menu notification-menu">
+					<summary>
+						Notifications
+						{#if data.notifications.length}
+							<span class="notification-count" title="Recent notifications"
+								>{data.notifications.length}</span
+							>
+						{/if}
+					</summary>
+					<div class="tool-popover notification-popover">
+						<div class="notification-heading">
+							<div>
+								<p class="popover-title">Notifications</p>
+								<small>Recent governed Work Kernel activity</small>
+							</div>
+							<a href="/my-work">Open My work</a>
+						</div>
+						<div class="notification-list" aria-live="polite">
+							{#each data.notifications as notification (notification.eventPublicId)}
+								<a class="notification-item" href={notification.href}>
+									<span class="notification-kind">{notification.kind}</span>
+									<strong>{notification.title}</strong>
+									<small>{notification.message}</small>
+									<span class="notification-meta">
+										<span>{notification.sourceDomain}</span>
+										<time datetime={notification.occurredAt.toISOString()}
+											>{formatNotificationTime(notification.occurredAt)}</time
+										>
+									</span>
+								</a>
+							{:else}
+								<p class="notification-empty">No recent Work Kernel notifications.</p>
+							{/each}
+						</div>
+					</div>
+				</details>
 			</div>
 
 			<details class="account-menu">
@@ -459,10 +497,19 @@
 		color: white;
 	}
 
-	.reserved-tool {
-		color: var(--nb-text-muted);
-		opacity: 0.7;
-		cursor: not-allowed;
+	.notification-count {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.25rem;
+		height: 1.25rem;
+		margin-left: 0.4rem;
+		padding: 0 0.32rem;
+		border-radius: 999px;
+		background: var(--nb-ink);
+		color: white;
+		font-size: 0.65rem;
+		font-weight: 850;
 	}
 
 	.tool-popover,
@@ -549,6 +596,102 @@
 
 	.popover-title {
 		padding: 0.35rem 0.65rem 0;
+	}
+
+	.notification-popover {
+		width: min(26rem, calc(100vw - 2rem));
+		padding: 0.65rem;
+	}
+
+	.notification-heading {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 1rem;
+		padding: 0.15rem 0.65rem 0.6rem;
+		border-bottom: 1px solid var(--nb-border);
+	}
+
+	.notification-heading .popover-title {
+		padding: 0;
+		margin-bottom: 0.12rem;
+	}
+
+	.notification-heading small {
+		color: var(--nb-text-muted);
+		font-size: 0.7rem;
+	}
+
+	.notification-heading a {
+		flex: 0 0 auto;
+		color: var(--nb-blue);
+		font-size: 0.72rem;
+		font-weight: 750;
+		text-decoration: none;
+	}
+
+	.notification-list {
+		display: grid;
+		gap: 0.15rem;
+		max-height: min(65vh, 30rem);
+		overflow-y: auto;
+		padding-top: 0.4rem;
+	}
+
+	.notification-item {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.16rem 0.55rem;
+		padding: 0.7rem 0.65rem;
+		border-radius: var(--nb-radius-sm);
+		color: var(--nb-text);
+		text-decoration: none;
+	}
+
+	.notification-item:hover,
+	.notification-item:focus-visible {
+		background: var(--nb-surface-muted);
+	}
+
+	.notification-kind {
+		grid-row: 1 / 4;
+		align-self: start;
+		padding: 0.18rem 0.38rem;
+		border-radius: 999px;
+		background: var(--nb-surface-muted);
+		color: var(--nb-text-muted);
+		font-size: 0.58rem;
+		font-weight: 850;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+	}
+
+	.notification-item strong {
+		font-size: 0.78rem;
+		line-height: 1.3;
+	}
+
+	.notification-item > small {
+		color: var(--nb-text-muted);
+		font-size: 0.7rem;
+		line-height: 1.4;
+	}
+
+	.notification-meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+		color: var(--nb-text-muted);
+		font-size: 0.63rem;
+		text-transform: capitalize;
+	}
+
+	.notification-empty {
+		margin: 0;
+		padding: 1rem 0.65rem;
+		color: var(--nb-text-muted);
+		font-size: 0.78rem;
 	}
 
 	.account-menu > summary {
