@@ -58,6 +58,11 @@ async function cleanup(): Promise<void> {
 			.where('project_id', 'in', projectIds)
 			.execute();
 		await db.deleteFrom('project_plan_activities').where('project_id', 'in', projectIds).execute();
+		await db
+			.updateTable('project_wbs_nodes')
+			.set({ parent_wbs_node_id: null })
+			.where('project_id', 'in', projectIds)
+			.execute();
 		await db.deleteFrom('project_wbs_nodes').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('audit_events').where('project_id', 'in', projectIds).execute();
 		await db.deleteFrom('project_member_roles').where('project_id', 'in', projectIds).execute();
