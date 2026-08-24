@@ -11,11 +11,21 @@
 		<p class="eyebrow">Workspace directory</p>
 		<h1>More workspaces</h1>
 		<p>
-			Specialist business functions live here instead of permanently occupying the sidebar. Search
-			from the top bar reaches the same directory from anywhere in NuBlox.
+			Specialist business functions live here instead of permanently occupying the sidebar. Use
+			enterprise search to find authorised records across NuBlox, or open a specialist workspace
+			below.
 		</p>
 	</div>
 </section>
+
+<a class="enterprise-search-card" href="/search">
+	<div>
+		<p class="eyebrow">Operating-system utility</p>
+		<strong>Enterprise search</strong>
+		<span>Find authorised projects, controlled information and Work Kernel records.</span>
+	</div>
+	<small>Search NuBlox →</small>
+</a>
 
 <div class="directory">
 	{#each data.workspaceDirectory as section (section.id)}
@@ -61,6 +71,45 @@
 	.page-header p:last-child {
 		color: var(--nb-text-muted);
 		line-height: 1.55;
+	}
+
+	.enterprise-search-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 1rem;
+		padding: 1.1rem 1.25rem;
+		border: 1px solid var(--nb-border-strong);
+		border-radius: var(--nb-radius-md);
+		background: var(--nb-white);
+		color: var(--nb-text);
+		text-decoration: none;
+	}
+
+	.enterprise-search-card:hover,
+	.enterprise-search-card:focus-visible {
+		background: var(--nb-surface-muted);
+	}
+
+	.enterprise-search-card div {
+		display: grid;
+		gap: 0.25rem;
+	}
+
+	.enterprise-search-card strong {
+		font-size: 1.05rem;
+	}
+
+	.enterprise-search-card span {
+		color: var(--nb-text-muted);
+		font-size: 0.82rem;
+	}
+
+	.enterprise-search-card small {
+		flex: 0 0 auto;
+		color: var(--nb-blue);
+		font-weight: 750;
 	}
 
 	.directory {
@@ -117,5 +166,12 @@
 		align-self: end;
 		color: var(--nb-blue);
 		font-weight: 750;
+	}
+
+	@media (max-width: 640px) {
+		.enterprise-search-card {
+			align-items: flex-start;
+			flex-direction: column;
+		}
 	}
 </style>
