@@ -10,6 +10,7 @@ import {
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import { NotificationService } from '$lib/server/notifications/notification-service';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 
@@ -48,6 +49,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	]);
 	if (!organisation) throw redirect(303, '/select-organisation');
 
+	const notifications = await new NotificationService(db).listForMember(actorContext, 12);
 	const requestedProjectPublicId = projectPublicIdFromUrl(url);
 	let projectContext: {
 		publicId: string;
@@ -88,6 +90,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		navigation: resolveAppNavigation(allowedPermissionKeys),
 		workspaceDirectory: resolveWorkspaceDirectory(allowedPermissionKeys),
 		quickActions: resolveQuickActions(allowedPermissionKeys),
+		notifications,
 		projectContext
 	};
 };

@@ -19,6 +19,16 @@ test('My Work exposes the governed Work Kernel without granting read-only mutati
 }) => {
 	await signIn(page);
 
+	const notificationMenu = page.locator('details.notification-menu');
+	await expect(notificationMenu.locator('summary')).toContainText('Notifications');
+	await notificationMenu.locator('summary').click();
+	await expect(
+		page.getByText('Recent governed Work Kernel activity', { exact: true })
+	).toBeVisible();
+	await expect(
+		notificationMenu.getByRole('link', { name: 'Open My work', exact: true })
+	).toBeVisible();
+
 	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
 	await primaryNavigation.getByRole('link', { name: 'My work', exact: true }).click();
 	await expect(page).toHaveURL(/\/my-work$/);
@@ -29,6 +39,8 @@ test('My Work exposes the governed Work Kernel without granting read-only mutati
 	).toBeVisible();
 	await expect(page.locator('form[action="?/transitionWork"]')).toHaveCount(0);
 	await expect(page.locator('form[action="?/decideWork"]')).toHaveCount(0);
-	await expect(page.getByRole('heading', { name: 'Continue in a project', level: 2 })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Continue in a project', level: 2 })
+	).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Work queues', level: 2 })).toBeVisible();
 });

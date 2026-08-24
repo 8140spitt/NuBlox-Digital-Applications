@@ -174,18 +174,29 @@ For each migration:
 - add end-to-end integration tests;
 - avoid dual mutable status sources.
 
-## 8. Notification centre sequence
+## 8. Notification centre
 
-The application shell currently reserves a Notifications control. It should activate only after notification state is derived from durable business events.
+The application-shell Notifications control is activated from canonical `outbox_events`; route-specific notification state is not introduced.
 
-The next package should add:
+The first in-app projection deliberately remains read-only and derives recent notification candidates on demand:
 
-- notification subscriptions/routing policy;
-- per-member notification inbox state;
-- read/dismiss semantics;
-- Work Kernel event consumers;
-- notification counts in the app shell;
-- deep links back to the canonical source/work item.
+- `work.item.assigned` routes a notification to the directly assigned member;
+- `work.item.status_changed` routes relevant activity to the work creator and active direct member assignees;
+- `work.item.decision_recorded` routes relevant decision evidence to the work creator and active direct member assignees;
+- organisation ownership is enforced in the projection query;
+- `work.view` / `work.manage` permission decisions are re-evaluated for organisation or project scope before shell data is returned;
+- the shell links notification activity back to the governed My Work workspace.
+
+The number shown in the shell is a **recent-event count**, not an unread count. This avoids inventing read semantics before durable member inbox state exists.
+
+The next notification package should add durable, idempotent delivery state rather than mutating `outbox_events` into a user inbox. That package should cover:
+
+- per-member notification inbox/read/dismiss state;
+- subscription and routing preferences;
+- notification deduplication at the delivery boundary;
+- asynchronous email/digest delivery;
+- overdue reminders and escalation policy;
+- deeper source-record links as domains adopt canonical Work Kernel linkage.
 
 ## 9. Definition of done for this foundation
 
