@@ -42,7 +42,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   complete-system-validation:
@@ -71,6 +71,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/work-kernel-notification-centre
 
       - uses: pnpm/action-setup@v4
         with:
@@ -91,11 +93,19 @@ jobs:
         working-directory: app
         run: pnpm audit --prod --audit-level moderate
 
-      - name: Capture canonical formatter output
+      - name: Apply canonical formatting to feature branch
         working-directory: app
+        run: pnpm format
+
+      - name: Commit canonical formatting
         run: |
-          pnpm format
-          git diff -- .
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          if ! git diff --cached --quiet; then
+            git commit -m "Apply canonical formatting"
+            git push origin HEAD:feat/work-kernel-notification-centre
+          fi
           exit 1
 
       - name: Apply authoritative migration stream
