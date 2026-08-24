@@ -43,7 +43,8 @@
 		<div>
 			<p class="eyebrow">Product architecture</p>
 			<strong>Capability map</strong>
-			<span>Inspect the 19 native domains, implementation maturity and your authorised routes.</span>
+			<span>Inspect the 19 native domains, implementation maturity and your authorised routes.</span
+			>
 		</div>
 		<small>View capabilities →</small>
 	</a>

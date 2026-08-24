@@ -73,7 +73,11 @@
 							{/each}
 						</div>
 					{:else}
-						<p>{domain.maturity === 'planned' ? 'No live workspace yet.' : 'No route in your effective permission scope.'}</p>
+						<p>
+							{domain.maturity === 'planned'
+								? 'No live workspace yet.'
+								: 'No route in your effective permission scope.'}
+						</p>
 					{/if}
 				</div>
 			</div>
