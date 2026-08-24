@@ -2217,6 +2217,20 @@ export interface PermitTypes {
   name: string;
 }
 
+export interface Portfolios {
+  archived_at: Date | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  description: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  name: string;
+  organisation_id: string;
+  portfolio_number: string;
+  public_id: string;
+  updated_at: Generated<Date>;
+}
+
 export interface ProcurementAwardItems {
   awarded_quantity: Decimal;
   awarded_unit_rate: Decimal;
@@ -2325,6 +2339,21 @@ export interface ProfessionalDomains {
   id: Generated<string>;
   is_active: Generated<number>;
   name: string;
+  updated_at: Generated<Date>;
+}
+
+export interface Programmes {
+  archived_at: Date | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  description: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  name: string;
+  organisation_id: string;
+  portfolio_id: string | null;
+  programme_number: string;
+  public_id: string;
   updated_at: Generated<Date>;
 }
 
@@ -2593,6 +2622,7 @@ export interface Projects {
   id: Generated<string>;
   name: string;
   owning_organisation_id: string;
+  programme_id: string | null;
   project_number: string;
   public_id: string;
   started_on: Date | null;
@@ -4473,6 +4503,7 @@ export interface DB {
   permit_information_links: PermitInformationLinks;
   permit_types: PermitTypes;
   permits_to_work: PermitsToWork;
+  portfolios: Portfolios;
   procurement_award_items: ProcurementAwardItems;
   procurement_awards: ProcurementAwards;
   procurement_comparison_returns: ProcurementComparisonReturns;
@@ -4482,6 +4513,7 @@ export interface DB {
   procurement_package_types: ProcurementPackageTypes;
   procurement_packages: ProcurementPackages;
   professional_domains: ProfessionalDomains;
+  programmes: Programmes;
   project_budget_adjustment_items: ProjectBudgetAdjustmentItems;
   project_budget_adjustments: ProjectBudgetAdjustments;
   project_budget_line_estimate_sources: ProjectBudgetLineEstimateSources;

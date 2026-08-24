@@ -4,6 +4,10 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import {
+	ProjectHierarchyRepository,
+	type ProjectHierarchyContext
+} from './project-hierarchy-repository';
+import {
 	ProjectRepository,
 	type ProjectLifecycleStatus,
 	type ProjectParticipantOrganisation,
@@ -15,14 +19,19 @@ import {
 	type CreateProjectInput
 } from './project-service';
 
+export type ProjectListItem = ProjectRecord & {
+	hierarchy: ProjectHierarchyContext | null;
+};
+
 export type ProjectListAccess = {
 	canView: boolean;
 	canCreate: boolean;
-	projects: ProjectRecord[];
+	projects: ProjectListItem[];
 };
 
 export type ProjectWorkspace = {
 	project: ProjectRecord;
+	hierarchy: ProjectHierarchyContext | null;
 	participants: ProjectParticipantOrganisation[];
 	canManageLifecycle: boolean;
 	allowedTransitions: readonly ProjectLifecycleStatus[];
@@ -86,13 +95,24 @@ export class ProjectWorkspaceService {
 		]);
 		const canView = decisions.get('project.view')?.allowed ?? false;
 		const canCreate = decisions.get('project.create')?.allowed ?? false;
+		if (!canView) return { canView, canCreate, projects: [] };
+
+		const projects = await new ProjectRepository(this.db).listForMember(
+			actor.organisationId,
+			actor.memberId
+		);
+		const contexts = await new ProjectHierarchyRepository(this.db).listProjectContexts(
+			projects.map((project) => project.id)
+		);
+		const hierarchyByProjectId = new Map(contexts.map((context) => [context.projectId, context]));
 
 		return {
 			canView,
 			canCreate,
-			projects: canView
-				? await new ProjectRepository(this.db).listForMember(actor.organisationId, actor.memberId)
-				: []
+			projects: projects.map((project) => ({
+				...project,
+				hierarchy: hierarchyByProjectId.get(project.id) ?? null
+			}))
 		};
 	}
 
@@ -156,9 +176,13 @@ export class ProjectWorkspaceService {
 			{ projectId: project.id }
 		);
 		const isOwningOrganisation = project.owningOrganisationId === actor.organisationId;
+		const [hierarchy] = await new ProjectHierarchyRepository(this.db).listProjectContexts([
+			project.id
+		]);
 
 		return {
 			project,
+			hierarchy: hierarchy ?? null,
 			participants: await new ProjectRepository(this.db).listActiveParticipantOrganisations(
 				project.id
 			),

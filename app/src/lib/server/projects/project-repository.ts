@@ -6,6 +6,7 @@ export type ProjectLifecycleStatus =
 export type ProjectRecord = {
 	id: string;
 	owningOrganisationId: string;
+	programmeId: string | null;
 	publicId: string;
 	projectNumber: string;
 	name: string;
@@ -37,6 +38,7 @@ export type InsertProject = {
 function mapProject(row: {
 	id: string;
 	owning_organisation_id: string;
+	programme_id: string | null;
 	public_id: string;
 	project_number: string;
 	name: string;
@@ -50,6 +52,7 @@ function mapProject(row: {
 	return {
 		id: row.id,
 		owningOrganisationId: row.owning_organisation_id,
+		programmeId: row.programme_id,
 		publicId: row.public_id,
 		projectNumber: row.project_number,
 		name: row.name,
@@ -65,6 +68,7 @@ function mapProject(row: {
 const PROJECT_COLUMNS = [
 	'id',
 	'owning_organisation_id',
+	'programme_id',
 	'public_id',
 	'project_number',
 	'name',
@@ -117,6 +121,7 @@ export class ProjectRepository {
 			.select([
 				'p.id as id',
 				'p.owning_organisation_id as owning_organisation_id',
+				'p.programme_id as programme_id',
 				'p.public_id as public_id',
 				'p.project_number as project_number',
 				'p.name as name',
@@ -151,6 +156,7 @@ export class ProjectRepository {
 			.select([
 				'p.id as id',
 				'p.owning_organisation_id as owning_organisation_id',
+				'p.programme_id as programme_id',
 				'p.public_id as public_id',
 				'p.project_number as project_number',
 				'p.name as name',
@@ -186,6 +192,7 @@ export class ProjectRepository {
 			.select([
 				'p.id as id',
 				'p.owning_organisation_id as owning_organisation_id',
+				'p.programme_id as programme_id',
 				'p.public_id as public_id',
 				'p.project_number as project_number',
 				'p.name as name',
