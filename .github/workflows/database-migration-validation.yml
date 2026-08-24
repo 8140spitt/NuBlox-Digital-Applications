@@ -120,6 +120,50 @@ jobs:
                   raise SystemExit('Expected project hierarchy insertion marker not found')
               page_text = page_text.replace(marker, assignment, 1)
           page_path.write_text(page_text)
+
+          bootstrap_path = Path('src/lib/server/organisations/bootstrap-service.ts')
+          bootstrap_text = bootstrap_path.read_text()
+          core_marker = "\t'project.manage',\n\t'project.lifecycle.manage',"
+          core_replacement = "\t'project.manage',\n\t'project.portfolio.view',\n\t'project.portfolio.manage',\n\t'project.programme.view',\n\t'project.programme.manage',\n\t'project.lifecycle.manage',"
+          if bootstrap_text.count(core_marker) == 2:
+              bootstrap_text = bootstrap_text.replace(core_marker, core_replacement)
+          elif bootstrap_text.count("\t'project.portfolio.manage',") != 2:
+              raise SystemExit('Expected bootstrap project-core markers not found')
+
+          manager_marker = "\t\t\t'project.create',\n\t\t\t'project.view',\n\t\t\t'project.lifecycle.manage',"
+          manager_replacement = "\t\t\t'project.create',\n\t\t\t'project.view',\n\t\t\t'project.portfolio.view',\n\t\t\t'project.portfolio.manage',\n\t\t\t'project.programme.view',\n\t\t\t'project.programme.manage',\n\t\t\t'project.lifecycle.manage',"
+          if manager_marker in bootstrap_text:
+              bootstrap_text = bootstrap_text.replace(manager_marker, manager_replacement, 1)
+
+          finance_marker = "\t\t\t'project.view',\n\t\t\t'crm.view',\n\t\t\t'commercial.view',"
+          finance_replacement = "\t\t\t'project.view',\n\t\t\t'project.portfolio.view',\n\t\t\t'project.programme.view',\n\t\t\t'crm.view',\n\t\t\t'commercial.view',"
+          if finance_marker in bootstrap_text:
+              bootstrap_text = bootstrap_text.replace(finance_marker, finance_replacement, 1)
+
+          member_read_marker = "permissionKeys: ['project.view', 'crm.view']"
+          member_read_replacement = "permissionKeys: ['project.view', 'project.portfolio.view', 'project.programme.view', 'crm.view']"
+          count = bootstrap_text.count(member_read_marker)
+          if count == 2:
+              bootstrap_text = bootstrap_text.replace(member_read_marker, member_read_replacement)
+          elif bootstrap_text.count("'project.programme.view', 'crm.view'") < 2:
+              raise SystemExit('Expected Member/Professional and Read Only role markers not found')
+          bootstrap_path.write_text(bootstrap_text)
+
+          service_path = Path('src/lib/server/projects/project-hierarchy-service.ts')
+          service_text = service_path.read_text()
+          service_text = service_text.replace(
+              "import { ensureProjectHierarchyStandardRoleDefaults } from './project-hierarchy-role-defaults';\n",
+              ''
+          )
+          service_text = service_text.replace(
+              '\t\tawait ensureProjectHierarchyStandardRoleDefaults(this.db, actor.organisationId);\n',
+              ''
+          )
+          service_path.write_text(service_text)
+
+          defaults_path = Path('src/lib/server/projects/project-hierarchy-role-defaults.ts')
+          if defaults_path.exists():
+              defaults_path.unlink()
           PY
           pnpm format
 
