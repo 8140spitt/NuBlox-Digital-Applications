@@ -45,7 +45,14 @@ test('read-only member can navigate context-first workspaces without receiving m
 		).toHaveCount(0);
 	}
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
-	await expect(page.getByRole('button', { name: 'Notifications' })).toBeDisabled();
+
+	const notificationMenu = page.locator('details.notification-menu');
+	await expect(notificationMenu.locator('summary')).toContainText('Notifications');
+	await notificationMenu.locator('summary').click();
+	await expect(
+		page.getByText('Recent governed Work Kernel activity', { exact: true })
+	).toBeVisible();
+	await expect(notificationMenu.getByRole('link', { name: 'Open My work', exact: true })).toBeVisible();
 
 	await page.goto('/more');
 	await expect(page.getByRole('heading', { name: 'More workspaces', level: 1 })).toBeVisible();
