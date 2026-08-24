@@ -40,12 +40,13 @@ test('owner procures, commits, values and controls project cost through the brow
 	const variationTitle = `Additional supports ${suffix}`;
 
 	await page.goto('/projects#create-project');
-	await page.getByLabel('Project number').fill(projectNumber);
-	await page.getByLabel('Project name').fill(projectName);
-	await page
+	const projectForm = page.locator('form[action="?/create"]');
+	await projectForm.getByLabel('Project number').fill(projectNumber);
+	await projectForm.getByLabel('Project name').fill(projectName);
+	await projectForm
 		.getByLabel(/Description/)
 		.fill('Browser acceptance project for procurement and project commercial control.');
-	await page.getByRole('button', { name: 'Create project' }).click();
+	await projectForm.getByRole('button', { name: 'Create project' }).click();
 	await expect(page).toHaveURL(/\/projects\/[0-9a-f-]+$/i);
 	const projectPublicId = new URL(page.url()).pathname.split('/').at(-1)!;
 
