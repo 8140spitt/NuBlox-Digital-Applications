@@ -25,7 +25,7 @@ function returnTo(pathname: string): string {
 function projectPublicIdFromUrl(url: URL): string | null {
 	const selected = url.searchParams.get('project')?.trim();
 	if (selected) return selected;
-	const match = /^\/projects\/([^/]+)$/.exec(url.pathname);
+	const match = /^\/projects\/([^/]+)(?:\/.*)?$/.exec(url.pathname);
 	return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 

@@ -22,6 +22,8 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'project.plan.view',
 	'project.plan.manage',
 	'project.plan.baseline.manage',
+	'project.resource.view',
+	'project.resource.manage',
 	'project.lifecycle.manage',
 	'project.participant.manage',
 	'project.team.manage',
@@ -170,6 +172,8 @@ const OWNER_CORE_KEYS = [
 	'project.plan.view',
 	'project.plan.manage',
 	'project.plan.baseline.manage',
+	'project.resource.view',
+	'project.resource.manage',
 	'project.lifecycle.manage',
 	'project.participant.manage',
 	'project.team.manage',
@@ -223,6 +227,8 @@ const STANDARD_ROLES = [
 			'project.plan.view',
 			'project.plan.manage',
 			'project.plan.baseline.manage',
+			'project.resource.view',
+			'project.resource.manage',
 			'project.lifecycle.manage',
 			'project.participant.manage',
 			'project.team.manage',
@@ -241,6 +247,7 @@ const STANDARD_ROLES = [
 			'project.portfolio.view',
 			'project.programme.view',
 			'project.plan.view',
+			'project.resource.view',
 			'crm.view',
 			'commercial.view',
 			'commercial.estimate.manage',
@@ -288,6 +295,7 @@ const STANDARD_ROLES = [
 			'project.portfolio.view',
 			'project.programme.view',
 			'project.plan.view',
+			'project.resource.view',
 			'crm.view'
 		]
 	},
@@ -304,6 +312,7 @@ const STANDARD_ROLES = [
 			'project.portfolio.view',
 			'project.programme.view',
 			'project.plan.view',
+			'project.resource.view',
 			'crm.view'
 		]
 	}
