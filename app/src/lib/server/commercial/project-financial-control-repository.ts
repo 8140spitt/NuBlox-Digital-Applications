@@ -192,7 +192,7 @@ export class ProjectFinancialControlRepository {
 		projectId: string,
 		cutoff: Date
 	): Promise<BudgetAdjustmentFact[]> {
-		return this.db
+		const rows = await this.db
 			.selectFrom('project_budget_adjustments as adjustment')
 			.innerJoin('project_budgets as budget', (join) =>
 				join
@@ -215,6 +215,13 @@ export class ProjectFinancialControlRepository {
 			.where('adjustment.lifecycle_status', '=', 'approved')
 			.where('adjustment.effective_on', '<=', cutoff)
 			.execute();
+
+		return rows.map((row) => {
+			if (!row.effectiveOn) {
+				throw new Error('Approved project budget adjustment is missing its effective date.');
+			}
+			return { ...row, effectiveOn: row.effectiveOn };
+		});
 	}
 
 	async listIssuedCommitmentItems(
