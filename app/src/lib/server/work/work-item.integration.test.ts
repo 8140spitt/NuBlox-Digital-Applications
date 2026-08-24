@@ -287,6 +287,23 @@ describe('NuBlox Work Kernel', () => {
 		).rejects.toBeInstanceOf(TenantAccessError);
 	});
 
+	it('does not let work.manage bypass an explicit granular approval deny', async () => {
+		const fixture = await createFixture();
+		await setPermission(fixture, 'work.manage', 'allow');
+		await setPermission(fixture, 'work.approve', 'deny');
+
+		const service = new WorkItemService(db);
+		const created = await service.create(fixture.actorA, {
+			kind: 'approval',
+			sourceDomain: 'commercial',
+			title: 'Controlled approval permission test'
+		});
+
+		await expect(
+			service.recordDecision(fixture.actorA, created.publicId, 'approved')
+		).rejects.toBeInstanceOf(TenantAccessError);
+	});
+
 	it('keeps cross-organisation assignment closed until participant validation is activated', async () => {
 		const fixture = await createFixture();
 		await allow(fixture, 'work.create', 'work.assign');
