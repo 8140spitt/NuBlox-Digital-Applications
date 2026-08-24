@@ -15,6 +15,10 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'project.create',
 	'project.view',
 	'project.manage',
+	'project.portfolio.view',
+	'project.portfolio.manage',
+	'project.programme.view',
+	'project.programme.manage',
 	'project.lifecycle.manage',
 	'project.participant.manage',
 	'project.team.manage',
@@ -156,6 +160,10 @@ const OWNER_CORE_KEYS = [
 	'project.create',
 	'project.view',
 	'project.manage',
+	'project.portfolio.view',
+	'project.portfolio.manage',
+	'project.programme.view',
+	'project.programme.manage',
 	'project.lifecycle.manage',
 	'project.participant.manage',
 	'project.team.manage',
@@ -202,6 +210,10 @@ const STANDARD_ROLES = [
 			'member.manage',
 			'project.create',
 			'project.view',
+			'project.portfolio.view',
+			'project.portfolio.manage',
+			'project.programme.view',
+			'project.programme.manage',
 			'project.lifecycle.manage',
 			'project.participant.manage',
 			'project.team.manage',
@@ -217,6 +229,8 @@ const STANDARD_ROLES = [
 			'Commercial and finance role template with delegated commercial sales-document and accounts-receivable authority.',
 		permissionKeys: [
 			'project.view',
+			'project.portfolio.view',
+			'project.programme.view',
 			'crm.view',
 			'commercial.view',
 			'commercial.estimate.manage',
@@ -259,7 +273,7 @@ const STANDARD_ROLES = [
 	{
 		name: 'Member/Professional',
 		description: 'General professional member role template.',
-		permissionKeys: ['project.view', 'crm.view']
+		permissionKeys: ['project.view', 'project.portfolio.view', 'project.programme.view', 'crm.view']
 	},
 	{
 		name: 'Field Worker',
@@ -269,7 +283,7 @@ const STANDARD_ROLES = [
 	{
 		name: 'Read Only',
 		description: 'Read-only role template; domain read permissions are assigned explicitly.',
-		permissionKeys: ['project.view', 'crm.view']
+		permissionKeys: ['project.view', 'project.portfolio.view', 'project.programme.view', 'crm.view']
 	}
 ] as const;
 

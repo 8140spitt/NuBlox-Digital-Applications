@@ -16,7 +16,6 @@ import {
 	type ProgrammeRecord,
 	type ProjectHierarchyContext
 } from './project-hierarchy-repository';
-import { ensureProjectHierarchyStandardRoleDefaults } from './project-hierarchy-role-defaults';
 import { ProjectRepository } from './project-repository';
 
 export type ProjectHierarchyAccess = {
@@ -98,7 +97,6 @@ export class ProjectHierarchyService {
 			this.db
 		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
-		await ensureProjectHierarchyStandardRoleDefaults(this.db, actor.organisationId);
 	}
 
 	async listHierarchy(actor: TenantActorContext): Promise<ProjectHierarchyAccess> {
