@@ -28,6 +28,7 @@ test('My Work exposes the governed Work Kernel without granting read-only mutati
 		page.getByText('No active Work Kernel items are assigned directly to you.', { exact: true })
 	).toBeVisible();
 	await expect(page.locator('form[action="?/transitionWork"]')).toHaveCount(0);
+	await expect(page.locator('form[action="?/decideWork"]')).toHaveCount(0);
 	await expect(page.getByRole('heading', { name: 'Continue in a project', level: 2 })).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Work queues', level: 2 })).toBeVisible();
 });
