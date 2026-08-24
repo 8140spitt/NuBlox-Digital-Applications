@@ -11,7 +11,10 @@ import {
 	TenantAccessError
 } from '$lib/server/kernel/errors';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
-import type { WorkItemStatus } from '$lib/server/work/work-item-repository';
+import type {
+	WorkItemDecision,
+	WorkItemStatus
+} from '$lib/server/work/work-item-repository';
 import { WorkItemService, WorkKernelValidationError } from '$lib/server/work/work-item-service';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -30,6 +33,18 @@ function text(data: FormData, name: string): string {
 
 function requestedTransition(value: string): WorkItemStatus | null {
 	if (value === 'in_progress' || value === 'blocked' || value === 'completed') return value;
+	return null;
+}
+
+function requestedDecision(value: string): WorkItemDecision | null {
+	if (
+		value === 'approved' ||
+		value === 'rejected' ||
+		value === 'returned' ||
+		value === 'acknowledged'
+	) {
+		return value;
+	}
 	return null;
 }
 
@@ -82,7 +97,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const permissions = new PermissionService(db);
 	const scopeDecisions = new Map<
 		string,
-		{ canView: boolean; canProgress: boolean; canComplete: boolean }
+		{ canView: boolean; canProgress: boolean; canComplete: boolean; canApprove: boolean }
 	>();
 	const scopeIds = [...new Set(assignedWork.map((item) => item.projectId ?? 'organisation'))];
 
@@ -90,15 +105,17 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		scopeIds.map(async (scopeId) => {
 			const projectId = scopeId === 'organisation' ? null : scopeId;
 			const scope = projectId ? { projectId } : {};
-			const [view, progress, complete] = await Promise.all([
+			const [view, progress, complete, approve] = await Promise.all([
 				permissions.decideWithUmbrella(actor, 'work.view', 'work.manage', scope),
 				permissions.decideWithUmbrella(actor, 'work.progress', 'work.manage', scope),
-				permissions.decideWithUmbrella(actor, 'work.complete', 'work.manage', scope)
+				permissions.decideWithUmbrella(actor, 'work.complete', 'work.manage', scope),
+				permissions.decideWithUmbrella(actor, 'work.approve', 'work.manage', scope)
 			]);
 			scopeDecisions.set(scopeId, {
 				canView: view.allowed,
 				canProgress: progress.allowed,
-				canComplete: complete.allowed
+				canComplete: complete.allowed,
+				canApprove: approve.allowed
 			});
 		})
 	);
@@ -112,6 +129,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				...item,
 				canProgress: decision.canProgress,
 				canComplete: decision.canComplete,
+				canApprove: decision.canApprove,
 				isOverdue: Boolean(item.dueAt && item.dueAt.getTime() < now)
 			};
 		})
@@ -159,6 +177,36 @@ export const actions: Actions = {
 				});
 			}
 			if (error instanceof InvalidLifecycleTransitionError || error instanceof WorkKernelValidationError) {
+				return fail(400, { workError: error.message });
+			}
+			throw error;
+		}
+
+		throw redirect(303, '/my-work?workUpdated=1');
+	},
+
+	decideWork: async ({ request, locals }) => {
+		const actor = actorFromLocals(locals);
+		if (!actor) return fail(401, { workError: 'Authentication and organisation context are required.' });
+
+		const data = await request.formData();
+		const workItemPublicId = text(data, 'workItemPublicId');
+		const decision = requestedDecision(text(data, 'decision'));
+		const note = text(data, 'note') || null;
+		if (!/^[0-9a-f-]{36}$/i.test(workItemPublicId) || !decision) {
+			return fail(400, { workError: 'The requested work decision is invalid.' });
+		}
+
+		try {
+			await new WorkItemService(getDatabase()).recordDecision(actor, workItemPublicId, decision, note);
+		} catch (error) {
+			if (error instanceof TenantAccessError) {
+				return fail(403, { workError: 'You are not authorised to record this work decision.' });
+			}
+			if (error instanceof RecordNotFoundError) {
+				return fail(404, { workError: 'The work item is no longer available in this organisation.' });
+			}
+			if (error instanceof WorkKernelValidationError) {
 				return fail(400, { workError: error.message });
 			}
 			throw error;
