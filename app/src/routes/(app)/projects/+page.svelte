@@ -9,6 +9,10 @@
 		cancelled: 'Cancelled',
 		archived: 'Archived'
 	};
+
+	function programmesForPortfolio(portfolioId: string) {
+		return data.hierarchy.programmes.filter((programme) => programme.portfolioId === portfolioId);
+	}
 </script>
 
 <svelte:head>
@@ -72,6 +76,163 @@
 	</section>
 {/if}
 
+<section id="project-hierarchy" class="hierarchy-panel" aria-labelledby="hierarchy-heading">
+	<div class="section-heading">
+		<div>
+			<p class="eyebrow">Project controls</p>
+			<h2 id="hierarchy-heading">Portfolio & programme structure</h2>
+			<p class="muted">
+				Govern organisation-owned projects through a stable Portfolio → Programme → Project
+				hierarchy. Projects may remain standalone where no programme is required.
+			</p>
+		</div>
+		<div class="hierarchy-counts" aria-label="Hierarchy counts">
+			<span><strong>{data.hierarchy.portfolios.length}</strong> portfolios</span>
+			<span><strong>{data.hierarchy.programmes.length}</strong> programmes</span>
+		</div>
+	</div>
+
+	{#if data.hierarchy.canViewPortfolios || data.hierarchy.canViewProgrammes}
+		<div class="hierarchy-tree">
+			{#each data.hierarchy.portfolios as portfolio}
+				<article class="portfolio-card">
+					<div class="hierarchy-card-heading">
+						<div>
+							<small>{portfolio.portfolioNumber}</small>
+							<h3>{portfolio.name}</h3>
+						</div>
+						<span class="status">{portfolio.lifecycleStatus}</span>
+					</div>
+					{#if portfolio.description}<p>{portfolio.description}</p>{/if}
+					<div class="programme-list">
+						{#each programmesForPortfolio(portfolio.id) as programme}
+							<div class="programme-row">
+								<span>{programme.programmeNumber}</span>
+								<strong>{programme.name}</strong>
+							</div>
+						{:else}
+							<p class="muted compact">No programmes assigned to this portfolio.</p>
+						{/each}
+					</div>
+				</article>
+			{/each}
+
+			{#if data.hierarchy.programmes.some((programme) => !programme.portfolioId)}
+				<article class="portfolio-card standalone-programmes">
+					<div class="hierarchy-card-heading">
+						<div>
+							<small>Independent programme layer</small>
+							<h3>Standalone programmes</h3>
+						</div>
+					</div>
+					<div class="programme-list">
+						{#each data.hierarchy.programmes.filter((programme) => !programme.portfolioId) as programme}
+							<div class="programme-row">
+								<span>{programme.programmeNumber}</span>
+								<strong>{programme.name}</strong>
+							</div>
+						{/each}
+					</div>
+				</article>
+			{/if}
+
+			{#if data.hierarchy.portfolios.length === 0 && data.hierarchy.programmes.length === 0}
+				<div class="hierarchy-empty">
+					<strong>No portfolio or programme structure yet</strong>
+					<p>Create only the levels your organisation actually needs. Existing projects remain valid.</p>
+				</div>
+			{/if}
+		</div>
+	{:else}
+		<p class="muted">Your current role does not grant organisation-wide portfolio or programme visibility.</p>
+	{/if}
+
+	{#if data.hierarchy.canManagePortfolios || data.hierarchy.canManageProgrammes}
+		<div class="hierarchy-forms">
+			{#if data.hierarchy.canManagePortfolios}
+				<form method="POST" action="?/createPortfolio" class="hierarchy-form">
+					<h3>Create portfolio</h3>
+					<label>
+						<span>Portfolio number</span>
+						<input
+							name="portfolioNumber"
+							required
+							maxlength="80"
+							value={form?.hierarchyAction === 'create-portfolio' ? form.portfolioNumber : ''}
+							placeholder="PORT-001"
+						/>
+					</label>
+					<label>
+						<span>Portfolio name</span>
+						<input
+							name="portfolioName"
+							required
+							maxlength="255"
+							value={form?.hierarchyAction === 'create-portfolio' ? form.portfolioName : ''}
+							placeholder="Strategic capital programme"
+						/>
+					</label>
+					<label>
+						<span>Description <small>optional</small></span>
+						<textarea name="portfolioDescription" maxlength="10000" rows="3">{form?.hierarchyAction === 'create-portfolio' ? form.portfolioDescription : ''}</textarea>
+					</label>
+					{#if form?.hierarchyError && form.hierarchyAction === 'create-portfolio'}
+						<p class="error" role="alert">{form.hierarchyError}</p>
+					{/if}
+					<button type="submit">Create portfolio</button>
+				</form>
+			{/if}
+
+			{#if data.hierarchy.canManageProgrammes}
+				<form method="POST" action="?/createProgramme" class="hierarchy-form">
+					<h3>Create programme</h3>
+					<label>
+						<span>Programme number</span>
+						<input
+							name="programmeNumber"
+							required
+							maxlength="80"
+							value={form?.hierarchyAction === 'create-programme' ? form.programmeNumber : ''}
+							placeholder="PROG-001"
+						/>
+					</label>
+					<label>
+						<span>Programme name</span>
+						<input
+							name="programmeName"
+							required
+							maxlength="255"
+							value={form?.hierarchyAction === 'create-programme' ? form.programmeName : ''}
+							placeholder="Regional delivery programme"
+						/>
+					</label>
+					<label>
+						<span>Portfolio <small>optional</small></span>
+						<select name="portfolioPublicId">
+							<option value="">No portfolio</option>
+							{#each data.hierarchy.portfolios as portfolio}
+								<option
+									value={portfolio.publicId}
+									selected={form?.hierarchyAction === 'create-programme' && form.portfolioPublicId === portfolio.publicId}
+								>{portfolio.portfolioNumber} · {portfolio.name}</option
+								>
+							{/each}
+						</select>
+					</label>
+					<label>
+						<span>Description <small>optional</small></span>
+						<textarea name="programmeDescription" maxlength="10000" rows="3">{form?.hierarchyAction === 'create-programme' ? form.programmeDescription : ''}</textarea>
+					</label>
+					{#if form?.hierarchyError && form.hierarchyAction === 'create-programme'}
+						<p class="error" role="alert">{form.hierarchyError}</p>
+					{/if}
+					<button type="submit">Create programme</button>
+				</form>
+			{/if}
+		</div>
+	{/if}
+</section>
+
 {#if !data.canView}
 	<section class="notice">
 		<h2>Project access is not enabled</h2>
@@ -97,6 +258,16 @@
 								>{statusLabels[project.status] ?? project.status}</span
 							>
 						</div>
+						<div class="project-context">
+							{#if project.hierarchy?.programmeName}
+								{#if project.hierarchy.portfolioName}
+									<span>{project.hierarchy.portfolioName}</span><span aria-hidden="true">/</span>
+								{/if}
+								<strong>{project.hierarchy.programmeName}</strong>
+							{:else}
+								<span>Standalone project</span>
+							{/if}
+						</div>
 						<h2>{project.name}</h2>
 						{#if project.description}<p>{project.description}</p>{/if}
 						<div class="card-meta">
@@ -120,7 +291,7 @@
 		<h2>Create an organisation-owned project</h2>
 		<p class="muted">
 			The creating organisation becomes the project owner and first participant. You become the
-			first active project member.
+			first active project member. Programme assignment can be controlled from the project record.
 		</p>
 	</div>
 
@@ -186,6 +357,10 @@
 		color: #5d5d57;
 		line-height: 1.6;
 	}
+	.muted.compact {
+		margin: 0;
+		font-size: 0.82rem;
+	}
 	.header-action,
 	button {
 		font: inherit;
@@ -206,7 +381,8 @@
 	.notice,
 	.empty-state,
 	.create-panel,
-	.invitation-panel {
+	.invitation-panel,
+	.hierarchy-panel {
 		background: white;
 		border: 1px solid #d9d9d2;
 		border-radius: 0.8rem;
@@ -214,13 +390,15 @@
 	}
 	.notice,
 	.empty-state,
-	.invitation-panel {
+	.invitation-panel,
+	.hierarchy-panel {
 		margin-bottom: 1rem;
 	}
 	.notice h2,
 	.empty-state h2,
 	.create-panel h2,
-	.invitation-panel h2 {
+	.invitation-panel h2,
+	.hierarchy-panel h2 {
 		margin-top: 0;
 	}
 	.section-heading {
@@ -238,6 +416,106 @@
 		border-radius: 999px;
 		background: #f0f0eb;
 		font-weight: 750;
+	}
+	.hierarchy-counts {
+		display: flex;
+		gap: 0.5rem;
+		flex-wrap: wrap;
+		justify-content: end;
+	}
+	.hierarchy-counts span {
+		padding: 0.45rem 0.65rem;
+		border-radius: 999px;
+		background: #f0f0eb;
+		font-size: 0.78rem;
+	}
+	.hierarchy-tree {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+		gap: 0.75rem;
+	}
+	.portfolio-card,
+	.hierarchy-empty {
+		padding: 1rem;
+		border: 1px solid #deded7;
+		border-radius: 0.65rem;
+		background: #fafaf7;
+	}
+	.hierarchy-card-heading {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		align-items: start;
+	}
+	.hierarchy-card-heading small,
+	.project-context {
+		color: #74746d;
+		font-size: 0.75rem;
+	}
+	.hierarchy-card-heading h3 {
+		margin: 0.25rem 0 0;
+	}
+	.portfolio-card > p {
+		color: #666;
+		font-size: 0.84rem;
+		line-height: 1.5;
+	}
+	.programme-list {
+		display: grid;
+		gap: 0.4rem;
+		margin-top: 0.85rem;
+	}
+	.programme-row {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		gap: 0.65rem;
+		padding: 0.6rem;
+		border-radius: 0.45rem;
+		background: white;
+		font-size: 0.82rem;
+	}
+	.programme-row span {
+		color: #74746d;
+		font-weight: 700;
+	}
+	.hierarchy-forms {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+		margin-top: 1rem;
+		padding-top: 1rem;
+		border-top: 1px solid #e5e5df;
+	}
+	.hierarchy-form {
+		display: grid;
+		gap: 0.75rem;
+		padding: 1rem;
+		border-radius: 0.65rem;
+		background: #f7f7f3;
+	}
+	.hierarchy-form h3 {
+		margin: 0;
+	}
+	.hierarchy-form label,
+	.project-form label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 650;
+	}
+	.hierarchy-form input,
+	.hierarchy-form textarea,
+	.hierarchy-form select,
+	.project-form input,
+	.project-form textarea {
+		font: inherit;
+		border: 1px solid #b9b9b1;
+		border-radius: 0.5rem;
+		padding: 0.72rem;
+		background: white;
+	}
+	.hierarchy-form button,
+	.project-form button {
+		justify-self: start;
 	}
 	.invitation-list {
 		display: grid;
@@ -317,8 +595,14 @@
 		font-weight: 750;
 		color: #666;
 	}
+	.project-context {
+		display: flex;
+		gap: 0.35rem;
+		margin-top: 0.85rem;
+		flex-wrap: wrap;
+	}
 	.project-card h2 {
-		margin: 1rem 0 0.55rem;
+		margin: 0.45rem 0 0.55rem;
 		font-size: 1.25rem;
 	}
 	.project-card p {
@@ -364,25 +648,16 @@
 		grid-template-columns: 1fr 1fr;
 		gap: 1rem;
 	}
-	.project-form label {
-		display: grid;
-		gap: 0.4rem;
-		font-weight: 650;
-	}
-	.project-form small {
+	.project-form small,
+	.hierarchy-form small {
 		color: #777;
 		font-weight: 500;
 	}
-	.project-form input,
-	.project-form textarea {
-		font: inherit;
-		border: 1px solid #b9b9b1;
-		border-radius: 0.5rem;
-		padding: 0.72rem;
-		background: white;
-	}
 	.project-form input:focus,
-	.project-form textarea:focus {
+	.project-form textarea:focus,
+	.hierarchy-form input:focus,
+	.hierarchy-form textarea:focus,
+	.hierarchy-form select:focus {
 		outline: 2px solid #222;
 		outline-offset: 2px;
 	}
@@ -393,17 +668,20 @@
 		color: #9b1c1c;
 		margin: 0;
 	}
-	.project-form button {
-		justify-self: start;
-	}
 	@media (max-width: 820px) {
-		.page-header {
+		.page-header,
+		.section-heading {
 			display: block;
 		}
 		.header-action {
 			display: inline-block;
 			margin-top: 0.5rem;
 		}
+		.hierarchy-counts {
+			justify-content: start;
+			margin-top: 0.75rem;
+		}
+		.hierarchy-forms,
 		.create-panel {
 			grid-template-columns: 1fr;
 		}
