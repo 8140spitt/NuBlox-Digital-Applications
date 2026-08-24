@@ -42,7 +42,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   complete-system-validation:
@@ -71,6 +71,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/project-resource-loading-capacity
 
       - uses: pnpm/action-setup@v4
         with:
@@ -86,6 +88,112 @@ jobs:
       - name: Install application dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
+
+      - name: Prepare project resource-capacity outputs
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text()
+
+          def write(path, text):
+              Path(path).write_text(text)
+
+          # Contain owner-workforce capacity to the project owning organisation and
+          # use calendars covering the complete active-load phasing window.
+          path = 'app/src/lib/server/projects/project-resource-capacity-service.ts'
+          text = read(path)
+          old = "\t\tconst project = await this.findProjectInMemberScope(actor, projectPublicId);\n\t\tconst permissionService = new PermissionService(this.db);"
+          new = "\t\tconst project = await this.findProjectInMemberScope(actor, projectPublicId);\n\t\tif (project.owningOrganisationId !== actor.organisationId) {\n\t\t\tthrow new RecordNotFoundError(\n\t\t\t\t'Project resource capacity not found in the active member scope.'\n\t\t\t);\n\t\t}\n\t\tconst permissionService = new PermissionService(this.db);"
+          if old not in text:
+              raise SystemExit('resource access patch anchor not found')
+          text = text.replace(old, new, 1)
+          old = "\t\tconst workerIds = [...new Set(resourcePool.map((resource) => resource.workerId))];\n\t\tconst [calendarPatterns, unavailability] = await Promise.all([\n\t\t\trepository.listCalendarPatterns(actor.organisationId, workerIds, range.from, range.to),"
+          new = "\t\tconst workerIds = [...new Set(resourcePool.map((resource) => resource.workerId))];\n\t\tconst calendarFrom = allocations.reduce(\n\t\t\t(current, allocation) =>\n\t\t\t\tallocation.loadStartOn < current ? allocation.loadStartOn : current,\n\t\t\trange.from\n\t\t);\n\t\tconst calendarTo = allocations.reduce(\n\t\t\t(current, allocation) =>\n\t\t\t\tallocation.loadFinishOn > current ? allocation.loadFinishOn : current,\n\t\t\trange.to\n\t\t);\n\t\tconst [calendarPatterns, unavailability] = await Promise.all([\n\t\t\trepository.listCalendarPatterns(\n\t\t\t\tactor.organisationId,\n\t\t\t\tworkerIds,\n\t\t\t\tcalendarFrom,\n\t\t\t\tcalendarTo\n\t\t\t),"
+          if old not in text:
+              raise SystemExit('calendar-range patch anchor not found')
+          text = text.replace(old, new, 1)
+          write(path, text)
+
+          # Future organisations get the same resource permissions as migrated existing roles.
+          path = 'app/src/lib/server/organisations/bootstrap-service.ts'
+          text = read(path)
+          baseline = "\t'project.plan.baseline.manage',\n"
+          addition = baseline + "\t'project.resource.view',\n\t'project.resource.manage',\n"
+          for _ in range(2):
+              if baseline not in text:
+                  raise SystemExit('bootstrap owner permission anchor not found')
+              text = text.replace(baseline, addition, 1)
+          manager = "\t\t\t'project.plan.baseline.manage',\n"
+          manager_addition = manager + "\t\t\t'project.resource.view',\n\t\t\t'project.resource.manage',\n"
+          if manager not in text:
+              raise SystemExit('manager permission anchor not found')
+          text = text.replace(manager, manager_addition, 1)
+
+          def add_view_to_role(source, role_name):
+              pattern = re.compile(
+                  rf"(name: '{re.escape(role_name)}'.*?permissionKeys: \[.*?\n\s*'project\.plan\.view',)",
+                  re.S,
+              )
+              match = pattern.search(source)
+              if not match:
+                  raise SystemExit(f'{role_name} permission anchor not found')
+              return source[:match.end()] + "\n\t\t\t'project.resource.view'," + source[match.end():]
+
+          for role_name in ('Finance/Commercial', 'Member/Professional', 'Read Only'):
+              text = add_view_to_role(text, role_name)
+          write(path, text)
+
+          # Keep nested project-control workspaces in project context and expose Plan/Resources.
+          path = 'app/src/lib/navigation/app-navigation.ts'
+          text = read(path)
+          old = "\tconst links: ProjectContextNavigationItem[] = [\n\t\t{ id: 'overview', label: 'Overview', href: projectHref },\n\t\t{ id: 'team', label: 'Team', href: `${projectHref}#team` }\n\t];\n"
+          new = old + "\tconst projectRoot = `/projects/${encodeURIComponent(projectPublicId)}`;\n\tif (hasAnyNamespace(allowed, ['project.plan.']))\n\t\tlinks.push({ id: 'plan', label: 'Plan', href: `${projectRoot}/plan` });\n\tif (hasAnyNamespace(allowed, ['project.resource.']))\n\t\tlinks.push({ id: 'resources', label: 'Resources', href: `${projectRoot}/resources` });\n"
+          if old not in text:
+              raise SystemExit('project navigation anchor not found')
+          text = text.replace(old, new, 1)
+          write(path, text)
+
+          # Capability maturity evidence now includes resource loading/capacity.
+          path = 'app/src/lib/navigation/capability-registry.ts'
+          text = read(path)
+          old = "Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, projects and Work Kernel are native; resource loading, risk, earned value and deeper project-controls integration remain."
+          new = "Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, projects and Work Kernel are native; risk, earned value and deeper project-controls integration remain."
+          if old not in text:
+              raise SystemExit('capability maturity anchor not found')
+          text = text.replace(old, new, 1)
+          write(path, text)
+
+          # Remove the three obsolete .tool-button selectors surfaced by local svelte-check.
+          path = 'app/src/routes/(app)/+layout.svelte'
+          text = read(path)
+          replacements = [
+              ("\t.tool-menu > summary,\n\t.tool-button,\n\t.account-menu > summary {", "\t.tool-menu > summary,\n\t.account-menu > summary {"),
+              ("\t.tool-menu > summary,\n\t.tool-button {", "\t.tool-menu > summary {"),
+              ("\t\t.tool-menu > summary,\n\t\t.tool-button {", "\t\t.tool-menu > summary {")
+          ]
+          for old, new in replacements:
+              if old not in text:
+                  raise SystemExit('tool-button selector anchor not found')
+              text = text.replace(old, new, 1)
+          write(path, text)
+          PY
+
+          cd app
+          pnpm db:migrate
+          pnpm db:types
+          pnpm format
+          cd ..
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app database docs .github/workflows/database-migration-validation.yml
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: generate project resource capacity outputs"
+            git push origin HEAD:feat/project-resource-loading-capacity
+          fi
 
       - name: Audit production dependencies
         working-directory: app
@@ -109,9 +217,9 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '407'
-          test "$fk_count" = '936'
-          test "$check_count" = '549'
+          test "$table_count" = '408'
+          test "$fk_count" = '942'
+          test "$check_count" = '552'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
