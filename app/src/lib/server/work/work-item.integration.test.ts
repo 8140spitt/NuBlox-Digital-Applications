@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
+import { NotificationService } from '$lib/server/notifications/notification-service';
 import { WorkItemService, WorkKernelValidationError } from './work-item-service';
 
 const TEST_NAME_PREFIX = 'Work Kernel Integration ';
@@ -190,7 +191,7 @@ afterAll(async () => {
 });
 
 describe('NuBlox Work Kernel', () => {
-	it('creates, assigns, progresses and decides work with atomic audit and outbox evidence', async () => {
+	it('creates, assigns, progresses and decides work with atomic audit, outbox and notification evidence', async () => {
 		const fixture = await createFixture();
 		await allow(
 			fixture,
@@ -253,6 +254,28 @@ describe('NuBlox Work Kernel', () => {
 			  AND aggregate_public_id = ${created.publicId}
 		`.execute(db);
 		expect(Number(outboxCount.rows[0]?.count ?? 0)).toBe(5);
+
+		const notifications = await new NotificationService(db).listForMember(fixture.actorA);
+		expect(notifications).toHaveLength(4);
+		expect(notifications.map((notification) => notification.kind)).toEqual([
+			'status',
+			'decision',
+			'status',
+			'assignment'
+		]);
+		expect(notifications).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({
+					kind: 'assignment',
+					workItemPublicId: created.publicId,
+					title: 'Assigned: Approve corrective action'
+				}),
+				expect.objectContaining({
+					kind: 'decision',
+					message: 'Approved decision recorded.'
+				})
+			])
+		);
 
 		const auditRows = await sql<ActionRow>`
 			SELECT action_key
