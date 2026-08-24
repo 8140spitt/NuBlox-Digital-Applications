@@ -21,9 +21,9 @@ test('personal contexts are discoverable, favouritable and record recent opens',
 	await page.getByRole('link', { name: /Contexts/ }).click();
 	await expect(page).toHaveURL(/\/contexts$/);
 	await expect(page.getByRole('heading', { name: 'Contexts', level: 1 })).toBeVisible();
-	await expect(page.getByText(ORGANISATION, { exact: true })).toBeVisible();
 
 	const organisationCard = page.locator('.context-card').filter({ hasText: ORGANISATION });
+	await expect(organisationCard.getByText(ORGANISATION, { exact: true })).toBeVisible();
 	await organisationCard.getByRole('button', { name: 'Favourite', exact: true }).click();
 	await expect(page.getByRole('heading', { name: 'Favourites', level: 2 })).toBeVisible();
 	await expect(
