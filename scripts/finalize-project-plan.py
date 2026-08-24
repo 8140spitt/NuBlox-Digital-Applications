@@ -64,8 +64,8 @@ replace_exact(
 )
 replace_exact(
     project_page,
-    "\t.workspace-grid {\n",
-    "\t.project-actions {\n\t\tdisplay: flex;\n\t\tgap: 0.75rem;\n\t\tmargin: -0.6rem 0 1.25rem;\n\t}\n\t.project-actions a {\n\t\tdisplay: inline-flex;\n\t\talign-items: center;\n\t\tpadding: 0.62rem 0.88rem;\n\t\tborder-radius: 0.55rem;\n\t\tbackground: #1f1f1c;\n\t\tcolor: white;\n\t\tfont-weight: 700;\n\t\ttext-decoration: none;\n\t}\n\t.project-actions a:hover {\n\t\tbackground: #373732;\n\t}\n\t.workspace-grid {\n",
+    "<style>\n\t.breadcrumbs {",
+    "<style>\n\t.project-actions {\n\t\tdisplay: flex;\n\t\tgap: 0.75rem;\n\t\tmargin: -0.6rem 0 1.25rem;\n\t}\n\t.project-actions a {\n\t\tdisplay: inline-flex;\n\t\talign-items: center;\n\t\tpadding: 0.62rem 0.88rem;\n\t\tborder-radius: 0.55rem;\n\t\tbackground: #1f1f1c;\n\t\tcolor: white;\n\t\tfont-weight: 700;\n\t\ttext-decoration: none;\n\t}\n\t.project-actions a:hover {\n\t\tbackground: #373732;\n\t}\n\t.breadcrumbs {",
 )
 
 registry = "app/src/lib/navigation/capability-registry.ts"
