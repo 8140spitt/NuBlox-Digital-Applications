@@ -51,6 +51,10 @@
 	</div>
 </section>
 
+<nav class="project-actions" aria-label="Project controls">
+	<a href={`/projects/${data.project.publicId}/plan`}>Open project plan</a>
+</nav>
+
 <div class="workspace-grid">
 	<section class="panel overview">
 		<div class="panel-heading">
@@ -395,6 +399,24 @@
 </div>
 
 <style>
+	.project-actions {
+		display: flex;
+		gap: 0.75rem;
+		margin: -0.6rem 0 1.25rem;
+	}
+	.project-actions a {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.62rem 0.88rem;
+		border-radius: 0.55rem;
+		background: #1f1f1c;
+		color: white;
+		font-weight: 700;
+		text-decoration: none;
+	}
+	.project-actions a:hover {
+		background: #373732;
+	}
 	.breadcrumbs {
 		display: flex;
 		gap: 0.55rem;

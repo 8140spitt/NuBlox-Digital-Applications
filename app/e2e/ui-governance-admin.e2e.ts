@@ -171,14 +171,14 @@ test('owner controls explicit member permission exceptions through the browser',
 	const viewerPublicId = await viewerOption.getAttribute('value');
 	expect(viewerPublicId).not.toBeNull();
 	await memberSelect.selectOption(viewerPublicId ?? '');
-	await overrideForm.locator('input[name="permissionKey"]').fill('crm.view');
+	await overrideForm.locator('input[name="permissionKey"]').fill('crm.party.manage');
 	await overrideForm.locator('select[name="effect"]').selectOption('deny');
 	await overrideForm.locator('textarea[name="reason"]').fill('E2E explicit deny exception.');
 	await overrideForm.getByRole('button', { name: 'Set permission exception' }).click();
 
 	const overridesPanel = page.locator('section[aria-labelledby="current-overrides-heading"]');
 	await expect(overridesPanel.getByText('NuBlox E2E Viewer', { exact: true })).toBeVisible();
-	await expect(overridesPanel.getByText('crm.view', { exact: true })).toBeVisible();
+	await expect(overridesPanel.getByText('crm.party.manage', { exact: true })).toBeVisible();
 	await expect(overridesPanel.getByText('deny', { exact: true })).toBeVisible();
 	await expect(
 		overridesPanel.getByText('E2E explicit deny exception.', { exact: true })
