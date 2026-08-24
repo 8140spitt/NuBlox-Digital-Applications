@@ -2,6 +2,10 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
 import {
+	resolveNativeCapabilityRegistry,
+	summariseCapabilityRegistry
+} from '$lib/navigation/capability-registry';
+import {
 	resolveAppNavigation,
 	resolveProjectContextNavigation,
 	resolveQuickActions,
@@ -50,6 +54,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	if (!organisation) throw redirect(303, '/select-organisation');
 
 	const notifications = await new NotificationService(db).listForMember(actorContext, 12);
+	const capabilityRegistry = resolveNativeCapabilityRegistry(allowedPermissionKeys);
 	const requestedProjectPublicId = projectPublicIdFromUrl(url);
 	let projectContext: {
 		publicId: string;
@@ -90,6 +95,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		navigation: resolveAppNavigation(allowedPermissionKeys),
 		workspaceDirectory: resolveWorkspaceDirectory(allowedPermissionKeys),
 		quickActions: resolveQuickActions(allowedPermissionKeys),
+		capabilityRegistry,
+		capabilitySummary: summariseCapabilityRegistry(capabilityRegistry),
 		notifications,
 		projectContext
 	};
