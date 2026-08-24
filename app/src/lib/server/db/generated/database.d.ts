@@ -2586,6 +2586,84 @@ export interface ProjectOrganisations {
   updated_at: Generated<Date>;
 }
 
+export interface ProjectPlanActivities {
+  activity_code: string;
+  activity_kind: Generated<string>;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  description: string | null;
+  id: Generated<string>;
+  name: string;
+  organisation_id: string;
+  planned_duration_days: Generated<Decimal>;
+  planned_finish_on: Date;
+  planned_start_on: Date;
+  project_id: string;
+  public_id: string;
+  status: Generated<string>;
+  updated_at: Generated<Date>;
+  wbs_node_id: string;
+}
+
+export interface ProjectPlanBaselineActivities {
+  activity_code: string;
+  activity_kind: string;
+  activity_public_id: string;
+  baseline_id: string;
+  id: Generated<string>;
+  name: string;
+  organisation_id: string;
+  planned_duration_days: Decimal;
+  planned_finish_on: Date;
+  planned_start_on: Date;
+  project_id: string;
+  source_activity_id: string;
+  status: string;
+  wbs_code: string;
+}
+
+export interface ProjectPlanBaselineDependencies {
+  baseline_id: string;
+  dependency_type: string;
+  id: Generated<string>;
+  lag_days: Decimal;
+  organisation_id: string;
+  predecessor_activity_code: string;
+  predecessor_activity_id: string;
+  project_id: string;
+  source_dependency_id: string;
+  successor_activity_code: string;
+  successor_activity_id: string;
+}
+
+export interface ProjectPlanBaselines {
+  baseline_number: number;
+  captured_at: Generated<Date>;
+  captured_by_member_id: string;
+  description: string | null;
+  id: Generated<string>;
+  name: string;
+  organisation_id: string;
+  project_id: string;
+  public_id: string;
+}
+
+export interface ProjectPlanDependencies {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  dependency_type: Generated<string>;
+  id: Generated<string>;
+  is_active: Generated<number>;
+  lag_days: Generated<Decimal>;
+  organisation_id: string;
+  predecessor_activity_id: string;
+  project_id: string;
+  public_id: string;
+  removed_at: Date | null;
+  removed_by_member_id: string | null;
+  successor_activity_id: string;
+}
+
 export interface ProjectResourceAssignments {
   assigned_by_member_id: string;
   assignment_status: Generated<string>;
@@ -2642,6 +2720,22 @@ export interface ProjectSites {
   site_code: string;
   timezone: string | null;
   updated_at: Generated<Date>;
+}
+
+export interface ProjectWbsNodes {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  description: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  name: string;
+  organisation_id: string;
+  parent_wbs_node_id: string | null;
+  project_id: string;
+  public_id: string;
+  sort_order: Generated<number>;
+  updated_at: Generated<Date>;
+  wbs_code: string;
 }
 
 export interface PurchaseOrderIssueEvents {
@@ -4532,9 +4626,15 @@ export interface DB {
   project_members: ProjectMembers;
   project_organisation_roles: ProjectOrganisationRoles;
   project_organisations: ProjectOrganisations;
+  project_plan_activities: ProjectPlanActivities;
+  project_plan_baseline_activities: ProjectPlanBaselineActivities;
+  project_plan_baseline_dependencies: ProjectPlanBaselineDependencies;
+  project_plan_baselines: ProjectPlanBaselines;
+  project_plan_dependencies: ProjectPlanDependencies;
   project_resource_assignments: ProjectResourceAssignments;
   project_role_types: ProjectRoleTypes;
   project_sites: ProjectSites;
+  project_wbs_nodes: ProjectWbsNodes;
   projects: Projects;
   purchase_order_issue_events: PurchaseOrderIssueEvents;
   purchase_order_issue_recipients: PurchaseOrderIssueRecipients;

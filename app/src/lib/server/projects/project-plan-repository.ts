@@ -174,7 +174,10 @@ export class ProjectPlanRepository {
 		return rows.map(mapWbs);
 	}
 
-	async findWbsByPublicId(projectId: string, publicId: string): Promise<ProjectWbsNodeRecord | null> {
+	async findWbsByPublicId(
+		projectId: string,
+		publicId: string
+	): Promise<ProjectWbsNodeRecord | null> {
 		const row = await this.db
 			.selectFrom('project_wbs_nodes')
 			.select([

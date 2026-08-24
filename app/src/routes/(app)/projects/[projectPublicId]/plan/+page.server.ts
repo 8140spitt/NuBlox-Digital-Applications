@@ -3,7 +3,11 @@ import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import {
 	ProjectPlanService,
 	ProjectPlanValidationError
@@ -38,11 +42,16 @@ function parseDate(value: FormDataEntryValue | null, label: string): Date {
 }
 
 function handlePlanActionError(cause: unknown, planAction: string) {
-	if (cause instanceof RecordNotFoundError) return fail(404, planFailure(planAction, cause.message));
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, planFailure(planAction, cause.message));
 	if (cause instanceof TenantAccessError) return fail(403, planFailure(planAction, cause.message));
-	if (cause instanceof ProjectPlanValidationError) return fail(400, planFailure(planAction, cause.message));
+	if (cause instanceof ProjectPlanValidationError)
+		return fail(400, planFailure(planAction, cause.message));
 	if (cause instanceof ConcurrentUpdateError) {
-		return fail(409, planFailure(planAction, 'The project plan changed concurrently. Reload and try again.'));
+		return fail(
+			409,
+			planFailure(planAction, 'The project plan changed concurrently. Reload and try again.')
+		);
 	}
 	throw cause;
 }

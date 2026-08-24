@@ -4,10 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
-import {
-	ProjectPlanService,
-	ProjectPlanValidationError
-} from './project-plan-service';
+import { ProjectPlanService, ProjectPlanValidationError } from './project-plan-service';
 
 const PREFIX = 'Project Plan Integration ';
 const PROJECT_PREFIX = 'PPI-';
@@ -459,7 +456,10 @@ describe('governed project-controls plan', () => {
 		expect(current.activities).toHaveLength(3);
 		expect(current.dependencies).toHaveLength(0);
 		const historical = await service.getBaselineSnapshot(owner, projectPublicId, baselinePublicId);
-		expect(historical.activities.map((activity) => activity.activityCode)).toEqual(['A100', 'M200']);
+		expect(historical.activities.map((activity) => activity.activityCode)).toEqual([
+			'A100',
+			'M200'
+		]);
 		expect(historical.dependencies).toHaveLength(1);
 
 		const baselineAudit = await db

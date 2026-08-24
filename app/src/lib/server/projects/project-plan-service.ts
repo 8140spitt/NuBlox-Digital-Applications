@@ -4,7 +4,11 @@ import { AuditRepository } from '$lib/server/audit/audit-repository';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase, type Database } from '$lib/server/db/database';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import {
 	ProjectPlanRepository,
@@ -102,7 +106,11 @@ function validateDate(value: Date, label: string): Date {
 	return value;
 }
 
-function validateDecimal(value: number | string, label: string, input: { min?: number; max?: number }): string {
+function validateDecimal(
+	value: number | string,
+	label: string,
+	input: { min?: number; max?: number }
+): string {
 	const numeric = Number(value);
 	if (!Number.isFinite(numeric)) throw new ProjectPlanValidationError(`${label} must be a number.`);
 	if (input.min !== undefined && numeric < input.min) {
@@ -117,9 +125,9 @@ function validateDecimal(value: number | string, label: string, input: { min?: n
 function isDuplicateKeyError(error: unknown): boolean {
 	return Boolean(
 		error &&
-			typeof error === 'object' &&
-			'code' in error &&
-			(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
+		typeof error === 'object' &&
+		'code' in error &&
+		(error as { code?: unknown }).code === 'ER_DUP_ENTRY'
 	);
 }
 
@@ -154,7 +162,9 @@ export class ProjectPlanService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 	}
 
@@ -178,7 +188,14 @@ export class ProjectPlanService {
 	): Promise<ProjectRecord> {
 		await this.assertActiveActor(actor);
 		const project = await this.findProjectInMemberScope(actor, projectPublicId);
-		const decision = await new PermissionService(this.db).decideWithUmbrella(
+		const permissionService = new PermissionService(this.db);
+		const projectViewDecision = await permissionService.decide(actor, 'project.view', {
+			projectId: project.id
+		});
+		if (!projectViewDecision.allowed) {
+			throw new TenantAccessError('Project access is not permitted.');
+		}
+		const decision = await permissionService.decideWithUmbrella(
 			actor,
 			permissionKey,
 			'project.manage',
@@ -194,19 +211,25 @@ export class ProjectPlanService {
 		await this.assertActiveActor(actor);
 		const project = await this.findProjectInMemberScope(actor, projectPublicId);
 		const permissionService = new PermissionService(this.db);
-		const [viewDecision, manageDecision, baselineDecision] = await Promise.all([
-			permissionService.decide(actor, 'project.plan.view', { projectId: project.id }),
-			permissionService.decideWithUmbrella(actor, 'project.plan.manage', 'project.manage', {
-				projectId: project.id
-			}),
-			permissionService.decideWithUmbrella(
-				actor,
-				'project.plan.baseline.manage',
-				'project.manage',
-				{ projectId: project.id }
-			)
-		]);
-		if (!viewDecision.allowed && !manageDecision.allowed && !baselineDecision.allowed) {
+		const [projectViewDecision, viewDecision, manageDecision, baselineDecision] = await Promise.all(
+			[
+				permissionService.decide(actor, 'project.view', { projectId: project.id }),
+				permissionService.decide(actor, 'project.plan.view', { projectId: project.id }),
+				permissionService.decideWithUmbrella(actor, 'project.plan.manage', 'project.manage', {
+					projectId: project.id
+				}),
+				permissionService.decideWithUmbrella(
+					actor,
+					'project.plan.baseline.manage',
+					'project.manage',
+					{ projectId: project.id }
+				)
+			]
+		);
+		if (
+			!projectViewDecision.allowed ||
+			(!viewDecision.allowed && !manageDecision.allowed && !baselineDecision.allowed)
+		) {
 			throw new RecordNotFoundError('Project plan not found in the active member scope.');
 		}
 
@@ -233,13 +256,19 @@ export class ProjectPlanService {
 		actor: TenantActorContext,
 		input: CreateProjectWbsNodeInput
 	): Promise<ProjectWbsNodeRecord> {
-		const project = await this.resolveMutationProject(actor, input.projectPublicId, 'project.plan.manage');
+		const project = await this.resolveMutationProject(
+			actor,
+			input.projectPublicId,
+			'project.plan.manage'
+		);
 		const wbsCode = validateShortCode(input.wbsCode, 'WBS code');
 		const name = validateName(input.name, 'WBS name');
 		const description = validateDescription(input.description);
 		const sortOrder = input.sortOrder ?? 0;
 		if (!Number.isInteger(sortOrder) || sortOrder < 0 || sortOrder > 1_000_000) {
-			throw new ProjectPlanValidationError('WBS sort order must be a whole number from 0 to 1,000,000.');
+			throw new ProjectPlanValidationError(
+				'WBS sort order must be a whole number from 0 to 1,000,000.'
+			);
 		}
 
 		const repository = new ProjectPlanRepository(this.db);
@@ -251,7 +280,9 @@ export class ProjectPlanService {
 			? await repository.findWbsByPublicId(project.id, parentPublicId)
 			: null;
 		if (parentPublicId && !parent) {
-			throw new ProjectPlanValidationError('The selected parent WBS node is not available on this project.');
+			throw new ProjectPlanValidationError(
+				'The selected parent WBS node is not available on this project.'
+			);
 		}
 
 		const publicId = this.publicIdFactory();
@@ -301,12 +332,22 @@ export class ProjectPlanService {
 		actor: TenantActorContext,
 		input: CreateProjectPlanActivityInput
 	): Promise<ProjectPlanActivityRecord> {
-		const project = await this.resolveMutationProject(actor, input.projectPublicId, 'project.plan.manage');
+		const project = await this.resolveMutationProject(
+			actor,
+			input.projectPublicId,
+			'project.plan.manage'
+		);
 		const repository = new ProjectPlanRepository(this.db);
 		const wbs = await repository.findWbsByPublicId(project.id, input.wbsNodePublicId.trim());
-		if (!wbs) throw new ProjectPlanValidationError('The selected WBS node is not available on this project.');
+		if (!wbs)
+			throw new ProjectPlanValidationError(
+				'The selected WBS node is not available on this project.'
+			);
 		const activityCode = validateShortCode(input.activityCode, 'Activity code');
-		const name = validateName(input.name, input.activityKind === 'milestone' ? 'Milestone name' : 'Activity name');
+		const name = validateName(
+			input.name,
+			input.activityKind === 'milestone' ? 'Milestone name' : 'Activity name'
+		);
 		const description = validateDescription(input.description);
 		if (input.activityKind !== 'activity' && input.activityKind !== 'milestone') {
 			throw new ProjectPlanValidationError('Activity kind must be activity or milestone.');
@@ -321,13 +362,18 @@ export class ProjectPlanService {
 			max: 100000
 		});
 		if (input.activityKind === 'milestone') {
-			if (Number(plannedDurationDays) !== 0 || plannedStartOn.getTime() !== plannedFinishOn.getTime()) {
+			if (
+				Number(plannedDurationDays) !== 0 ||
+				plannedStartOn.getTime() !== plannedFinishOn.getTime()
+			) {
 				throw new ProjectPlanValidationError(
 					'Milestones must have zero duration and the same planned start and finish date.'
 				);
 			}
 		} else if (Number(plannedDurationDays) <= 0) {
-			throw new ProjectPlanValidationError('Activities must have a planned duration greater than zero.');
+			throw new ProjectPlanValidationError(
+				'Activities must have a planned duration greater than zero.'
+			);
 		}
 		if (await repository.findActivityByCode(project.id, activityCode)) {
 			throw new ProjectPlanValidationError('That activity code is already in use on this project.');
@@ -373,7 +419,9 @@ export class ProjectPlanService {
 			});
 		} catch (error) {
 			if (isDuplicateKeyError(error)) {
-				throw new ProjectPlanValidationError('That activity code is already in use on this project.');
+				throw new ProjectPlanValidationError(
+					'That activity code is already in use on this project.'
+				);
 			}
 			throw error;
 		}
@@ -387,14 +435,20 @@ export class ProjectPlanService {
 		actor: TenantActorContext,
 		input: CreateProjectPlanDependencyInput
 	): Promise<ProjectPlanDependencyRecord> {
-		const project = await this.resolveMutationProject(actor, input.projectPublicId, 'project.plan.manage');
+		const project = await this.resolveMutationProject(
+			actor,
+			input.projectPublicId,
+			'project.plan.manage'
+		);
 		const repository = new ProjectPlanRepository(this.db);
 		const [predecessor, successor] = await Promise.all([
 			repository.findActivityByPublicId(project.id, input.predecessorActivityPublicId.trim()),
 			repository.findActivityByPublicId(project.id, input.successorActivityPublicId.trim())
 		]);
 		if (!predecessor || !successor) {
-			throw new ProjectPlanValidationError('Both dependency activities must belong to this project plan.');
+			throw new ProjectPlanValidationError(
+				'Both dependency activities must belong to this project plan.'
+			);
 		}
 		if (predecessor.id === successor.id) {
 			throw new ProjectPlanValidationError('An activity cannot depend on itself.');
@@ -407,11 +461,15 @@ export class ProjectPlanService {
 			max: 100000
 		});
 		if (await repository.findActiveDependencyBetween(project.id, predecessor.id, successor.id)) {
-			throw new ProjectPlanValidationError('That dependency already exists on the current project plan.');
+			throw new ProjectPlanValidationError(
+				'That dependency already exists on the current project plan.'
+			);
 		}
 		const existingDependencies = await repository.listActiveDependencies(project.id);
 		if (createsDependencyCycle(existingDependencies, predecessor.id, successor.id)) {
-			throw new ProjectPlanValidationError('That dependency would create a cycle in the project plan.');
+			throw new ProjectPlanValidationError(
+				'That dependency would create a cycle in the project plan.'
+			);
 		}
 
 		const publicId = this.publicIdFactory();
@@ -457,10 +515,14 @@ export class ProjectPlanService {
 		projectPublicId: string,
 		dependencyPublicId: string
 	): Promise<void> {
-		const project = await this.resolveMutationProject(actor, projectPublicId, 'project.plan.manage');
-		const dependency = (await new ProjectPlanRepository(this.db).listActiveDependencies(project.id)).find(
-			(candidate) => candidate.publicId === dependencyPublicId
+		const project = await this.resolveMutationProject(
+			actor,
+			projectPublicId,
+			'project.plan.manage'
 		);
+		const dependency = (
+			await new ProjectPlanRepository(this.db).listActiveDependencies(project.id)
+		).find((candidate) => candidate.publicId === dependencyPublicId);
 		if (!dependency) throw new RecordNotFoundError('Project-plan dependency not found.');
 		const removedAt = new Date();
 		await this.db.transaction().execute(async (transaction) => {
@@ -516,7 +578,9 @@ export class ProjectPlanService {
 				repository.listActiveDependencies(project.id)
 			]);
 			if (activities.length === 0) {
-				throw new ProjectPlanValidationError('A schedule baseline requires at least one activity or milestone.');
+				throw new ProjectPlanValidationError(
+					'A schedule baseline requires at least one activity or milestone.'
+				);
 			}
 			const baselineNumber = await repository.nextBaselineNumber(project.id);
 			const baselineId = await repository.insertBaseline({

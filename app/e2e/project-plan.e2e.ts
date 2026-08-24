@@ -26,7 +26,9 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	const projectForm = page.locator('form[action="?/create"]');
 	await projectForm.getByLabel('Project number').fill(projectNumber);
 	await projectForm.getByLabel('Project name').fill(projectName);
-	await projectForm.getByLabel(/Description/).fill('Browser acceptance project for controlled planning.');
+	await projectForm
+		.getByLabel(/Description/)
+		.fill('Browser acceptance project for controlled planning.');
 	await projectForm.getByRole('button', { name: 'Create project' }).click();
 	await expect(page).toHaveURL(/\/projects\/[0-9a-f-]+$/i);
 	const projectPublicId = new URL(page.url()).pathname.split('/').at(-1)!;
@@ -67,8 +69,12 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	await expect(page.getByRole('cell', { name: 'M200' })).toBeVisible();
 
 	const dependencyForm = page.locator('form[action="?/addDependency"]');
-	await dependencyForm.getByLabel('Predecessor').selectOption({ label: 'A100 · Excavate foundations' });
-	await dependencyForm.getByLabel('Successor').selectOption({ label: 'M200 · Foundations complete' });
+	await dependencyForm
+		.getByLabel('Predecessor')
+		.selectOption({ label: 'A100 · Excavate foundations' });
+	await dependencyForm
+		.getByLabel('Successor')
+		.selectOption({ label: 'M200 · Foundations complete' });
 	await dependencyForm.getByLabel('Relationship').selectOption('FS');
 	await dependencyForm.getByLabel('Lag (days)').fill('0');
 	await dependencyForm.getByRole('button', { name: 'Add dependency' }).click();
@@ -85,5 +91,7 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	const baselineCard = page.locator('.baseline-card').filter({ hasText: 'Contract baseline' });
 	await expect(baselineCard).toBeVisible();
 	await expect(baselineCard).toContainText('2 activities/milestones · 1 dependencies');
-	await expect(page.locator('.metrics article').filter({ hasText: 'Baselines' })).toContainText('1');
+	await expect(page.locator('.metrics article').filter({ hasText: 'Baselines' })).toContainText(
+		'1'
+	);
 });
