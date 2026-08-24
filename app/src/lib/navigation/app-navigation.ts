@@ -539,6 +539,15 @@ export function resolveProjectContextNavigation(
 		links.push({ id: 'plan', label: 'Plan', href: `${projectRoot}/plan` });
 	if (hasAnyNamespace(allowed, ['project.resource.']))
 		links.push({ id: 'resources', label: 'Resources', href: `${projectRoot}/resources` });
+	if (
+		hasAnyNamespace(allowed, [
+			'commercial.forecast.',
+			'commercial.cash_flow.',
+			'commercial.cost_control.',
+			'commercial.budget.'
+		])
+	)
+		links.push({ id: 'financials', label: 'Financials', href: `${projectRoot}/financials` });
 	if (hasAnyNamespace(allowed, ['information.']))
 		links.push({ id: 'documents', label: 'Documents', href: `/documents${query}` });
 	if (hasAnyNamespace(allowed, ['procurement.']))

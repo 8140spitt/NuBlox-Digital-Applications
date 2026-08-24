@@ -431,6 +431,21 @@ export interface CommercialCostCategories {
   name: string;
 }
 
+export interface CommercialForecastCashFlowLines {
+  amount: Decimal;
+  cash_flow_category: string;
+  commentary: string | null;
+  commercial_forecast_id: string;
+  created_at: Generated<Date>;
+  direction: string;
+  flow_date: Date;
+  id: Generated<string>;
+  line_number: number;
+  organisation_id: string;
+  project_cost_code_id: string | null;
+  project_id: string;
+}
+
 export interface CommercialForecastLines {
   actual_cost_snapshot: Decimal;
   approved_change_snapshot: Generated<Decimal>;
@@ -4466,6 +4481,7 @@ export interface DB {
   change_event_information_links: ChangeEventInformationLinks;
   commercial_adjustment_types: CommercialAdjustmentTypes;
   commercial_cost_categories: CommercialCostCategories;
+  commercial_forecast_cash_flow_lines: CommercialForecastCashFlowLines;
   commercial_forecast_lines: CommercialForecastLines;
   commercial_forecasts: CommercialForecasts;
   commercial_reporting_periods: CommercialReportingPeriods;
