@@ -156,10 +156,7 @@ async function cleanup(): Promise<void> {
 			.where('organisation_id', '=', organisationId)
 			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', '=', organisationId).execute();
-		await db
-			.deleteFrom('role_permissions')
-			.where('organisation_id', '=', organisationId)
-			.execute();
+		await db.deleteFrom('role_permissions').where('organisation_id', '=', organisationId).execute();
 		await db
 			.deleteFrom('organisation_roles')
 			.where('organisation_id', '=', organisationId)

@@ -59,14 +59,7 @@ try {
 		(id, provider_account_id, provider_id, auth_user_id, access_token, refresh_token, id_token,
 		 access_token_expires_at, refresh_token_expires_at, scope, password, created_at, updated_at)
 		VALUES (?, ?, 'credential', ?, NULL, NULL, NULL, NULL, NULL, NULL, ?, ?, ?)`,
-		[
-			randomUUID(),
-			authUserId,
-			authUserId,
-			await hashPassword(EXTERNAL_PERSON_PASSWORD),
-			now,
-			now
-		]
+		[randomUUID(), authUserId, authUserId, await hashPassword(EXTERNAL_PERSON_PASSWORD), now, now]
 	);
 	await db.execute('INSERT INTO auth_user_links (auth_user_id, user_id) VALUES (?, ?)', [
 		authUserId,
