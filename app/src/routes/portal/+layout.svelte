@@ -27,11 +27,13 @@
 		</nav>
 		<div class="context">
 			<div>
-				<span>{data.organisation.name}</span>
+				<span>{data.mode === 'member' ? data.organisation?.name : 'External collaboration'}</span>
 				<small>{data.actor.displayName}</small>
 			</div>
-			<a href="/select-organisation">Switch</a>
-			<a href="/dashboard">Back to NuBlox</a>
+			{#if data.mode === 'member'}
+				<a href="/select-organisation">Switch</a>
+				<a href="/dashboard">Back to NuBlox</a>
+			{/if}
 		</div>
 	</header>
 
