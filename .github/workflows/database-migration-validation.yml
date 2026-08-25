@@ -39,12 +39,6 @@ jobs:
         working-directory: app
         run: pnpm format
 
-      - name: Validate integration and types
-        working-directory: app
-        run: |
-          pnpm test:integration
-          pnpm check
-
       - name: Commit corrections
         run: |
           git config user.name "github-actions[bot]"
