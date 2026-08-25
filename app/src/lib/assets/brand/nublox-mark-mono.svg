@@ -1,9 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
-  <title id="title">NuBlox monochrome mark</title>
-  <desc id="desc">A monochrome modular geometric N.</desc>
+  <title id="title">NuBlox monochrome folded N mark</title>
+  <desc id="desc">The NuBlox folded ribbon N in a single colour.</desc>
   <g fill="#07182E">
-    <rect x="12" y="14" width="20" height="68" rx="4"/>
-    <rect x="64" y="14" width="20" height="68" rx="4"/>
-    <path d="M22 14h17l45 52v16H67L22 30V14Z"/>
+    <path d="M14 14H36V82H14Z"/>
+    <path d="M60 14H82V82H60Z"/>
+    <path d="M14 14H36L82 60V82H60L14 36Z"/>
   </g>
 </svg>
