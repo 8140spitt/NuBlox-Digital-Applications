@@ -24,7 +24,7 @@
 	<svg
 		class={`nublox-mark ${className}`.trim()}
 		style={`--nublox-mark-size: ${dimension}`}
-		viewBox="0 0 96 96"
+		viewBox="0 0 100 100"
 		role={decorative ? undefined : 'img'}
 		aria-hidden={decorative ? 'true' : undefined}
 		aria-label={decorative ? undefined : title}
@@ -33,9 +33,9 @@
 			<title>{title}</title>
 		{/if}
 		<g fill="currentColor">
-			<path d="M14 14H36V82H14Z" />
-			<path d="M60 14H82V82H60Z" />
-			<path d="M14 14H36L82 60V82H60L14 36Z" />
+			<path d="M10 10H35V90H10Z" />
+			<path d="M68 10H90V90H70L68 88Z" />
+			<path d="M10 10H35L90 65V90H70L10 30Z" />
 		</g>
 	</svg>
 {:else}
