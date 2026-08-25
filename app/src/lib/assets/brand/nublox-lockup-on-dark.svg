@@ -1,18 +1,44 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img" aria-labelledby="title desc">
   <title id="title">NuBlox</title>
-  <desc id="desc">NuBlox modular N mark with a white NuBlox wordmark for dark backgrounds.</desc>
+  <desc id="desc">NuBlox folded ribbon N mark with a white NuBlox wordmark for dark backgrounds.</desc>
   <defs>
-    <linearGradient id="nublox-lockup-dark-gradient" x1="16" y1="80" x2="80" y2="16" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#146EF5"/>
-      <stop offset="0.52" stop-color="#0B7BFF"/>
-      <stop offset="1" stop-color="#20B8D8"/>
+    <linearGradient id="nb-lock-left" x1="14" y1="14" x2="36" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B7BFF"/>
+      <stop offset="0.48" stop-color="#146EF5"/>
+      <stop offset="1" stop-color="#123BDE"/>
+    </linearGradient>
+    <linearGradient id="nb-lock-right" x1="71" y1="14" x2="71" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20D9F2"/>
+      <stop offset="0.48" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#1437D8"/>
+    </linearGradient>
+    <linearGradient id="nb-lock-diagonal" x1="18" y1="16" x2="77" y2="79" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B7BFF"/>
+      <stop offset="0.33" stop-color="#20CFE9"/>
+      <stop offset="0.58" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#1731D1"/>
+    </linearGradient>
+    <linearGradient id="nb-lock-left-fold" x1="14" y1="24" x2="34" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1244F4"/>
+      <stop offset="0.52" stop-color="#20B8D8"/>
+      <stop offset="1" stop-color="#0B7BFF"/>
+    </linearGradient>
+    <linearGradient id="nb-lock-right-fold" x1="64" y1="56" x2="82" y2="44" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1232C4"/>
+      <stop offset="0.46" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#20CFE9"/>
+    </linearGradient>
+    <linearGradient id="nb-lock-sheen" x1="20" y1="18" x2="76" y2="77" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.16"/>
+      <stop offset="0.52" stop-color="#FFFFFF" stop-opacity="0.035"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
     </linearGradient>
   </defs>
-  <g>
-    <rect x="12" y="14" width="20" height="68" rx="4" fill="url(#nublox-lockup-dark-gradient)"/>
-    <rect x="64" y="14" width="20" height="68" rx="4" fill="url(#nublox-lockup-dark-gradient)"/>
-    <path d="M22 14h17l45 52v16H67L22 30V14Z" fill="url(#nublox-lockup-dark-gradient)"/>
-    <path d="M22 48h17l12 14H34c-6.627 0-12-5.373-12-12v-2Z" fill="#07182E" opacity="0.28"/>
-  </g>
+  <path d="M14 14H36V82H14Z" fill="url(#nb-lock-left)"/>
+  <path d="M60 14H82V82H60Z" fill="url(#nb-lock-right)"/>
+  <path d="M14 24L36 46L14 60Z" fill="url(#nb-lock-left-fold)"/>
+  <path d="M60 55L82 43V64L71 53Z" fill="url(#nb-lock-right-fold)"/>
+  <path d="M14 14H36L82 60V82H60L14 36Z" fill="url(#nb-lock-diagonal)"/>
+  <path d="M14 14H36L82 60V65L32 16H14Z" fill="url(#nb-lock-sheen)"/>
   <text x="112" y="64" fill="#FFFFFF" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="52" font-weight="750" letter-spacing="-2">NuBlox</text>
 </svg>
