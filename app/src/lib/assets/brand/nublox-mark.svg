@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-labelledby="title desc">
+  <title id="title">NuBlox mark</title>
+  <desc id="desc">A modular geometric N formed from connected blue structural elements.</desc>
+  <defs>
+    <linearGradient id="nublox-mark-gradient" x1="16" y1="80" x2="80" y2="16" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#146EF5"/>
+      <stop offset="0.52" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#20B8D8"/>
+    </linearGradient>
+  </defs>
+  <rect x="12" y="14" width="20" height="68" rx="4" fill="url(#nublox-mark-gradient)"/>
+  <rect x="64" y="14" width="20" height="68" rx="4" fill="url(#nublox-mark-gradient)"/>
+  <path d="M22 14h17l45 52v16H67L22 30V14Z" fill="url(#nublox-mark-gradient)"/>
+  <path d="M22 48h17l12 14H34c-6.627 0-12-5.373-12-12v-2Z" fill="#07182E" opacity="0.2"/>
+</svg>
