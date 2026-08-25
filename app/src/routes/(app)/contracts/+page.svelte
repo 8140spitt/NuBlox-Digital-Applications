@@ -27,14 +27,22 @@
 			{:else}
 				<div class="records">
 					{#each data.contracts as contract}
-						<a class="record" href={`/contracts/${contract.publicId}`}>
+						<a
+							class="record"
+							href={contract.lifecycleStatus === 'active' && !contract.projectPublicId
+								? `/contracts/${contract.publicId}/mobilise`
+								: `/contracts/${contract.publicId}`}
+						>
 							<span
 								><strong>{contract.contractNumber}</strong><small>{contract.contractTypeName}</small
 								></span
 							>
 							<span
 								><strong>{contract.title}</strong><small
-									>{contract.projectNumber ?? 'Awaiting project mobilisation'}</small
+									>{contract.projectNumber ??
+										(contract.lifecycleStatus === 'active'
+											? 'Ready for project mobilisation'
+											: 'Awaiting project mobilisation')}</small
 								></span
 							>
 							<span class="status">{contract.lifecycleStatus.replaceAll('_', ' ')}</span>
