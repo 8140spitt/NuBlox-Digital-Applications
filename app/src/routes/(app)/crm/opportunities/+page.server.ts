@@ -2,17 +2,15 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { CrmOpportunityClientService } from '$lib/server/crm/crm-opportunity-client-service';
 import {
 	CrmOpportunityService,
 	CrmOpportunityValidationError
 } from '$lib/server/crm/crm-opportunity-service';
 import type { OpportunityStatus } from '$lib/server/crm/crm-opportunity-repository';
 import { CrmPipelineProvisioningService } from '$lib/server/crm/crm-pipeline-provisioning';
-import { CrmRepository, type CrmPartySummary } from '$lib/server/crm/crm-repository';
-import { getDatabase, type Database } from '$lib/server/db/database';
+import { getDatabase } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
-
-const OPPORTUNITY_CUSTOMER_ROLE_CODES = new Set(['prospect', 'client']);
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
@@ -22,30 +20,6 @@ function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 		memberId: locals.tenant.memberId,
 		correlationId: locals.correlationId
 	};
-}
-
-function isOpportunityCustomer(party: CrmPartySummary): boolean {
-	return (
-		party.status === 'active' &&
-		party.kind === 'organisation' &&
-		party.roles.some((role) => OPPORTUNITY_CUSTOMER_ROLE_CODES.has(role.code))
-	);
-}
-
-async function assertOpportunityCustomer(
-	db: Database,
-	actor: TenantActorContext,
-	partyPublicId: string
-): Promise<void> {
-	const party = await new CrmRepository(db).findPartyByPublicId(
-		actor.organisationId,
-		partyPublicId.trim()
-	);
-	if (!party || !isOpportunityCustomer(party)) {
-		throw new CrmOpportunityValidationError(
-			'Choose an active CRM organisation classified as a prospect or client.'
-		);
-	}
 }
 
 function parseStatus(value: string | null): OpportunityStatus | undefined {
@@ -86,7 +60,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 	return {
 		...workspace,
-		partyCandidates: workspace.partyCandidates.filter(isOpportunityCustomer)
+		clientAccounts: workspace.canView
+			? await new CrmOpportunityClientService(db).listClientAccounts(actor)
+			: []
 	};
 };
 
@@ -98,19 +74,20 @@ export const actions: Actions = {
 		const data = await request.formData();
 		try {
 			const selectedStage = stageSelection(data.get('stageSelection'));
-			const primaryPartyPublicId = String(data.get('primaryPartyPublicId') ?? '');
-			const db = getDatabase();
-			await assertOpportunityCustomer(db, actor, primaryPartyPublicId);
-			const opportunity = await new CrmOpportunityService(db).createOpportunity(actor, {
-				title: String(data.get('title') ?? ''),
-				description: String(data.get('description') ?? ''),
-				pipelinePublicId: selectedStage.pipelinePublicId,
-				stageName: selectedStage.stageName,
-				estimatedValue: String(data.get('estimatedValue') ?? ''),
-				currencyCode: String(data.get('currencyCode') ?? 'GBP'),
-				expectedCloseDate: String(data.get('expectedCloseDate') ?? ''),
-				primaryPartyPublicId
-			});
+			const opportunity = await new CrmOpportunityClientService(getDatabase()).createOpportunity(
+				actor,
+				{
+					title: String(data.get('title') ?? ''),
+					description: String(data.get('description') ?? ''),
+					pipelinePublicId: selectedStage.pipelinePublicId,
+					stageName: selectedStage.stageName,
+					estimatedValue: String(data.get('estimatedValue') ?? ''),
+					currencyCode: String(data.get('currencyCode') ?? 'GBP'),
+					expectedCloseDate: String(data.get('expectedCloseDate') ?? ''),
+					primaryPartyPublicId: String(data.get('clientOrganisationPublicId') ?? ''),
+					clientContactPartyPublicId: String(data.get('clientContactPartyPublicId') ?? '')
+				}
+			);
 			throw redirect(303, `/crm/opportunities/${encodeURIComponent(opportunity.publicId)}`);
 		} catch (error) {
 			if (error instanceof CrmOpportunityValidationError)
