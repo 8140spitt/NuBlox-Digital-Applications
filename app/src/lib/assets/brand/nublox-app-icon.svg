@@ -1,49 +1,30 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">NuBlox app icon</title>
-  <desc id="desc">The NuBlox folded ribbon N on a navy rounded square.</desc>
+  <desc id="desc">The NuBlox folded ribbon N on a dark navy rounded square.</desc>
   <defs>
-    <radialGradient id="nb-icon-bg" cx="0" cy="0" r="1" gradientTransform="translate(92 24) rotate(133) scale(120)" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#123D72"/>
-      <stop offset="0.55" stop-color="#0A2343"/>
+    <radialGradient id="nb-icon-bg" cx="0" cy="0" r="1" gradientTransform="translate(90 20) rotate(130) scale(120)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#123D72"/>
       <stop offset="1" stop-color="#07182E"/>
     </radialGradient>
-    <linearGradient id="nb-icon-left" x1="28" y1="25" x2="50" y2="103" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#0B7BFF"/>
-      <stop offset="0.5" stop-color="#146EF5"/>
-      <stop offset="1" stop-color="#123BDE"/>
+    <linearGradient id="nb-icon-left" x1="36" y1="24" x2="36" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0A8FFF"/>
+      <stop offset="0.46" stop-color="#0878F7"/>
+      <stop offset="1" stop-color="#0752E6"/>
     </linearGradient>
-    <linearGradient id="nb-icon-right" x1="88" y1="25" x2="88" y2="103" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#20D9F2"/>
-      <stop offset="0.5" stop-color="#0B7BFF"/>
-      <stop offset="1" stop-color="#1437D8"/>
+    <linearGradient id="nb-icon-right" x1="93" y1="24" x2="93" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#18C4E6"/>
+      <stop offset="0.45" stop-color="#0B86F7"/>
+      <stop offset="1" stop-color="#1247D8"/>
     </linearGradient>
-    <linearGradient id="nb-icon-diagonal" x1="31" y1="27" x2="99" y2="99" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#0B7BFF"/>
-      <stop offset="0.33" stop-color="#20CFE9"/>
-      <stop offset="0.58" stop-color="#0B7BFF"/>
-      <stop offset="1" stop-color="#1731D1"/>
-    </linearGradient>
-    <linearGradient id="nb-icon-left-fold" x1="28" y1="37" x2="49" y2="74" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1244F4"/>
-      <stop offset="0.52" stop-color="#20B8D8"/>
-      <stop offset="1" stop-color="#0B7BFF"/>
-    </linearGradient>
-    <linearGradient id="nb-icon-right-fold" x1="77" y1="72" x2="101" y2="55" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#1232C4"/>
-      <stop offset="0.46" stop-color="#0B7BFF"/>
-      <stop offset="1" stop-color="#20CFE9"/>
-    </linearGradient>
-    <linearGradient id="nb-icon-sheen" x1="31" y1="27" x2="99" y2="99" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.15"/>
-      <stop offset="0.52" stop-color="#FFFFFF" stop-opacity="0.03"/>
-      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    <linearGradient id="nb-icon-diagonal" x1="30" y1="25" x2="101" y2="102" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0AA5FF"/>
+      <stop offset="0.28" stop-color="#0B8AF9"/>
+      <stop offset="0.64" stop-color="#0870F0"/>
+      <stop offset="1" stop-color="#173FD8"/>
     </linearGradient>
   </defs>
-  <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#nb-icon-bg)"/>
-  <path d="M28 25H50V103H28Z" fill="url(#nb-icon-left)"/>
-  <path d="M78 25H100V103H78Z" fill="url(#nb-icon-right)"/>
-  <path d="M28 37L50 59L28 75Z" fill="url(#nb-icon-left-fold)"/>
-  <path d="M78 72L100 59V80L89 69Z" fill="url(#nb-icon-right-fold)"/>
-  <path d="M28 25H50L100 75V103H78L28 53Z" fill="url(#nb-icon-diagonal)"/>
-  <path d="M28 25H50L100 75V81L46 28H28Z" fill="url(#nb-icon-sheen)"/>
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#nb-icon-bg)"/>
+  <path d="M24 24H49V104H24Z" fill="url(#nb-icon-left)"/>
+  <path d="M82 24H104V104H84L82 102Z" fill="url(#nb-icon-right)"/>
+  <path d="M24 24H49L104 79V104H84L24 44Z" fill="url(#nb-icon-diagonal)"/>
 </svg>
