@@ -13,29 +13,40 @@
 <div class="marketing-page">
 	<MarketingHeader />
 	<main>
-		<MarketingHero />
+		<MarketingHero primaryHref="/start" />
 
 		<section class="platform" id="platform" aria-labelledby="platform-title">
 			<div class="section-inner">
 				<div class="section-heading">
 					<p>One connected platform</p>
-					<h2 id="platform-title">Run the business and deliver the work from the same operating foundation.</h2>
+					<h2 id="platform-title">
+						Run the business and deliver the work from the same operating foundation.
+					</h2>
 				</div>
 				<div class="platform-grid">
 					<article>
 						<span>01</span>
 						<h3>Shared business core</h3>
-						<p>Customers, suppliers, people, finance and commercial records stay connected instead of being recreated between tools.</p>
+						<p>
+							Customers, suppliers, people, finance and commercial records stay connected instead of
+							being recreated between tools.
+						</p>
 					</article>
 					<article>
 						<span>02</span>
 						<h3>Project operating context</h3>
-						<p>Project teams move between information, controls, commercial work and delivery while retaining the same project context.</p>
+						<p>
+							Project teams move between information, controls, commercial work and delivery while
+							retaining the same project context.
+						</p>
 					</article>
 					<article>
 						<span>03</span>
 						<h3>Governed workflows</h3>
-						<p>Role-aware permissions, lifecycle controls and auditable events turn disconnected administration into controlled operations.</p>
+						<p>
+							Role-aware permissions, lifecycle controls and auditable events turn disconnected
+							administration into controlled operations.
+						</p>
 					</article>
 				</div>
 			</div>
