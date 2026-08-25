@@ -22,7 +22,9 @@ export class AuditRepository {
 		const actorMemberId = event.actorMemberId ?? null;
 		const externalAuthUserId = event.externalAuthUserId ?? null;
 		if ((actorMemberId === null) === (externalAuthUserId === null)) {
-			throw new Error('Audit evidence requires exactly one internal-member or external-auth actor.');
+			throw new Error(
+				'Audit evidence requires exactly one internal-member or external-auth actor.'
+			);
 		}
 		await this.db
 			.insertInto('audit_events')

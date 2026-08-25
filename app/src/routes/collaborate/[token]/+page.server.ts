@@ -27,7 +27,8 @@ function collaborationFailure(cause: unknown) {
 export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 	const service = new ProjectExternalCollaborationService(getDatabase());
 	const invitation = await service.getPendingInvitation(params.token);
-	if (!invitation) throw error(404, 'This project collaboration invitation is invalid or has expired.');
+	if (!invitation)
+		throw error(404, 'This project collaboration invitation is invalid or has expired.');
 
 	const remainingSeconds = Math.max(
 		60,
@@ -55,7 +56,8 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 
 export const actions: Actions = {
 	accept: async ({ params, locals, cookies }) => {
-		if (!locals.actor) return fail(401, { message: 'Sign in with the invited email address first.' });
+		if (!locals.actor)
+			return fail(401, { message: 'Sign in with the invited email address first.' });
 		try {
 			await new ProjectExternalCollaborationService(getDatabase()).acceptExistingUser(
 				params.token,
@@ -65,7 +67,8 @@ export const actions: Actions = {
 			cookies.delete(PROJECT_COLLABORATION_SIGNUP_COOKIE, { path: '/' });
 			throw redirect(303, '/portal');
 		} catch (cause) {
-			if (cause && typeof cause === 'object' && 'status' in cause && 'location' in cause) throw cause;
+			if (cause && typeof cause === 'object' && 'status' in cause && 'location' in cause)
+				throw cause;
 			return collaborationFailure(cause);
 		}
 	}

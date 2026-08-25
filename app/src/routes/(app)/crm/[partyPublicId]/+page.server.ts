@@ -70,38 +70,6 @@ export const actions: Actions = {
 		throw redirect(303, `/crm/${encodeURIComponent(params.partyPublicId)}`);
 	},
 
-	linkPlatformOrganisation: async ({ request, locals, params }) => {
-		const actor = actorFromLocals(locals);
-		if (!actor)
-			return fail(401, {
-				platformLinkError: 'Authentication and organisation context are required.'
-			});
-		const data = await request.formData();
-		try {
-			await new CrmService(getDatabase()).linkPlatformOrganisation(actor, {
-				partyPublicId: params.partyPublicId,
-				organisationPublicId: String(data.get('organisationPublicId') ?? '')
-			});
-		} catch (error) {
-			return mutationFailure(error, 'platformLinkError');
-		}
-		throw redirect(303, `/crm/${encodeURIComponent(params.partyPublicId)}#nublox-link`);
-	},
-
-	unlinkPlatformOrganisation: async ({ locals, params }) => {
-		const actor = actorFromLocals(locals);
-		if (!actor)
-			return fail(401, {
-				platformLinkError: 'Authentication and organisation context are required.'
-			});
-		try {
-			await new CrmService(getDatabase()).unlinkPlatformOrganisation(actor, params.partyPublicId);
-		} catch (error) {
-			return mutationFailure(error, 'platformLinkError');
-		}
-		throw redirect(303, `/crm/${encodeURIComponent(params.partyPublicId)}#nublox-link`);
-	},
-
 	createContact: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
 		if (!actor)

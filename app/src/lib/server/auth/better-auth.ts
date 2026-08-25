@@ -70,7 +70,8 @@ function signupProvisioningIntentFromContext(ctx: {
 	if (bootstrapToken) return { kind: 'organisation-bootstrap', token: bootstrapToken };
 	if (collaborationToken) return { kind: 'project-collaboration', token: collaborationToken };
 	throw new APIError('FORBIDDEN', {
-		message: 'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
+		message:
+			'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
 	});
 }
 

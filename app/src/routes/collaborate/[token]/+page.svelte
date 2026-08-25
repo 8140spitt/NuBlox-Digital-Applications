@@ -91,8 +91,9 @@
 			<section class="notice success">
 				<h2>Check your email</h2>
 				<p>
-					We sent a verification link to <strong>{data.invitation.email}</strong>. After verification,
-					your personal project collaboration access is activated. No organisation setup is required.
+					We sent a verification link to <strong>{data.invitation.email}</strong>. After
+					verification, your personal project collaboration access is activated. No organisation
+					setup is required.
 				</p>
 			</section>
 		{:else}
