@@ -13,6 +13,9 @@ import { CrmRepository, type CrmOrganisationContact, type CrmPartySummary } from
 
 const CLIENT_ROLE_CODES = new Set(['prospect', 'client']);
 
+// The client organisation owns the opportunity primary-party slot. The designated
+// client contact is a separate controlled relationship so the commercial addressee
+// can flow through quotations and contracts without overloading generic participants.
 export type OpportunityClientContactOption = {
 	publicId: string;
 	displayName: string;
