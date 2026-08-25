@@ -23,7 +23,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 	try {
 		const db = getDatabase();
 		const portfolio = await new ContractService(db).listPortfolio(actor);
-		if (!portfolio.canView) return portfolio;
+		if (!portfolio.canView) {
+			return {
+				...portfolio,
+				canFormContract: false,
+				acceptedQuotationsAwaitingContract: []
+			};
+		}
 		const progression = await new CommercialLifecycleService(db).listAcceptedQuotationsAwaitingContract(
 			actor
 		);
