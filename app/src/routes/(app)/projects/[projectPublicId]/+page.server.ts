@@ -16,7 +16,8 @@ import {
 } from '$lib/server/projects/project-team-service';
 import {
 	ProjectExternalCollaborationService,
-	ProjectExternalCollaborationValidationError
+	ProjectExternalCollaborationValidationError,
+	type ExternalCollaborationManagementView
 } from '$lib/server/projects/project-external-collaboration-service';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 
@@ -106,7 +107,7 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			params.projectPublicId
 		);
 		const team = await new ProjectTeamService(db).getTeamView(actor, params.projectPublicId);
-		let externalCollaboration = {
+		let externalCollaboration: ExternalCollaborationManagementView = {
 			canManage: false,
 			roleTypes: [],
 			candidates: [],

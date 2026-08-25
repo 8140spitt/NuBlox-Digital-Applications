@@ -417,46 +417,6 @@
 	.full-width {
 		grid-column: 1 / -1;
 	}
-	.platform-link-summary {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		padding: 0.85rem;
-		border: 1px solid #dcdcd5;
-		border-radius: 0.55rem;
-		background: #fafaf7;
-	}
-	.platform-link-summary > div {
-		display: grid;
-		gap: 0.2rem;
-	}
-	.platform-link-summary span {
-		color: #666;
-		font-size: 0.82rem;
-		text-transform: capitalize;
-	}
-	.platform-link-form {
-		display: grid;
-		grid-template-columns: minmax(16rem, 1fr) auto;
-		align-items: end;
-		gap: 0.75rem;
-		max-width: 46rem;
-	}
-	.platform-link-form label {
-		display: grid;
-		gap: 0.35rem;
-		font-size: 0.84rem;
-		font-weight: 650;
-	}
-	.platform-link-form input {
-		min-width: 0;
-		font: inherit;
-		border: 1px solid #b9b9b1;
-		border-radius: 0.45rem;
-		padding: 0.64rem;
-		background: white;
-	}
 	.panel-heading {
 		display: flex;
 		justify-content: space-between;
