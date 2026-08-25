@@ -68,9 +68,7 @@ test('owner governs project risks, issues, decisions and linked Work Kernel acti
 	await expect(
 		page.getByRole('cell', { name: 'Confirm alternate crane reservation' })
 	).toBeVisible();
-	await expect(
-		page.getByRole('heading', { name: 'Action register', level: 2 }).locator('..')
-	).toContainText('1 linked actions');
+	await expect(page.locator('.action-register .panel-heading')).toContainText('1 linked actions');
 
 	const issueForm = page.locator('form[action="?/createItem"]').filter({ hasText: 'Raise issue' });
 	await issueForm.getByLabel('Title').fill('Temporary power shortfall');
