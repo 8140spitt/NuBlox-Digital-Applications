@@ -33,36 +33,37 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
 
-          def replace_once(path, old, new):
+          def replace_exact(path, old, new, expected=1):
               p = Path(path)
               text = p.read_text()
               count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected exactly one match, found {count}')
-              p.write_text(text.replace(old, new, 1))
+              if count != expected:
+                  raise SystemExit(f'{path}: expected {expected} match(es), found {count}')
+              p.write_text(text.replace(old, new))
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/commercial/commercial-repository.ts',
               "\t\t\t.where('assignment.is_primary', '=', 1)\n\t\t\t.where('role.code', '=', 'contact')",
               "\t\t\t.where('role.code', '=', 'client_contact')"
           )
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/crm/crm-opportunity-client-service.ts',
               "repository.findOpportunityPartyRoleTypeId('contact')",
               "repository.findOpportunityPartyRoleTypeId('client_contact')"
           )
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/crm/crm-opportunity-service.ts',
               "\t\treturn {\n\t\t\topportunity,\n\t\t\tcanManageOpportunities: opportunityDecision.allowed,\n\t\t\tcanManageActivities: activityDecision.allowed,\n\t\t\tpipelines,\n\t\t\tparticipants,\n\t\t\tpartyRoleTypes,\n\t\t\tactivityTypes,",
               "\t\treturn {\n\t\t\topportunity,\n\t\t\tcanManageOpportunities: opportunityDecision.allowed,\n\t\t\tcanManageActivities: activityDecision.allowed,\n\t\t\tpipelines,\n\t\t\tparticipants,\n\t\t\tpartyRoleTypes: partyRoleTypes.filter((role) => role.code !== 'client_contact'),\n\t\t\tactivityTypes,"
           )
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/crm/crm-opportunity-service.ts',
               "\t\tconst participantRoleCode = roleCode(input.roleCode);\n\t\treturn this.db.transaction()",
-              "\t\tconst participantRoleCode = roleCode(input.roleCode);\n\t\tif (participantRoleCode === 'client_contact') {\n\t\t\tthrow new CrmOpportunityValidationError(\n\t\t\t\t'Client contact is controlled by the opportunity client context.'\n\t\t\t);\n\t\t}\n\t\treturn this.db.transaction()"
+              "\t\tconst participantRoleCode = roleCode(input.roleCode);\n\t\tif (participantRoleCode === 'client_contact') {\n\t\t\tthrow new CrmOpportunityValidationError(\n\t\t\t\t'Client contact is controlled by the opportunity client context.'\n\t\t\t);\n\t\t}\n\t\treturn this.db.transaction()",
+              2
           )
 
           test_path = Path('app/src/lib/server/crm/crm-account-opportunity-context.integration.test.ts')
@@ -73,25 +74,25 @@ jobs:
           test_text = test_text.replace("where('role.code', '=', 'contact')", "where('role.code', '=', 'client_contact')", 1)
           test_path.write_text(test_text)
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/commercial/commercial-lifecycle.integration.test.ts',
               "\t\t\t.select([\n\t\t\t\t'estimate.title',\n\t\t\t\t'estimate.currency_code as currencyCode',",
               "\t\t\t.innerJoin('estimate_versions as version', (join) =>\n\t\t\t\tjoin\n\t\t\t\t\t.onRef('version.estimate_id', '=', 'estimate.id')\n\t\t\t\t\t.onRef('version.organisation_id', '=', 'estimate.organisation_id')\n\t\t\t\t\t.on('version.version_number', '=', 1)\n\t\t\t)\n\t\t\t.select([\n\t\t\t\t'estimate.title',\n\t\t\t\t'version.currency_code as currencyCode',"
           )
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/crm/crm-opportunities-activities.integration.test.ts',
               "\t\tconst replacement = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'person',\n\t\t\tgivenNames: 'Morgan',\n\t\t\tfamilyName: 'Buyer'\n\t\t});",
               "\t\tconst replacement = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Replacement Client`,\n\t\t\troleCodes: ['prospect']\n\t\t});"
           )
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/crm/crm-opportunities-activities.integration.test.ts',
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Participant Client`\n\t\t});",
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Participant Client`,\n\t\t\troleCodes: ['prospect']\n\t\t});"
           )
 
-          replace_once(
+          replace_exact(
               'app/src/lib/server/crm/crm-opportunities-activities.integration.test.ts',
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Activity Client`\n\t\t});",
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Activity Client`,\n\t\t\troleCodes: ['prospect']\n\t\t});"
