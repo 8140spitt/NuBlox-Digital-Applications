@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state';
-	import brandHeader from '$lib/assets/nublox-logo-on-navy.webp';
+	import { NuBloxLockup } from '$lib/components/brand';
 
 	let { data, children } = $props();
 	let pathname = $derived(page.url.pathname);
@@ -16,9 +16,13 @@
 
 <div class="portal-shell">
 	<header class="portal-header">
-		<a class="brand" href="/portal" aria-label="NuBlox shared work">
-			<img src={brandHeader} alt="NuBlox" />
-		</a>
+		<NuBloxLockup
+			class="brand"
+			href="/portal"
+			theme="dark"
+			size="sm"
+			ariaLabel="NuBlox shared work"
+		/>
 		<nav aria-label="Portal navigation">
 			<a class:active={active('/portal')} href="/portal">Shared work</a>
 			{#if data.canManage}
@@ -63,19 +67,6 @@
 		background: var(--nb-ink);
 		color: var(--nb-white);
 		box-shadow: 0 1px 0 rgb(255 255 255 / 0.08);
-	}
-
-	.brand {
-		display: flex;
-		align-items: center;
-	}
-
-	.brand img {
-		display: block;
-		width: 8.8rem;
-		height: 2.2rem;
-		object-fit: contain;
-		object-position: left center;
 	}
 
 	nav {
