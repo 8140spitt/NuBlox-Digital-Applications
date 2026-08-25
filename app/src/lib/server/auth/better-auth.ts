@@ -18,12 +18,17 @@ import {
 	InvitationAccessError,
 	OrganisationInvitationService
 } from '$lib/server/organisations/invitation-service';
+import {
+	ProjectExternalCollaborationAccessError,
+	ProjectExternalCollaborationService
+} from '$lib/server/projects/project-external-collaboration-service';
 import { ensurePortalCollaborationStandardRoleDefaults } from '$lib/server/portal/portal-collaboration-bootstrap';
 import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';
 import { ensureSiteQualitySafetyStandardRoleDefaults } from '$lib/server/site/site-quality-safety-bootstrap';
 import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from './bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
+import { PROJECT_COLLABORATION_SIGNUP_COOKIE } from './project-collaboration-cookie';
 import { assertVerifiedAuthUser } from './verified-auth-user';
 
 function requireEnv(name: 'DATABASE_URL' | 'BETTER_AUTH_SECRET' | 'BETTER_AUTH_URL'): string {
@@ -40,23 +45,33 @@ function bootstrapService(): OrganisationBootstrapService {
 	return new OrganisationBootstrapService(getDatabase());
 }
 
+function collaborationService(): ProjectExternalCollaborationService {
+	return new ProjectExternalCollaborationService(getDatabase());
+}
+
 type SignupProvisioningIntent =
-	{ kind: 'invitation'; token: string } | { kind: 'organisation-bootstrap'; token: string };
+	| { kind: 'invitation'; token: string }
+	| { kind: 'organisation-bootstrap'; token: string }
+	| { kind: 'project-collaboration'; token: string };
 
 function signupProvisioningIntentFromContext(ctx: {
 	getCookie(name: string): string | null | undefined;
 }): SignupProvisioningIntent {
 	const invitationToken = ctx.getCookie(INVITATION_SIGNUP_COOKIE)?.trim() ?? '';
 	const bootstrapToken = ctx.getCookie(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE)?.trim() ?? '';
-	if (invitationToken && bootstrapToken) {
+	const collaborationToken = ctx.getCookie(PROJECT_COLLABORATION_SIGNUP_COOKIE)?.trim() ?? '';
+	const intentCount = [invitationToken, bootstrapToken, collaborationToken].filter(Boolean).length;
+	if (intentCount > 1) {
 		throw new APIError('FORBIDDEN', {
 			message: 'The NuBlox account setup state is ambiguous. Start again.'
 		});
 	}
 	if (invitationToken) return { kind: 'invitation', token: invitationToken };
 	if (bootstrapToken) return { kind: 'organisation-bootstrap', token: bootstrapToken };
+	if (collaborationToken) return { kind: 'project-collaboration', token: collaborationToken };
 	throw new APIError('FORBIDDEN', {
-		message: 'A valid NuBlox invitation or organisation setup request is required.'
+		message:
+			'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
 	});
 }
 
@@ -143,16 +158,20 @@ export const auth = betterAuth({
 			try {
 				if (intent.kind === 'invitation') {
 					await invitationService().validateSignup(intent.token, email);
-				} else {
+				} else if (intent.kind === 'organisation-bootstrap') {
 					await bootstrapService().validateSignup(intent.token, email);
+				} else {
+					await collaborationService().validateSignup(intent.token, email);
 				}
 			} catch (cause) {
 				if (
 					cause instanceof InvitationAccessError ||
-					cause instanceof OrganisationBootstrapAccessError
+					cause instanceof OrganisationBootstrapAccessError ||
+					cause instanceof ProjectExternalCollaborationAccessError
 				) {
 					throw new APIError('FORBIDDEN', {
-						message: 'A valid NuBlox invitation or organisation setup request is required.'
+						message:
+							'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
 					});
 				}
 				throw cause;
@@ -167,6 +186,8 @@ export const auth = betterAuth({
 					const intent = signupProvisioningIntentFromContext(ctx);
 					if (intent.kind === 'invitation') {
 						await invitationService().bindSignupAuthUser(intent.token, user.email, user.id);
+					} else if (intent.kind === 'project-collaboration') {
+						await collaborationService().bindSignupAuthUser(intent.token, user.email, user.id);
 					} else {
 						const db = getDatabase();
 						const created = await new OrganisationBootstrapService(db).provisionSignup({
@@ -210,6 +231,12 @@ export const auth = betterAuth({
 				correlationId
 			});
 			await bootstrapService().activateVerifiedAuthUser({
+				authUserId: user.id,
+				email: user.email,
+				displayName: user.name,
+				correlationId
+			});
+			await collaborationService().activateVerifiedAuthUser({
 				authUserId: user.id,
 				email: user.email,
 				displayName: user.name,

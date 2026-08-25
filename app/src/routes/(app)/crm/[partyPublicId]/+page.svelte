@@ -171,48 +171,6 @@
 	</section>
 
 	{#if data.party.kind === 'organisation'}
-		<section id="nublox-link" class="panel full-width collaboration-link">
-			<div class="panel-heading">
-				<div>
-					<p class="eyebrow">Collaboration</p>
-					<h2>NuBlox organisation link</h2>
-				</div>
-			</div>
-			<p class="muted">
-				Link this private CRM organisation to its NuBlox account once. Project invitations then use
-				this customer record instead of asking users to copy platform IDs.
-			</p>
-			{#if form?.platformLinkError}<p class="error" role="alert">{form.platformLinkError}</p>{/if}
-			{#if data.platformOrganisationLink}
-				<div class="platform-link-summary">
-					<div>
-						<strong>{data.platformOrganisationLink.organisationName}</strong>
-						<span>NuBlox account · {data.platformOrganisationLink.status}</span>
-					</div>
-					{#if data.canManage}
-						<form method="POST" action="?/unlinkPlatformOrganisation">
-							<button class="danger-button" type="submit">Remove NuBlox link</button>
-						</form>
-					{/if}
-				</div>
-			{:else if data.canManage}
-				<form method="POST" action="?/linkPlatformOrganisation" class="platform-link-form">
-					<label>
-						<span>NuBlox organisation ID</span>
-						<input
-							name="organisationPublicId"
-							required
-							maxlength="64"
-							placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
-						/>
-					</label>
-					<button type="submit">Link NuBlox organisation</button>
-				</form>
-			{/if}
-		</section>
-	{/if}
-
-	{#if data.party.kind === 'organisation'}
 		<section id="contacts" class="panel contacts full-width">
 			<div class="panel-heading">
 				<div>
@@ -221,6 +179,11 @@
 				</div>
 				<span class="count">{data.contacts.length}</span>
 			</div>
+
+			<p class="muted">
+				Contacts describe a person's affiliation with this organisation. A contact is not
+				automatically a customer; customer/client status remains an explicit CRM business role.
+			</p>
 
 			{#if form?.contactActionError}<p class="error" role="alert">{form.contactActionError}</p>{/if}
 
@@ -453,46 +416,6 @@
 	}
 	.full-width {
 		grid-column: 1 / -1;
-	}
-	.platform-link-summary {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-		padding: 0.85rem;
-		border: 1px solid #dcdcd5;
-		border-radius: 0.55rem;
-		background: #fafaf7;
-	}
-	.platform-link-summary > div {
-		display: grid;
-		gap: 0.2rem;
-	}
-	.platform-link-summary span {
-		color: #666;
-		font-size: 0.82rem;
-		text-transform: capitalize;
-	}
-	.platform-link-form {
-		display: grid;
-		grid-template-columns: minmax(16rem, 1fr) auto;
-		align-items: end;
-		gap: 0.75rem;
-		max-width: 46rem;
-	}
-	.platform-link-form label {
-		display: grid;
-		gap: 0.35rem;
-		font-size: 0.84rem;
-		font-weight: 650;
-	}
-	.platform-link-form input {
-		min-width: 0;
-		font: inherit;
-		border: 1px solid #b9b9b1;
-		border-radius: 0.45rem;
-		padding: 0.64rem;
-		background: white;
 	}
 	.panel-heading {
 		display: flex;

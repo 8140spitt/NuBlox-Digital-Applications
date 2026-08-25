@@ -14,18 +14,7 @@
 		if (data.actor) return;
 		submitting = true;
 		message = '';
-		const bootstrap = await fetch('/api/project-collaboration/bootstrap-intents', {
-			method: 'POST',
-			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ defaultTimezone: 'Europe/London', defaultCurrencyCode: 'GBP' })
-		});
-		if (!bootstrap.ok) {
-			const body = await bootstrap.json().catch(() => null);
-			message = body?.message ?? 'The invited organisation could not be prepared.';
-			submitting = false;
-			return;
-		}
-		const callbackURL = `${window.location.origin}/signin?verified=1&returnTo=${encodeURIComponent('/select-organisation')}`;
+		const callbackURL = `${window.location.origin}/signin?verified=1&returnTo=${encodeURIComponent('/portal')}`;
 		const result = await authClient.signUp.email({
 			email: data.invitation.email,
 			name: displayName.trim(),
@@ -52,20 +41,32 @@
 			<p class="eyebrow">Project collaboration</p>
 			<h1>Join {data.invitation.projectName}</h1>
 			<p class="lede">
-				<strong>{data.invitation.invitingOrganisationName}</strong> invited
-				<strong>{data.invitation.crmOrganisationName}</strong> to collaborate on
-				{data.invitation.projectNumber}.
+				<strong>{data.invitation.invitingOrganisationName}</strong> invited you personally to
+				collaborate on {data.invitation.projectNumber}.
 			</p>
 		</header>
 
 		<div class="invitation-summary">
-			<div><span>Organisation</span><strong>{data.invitation.crmOrganisationName}</strong></div>
-			<div><span>Invited contact</span><strong>{data.invitation.contactName}</strong></div>
+			<div><span>Invited person</span><strong>{data.invitation.contactName}</strong></div>
 			<div><span>Email</span><strong>{data.invitation.email}</strong></div>
+			{#if data.invitation.organisationName}
+				<div>
+					<span>CRM affiliation</span>
+					<strong>{data.invitation.organisationName}</strong>
+				</div>
+			{/if}
 			<div>
 				<span>Project roles</span>
 				<strong>{data.invitation.roleNames.join(', ')}</strong>
 			</div>
+		</div>
+
+		<div class="boundary-note">
+			<strong>No organisation account is required.</strong>
+			<span>
+				This invitation grants project access to you as an authenticated person. It does not create,
+				connect or identify a NuBlox organisation for you or your employer.
+			</span>
 		</div>
 
 		{#if form?.message}<p class="error" role="alert">{form.message}</p>{/if}
@@ -73,74 +74,35 @@
 		{#if data.actor}
 			<section class="choice-section">
 				<p class="eyebrow">Signed in</p>
-				<h2>Choose how to connect {data.invitation.crmOrganisationName}</h2>
+				<h2>Accept your project access</h2>
 				<p class="muted">Signed in as {data.actor.displayName} · {data.actor.email}</p>
-
 				{#if !data.emailMatchesActor}
 					<div class="notice warning">
 						This invitation was sent to {data.invitation.email}. Sign in with that verified email
 						address to accept it.
 					</div>
 				{:else}
-					<div class="choices">
-						{#if data.currentOrganisation}
-							<article>
-								<div>
-									<p class="eyebrow">Existing NuBlox organisation</p>
-									<h3>{data.currentOrganisation.name}</h3>
-									<p>
-										Connect this organisation to the CRM customer and join the project immediately.
-									</p>
-								</div>
-								{#if data.currentOrganisation.canAccept}
-									<form method="POST" action="?/acceptCurrent">
-										<button class="primary" type="submit">Connect and join project</button>
-									</form>
-								{:else}
-									<p class="muted">Organisation administrator authority is required.</p>
-								{/if}
-							</article>
-						{/if}
-
-						<article>
-							<div>
-								<p class="eyebrow">New NuBlox organisation</p>
-								<h3>{data.invitation.crmOrganisationName}</h3>
-								<p>
-									Create the invited organisation from the CRM identity, connect it automatically
-									and join the project as its initial owner.
-								</p>
-							</div>
-							<form method="POST" action="?/createOrganisation">
-								<button class="secondary" type="submit">Create organisation and join</button>
-							</form>
-						</article>
-					</div>
-
-					<p class="switch-copy">
-						Need a different existing organisation?
-						<a href={`/select-organisation?returnTo=${encodeURIComponent(data.returnTo)}`}
-							>Switch organisation</a
-						>
-					</p>
+					<form method="POST" action="?/accept">
+						<button class="primary" type="submit">Accept and open shared work</button>
+					</form>
 				{/if}
 			</section>
 		{:else if submitted}
 			<section class="notice success">
 				<h2>Check your email</h2>
 				<p>
-					We sent a verification link to <strong>{data.invitation.email}</strong>. Verification
-					creates {data.invitation.crmOrganisationName}, connects it to the inviter's CRM record and
-					joins it to this project automatically.
+					We sent a verification link to <strong>{data.invitation.email}</strong>. After
+					verification, your personal project collaboration access is activated. No organisation
+					setup is required.
 				</p>
 			</section>
 		{:else}
 			<section class="choice-section">
 				<p class="eyebrow">New to NuBlox</p>
-				<h2>Create your account</h2>
+				<h2>Create your personal sign-in</h2>
 				<p class="muted">
-					Your organisation details come from the invitation, so there is no organisation ID to
-					find, copy or send back.
+					Create an authenticated identity for this email. Your CRM record remains private to the
+					inviting business and is not turned into a platform organisation.
 				</p>
 				<form class="stack" onsubmit={createAccount}>
 					<label>
@@ -162,16 +124,9 @@
 							required
 						/>
 					</label>
-					<div class="organisation-preview">
-						<span>Organisation to create</span>
-						<strong>{data.invitation.crmLegalName}</strong>
-						{#if data.invitation.crmTradingName}<small
-								>Trading as {data.invitation.crmTradingName}</small
-							>{/if}
-					</div>
 					{#if message}<p class="error" role="alert">{message}</p>{/if}
 					<button class="primary" type="submit" disabled={submitting}>
-						{submitting ? 'Preparing account…' : 'Create account and join project'}
+						{submitting ? 'Creating account…' : 'Create account and join project'}
 					</button>
 				</form>
 				<p class="switch-copy">
@@ -181,9 +136,7 @@
 			</section>
 		{/if}
 
-		<footer>
-			Invitation expires {new Date(data.invitation.expiresAt).toLocaleString()}.
-		</footer>
+		<footer>Invitation expires {new Date(data.invitation.expiresAt).toLocaleString()}.</footer>
 	</section>
 </main>
 
@@ -221,8 +174,7 @@
 		font-size: clamp(2rem, 6vw, 3rem);
 		letter-spacing: -0.045em;
 	}
-	h2,
-	h3 {
+	h2 {
 		margin: 0;
 	}
 	.lede,
@@ -238,8 +190,7 @@
 		gap: 0.7rem;
 		margin: 1.5rem 0;
 	}
-	.invitation-summary > div,
-	.organisation-preview {
+	.invitation-summary > div {
 		display: grid;
 		gap: 0.2rem;
 		padding: 0.85rem;
@@ -247,33 +198,23 @@
 		border-radius: 0.6rem;
 		background: #fafaf7;
 	}
-	.invitation-summary span,
-	.organisation-preview span {
+	.invitation-summary span {
 		color: #6b6b65;
 		font-size: 0.75rem;
 	}
+	.boundary-note {
+		display: grid;
+		gap: 0.35rem;
+		padding: 1rem;
+		border: 1px solid #cfe1d5;
+		border-radius: 0.65rem;
+		background: #f3faf5;
+		line-height: 1.5;
+	}
 	.choice-section {
 		border-top: 1px solid #e1e1da;
+		margin-top: 1.5rem;
 		padding-top: 1.5rem;
-	}
-	.choices {
-		display: grid;
-		gap: 0.8rem;
-		margin-top: 1rem;
-	}
-	.choices article {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1.25rem;
-		padding: 1rem;
-		border: 1px solid #d8d8d1;
-		border-radius: 0.7rem;
-	}
-	.choices article p {
-		margin: 0.35rem 0 0;
-		color: #5c5c56;
-		line-height: 1.45;
 	}
 	.stack {
 		display: grid;
@@ -308,11 +249,6 @@
 		background: #111;
 		color: white;
 	}
-	.secondary {
-		border: 1px solid #777;
-		background: white;
-		color: #111;
-	}
 	button:disabled {
 		opacity: 0.55;
 		cursor: wait;
@@ -345,10 +281,6 @@
 	@media (max-width: 680px) {
 		.invitation-summary {
 			grid-template-columns: 1fr;
-		}
-		.choices article {
-			align-items: stretch;
-			flex-direction: column;
 		}
 	}
 </style>

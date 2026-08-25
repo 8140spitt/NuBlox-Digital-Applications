@@ -263,6 +263,7 @@ export interface AuditEvents {
   correlation_id: string | null;
   event_metadata: Json | null;
   event_public_id: string;
+  external_auth_user_id: string | null;
   id: Generated<string>;
   occurred_at: Generated<Date>;
   project_id: string | null;
@@ -2025,7 +2026,6 @@ export interface PartyOrganisationContacts {
 export interface PartyOrganisations {
   created_at: Generated<Date>;
   legal_name: string;
-  linked_organisation_id: string | null;
   organisation_id: string;
   party_id: string;
   trading_name: string | null;
@@ -2525,18 +2525,17 @@ export interface ProjectCollaborationInvitations {
   auth_user_id: string | null;
   created_at: Generated<Date>;
   crm_contact_party_id: string;
-  crm_organisation_party_id: string;
+  crm_organisation_party_id: string | null;
   expires_at: Date;
   id: Generated<string>;
   invite_email: string;
   invited_by_member_id: string;
   inviting_organisation_id: string;
-  pending_crm_organisation_party_id: string | null;
+  pending_crm_contact_party_id: string | null;
   project_id: string;
   public_id: string;
   revoked_at: Date | null;
   status: Generated<string>;
-  target_organisation_id: string | null;
   token_hash: string;
   updated_at: Generated<Date>;
 }
@@ -2618,6 +2617,30 @@ export interface ProjectEarnedValueBaselines {
   project_id: string;
   public_id: string;
   source_plan_baseline_id: string;
+}
+
+export interface ProjectExternalCollaboratorRoles {
+  assigned_at: Generated<Date>;
+  project_external_collaborator_id: string;
+  project_id: string;
+  project_role_type_id: string;
+}
+
+export interface ProjectExternalCollaborators {
+  auth_user_id: string;
+  created_at: Generated<Date>;
+  crm_organisation_party_id: string | null;
+  crm_person_party_id: string;
+  id: Generated<string>;
+  invite_email: string;
+  invited_by_member_id: string;
+  joined_at: Date;
+  left_at: Date | null;
+  owning_organisation_id: string;
+  project_id: string;
+  public_id: string;
+  status: Generated<string>;
+  updated_at: Generated<Date>;
 }
 
 export interface ProjectInstructions {
@@ -4728,6 +4751,8 @@ export interface DB {
   project_direct_costs: ProjectDirectCosts;
   project_earned_value_baseline_allocations: ProjectEarnedValueBaselineAllocations;
   project_earned_value_baselines: ProjectEarnedValueBaselines;
+  project_external_collaborator_roles: ProjectExternalCollaboratorRoles;
+  project_external_collaborators: ProjectExternalCollaborators;
   project_instructions: ProjectInstructions;
   project_member_roles: ProjectMemberRoles;
   project_members: ProjectMembers;

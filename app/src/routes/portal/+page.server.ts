@@ -13,6 +13,7 @@ import {
 	PortalCollaborationService,
 	PortalCollaborationValidationError
 } from '$lib/server/portal/portal-collaboration-service';
+import { ProjectExternalCollaborationService } from '$lib/server/projects/project-external-collaboration-service';
 import {
 	ProjectTeamService,
 	ProjectTeamValidationError
@@ -38,9 +39,28 @@ function actionFailure(status: number, action: string, subjectPublicId: string, 
 }
 
 export const load: PageServerLoad = async ({ locals }) => {
-	const actor = actorFromLocals(locals);
-	if (!actor) throw redirect(303, '/signin?returnTo=%2Fportal');
+	if (!locals.actor) throw redirect(303, '/signin?returnTo=%2Fportal');
 	const db = getDatabase();
+	const actor = actorFromLocals(locals);
+	if (!actor) {
+		const externalProjects = await new ProjectExternalCollaborationService(
+			db
+		).listExternalPortalProjects(locals.actor.authUserId);
+		return {
+			mode: 'external' as const,
+			canView: true,
+			canRespond: false,
+			canManage: false,
+			projects: [],
+			rfis: [],
+			submittals: [],
+			instructions: [],
+			transmittals: [],
+			invitations: [],
+			externalProjects
+		};
+	}
+
 	const invitationDecision = await new PermissionService(db).decideWithUmbrella(
 		actor,
 		'project.participation.manage',
@@ -52,7 +72,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 			? new ProjectTeamService(db).listPendingInvitations(actor)
 			: Promise.resolve([])
 	]);
-	return { ...workspace, invitations };
+	return { mode: 'member' as const, ...workspace, invitations, externalProjects: [] };
 };
 
 export const actions: Actions = {

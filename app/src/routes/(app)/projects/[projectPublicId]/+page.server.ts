@@ -14,6 +14,11 @@ import {
 	ProjectTeamService,
 	ProjectTeamValidationError
 } from '$lib/server/projects/project-team-service';
+import {
+	ProjectExternalCollaborationService,
+	ProjectExternalCollaborationValidationError,
+	type ExternalCollaborationManagementView
+} from '$lib/server/projects/project-external-collaboration-service';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 
 const PROJECT_STATUSES = new Set<ProjectLifecycleStatus>([
@@ -73,7 +78,10 @@ function teamFailure(error: unknown, teamAction: string) {
 	if (error instanceof TenantAccessError) {
 		return fail(403, actionFailure({ teamError: error.message, teamAction }));
 	}
-	if (error instanceof ProjectTeamValidationError) {
+	if (
+		error instanceof ProjectTeamValidationError ||
+		error instanceof ProjectExternalCollaborationValidationError
+	) {
 		return fail(400, actionFailure({ teamError: error.message, teamAction }));
 	}
 	if (error instanceof ConcurrentUpdateError) {
@@ -99,7 +107,24 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			params.projectPublicId
 		);
 		const team = await new ProjectTeamService(db).getTeamView(actor, params.projectPublicId);
-		return { ...workspace, team };
+		let externalCollaboration: ExternalCollaborationManagementView = {
+			canManage: false,
+			roleTypes: [],
+			candidates: [],
+			collaborators: [],
+			pendingInvitations: []
+		};
+		if (team.canManageParticipants) {
+			try {
+				externalCollaboration = await new ProjectExternalCollaborationService(db).getManagementView(
+					actor,
+					params.projectPublicId
+				);
+			} catch (cause) {
+				if (!(cause instanceof ProjectExternalCollaborationValidationError)) throw cause;
+			}
+		}
+		return { ...workspace, team, externalCollaboration };
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError || cause instanceof TenantAccessError) {
 			throw httpError(404, 'Project not found.');
@@ -175,27 +200,81 @@ export const actions: Actions = {
 		throw redirect(303, `/projects/${encodeURIComponent(params.projectPublicId)}`);
 	},
 
-	inviteParticipant: async ({ request, locals, params }) => {
+	inviteExternal: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
 		if (!actor)
 			return fail(
 				401,
-				actionFailure({
-					teamError: 'Authentication is required.',
-					teamAction: 'invite-participant'
-				})
+				actionFailure({ teamError: 'Authentication is required.', teamAction: 'external-invite' })
 			);
 		const data = await request.formData();
+		const [personPartyPublicId = '', organisationPartyPublicId = ''] = String(
+			data.get('candidate') ?? ''
+		).split('|', 2);
 		try {
-			await new ProjectTeamService(getDatabase()).inviteCrmParticipant(actor, {
+			await new ProjectExternalCollaborationService(getDatabase()).invite(actor, {
 				projectPublicId: params.projectPublicId,
-				crmPartyPublicId: String(data.get('crmPartyPublicId') ?? ''),
+				personPartyPublicId,
+				organisationPartyPublicId: organisationPartyPublicId || null,
 				roleKeys: roleKeys(data)
 			});
 		} catch (cause) {
-			return teamFailure(cause, 'invite-participant');
+			return teamFailure(cause, 'external-invite');
 		}
-		throw redirect(303, `/projects/${encodeURIComponent(params.projectPublicId)}`);
+		throw redirect(
+			303,
+			`/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`
+		);
+	},
+
+	revokeExternalInvitation: async ({ request, locals, params }) => {
+		const actor = actorFromLocals(locals);
+		const data = await request.formData();
+		const invitationPublicId = String(data.get('invitationPublicId') ?? '');
+		const marker = `external-invitation-${invitationPublicId}`;
+		if (!actor)
+			return fail(
+				401,
+				actionFailure({ teamError: 'Authentication is required.', teamAction: marker })
+			);
+		try {
+			await new ProjectExternalCollaborationService(getDatabase()).revokeInvitation(
+				actor,
+				params.projectPublicId,
+				invitationPublicId
+			);
+		} catch (cause) {
+			return teamFailure(cause, marker);
+		}
+		throw redirect(
+			303,
+			`/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`
+		);
+	},
+
+	removeExternalCollaborator: async ({ request, locals, params }) => {
+		const actor = actorFromLocals(locals);
+		const data = await request.formData();
+		const collaboratorPublicId = String(data.get('collaboratorPublicId') ?? '');
+		const marker = `external-${collaboratorPublicId}`;
+		if (!actor)
+			return fail(
+				401,
+				actionFailure({ teamError: 'Authentication is required.', teamAction: marker })
+			);
+		try {
+			await new ProjectExternalCollaborationService(getDatabase()).removeCollaborator(
+				actor,
+				params.projectPublicId,
+				collaboratorPublicId
+			);
+		} catch (cause) {
+			return teamFailure(cause, marker);
+		}
+		throw redirect(
+			303,
+			`/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`
+		);
 	},
 
 	updateParticipantRoles: async ({ request, locals, params }) => {

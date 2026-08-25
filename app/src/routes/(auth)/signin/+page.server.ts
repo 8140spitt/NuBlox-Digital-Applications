@@ -5,6 +5,7 @@ import type { PageServerLoad } from './$types';
 import { auth } from '$lib/server/auth/better-auth';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
+import { PROJECT_COLLABORATION_SIGNUP_COOKIE } from '$lib/server/auth/project-collaboration-cookie';
 
 function safeReturnTo(value: string | null): string | null {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
@@ -23,6 +24,7 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 	if (verified) {
 		cookies.delete(INVITATION_SIGNUP_COOKIE, { path: '/' });
 		cookies.delete(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE, { path: '/' });
+		cookies.delete(PROJECT_COLLABORATION_SIGNUP_COOKIE, { path: '/' });
 	}
 	if (locals.actor) {
 		throw redirect(

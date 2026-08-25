@@ -106,7 +106,7 @@
 			<span class="count">{data.team.participants.length}</span>
 		</div>
 
-		{#if form?.teamError && (form.teamAction === 'invite-participant' || form.teamAction.startsWith('participant-'))}
+		{#if form?.teamError && form.teamAction.startsWith('participant-')}
 			<p class="error" role="alert">{form.teamError}</p>
 		{/if}
 
@@ -173,35 +173,104 @@
 				</article>
 			{/each}
 		</div>
+	</section>
 
-		{#if data.team.canManageParticipants}
-			<form method="POST" action="?/inviteParticipant" class="invite-form">
-				<h3>Invite organisation</h3>
+	<section id="external-collaborators" class="panel participants">
+		<div class="panel-heading">
+			<div>
+				<p class="eyebrow">External collaboration</p>
+				<h2>Customer and contact collaborators</h2>
+			</div>
+			<span class="count">{data.externalCollaboration.collaborators.length}</span>
+		</div>
+		<p class="hint">
+			Access is granted to authenticated people for this project. CRM organisations remain private
+			relationship records and are never linked to NuBlox organisations.
+		</p>
+
+		{#if form?.teamError && form.teamAction.startsWith('external')}
+			<p class="error" role="alert">{form.teamError}</p>
+		{/if}
+
+		<div class="participant-list">
+			{#each data.externalCollaboration.collaborators as collaborator}
+				<article class="participant-card">
+					<div class="participant-summary">
+						<div>
+							<strong>{collaborator.personName}</strong>
+							<small>{collaborator.email}</small>
+							{#if collaborator.organisationName}<small
+									>CRM affiliation · {collaborator.organisationName}</small
+								>{/if}
+						</div>
+						<span class="participant-status participant-active">Active</span>
+					</div>
+					<div class="role-list">
+						{#each collaborator.roles as role}<span>{role.name}</span>{/each}
+					</div>
+					{#if data.externalCollaboration.canManage}
+						<form method="POST" action="?/removeExternalCollaborator">
+							<input type="hidden" name="collaboratorPublicId" value={collaborator.publicId} />
+							<button class="danger" type="submit">Remove external access</button>
+						</form>
+					{/if}
+				</article>
+			{/each}
+		</div>
+
+		{#if data.externalCollaboration.pendingInvitations.length}
+			<h3>Pending invitations</h3>
+			<div class="participant-list">
+				{#each data.externalCollaboration.pendingInvitations as invitation}
+					<article class="participant-card">
+						<div class="participant-summary">
+							<div>
+								<strong>{invitation.personName}</strong>
+								<small>{invitation.email}</small>
+								{#if invitation.organisationName}<small
+										>CRM affiliation · {invitation.organisationName}</small
+									>{/if}
+							</div>
+							<span class="participant-status participant-invited">Invited</span>
+						</div>
+						<div class="role-list">
+							{#each invitation.roles as role}<span>{role.name}</span>{/each}
+						</div>
+						{#if data.externalCollaboration.canManage}
+							<form method="POST" action="?/revokeExternalInvitation">
+								<input type="hidden" name="invitationPublicId" value={invitation.publicId} />
+								<button class="danger" type="submit">Revoke invitation</button>
+							</form>
+						{/if}
+					</article>
+				{/each}
+			</div>
+		{/if}
+
+		{#if data.externalCollaboration.canManage}
+			<form method="POST" action="?/inviteExternal" class="invite-form">
+				<h3>Invite external person</h3>
 				<p class="hint">
-					Select an organisation from Customers. Linked NuBlox accounts can be invited without
-					copying platform IDs into the project.
+					Choose a direct person customer or a contact at a CRM organisation. The invitation belongs
+					to that person.
 				</p>
-				{#if data.team.invitationCandidates.length === 0}
+				{#if data.externalCollaboration.candidates.length === 0}
 					<p class="hint">
-						No active CRM organisations are available.
-						<a href="/crm?kind=organisation&status=active">Open Customers</a> to maintain them.
+						No active CRM people with primary email addresses are available.
+						<a href="/crm?kind=person&status=active">Open Customers</a>.
 					</p>
 				{:else}
 					<label>
-						<span>Organisation</span>
-						<select name="crmPartyPublicId" required>
-							<option value="">Select CRM organisation</option>
-							{#each data.team.invitationCandidates as candidate}
+						<span>Person</span>
+						<select name="candidate" required>
+							<option value="">Select person</option>
+							{#each data.externalCollaboration.candidates as candidate}
 								<option
-									value={candidate.partyPublicId}
-									disabled={!candidate.linkedOrganisationId ||
-										candidate.linkedOrganisationStatus !== 'active'}
+									value={`${candidate.personPartyPublicId}|${candidate.organisationPartyPublicId ?? ''}`}
 								>
-									{candidate.displayName} · {candidate.linkedOrganisationStatus === 'active'
-										? (candidate.linkedOrganisationName ?? 'Linked NuBlox organisation')
-										: candidate.linkedOrganisationId
-											? 'NuBlox account unavailable'
-											: 'Not linked to NuBlox'}
+									{candidate.personName} · {candidate.email}{candidate.organisationName
+										? ` · ${candidate.organisationName}`
+										: ' · direct person customer/contact'}
 								</option>
 							{/each}
 						</select>
@@ -209,16 +278,12 @@
 					<label>
 						<span>Project roles</span>
 						<select name="roleKeys" multiple size="6" required>
-							{#each data.team.roleTypes as role}<option value={role.roleKey}>{role.name}</option
+							{#each data.externalCollaboration.roleTypes as role}<option value={role.roleKey}
+									>{role.name}</option
 								>{/each}
 						</select>
 					</label>
-					<button
-						type="submit"
-						disabled={!data.team.invitationCandidates.some(
-							(candidate) => candidate.linkedOrganisationStatus === 'active'
-						)}>Send project invitation</button
-					>
+					<button type="submit">Send personal project invitation</button>
 				{/if}
 			</form>
 		{/if}
