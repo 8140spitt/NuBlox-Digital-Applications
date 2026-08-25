@@ -24,6 +24,10 @@ const BOOTSTRAP_PERMISSION_KEYS = [
 	'project.plan.baseline.manage',
 	'project.resource.view',
 	'project.resource.manage',
+	'project.progress.view',
+	'project.progress.manage',
+	'project.progress.approve',
+	'project.progress.baseline.manage',
 	'project.lifecycle.manage',
 	'project.participant.manage',
 	'project.team.manage',
@@ -178,6 +182,10 @@ const OWNER_CORE_KEYS = [
 	'project.plan.baseline.manage',
 	'project.resource.view',
 	'project.resource.manage',
+	'project.progress.view',
+	'project.progress.manage',
+	'project.progress.approve',
+	'project.progress.baseline.manage',
 	'project.lifecycle.manage',
 	'project.participant.manage',
 	'project.team.manage',
@@ -237,6 +245,10 @@ const STANDARD_ROLES = [
 			'project.plan.baseline.manage',
 			'project.resource.view',
 			'project.resource.manage',
+			'project.progress.view',
+			'project.progress.manage',
+			'project.progress.approve',
+			'project.progress.baseline.manage',
 			'project.lifecycle.manage',
 			'project.participant.manage',
 			'project.team.manage',
@@ -299,7 +311,8 @@ const STANDARD_ROLES = [
 			'finance.accounting.view',
 			'commercial.forecast.view',
 			'commercial.forecast.manage',
-			'commercial.cash_flow.manage'
+			'commercial.cash_flow.manage',
+			'project.progress.view'
 		]
 	},
 	{
@@ -311,13 +324,20 @@ const STANDARD_ROLES = [
 			'project.programme.view',
 			'project.plan.view',
 			'project.resource.view',
-			'crm.view'
+			'crm.view',
+			'project.progress.view',
+			'project.progress.manage'
 		]
 	},
 	{
 		name: 'Field Worker',
 		description: 'Site and field workforce role template.',
-		permissionKeys: ['project.view', 'project.plan.view']
+		permissionKeys: [
+			'project.view',
+			'project.plan.view',
+			'project.progress.view',
+			'project.progress.manage'
+		]
 	},
 	{
 		name: 'Read Only',
@@ -329,7 +349,8 @@ const STANDARD_ROLES = [
 			'project.plan.view',
 			'project.resource.view',
 			'crm.view',
-			'commercial.forecast.view'
+			'commercial.forecast.view',
+			'project.progress.view'
 		]
 	}
 ] as const;
