@@ -14,8 +14,7 @@
 		eyebrow = 'Built environment operating platform',
 		title = 'The operating system for the',
 		highlight = 'built environment.',
-		description =
-			'Connect your people, projects, processes and business through one governed operating platform.',
+		description = 'Connect your people, projects, processes and business through one governed operating platform.',
 		primaryLabel = 'Get started',
 		primaryHref = '/start',
 		secondaryLabel = 'Sign in',
