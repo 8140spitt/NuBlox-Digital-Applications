@@ -39,7 +39,8 @@ function actionFailure(ridaAction: string, ridaError: string) {
 function parseDate(value: FormDataEntryValue | null, label: string): Date | null {
 	const text = String(value ?? '').trim();
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new ProjectRidaValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new ProjectRidaValidationError(`${label} is invalid.`);
 	const parsed = new Date(`${text}T00:00:00.000Z`);
 	if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text) {
 		throw new ProjectRidaValidationError(`${label} is invalid.`);
@@ -55,12 +56,18 @@ function parseScore(value: FormDataEntryValue | null): number | null {
 }
 
 function handleActionError(cause: unknown, ridaAction: string) {
-	if (cause instanceof RecordNotFoundError) return fail(404, actionFailure(ridaAction, cause.message));
-	if (cause instanceof TenantAccessError) return fail(403, actionFailure(ridaAction, cause.message));
-	if (cause instanceof ProjectRidaValidationError || cause instanceof InvalidLifecycleTransitionError) {
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, actionFailure(ridaAction, cause.message));
+	if (cause instanceof TenantAccessError)
+		return fail(403, actionFailure(ridaAction, cause.message));
+	if (
+		cause instanceof ProjectRidaValidationError ||
+		cause instanceof InvalidLifecycleTransitionError
+	) {
 		return fail(400, actionFailure(ridaAction, cause.message));
 	}
-	if (cause instanceof ConcurrentUpdateError) return fail(409, actionFailure(ridaAction, cause.message));
+	if (cause instanceof ConcurrentUpdateError)
+		return fail(409, actionFailure(ridaAction, cause.message));
 	throw cause;
 }
 
@@ -80,7 +87,8 @@ function createInput(data: FormData, projectPublicId: string) {
 		riskDirection: (String(data.get('riskDirection') ?? '') || null) as RiskDirection | null,
 		probabilityScore: parseScore(data.get('probabilityScore')),
 		impactScore: parseScore(data.get('impactScore')),
-		responseStrategy: (String(data.get('responseStrategy') ?? '') || null) as RiskResponseStrategy | null,
+		responseStrategy: (String(data.get('responseStrategy') ?? '') ||
+			null) as RiskResponseStrategy | null,
 		responsePlan: String(data.get('responsePlan') ?? ''),
 		residualProbabilityScore: parseScore(data.get('residualProbabilityScore')),
 		residualImpactScore: parseScore(data.get('residualImpactScore')),
@@ -110,7 +118,10 @@ export const actions: Actions = {
 		if (!actor) return fail(401, actionFailure('create-item', 'Authentication is required.'));
 		const data = await request.formData();
 		try {
-			await new ProjectRidaService(getDatabase()).createItem(actor, createInput(data, params.projectPublicId));
+			await new ProjectRidaService(getDatabase()).createItem(
+				actor,
+				createInput(data, params.projectPublicId)
+			);
 		} catch (cause) {
 			return handleActionError(cause, 'create-item');
 		}
@@ -194,7 +205,8 @@ export const actions: Actions = {
 				itemPublicId: String(data.get('itemPublicId') ?? ''),
 				title: String(data.get('title') ?? ''),
 				description: String(data.get('description') ?? ''),
-				priority: String(data.get('priority') ?? 'normal') as 'low' | 'normal' | 'high' | 'critical',
+				priority: String(data.get('priority') ?? 'normal') as
+					'low' | 'normal' | 'high' | 'critical',
 				dueAt: parseDate(data.get('dueOn'), 'Action due date')
 			});
 		} catch (cause) {

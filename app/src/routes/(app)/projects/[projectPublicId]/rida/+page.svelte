@@ -49,8 +49,9 @@
 			<p class="eyebrow">Project controls · Governance</p>
 			<h1>Risks, issues, decisions & actions</h1>
 			<p class="lede">
-				Control uncertainty, active problems and project decisions in one governed register. Follow-up
-				actions remain canonical NuBlox work items with assignment, due-date and completion evidence.
+				Control uncertainty, active problems and project decisions in one governed register.
+				Follow-up actions remain canonical NuBlox work items with assignment, due-date and
+				completion evidence.
 			</p>
 		</div>
 		<nav class="context-links" aria-label="Project controls navigation">
@@ -109,8 +110,24 @@
 						</select>
 					</label>
 					<div class="two-columns">
-						<label>Probability (1–5) <input type="number" name="probabilityScore" min="1" max="5" required /></label>
-						<label>Impact (1–5) <input type="number" name="impactScore" min="1" max="5" required /></label>
+						<label
+							>Probability (1–5) <input
+								type="number"
+								name="probabilityScore"
+								min="1"
+								max="5"
+								required
+							/></label
+						>
+						<label
+							>Impact (1–5) <input
+								type="number"
+								name="impactScore"
+								min="1"
+								max="5"
+								required
+							/></label
+						>
 					</div>
 					<label>
 						Response strategy
@@ -201,9 +218,19 @@
 		<section class="panel register-panel" aria-labelledby={`${registerType}-heading`}>
 			<div class="panel-heading">
 				<div>
-					<p class="eyebrow">{registerType === 'risk' ? 'Uncertainty' : registerType === 'issue' ? 'Active problems' : 'Governance record'}</p>
+					<p class="eyebrow">
+						{registerType === 'risk'
+							? 'Uncertainty'
+							: registerType === 'issue'
+								? 'Active problems'
+								: 'Governance record'}
+					</p>
 					<h2 id={`${registerType}-heading`}>
-						{registerType === 'risk' ? 'Risk register' : registerType === 'issue' ? 'Issue register' : 'Decision register'}
+						{registerType === 'risk'
+							? 'Risk register'
+							: registerType === 'issue'
+								? 'Issue register'
+								: 'Decision register'}
 					</h2>
 				</div>
 				<span>{registerItems.length} records</span>
@@ -230,17 +257,30 @@
 								<span><strong>Due</strong> {dateText(item.dueOn)}</span>
 								{#if item.itemType === 'risk'}
 									<span><strong>Direction</strong> {item.riskDirection}</span>
-									<span><strong>Rating</strong> {riskRating(item.probabilityScore, item.impactScore)}</span>
+									<span
+										><strong>Rating</strong>
+										{riskRating(item.probabilityScore, item.impactScore)}</span
+									>
 									<span><strong>Response</strong> {item.responseStrategy ?? 'Not selected'}</span>
-									{#if item.responsePlan}<span class="wide"><strong>Response plan</strong> {item.responsePlan}</span>{/if}
+									{#if item.responsePlan}<span class="wide"
+											><strong>Response plan</strong> {item.responsePlan}</span
+										>{/if}
 								{:else if item.itemType === 'issue'}
 									<span><strong>Severity</strong> {item.severity}</span>
-									{#if item.impactSummary}<span class="wide"><strong>Impact</strong> {item.impactSummary}</span>{/if}
-									{#if item.resolutionPlan}<span class="wide"><strong>Resolution</strong> {item.resolutionPlan}</span>{/if}
+									{#if item.impactSummary}<span class="wide"
+											><strong>Impact</strong> {item.impactSummary}</span
+										>{/if}
+									{#if item.resolutionPlan}<span class="wide"
+											><strong>Resolution</strong> {item.resolutionPlan}</span
+										>{/if}
 								{:else}
 									<span><strong>Required by</strong> {dateText(item.decisionRequiredOn)}</span>
-									{#if item.decisionOutcome}<span class="wide"><strong>Outcome</strong> {item.decisionOutcome}</span>{/if}
-									{#if item.decisionRationale}<span class="wide"><strong>Rationale</strong> {item.decisionRationale}</span>{/if}
+									{#if item.decisionOutcome}<span class="wide"
+											><strong>Outcome</strong> {item.decisionOutcome}</span
+										>{/if}
+									{#if item.decisionRationale}<span class="wide"
+											><strong>Rationale</strong> {item.decisionRationale}</span
+										>{/if}
 								{/if}
 							</div>
 
@@ -286,7 +326,11 @@
 											<li>
 												<div>
 													<strong>{action.title}</strong>
-													<span>{action.status} · {action.priority} · due {dateText(action.dueAt)}</span>
+													<span
+														>{action.status} · {action.priority} · due {dateText(
+															action.dueAt
+														)}</span
+													>
 												</div>
 												<a href="/my-work">Open in My work</a>
 											</li>
@@ -344,10 +388,15 @@
 		{#if data.actions.length}
 			<div class="action-table-wrap">
 				<table>
-					<thead><tr><th>Source</th><th>Action</th><th>Priority</th><th>Status</th><th>Due</th></tr></thead>
+					<thead
+						><tr><th>Source</th><th>Action</th><th>Priority</th><th>Status</th><th>Due</th></tr
+						></thead
+					>
 					<tbody>
 						{#each data.actions as action}
-							{@const source = data.items.find((item) => item.publicId === action.sourceItemPublicId)}
+							{@const source = data.items.find(
+								(item) => item.publicId === action.sourceItemPublicId
+							)}
 							<tr>
 								<td>{source ? reference(source) : 'Register item'}</td>
 								<td>{action.title}</td>

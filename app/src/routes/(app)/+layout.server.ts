@@ -72,8 +72,13 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				actorContext,
 				requestedProjectPublicId
 			);
-			const links = resolveProjectContextNavigation(allowedPermissionKeys, workspace.project.publicId);
-			if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('project.rida.'))) {
+			const links = resolveProjectContextNavigation(
+				allowedPermissionKeys,
+				workspace.project.publicId
+			);
+			if (
+				allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('project.rida.'))
+			) {
 				const ridaLink = {
 					id: 'rida',
 					label: 'RIDA',

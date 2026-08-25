@@ -38,7 +38,10 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const projectIds = projects.map((row) => row.id);
 	if (projectIds.length) {
-		await db.deleteFrom('outbox_events').where('aggregate_type', '=', 'project_rida_item').execute();
+		await db
+			.deleteFrom('outbox_events')
+			.where('aggregate_type', '=', 'project_rida_item')
+			.execute();
 		await db
 			.deleteFrom('outbox_events')
 			.where('aggregate_type', '=', 'work_item')
@@ -347,7 +350,9 @@ describe('project risk, issue, decision and action registers', () => {
 
 		const workspace = await service.getWorkspace(viewer, projectPublicId);
 		expect(workspace.canManage).toBe(false);
-		expect(workspace.items.find((item) => item.publicId === riskPublicId)?.status).toBe('monitoring');
+		expect(workspace.items.find((item) => item.publicId === riskPublicId)?.status).toBe(
+			'monitoring'
+		);
 		expect(workspace.items.find((item) => item.publicId === issuePublicId)?.status).toBe('closed');
 		expect(workspace.openRiskCount).toBeGreaterThanOrEqual(1);
 	});

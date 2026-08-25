@@ -4,13 +4,7 @@ export type ProjectRidaItemType = 'risk' | 'issue' | 'decision';
 export type ProjectRidaPriority = 'low' | 'normal' | 'high' | 'critical';
 export type RiskDirection = 'threat' | 'opportunity';
 export type RiskResponseStrategy =
-	| 'avoid'
-	| 'reduce'
-	| 'transfer'
-	| 'accept'
-	| 'exploit'
-	| 'enhance'
-	| 'share';
+	'avoid' | 'reduce' | 'transfer' | 'accept' | 'exploit' | 'enhance' | 'share';
 export type IssueSeverity = 'low' | 'medium' | 'high' | 'critical';
 export type ProjectRidaLifecycleStatus =
 	| 'open'

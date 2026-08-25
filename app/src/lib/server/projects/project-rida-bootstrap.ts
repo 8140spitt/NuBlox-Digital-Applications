@@ -8,7 +8,12 @@ export const PROJECT_RIDA_STANDARD_ROLE_PERMISSIONS = {
 		'project.rida.decide',
 		'project.rida.close'
 	],
-	Manager: ['project.rida.view', 'project.rida.manage', 'project.rida.decide', 'project.rida.close'],
+	Manager: [
+		'project.rida.view',
+		'project.rida.manage',
+		'project.rida.decide',
+		'project.rida.close'
+	],
 	'Finance/Commercial': ['project.rida.view'],
 	'Member/Professional': ['project.rida.view', 'project.rida.manage'],
 	'Field Worker': ['project.rida.view', 'project.rida.manage'],

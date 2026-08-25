@@ -86,7 +86,10 @@ export type ProjectRidaWorkspace = {
 };
 
 const TRANSITIONS: Readonly<
-	Record<ProjectRidaItemType, Partial<Record<ProjectRidaLifecycleStatus, readonly ProjectRidaLifecycleStatus[]>>>
+	Record<
+		ProjectRidaItemType,
+		Partial<Record<ProjectRidaLifecycleStatus, readonly ProjectRidaLifecycleStatus[]>>
+	>
 > = {
 	risk: {
 		open: ['monitoring', 'realised'],
@@ -169,13 +172,17 @@ export class ProjectRidaService {
 			projectPublicId.trim()
 		);
 		if (!project || project.owningOrganisationId !== actor.organisationId) {
-			throw new RecordNotFoundError('Project controls register not found in the active member scope.');
+			throw new RecordNotFoundError(
+				'Project controls register not found in the active member scope.'
+			);
 		}
 		const viewProject = await new PermissionService(this.db).decide(actor, 'project.view', {
 			projectId: project.id
 		});
 		if (!viewProject.allowed) {
-			throw new RecordNotFoundError('Project controls register not found in the active member scope.');
+			throw new RecordNotFoundError(
+				'Project controls register not found in the active member scope.'
+			);
 		}
 		return project;
 	}
@@ -197,7 +204,9 @@ export class ProjectRidaService {
 			permissions.decideWithUmbrella(actor, 'work.create', 'work.manage', { projectId: project.id })
 		]);
 		if (!view.allowed && !manage.allowed && !decide.allowed && !close.allowed) {
-			throw new RecordNotFoundError('Project controls register not found in the active member scope.');
+			throw new RecordNotFoundError(
+				'Project controls register not found in the active member scope.'
+			);
 		}
 		return {
 			canManage: manage.allowed,
@@ -220,11 +229,15 @@ export class ProjectRidaService {
 			'project.manage',
 			{ projectId: project.id }
 		);
-		if (!decision.allowed) throw new TenantAccessError('Project controls register management is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('Project controls register management is not permitted.');
 		return project;
 	}
 
-	private async validateOwnerMember(organisationId: string, memberId: string | null): Promise<void> {
+	private async validateOwnerMember(
+		organisationId: string,
+		memberId: string | null
+	): Promise<void> {
 		if (!memberId) return;
 		const row = await this.db
 			.selectFrom('organisation_members')
@@ -233,7 +246,10 @@ export class ProjectRidaService {
 			.where('organisation_id', '=', organisationId)
 			.where('status', '=', 'active')
 			.executeTakeFirst();
-		if (!row) throw new ProjectRidaValidationError('Owner must be an active member of the project owner organisation.');
+		if (!row)
+			throw new ProjectRidaValidationError(
+				'Owner must be an active member of the project owner organisation.'
+			);
 	}
 
 	private normalizeItemInput(itemType: ProjectRidaItemType, input: CreateProjectRidaItemInput) {
@@ -282,7 +298,10 @@ export class ProjectRidaService {
 					)
 				: null;
 			base.responsePlan = optionalText(input.responsePlan, 20_000);
-			base.residualProbabilityScore = score(input.residualProbabilityScore, 'Residual probability score');
+			base.residualProbabilityScore = score(
+				input.residualProbabilityScore,
+				'Residual probability score'
+			);
 			base.residualImpactScore = score(input.residualImpactScore, 'Residual impact score');
 		}
 
@@ -340,7 +359,10 @@ export class ProjectRidaService {
 		});
 	}
 
-	async getWorkspace(actor: TenantActorContext, projectPublicId: string): Promise<ProjectRidaWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		projectPublicId: string
+	): Promise<ProjectRidaWorkspace> {
 		const project = await this.findProject(actor, projectPublicId);
 		const flags = await this.permissionFlags(actor, project);
 		const repository = new ProjectRidaRepository(this.db);
@@ -356,17 +378,25 @@ export class ProjectRidaService {
 			canDecide: flags.canDecide,
 			canClose: flags.canClose,
 			canCreateAction: flags.canCreateAction,
-			openRiskCount: items.filter((item) => item.itemType === 'risk' && item.status !== 'closed').length,
-			openIssueCount: items.filter((item) => item.itemType === 'issue' && item.status !== 'closed').length,
+			openRiskCount: items.filter((item) => item.itemType === 'risk' && item.status !== 'closed')
+				.length,
+			openIssueCount: items.filter((item) => item.itemType === 'issue' && item.status !== 'closed')
+				.length,
 			pendingDecisionCount: items.filter(
 				(item) => item.itemType === 'decision' && ['proposed', 'pending'].includes(item.status)
 			).length,
-			openActionCount: actions.filter((action) => !['completed', 'cancelled'].includes(action.status)).length
+			openActionCount: actions.filter(
+				(action) => !['completed', 'cancelled'].includes(action.status)
+			).length
 		};
 	}
 
 	async createItem(actor: TenantActorContext, input: CreateProjectRidaItemInput): Promise<string> {
-		const project = await this.requirePermission(actor, input.projectPublicId, 'project.rida.manage');
+		const project = await this.requirePermission(
+			actor,
+			input.projectPublicId,
+			'project.rida.manage'
+		);
 		const normalized = this.normalizeItemInput(input.itemType, input);
 		await this.validateOwnerMember(project.owningOrganisationId, normalized.ownerMemberId);
 		const publicId = this.publicIdFactory();
@@ -374,7 +404,8 @@ export class ProjectRidaService {
 		await this.db.transaction().execute(async (trx) => {
 			const repository = new ProjectRidaRepository(trx);
 			const itemNumber = await repository.nextItemNumber(project.id, input.itemType);
-			const status: ProjectRidaLifecycleStatus = input.itemType === 'decision' ? 'proposed' : 'open';
+			const status: ProjectRidaLifecycleStatus =
+				input.itemType === 'decision' ? 'proposed' : 'open';
 			await repository.insertItem({
 				organisationId: project.owningOrganisationId,
 				projectId: project.id,
@@ -397,7 +428,11 @@ export class ProjectRidaService {
 	}
 
 	async updateItem(actor: TenantActorContext, input: UpdateProjectRidaItemInput): Promise<void> {
-		const project = await this.requirePermission(actor, input.projectPublicId, 'project.rida.manage');
+		const project = await this.requirePermission(
+			actor,
+			input.projectPublicId,
+			'project.rida.manage'
+		);
 		await this.db.transaction().execute(async (trx) => {
 			const repository = new ProjectRidaRepository(trx);
 			const current = await repository.findItemByPublicId(project.id, input.itemPublicId.trim());
@@ -440,7 +475,9 @@ export class ProjectRidaService {
 			const current = await repository.findItemByPublicId(project.id, itemPublicId.trim());
 			if (!current) throw new RecordNotFoundError('Register item not found.');
 			if (toStatus === 'closed' || toStatus === 'decided') {
-				throw new ProjectRidaValidationError('Use the controlled close or decision action for this transition.');
+				throw new ProjectRidaValidationError(
+					'Use the controlled close or decision action for this transition.'
+				);
 			}
 			if (current.itemType === 'decision' && toStatus === 'superseded') {
 				const decision = await new PermissionService(trx).decideWithUmbrella(
@@ -452,7 +489,8 @@ export class ProjectRidaService {
 				if (!decision.allowed) throw new TenantAccessError('Decision authority is required.');
 			}
 			const allowed = TRANSITIONS[current.itemType][current.status] ?? [];
-			if (!allowed.includes(toStatus)) throw new InvalidLifecycleTransitionError(current.status, toStatus);
+			if (!allowed.includes(toStatus))
+				throw new InvalidLifecycleTransitionError(current.status, toStatus);
 			const changed = await repository.transition({
 				projectId: project.id,
 				itemId: current.id,
@@ -483,7 +521,8 @@ export class ProjectRidaService {
 		await this.db.transaction().execute(async (trx) => {
 			const repository = new ProjectRidaRepository(trx);
 			const current = await repository.findItemByPublicId(project.id, itemPublicId.trim());
-			if (!current || current.itemType !== 'decision') throw new RecordNotFoundError('Decision not found.');
+			if (!current || current.itemType !== 'decision')
+				throw new RecordNotFoundError('Decision not found.');
 			if (!['proposed', 'pending'].includes(current.status)) {
 				throw new InvalidLifecycleTransitionError(current.status, 'decided');
 			}
@@ -519,7 +558,8 @@ export class ProjectRidaService {
 			if (!current || !['risk', 'issue'].includes(current.itemType)) {
 				throw new RecordNotFoundError('Closable register item not found.');
 			}
-			if (current.status === 'closed') throw new InvalidLifecycleTransitionError('closed', 'closed');
+			if (current.status === 'closed')
+				throw new InvalidLifecycleTransitionError('closed', 'closed');
 			const changed = await repository.closeItem({
 				projectId: project.id,
 				itemId: current.id,
@@ -537,8 +577,15 @@ export class ProjectRidaService {
 		});
 	}
 
-	async createAction(actor: TenantActorContext, input: CreateProjectRidaActionInput): Promise<string> {
-		const project = await this.requirePermission(actor, input.projectPublicId, 'project.rida.manage');
+	async createAction(
+		actor: TenantActorContext,
+		input: CreateProjectRidaActionInput
+	): Promise<string> {
+		const project = await this.requirePermission(
+			actor,
+			input.projectPublicId,
+			'project.rida.manage'
+		);
 		const item = await new ProjectRidaRepository(this.db).findItemByPublicId(
 			project.id,
 			input.itemPublicId.trim()
