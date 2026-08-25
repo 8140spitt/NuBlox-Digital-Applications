@@ -57,6 +57,58 @@
 	</div>
 </section>
 
+<section class="journey-panel" aria-labelledby="commercial-journey-heading">
+	<div class="journey-heading">
+		<div>
+			<p class="eyebrow">Win-work progression</p>
+			<h2 id="commercial-journey-heading">Commercial journey</h2>
+			<p>
+				<strong>{data.commercialJourney.customerDisplayName ?? 'Primary customer required'}</strong>
+				is the upstream CRM party for this journey. Downstream stages inherit that context instead
+				of asking for the customer again.
+			</p>
+		</div>
+		<div class="journey-action">
+			{#if data.commercialJourney.nextAction.action === 'develop_estimate'}
+				{#if data.commercialJourney.canDevelopEstimate}
+					<form method="POST" action="?/developEstimate">
+						<button type="submit">Develop estimate</button>
+					</form>
+				{:else}
+					<span class="muted">Estimate-management authority required</span>
+				{/if}
+			{:else if data.commercialJourney.nextAction.href}
+				<a class="journey-button" href={data.commercialJourney.nextAction.href}
+					>{data.commercialJourney.nextAction.label}</a
+				>
+			{/if}
+		</div>
+	</div>
+
+	{#if form?.progressionError}<p class="error" role="alert">{form.progressionError}</p>{/if}
+
+	<ol class="journey-stages">
+		{#each data.commercialJourney.stages as stage, index}
+			<li class:complete={stage.complete} class:current={!stage.complete && index === data.commercialJourney.stages.findIndex((candidate) => !candidate.complete)}>
+				<div class="stage-marker" aria-hidden="true">{index + 1}</div>
+				{#if stage.href}
+					<a class="stage-content" href={stage.href}>
+						<span>{stage.label}</span>
+						<strong>{stage.reference ?? stage.title ?? 'In progress'}</strong>
+						<small>{stage.status.replaceAll('_', ' ')}</small>
+					</a>
+				{:else}
+					<div class="stage-content">
+						<span>{stage.label}</span>
+						<strong>Not started</strong>
+						<small>{stage.status.replaceAll('_', ' ')}</small>
+					</div>
+				{/if}
+			</li>
+		{/each}
+	</ol>
+</section>
+
 <div class="workspace-grid">
 	<section class="panel summary">
 		<p class="eyebrow">Opportunity</p>
@@ -362,7 +414,7 @@
 		font-weight: 650;
 	}
 	.opportunity-header {
-		margin-bottom: 1.25rem;
+		margin-bottom: 1rem;
 	}
 	.header-meta {
 		display: flex;
@@ -400,6 +452,102 @@
 	.status-cancelled {
 		background: #f1ece9;
 		color: #76544a;
+	}
+	.journey-panel {
+		margin-bottom: 1.25rem;
+		padding: 1.15rem;
+		border: 1px solid #bfc8bd;
+		border-radius: 0.8rem;
+		background: #fbfcf8;
+	}
+	.journey-heading {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: start;
+	}
+	.journey-heading h2 {
+		margin: 0.2rem 0 0.3rem;
+	}
+	.journey-heading p:not(.eyebrow) {
+		margin: 0;
+		max-width: 52rem;
+		color: #666;
+		line-height: 1.5;
+	}
+	.journey-button {
+		display: inline-block;
+		white-space: nowrap;
+		padding: 0.58rem 0.78rem;
+		border-radius: 0.48rem;
+		background: #111;
+		color: white;
+		font-weight: 750;
+		text-decoration: none;
+	}
+	.journey-stages {
+		list-style: none;
+		padding: 0;
+		margin: 1rem 0 0;
+		display: grid;
+		grid-template-columns: repeat(5, minmax(0, 1fr));
+		gap: 0;
+	}
+	.journey-stages li {
+		position: relative;
+		display: grid;
+		grid-template-columns: auto 1fr;
+		gap: 0.55rem;
+		align-items: start;
+		padding-right: 0.8rem;
+	}
+	.journey-stages li:not(:last-child)::after {
+		content: '';
+		position: absolute;
+		top: 0.85rem;
+		left: 1.7rem;
+		right: 0;
+		height: 2px;
+		background: #d9ddd6;
+		z-index: 0;
+	}
+	.stage-marker {
+		position: relative;
+		z-index: 1;
+		width: 1.7rem;
+		height: 1.7rem;
+		display: grid;
+		place-items: center;
+		border-radius: 999px;
+		background: #eceee9;
+		font-size: 0.72rem;
+		font-weight: 800;
+	}
+	.complete .stage-marker {
+		background: #dbeedc;
+		color: #245a31;
+	}
+	.current .stage-marker {
+		background: #111;
+		color: white;
+	}
+	.stage-content {
+		display: grid;
+		gap: 0.12rem;
+		min-width: 0;
+		color: inherit;
+		text-decoration: none;
+	}
+	.stage-content span,
+	.stage-content small {
+		color: #666;
+		font-size: 0.74rem;
+	}
+	.stage-content strong {
+		overflow-wrap: anywhere;
+	}
+	.stage-content small {
+		text-transform: capitalize;
 	}
 	.workspace-grid {
 		display: grid;
@@ -650,6 +798,16 @@
 		background: #f0f0eb;
 	}
 	@media (max-width: 900px) {
+		.journey-heading {
+			display: grid;
+		}
+		.journey-stages {
+			grid-template-columns: 1fr;
+			gap: 0.55rem;
+		}
+		.journey-stages li:not(:last-child)::after {
+			display: none;
+		}
 		.workspace-grid {
 			grid-template-columns: 1fr;
 		}
