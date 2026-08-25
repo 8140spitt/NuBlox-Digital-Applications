@@ -240,10 +240,11 @@ export class ProjectExternalCollaborationService {
 			.innerJoin('parties as person_party', 'person_party.id', 'collaborator.crm_person_party_id')
 			.innerJoin('party_persons as person', 'person.party_id', 'person_party.id')
 			.leftJoin(
-				'party_organisations as company',
-				'company.party_id',
+				'parties as company_party',
+				'company_party.id',
 				'collaborator.crm_organisation_party_id'
 			)
+			.leftJoin('party_organisations as company', 'company.party_id', 'company_party.id')
 			.select([
 				'collaborator.id as id',
 				'collaborator.public_id as publicId',
@@ -254,7 +255,7 @@ export class ProjectExternalCollaborationService {
 				'person.preferred_name as preferredName',
 				'person.given_names as givenNames',
 				'person.family_name as familyName',
-				'company.party_id as companyPartyId',
+				'company_party.public_id as companyPublicId',
 				'company.legal_name as companyLegalName',
 				'company.trading_name as companyTradingName'
 			])
@@ -410,7 +411,7 @@ export class ProjectExternalCollaborationService {
 				personPartyPublicId: row.personPublicId,
 				personName: displayPerson(row),
 				email: row.email,
-				organisationPartyPublicId: row.companyPartyId ? null : null,
+				organisationPartyPublicId: row.companyPublicId ?? null,
 				organisationName: row.companyLegalName
 					? displayOrganisation({
 							legalName: row.companyLegalName,

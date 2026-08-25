@@ -26,7 +26,6 @@ let memberBManagerPublicId = '';
 let memberBTeammatePublicId = '';
 let memberCPublicId = '';
 let organisationBPublicId = '';
-let crmOrganisationBPublicId = '';
 let actorA: TenantActorContext;
 let actorBManager: TenantActorContext;
 let actorBTeammate: TenantActorContext;
@@ -219,29 +218,6 @@ beforeAll(async () => {
 		'crm.view'
 	]);
 
-	crmOrganisationBPublicId = randomUUID();
-	const crmOrganisationBPartyId = insertedId(
-		await db
-			.insertInto('parties')
-			.values({
-				organisation_id: organisationAId,
-				public_id: crmOrganisationBPublicId,
-				party_kind: 'organisation',
-				account_owner_member_id: memberAId,
-				status: 'active'
-			})
-			.executeTakeFirstOrThrow()
-	);
-	await db
-		.insertInto('party_organisations')
-		.values({
-			party_id: crmOrganisationBPartyId,
-			organisation_id: organisationAId,
-			legal_name: `${PREFIX}Organisation B CRM`,
-			trading_name: null,
-			linked_organisation_id: organisationBId
-		})
-		.executeTakeFirstOrThrow();
 	await assignPermissionRole(organisationBId, memberBManagerId, 'External Manager', [
 		'project.view',
 		'project.manage'
@@ -284,19 +260,11 @@ afterAll(async () => {
 });
 
 describe('project participant and team administration', () => {
-	it('invites a linked CRM organisation without granting project scope before acceptance', async () => {
+	it('invites a NuBlox organisation explicitly without granting project scope before acceptance', async () => {
 		const service = new ProjectTeamService(db);
-		const team = await service.getTeamView(actorA, projectPublicId);
-		expect(team.invitationCandidates).toContainEqual(
-			expect.objectContaining({
-				partyPublicId: crmOrganisationBPublicId,
-				linkedOrganisationPublicId: organisationBPublicId,
-				linkedOrganisationStatus: 'active'
-			})
-		);
-		await service.inviteCrmParticipant(actorA, {
+		await service.inviteParticipant(actorA, {
 			projectPublicId,
-			crmPartyPublicId: crmOrganisationBPublicId,
+			organisationPublicId: organisationBPublicId,
 			roleKeys: ['main_contractor']
 		});
 

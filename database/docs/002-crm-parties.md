@@ -14,7 +14,7 @@ A company must not need duplicate records because it is simultaneously a client,
 
 CRM parties are **tenant-owned records**.
 
-If the same external contractor is known to two different NuBlox organisations, each tenant maintains its own private CRM record unless a later NuBlox Network feature explicitly links identities with controlled consent and sharing rules.
+If the same external contractor is known to two different NuBlox organisations, each tenant maintains its own private CRM record. CRM people and companies never map to NuBlox platform organisations. Any future consent-based network or sharing capability must preserve these private party identities rather than reconciling them into a platform-wide company record.
 
 This avoids creating an unintended global customer/contact directory and protects private relationship data.
 
