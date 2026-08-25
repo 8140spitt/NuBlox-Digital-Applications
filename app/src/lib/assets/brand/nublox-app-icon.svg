@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">NuBlox app icon</title>
+  <desc id="desc">The NuBlox modular N on a dark navy rounded square.</desc>
+  <defs>
+    <linearGradient id="nublox-icon-gradient" x1="30" y1="96" x2="98" y2="28" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#146EF5"/>
+      <stop offset="0.52" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#20B8D8"/>
+    </linearGradient>
+    <radialGradient id="nublox-icon-bg" cx="0" cy="0" r="1" gradientTransform="translate(88 22) rotate(130) scale(116)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#123D72"/>
+      <stop offset="1" stop-color="#07182E"/>
+    </radialGradient>
+  </defs>
+  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#nublox-icon-bg)"/>
+  <rect x="28" y="28" width="18" height="72" rx="4" fill="url(#nublox-icon-gradient)"/>
+  <rect x="82" y="28" width="18" height="72" rx="4" fill="url(#nublox-icon-gradient)"/>
+  <path d="M37 28h16l47 54v18H84L37 46V28Z" fill="url(#nublox-icon-gradient)"/>
+  <path d="M37 64h16l11 13H48c-6.075 0-11-4.925-11-11v-2Z" fill="#07182E" opacity="0.24"/>
+</svg>
