@@ -110,8 +110,8 @@
 			<p class="eyebrow">New record</p>
 			<h2>Add an organisation or person</h2>
 			<p>
-				A real-world party is stored once in this tenant and can hold several business roles.
-				Client, supplier, subcontractor and consultant are classifications of the same party record.
+				An organisation is the CRM account. Every new organisation is created together with its first
+				contact, who becomes the primary CRM contact automatically.
 			</p>
 		</div>
 
@@ -125,14 +125,80 @@
 			</label>
 
 			{#if partyKind === 'organisation'}
-				<label class="wide">
-					<span>Legal name</span>
-					<input name="legalName" maxlength="255" required placeholder="Example Construction Ltd" />
-				</label>
-				<label class="wide">
-					<span>Trading name <small>optional</small></span>
-					<input name="tradingName" maxlength="255" />
-				</label>
+				<div class="form-section wide">
+					<div class="section-heading">
+						<p class="eyebrow">Organisation</p>
+						<h3>Account details</h3>
+					</div>
+					<div class="section-grid">
+						<label class="wide">
+							<span>Legal name</span>
+							<input
+								name="legalName"
+								maxlength="255"
+								required
+								placeholder="Example Construction Ltd"
+							/>
+						</label>
+						<label class="wide">
+							<span>Trading name <small>optional</small></span>
+							<input name="tradingName" maxlength="255" />
+						</label>
+						<label>
+							<span>Organisation email <small>optional</small></span>
+							<input name="organisationEmail" type="email" maxlength="320" />
+						</label>
+						<label>
+							<span>Organisation phone <small>E.164, optional</small></span>
+							<input name="organisationPhone" maxlength="32" placeholder="+442071234567" />
+						</label>
+					</div>
+				</div>
+
+				<div class="form-section primary-contact-section wide">
+					<div class="section-heading">
+						<p class="eyebrow">Primary contact</p>
+						<h3>First organisation contact</h3>
+						<p>
+							Required. This person becomes the CRM primary contact and is used automatically when an
+							opportunity contact is left blank.
+						</p>
+					</div>
+					<div class="section-grid">
+						<label>
+							<span>Honorific <small>optional</small></span>
+							<input name="contactHonorific" maxlength="64" placeholder="Ms" />
+						</label>
+						<label>
+							<span>Preferred name <small>optional</small></span>
+							<input name="contactPreferredName" maxlength="160" />
+						</label>
+						<label>
+							<span>Given names</span>
+							<input name="contactGivenNames" maxlength="200" required />
+						</label>
+						<label>
+							<span>Family name</span>
+							<input name="contactFamilyName" maxlength="160" required />
+						</label>
+						<label>
+							<span>Email <small>optional</small></span>
+							<input name="contactEmail" type="email" maxlength="320" />
+						</label>
+						<label>
+							<span>Phone <small>E.164, optional</small></span>
+							<input name="contactPhone" maxlength="32" placeholder="+447700900000" />
+						</label>
+						<label>
+							<span>Job title <small>optional</small></span>
+							<input name="contactJobTitle" maxlength="160" />
+						</label>
+						<label>
+							<span>Department <small>optional</small></span>
+							<input name="contactDepartment" maxlength="160" />
+						</label>
+					</div>
+				</div>
 			{:else}
 				<label>
 					<span>Honorific <small>optional</small></span>
@@ -150,16 +216,15 @@
 					<span>Preferred name <small>optional</small></span>
 					<input name="preferredName" maxlength="160" />
 				</label>
+				<label>
+					<span>Primary email <small>optional</small></span>
+					<input name="primaryEmail" type="email" maxlength="320" />
+				</label>
+				<label>
+					<span>Primary phone <small>E.164</small></span>
+					<input name="primaryPhone" maxlength="32" placeholder="+442071234567" />
+				</label>
 			{/if}
-
-			<label>
-				<span>Primary email <small>optional</small></span>
-				<input name="primaryEmail" type="email" maxlength="320" />
-			</label>
-			<label>
-				<span>Primary phone <small>E.164</small></span>
-				<input name="primaryPhone" maxlength="32" placeholder="+442071234567" />
-			</label>
 
 			<fieldset class="wide role-fieldset">
 				<legend>Business roles</legend>
@@ -174,7 +239,7 @@
 			</fieldset>
 
 			{#if form?.createError}<p class="error wide" role="alert">{form.createError}</p>{/if}
-			<button type="submit">Create CRM record</button>
+			<button type="submit">{partyKind === 'organisation' ? 'Create organisation' : 'Create person'}</button>
 		</form>
 	</section>
 {/if}
@@ -191,7 +256,8 @@
 		max-width: 60rem;
 	}
 	.page-header p:last-child,
-	.create-copy p {
+	.create-copy p,
+	.section-heading p:last-child {
 		color: #5d5d57;
 		line-height: 1.6;
 	}
@@ -208,7 +274,8 @@
 		font-size: clamp(2rem, 5vw, 3.1rem);
 		letter-spacing: -0.045em;
 	}
-	h2 {
+	h2,
+	h3 {
 		margin: 0;
 	}
 	.panel,
@@ -345,7 +412,8 @@
 		gap: 2rem;
 		align-items: start;
 	}
-	.party-form {
+	.party-form,
+	.section-grid {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.9rem;
@@ -356,6 +424,25 @@
 	}
 	.wide {
 		grid-column: 1 / -1;
+	}
+	.form-section {
+		display: grid;
+		gap: 0.9rem;
+		padding: 1rem;
+		border: 1px solid #deded7;
+		border-radius: 0.65rem;
+		background: #fafaf7;
+	}
+	.primary-contact-section {
+		border-color: #c8d4c8;
+		background: #fbfdfb;
+	}
+	.section-heading {
+		display: grid;
+		gap: 0.25rem;
+	}
+	.section-heading p {
+		margin: 0;
 	}
 	.role-fieldset {
 		border: 1px solid #d7d7d0;
@@ -414,6 +501,7 @@
 			grid-template-columns: 1fr;
 		}
 		.party-form,
+		.section-grid,
 		.filters form {
 			grid-template-columns: 1fr;
 		}
