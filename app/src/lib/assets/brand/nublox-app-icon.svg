@@ -1,20 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">NuBlox app icon</title>
-  <desc id="desc">The NuBlox modular N on a dark navy rounded square.</desc>
+  <desc id="desc">The NuBlox folded ribbon N on a navy rounded square.</desc>
   <defs>
-    <linearGradient id="nublox-icon-gradient" x1="30" y1="96" x2="98" y2="28" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#146EF5"/>
-      <stop offset="0.52" stop-color="#0B7BFF"/>
-      <stop offset="1" stop-color="#20B8D8"/>
-    </linearGradient>
-    <radialGradient id="nublox-icon-bg" cx="0" cy="0" r="1" gradientTransform="translate(88 22) rotate(130) scale(116)" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#123D72"/>
+    <radialGradient id="nb-icon-bg" cx="0" cy="0" r="1" gradientTransform="translate(92 24) rotate(133) scale(120)" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#123D72"/>
+      <stop offset="0.55" stop-color="#0A2343"/>
       <stop offset="1" stop-color="#07182E"/>
     </radialGradient>
+    <linearGradient id="nb-icon-left" x1="28" y1="25" x2="50" y2="103" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B7BFF"/>
+      <stop offset="0.5" stop-color="#146EF5"/>
+      <stop offset="1" stop-color="#123BDE"/>
+    </linearGradient>
+    <linearGradient id="nb-icon-right" x1="88" y1="25" x2="88" y2="103" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#20D9F2"/>
+      <stop offset="0.5" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#1437D8"/>
+    </linearGradient>
+    <linearGradient id="nb-icon-diagonal" x1="31" y1="27" x2="99" y2="99" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0B7BFF"/>
+      <stop offset="0.33" stop-color="#20CFE9"/>
+      <stop offset="0.58" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#1731D1"/>
+    </linearGradient>
+    <linearGradient id="nb-icon-left-fold" x1="28" y1="37" x2="49" y2="74" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1244F4"/>
+      <stop offset="0.52" stop-color="#20B8D8"/>
+      <stop offset="1" stop-color="#0B7BFF"/>
+    </linearGradient>
+    <linearGradient id="nb-icon-right-fold" x1="77" y1="72" x2="101" y2="55" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1232C4"/>
+      <stop offset="0.46" stop-color="#0B7BFF"/>
+      <stop offset="1" stop-color="#20CFE9"/>
+    </linearGradient>
+    <linearGradient id="nb-icon-sheen" x1="31" y1="27" x2="99" y2="99" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.15"/>
+      <stop offset="0.52" stop-color="#FFFFFF" stop-opacity="0.03"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
   </defs>
-  <rect x="4" y="4" width="120" height="120" rx="26" fill="url(#nublox-icon-bg)"/>
-  <rect x="28" y="28" width="18" height="72" rx="4" fill="url(#nublox-icon-gradient)"/>
-  <rect x="82" y="28" width="18" height="72" rx="4" fill="url(#nublox-icon-gradient)"/>
-  <path d="M37 28h16l47 54v18H84L37 46V28Z" fill="url(#nublox-icon-gradient)"/>
-  <path d="M37 64h16l11 13H48c-6.075 0-11-4.925-11-11v-2Z" fill="#07182E" opacity="0.24"/>
+  <rect x="4" y="4" width="120" height="120" rx="27" fill="url(#nb-icon-bg)"/>
+  <path d="M28 25H50V103H28Z" fill="url(#nb-icon-left)"/>
+  <path d="M78 25H100V103H78Z" fill="url(#nb-icon-right)"/>
+  <path d="M28 37L50 59L28 75Z" fill="url(#nb-icon-left-fold)"/>
+  <path d="M78 72L100 59V80L89 69Z" fill="url(#nb-icon-right-fold)"/>
+  <path d="M28 25H50L100 75V103H78L28 53Z" fill="url(#nb-icon-diagonal)"/>
+  <path d="M28 25H50L100 75V81L46 28H28Z" fill="url(#nb-icon-sheen)"/>
 </svg>
