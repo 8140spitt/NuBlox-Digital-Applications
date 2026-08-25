@@ -110,8 +110,8 @@
 			<p class="eyebrow">New record</p>
 			<h2>Add an organisation or person</h2>
 			<p>
-				An organisation is the CRM account. Every new organisation is created together with its first
-				contact, who becomes the primary CRM contact automatically.
+				An organisation is the CRM account. Every new organisation is created together with its
+				first contact, who becomes the primary CRM contact automatically.
 			</p>
 		</div>
 
@@ -160,8 +160,8 @@
 						<p class="eyebrow">Primary contact</p>
 						<h3>First organisation contact</h3>
 						<p>
-							Required. This person becomes the CRM primary contact and is used automatically when an
-							opportunity contact is left blank.
+							Required. This person becomes the CRM primary contact and is used automatically when
+							an opportunity contact is left blank.
 						</p>
 					</div>
 					<div class="section-grid">
@@ -239,7 +239,9 @@
 			</fieldset>
 
 			{#if form?.createError}<p class="error wide" role="alert">{form.createError}</p>{/if}
-			<button type="submit">{partyKind === 'organisation' ? 'Create organisation' : 'Create person'}</button>
+			<button type="submit"
+				>{partyKind === 'organisation' ? 'Create organisation' : 'Create person'}</button
+			>
 		</form>
 	</section>
 {/if}

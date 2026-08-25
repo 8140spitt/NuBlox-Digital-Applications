@@ -114,8 +114,8 @@
 					<p class="error">No active CRM pipeline is configured for this organisation.</p>
 				{:else if data.clientAccounts.length === 0}
 					<p class="error">
-						Create an active CRM prospect or client organisation with a primary contact before opening an
-						opportunity.
+						Create an active CRM prospect or client organisation with a primary contact before
+						opening an opportunity.
 					</p>
 				{:else}
 					<form method="POST" action="?/create" class="create-form">
@@ -149,9 +149,9 @@
 										</option>
 										{#each selectedClient.contacts as contact}
 											<option value={contact.publicId}
-												>{contact.displayName}{contact.jobTitle ? ` · ${contact.jobTitle}` : ''}{contact.isPrimaryContact
-													? ' · Primary'
-													: ''}</option
+												>{contact.displayName}{contact.jobTitle
+													? ` · ${contact.jobTitle}`
+													: ''}{contact.isPrimaryContact ? ' · Primary' : ''}</option
 											>
 										{/each}
 									{:else}
@@ -166,13 +166,13 @@
 
 						{#if selectedClient && selectedClient.contacts.length === 0}
 							<p class="error wide">
-								This client organisation has no active contacts. Add a CRM contact before creating the
-								opportunity.
+								This client organisation has no active contacts. Add a CRM contact before creating
+								the opportunity.
 							</p>
 						{:else if selectedClient && !selectedClient.primaryContactPublicId}
 							<p class="warning wide">
-								This legacy client has no CRM primary contact. Choose a contact explicitly, or set its primary
-								contact in CRM.
+								This legacy client has no CRM primary contact. Choose a contact explicitly, or set
+								its primary contact in CRM.
 							</p>
 						{/if}
 

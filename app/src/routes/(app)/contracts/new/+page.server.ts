@@ -41,7 +41,9 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		if (quotationPublicId) {
 			return {
 				mode: 'accepted-quotation' as const,
-				...(await new CommercialLifecycleService(getDatabase()).getAcceptedQuotationContractFormationWorkspace(
+				...(await new CommercialLifecycleService(
+					getDatabase()
+				).getAcceptedQuotationContractFormationWorkspace(
 					actor,
 					quotationPublicId,
 					optionalVersion(url.searchParams.get('version'))

@@ -56,8 +56,9 @@
 		</p>
 		{#if data.mode === 'legacy-project'}
 			<p class="compatibility-note">
-				Compatibility path: this source was converted to a proposed project before contract formation.
-				New wins now form the contract first and mobilise the project only after execution.
+				Compatibility path: this source was converted to a proposed project before contract
+				formation. New wins now form the contract first and mobilise the project only after
+				execution.
 			</p>
 		{/if}
 	</section>
@@ -67,11 +68,15 @@
 			<p class="eyebrow">Already progressed</p>
 			<h2>{data.existingContract.contractNumber}</h2>
 			<p>This accepted quotation already has its contract record.</p>
-			<a class="button-link" href={`/contracts/${data.existingContract.publicId}`}>Continue contract</a>
+			<a class="button-link" href={`/contracts/${data.existingContract.publicId}`}
+				>Continue contract</a
+			>
 		{:else if !data.canCreate}
 			<p class="eyebrow">Authority required</p>
 			<h2>Contract formation is unavailable</h2>
-			<p>Contract-creation authority is required. Project creation is not required at this stage.</p>
+			<p>
+				Contract-creation authority is required. Project creation is not required at this stage.
+			</p>
 		{:else}
 			<p class="eyebrow">Progression</p>
 			<h2>Form contract version 1</h2>

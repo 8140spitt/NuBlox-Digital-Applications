@@ -25,8 +25,8 @@
 		<h1>Estimates</h1>
 		<p>
 			Develop the commercial position already established in CRM. Customer, opportunity title and
-			currency flow forward automatically; estimating adds only the cost, price and scope detail that
-			belongs at this stage.
+			currency flow forward automatically; estimating adds only the cost, price and scope detail
+			that belongs at this stage.
 		</p>
 	</div>
 	<span class="count">{data.estimates.length}</span>
@@ -86,8 +86,7 @@
 								<option value="">Choose opportunity</option>
 								{#each data.opportunities as opportunity}
 									<option value={opportunity.publicId}
-										>{opportunity.title} · {opportunity.primaryPartyDisplayName ??
-											'No customer'} · {opportunity.currencyCode}</option
+										>{opportunity.title} · {opportunity.primaryPartyDisplayName ?? 'No customer'} · {opportunity.currencyCode}</option
 									>
 								{/each}
 							</select>

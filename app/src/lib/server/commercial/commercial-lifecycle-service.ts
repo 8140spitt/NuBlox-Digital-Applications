@@ -20,11 +20,7 @@ import { lineAmount, sumMoney } from './commercial-decimal';
 import { CommercialService } from './commercial-service';
 
 export type CommercialJourneyStageKey =
-	| 'opportunity'
-	| 'estimate'
-	| 'quotation'
-	| 'contract'
-	| 'project';
+	'opportunity' | 'estimate' | 'quotation' | 'contract' | 'project';
 
 export type CommercialJourneyStage = {
 	key: CommercialJourneyStageKey;
@@ -357,7 +353,8 @@ export class CommercialLifecycleService {
 			.where('response.response_type', '=', 'accepted')
 			.where('quotation.public_id', '=', quotationPublicId)
 			.orderBy('response.responded_at', 'desc');
-		if (versionNumber !== undefined) query = query.where('version.version_number', '=', versionNumber);
+		if (versionNumber !== undefined)
+			query = query.where('version.version_number', '=', versionNumber);
 		if (lock) query = query.forUpdate();
 		return (await query.executeTakeFirst()) ?? null;
 	}
@@ -453,14 +450,16 @@ export class CommercialLifecycleService {
 
 		const projectId =
 			contract?.projectId ??
-			(await this.db
-				.selectFrom('quotations')
-				.select('project_id as projectId')
-				.where('organisation_id', '=', actor.organisationId)
-				.where('opportunity_id', '=', opportunity.id)
-				.where('project_id', 'is not', null)
-				.orderBy('id', 'desc')
-				.executeTakeFirst())?.projectId ??
+			(
+				await this.db
+					.selectFrom('quotations')
+					.select('project_id as projectId')
+					.where('organisation_id', '=', actor.organisationId)
+					.where('opportunity_id', '=', opportunity.id)
+					.where('project_id', 'is not', null)
+					.orderBy('id', 'desc')
+					.executeTakeFirst()
+			)?.projectId ??
 			null;
 		const project = projectId
 			? await this.db
@@ -576,7 +575,9 @@ export class CommercialLifecycleService {
 		);
 		if (!opportunity) throw new RecordNotFoundError('CRM opportunity not found.');
 		if (!opportunity.primaryPartyPublicId) {
-			throw new ContractValidationError('The opportunity requires a primary customer before estimating.');
+			throw new ContractValidationError(
+				'The opportunity requires a primary customer before estimating.'
+			);
 		}
 
 		const existing = await this.db
@@ -758,7 +759,8 @@ export class CommercialLifecycleService {
 					.where('code', '=', contractTypeCode)
 					.where('is_active', '=', 1)
 					.executeTakeFirst();
-				if (!type) throw new ContractValidationError('The selected contract type is not available.');
+				if (!type)
+					throw new ContractValidationError('The selected contract type is not available.');
 
 				const contractNumber = generatedContractNumber(
 					source.quotationNumber,
@@ -996,7 +998,8 @@ export class CommercialLifecycleService {
 		const project = contract.projectId
 			? await this.findProjectById(this.db, actor.organisationId, contract.projectId)
 			: null;
-		const isExecuted = contract.lifecycleStatus === 'active' && version?.versionStatus === 'executed';
+		const isExecuted =
+			contract.lifecycleStatus === 'active' && version?.versionStatus === 'executed';
 		return {
 			canMobilise: isExecuted && !project && (await this.projectCreateAllowed(actor)),
 			isExecuted,
@@ -1053,7 +1056,9 @@ export class CommercialLifecycleService {
 				!contractVersion ||
 				contractVersion.versionStatus !== 'executed'
 			) {
-				throw new ContractValidationError('Only an executed contract can be mobilised to a project.');
+				throw new ContractValidationError(
+					'Only an executed contract can be mobilised to a project.'
+				);
 			}
 
 			const source = await trx

@@ -22,10 +22,7 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) {
 		throw httpError(401, 'Authentication and organisation context are required.');
 	}
-	throw redirect(
-		303,
-		contractFormationLocation(params.quotationPublicId, versionFromUrl(url))
-	);
+	throw redirect(303, contractFormationLocation(params.quotationPublicId, versionFromUrl(url)));
 };
 
 export const actions: Actions = {
@@ -36,7 +33,10 @@ export const actions: Actions = {
 		const data = await request.formData();
 		throw redirect(
 			303,
-			contractFormationLocation(params.quotationPublicId, versionFromForm(data.get('versionNumber')))
+			contractFormationLocation(
+				params.quotationPublicId,
+				versionFromForm(data.get('versionNumber'))
+			)
 		);
 	}
 };

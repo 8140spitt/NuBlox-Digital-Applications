@@ -81,7 +81,9 @@ export class CrmOrganisationOnboardingService {
 	) {}
 
 	private async requireActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -164,11 +166,7 @@ export class CrmOrganisationOnboardingService {
 				organisationPartyId,
 				organisationPhone
 			);
-			await repository.setPartyRoles(
-				actor.organisationId,
-				organisationPartyId,
-				resolvedRoleIds
-			);
+			await repository.setPartyRoles(actor.organisationId, organisationPartyId, resolvedRoleIds);
 
 			const contactPublicId = this.publicIdFactory();
 			const contactPartyId = await repository.insertParty({

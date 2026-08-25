@@ -182,19 +182,13 @@ async function cleanup(): Promise<void> {
 		.deleteFrom('project_organisations')
 		.where('participant_organisation_id', 'in', organisationIds)
 		.execute();
-	await db
-		.deleteFrom('projects')
-		.where('owning_organisation_id', 'in', organisationIds)
-		.execute();
+	await db.deleteFrom('projects').where('owning_organisation_id', 'in', organisationIds).execute();
 
 	await db
 		.deleteFrom('party_organisation_contacts')
 		.where('organisation_id', 'in', organisationIds)
 		.execute();
-	await db
-		.deleteFrom('party_addresses')
-		.where('organisation_id', 'in', organisationIds)
-		.execute();
+	await db.deleteFrom('party_addresses').where('organisation_id', 'in', organisationIds).execute();
 	await db.deleteFrom('addresses').where('organisation_id', 'in', organisationIds).execute();
 	await db
 		.deleteFrom('party_role_assignments')
@@ -220,10 +214,7 @@ async function cleanup(): Promise<void> {
 		.where('organisation_id', 'in', organisationIds)
 		.execute();
 	await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
-	await db
-		.deleteFrom('role_permissions')
-		.where('organisation_id', 'in', organisationIds)
-		.execute();
+	await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
 	await db
 		.deleteFrom('organisation_roles')
 		.where('organisation_id', 'in', organisationIds)
@@ -457,7 +448,9 @@ describe('commercial opportunity to project progression', () => {
 		expect(formation.quotation.customerDisplayName).toBe(`${PREFIX}Customer Ltd`);
 		expect(formation.legacyProject).toBeNull();
 		expect(formation.quotation.netAmount).toBe('125000.0000');
-		const contractType = formation.contractTypes.find((type) => type.code === 'construction_contract');
+		const contractType = formation.contractTypes.find(
+			(type) => type.code === 'construction_contract'
+		);
 		if (!contractType) throw new Error('Expected construction contract type.');
 
 		const contract = await lifecycle.formContractFromAcceptedQuotation(actor, {
@@ -517,9 +510,9 @@ describe('commercial opportunity to project progression', () => {
 			.executeTakeFirstOrThrow();
 		expect(unchangedSnapshot.displayName).toBe(`${PREFIX}Customer Ltd`);
 
-		await expect(lifecycle.mobiliseProjectFromContract(actor, contractPublicId)).rejects.toBeInstanceOf(
-			ContractValidationError
-		);
+		await expect(
+			lifecycle.mobiliseProjectFromContract(actor, contractPublicId)
+		).rejects.toBeInstanceOf(ContractValidationError);
 	});
 
 	it('mobilises exactly one active project only after contract execution and preserves lineage', async () => {

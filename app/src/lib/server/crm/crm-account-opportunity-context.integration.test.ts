@@ -42,29 +42,65 @@ async function cleanup(): Promise<void> {
 		return;
 	}
 
-	await db.deleteFrom('crm_activity_members').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('crm_activity_parties').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('crm_activity_members')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('crm_activity_parties')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('crm_activities').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('opportunity_parties').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('opportunity_parties')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('opportunities').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('crm_pipeline_stages').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('crm_pipeline_stages')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('crm_pipelines').where('organisation_id', 'in', organisationIds).execute();
 	await db
 		.deleteFrom('party_organisation_contacts')
 		.where('organisation_id', 'in', organisationIds)
 		.execute();
-	await db.deleteFrom('party_role_assignments').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('party_phone_numbers').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('party_email_addresses').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('party_role_assignments')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('party_phone_numbers')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('party_email_addresses')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('party_persons').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('party_organisations').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('party_organisations')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('parties').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('audit_events')
+		.where('acting_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('member_permission_overrides')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
 	await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('organisation_roles')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('organisation_members')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
 }
@@ -261,7 +297,11 @@ describe('CRM organisation and opportunity client context', () => {
 						'assignment.opportunity_party_role_type_id'
 					)
 					.innerJoin('opportunities as opportunity', 'opportunity.id', 'assignment.opportunity_id')
-					.select(['party.public_id as partyPublicId', 'role.code as roleCode', 'assignment.is_primary as isPrimary'])
+					.select([
+						'party.public_id as partyPublicId',
+						'role.code as roleCode',
+						'assignment.is_primary as isPrimary'
+					])
 					.where('assignment.organisation_id', '=', organisationId)
 					.where('opportunity.public_id', '=', opportunity.publicId)
 					.orderBy('role.code', 'asc')
@@ -291,7 +331,11 @@ describe('CRM organisation and opportunity client context', () => {
 		});
 		const selectedContact = await db
 			.selectFrom('opportunity_parties as assignment')
-			.innerJoin('opportunity_party_role_types as role', 'role.id', 'assignment.opportunity_party_role_type_id')
+			.innerJoin(
+				'opportunity_party_role_types as role',
+				'role.id',
+				'assignment.opportunity_party_role_type_id'
+			)
 			.innerJoin('parties as party', (join) =>
 				join
 					.onRef('party.id', '=', 'assignment.party_id')

@@ -64,8 +64,8 @@
 			<h2 id="commercial-journey-heading">Commercial journey</h2>
 			<p>
 				<strong>{data.commercialJourney.customerDisplayName ?? 'Primary customer required'}</strong>
-				is the upstream CRM party for this journey. Downstream stages inherit that context instead
-				of asking for the customer again.
+				is the upstream CRM party for this journey. Downstream stages inherit that context instead of
+				asking for the customer again.
 			</p>
 		</div>
 		<div class="journey-action">
@@ -89,7 +89,11 @@
 
 	<ol class="journey-stages">
 		{#each data.commercialJourney.stages as stage, index}
-			<li class:complete={stage.complete} class:current={!stage.complete && index === data.commercialJourney.stages.findIndex((candidate) => !candidate.complete)}>
+			<li
+				class:complete={stage.complete}
+				class:current={!stage.complete &&
+					index === data.commercialJourney.stages.findIndex((candidate) => !candidate.complete)}
+			>
 				<div class="stage-marker" aria-hidden="true">{index + 1}</div>
 				{#if stage.href}
 					<a class="stage-content" href={stage.href}>

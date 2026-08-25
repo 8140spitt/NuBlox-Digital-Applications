@@ -24,7 +24,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		const db = getDatabase();
 		const [workspace, mobilisation] = await Promise.all([
 			new ContractService(db).getWorkspace(actor, params.contractPublicId),
-			new CommercialLifecycleService(db).getContractMobilisationState(actor, params.contractPublicId)
+			new CommercialLifecycleService(db).getContractMobilisationState(
+				actor,
+				params.contractPublicId
+			)
 		]);
 		if (mobilisation.project) {
 			throw redirect(303, `/projects/${encodeURIComponent(mobilisation.project.publicId)}`);
@@ -46,12 +49,13 @@ export const actions: Actions = {
 	default: async ({ locals, params }) => {
 		const actor = actorFromLocals(locals);
 		if (!actor)
-			return fail(401, { mobilisationError: 'Authentication and organisation context are required.' });
+			return fail(401, {
+				mobilisationError: 'Authentication and organisation context are required.'
+			});
 		try {
-			const project = await new CommercialLifecycleService(getDatabase()).mobiliseProjectFromContract(
-				actor,
-				params.contractPublicId
-			);
+			const project = await new CommercialLifecycleService(
+				getDatabase()
+			).mobiliseProjectFromContract(actor, params.contractPublicId);
 			throw redirect(303, `/projects/${encodeURIComponent(project.publicId)}`);
 		} catch (cause) {
 			if (cause instanceof ContractValidationError)

@@ -30,9 +30,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 				acceptedQuotationsAwaitingContract: []
 			};
 		}
-		const progression = await new CommercialLifecycleService(db).listAcceptedQuotationsAwaitingContract(
-			actor
-		);
+		const progression = await new CommercialLifecycleService(
+			db
+		).listAcceptedQuotationsAwaitingContract(actor);
 		return { ...portfolio, ...progression };
 	} catch (cause) {
 		if (cause instanceof TenantAccessError)

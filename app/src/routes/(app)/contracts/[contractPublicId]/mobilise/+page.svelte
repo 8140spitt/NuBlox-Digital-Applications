@@ -22,10 +22,22 @@
 	<p class="eyebrow">Executed commercial baseline</p>
 	<h2>{data.contract.title}</h2>
 	<dl>
-		<div><dt>Contract</dt><dd>{data.contract.contractNumber}</dd></div>
-		<div><dt>Contract status</dt><dd>{data.contract.lifecycleStatus.replaceAll('_', ' ')}</dd></div>
-		<div><dt>Executed version</dt><dd>{data.version.versionNumber}</dd></div>
-		<div><dt>Accepted quotation</dt><dd>{data.contract.sourceQuotationNumber ?? 'No quotation source'}</dd></div>
+		<div>
+			<dt>Contract</dt>
+			<dd>{data.contract.contractNumber}</dd>
+		</div>
+		<div>
+			<dt>Contract status</dt>
+			<dd>{data.contract.lifecycleStatus.replaceAll('_', ' ')}</dd>
+		</div>
+		<div>
+			<dt>Executed version</dt>
+			<dd>{data.version.versionNumber}</dd>
+		</div>
+		<div>
+			<dt>Accepted quotation</dt>
+			<dd>{data.contract.sourceQuotationNumber ?? 'No quotation source'}</dd>
+		</div>
 	</dl>
 
 	{#if !data.mobilisation.isExecuted}

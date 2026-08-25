@@ -8,7 +8,10 @@
 	<div>
 		<p class="eyebrow">Commercial progression</p>
 		<h1>Contracts</h1>
-		<p>Accepted customer offers progress into controlled contract formation before project mobilisation.</p>
+		<p>
+			Accepted customer offers progress into controlled contract formation before project
+			mobilisation.
+		</p>
 	</div>
 </section>
 
@@ -57,8 +60,8 @@
 				<p class="eyebrow">Quote → contract</p>
 				<h2>Awaiting contract formation</h2>
 				<p class="muted">
-					Customer and accepted commercial context are inherited from the quotation. A project is not
-					created until the resulting contract is executed.
+					Customer and accepted commercial context are inherited from the quotation. A project is
+					not created until the resulting contract is executed.
 				</p>
 				{#if data.acceptedQuotationsAwaitingContract.length === 0}
 					<p class="muted">No accepted quotations are waiting for contract formation.</p>
@@ -91,8 +94,8 @@
 					<p class="eyebrow">Legacy compatibility</p>
 					<h2>Projects created before contract</h2>
 					<p class="muted">
-						These records were created under the previous quote→project→contract sequence. NuBlox keeps
-						them operable while new work follows quote→contract→project.
+						These records were created under the previous quote→project→contract sequence. NuBlox
+						keeps them operable while new work follows quote→contract→project.
 					</p>
 					<div class="queue">
 						{#each data.eligibleProjects as project}

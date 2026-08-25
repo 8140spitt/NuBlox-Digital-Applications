@@ -47,7 +47,10 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 		const [amendments, creditControl, mobilisation] = await Promise.all([
 			new ContractAmendmentService(db).listForContract(actor, params.contractPublicId),
 			contractCreditControlPreview(actor, params.contractPublicId, db),
-			new CommercialLifecycleService(db).getContractMobilisationState(actor, params.contractPublicId)
+			new CommercialLifecycleService(db).getContractMobilisationState(
+				actor,
+				params.contractPublicId
+			)
 		]);
 		return { ...workspace, amendments, creditControl, mobilisation };
 	} catch (cause) {
@@ -206,10 +209,9 @@ export const actions: Actions = {
 		const actor = actorFromLocals(locals);
 		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
 		try {
-			const project = await new CommercialLifecycleService(getDatabase()).mobiliseProjectFromContract(
-				actor,
-				params.contractPublicId
-			);
+			const project = await new CommercialLifecycleService(
+				getDatabase()
+			).mobiliseProjectFromContract(actor, params.contractPublicId);
 			throw redirect(303, `/projects/${encodeURIComponent(project.publicId)}`);
 		} catch (cause) {
 			return actionFailure(cause);

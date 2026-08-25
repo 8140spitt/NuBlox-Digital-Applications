@@ -7,14 +7,8 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
-import {
-	CrmOpportunityValidationError,
-	type OpportunityInput
-} from './crm-opportunity-service';
-import {
-	CrmOpportunityRepository,
-	type CrmOpportunitySummary
-} from './crm-opportunity-repository';
+import { CrmOpportunityValidationError, type OpportunityInput } from './crm-opportunity-service';
+import { CrmOpportunityRepository, type CrmOpportunitySummary } from './crm-opportunity-repository';
 import { CrmRepository, type CrmOrganisationContact, type CrmPartySummary } from './crm-repository';
 
 const CLIENT_ROLE_CODES = new Set(['prospect', 'client']);
@@ -59,7 +53,11 @@ function requiredText(value: string, maxLength: number, label: string): string {
 	return text;
 }
 
-function optionalText(value: string | null | undefined, maxLength: number, label: string): string | null {
+function optionalText(
+	value: string | null | undefined,
+	maxLength: number,
+	label: string
+): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
 	if (text.length > maxLength) {
@@ -119,7 +117,9 @@ export class CrmOpportunityClientService {
 	) {}
 
 	private async requireActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -199,8 +199,8 @@ export class CrmOpportunityClientService {
 
 		const explicitContactPublicId = contactPublicId?.trim() || null;
 		const contact = explicitContactPublicId
-			? contacts.find((candidate) => candidate.personPublicId === explicitContactPublicId) ?? null
-			: contacts.find((candidate) => candidate.isPrimaryContact) ?? null;
+			? (contacts.find((candidate) => candidate.personPublicId === explicitContactPublicId) ?? null)
+			: (contacts.find((candidate) => candidate.isPrimaryContact) ?? null);
 
 		if (!contact) {
 			throw new CrmOpportunityValidationError(
