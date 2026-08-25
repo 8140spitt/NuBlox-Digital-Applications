@@ -35,278 +35,348 @@
 	);
 </script>
 
-<section class="hero">
-	<div>
-		<p class="eyebrow">Collaboration portal</p>
-		<h1>Shared work</h1>
-		<p class="lede">
-			Everything another project organisation has explicitly sent or assigned to your team, in one
-			place.
-		</p>
-	</div>
-	{#if data.canManage}
-		<a class="manage-link" href="/portal/manage">Manage sharing</a>
-	{/if}
-</section>
+{#if data.mode === 'external'}
+	<section class="hero">
+		<div>
+			<p class="eyebrow">External collaboration</p>
+			<h1>Your shared projects</h1>
+			<p class="lede">
+				Project access has been granted to you personally. You do not need a NuBlox organisation,
+				and your employer or CRM affiliation is not mapped to a platform organisation.
+			</p>
+		</div>
+	</section>
 
-<section class="metrics" aria-label="Shared work summary">
-	<article>
-		<strong>{actionCount}</strong>
-		<span>Need attention</span>
-	</article>
-	<article>
-		<strong>{data.projects.length}</strong>
-		<span>Shared projects</span>
-	</article>
-	<article>
-		<strong>{data.transmittals.length}</strong>
-		<span>Information issues</span>
-	</article>
-</section>
+	<section class="metrics" aria-label="External project access summary">
+		<article>
+			<strong>{data.externalProjects.length}</strong>
+			<span>Shared projects</span>
+		</article>
+		<article>
+			<strong
+				>{data.externalProjects.reduce((total, project) => total + project.roles.length, 0)}</strong
+			>
+			<span>Project roles</span>
+		</article>
+		<article>
+			<strong>Person</strong>
+			<span>Access boundary</span>
+		</article>
+	</section>
 
-{#if form?.message}
-	<p class="form-message" role="alert">{form.message}</p>
-{/if}
-
-{#if data.invitations.length}
-	<section class="section-block" aria-labelledby="invitations-heading">
+	<section class="section-block" aria-labelledby="external-projects-heading">
 		<div class="section-heading">
 			<div>
-				<p class="eyebrow">Invitations</p>
-				<h2 id="invitations-heading">Join a shared project</h2>
+				<p class="eyebrow">Project access</p>
+				<h2 id="external-projects-heading">Projects shared with you</h2>
 			</div>
-			<span class="count-badge">{data.invitations.length}</span>
 		</div>
-		<div class="card-list">
-			{#each data.invitations as invitation (invitation.projectPublicId)}
-				<article class="work-card invitation-card">
-					<div class="card-copy">
-						<div class="meta-line">
-							<span>{invitation.projectNumber}</span>
-							<span>From {invitation.owningOrganisationName}</span>
-						</div>
-						<h3>{invitation.projectName}</h3>
-						{#if invitation.roles.length}
-							<p class="muted">Role: {invitation.roles.map((role) => role.name).join(', ')}</p>
-						{/if}
-						{#if form?.action === 'invitation' && form?.subjectPublicId === invitation.projectPublicId}
-							<p class="inline-error" role="alert">{form.message}</p>
-						{/if}
+		<div class="project-grid">
+			{#each data.externalProjects as project (project.collaboratorPublicId)}
+				<article class="project-card">
+					<div>
+						<span class="project-number">{project.projectNumber}</span>
+						<span class="status-pill">{titleCase(project.projectStatus)}</span>
 					</div>
-					<div class="inline-actions">
-						<form method="POST" action="?/acceptInvitation">
-							<input type="hidden" name="projectPublicId" value={invitation.projectPublicId} />
-							<button class="primary" type="submit">Accept</button>
-						</form>
-						<form method="POST" action="?/declineInvitation">
-							<input type="hidden" name="projectPublicId" value={invitation.projectPublicId} />
-							<button class="secondary" type="submit">Decline</button>
-						</form>
-					</div>
+					<h3>{project.projectName}</h3>
+					<p>Shared by {project.owningOrganisationName}</p>
+					{#if project.crmOrganisationName}
+						<p class="muted">CRM affiliation: {project.crmOrganisationName}</p>
+					{/if}
+					{#if project.roles.length}
+						<p class="muted">Project roles: {project.roles.join(', ')}</p>
+					{/if}
 				</article>
 			{/each}
 		</div>
 	</section>
-{/if}
 
-<section class="section-block" aria-labelledby="actions-heading">
-	<div class="section-heading">
-		<div>
-			<p class="eyebrow">Action inbox</p>
-			<h2 id="actions-heading">What needs your team</h2>
-		</div>
-		<span class="count-badge"
-			>{openRfis.length + pendingSubmittals.length + pendingInstructions.length}</span
-		>
-	</div>
-
-	{#if !openRfis.length && !pendingSubmittals.length && !pendingInstructions.length}
+	<section class="section-block">
 		<div class="empty-state">
-			<strong>You’re clear.</strong>
-			<p>No shared RFI, submittal or instruction currently needs action.</p>
+			<strong>External access is deliberately project-scoped.</strong>
+			<p>
+				NuBlox tenant administration, organisation membership and internal business data remain
+				outside your external collaboration scope. Controlled RFI, submittal and information sharing
+				can be added to this person-level boundary without creating an organisation identity.
+			</p>
 		</div>
-	{:else}
-		<div class="action-grid">
-			{#each openRfis as rfi (rfi.publicId)}
-				<article class="work-card">
-					<div class="card-type">RFI · {rfi.rfiNumber}</div>
-					<h3>{rfi.subject}</h3>
-					<p class="question">{rfi.question}</p>
-					<div class="meta-grid">
-						<span><strong>Project</strong>{rfi.projectNumber} · {rfi.projectName}</span>
-						<span><strong>From</strong>{rfi.owningOrganisationName}</span>
-						<span><strong>Due</strong>{dateTime(rfi.dueAt)}</span>
-						<span><strong>Priority</strong>{titleCase(rfi.priority)}</span>
-					</div>
-					{#if rfi.latestResponse}
-						<div class="previous-response">
-							<strong>Your latest response</strong>
-							<p>{rfi.latestResponse}</p>
-						</div>
-					{/if}
-					{#if form?.action === 'rfi' && form?.subjectPublicId === rfi.publicId}
-						<p class="inline-error" role="alert">{form.message}</p>
-					{/if}
-					{#if data.canRespond}
-						<details>
-							<summary>Respond to RFI</summary>
-							<form class="response-form" method="POST" action="?/respondRfi">
-								<input type="hidden" name="rfiPublicId" value={rfi.publicId} />
-								<label>
-									<span>Response</span>
-									<textarea name="responseText" rows="5" required maxlength="20000"></textarea>
-								</label>
-								<label class="checkbox-row">
-									<input type="checkbox" name="final" checked />
-									<span>Mark this as the final response</span>
-								</label>
-								<button class="primary" type="submit">Send response</button>
-							</form>
-						</details>
-					{/if}
-				</article>
-			{/each}
-
-			{#each pendingSubmittals as submittal (submittal.publicId)}
-				<article class="work-card">
-					<div class="card-type">Submittal · {submittal.number}</div>
-					<h3>{submittal.title}</h3>
-					<div class="meta-grid">
-						<span><strong>Project</strong>{submittal.projectNumber} · {submittal.projectName}</span>
-						<span><strong>From</strong>{submittal.owningOrganisationName}</span>
-						<span><strong>Type</strong>{submittal.typeName}</span>
-						<span
-							><strong>Review due</strong>{dateTime(
-								submittal.reviewerDueAt ?? submittal.dueAt
-							)}</span
-						>
-					</div>
-					{#if form?.action === 'submittal' && form?.subjectPublicId === submittal.publicId}
-						<p class="inline-error" role="alert">{form.message}</p>
-					{/if}
-					{#if data.canRespond}
-						<details>
-							<summary>Review submittal</summary>
-							<form class="response-form" method="POST" action="?/reviewSubmittal">
-								<input type="hidden" name="submittalPublicId" value={submittal.publicId} />
-								<label>
-									<span>Outcome</span>
-									<select name="outcome" required>
-										<option value="">Choose outcome</option>
-										{#each reviewOutcomes as outcome}
-											<option value={outcome[0]}>{outcome[1]}</option>
-										{/each}
-									</select>
-								</label>
-								<label>
-									<span>Comments <small>optional</small></span>
-									<textarea name="comments" rows="4" maxlength="20000"></textarea>
-								</label>
-								<button class="primary" type="submit">Submit review</button>
-							</form>
-						</details>
-					{/if}
-				</article>
-			{/each}
-
-			{#each pendingInstructions as instruction (instruction.publicId)}
-				<article class="work-card">
-					<div class="card-type">Instruction · {instruction.number}</div>
-					<h3>{instruction.subject}</h3>
-					<p class="question">{instruction.instructionText}</p>
-					<div class="meta-grid">
-						<span
-							><strong>Project</strong>{instruction.projectNumber} · {instruction.projectName}</span
-						>
-						<span><strong>From</strong>{instruction.issuingOrganisationName}</span>
-						<span><strong>Type</strong>{instruction.typeName}</span>
-						<span><strong>Issued</strong>{dateTime(instruction.issuedAt)}</span>
-					</div>
-					{#if form?.action === 'instruction' && form?.subjectPublicId === instruction.publicId}
-						<p class="inline-error" role="alert">{form.message}</p>
-					{/if}
-					{#if data.canRespond}
-						<form method="POST" action="?/acknowledgeInstruction">
-							<input type="hidden" name="instructionPublicId" value={instruction.publicId} />
-							<button class="primary" type="submit">Acknowledge instruction</button>
-						</form>
-					{/if}
-				</article>
-			{/each}
-		</div>
-	{/if}
-</section>
-
-<section class="section-block" aria-labelledby="information-heading">
-	<div class="section-heading">
+	</section>
+{:else}
+	<section class="hero">
 		<div>
-			<p class="eyebrow">Shared information</p>
-			<h2 id="information-heading">Issued to your organisation</h2>
+			<p class="eyebrow">Collaboration portal</p>
+			<h1>Shared work</h1>
+			<p class="lede">
+				Everything another project organisation has explicitly sent or assigned to your team, in one
+				place.
+			</p>
 		</div>
-		<span class="count-badge">{data.transmittals.length}</span>
-	</div>
-	{#if data.transmittals.length}
-		<div class="card-list">
-			{#each data.transmittals as transmittal (transmittal.publicId)}
-				<article class="work-card compact-card">
-					<div class="card-copy">
-						<div class="meta-line">
-							<span>{transmittal.transmittalNumber}</span>
-							<span>{dateTime(transmittal.issuedAt)}</span>
+		{#if data.canManage}
+			<a class="manage-link" href="/portal/manage">Manage sharing</a>
+		{/if}
+	</section>
+
+	<section class="metrics" aria-label="Shared work summary">
+		<article>
+			<strong>{actionCount}</strong>
+			<span>Need attention</span>
+		</article>
+		<article>
+			<strong>{data.projects.length}</strong>
+			<span>Shared projects</span>
+		</article>
+		<article>
+			<strong>{data.transmittals.length}</strong>
+			<span>Information issues</span>
+		</article>
+	</section>
+
+	{#if form?.message}
+		<p class="form-message" role="alert">{form.message}</p>
+	{/if}
+
+	{#if data.invitations.length}
+		<section class="section-block" aria-labelledby="invitations-heading">
+			<div class="section-heading">
+				<div>
+					<p class="eyebrow">Invitations</p>
+					<h2 id="invitations-heading">Join a shared project</h2>
+				</div>
+				<span class="count-badge">{data.invitations.length}</span>
+			</div>
+			<div class="card-list">
+				{#each data.invitations as invitation (invitation.projectPublicId)}
+					<article class="work-card invitation-card">
+						<div class="card-copy">
+							<div class="meta-line">
+								<span>{invitation.projectNumber}</span>
+								<span>From {invitation.owningOrganisationName}</span>
+							</div>
+							<h3>{invitation.projectName}</h3>
+							{#if invitation.roles.length}
+								<p class="muted">Role: {invitation.roles.map((role) => role.name).join(', ')}</p>
+							{/if}
+							{#if form?.action === 'invitation' && form?.subjectPublicId === invitation.projectPublicId}
+								<p class="inline-error" role="alert">{form.message}</p>
+							{/if}
 						</div>
-						<h3>{transmittal.subject}</h3>
-						<p class="muted">
-							{transmittal.projectNumber} · {transmittal.projectName} · From {transmittal.issuingOrganisationName}
+						<div class="inline-actions">
+							<form method="POST" action="?/acceptInvitation">
+								<input type="hidden" name="projectPublicId" value={invitation.projectPublicId} />
+								<button class="primary" type="submit">Accept</button>
+							</form>
+							<form method="POST" action="?/declineInvitation">
+								<input type="hidden" name="projectPublicId" value={invitation.projectPublicId} />
+								<button class="secondary" type="submit">Decline</button>
+							</form>
+						</div>
+					</article>
+				{/each}
+			</div>
+		</section>
+	{/if}
+
+	<section class="section-block" aria-labelledby="actions-heading">
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Action inbox</p>
+				<h2 id="actions-heading">What needs your team</h2>
+			</div>
+			<span class="count-badge"
+				>{openRfis.length + pendingSubmittals.length + pendingInstructions.length}</span
+			>
+		</div>
+
+		{#if !openRfis.length && !pendingSubmittals.length && !pendingInstructions.length}
+			<div class="empty-state">
+				<strong>You’re clear.</strong>
+				<p>No shared RFI, submittal or instruction currently needs action.</p>
+			</div>
+		{:else}
+			<div class="action-grid">
+				{#each openRfis as rfi (rfi.publicId)}
+					<article class="work-card">
+						<div class="card-type">RFI · {rfi.rfiNumber}</div>
+						<h3>{rfi.subject}</h3>
+						<p class="question">{rfi.question}</p>
+						<div class="meta-grid">
+							<span><strong>Project</strong>{rfi.projectNumber} · {rfi.projectName}</span>
+							<span><strong>From</strong>{rfi.owningOrganisationName}</span>
+							<span><strong>Due</strong>{dateTime(rfi.dueAt)}</span>
+							<span><strong>Priority</strong>{titleCase(rfi.priority)}</span>
+						</div>
+						{#if rfi.latestResponse}
+							<div class="previous-response">
+								<strong>Your latest response</strong>
+								<p>{rfi.latestResponse}</p>
+							</div>
+						{/if}
+						{#if form?.action === 'rfi' && form?.subjectPublicId === rfi.publicId}
+							<p class="inline-error" role="alert">{form.message}</p>
+						{/if}
+						{#if data.canRespond}
+							<details>
+								<summary>Respond to RFI</summary>
+								<form class="response-form" method="POST" action="?/respondRfi">
+									<input type="hidden" name="rfiPublicId" value={rfi.publicId} />
+									<label>
+										<span>Response</span>
+										<textarea name="responseText" rows="5" required maxlength="20000"></textarea>
+									</label>
+									<label class="checkbox-row">
+										<input type="checkbox" name="final" checked />
+										<span>Mark this as the final response</span>
+									</label>
+									<button class="primary" type="submit">Send response</button>
+								</form>
+							</details>
+						{/if}
+					</article>
+				{/each}
+
+				{#each pendingSubmittals as submittal (submittal.publicId)}
+					<article class="work-card">
+						<div class="card-type">Submittal · {submittal.number}</div>
+						<h3>{submittal.title}</h3>
+						<div class="meta-grid">
+							<span
+								><strong>Project</strong>{submittal.projectNumber} · {submittal.projectName}</span
+							>
+							<span><strong>From</strong>{submittal.owningOrganisationName}</span>
+							<span><strong>Type</strong>{submittal.typeName}</span>
+							<span
+								><strong>Review due</strong>{dateTime(
+									submittal.reviewerDueAt ?? submittal.dueAt
+								)}</span
+							>
+						</div>
+						{#if form?.action === 'submittal' && form?.subjectPublicId === submittal.publicId}
+							<p class="inline-error" role="alert">{form.message}</p>
+						{/if}
+						{#if data.canRespond}
+							<details>
+								<summary>Review submittal</summary>
+								<form class="response-form" method="POST" action="?/reviewSubmittal">
+									<input type="hidden" name="submittalPublicId" value={submittal.publicId} />
+									<label>
+										<span>Outcome</span>
+										<select name="outcome" required>
+											<option value="">Choose outcome</option>
+											{#each reviewOutcomes as outcome}
+												<option value={outcome[0]}>{outcome[1]}</option>
+											{/each}
+										</select>
+									</label>
+									<label>
+										<span>Comments <small>optional</small></span>
+										<textarea name="comments" rows="4" maxlength="20000"></textarea>
+									</label>
+									<button class="primary" type="submit">Submit review</button>
+								</form>
+							</details>
+						{/if}
+					</article>
+				{/each}
+
+				{#each pendingInstructions as instruction (instruction.publicId)}
+					<article class="work-card">
+						<div class="card-type">Instruction · {instruction.number}</div>
+						<h3>{instruction.subject}</h3>
+						<p class="question">{instruction.instructionText}</p>
+						<div class="meta-grid">
+							<span
+								><strong>Project</strong>{instruction.projectNumber} · {instruction.projectName}</span
+							>
+							<span><strong>From</strong>{instruction.issuingOrganisationName}</span>
+							<span><strong>Type</strong>{instruction.typeName}</span>
+							<span><strong>Issued</strong>{dateTime(instruction.issuedAt)}</span>
+						</div>
+						{#if form?.action === 'instruction' && form?.subjectPublicId === instruction.publicId}
+							<p class="inline-error" role="alert">{form.message}</p>
+						{/if}
+						{#if data.canRespond}
+							<form method="POST" action="?/acknowledgeInstruction">
+								<input type="hidden" name="instructionPublicId" value={instruction.publicId} />
+								<button class="primary" type="submit">Acknowledge instruction</button>
+							</form>
+						{/if}
+					</article>
+				{/each}
+			</div>
+		{/if}
+	</section>
+
+	<section class="section-block" aria-labelledby="information-heading">
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Shared information</p>
+				<h2 id="information-heading">Issued to your organisation</h2>
+			</div>
+			<span class="count-badge">{data.transmittals.length}</span>
+		</div>
+		{#if data.transmittals.length}
+			<div class="card-list">
+				{#each data.transmittals as transmittal (transmittal.publicId)}
+					<article class="work-card compact-card">
+						<div class="card-copy">
+							<div class="meta-line">
+								<span>{transmittal.transmittalNumber}</span>
+								<span>{dateTime(transmittal.issuedAt)}</span>
+							</div>
+							<h3>{transmittal.subject}</h3>
+							<p class="muted">
+								{transmittal.projectNumber} · {transmittal.projectName} · From {transmittal.issuingOrganisationName}
+							</p>
+							{#if transmittal.purpose}<p class="muted">Purpose: {transmittal.purpose}</p>{/if}
+						</div>
+						<ul class="revision-list" aria-label={`Revisions in ${transmittal.transmittalNumber}`}>
+							{#each transmittal.items as item (item.versionPublicId)}
+								<li>
+									<strong>{item.containerNumber}</strong>
+									<span>{item.title}</span>
+									<small>Rev {item.revisionCode} · {titleCase(item.versionStatus)}</small>
+								</li>
+							{/each}
+						</ul>
+					</article>
+				{/each}
+			</div>
+		{:else}
+			<div class="empty-state">
+				<p>No controlled information has been issued to this organisation yet.</p>
+			</div>
+		{/if}
+	</section>
+
+	<section class="section-block" aria-labelledby="projects-heading">
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Project access</p>
+				<h2 id="projects-heading">Your shared projects</h2>
+			</div>
+		</div>
+		{#if data.projects.length}
+			<div class="project-grid">
+				{#each data.projects as project (project.publicId)}
+					<article class="project-card">
+						<div>
+							<span class="project-number">{project.projectNumber}</span>
+							<span class="status-pill">{titleCase(project.status)}</span>
+						</div>
+						<h3>{project.name}</h3>
+						<p>
+							{project.isOwnedByCurrentOrganisation
+								? 'Owned by your organisation'
+								: `Owned by ${project.owningOrganisationName}`}
 						</p>
-						{#if transmittal.purpose}<p class="muted">Purpose: {transmittal.purpose}</p>{/if}
-					</div>
-					<ul class="revision-list" aria-label={`Revisions in ${transmittal.transmittalNumber}`}>
-						{#each transmittal.items as item (item.versionPublicId)}
-							<li>
-								<strong>{item.containerNumber}</strong>
-								<span>{item.title}</span>
-								<small>Rev {item.revisionCode} · {titleCase(item.versionStatus)}</small>
-							</li>
-						{/each}
-					</ul>
-				</article>
-			{/each}
-		</div>
-	{:else}
-		<div class="empty-state">
-			<p>No controlled information has been issued to this organisation yet.</p>
-		</div>
-	{/if}
-</section>
-
-<section class="section-block" aria-labelledby="projects-heading">
-	<div class="section-heading">
-		<div>
-			<p class="eyebrow">Project access</p>
-			<h2 id="projects-heading">Your shared projects</h2>
-		</div>
-	</div>
-	{#if data.projects.length}
-		<div class="project-grid">
-			{#each data.projects as project (project.publicId)}
-				<article class="project-card">
-					<div>
-						<span class="project-number">{project.projectNumber}</span>
-						<span class="status-pill">{titleCase(project.status)}</span>
-					</div>
-					<h3>{project.name}</h3>
-					<p>
-						{project.isOwnedByCurrentOrganisation
-							? 'Owned by your organisation'
-							: `Owned by ${project.owningOrganisationName}`}
-					</p>
-				</article>
-			{/each}
-		</div>
-	{:else}
-		<div class="empty-state"><p>No active shared projects are assigned to this member.</p></div>
-	{/if}
-</section>
+					</article>
+				{/each}
+			</div>
+		{:else}
+			<div class="empty-state"><p>No active shared projects are assigned to this member.</p></div>
+		{/if}
+	</section>
+{/if}
 
 <style>
 	.hero,

@@ -14,11 +14,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	if (!locals.actor) throw redirect(303, returnTo(url.pathname));
 
 	const db = getDatabase();
-	if (
-		locals.tenant.membershipVerified &&
-		locals.tenant.organisationId &&
-		locals.tenant.memberId
-	) {
+	if (locals.tenant.membershipVerified && locals.tenant.organisationId && locals.tenant.memberId) {
 		const actor = {
 			organisationId: locals.tenant.organisationId,
 			userId: locals.actor.userId,
