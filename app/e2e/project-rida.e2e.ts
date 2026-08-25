@@ -83,7 +83,9 @@ test('owner governs project risks, issues, decisions and linked Work Kernel acti
 	const decisionForm = page
 		.locator('form[action="?/createItem"]')
 		.filter({ hasText: 'Propose decision' });
-	await decisionForm.getByLabel('Decision required').fill('Approve revised facade sequence');
+	await decisionForm
+		.getByLabel('Decision required', { exact: true })
+		.fill('Approve revised facade sequence');
 	await decisionForm.getByLabel('Context').fill('Protect the weather-tight milestone.');
 	await decisionForm.getByLabel('Decision required by').fill('2026-09-03');
 	await decisionForm.getByRole('button', { name: 'Propose decision' }).click();
