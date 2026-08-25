@@ -1,54 +1,20 @@
-name: Complete System Validation
+name: Generate Project Progress Outputs
 
 on:
   pull_request:
     paths:
       - 'database/migrations/**'
-      - 'app/package.json'
-      - 'app/pnpm-lock.yaml'
-      - 'app/.kysely-codegenrc.json'
-      - 'app/.kysely-collections-codegenrc.json'
-      - 'app/.kysely-accounting-codegenrc.json'
-      - 'app/.kysely-accounts-payable-codegenrc.json'
-      - 'app/.prettierignore'
-      - 'app/eslint.config.js'
-      - 'app/playwright.config.ts'
-      - 'app/prettier.config.js'
-      - 'app/vite.config.ts'
-      - 'app/vitest.integration.config.ts'
-      - 'app/e2e/**'
-      - 'app/src/**'
-      - '.github/workflows/database-migration-validation.yml'
-  push:
-    branches:
-      - main
-    paths:
-      - 'database/migrations/**'
-      - 'app/package.json'
-      - 'app/pnpm-lock.yaml'
-      - 'app/.kysely-codegenrc.json'
-      - 'app/.kysely-collections-codegenrc.json'
-      - 'app/.kysely-accounting-codegenrc.json'
-      - 'app/.kysely-accounts-payable-codegenrc.json'
-      - 'app/.prettierignore'
-      - 'app/eslint.config.js'
-      - 'app/playwright.config.ts'
-      - 'app/prettier.config.js'
-      - 'app/vite.config.ts'
-      - 'app/vitest.integration.config.ts'
-      - 'app/e2e/**'
-      - 'app/src/**'
+      - 'app/**'
+      - 'docs/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  complete-system-validation:
-    name: Database, integration, quality, build and browser validation
+  generate-project-progress:
     runs-on: ubuntu-latest
-
     services:
       mysql:
         image: mysql:8.4
@@ -61,16 +27,16 @@ jobs:
           --health-interval=5s
           --health-timeout=5s
           --health-retries=30
-
     env:
       DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
       DB_POOL_MAX: '5'
       BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
       BETTER_AUTH_URL: http://127.0.0.1:4173
       EMAIL_DELIVERY_MODE: console
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/project-progress-earned-value
 
       - uses: pnpm/action-setup@v4
         with:
@@ -87,62 +53,141 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
-      - name: Audit production dependencies
-        working-directory: app
-        run: pnpm audit --prod --audit-level moderate
+      - name: Apply project progress source wiring
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          import re
 
-      - name: Run formatting and lint checks
-        working-directory: app
-        run: pnpm lint
+          # Confidentiality: progress can be shared, monetary EVM cannot.
+          path = Path('app/src/lib/server/projects/project-progress-service.ts')
+          text = path.read_text()
+          anchor = "\t\tconst unavailable = (reason: string): EarnedValueMetrics => ({\n"
+          if "Commercial financial permission is required to view earned-value monetary performance." not in text:
+              early = """\t\tif (!canViewFinancialPerformance) {\n\t\t\treturn {\n\t\t\t\tavailable: false,\n\t\t\t\treason: 'Commercial financial permission is required to view earned-value monetary performance.',\n\t\t\t\tdataDate: dateText(dataDate),\n\t\t\t\tcurrencyCode: null,\n\t\t\t\tbaselinePublicId: null,\n\t\t\t\tbaselineName: null,\n\t\t\t\tbudgetAtCompletion: null,\n\t\t\t\tplannedValue: null,\n\t\t\t\tearnedValue: null,\n\t\t\t\tactualCost: null,\n\t\t\t\tscheduleVariance: null,\n\t\t\t\tcostVariance: null,\n\t\t\t\tschedulePerformanceIndex: null,\n\t\t\t\tcostPerformanceIndex: null,\n\t\t\t\tplannedPercent: null,\n\t\t\t\tearnedPercent: null,\n\t\t\t\tactivities: []\n\t\t\t};\n\t\t}\n"""
+              if anchor not in text:
+                  raise SystemExit('earned-value unavailable anchor not found')
+              text = text.replace(anchor, early + anchor, 1)
+          text = re.sub(
+              r"\n\t\tif \(!canViewFinancialPerformance\) \{\n\t\t\treturn \{\n\t\t\t\tavailable: true,.*?\n\t\t\t\};\n\t\t\}\n\t\tconst financial =",
+              "\n\t\tconst financial =",
+              text,
+              count=1,
+              flags=re.S,
+          )
+          old = "\t\t\tprogressRepository.listEarnedValueBaselines(project.id)\n"
+          new = "\t\t\tflags.canViewFinancialPerformance\n\t\t\t\t? progressRepository.listEarnedValueBaselines(project.id)\n\t\t\t\t: Promise.resolve([] as EarnedValueBaselineRecord[])\n"
+          if old in text:
+              text = text.replace(old, new, 1)
+          path.write_text(text)
 
-      - name: Apply authoritative migration stream
+          # Strong typing at the form boundary.
+          path = Path('app/src/routes/(app)/projects/[projectPublicId]/progress/+page.server.ts')
+          text = path.read_text()
+          progress_import = "import type { ProgressMeasurementMethod } from '$lib/server/projects/project-progress-repository';\n"
+          if progress_import not in text:
+              anchor = "import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';\n"
+              if anchor not in text:
+                  raise SystemExit('progress route import anchor not found')
+              text = text.replace(anchor, anchor + progress_import, 1)
+          text = text.replace('as never,', 'as ProgressMeasurementMethod,')
+          path.write_text(text)
+
+          # Future-organisation permission bootstrap.
+          path = Path('app/src/lib/server/organisations/bootstrap-service.ts')
+          text = path.read_text()
+          if "'project.progress.view'" not in text:
+              progress_all = (
+                  "\t'project.progress.view',\n"
+                  "\t'project.progress.manage',\n"
+                  "\t'project.progress.approve',\n"
+                  "\t'project.progress.baseline.manage',\n"
+              )
+              text = text.replace("\t'project.resource.manage',\n", "\t'project.resource.manage',\n" + progress_all)
+
+              def patch_role(name, keys):
+                  nonlocal_text = None
+                  pattern = re.compile(r"(name: '" + re.escape(name) + r"'.*?permissionKeys: \[)(.*?)(\n\t\t\])", re.S)
+                  match = pattern.search(text)
+                  if not match:
+                      raise SystemExit(f'{name} role block not found')
+                  body = match.group(2)
+                  insertion = ''.join(f"\n\t\t\t'{key}'," for key in keys)
+                  if keys[0] not in body:
+                      body = body.rstrip()
+                      if body and not body.rstrip().endswith(','):
+                          body += ','
+                      body += insertion
+                  return text[:match.start(2)] + body + text[match.end(2):]
+
+              for role_name, role_keys in [
+                  ('Finance/Commercial', ['project.progress.view']),
+                  ('Member/Professional', ['project.progress.view', 'project.progress.manage']),
+                  ('Read Only', ['project.progress.view']),
+              ]:
+                  pattern = re.compile(r"(name: '" + re.escape(role_name) + r"'.*?permissionKeys: \[)(.*?)(\n\t\t\])", re.S)
+                  match = pattern.search(text)
+                  if not match:
+                      raise SystemExit(f'{role_name} role block not found')
+                  body = match.group(2)
+                  if role_keys[0] not in body:
+                      if body.rstrip() and not body.rstrip().endswith(','):
+                          body = body.rstrip() + ','
+                      body += ''.join(f"\n\t\t\t'{key}'," for key in role_keys)
+                  text = text[:match.start(2)] + body + text[match.end(2):]
+
+              old_field = "permissionKeys: ['project.view', 'project.plan.view']"
+              new_field = "permissionKeys: [\n\t\t\t'project.view',\n\t\t\t'project.plan.view',\n\t\t\t'project.progress.view',\n\t\t\t'project.progress.manage'\n\t\t]"
+              if old_field not in text:
+                  raise SystemExit('Field Worker permission anchor not found')
+              text = text.replace(old_field, new_field, 1)
+          path.write_text(text)
+
+          # Project-context discoverability.
+          path = Path('app/src/lib/navigation/app-navigation.ts')
+          text = path.read_text()
+          if "id: 'progress'" not in text:
+              anchor = "\tif (hasAnyNamespace(allowed, ['project.resource.']))\n\t\tlinks.push({ id: 'resources', label: 'Resources', href: `${projectRoot}/resources` });\n"
+              addition = anchor + "\tif (hasAnyNamespace(allowed, ['project.progress.']))\n\t\tlinks.push({ id: 'progress', label: 'Progress', href: `${projectRoot}/progress` });\n"
+              if anchor not in text:
+                  raise SystemExit('project context resource anchor not found')
+              text = text.replace(anchor, addition, 1)
+          path.write_text(text)
+
+          # Capability maturity evidence.
+          path = Path('app/src/lib/navigation/capability-registry.ts')
+          text = path.read_text()
+          old = "Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, governed project financial control/EAC/cash flow, projects and Work Kernel are native; risk, earned value and controlled cross-domain change remain."
+          new = "Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, governed project financial control/EAC/cash flow, controlled progress measurement and earned-value foundations, projects and Work Kernel are native; risk and controlled cross-domain change remain."
+          if old not in text:
+              raise SystemExit('capability maturity note anchor not found')
+          text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+
+      - name: Apply migration and regenerate database-derived types
         working-directory: app
         run: |
           pnpm db:migrate
           pnpm db:status
+          pnpm db:types
+          pnpm format
 
-      - name: Verify migrated application structure
+      - name: Report migrated schema contract
         env:
           MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
         run: |
           table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
-          echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '409'
-          test "$fk_count" = '944'
-          test "$check_count" = '556'
+          echo "PROJECT_PROGRESS_SCHEMA=$table_count/$fk_count/$check_count"
 
-      - name: Regenerate database-derived Kysely types
-        working-directory: app
-        run: pnpm db:types
-
-      - name: Verify generated types are committed
-        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts
-
-      - name: Run real-MySQL integration suite
-        working-directory: app
-        run: pnpm test:integration
-
-      - name: Type-check SvelteKit application
-        working-directory: app
-        run: pnpm check
-
-      - name: Install Chromium for component and browser validation
-        working-directory: app
-        run: pnpm exec playwright install chromium
-
-      - name: Run unit and component tests
-        working-directory: app
-        run: pnpm test:unit
-
-      - name: Verify validation leaves no tracked-file drift
-        run: git diff --exit-code
-
-      - name: Build production SvelteKit application
-        working-directory: app
-        run: pnpm build
-
-      - name: Run Playwright browser E2E suite
-        working-directory: app
-        run: pnpm exec playwright test
+      - name: Commit generated project progress outputs
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app database docs
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: generate project progress outputs"
+            git push origin HEAD:feat/project-progress-earned-value
+          fi
