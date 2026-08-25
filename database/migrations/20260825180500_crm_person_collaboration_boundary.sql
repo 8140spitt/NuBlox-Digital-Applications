@@ -134,6 +134,11 @@ INNER JOIN project_collaboration_invitation_roles AS invitation_role
 WHERE invitation.status = 'accepted'
   AND invitation.auth_user_id IS NOT NULL;
 
+-- The old pending-by-CRM-organisation unique index currently supplies the leading project_id
+-- index used by the project foreign key. Preserve an explicit project index before removing it.
+ALTER TABLE project_collaboration_invitations
+    ADD KEY idx_project_collaboration_invitations_project (project_id);
+
 -- Invitations are now uniquely pending by person/contact, not by employer organisation.
 ALTER TABLE project_collaboration_invitations
     DROP INDEX uq_project_collaboration_invitations_pending_crm,
