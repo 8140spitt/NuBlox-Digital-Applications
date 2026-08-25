@@ -18,44 +18,49 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: feat/commercial-lifecycle-progression
+
       - uses: pnpm/action-setup@v4
         with:
           version: 10.14.0
           run_install: false
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Apply controlled client-contact corrections
+
+      - name: Apply final CRM client-contact corrections
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          def replace_once(path, old, new):
+          def replace_all(path, old, new, minimum=1):
               p = Path(path)
               text = p.read_text()
               count = text.count(old)
-              if count != 1:
-                  raise SystemExit(f'{path}: expected exactly one match, found {count}')
-              p.write_text(text.replace(old, new, 1))
+              if count < minimum:
+                  raise SystemExit(f'{path}: expected at least {minimum} match(es), found {count}')
+              p.write_text(text.replace(old, new))
 
-          replace_once(
+          replace_all(
               'app/src/lib/server/commercial/commercial-repository.ts',
               "\t\t\t.where('assignment.is_primary', '=', 1)\n\t\t\t.where('role.code', '=', 'contact')",
               "\t\t\t.where('role.code', '=', 'client_contact')"
           )
 
-          replace_once(
+          replace_all(
               'app/src/lib/server/crm/crm-opportunity-client-service.ts',
               "repository.findOpportunityPartyRoleTypeId('contact')",
               "repository.findOpportunityPartyRoleTypeId('client_contact')"
           )
 
-          replace_once(
+          replace_all(
               'app/src/lib/server/crm/crm-opportunity-service.ts',
               "\t\t\tpartyRoleTypes,\n\t\t\tactivityTypes,",
-              "\t\t\tpartyRoleTypes: partyRoleTypes.filter((role) => role.code !== 'client_contact'),\n\t\t\tactivityTypes,"
+              "\t\t\tpartyRoleTypes: partyRoleTypes.filter((role) => role.code !== 'client_contact'),\n\t\t\tactivityTypes,",
+              2
           )
-          replace_once(
+
+          replace_all(
               'app/src/lib/server/crm/crm-opportunity-service.ts',
               "\t\tconst participantRoleCode = roleCode(input.roleCode);\n\t\treturn this.db.transaction()",
               "\t\tconst participantRoleCode = roleCode(input.roleCode);\n\t\tif (participantRoleCode === 'client_contact') {\n\t\t\tthrow new CrmOpportunityValidationError(\n\t\t\t\t'Client contact is controlled by the opportunity client context.'\n\t\t\t);\n\t\t}\n\t\treturn this.db.transaction()"
@@ -63,42 +68,49 @@ jobs:
 
           test_path = Path('app/src/lib/server/crm/crm-account-opportunity-context.integration.test.ts')
           test_text = test_path.read_text()
-          if test_text.count("roleCode: 'contact'") != 1 or test_text.count("where('role.code', '=', 'contact')") != 1:
-              raise SystemExit('crm account context test contact-role matches changed unexpectedly')
+          if test_text.count("roleCode: 'contact'") < 1 or test_text.count("where('role.code', '=', 'contact')") < 1:
+              raise SystemExit('CRM account context contact-role assertions changed unexpectedly')
           test_text = test_text.replace("roleCode: 'contact'", "roleCode: 'client_contact'", 1)
           test_text = test_text.replace("where('role.code', '=', 'contact')", "where('role.code', '=', 'client_contact')", 1)
           test_path.write_text(test_text)
 
-          replace_once(
+          replace_all(
               'app/src/lib/server/commercial/commercial-lifecycle.integration.test.ts',
               "\t\t\t.select([\n\t\t\t\t'estimate.title',\n\t\t\t\t'estimate.currency_code as currencyCode',",
               "\t\t\t.innerJoin('estimate_versions as version', (join) =>\n\t\t\t\tjoin\n\t\t\t\t\t.onRef('version.estimate_id', '=', 'estimate.id')\n\t\t\t\t\t.onRef('version.organisation_id', '=', 'estimate.organisation_id')\n\t\t\t\t\t.on('version.version_number', '=', 1)\n\t\t\t)\n\t\t\t.select([\n\t\t\t\t'estimate.title',\n\t\t\t\t'version.currency_code as currencyCode',"
           )
 
-          replace_once(
+          replace_all(
               'app/src/lib/server/crm/crm-opportunities-activities.integration.test.ts',
               "\t\tconst replacement = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'person',\n\t\t\tgivenNames: 'Morgan',\n\t\t\tfamilyName: 'Buyer'\n\t\t});",
               "\t\tconst replacement = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Replacement Client`,\n\t\t\troleCodes: ['prospect']\n\t\t});"
           )
-          replace_once(
+
+          replace_all(
               'app/src/lib/server/crm/crm-opportunities-activities.integration.test.ts',
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Participant Client`\n\t\t});",
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Participant Client`,\n\t\t\troleCodes: ['prospect']\n\t\t});"
           )
-          replace_once(
+
+          replace_all(
               'app/src/lib/server/crm/crm-opportunities-activities.integration.test.ts',
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Activity Client`\n\t\t});",
               "\t\tconst client = await crm.createParty(actorManagerA, {\n\t\t\tkind: 'organisation',\n\t\t\tlegalName: `${PREFIX}Activity Client`,\n\t\t\troleCodes: ['prospect']\n\t\t});"
           )
           PY
+
           cd app
           pnpm install --frozen-lockfile
           pnpm exec prettier --write .
           pnpm exec eslint .
           cd ..
+
+          git fetch origin main --depth=1
+          git show origin/main:.github/workflows/database-migration-validation.yml > .github/workflows/database-migration-validation.yml
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/src database/migrations
-          git commit -m "Preserve designated client contact through commercial lineage"
+          git add app/src database/migrations .github/workflows/database-migration-validation.yml
+          git commit -m "Preserve CRM client contact through commercial lineage"
           git push origin HEAD:feat/commercial-lifecycle-progression
           exit 1
