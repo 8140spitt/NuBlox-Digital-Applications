@@ -2,8 +2,8 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { CommercialLifecycleService } from '$lib/server/commercial/commercial-lifecycle-service';
 import {
-	CommercialLifecycleService,
 	CommercialService,
 	CommercialValidationError
 } from '$lib/server/commercial/commercial-service';
