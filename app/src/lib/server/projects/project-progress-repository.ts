@@ -2,10 +2,7 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type ProgressPeriodStatus = 'open' | 'submitted' | 'approved';
 export type ProgressMeasurementMethod =
-	| 'manual_percent'
-	| 'milestone_0_100'
-	| 'milestone_50_50'
-	| 'quantity';
+	'manual_percent' | 'milestone_0_100' | 'milestone_50_50' | 'quantity';
 export type EarnedValueBaselineStatus = 'draft' | 'approved' | 'superseded';
 
 export type ProgressPeriodRecord = {
@@ -161,7 +158,10 @@ export class ProjectProgressRepository {
 		return row ? mapPeriod(row) : null;
 	}
 
-	async listApprovedPeriodsUpTo(projectId: string, dataDate: Date): Promise<ProgressPeriodRecord[]> {
+	async listApprovedPeriodsUpTo(
+		projectId: string,
+		dataDate: Date
+	): Promise<ProgressPeriodRecord[]> {
 		const rows = await this.db
 			.selectFrom('project_progress_periods')
 			.selectAll()
@@ -209,7 +209,8 @@ export class ProjectProgressRepository {
 				approved_at: null
 			})
 			.executeTakeFirstOrThrow();
-		if (result.insertId === undefined) throw new Error('MySQL did not return the progress period ID.');
+		if (result.insertId === undefined)
+			throw new Error('MySQL did not return the progress period ID.');
 		return result.insertId.toString();
 	}
 
@@ -217,11 +218,17 @@ export class ProjectProgressRepository {
 		return this.listMeasurementsForPeriods([periodId]);
 	}
 
-	async listMeasurementsForPeriods(periodIds: readonly string[]): Promise<ActivityProgressMeasurementRecord[]> {
+	async listMeasurementsForPeriods(
+		periodIds: readonly string[]
+	): Promise<ActivityProgressMeasurementRecord[]> {
 		if (periodIds.length === 0) return [];
 		const rows = await this.db
 			.selectFrom('project_activity_progress_measurements as measurement')
-			.innerJoin('project_progress_periods as period', 'period.id', 'measurement.progress_period_id')
+			.innerJoin(
+				'project_progress_periods as period',
+				'period.id',
+				'measurement.progress_period_id'
+			)
 			.innerJoin('project_plan_activities as activity', 'activity.id', 'measurement.activity_id')
 			.innerJoin('project_wbs_nodes as wbs', 'wbs.id', 'activity.wbs_node_id')
 			.select([
@@ -405,7 +412,11 @@ export class ProjectProgressRepository {
 			.select((eb) =>
 				eb
 					.selectFrom('project_earned_value_baseline_allocations as allocation')
-					.select(({ fn }) => fn.coalesce(fn.sum<string>('allocation.budget_at_completion_amount'), eb.val('0.0000')).as('allocated'))
+					.select(({ fn }) =>
+						fn
+							.coalesce(fn.sum<string>('allocation.budget_at_completion_amount'), eb.val('0.0000'))
+							.as('allocated')
+					)
 					.whereRef('allocation.earned_value_baseline_id', '=', 'ev.id')
 					.as('allocated_budget')
 			)
@@ -438,11 +449,19 @@ export class ProjectProgressRepository {
 		projectId: string,
 		publicId: string
 	): Promise<EarnedValueBaselineRecord | null> {
-		return (await this.listEarnedValueBaselines(projectId)).find((row) => row.publicId === publicId) ?? null;
+		return (
+			(await this.listEarnedValueBaselines(projectId)).find((row) => row.publicId === publicId) ??
+			null
+		);
 	}
 
-	async findApprovedEarnedValueBaseline(projectId: string): Promise<EarnedValueBaselineRecord | null> {
-		return (await this.listEarnedValueBaselines(projectId)).find((row) => row.status === 'approved') ?? null;
+	async findApprovedEarnedValueBaseline(
+		projectId: string
+	): Promise<EarnedValueBaselineRecord | null> {
+		return (
+			(await this.listEarnedValueBaselines(projectId)).find((row) => row.status === 'approved') ??
+			null
+		);
 	}
 
 	async insertEarnedValueBaseline(input: {
@@ -473,7 +492,8 @@ export class ProjectProgressRepository {
 				approved_at: null
 			})
 			.executeTakeFirstOrThrow();
-		if (result.insertId === undefined) throw new Error('MySQL did not return the earned-value baseline ID.');
+		if (result.insertId === undefined)
+			throw new Error('MySQL did not return the earned-value baseline ID.');
 		return result.insertId.toString();
 	}
 

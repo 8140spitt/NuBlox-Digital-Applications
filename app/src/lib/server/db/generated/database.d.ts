@@ -2372,6 +2372,28 @@ export interface Programmes {
   updated_at: Generated<Date>;
 }
 
+export interface ProjectActivityProgressMeasurements {
+  activity_id: string;
+  actual_finish_on: Date | null;
+  actual_start_on: Date | null;
+  commentary: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  measurement_method: Generated<string>;
+  organisation_id: string;
+  percent_complete: Decimal;
+  progress_period_id: string;
+  project_id: string;
+  public_id: string;
+  quantity_complete: Decimal | null;
+  quantity_total: Decimal | null;
+  quantity_unit: string | null;
+  remaining_duration_days: Decimal | null;
+  updated_at: Generated<Date>;
+  updated_by_member_id: string;
+}
+
 export interface ProjectActivityResourceAllocations {
   allocation_status: Generated<string>;
   created_at: Generated<Date>;
@@ -2569,6 +2591,35 @@ export interface ProjectDirectCosts {
   updated_at: Generated<Date>;
 }
 
+export interface ProjectEarnedValueBaselineAllocations {
+  budget_at_completion_amount: Decimal;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  earned_value_baseline_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  project_id: string;
+  source_activity_id: string;
+  source_plan_baseline_id: string;
+}
+
+export interface ProjectEarnedValueBaselines {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  baseline_number: number;
+  control_budget_snapshot: Decimal;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  currency_code: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  name: string;
+  organisation_id: string;
+  project_id: string;
+  public_id: string;
+  source_plan_baseline_id: string;
+}
+
 export interface ProjectInstructions {
   created_at: Generated<Date>;
   id: Generated<string>;
@@ -2696,6 +2747,23 @@ export interface ProjectPlanDependencies {
   removed_at: Date | null;
   removed_by_member_id: string | null;
   successor_activity_id: string;
+}
+
+export interface ProjectProgressPeriods {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  data_date: Date;
+  id: Generated<string>;
+  label: string;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  period_number: number;
+  project_id: string;
+  public_id: string;
+  submitted_at: Date | null;
+  submitted_by_member_id: string | null;
 }
 
 export interface ProjectResourceAssignments {
@@ -4643,6 +4711,7 @@ export interface DB {
   procurement_packages: ProcurementPackages;
   professional_domains: ProfessionalDomains;
   programmes: Programmes;
+  project_activity_progress_measurements: ProjectActivityProgressMeasurements;
   project_activity_resource_allocations: ProjectActivityResourceAllocations;
   project_budget_adjustment_items: ProjectBudgetAdjustmentItems;
   project_budget_adjustments: ProjectBudgetAdjustments;
@@ -4657,6 +4726,8 @@ export interface DB {
   project_cost_codes: ProjectCostCodes;
   project_direct_cost_reversals: ProjectDirectCostReversals;
   project_direct_costs: ProjectDirectCosts;
+  project_earned_value_baseline_allocations: ProjectEarnedValueBaselineAllocations;
+  project_earned_value_baselines: ProjectEarnedValueBaselines;
   project_instructions: ProjectInstructions;
   project_member_roles: ProjectMemberRoles;
   project_members: ProjectMembers;
@@ -4667,6 +4738,7 @@ export interface DB {
   project_plan_baseline_dependencies: ProjectPlanBaselineDependencies;
   project_plan_baselines: ProjectPlanBaselines;
   project_plan_dependencies: ProjectPlanDependencies;
+  project_progress_periods: ProjectProgressPeriods;
   project_resource_assignments: ProjectResourceAssignments;
   project_role_types: ProjectRoleTypes;
   project_sites: ProjectSites;

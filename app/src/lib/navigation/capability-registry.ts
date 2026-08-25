@@ -123,7 +123,7 @@ const nativeCapabilityDomains: readonly NativeCapabilityDomain[] = [
 		description: 'Project governance, planning, work, schedule, risk, change and project controls.',
 		maturity: 'partial',
 		maturityNote:
-			'Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, governed project financial control/EAC/cash flow, projects and Work Kernel are native; risk, earned value and controlled cross-domain change remain.',
+			'Portfolio/programme/project hierarchy, WBS, activities, milestones, dependency logic, schedule baselines, resource loading/capacity, governed project financial control/EAC/cash flow, controlled progress measurement and earned-value foundations, projects and Work Kernel are native; risk and controlled cross-domain change remain.',
 		permissionNamespaces: ['project.', 'schedule.', 'work.'],
 		routes: [
 			{ label: 'Projects', href: '/projects', anyPermissionNamespaces: ['project.'] },

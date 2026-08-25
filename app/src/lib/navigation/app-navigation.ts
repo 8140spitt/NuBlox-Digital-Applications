@@ -539,6 +539,8 @@ export function resolveProjectContextNavigation(
 		links.push({ id: 'plan', label: 'Plan', href: `${projectRoot}/plan` });
 	if (hasAnyNamespace(allowed, ['project.resource.']))
 		links.push({ id: 'resources', label: 'Resources', href: `${projectRoot}/resources` });
+	if (hasAnyNamespace(allowed, ['project.progress.']))
+		links.push({ id: 'progress', label: 'Progress', href: `${projectRoot}/progress` });
 	if (
 		hasAnyNamespace(allowed, [
 			'commercial.forecast.',

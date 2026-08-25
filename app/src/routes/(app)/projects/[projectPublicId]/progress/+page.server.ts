@@ -4,6 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import type { ProgressMeasurementMethod } from '$lib/server/projects/project-progress-repository';
 import {
 	ProjectProgressService,
 	ProjectProgressValidationError
@@ -26,7 +27,8 @@ function actionFailure(progressAction: string, progressError: string) {
 function parseDate(value: FormDataEntryValue | string | null, label: string): Date | null {
 	const text = String(value ?? '').trim();
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new ProjectProgressValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new ProjectProgressValidationError(`${label} is invalid.`);
 	const parsed = new Date(`${text}T00:00:00.000Z`);
 	if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text) {
 		throw new ProjectProgressValidationError(`${label} is invalid.`);
@@ -41,9 +43,12 @@ function requiredDate(value: FormDataEntryValue | null, label: string): Date {
 }
 
 function handleActionError(cause: unknown, progressAction: string) {
-	if (cause instanceof RecordNotFoundError) return fail(404, actionFailure(progressAction, cause.message));
-	if (cause instanceof TenantAccessError) return fail(403, actionFailure(progressAction, cause.message));
-	if (cause instanceof ProjectProgressValidationError) return fail(400, actionFailure(progressAction, cause.message));
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, actionFailure(progressAction, cause.message));
+	if (cause instanceof TenantAccessError)
+		return fail(403, actionFailure(progressAction, cause.message));
+	if (cause instanceof ProjectProgressValidationError)
+		return fail(400, actionFailure(progressAction, cause.message));
 	throw cause;
 }
 
@@ -54,18 +59,25 @@ function redirectToProgress(
 	const query = new URLSearchParams();
 	if (options.period) query.set('period', options.period);
 	if (options.baseline) query.set('baseline', options.baseline);
-	throw redirect(303, `/projects/${encodeURIComponent(projectPublicId)}/progress${query.size ? `?${query}` : ''}`);
+	throw redirect(
+		303,
+		`/projects/${encodeURIComponent(projectPublicId)}/progress${query.size ? `?${query}` : ''}`
+	);
 }
 
 export const load: PageServerLoad = async ({ locals, params, url }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new ProjectProgressService(getDatabase()).getWorkspace(actor, params.projectPublicId, {
-			periodPublicId: url.searchParams.get('period'),
-			baselinePublicId: url.searchParams.get('baseline'),
-			dataDate: parseDate(url.searchParams.get('dataDate'), 'Data date')
-		});
+		return await new ProjectProgressService(getDatabase()).getWorkspace(
+			actor,
+			params.projectPublicId,
+			{
+				periodPublicId: url.searchParams.get('period'),
+				baselinePublicId: url.searchParams.get('baseline'),
+				dataDate: parseDate(url.searchParams.get('dataDate'), 'Data date')
+			}
+		);
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError || cause instanceof TenantAccessError) {
 			throw httpError(404, 'Project progress not found.');
@@ -102,7 +114,7 @@ export const actions: Actions = {
 				projectPublicId: params.projectPublicId,
 				periodPublicId,
 				activityPublicId: String(data.get('activityPublicId') ?? ''),
-				measurementMethod: String(data.get('measurementMethod') ?? '') as never,
+				measurementMethod: String(data.get('measurementMethod') ?? '') as ProgressMeasurementMethod,
 				percentComplete: String(data.get('percentComplete') ?? ''),
 				actualStartOn: parseDate(data.get('actualStartOn'), 'Actual start'),
 				actualFinishOn: parseDate(data.get('actualFinishOn'), 'Actual finish'),
@@ -124,7 +136,11 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const periodPublicId = String(data.get('periodPublicId') ?? '');
 		try {
-			await new ProjectProgressService(getDatabase()).submitProgressPeriod(actor, params.projectPublicId, periodPublicId);
+			await new ProjectProgressService(getDatabase()).submitProgressPeriod(
+				actor,
+				params.projectPublicId,
+				periodPublicId
+			);
 		} catch (cause) {
 			return handleActionError(cause, 'submit-period');
 		}
@@ -137,7 +153,11 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const periodPublicId = String(data.get('periodPublicId') ?? '');
 		try {
-			await new ProjectProgressService(getDatabase()).approveProgressPeriod(actor, params.projectPublicId, periodPublicId);
+			await new ProjectProgressService(getDatabase()).approveProgressPeriod(
+				actor,
+				params.projectPublicId,
+				periodPublicId
+			);
 		} catch (cause) {
 			return handleActionError(cause, 'approve-period');
 		}
@@ -149,11 +169,14 @@ export const actions: Actions = {
 		if (!actor) return fail(401, actionFailure('create-baseline', 'Authentication is required.'));
 		const data = await request.formData();
 		try {
-			const publicId = await new ProjectProgressService(getDatabase()).createEarnedValueBaseline(actor, {
-				projectPublicId: params.projectPublicId,
-				planBaselinePublicId: String(data.get('planBaselinePublicId') ?? ''),
-				name: String(data.get('name') ?? '')
-			});
+			const publicId = await new ProjectProgressService(getDatabase()).createEarnedValueBaseline(
+				actor,
+				{
+					projectPublicId: params.projectPublicId,
+					planBaselinePublicId: String(data.get('planBaselinePublicId') ?? ''),
+					name: String(data.get('name') ?? '')
+				}
+			);
 			redirectToProgress(params.projectPublicId, { baseline: publicId });
 		} catch (cause) {
 			return handleActionError(cause, 'create-baseline');
@@ -184,7 +207,11 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const baselinePublicId = String(data.get('baselinePublicId') ?? '');
 		try {
-			await new ProjectProgressService(getDatabase()).approveEarnedValueBaseline(actor, params.projectPublicId, baselinePublicId);
+			await new ProjectProgressService(getDatabase()).approveEarnedValueBaseline(
+				actor,
+				params.projectPublicId,
+				baselinePublicId
+			);
 		} catch (cause) {
 			return handleActionError(cause, 'approve-baseline');
 		}
