@@ -21,11 +21,12 @@
 
 <section class="page-heading">
 	<div>
-		<p class="eyebrow">Commercial sales</p>
+		<p class="eyebrow">Commercial progression</p>
 		<h1>Estimates</h1>
 		<p>
-			Build internal cost and sell-rate detail against CRM opportunities before producing a
-			customer-facing quotation.
+			Develop the commercial position already established in CRM. Customer, opportunity title and
+			currency flow forward automatically; estimating adds only the cost, price and scope detail that
+			belongs at this stage.
 		</p>
 	</div>
 	<span class="count">{data.estimates.length}</span>
@@ -41,7 +42,7 @@
 			{#if data.estimates.length === 0}
 				<div class="empty">
 					<h2>No estimates yet</h2>
-					<p>Create an estimate from an active or won CRM opportunity.</p>
+					<p>Develop an estimate from an active or won CRM opportunity.</p>
 				</div>
 			{:else}
 				<div class="list">
@@ -68,8 +69,13 @@
 
 		{#if data.canManageEstimates}
 			<section id="new-estimate" class="panel create-panel">
-				<p class="eyebrow">New estimate</p>
-				<h2>Price an opportunity</h2>
+				<p class="eyebrow">Opportunity → estimate</p>
+				<h2>Develop estimate</h2>
+				<p class="hint">
+					Select the opportunity, not the customer again. NuBlox carries its primary CRM party,
+					title, currency and initial scope into the estimate. If an estimate already exists, this
+					opens it instead of creating a duplicate.
+				</p>
 				{#if data.opportunities.length === 0}
 					<p class="hint">There are no active or won CRM opportunities available for estimating.</p>
 				{:else}
@@ -81,28 +87,13 @@
 								{#each data.opportunities as opportunity}
 									<option value={opportunity.publicId}
 										>{opportunity.title} · {opportunity.primaryPartyDisplayName ??
-											'No customer'}</option
+											'No customer'} · {opportunity.currencyCode}</option
 									>
 								{/each}
 							</select>
 						</label>
-						<label class="wide"
-							><span>Estimate title</span><input name="title" maxlength="255" required /></label
-						>
-						<label
-							><span>Currency</span><input
-								name="currencyCode"
-								maxlength="3"
-								value="GBP"
-								required
-							/></label
-						>
-						<label class="wide"
-							><span>Notes</span><textarea name="notes" rows="4" maxlength="10000"
-							></textarea></label
-						>
 						{#if form?.createError}<p class="error wide" role="alert">{form.createError}</p>{/if}
-						<button type="submit">Create estimate</button>
+						<button type="submit">Develop estimate</button>
 					</form>
 				{/if}
 			</section>
@@ -277,6 +268,9 @@
 	.hint,
 	.empty {
 		color: #666;
+	}
+	.hint {
+		line-height: 1.5;
 	}
 	.empty {
 		padding: 2rem 0.5rem;
