@@ -16,6 +16,7 @@ import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { NotificationService } from '$lib/server/notifications/notification-service';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
+import { ensureProjectRidaStandardRoleDefaults } from '$lib/server/projects/project-rida-bootstrap';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 
 function returnTo(pathname: string): string {
@@ -47,6 +48,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		memberId: locals.tenant.memberId,
 		correlationId: locals.correlationId
 	};
+	await ensureProjectRidaStandardRoleDefaults(db, locals.tenant.organisationId);
 	const [organisation, allowedPermissionKeys] = await Promise.all([
 		new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
 		new PermissionService(db).listAllowedPermissionKeys(actorContext)
@@ -70,12 +72,22 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				actorContext,
 				requestedProjectPublicId
 			);
+			const links = resolveProjectContextNavigation(allowedPermissionKeys, workspace.project.publicId);
+			if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('project.rida.'))) {
+				const ridaLink = {
+					id: 'rida',
+					label: 'RIDA',
+					href: `/projects/${encodeURIComponent(workspace.project.publicId)}/rida`
+				};
+				const progressIndex = links.findIndex((link) => link.id === 'progress');
+				links.splice(progressIndex >= 0 ? progressIndex + 1 : links.length, 0, ridaLink);
+			}
 			projectContext = {
 				publicId: workspace.project.publicId,
 				projectNumber: workspace.project.projectNumber,
 				name: workspace.project.name,
 				status: workspace.project.status,
-				links: resolveProjectContextNavigation(allowedPermissionKeys, workspace.project.publicId)
+				links
 			};
 		} catch (cause) {
 			if (!(cause instanceof RecordNotFoundError) && !(cause instanceof TenantAccessError))
