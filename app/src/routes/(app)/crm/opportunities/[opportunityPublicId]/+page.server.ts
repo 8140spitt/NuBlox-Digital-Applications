@@ -2,6 +2,8 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { CommercialLifecycleService } from '$lib/server/commercial/commercial-lifecycle-service';
+import { ContractValidationError } from '$lib/server/contracts/contract-common';
 import {
 	CrmOpportunityService,
 	CrmOpportunityValidationError
@@ -51,7 +53,8 @@ function directionValue(value: FormDataEntryValue | null): ActivityDirection {
 }
 
 function actionError(error: unknown, key: string) {
-	if (error instanceof CrmOpportunityValidationError) return fail(400, { [key]: error.message });
+	if (error instanceof CrmOpportunityValidationError || error instanceof ContractValidationError)
+		return fail(400, { [key]: error.message });
 	if (error instanceof TenantAccessError)
 		return fail(403, { [key]: 'You do not have permission for this CRM action.' });
 	if (error instanceof RecordNotFoundError) return fail(404, { [key]: error.message });
@@ -62,10 +65,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new CrmOpportunityService(getDatabase()).getWorkspace(
-			actor,
-			params.opportunityPublicId
-		);
+		const db = getDatabase();
+		const [workspace, commercialJourney] = await Promise.all([
+			new CrmOpportunityService(db).getWorkspace(actor, params.opportunityPublicId),
+			new CommercialLifecycleService(db).getOpportunityJourney(actor, params.opportunityPublicId)
+		]);
+		return { ...workspace, commercialJourney };
 	} catch (error) {
 		if (error instanceof RecordNotFoundError) throw httpError(404, 'CRM opportunity not found.');
 		if (error instanceof TenantAccessError) throw httpError(403, 'CRM viewing is not permitted.');
@@ -74,6 +79,23 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 };
 
 export const actions: Actions = {
+	developEstimate: async ({ locals, params }) => {
+		const actor = actorFromLocals(locals);
+		if (!actor)
+			return fail(401, {
+				progressionError: 'Authentication and organisation context are required.'
+			});
+		try {
+			const estimate = await new CommercialLifecycleService(getDatabase()).developEstimate(
+				actor,
+				params.opportunityPublicId
+			);
+			throw redirect(303, `/commercial/estimates/${encodeURIComponent(estimate.publicId)}`);
+		} catch (error) {
+			return actionError(error, 'progressionError');
+		}
+	},
+
 	update: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
 		if (!actor)
