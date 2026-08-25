@@ -42,7 +42,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   complete-system-validation:
@@ -71,6 +71,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Remove merged delivery branch
+        run: git push origin --delete feat/project-progress-earned-value || true
 
       - uses: pnpm/action-setup@v4
         with:
