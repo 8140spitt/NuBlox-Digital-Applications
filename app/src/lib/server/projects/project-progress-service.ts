@@ -164,7 +164,9 @@ function moneyText(value: bigint): string {
 
 function ratio(numerator: bigint, denominator: bigint): number | null {
 	if (denominator === 0n) return null;
-	return Number((numerator * 10_000n) / denominator) / 10_000;
+	const scale = 1_000_000n;
+	const rounded = (numerator * scale + denominator / 2n) / denominator;
+	return Number(rounded) / Number(scale);
 }
 
 function percent(numerator: bigint, denominator: bigint): number | null {
