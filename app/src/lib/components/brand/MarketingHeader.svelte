@@ -22,7 +22,7 @@
 			{ label: 'About', href: '#about' }
 		],
 		ctaLabel = 'Get started',
-		ctaHref = '/signup',
+		ctaHref = '/start',
 		signInHref = '/signin'
 	}: Props = $props();
 </script>
