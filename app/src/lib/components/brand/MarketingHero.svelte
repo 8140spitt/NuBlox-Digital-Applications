@@ -14,9 +14,10 @@
 		eyebrow = 'Built environment operating platform',
 		title = 'The operating system for the',
 		highlight = 'built environment.',
-		description = 'Connect your people, projects, processes and business through one governed operating platform.',
+		description =
+			'Connect your people, projects, processes and business through one governed operating platform.',
 		primaryLabel = 'Get started',
-		primaryHref = '/signup',
+		primaryHref = '/start',
 		secondaryLabel = 'Sign in',
 		secondaryHref = '/signin'
 	}: Props = $props();
@@ -39,7 +40,9 @@
 			</h1>
 			<p class="description">{description}</p>
 			<div class="hero-actions">
-				<a class="primary" href={primaryHref}>{primaryLabel}<span aria-hidden="true">→</span></a>
+				<a class="primary" href={primaryHref}>
+					{primaryLabel}<span aria-hidden="true">→</span>
+				</a>
 				<a class="secondary" href={secondaryHref}>{secondaryLabel}</a>
 			</div>
 		</div>
@@ -47,7 +50,9 @@
 		<aside class="platform-card" aria-label="NuBlox platform proposition">
 			<span class="card-kicker">One connected foundation</span>
 			<strong>Business + project operations</strong>
-			<p>Shared records, governed workflows and role-aware workspaces across the building lifecycle.</p>
+			<p>
+				Shared records, governed workflows and role-aware workspaces across the building lifecycle.
+			</p>
 			<div class="capabilities" aria-label="Platform capabilities">
 				<span>Projects</span>
 				<span>Commercial</span>
