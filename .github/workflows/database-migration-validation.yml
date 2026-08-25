@@ -97,6 +97,21 @@ jobs:
         working-directory: app
         run: pnpm lint
 
+      - name: Upload canonical RIDA formatting
+        uses: actions/upload-artifact@v4
+        with:
+          name: rida-prettier
+          path: |
+            app/e2e/project-rida.e2e.ts
+            app/src/lib/server/db/database.ts
+            app/src/lib/server/projects/project-rida-bootstrap.ts
+            app/src/lib/server/projects/project-rida-repository.ts
+            app/src/lib/server/projects/project-rida-service.ts
+            app/src/lib/server/projects/project-rida.integration.test.ts
+            app/src/routes/(app)/+layout.server.ts
+            app/src/routes/(app)/projects/[projectPublicId]/rida/+page.server.ts
+            app/src/routes/(app)/projects/[projectPublicId]/rida/+page.svelte
+
       - name: Apply authoritative migration stream
         working-directory: app
         run: |
