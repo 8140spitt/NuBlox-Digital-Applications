@@ -2,8 +2,9 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
-import { CrmService, CrmValidationError } from '$lib/server/crm/crm-service';
+import { CrmOrganisationContactPolicyService } from '$lib/server/crm/crm-organisation-contact-policy-service';
 import type { CrmPartyStatus } from '$lib/server/crm/crm-repository';
+import { CrmService, CrmValidationError } from '$lib/server/crm/crm-service';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -122,7 +123,7 @@ export const actions: Actions = {
 			});
 		const data = await request.formData();
 		try {
-			await new CrmService(getDatabase()).endOrganisationContact(
+			await new CrmOrganisationContactPolicyService(getDatabase()).endOrganisationContact(
 				actor,
 				params.partyPublicId,
 				String(data.get('personPartyPublicId') ?? '')
