@@ -371,9 +371,15 @@ describe('commercial opportunity to project progression', () => {
 					.onRef('opportunity.id', '=', 'estimate.opportunity_id')
 					.onRef('opportunity.organisation_id', '=', 'estimate.organisation_id')
 			)
+			.innerJoin('estimate_versions as version', (join) =>
+				join
+					.onRef('version.estimate_id', '=', 'estimate.id')
+					.onRef('version.organisation_id', '=', 'estimate.organisation_id')
+					.on('version.version_number', '=', 1)
+			)
 			.select([
 				'estimate.title',
-				'estimate.currency_code as currencyCode',
+				'version.currency_code as currencyCode',
 				'opportunity.public_id as opportunityPublicId'
 			])
 			.where('estimate.organisation_id', '=', organisationId)

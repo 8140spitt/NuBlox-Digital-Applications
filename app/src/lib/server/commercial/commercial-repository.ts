@@ -398,8 +398,7 @@ export class CommercialRepository {
 			.select('assignment.party_id as partyId')
 			.where('assignment.organisation_id', '=', organisationId)
 			.where('assignment.opportunity_id', '=', row.id)
-			.where('assignment.is_primary', '=', 1)
-			.where('role.code', '=', 'contact')
+			.where('role.code', '=', 'client_contact')
 			.executeTakeFirst();
 
 		return {

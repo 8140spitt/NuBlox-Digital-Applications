@@ -358,7 +358,7 @@ export class CrmOpportunityService {
 			canManageActivities: activityDecision.allowed,
 			pipelines,
 			participants,
-			partyRoleTypes,
+			partyRoleTypes: partyRoleTypes.filter((role) => role.code !== 'client_contact'),
 			activityTypes,
 			activities,
 			partyCandidates
@@ -545,6 +545,11 @@ export class CrmOpportunityService {
 		const opportunityPublicId = publicId(input.opportunityPublicId, 'Opportunity ID');
 		const partyPublicId = publicId(input.partyPublicId, 'CRM party ID');
 		const participantRoleCode = roleCode(input.roleCode);
+		if (participantRoleCode === 'client_contact') {
+			throw new CrmOpportunityValidationError(
+				'Client contact is controlled by the opportunity client context.'
+			);
+		}
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertOpportunityManage(actor, trx);
@@ -593,6 +598,11 @@ export class CrmOpportunityService {
 		const opportunityPublicId = publicId(input.opportunityPublicId, 'Opportunity ID');
 		const partyPublicId = publicId(input.partyPublicId, 'CRM party ID');
 		const participantRoleCode = roleCode(input.roleCode);
+		if (participantRoleCode === 'client_contact') {
+			throw new CrmOpportunityValidationError(
+				'Client contact is controlled by the opportunity client context.'
+			);
+		}
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertOpportunityManage(actor, trx);

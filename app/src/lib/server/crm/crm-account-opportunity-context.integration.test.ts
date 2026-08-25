@@ -314,7 +314,7 @@ describe('CRM organisation and opportunity client context', () => {
 		});
 		expect(participants).toContainEqual({
 			partyPublicId: primaryContactPublicId,
-			roleCode: 'contact',
+			roleCode: 'client_contact',
 			isPrimary: 0
 		});
 	});
@@ -345,7 +345,7 @@ describe('CRM organisation and opportunity client context', () => {
 			.select('party.public_id as partyPublicId')
 			.where('assignment.organisation_id', '=', organisationId)
 			.where('opportunity.public_id', '=', opportunity.publicId)
-			.where('role.code', '=', 'contact')
+			.where('role.code', '=', 'client_contact')
 			.executeTakeFirstOrThrow();
 		expect(selectedContact.partyPublicId).toBe(secondaryContactPublicId);
 

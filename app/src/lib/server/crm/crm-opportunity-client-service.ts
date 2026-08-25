@@ -253,7 +253,7 @@ export class CrmOpportunityClientService {
 			);
 			const [customerRoleTypeId, contactRoleTypeId] = await Promise.all([
 				repository.findOpportunityPartyRoleTypeId('customer'),
-				repository.findOpportunityPartyRoleTypeId('contact')
+				repository.findOpportunityPartyRoleTypeId('client_contact')
 			]);
 			if (customerRoleTypeId === null || contactRoleTypeId === null) {
 				throw new Error('Required CRM opportunity party role types are missing.');
