@@ -22,12 +22,19 @@ test('owner creates and filters a CRM organisation through the browser', async (
 
 	await page.getByLabel('Legal name').fill('E2E Customer Ltd');
 	await page.getByLabel('Trading name').fill('E2E Customer');
-	await page.getByLabel('Primary email').fill('customer-e2e@example.test');
-	await page.getByLabel('Primary phone').fill('+442071234567');
+	await page.locator('input[name="organisationEmail"]').fill('accounts-e2e@example.test');
+	await page.locator('input[name="organisationPhone"]').fill('+442071234567');
+	await page.locator('input[name="contactGivenNames"]').fill('Alex');
+	await page.locator('input[name="contactFamilyName"]').fill('Customer');
+	await page.locator('input[name="contactEmail"]').fill('customer-e2e@example.test');
+	await page.locator('input[name="contactPhone"]').fill('+447700900001');
+	await page.locator('input[name="contactJobTitle"]').fill('Commercial Director');
+	await page.getByLabel('Client', { exact: true }).check();
 	await page.getByRole('button', { name: 'Create CRM record' }).click();
 
 	await expect(page).toHaveURL(/\/crm\/[0-9a-f-]+$/i);
 	await expect(page.getByRole('heading', { name: 'E2E Customer', level: 1 })).toBeVisible();
+	await expect(page.getByText('Alex Customer', { exact: true })).toBeVisible();
 
 	await page.goto('/crm');
 	await page.getByLabel('Search').fill('E2E Customer Ltd');
@@ -40,7 +47,8 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.goto('/crm/opportunities');
 
 	await page.getByLabel('Title').fill('E2E Office Refurbishment');
-	await page.getByLabel('Primary customer').selectOption({ label: 'E2E Customer' });
+	await page.getByLabel('Client organisation').selectOption({ label: 'E2E Customer' });
+	await expect(page.getByLabel(/Client contact/)).toContainText('Use CRM primary contact');
 	await page.getByLabel('Pipeline stage').selectOption({ index: 1 });
 	await page.getByLabel('Estimated value').fill('125000.00');
 	await page.getByLabel('Currency').fill('GBP');
@@ -54,22 +62,19 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.goto('/commercial/estimates');
 	await page
 		.getByLabel('CRM opportunity')
-		.selectOption({ label: 'E2E Office Refurbishment · E2E Customer' });
-	await page.getByLabel('Estimate title').fill('E2E Office Refurbishment Estimate');
-	await page.getByLabel('Currency').fill('GBP');
-	await page.getByLabel('Notes').fill('Created by full browser acceptance validation.');
-	await page.getByRole('button', { name: 'Create estimate' }).click();
+		.selectOption({ label: 'E2E Office Refurbishment · E2E Customer · GBP' });
+	await page.getByRole('button', { name: 'Develop estimate' }).click();
 
 	await expect(page).toHaveURL(/\/commercial\/estimates\/[0-9a-f-]+$/i);
-	await expect(
-		page.getByText('E2E Office Refurbishment Estimate', { exact: true }).first()
-	).toBeVisible();
+	await expect(page.getByText('E2E Office Refurbishment', { exact: true }).first()).toBeVisible();
 });
 
-test('owner takes commercial evidence through project and executed contract', async ({ page }) => {
+test('owner takes commercial evidence through executed contract and project mobilisation', async ({
+	page
+}) => {
 	await signIn(page);
 	await page.goto('/commercial/estimates');
-	await page.getByRole('link', { name: /E2E Office Refurbishment Estimate/ }).click();
+	await page.getByRole('link', { name: /E2E Office Refurbishment/ }).click();
 
 	await page.getByLabel('Description').fill('Office refurbishment works');
 	await page.getByLabel('Quantity').fill('1');
@@ -85,29 +90,27 @@ test('owner takes commercial evidence through project and executed contract', as
 	await page.getByRole('button', { name: 'Create quotation' }).click();
 
 	await expect(page).toHaveURL(/\/commercial\/quotations\/[0-9a-f-]+$/i);
-	await page.getByLabel('Recipient name').fill('E2E Customer');
+	await page.getByLabel('Recipient name').fill('Alex Customer');
 	await page.getByLabel('Recipient email').fill('customer-e2e@example.test');
 	await page.getByLabel('Issue note').fill('Issued by browser acceptance validation.');
 	await page.getByRole('button', { name: 'Issue quotation version 1' }).click();
 
 	await page.getByLabel('Response').selectOption('accepted');
-	await page.getByLabel('Respondent name').fill('E2E Customer');
+	await page.getByLabel('Respondent name').fill('Alex Customer');
 	await page.getByLabel('Respondent email').fill('customer-e2e@example.test');
 	await page.getByRole('button', { name: 'Record response' }).click();
 	await expect(page.getByText('Accepted', { exact: true }).first()).toBeVisible();
 
 	await page.goto('/commercial/quotations');
 	await page.getByRole('link', { name: 'Project conversion' }).click();
-	await page.getByRole('button', { name: 'Create project from accepted quotation' }).click();
-	await expect(page).toHaveURL(/\/contracts\/new\?project=[0-9a-f-]+$/i);
-	const projectPublicId = new URL(page.url()).searchParams.get('project');
-	expect(projectPublicId).toMatch(/^[0-9a-f-]+$/i);
-	const projectHref = `/projects/${projectPublicId}`;
-
+	await expect(page).toHaveURL(/\/contracts\/new\?quotation=[0-9a-f-]+&version=1$/i);
 	await page.getByLabel('Customer reference').fill('E2E-CONTRACT-001');
-	await page.getByRole('button', { name: 'Create draft contract' }).click();
+	await page.getByRole('button', { name: 'Form draft contract' }).click();
 
 	await expect(page).toHaveURL(/\/contracts\/[0-9a-f-]+$/i);
+	const contractPublicId = page.url().split('/').at(-1);
+	expect(contractPublicId).toMatch(/^[0-9a-f-]+$/i);
+
 	await page.getByLabel('Recipient email').fill('customer-e2e@example.test');
 	await page.getByLabel('Note').fill('Contract issued by browser acceptance validation.');
 	await page.getByRole('button', { name: 'Issue contract' }).click();
@@ -119,13 +122,9 @@ test('owner takes commercial evidence through project and executed contract', as
 	await page.getByRole('button', { name: 'Record execution' }).click();
 	await expect(page.getByText('Executed', { exact: true })).toBeVisible();
 
-	await page.goto(projectHref);
-	await expect(page.locator('.project-header .status')).toHaveText('Proposed');
-	const activationForm = page
-		.locator('form[action="?/transition"]')
-		.filter({ hasText: 'Set active' });
-	await activationForm.getByLabel('Effective date').fill('2026-08-19');
-	await activationForm.getByRole('button', { name: 'Set active' }).click();
+	await page.goto(`/contracts/${contractPublicId}/mobilise`);
+	await page.getByRole('button', { name: 'Mobilise project' }).click();
+	await expect(page).toHaveURL(/\/projects\/[0-9a-f-]+$/i);
 	await expect(page.locator('.project-header .status')).toHaveText('Active');
 });
 
