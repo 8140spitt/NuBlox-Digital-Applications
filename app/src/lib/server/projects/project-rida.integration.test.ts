@@ -292,19 +292,19 @@ beforeAll(async () => {
 		organisationId: organisationAId,
 		userId: ownerUserId,
 		memberId: ownerMemberId,
-		correlationId: `rida-owner-${randomUUID()}`
+		correlationId: randomUUID()
 	};
 	viewer = {
 		organisationId: organisationAId,
 		userId: viewerUserId,
 		memberId: viewerMemberId,
-		correlationId: `rida-viewer-${randomUUID()}`
+		correlationId: randomUUID()
 	};
 	external = {
 		organisationId: organisationBId,
 		userId: externalUserId,
 		memberId: externalMemberId,
-		correlationId: `rida-external-${randomUUID()}`
+		correlationId: randomUUID()
 	};
 });
 
