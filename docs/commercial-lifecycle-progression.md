@@ -113,3 +113,7 @@ NuBlox should use progression language rather than generic creation language:
 - Mobilise project
 
 Each stage asks only for information that becomes authoritative at that stage. Upstream context is inherited and displayed, not repeatedly rebuilt.
+
+## Acceptance gate
+
+The browser acceptance journey must exercise the canonical progression rather than legacy screens: create a CRM client organisation with its primary contact, open an opportunity against that organisation, develop the inherited estimate, issue and accept the quotation, form and execute the contract, and mobilise the project. The complete system validation workflow must pass this journey together with database migration, generated-type drift, integration, Svelte, unit and production-build checks before the lifecycle change is merged to `main`.
