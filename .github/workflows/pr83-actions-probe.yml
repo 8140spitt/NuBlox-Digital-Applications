@@ -1,0 +1,17 @@
+name: PR 83 Actions Probe
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  probe:
+    name: Confirm GitHub-hosted runner startup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Confirm runner startup
+        run: echo "GitHub Actions runner started successfully."
