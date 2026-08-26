@@ -12,6 +12,7 @@ import { CrmPipelineProvisioningService } from '$lib/server/crm/crm-pipeline-pro
 import { getDatabase } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 
+
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
 	return {
