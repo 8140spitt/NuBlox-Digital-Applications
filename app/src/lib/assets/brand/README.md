@@ -1,29 +1,24 @@
 # NuBlox production brand assets
 
-This directory contains deterministic vector assets for the NuBlox application and website.
+This directory contains the production vector assets for the NuBlox application and website.
 
 ## Canonical assets
 
-- `nublox-mark.svg` — full-colour, full-detail folded-ribbon N master.
-- `nublox-mark-mono.svg` — single-colour silhouette for print, documents and restricted-colour contexts.
-- `nublox-app-icon.svg` — deep-navy rounded-square application/PWA icon built from the same master geometry.
-- `nublox-lockup.svg` — portable light-background lockup using the full-detail mark.
-- `nublox-lockup-on-dark.svg` — portable dark-background lockup using the full-detail mark.
+- `nublox-mark.svg` — canonical full-colour NuBlox N master.
+- `nublox-mark-mono.svg` — single-colour derivative for print, documents and restricted-colour contexts.
+- `nublox-app-icon.svg` — deep-navy rounded-square application/PWA icon derived from the canonical mark.
+- `nublox-lockup.svg` — portable light-background lockup using the canonical mark.
+- `nublox-lockup-on-dark.svg` — portable dark-background lockup using the canonical mark.
 
 For Svelte application UI, prefer the components under `app/src/lib/components/brand` because they inherit the shared design tokens and keep typography responsive.
 
-## Full-detail master rule
+## Source-of-truth rule
 
-The selected NuBlox identity is a dimensional folded-ribbon N. Production colour artwork must preserve the designed planes rather than reducing the mark to three flat geometric shapes. The canonical master includes:
+`nublox-mark.svg` is the approved source-of-truth vector supplied directly for production. Its authored geometry is `335 × 338` and includes the exact paths, gradients, overlay blur treatments and edge strokes that define the NuBlox N.
 
-- separate blue and cyan upright planes;
-- a front diagonal ribbon plane;
-- recessed left and right fold shading;
-- directional surface lighting;
-- restrained top-edge highlights; and
-- lower-edge depth treatment.
+Do **not** redraw, reinterpret, simplify, normalise or replace the canonical full-colour geometry with an approximation. Derivative assets may scale, position or place the mark on a surface, but must preserve the supplied geometry and visual treatment.
 
-The monochrome variant intentionally collapses those colour/depth cues into the same canonical silhouette. It is a functional restricted-colour variant, not the primary master.
+The monochrome variant intentionally removes colour, filters and edge-light gradients while retaining the three canonical structural paths. It is a restricted-colour derivative, not an alternative logo design.
 
 ## Legacy `.webp` artwork
 
@@ -32,11 +27,9 @@ The older `.webp` files in `app/src/lib/assets` were generated during concept de
 The production path is:
 
 ```text
-concept artwork (.webp)
+approved supplied vector (`nublox-mark.svg`)
         ↓
-full-detail controlled vector master (.svg)
-        ↓
-Svelte brand components
+derived SVG assets / Svelte brand components
         ↓
 shared CSS design tokens
         ↓
@@ -47,8 +40,8 @@ application / website composition
 
 - SVG is the canonical format for marks and scalable identity graphics.
 - Do not simplify or redraw the full-colour mark independently for individual UI surfaces.
-- The application favicon and app icon must derive from the same folded-ribbon geometry as the master mark.
+- The favicon, app icon and portable lockups must derive from the supplied canonical geometry.
 - The wordmark in application UI is rendered by the Svelte lockup component so it follows application typography and remains accessible.
 - Product names are endorsements (`NuBlox Projects`, `NuBlox Commercial`, etc.), not separate logos.
-- Semantic workflow colours must remain independent of the master-brand blue/cyan palette.
+- Semantic workflow colours must remain independent of the master-brand palette.
 - Do not rasterise headers, navigation bars, buttons or UI compositions. Build them as Svelte/CSS components.
