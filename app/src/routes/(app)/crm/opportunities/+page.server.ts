@@ -60,7 +60,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 	return {
 		...workspace,
-		clientAccounts: workspace.canView
+		customerOptions: workspace.canView
 			? await new CrmOpportunityClientService(db).listClientAccounts(actor)
 			: []
 	};
@@ -84,7 +84,9 @@ export const actions: Actions = {
 					estimatedValue: String(data.get('estimatedValue') ?? ''),
 					currencyCode: String(data.get('currencyCode') ?? 'GBP'),
 					expectedCloseDate: String(data.get('expectedCloseDate') ?? ''),
-					primaryPartyPublicId: String(data.get('clientOrganisationPublicId') ?? ''),
+					primaryPartyPublicId: String(
+						data.get('customerPartyPublicId') ?? data.get('clientOrganisationPublicId') ?? ''
+					),
 					clientContactPartyPublicId: String(data.get('clientContactPartyPublicId') ?? '')
 				}
 			);
