@@ -1,5 +1,13 @@
 <script lang="ts">
 	let { data, form } = $props();
+	let customerPartyPublicId = $state(data.opportunity.primaryPartyPublicId ?? '');
+	let selectedCustomer = $derived(
+		data.customerOptions.find((customer) => customer.publicId === customerPartyPublicId) ?? null
+	);
+	const currentClientContactPublicId =
+		data.participants.find((participant) => participant.roleCode === 'client_contact')?.partyPublicId ??
+		'';
+
 	const statusLabels: Record<string, string> = {
 		open: 'Open',
 		won: 'Won',
@@ -174,23 +182,76 @@
 						value={data.opportunity.title}
 					/></label
 				>
-				<label class="wide"
-					><span>Primary customer</span>
-					<select name="primaryPartyPublicId" required>
-						{#if data.opportunity.primaryPartyPublicId && !data.partyCandidates.some((party) => party.publicId === data.opportunity.primaryPartyPublicId)}
-							<option value={data.opportunity.primaryPartyPublicId} selected
-								>{data.opportunity.primaryPartyDisplayName ?? 'Current customer'} · inactive</option
-							>
-						{/if}
-						{#each data.partyCandidates as party}
-							<option
-								value={party.publicId}
-								selected={party.publicId === data.opportunity.primaryPartyPublicId}
-								>{party.displayName}</option
-							>
-						{/each}
-					</select>
-				</label>
+
+				<div class="customer-context wide">
+					<label>
+						<span>Customer</span>
+						<select name="customerPartyPublicId" required bind:value={customerPartyPublicId}>
+							{#if data.opportunity.primaryPartyPublicId && !data.customerOptions.some((customer) => customer.publicId === data.opportunity.primaryPartyPublicId)}
+								<option value={data.opportunity.primaryPartyPublicId} selected>
+									{data.opportunity.primaryPartyDisplayName ?? 'Current customer'} · unavailable
+								</option>
+							{/if}
+							{#each data.customerOptions as customer}
+								<option value={customer.publicId}>
+									{customer.displayName} · {customer.kind === 'organisation'
+										? 'Organisation'
+										: 'Private person'}
+								</option>
+							{/each}
+						</select>
+						<small class="field-help">
+							An opportunity customer can be a CRM organisation or a private person.
+						</small>
+					</label>
+
+					{#if selectedCustomer?.kind === 'organisation'}
+						<label>
+							<span>Client contact <small>optional</small></span>
+							<select name="clientContactPartyPublicId">
+								<option value="">
+									{selectedCustomer.primaryContactDisplayName
+										? `Use CRM primary contact — ${selectedCustomer.primaryContactDisplayName}`
+										: 'Use CRM primary contact'}
+								</option>
+								{#each selectedCustomer.contacts as contact}
+									<option
+										value={contact.publicId}
+										selected={customerPartyPublicId === data.opportunity.primaryPartyPublicId &&
+											contact.publicId === currentClientContactPublicId}
+									>
+										{contact.displayName}{contact.jobTitle ? ` · ${contact.jobTitle}` : ''}{contact.isPrimaryContact
+											? ' · Primary'
+											: ''}
+									</option>
+								{/each}
+							</select>
+							<small class="field-help">
+								Leave blank to use the organisation's CRM primary contact.
+							</small>
+						</label>
+					{:else if selectedCustomer?.kind === 'person'}
+						<div class="person-context">
+							<strong>Private person customer</strong>
+							<span>
+								{selectedCustomer.displayName} is both the customer and the commercial contact.
+							</span>
+						</div>
+					{/if}
+				</div>
+
+				{#if selectedCustomer?.kind === 'organisation' && selectedCustomer.contacts.length === 0}
+					<p class="error wide">
+						This customer organisation has no active CRM contacts. Add a CRM contact before saving
+						the opportunity.
+					</p>
+				{:else if selectedCustomer?.kind === 'organisation' && !selectedCustomer.primaryContactPublicId}
+					<p class="warning wide">
+						This legacy organisation has no CRM primary contact. Choose a contact explicitly, or set
+						its primary contact in CRM.
+					</p>
+				{/if}
+
 				<label class="wide"
 					><span>Pipeline stage</span>
 					<select name="stageSelection" required>
@@ -247,7 +308,11 @@
 					></label
 				>
 				{#if form?.updateError}<p class="error wide" role="alert">{form.updateError}</p>{/if}
-				<button type="submit">Save opportunity</button>
+				<button
+					type="submit"
+					disabled={selectedCustomer?.kind === 'organisation' && selectedCustomer.contacts.length === 0}
+					>Save opportunity</button
+				>
 			</form>
 		{:else}
 			<p class="muted">
@@ -280,7 +345,7 @@
 							<span>{participant.roleName}</span>
 						</div>
 						{#if participant.isPrimary}<span class="primary-badge">Primary customer</span>{/if}
-						{#if data.canManageOpportunities && !participant.isPrimary}
+						{#if data.canManageOpportunities && !participant.isPrimary && participant.roleCode !== 'client_contact'}
 							<form method="POST" action="?/removeParticipant">
 								<input type="hidden" name="partyPublicId" value={participant.partyPublicId} />
 								<input type="hidden" name="roleCode" value={participant.roleCode} />
@@ -604,11 +669,25 @@
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.75rem;
 	}
+	.customer-context {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+		padding: 0.8rem;
+		border: 1px solid #e0e0da;
+		border-radius: 0.55rem;
+		background: #fafaf7;
+	}
 	label {
 		display: grid;
 		gap: 0.35rem;
 		font-size: 0.84rem;
 		font-weight: 650;
+	}
+	label small,
+	.field-help {
+		color: #777;
+		font-weight: 500;
 	}
 	input,
 	select,
@@ -626,6 +705,19 @@
 	.wide {
 		grid-column: 1 / -1;
 	}
+	.person-context {
+		display: grid;
+		align-content: center;
+		gap: 0.3rem;
+		padding: 0.65rem;
+		border: 1px solid #e0e0da;
+		border-radius: 0.45rem;
+		font-size: 0.84rem;
+	}
+	.person-context span {
+		color: #666;
+		font-weight: 500;
+	}
 	button {
 		font: inherit;
 		font-weight: 750;
@@ -637,8 +729,15 @@
 		cursor: pointer;
 		justify-self: start;
 	}
+	button:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
+	}
 	.error {
 		color: #941c1c;
+	}
+	.warning {
+		color: #72550d;
 	}
 	.muted,
 	.description {
@@ -822,7 +921,8 @@
 	@media (max-width: 620px) {
 		.edit-form,
 		.activity-form,
-		.participant-form {
+		.participant-form,
+		.customer-context {
 			grid-template-columns: 1fr;
 		}
 		.wide {
