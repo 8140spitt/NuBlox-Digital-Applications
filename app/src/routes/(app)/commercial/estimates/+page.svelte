@@ -237,18 +237,13 @@
 		font-size: 0.84rem;
 		font-weight: 650;
 	}
-	input,
-	select,
-	textarea {
+	select {
 		min-width: 0;
 		font: inherit;
 		border: 1px solid #b9b9b1;
 		border-radius: 0.45rem;
 		padding: 0.62rem;
 		background: white;
-	}
-	textarea {
-		resize: vertical;
 	}
 	button {
 		font: inherit;
