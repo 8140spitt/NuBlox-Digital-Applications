@@ -2,5 +2,5 @@
 
 <section aria-live="polite">
 	<h1>Continuing to contract formation</h1>
-	<p>The accepted quotation is being routed into the governed contract-formation workflow.</p>
+	<p>The accepted quotation is continuing into the governed contract-formation workflow.</p>
 </section>
