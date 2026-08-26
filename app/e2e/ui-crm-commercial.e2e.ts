@@ -30,7 +30,7 @@ test('owner creates and filters a CRM organisation through the browser', async (
 	await page.locator('input[name="contactPhone"]').fill('+447700900001');
 	await page.locator('input[name="contactJobTitle"]').fill('Commercial Director');
 	await page.getByLabel('Client', { exact: true }).check();
-	await page.getByRole('button', { name: 'Create CRM record' }).click();
+	await page.getByRole('button', { name: 'Create organisation' }).click();
 
 	await expect(page).toHaveURL(/\/crm\/[0-9a-f-]+$/i);
 	await expect(page.getByRole('heading', { name: 'E2E Customer', level: 1 })).toBeVisible();
