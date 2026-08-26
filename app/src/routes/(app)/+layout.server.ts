@@ -16,6 +16,7 @@ import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { NotificationService } from '$lib/server/notifications/notification-service';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
+import { ensureProjectChangeStandardRoleDefaults } from '$lib/server/projects/project-change-bootstrap';
 import { ensureProjectRidaStandardRoleDefaults } from '$lib/server/projects/project-rida-bootstrap';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 
@@ -48,7 +49,10 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		memberId: locals.tenant.memberId,
 		correlationId: locals.correlationId
 	};
-	await ensureProjectRidaStandardRoleDefaults(db, locals.tenant.organisationId);
+	await Promise.all([
+		ensureProjectRidaStandardRoleDefaults(db, locals.tenant.organisationId),
+		ensureProjectChangeStandardRoleDefaults(db, locals.tenant.organisationId)
+	]);
 	const [organisation, allowedPermissionKeys] = await Promise.all([
 		new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
 		new PermissionService(db).listAllowedPermissionKeys(actorContext)
@@ -86,6 +90,17 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				};
 				const progressIndex = links.findIndex((link) => link.id === 'progress');
 				links.splice(progressIndex >= 0 ? progressIndex + 1 : links.length, 0, ridaLink);
+			}
+			if (
+				allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('project.change.'))
+			) {
+				const changeLink = {
+					id: 'change',
+					label: 'Change',
+					href: `/projects/${encodeURIComponent(workspace.project.publicId)}/changes`
+				};
+				const ridaIndex = links.findIndex((link) => link.id === 'rida');
+				links.splice(ridaIndex >= 0 ? ridaIndex + 1 : links.length, 0, changeLink);
 			}
 			projectContext = {
 				publicId: workspace.project.publicId,
