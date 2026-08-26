@@ -119,6 +119,7 @@ export type ProjectChangeRecord = {
 
 export type ProjectChangeWorkspace = {
 	project: ProjectRecord;
+	defaultCurrencyCode: string;
 	changeTypes: Array<{ code: string; name: string }>;
 	changes: ProjectChangeRecord[];
 	wbsOptions: Array<{ publicId: string; code: string; name: string }>;
@@ -415,6 +416,7 @@ export class ProjectChangeService {
 		const project = await this.findProject(actor, projectPublicId);
 		const flags = await this.permissionFlags(actor, project);
 		const [
+			organisation,
 			types,
 			changeRows,
 			assessmentRows,
@@ -427,6 +429,12 @@ export class ProjectChangeService {
 			informationCounts,
 			variationCounts
 		] = await Promise.all([
+			this.db
+				.selectFrom('organisations')
+				.select('default_currency_code')
+				.where('id', '=', actor.organisationId)
+				.where('status', '=', 'active')
+				.executeTakeFirstOrThrow(),
 			this.db
 				.selectFrom('project_change_event_types')
 				.select(['code', 'name'])
@@ -640,6 +648,7 @@ export class ProjectChangeService {
 
 		return {
 			project,
+			defaultCurrencyCode: organisation.default_currency_code,
 			changeTypes: types,
 			changes: changeRows.map((row) => ({
 				id: row.id,

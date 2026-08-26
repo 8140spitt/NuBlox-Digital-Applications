@@ -237,8 +237,7 @@
 										name="currencyCode"
 										maxlength="3"
 										value={selectedChange.latestAssessment?.currencyCode ??
-											data.project.currencyCode ??
-											'GBP'}
+											data.defaultCurrencyCode}
 									/></label
 								>
 								<label
