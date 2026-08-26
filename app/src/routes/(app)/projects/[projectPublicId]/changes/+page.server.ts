@@ -26,9 +26,12 @@ function actionFailure(changeAction: string, changeError: string) {
 }
 
 function handleActionError(cause: unknown, changeAction: string) {
-	if (cause instanceof RecordNotFoundError) return fail(404, actionFailure(changeAction, cause.message));
-	if (cause instanceof TenantAccessError) return fail(403, actionFailure(changeAction, cause.message));
-	if (cause instanceof ProjectChangeValidationError) return fail(400, actionFailure(changeAction, cause.message));
+	if (cause instanceof RecordNotFoundError)
+		return fail(404, actionFailure(changeAction, cause.message));
+	if (cause instanceof TenantAccessError)
+		return fail(403, actionFailure(changeAction, cause.message));
+	if (cause instanceof ProjectChangeValidationError)
+		return fail(400, actionFailure(changeAction, cause.message));
 	throw cause;
 }
 
@@ -40,7 +43,8 @@ function redirectToChange(projectPublicId: string, changePublicId?: string | nul
 function parseDate(value: FormDataEntryValue | null, label: string): Date | null {
 	const text = String(value ?? '').trim();
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new ProjectChangeValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new ProjectChangeValidationError(`${label} is invalid.`);
 	const parsed = new Date(`${text}T12:00:00.000Z`);
 	if (Number.isNaN(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== text) {
 		throw new ProjectChangeValidationError(`${label} is invalid.`);
@@ -52,9 +56,14 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		const workspace = await new ProjectChangeService(getDatabase()).getWorkspace(actor, params.projectPublicId);
+		const workspace = await new ProjectChangeService(getDatabase()).getWorkspace(
+			actor,
+			params.projectPublicId
+		);
 		const requestedChange = url.searchParams.get('change')?.trim() ?? '';
-		const selectedChangePublicId = workspace.changes.some((change) => change.publicId === requestedChange)
+		const selectedChangePublicId = workspace.changes.some(
+			(change) => change.publicId === requestedChange
+		)
 			? requestedChange
 			: (workspace.changes[0]?.publicId ?? null);
 		return { ...workspace, selectedChangePublicId };
@@ -94,10 +103,14 @@ export const actions: Actions = {
 				projectPublicId: params.projectPublicId,
 				changePublicId,
 				scopeImpactLevel: String(data.get('scopeImpactLevel') ?? 'none') as ChangeImpactLevel,
-				programmeImpactLevel: String(data.get('programmeImpactLevel') ?? 'none') as ChangeImpactLevel,
+				programmeImpactLevel: String(
+					data.get('programmeImpactLevel') ?? 'none'
+				) as ChangeImpactLevel,
 				costImpactLevel: String(data.get('costImpactLevel') ?? 'none') as ChangeImpactLevel,
 				contractImpactLevel: String(data.get('contractImpactLevel') ?? 'none') as ChangeImpactLevel,
-				informationImpactLevel: String(data.get('informationImpactLevel') ?? 'none') as ChangeImpactLevel,
+				informationImpactLevel: String(
+					data.get('informationImpactLevel') ?? 'none'
+				) as ChangeImpactLevel,
 				scopeSummary: String(data.get('scopeSummary') ?? ''),
 				programmeSummary: String(data.get('programmeSummary') ?? ''),
 				costSummary: String(data.get('costSummary') ?? ''),
@@ -123,7 +136,11 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const changePublicId = String(data.get('changePublicId') ?? '');
 		try {
-			await new ProjectChangeService(getDatabase()).submitAssessment(actor, params.projectPublicId, changePublicId);
+			await new ProjectChangeService(getDatabase()).submitAssessment(
+				actor,
+				params.projectPublicId,
+				changePublicId
+			);
 		} catch (cause) {
 			return handleActionError(cause, 'submit-assessment');
 		}
@@ -151,7 +168,8 @@ export const actions: Actions = {
 
 	recordImplementation: async ({ request, locals, params }) => {
 		const actor = actorFromLocals(locals);
-		if (!actor) return fail(401, actionFailure('record-implementation', 'Authentication is required.'));
+		if (!actor)
+			return fail(401, actionFailure('record-implementation', 'Authentication is required.'));
 		const data = await request.formData();
 		const changePublicId = String(data.get('changePublicId') ?? '');
 		try {
@@ -173,7 +191,11 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const changePublicId = String(data.get('changePublicId') ?? '');
 		try {
-			await new ProjectChangeService(getDatabase()).closeChange(actor, params.projectPublicId, changePublicId);
+			await new ProjectChangeService(getDatabase()).closeChange(
+				actor,
+				params.projectPublicId,
+				changePublicId
+			);
 		} catch (cause) {
 			return handleActionError(cause, 'close-change');
 		}
@@ -186,7 +208,11 @@ export const actions: Actions = {
 		const data = await request.formData();
 		const changePublicId = String(data.get('changePublicId') ?? '');
 		try {
-			await new ProjectChangeService(getDatabase()).cancelChange(actor, params.projectPublicId, changePublicId);
+			await new ProjectChangeService(getDatabase()).cancelChange(
+				actor,
+				params.projectPublicId,
+				changePublicId
+			);
 		} catch (cause) {
 			return handleActionError(cause, 'cancel-change');
 		}

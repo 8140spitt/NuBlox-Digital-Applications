@@ -32,7 +32,9 @@ test('owner governs a project change from identification to closure', async ({ p
 	const projectPublicId = new URL(page.url()).pathname.split('/').at(-1)!;
 
 	await page.goto(`/projects/${projectPublicId}/changes`);
-	await expect(page.getByRole('heading', { name: 'Controlled project change', level: 1 })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Controlled project change', level: 1 })
+	).toBeVisible();
 	await expect(page.getByRole('heading', { name: 'Project changes', level: 2 })).toBeVisible();
 
 	const raiseForm = page.locator('form[action="?/createChange"]');
@@ -43,7 +45,9 @@ test('owner governs a project change from identification to closure', async ({ p
 		.fill('Client request affects partition scope, programme, cost and design information.');
 	await raiseForm.getByRole('button', { name: 'Raise change' }).click();
 
-	await expect(page.getByRole('heading', { name: 'Add enhanced acoustic lining', level: 2 })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Add enhanced acoustic lining', level: 2 })
+	).toBeVisible();
 	await expect(page.locator('.change-list').getByText(/CHG-\d+/)).toBeVisible();
 	await expect(page.getByText('identified', { exact: true }).first()).toBeVisible();
 
@@ -102,7 +106,11 @@ test('owner governs a project change from identification to closure', async ({ p
 		.fill('Scope, programme, commercial position and revised design information were updated.');
 	await implementationForm.getByRole('button', { name: 'Record as implemented' }).click();
 	await expect(page.getByText('implemented', { exact: true }).first()).toBeVisible();
-	await expect(page.getByText('Scope, programme, commercial position and revised design information were updated.')).toBeVisible();
+	await expect(
+		page.getByText(
+			'Scope, programme, commercial position and revised design information were updated.'
+		)
+	).toBeVisible();
 
 	await page.getByRole('button', { name: 'Close change' }).click();
 	await expect(page.getByText('closed', { exact: true }).first()).toBeVisible();

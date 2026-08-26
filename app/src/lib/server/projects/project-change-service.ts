@@ -12,19 +12,10 @@ import { ensureProjectChangeStandardRoleDefaults } from './project-change-bootst
 import { ProjectRepository, type ProjectRecord } from './project-repository';
 
 export type ProjectChangeStatus =
-	| 'identified'
-	| 'under_review'
-	| 'accepted'
-	| 'rejected'
-	| 'implemented'
-	| 'closed'
-	| 'cancelled';
+	'identified' | 'under_review' | 'accepted' | 'rejected' | 'implemented' | 'closed' | 'cancelled';
 export type ChangeImpactLevel = 'none' | 'potential' | 'confirmed';
 export type ProjectChangeDecision =
-	| 'accepted'
-	| 'accepted_with_conditions'
-	| 'rejected'
-	| 'deferred';
+	'accepted' | 'accepted_with_conditions' | 'rejected' | 'deferred';
 
 export class ProjectChangeValidationError extends Error {
 	readonly code = 'PROJECT_CHANGE_VALIDATION';
@@ -172,7 +163,9 @@ function decimal(value: string | null | undefined, label: string): string | null
 	const normalized = value?.trim() ?? '';
 	if (!normalized) return null;
 	if (!/^-?\d{1,15}(?:\.\d{1,2})?$/.test(normalized)) {
-		throw new ProjectChangeValidationError(`${label} must be a valid decimal with at most 2 decimal places.`);
+		throw new ProjectChangeValidationError(
+			`${label} must be a valid decimal with at most 2 decimal places.`
+		);
 	}
 	return Number(normalized).toFixed(2);
 }
@@ -204,7 +197,10 @@ export class ProjectChangeService {
 		if (!membership) throw new TenantAccessError();
 	}
 
-	private async findProject(actor: TenantActorContext, projectPublicId: string): Promise<ProjectRecord> {
+	private async findProject(
+		actor: TenantActorContext,
+		projectPublicId: string
+	): Promise<ProjectRecord> {
 		await this.assertActiveActor(actor);
 		await ensureProjectChangeStandardRoleDefaults(this.db, actor.organisationId);
 		const project = await new ProjectRepository(this.db).findForMemberByPublicId(
@@ -244,7 +240,13 @@ export class ProjectChangeService {
 				projectId: project.id
 			})
 		]);
-		if (!view.allowed && !manage.allowed && !assess.allowed && !approve.allowed && !implement.allowed) {
+		if (
+			!view.allowed &&
+			!manage.allowed &&
+			!assess.allowed &&
+			!approve.allowed &&
+			!implement.allowed
+		) {
 			throw new RecordNotFoundError('Project change control not found in the active member scope.');
 		}
 		return {
@@ -273,7 +275,8 @@ export class ProjectChangeService {
 			'project.manage',
 			{ projectId: project.id }
 		);
-		if (!decision.allowed) throw new TenantAccessError('Project change control action is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('Project change control action is not permitted.');
 		return project;
 	}
 
@@ -312,35 +315,38 @@ export class ProjectChangeService {
 		return row;
 	}
 
-	private assessmentRecord(row: {
-		id: string;
-		public_id: string;
-		project_change_event_id: string;
-		version_number: number;
-		version_status: string;
-		scope_impact_level: string;
-		programme_impact_level: string;
-		cost_impact_level: string;
-		contract_impact_level: string;
-		information_impact_level: string;
-		scope_summary: string | null;
-		programme_summary: string | null;
-		cost_summary: string | null;
-		contract_summary: string | null;
-		information_summary: string | null;
-		currency_code: string | null;
-		estimated_cost_delta: string | null;
-		estimated_time_delta_days: string | null;
-		prepared_by_member_id: string;
-		prepared_at: Date;
-		submitted_by_member_id: string | null;
-		submitted_at: Date | null;
-	}, impacts?: {
-		wbs?: string[];
-		activities?: string[];
-		costCodes?: string[];
-		contracts?: string[];
-	}): ProjectChangeAssessmentRecord {
+	private assessmentRecord(
+		row: {
+			id: string;
+			public_id: string;
+			project_change_event_id: string;
+			version_number: number;
+			version_status: string;
+			scope_impact_level: string;
+			programme_impact_level: string;
+			cost_impact_level: string;
+			contract_impact_level: string;
+			information_impact_level: string;
+			scope_summary: string | null;
+			programme_summary: string | null;
+			cost_summary: string | null;
+			contract_summary: string | null;
+			information_summary: string | null;
+			currency_code: string | null;
+			estimated_cost_delta: string | null;
+			estimated_time_delta_days: string | null;
+			prepared_by_member_id: string;
+			prepared_at: Date;
+			submitted_by_member_id: string | null;
+			submitted_at: Date | null;
+		},
+		impacts?: {
+			wbs?: string[];
+			activities?: string[];
+			costCodes?: string[];
+			contracts?: string[];
+		}
+	): ProjectChangeAssessmentRecord {
 		return {
 			id: row.id,
 			publicId: row.public_id,
@@ -402,111 +408,129 @@ export class ProjectChangeService {
 		});
 	}
 
-	async getWorkspace(actor: TenantActorContext, projectPublicId: string): Promise<ProjectChangeWorkspace> {
+	async getWorkspace(
+		actor: TenantActorContext,
+		projectPublicId: string
+	): Promise<ProjectChangeWorkspace> {
 		const project = await this.findProject(actor, projectPublicId);
 		const flags = await this.permissionFlags(actor, project);
-		const [types, changeRows, assessmentRows, decisionRows, implementationRows, wbsRows, activityRows, costRows, contractRows, informationCounts, variationCounts] =
-			await Promise.all([
-				this.db
-					.selectFrom('project_change_event_types')
-					.select(['code', 'name'])
-					.where('is_active', '=', 1)
-					.orderBy('name')
-					.execute(),
-				this.db
-					.selectFrom('project_change_events')
-					.innerJoin(
-						'project_change_event_types',
-						'project_change_event_types.id',
-						'project_change_events.project_change_event_type_id'
-					)
-					.select([
-						'project_change_events.id',
-						'project_change_events.public_id',
-						'project_change_events.change_number',
-						'project_change_events.title',
-						'project_change_events.description',
-						'project_change_events.status',
-						'project_change_events.identified_by_member_id',
-						'project_change_events.identified_at',
-						'project_change_events.closed_at',
-						'project_change_event_types.code as type_code',
-						'project_change_event_types.name as type_name'
-					])
-					.where('project_change_events.project_id', '=', project.id)
-					.where('project_change_events.owning_organisation_id', '=', actor.organisationId)
-					.orderBy('project_change_events.identified_at', 'desc')
-					.execute(),
-				this.db
-					.selectFrom('project_change_assessments')
-					.selectAll()
-					.where('project_id', '=', project.id)
-					.where('organisation_id', '=', actor.organisationId)
-					.orderBy('version_number', 'desc')
-					.execute(),
-				this.db
-					.selectFrom('project_change_decisions')
-					.selectAll()
-					.where('project_id', '=', project.id)
-					.where('organisation_id', '=', actor.organisationId)
-					.orderBy('decision_number', 'desc')
-					.execute(),
-				this.db
-					.selectFrom('project_change_implementations')
-					.selectAll()
-					.where('project_id', '=', project.id)
-					.where('organisation_id', '=', actor.organisationId)
-					.execute(),
-				this.db
-					.selectFrom('project_wbs_nodes')
-					.select(['public_id', 'wbs_code', 'name'])
-					.where('project_id', '=', project.id)
-					.where('organisation_id', '=', actor.organisationId)
-					.where('lifecycle_status', '=', 'active')
-					.orderBy('wbs_code')
-					.execute(),
-				this.db
-					.selectFrom('project_plan_activities')
-					.select(['public_id', 'activity_code', 'name'])
-					.where('project_id', '=', project.id)
-					.where('organisation_id', '=', actor.organisationId)
-					.where('status', '!=', 'cancelled')
-					.orderBy('activity_code')
-					.execute(),
-				this.db
-					.selectFrom('project_cost_codes')
-					.select(['public_id', 'code', 'name'])
-					.where('project_id', '=', project.id)
-					.where('organisation_id', '=', actor.organisationId)
-					.where('is_active', '=', 1)
-					.orderBy('code')
-					.execute(),
-				this.db
-					.selectFrom('contracts')
-					.select(['public_id', 'contract_number', 'title'])
-					.where('project_id', '=', project.id)
-					.where('organisation_id', '=', actor.organisationId)
-					.where('lifecycle_status', '!=', 'cancelled')
-					.orderBy('contract_number')
-					.execute(),
-				this.db
-					.selectFrom('change_event_information_links')
-					.select('project_change_event_id')
-					.where('change_owner_organisation_id', '=', actor.organisationId)
-					.execute(),
-				this.db
-					.selectFrom('commercial_variation_change_events')
-					.select('project_change_event_id')
-					.where('change_owner_organisation_id', '=', actor.organisationId)
-					.execute()
-			]);
+		const [
+			types,
+			changeRows,
+			assessmentRows,
+			decisionRows,
+			implementationRows,
+			wbsRows,
+			activityRows,
+			costRows,
+			contractRows,
+			informationCounts,
+			variationCounts
+		] = await Promise.all([
+			this.db
+				.selectFrom('project_change_event_types')
+				.select(['code', 'name'])
+				.where('is_active', '=', 1)
+				.orderBy('name')
+				.execute(),
+			this.db
+				.selectFrom('project_change_events')
+				.innerJoin(
+					'project_change_event_types',
+					'project_change_event_types.id',
+					'project_change_events.project_change_event_type_id'
+				)
+				.select([
+					'project_change_events.id',
+					'project_change_events.public_id',
+					'project_change_events.change_number',
+					'project_change_events.title',
+					'project_change_events.description',
+					'project_change_events.status',
+					'project_change_events.identified_by_member_id',
+					'project_change_events.identified_at',
+					'project_change_events.closed_at',
+					'project_change_event_types.code as type_code',
+					'project_change_event_types.name as type_name'
+				])
+				.where('project_change_events.project_id', '=', project.id)
+				.where('project_change_events.owning_organisation_id', '=', actor.organisationId)
+				.orderBy('project_change_events.identified_at', 'desc')
+				.execute(),
+			this.db
+				.selectFrom('project_change_assessments')
+				.selectAll()
+				.where('project_id', '=', project.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.orderBy('version_number', 'desc')
+				.execute(),
+			this.db
+				.selectFrom('project_change_decisions')
+				.selectAll()
+				.where('project_id', '=', project.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.orderBy('decision_number', 'desc')
+				.execute(),
+			this.db
+				.selectFrom('project_change_implementations')
+				.selectAll()
+				.where('project_id', '=', project.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.execute(),
+			this.db
+				.selectFrom('project_wbs_nodes')
+				.select(['public_id', 'wbs_code', 'name'])
+				.where('project_id', '=', project.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.where('lifecycle_status', '=', 'active')
+				.orderBy('wbs_code')
+				.execute(),
+			this.db
+				.selectFrom('project_plan_activities')
+				.select(['public_id', 'activity_code', 'name'])
+				.where('project_id', '=', project.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.where('status', '!=', 'cancelled')
+				.orderBy('activity_code')
+				.execute(),
+			this.db
+				.selectFrom('project_cost_codes')
+				.select(['public_id', 'code', 'name'])
+				.where('project_id', '=', project.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.where('is_active', '=', 1)
+				.orderBy('code')
+				.execute(),
+			this.db
+				.selectFrom('contracts')
+				.select(['public_id', 'contract_number', 'title'])
+				.where('project_id', '=', project.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.where('lifecycle_status', '!=', 'cancelled')
+				.orderBy('contract_number')
+				.execute(),
+			this.db
+				.selectFrom('change_event_information_links')
+				.select('project_change_event_id')
+				.where('change_owner_organisation_id', '=', actor.organisationId)
+				.execute(),
+			this.db
+				.selectFrom('commercial_variation_change_events')
+				.select('project_change_event_id')
+				.where('change_owner_organisation_id', '=', actor.organisationId)
+				.execute()
+		]);
 
 		const assessmentIds = assessmentRows.map((row) => row.id);
 		const [wbsImpacts, activityImpacts, costImpacts, contractImpacts] = assessmentIds.length
 			? await Promise.all([
 					this.db
 						.selectFrom('project_change_wbs_impacts')
-						.innerJoin('project_wbs_nodes', 'project_wbs_nodes.id', 'project_change_wbs_impacts.wbs_node_id')
+						.innerJoin(
+							'project_wbs_nodes',
+							'project_wbs_nodes.id',
+							'project_change_wbs_impacts.wbs_node_id'
+						)
 						.select(['project_change_wbs_impacts.assessment_id', 'project_wbs_nodes.public_id'])
 						.where('project_change_wbs_impacts.assessment_id', 'in', assessmentIds)
 						.execute(),
@@ -517,12 +541,19 @@ export class ProjectChangeService {
 							'project_plan_activities.id',
 							'project_change_activity_impacts.project_plan_activity_id'
 						)
-						.select(['project_change_activity_impacts.assessment_id', 'project_plan_activities.public_id'])
+						.select([
+							'project_change_activity_impacts.assessment_id',
+							'project_plan_activities.public_id'
+						])
 						.where('project_change_activity_impacts.assessment_id', 'in', assessmentIds)
 						.execute(),
 					this.db
 						.selectFrom('project_change_cost_impacts')
-						.innerJoin('project_cost_codes', 'project_cost_codes.id', 'project_change_cost_impacts.project_cost_code_id')
+						.innerJoin(
+							'project_cost_codes',
+							'project_cost_codes.id',
+							'project_change_cost_impacts.project_cost_code_id'
+						)
 						.select(['project_change_cost_impacts.assessment_id', 'project_cost_codes.public_id'])
 						.where('project_change_cost_impacts.assessment_id', 'in', assessmentIds)
 						.execute(),
@@ -535,19 +566,34 @@ export class ProjectChangeService {
 				])
 			: [[], [], [], []];
 
-		const impactsByAssessment = new Map<string, { wbs: string[]; activities: string[]; costCodes: string[]; contracts: string[] }>();
+		const impactsByAssessment = new Map<
+			string,
+			{ wbs: string[]; activities: string[]; costCodes: string[]; contracts: string[] }
+		>();
 		for (const assessmentId of assessmentIds) {
-			impactsByAssessment.set(assessmentId, { wbs: [], activities: [], costCodes: [], contracts: [] });
+			impactsByAssessment.set(assessmentId, {
+				wbs: [],
+				activities: [],
+				costCodes: [],
+				contracts: []
+			});
 		}
-		for (const row of wbsImpacts) impactsByAssessment.get(row.assessment_id)?.wbs.push(row.public_id);
-		for (const row of activityImpacts) impactsByAssessment.get(row.assessment_id)?.activities.push(row.public_id);
-		for (const row of costImpacts) impactsByAssessment.get(row.assessment_id)?.costCodes.push(row.public_id);
-		for (const row of contractImpacts) impactsByAssessment.get(row.assessment_id)?.contracts.push(row.public_id);
+		for (const row of wbsImpacts)
+			impactsByAssessment.get(row.assessment_id)?.wbs.push(row.public_id);
+		for (const row of activityImpacts)
+			impactsByAssessment.get(row.assessment_id)?.activities.push(row.public_id);
+		for (const row of costImpacts)
+			impactsByAssessment.get(row.assessment_id)?.costCodes.push(row.public_id);
+		for (const row of contractImpacts)
+			impactsByAssessment.get(row.assessment_id)?.contracts.push(row.public_id);
 
 		const assessmentByEvent = new Map<string, ProjectChangeAssessmentRecord>();
 		for (const row of assessmentRows) {
 			if (!assessmentByEvent.has(row.project_change_event_id)) {
-				assessmentByEvent.set(row.project_change_event_id, this.assessmentRecord(row, impactsByAssessment.get(row.id)));
+				assessmentByEvent.set(
+					row.project_change_event_id,
+					this.assessmentRecord(row, impactsByAssessment.get(row.id))
+				);
 			}
 		}
 		const decisionByEvent = new Map<string, ProjectChangeDecisionRecord>();
@@ -580,9 +626,17 @@ export class ProjectChangeService {
 			])
 		);
 		const informationCountByEvent = new Map<string, number>();
-		for (const row of informationCounts) informationCountByEvent.set(row.project_change_event_id, (informationCountByEvent.get(row.project_change_event_id) ?? 0) + 1);
+		for (const row of informationCounts)
+			informationCountByEvent.set(
+				row.project_change_event_id,
+				(informationCountByEvent.get(row.project_change_event_id) ?? 0) + 1
+			);
 		const variationCountByEvent = new Map<string, number>();
-		for (const row of variationCounts) variationCountByEvent.set(row.project_change_event_id, (variationCountByEvent.get(row.project_change_event_id) ?? 0) + 1);
+		for (const row of variationCounts)
+			variationCountByEvent.set(
+				row.project_change_event_id,
+				(variationCountByEvent.get(row.project_change_event_id) ?? 0) + 1
+			);
 
 		return {
 			project,
@@ -605,10 +659,26 @@ export class ProjectChangeService {
 				informationLinkCount: informationCountByEvent.get(row.id) ?? 0,
 				commercialVariationCount: variationCountByEvent.get(row.id) ?? 0
 			})),
-			wbsOptions: wbsRows.map((row) => ({ publicId: row.public_id, code: row.wbs_code, name: row.name })),
-			activityOptions: activityRows.map((row) => ({ publicId: row.public_id, code: row.activity_code, name: row.name })),
-			costCodeOptions: costRows.map((row) => ({ publicId: row.public_id, code: row.code, name: row.name })),
-			contractOptions: contractRows.map((row) => ({ publicId: row.public_id, contractNumber: row.contract_number, title: row.title })),
+			wbsOptions: wbsRows.map((row) => ({
+				publicId: row.public_id,
+				code: row.wbs_code,
+				name: row.name
+			})),
+			activityOptions: activityRows.map((row) => ({
+				publicId: row.public_id,
+				code: row.activity_code,
+				name: row.name
+			})),
+			costCodeOptions: costRows.map((row) => ({
+				publicId: row.public_id,
+				code: row.code,
+				name: row.name
+			})),
+			contractOptions: contractRows.map((row) => ({
+				publicId: row.public_id,
+				contractNumber: row.contract_number,
+				title: row.title
+			})),
 			...flags
 		};
 	}
@@ -617,7 +687,11 @@ export class ProjectChangeService {
 		actor: TenantActorContext,
 		input: { projectPublicId: string; typeCode: string; title: string; description: string }
 	): Promise<string> {
-		const project = await this.requirePermission(actor, input.projectPublicId, 'project.change.manage');
+		const project = await this.requirePermission(
+			actor,
+			input.projectPublicId,
+			'project.change.manage'
+		);
 		const typeCode = requiredText(input.typeCode, 'Change type', 64);
 		const title = requiredText(input.title, 'Title', 255);
 		const description = requiredText(input.description, 'Description', 20_000);
@@ -669,7 +743,9 @@ export class ProjectChangeService {
 		const estimatedCostDelta = decimal(input.estimatedCostDelta, 'Estimated cost delta');
 		const currencyCode = currency(input.currencyCode);
 		if (estimatedCostDelta !== null && currencyCode === null) {
-			throw new ProjectChangeValidationError('Currency is required when an estimated cost delta is recorded.');
+			throw new ProjectChangeValidationError(
+				'Currency is required when an estimated cost delta is recorded.'
+			);
 		}
 		return {
 			scopeImpactLevel: impactLevel(input.scopeImpactLevel, 'Scope impact'),
@@ -737,15 +813,34 @@ export class ProjectChangeService {
 				: Promise.resolve([])
 		]);
 
-		if (wbsRows.length !== input.wbsPublicIds.length) throw new ProjectChangeValidationError('One or more scope/WBS selections are outside this project.');
-		if (activityRows.length !== input.activityPublicIds.length) throw new ProjectChangeValidationError('One or more programme/activity selections are outside this project.');
-		if (costRows.length !== input.costCodePublicIds.length) throw new ProjectChangeValidationError('One or more cost-code selections are outside this project.');
-		if (contractRows.length !== input.contractPublicIds.length) throw new ProjectChangeValidationError('One or more contract selections are outside this project.');
+		if (wbsRows.length !== input.wbsPublicIds.length)
+			throw new ProjectChangeValidationError(
+				'One or more scope/WBS selections are outside this project.'
+			);
+		if (activityRows.length !== input.activityPublicIds.length)
+			throw new ProjectChangeValidationError(
+				'One or more programme/activity selections are outside this project.'
+			);
+		if (costRows.length !== input.costCodePublicIds.length)
+			throw new ProjectChangeValidationError(
+				'One or more cost-code selections are outside this project.'
+			);
+		if (contractRows.length !== input.contractPublicIds.length)
+			throw new ProjectChangeValidationError(
+				'One or more contract selections are outside this project.'
+			);
 		return { wbsRows, activityRows, costRows, contractRows };
 	}
 
-	async saveAssessment(actor: TenantActorContext, input: ProjectChangeAssessmentInput): Promise<string> {
-		const project = await this.requirePermission(actor, input.projectPublicId, 'project.change.assess');
+	async saveAssessment(
+		actor: TenantActorContext,
+		input: ProjectChangeAssessmentInput
+	): Promise<string> {
+		const project = await this.requirePermission(
+			actor,
+			input.projectPublicId,
+			'project.change.assess'
+		);
 		const normalized = this.normalizeAssessment(input);
 		const now = this.now();
 		let assessmentPublicId = '';
@@ -753,7 +848,9 @@ export class ProjectChangeService {
 		await this.db.transaction().execute(async (trx) => {
 			const change = await this.findChange(trx, project, input.changePublicId, true);
 			if (!['identified', 'under_review'].includes(change.status)) {
-				throw new ProjectChangeValidationError('Only identified or under-review changes can be assessed.');
+				throw new ProjectChangeValidationError(
+					'Only identified or under-review changes can be assessed.'
+				);
 			}
 			const latest = await trx
 				.selectFrom('project_change_assessments')
@@ -820,128 +917,395 @@ export class ProjectChangeService {
 					})
 					.executeTakeFirstOrThrow();
 				assessmentId = inserted.insertId?.toString() ?? '';
-				if (!assessmentId) throw new Error('Project change assessment insert did not return an identifier.');
+				if (!assessmentId)
+					throw new Error('Project change assessment insert did not return an identifier.');
 			}
 
 			await Promise.all([
-				trx.deleteFrom('project_change_wbs_impacts').where('assessment_id', '=', assessmentId).execute(),
-				trx.deleteFrom('project_change_activity_impacts').where('assessment_id', '=', assessmentId).execute(),
-				trx.deleteFrom('project_change_cost_impacts').where('assessment_id', '=', assessmentId).execute(),
-				trx.deleteFrom('project_change_contract_impacts').where('assessment_id', '=', assessmentId).execute()
+				trx
+					.deleteFrom('project_change_wbs_impacts')
+					.where('assessment_id', '=', assessmentId)
+					.execute(),
+				trx
+					.deleteFrom('project_change_activity_impacts')
+					.where('assessment_id', '=', assessmentId)
+					.execute(),
+				trx
+					.deleteFrom('project_change_cost_impacts')
+					.where('assessment_id', '=', assessmentId)
+					.execute(),
+				trx
+					.deleteFrom('project_change_contract_impacts')
+					.where('assessment_id', '=', assessmentId)
+					.execute()
 			]);
-			if (impactIds.wbsRows.length) await trx.insertInto('project_change_wbs_impacts').values(impactIds.wbsRows.map((row) => ({ assessment_id: assessmentId, organisation_id: actor.organisationId, project_id: project.id, wbs_node_id: row.id, impact_type: 'affected', impact_summary: null }))).execute();
-			if (impactIds.activityRows.length) await trx.insertInto('project_change_activity_impacts').values(impactIds.activityRows.map((row) => ({ assessment_id: assessmentId, organisation_id: actor.organisationId, project_id: project.id, project_plan_activity_id: row.id, impact_type: 'affected', time_delta_days: null, impact_summary: null }))).execute();
-			if (impactIds.costRows.length) await trx.insertInto('project_change_cost_impacts').values(impactIds.costRows.map((row) => ({ assessment_id: assessmentId, organisation_id: actor.organisationId, project_id: project.id, project_cost_code_id: row.id, impact_type: 'uncertain', amount_delta: null, impact_summary: null }))).execute();
-			if (impactIds.contractRows.length) await trx.insertInto('project_change_contract_impacts').values(impactIds.contractRows.map((row) => ({ assessment_id: assessmentId, organisation_id: actor.organisationId, project_id: project.id, contract_id: row.id, impact_type: 'other', impact_summary: null }))).execute();
+			if (impactIds.wbsRows.length)
+				await trx
+					.insertInto('project_change_wbs_impacts')
+					.values(
+						impactIds.wbsRows.map((row) => ({
+							assessment_id: assessmentId,
+							organisation_id: actor.organisationId,
+							project_id: project.id,
+							wbs_node_id: row.id,
+							impact_type: 'affected',
+							impact_summary: null
+						}))
+					)
+					.execute();
+			if (impactIds.activityRows.length)
+				await trx
+					.insertInto('project_change_activity_impacts')
+					.values(
+						impactIds.activityRows.map((row) => ({
+							assessment_id: assessmentId,
+							organisation_id: actor.organisationId,
+							project_id: project.id,
+							project_plan_activity_id: row.id,
+							impact_type: 'affected',
+							time_delta_days: null,
+							impact_summary: null
+						}))
+					)
+					.execute();
+			if (impactIds.costRows.length)
+				await trx
+					.insertInto('project_change_cost_impacts')
+					.values(
+						impactIds.costRows.map((row) => ({
+							assessment_id: assessmentId,
+							organisation_id: actor.organisationId,
+							project_id: project.id,
+							project_cost_code_id: row.id,
+							impact_type: 'uncertain',
+							amount_delta: null,
+							impact_summary: null
+						}))
+					)
+					.execute();
+			if (impactIds.contractRows.length)
+				await trx
+					.insertInto('project_change_contract_impacts')
+					.values(
+						impactIds.contractRows.map((row) => ({
+							assessment_id: assessmentId,
+							organisation_id: actor.organisationId,
+							project_id: project.id,
+							contract_id: row.id,
+							impact_type: 'other',
+							impact_summary: null
+						}))
+					)
+					.execute();
 
-			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.assessment_saved', {
-				assessmentPublicId,
-				impactLevels: {
-					scope: normalized.scopeImpactLevel,
-					programme: normalized.programmeImpactLevel,
-					cost: normalized.costImpactLevel,
-					contract: normalized.contractImpactLevel,
-					information: normalized.informationImpactLevel
+			await this.appendEvidence(
+				trx,
+				actor,
+				project,
+				change.public_id,
+				'project.change.assessment_saved',
+				{
+					assessmentPublicId,
+					impactLevels: {
+						scope: normalized.scopeImpactLevel,
+						programme: normalized.programmeImpactLevel,
+						cost: normalized.costImpactLevel,
+						contract: normalized.contractImpactLevel,
+						information: normalized.informationImpactLevel
+					}
 				}
-			});
+			);
 		});
 		return assessmentPublicId;
 	}
 
-	async submitAssessment(actor: TenantActorContext, projectPublicId: string, changePublicId: string): Promise<void> {
+	async submitAssessment(
+		actor: TenantActorContext,
+		projectPublicId: string,
+		changePublicId: string
+	): Promise<void> {
 		const project = await this.requirePermission(actor, projectPublicId, 'project.change.assess');
 		const now = this.now();
 		await this.db.transaction().execute(async (trx) => {
 			const change = await this.findChange(trx, project, changePublicId, true);
-			if (!['identified', 'under_review'].includes(change.status)) throw new ProjectChangeValidationError('This change can no longer be submitted for assessment.');
-			const draft = await trx.selectFrom('project_change_assessments').selectAll().where('project_change_event_id', '=', change.id).where('organisation_id', '=', actor.organisationId).where('version_status', '=', 'draft').orderBy('version_number', 'desc').forUpdate().executeTakeFirst();
-			if (!draft) throw new ProjectChangeValidationError('Save a draft impact assessment before submitting the change.');
-			const hasImpact = [draft.scope_impact_level, draft.programme_impact_level, draft.cost_impact_level, draft.contract_impact_level, draft.information_impact_level].some((value) => value !== 'none');
-			if (!hasImpact) throw new ProjectChangeValidationError('At least one impact domain must be marked potential or confirmed before submission.');
-			await trx.updateTable('project_change_assessments').set({ version_status: 'superseded' }).where('project_change_event_id', '=', change.id).where('version_status', '=', 'submitted').execute();
-			await trx.updateTable('project_change_assessments').set({ version_status: 'submitted', submitted_by_member_id: actor.memberId, submitted_at: now }).where('id', '=', draft.id).where('version_status', '=', 'draft').executeTakeFirstOrThrow();
-			await trx.updateTable('project_change_events').set({ status: 'under_review' }).where('id', '=', change.id).where('owning_organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.assessment_submitted', { assessmentPublicId: draft.public_id, versionNumber: draft.version_number, status: 'under_review' });
+			if (!['identified', 'under_review'].includes(change.status))
+				throw new ProjectChangeValidationError(
+					'This change can no longer be submitted for assessment.'
+				);
+			const draft = await trx
+				.selectFrom('project_change_assessments')
+				.selectAll()
+				.where('project_change_event_id', '=', change.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.where('version_status', '=', 'draft')
+				.orderBy('version_number', 'desc')
+				.forUpdate()
+				.executeTakeFirst();
+			if (!draft)
+				throw new ProjectChangeValidationError(
+					'Save a draft impact assessment before submitting the change.'
+				);
+			const hasImpact = [
+				draft.scope_impact_level,
+				draft.programme_impact_level,
+				draft.cost_impact_level,
+				draft.contract_impact_level,
+				draft.information_impact_level
+			].some((value) => value !== 'none');
+			if (!hasImpact)
+				throw new ProjectChangeValidationError(
+					'At least one impact domain must be marked potential or confirmed before submission.'
+				);
+			await trx
+				.updateTable('project_change_assessments')
+				.set({ version_status: 'superseded' })
+				.where('project_change_event_id', '=', change.id)
+				.where('version_status', '=', 'submitted')
+				.execute();
+			await trx
+				.updateTable('project_change_assessments')
+				.set({
+					version_status: 'submitted',
+					submitted_by_member_id: actor.memberId,
+					submitted_at: now
+				})
+				.where('id', '=', draft.id)
+				.where('version_status', '=', 'draft')
+				.executeTakeFirstOrThrow();
+			await trx
+				.updateTable('project_change_events')
+				.set({ status: 'under_review' })
+				.where('id', '=', change.id)
+				.where('owning_organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await this.appendEvidence(
+				trx,
+				actor,
+				project,
+				change.public_id,
+				'project.change.assessment_submitted',
+				{
+					assessmentPublicId: draft.public_id,
+					versionNumber: draft.version_number,
+					status: 'under_review'
+				}
+			);
 		});
 	}
 
 	async decideChange(
 		actor: TenantActorContext,
-		input: { projectPublicId: string; changePublicId: string; decision: ProjectChangeDecision; rationale: string; conditions?: string | null }
+		input: {
+			projectPublicId: string;
+			changePublicId: string;
+			decision: ProjectChangeDecision;
+			rationale: string;
+			conditions?: string | null;
+		}
 	): Promise<void> {
-		const project = await this.requirePermission(actor, input.projectPublicId, 'project.change.approve');
-		if (!DECISIONS.includes(input.decision)) throw new ProjectChangeValidationError('Decision is invalid.');
+		const project = await this.requirePermission(
+			actor,
+			input.projectPublicId,
+			'project.change.approve'
+		);
+		if (!DECISIONS.includes(input.decision))
+			throw new ProjectChangeValidationError('Decision is invalid.');
 		const rationale = requiredText(input.rationale, 'Decision rationale', 20_000);
 		const conditions = optionalText(input.conditions, 20_000);
-		if (input.decision === 'accepted_with_conditions' && !conditions) throw new ProjectChangeValidationError('Acceptance conditions are required for an accepted-with-conditions decision.');
+		if (input.decision === 'accepted_with_conditions' && !conditions)
+			throw new ProjectChangeValidationError(
+				'Acceptance conditions are required for an accepted-with-conditions decision.'
+			);
 		const now = this.now();
 
 		await this.db.transaction().execute(async (trx) => {
 			const change = await this.findChange(trx, project, input.changePublicId, true);
-			if (change.status !== 'under_review') throw new ProjectChangeValidationError('Only an under-review change can be decided.');
-			const assessment = await trx.selectFrom('project_change_assessments').select(['id', 'public_id']).where('project_change_event_id', '=', change.id).where('version_status', '=', 'submitted').orderBy('version_number', 'desc').forUpdate().executeTakeFirst();
-			if (!assessment) throw new ProjectChangeValidationError('A submitted impact assessment is required before decision.');
-			const lastDecision = await trx.selectFrom('project_change_decisions').select('decision_number').where('project_change_event_id', '=', change.id).orderBy('decision_number', 'desc').forUpdate().executeTakeFirst();
-			await trx.insertInto('project_change_decisions').values({
-				organisation_id: actor.organisationId,
-				project_id: project.id,
-				project_change_event_id: change.id,
-				assessment_id: assessment.id,
-				public_id: this.publicIdFactory(),
-				decision_number: (lastDecision?.decision_number ?? 0) + 1,
+			if (change.status !== 'under_review')
+				throw new ProjectChangeValidationError('Only an under-review change can be decided.');
+			const assessment = await trx
+				.selectFrom('project_change_assessments')
+				.select(['id', 'public_id'])
+				.where('project_change_event_id', '=', change.id)
+				.where('version_status', '=', 'submitted')
+				.orderBy('version_number', 'desc')
+				.forUpdate()
+				.executeTakeFirst();
+			if (!assessment)
+				throw new ProjectChangeValidationError(
+					'A submitted impact assessment is required before decision.'
+				);
+			const lastDecision = await trx
+				.selectFrom('project_change_decisions')
+				.select('decision_number')
+				.where('project_change_event_id', '=', change.id)
+				.orderBy('decision_number', 'desc')
+				.forUpdate()
+				.executeTakeFirst();
+			await trx
+				.insertInto('project_change_decisions')
+				.values({
+					organisation_id: actor.organisationId,
+					project_id: project.id,
+					project_change_event_id: change.id,
+					assessment_id: assessment.id,
+					public_id: this.publicIdFactory(),
+					decision_number: (lastDecision?.decision_number ?? 0) + 1,
+					decision: input.decision,
+					rationale,
+					conditions,
+					decided_by_member_id: actor.memberId,
+					decided_at: now
+				})
+				.execute();
+			const status: ProjectChangeStatus =
+				input.decision === 'rejected'
+					? 'rejected'
+					: input.decision === 'deferred'
+						? 'under_review'
+						: 'accepted';
+			await trx
+				.updateTable('project_change_events')
+				.set({ status })
+				.where('id', '=', change.id)
+				.where('owning_organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.decided', {
+				assessmentPublicId: assessment.public_id,
 				decision: input.decision,
-				rationale,
-				conditions,
-				decided_by_member_id: actor.memberId,
-				decided_at: now
-			}).execute();
-			const status: ProjectChangeStatus = input.decision === 'rejected' ? 'rejected' : input.decision === 'deferred' ? 'under_review' : 'accepted';
-			await trx.updateTable('project_change_events').set({ status }).where('id', '=', change.id).where('owning_organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.decided', { assessmentPublicId: assessment.public_id, decision: input.decision, status });
+				status
+			});
 		});
 	}
 
 	async recordImplementation(
 		actor: TenantActorContext,
-		input: { projectPublicId: string; changePublicId: string; implementationSummary: string; implementedAt?: Date | null }
+		input: {
+			projectPublicId: string;
+			changePublicId: string;
+			implementationSummary: string;
+			implementedAt?: Date | null;
+		}
 	): Promise<void> {
-		const project = await this.requirePermission(actor, input.projectPublicId, 'project.change.implement');
-		const implementationSummary = requiredText(input.implementationSummary, 'Implementation summary', 20_000);
+		const project = await this.requirePermission(
+			actor,
+			input.projectPublicId,
+			'project.change.implement'
+		);
+		const implementationSummary = requiredText(
+			input.implementationSummary,
+			'Implementation summary',
+			20_000
+		);
 		const implementedAt = input.implementedAt ?? this.now();
-		if (!(implementedAt instanceof Date) || Number.isNaN(implementedAt.getTime())) throw new ProjectChangeValidationError('Implementation date is invalid.');
+		if (!(implementedAt instanceof Date) || Number.isNaN(implementedAt.getTime()))
+			throw new ProjectChangeValidationError('Implementation date is invalid.');
 
 		await this.db.transaction().execute(async (trx) => {
 			const change = await this.findChange(trx, project, input.changePublicId, true);
-			if (change.status !== 'accepted') throw new ProjectChangeValidationError('Only an accepted change can be recorded as implemented.');
-			const decision = await trx.selectFrom('project_change_decisions').select(['assessment_id', 'decision']).where('project_change_event_id', '=', change.id).where('decision', 'in', ['accepted', 'accepted_with_conditions']).orderBy('decision_number', 'desc').forUpdate().executeTakeFirst();
-			if (!decision) throw new ProjectChangeValidationError('Accepted decision evidence is required before implementation.');
-			const existing = await trx.selectFrom('project_change_implementations').select('id').where('project_change_event_id', '=', change.id).executeTakeFirst();
-			if (existing) throw new ProjectChangeValidationError('Implementation has already been recorded for this change.');
-			await trx.insertInto('project_change_implementations').values({ organisation_id: actor.organisationId, project_id: project.id, project_change_event_id: change.id, assessment_id: decision.assessment_id, public_id: this.publicIdFactory(), implementation_summary: implementationSummary, implemented_by_member_id: actor.memberId, implemented_at: implementedAt }).execute();
-			await trx.updateTable('project_change_events').set({ status: 'implemented' }).where('id', '=', change.id).where('owning_organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.implemented', { status: 'implemented', implementedAt: implementedAt.toISOString() });
+			if (change.status !== 'accepted')
+				throw new ProjectChangeValidationError(
+					'Only an accepted change can be recorded as implemented.'
+				);
+			const decision = await trx
+				.selectFrom('project_change_decisions')
+				.select(['assessment_id', 'decision'])
+				.where('project_change_event_id', '=', change.id)
+				.where('decision', 'in', ['accepted', 'accepted_with_conditions'])
+				.orderBy('decision_number', 'desc')
+				.forUpdate()
+				.executeTakeFirst();
+			if (!decision)
+				throw new ProjectChangeValidationError(
+					'Accepted decision evidence is required before implementation.'
+				);
+			const existing = await trx
+				.selectFrom('project_change_implementations')
+				.select('id')
+				.where('project_change_event_id', '=', change.id)
+				.executeTakeFirst();
+			if (existing)
+				throw new ProjectChangeValidationError(
+					'Implementation has already been recorded for this change.'
+				);
+			await trx
+				.insertInto('project_change_implementations')
+				.values({
+					organisation_id: actor.organisationId,
+					project_id: project.id,
+					project_change_event_id: change.id,
+					assessment_id: decision.assessment_id,
+					public_id: this.publicIdFactory(),
+					implementation_summary: implementationSummary,
+					implemented_by_member_id: actor.memberId,
+					implemented_at: implementedAt
+				})
+				.execute();
+			await trx
+				.updateTable('project_change_events')
+				.set({ status: 'implemented' })
+				.where('id', '=', change.id)
+				.where('owning_organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await this.appendEvidence(
+				trx,
+				actor,
+				project,
+				change.public_id,
+				'project.change.implemented',
+				{ status: 'implemented', implementedAt: implementedAt.toISOString() }
+			);
 		});
 	}
 
-	async closeChange(actor: TenantActorContext, projectPublicId: string, changePublicId: string): Promise<void> {
+	async closeChange(
+		actor: TenantActorContext,
+		projectPublicId: string,
+		changePublicId: string
+	): Promise<void> {
 		const project = await this.requirePermission(actor, projectPublicId, 'project.change.close');
 		const now = this.now();
 		await this.db.transaction().execute(async (trx) => {
 			const change = await this.findChange(trx, project, changePublicId, true);
-			if (!['implemented', 'rejected'].includes(change.status)) throw new ProjectChangeValidationError('Only implemented or rejected changes can be closed.');
-			await trx.updateTable('project_change_events').set({ status: 'closed', closed_at: now }).where('id', '=', change.id).where('owning_organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.closed', { previousStatus: change.status, status: 'closed' });
+			if (!['implemented', 'rejected'].includes(change.status))
+				throw new ProjectChangeValidationError(
+					'Only implemented or rejected changes can be closed.'
+				);
+			await trx
+				.updateTable('project_change_events')
+				.set({ status: 'closed', closed_at: now })
+				.where('id', '=', change.id)
+				.where('owning_organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.closed', {
+				previousStatus: change.status,
+				status: 'closed'
+			});
 		});
 	}
 
-	async cancelChange(actor: TenantActorContext, projectPublicId: string, changePublicId: string): Promise<void> {
+	async cancelChange(
+		actor: TenantActorContext,
+		projectPublicId: string,
+		changePublicId: string
+	): Promise<void> {
 		const project = await this.requirePermission(actor, projectPublicId, 'project.change.manage');
 		const now = this.now();
 		await this.db.transaction().execute(async (trx) => {
 			const change = await this.findChange(trx, project, changePublicId, true);
-			if (!['identified', 'under_review'].includes(change.status)) throw new ProjectChangeValidationError('Only identified or under-review changes can be cancelled.');
-			await trx.updateTable('project_change_events').set({ status: 'cancelled', closed_at: now }).where('id', '=', change.id).where('owning_organisation_id', '=', actor.organisationId).executeTakeFirstOrThrow();
-			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.cancelled', { previousStatus: change.status, status: 'cancelled' });
+			if (!['identified', 'under_review'].includes(change.status))
+				throw new ProjectChangeValidationError(
+					'Only identified or under-review changes can be cancelled.'
+				);
+			await trx
+				.updateTable('project_change_events')
+				.set({ status: 'cancelled', closed_at: now })
+				.where('id', '=', change.id)
+				.where('owning_organisation_id', '=', actor.organisationId)
+				.executeTakeFirstOrThrow();
+			await this.appendEvidence(trx, actor, project, change.public_id, 'project.change.cancelled', {
+				previousStatus: change.status,
+				status: 'cancelled'
+			});
 		});
 	}
 }

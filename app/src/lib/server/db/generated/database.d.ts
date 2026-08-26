@@ -2489,6 +2489,82 @@ export interface ProjectBudgetVersions {
   version_status: Generated<string>;
 }
 
+export interface ProjectChangeActivityImpacts {
+  assessment_id: string;
+  created_at: Generated<Date>;
+  impact_summary: string | null;
+  impact_type: Generated<string>;
+  organisation_id: string;
+  project_id: string;
+  project_plan_activity_id: string;
+  time_delta_days: Decimal | null;
+}
+
+export interface ProjectChangeAssessments {
+  contract_impact_level: Generated<string>;
+  contract_summary: string | null;
+  cost_impact_level: Generated<string>;
+  cost_summary: string | null;
+  currency_code: string | null;
+  estimated_cost_delta: Decimal | null;
+  estimated_time_delta_days: Decimal | null;
+  id: Generated<string>;
+  information_impact_level: Generated<string>;
+  information_summary: string | null;
+  organisation_id: string;
+  prepared_at: Generated<Date>;
+  prepared_by_member_id: string;
+  programme_impact_level: Generated<string>;
+  programme_summary: string | null;
+  project_change_event_id: string;
+  project_id: string;
+  public_id: string;
+  scope_impact_level: Generated<string>;
+  scope_summary: string | null;
+  submitted_at: Date | null;
+  submitted_by_member_id: string | null;
+  updated_at: Generated<Date>;
+  version_number: number;
+  version_status: Generated<string>;
+}
+
+export interface ProjectChangeContractImpacts {
+  assessment_id: string;
+  contract_id: string;
+  created_at: Generated<Date>;
+  impact_summary: string | null;
+  impact_type: Generated<string>;
+  organisation_id: string;
+  project_id: string;
+}
+
+export interface ProjectChangeCostImpacts {
+  amount_delta: Decimal | null;
+  assessment_id: string;
+  created_at: Generated<Date>;
+  impact_summary: string | null;
+  impact_type: Generated<string>;
+  organisation_id: string;
+  project_cost_code_id: string;
+  project_id: string;
+}
+
+export interface ProjectChangeDecisions {
+  assessment_id: string;
+  conditions: string | null;
+  created_at: Generated<Date>;
+  decided_at: Date;
+  decided_by_member_id: string;
+  decision: string;
+  decision_number: number;
+  id: Generated<string>;
+  organisation_id: string;
+  project_change_event_id: string;
+  project_id: string;
+  public_id: string;
+  rationale: string;
+}
+
 export interface ProjectChangeEvents {
   change_number: string;
   closed_at: Date | null;
@@ -2511,6 +2587,29 @@ export interface ProjectChangeEventTypes {
   id: Generated<number>;
   is_active: Generated<number>;
   name: string;
+}
+
+export interface ProjectChangeImplementations {
+  assessment_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  implementation_summary: string;
+  implemented_at: Date;
+  implemented_by_member_id: string;
+  organisation_id: string;
+  project_change_event_id: string;
+  project_id: string;
+  public_id: string;
+}
+
+export interface ProjectChangeWbsImpacts {
+  assessment_id: string;
+  created_at: Generated<Date>;
+  impact_summary: string | null;
+  impact_type: Generated<string>;
+  organisation_id: string;
+  project_id: string;
+  wbs_node_id: string;
 }
 
 export interface ProjectCollaborationInvitationRoles {
@@ -4742,8 +4841,15 @@ export interface DB {
   project_budget_lines: ProjectBudgetLines;
   project_budget_versions: ProjectBudgetVersions;
   project_budgets: ProjectBudgets;
+  project_change_activity_impacts: ProjectChangeActivityImpacts;
+  project_change_assessments: ProjectChangeAssessments;
+  project_change_contract_impacts: ProjectChangeContractImpacts;
+  project_change_cost_impacts: ProjectChangeCostImpacts;
+  project_change_decisions: ProjectChangeDecisions;
   project_change_event_types: ProjectChangeEventTypes;
   project_change_events: ProjectChangeEvents;
+  project_change_implementations: ProjectChangeImplementations;
+  project_change_wbs_impacts: ProjectChangeWbsImpacts;
   project_collaboration_invitation_roles: ProjectCollaborationInvitationRoles;
   project_collaboration_invitations: ProjectCollaborationInvitations;
   project_cost_codes: ProjectCostCodes;
