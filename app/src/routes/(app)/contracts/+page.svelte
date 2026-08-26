@@ -6,9 +6,12 @@
 
 <section class="page-heading">
 	<div>
-		<p class="eyebrow">Package 004</p>
+		<p class="eyebrow">Commercial progression</p>
 		<h1>Contracts</h1>
-		<p>Controlled contract formation and execution evidence.</p>
+		<p>
+			Accepted customer offers progress into controlled contract formation before project
+			mobilisation.
+		</p>
 	</div>
 </section>
 
@@ -27,14 +30,22 @@
 			{:else}
 				<div class="records">
 					{#each data.contracts as contract}
-						<a class="record" href={`/contracts/${contract.publicId}`}>
+						<a
+							class="record"
+							href={contract.lifecycleStatus === 'active' && !contract.projectPublicId
+								? `/contracts/${contract.publicId}/mobilise`
+								: `/contracts/${contract.publicId}`}
+						>
 							<span
 								><strong>{contract.contractNumber}</strong><small>{contract.contractTypeName}</small
 								></span
 							>
 							<span
 								><strong>{contract.title}</strong><small
-									>{contract.projectNumber ?? 'No project'}</small
+									>{contract.projectNumber ??
+										(contract.lifecycleStatus === 'active'
+											? 'Ready for project mobilisation'
+											: 'Awaiting project mobilisation')}</small
 								></span
 							>
 							<span class="status">{contract.lifecycleStatus.replaceAll('_', ' ')}</span>
@@ -45,14 +56,18 @@
 		</section>
 
 		<aside class="stack">
-			<section class="panel">
-				<p class="eyebrow">Accepted quotations</p>
-				<h2>Awaiting project conversion</h2>
-				{#if data.acceptedQuotationsAwaitingProject.length === 0}
-					<p class="muted">No accepted quotations are waiting for project conversion.</p>
+			<section class="panel progression-panel">
+				<p class="eyebrow">Quote → contract</p>
+				<h2>Awaiting contract formation</h2>
+				<p class="muted">
+					Customer and accepted commercial context are inherited from the quotation. A project is
+					not created until the resulting contract is executed.
+				</p>
+				{#if data.acceptedQuotationsAwaitingContract.length === 0}
+					<p class="muted">No accepted quotations are waiting for contract formation.</p>
 				{:else}
 					<div class="queue">
-						{#each data.acceptedQuotationsAwaitingProject as quotation}
+						{#each data.acceptedQuotationsAwaitingContract as quotation}
 							<article>
 								<strong>{quotation.quotationNumber} · {quotation.quotationTitle}</strong>
 								<span
@@ -60,16 +75,13 @@
 										quotation.acceptedAt
 									).toLocaleDateString()}</span
 								>
-								{#if data.canConvertAcceptedQuotation}
+								{#if data.canFormContract}
 									<a
-										href={`/commercial/quotations/${encodeURIComponent(quotation.quotationPublicId)}/convert?version=${quotation.versionNumber}`}
-										>Continue to project &amp; contract</a
+										href={`/contracts/new?quotation=${encodeURIComponent(quotation.quotationPublicId)}&version=${quotation.versionNumber}`}
+										>Form contract</a
 									>
 								{:else}
-									<small class="muted"
-										>Quotation conversion, project creation and contract creation authority are
-										required.</small
-									>
+									<small class="muted">Contract-creation authority is required.</small>
 								{/if}
 							</article>
 						{/each}
@@ -77,29 +89,29 @@
 				{/if}
 			</section>
 
-			<section class="panel">
-				<p class="eyebrow">Formation queue</p>
-				<h2>Proposed projects awaiting contract</h2>
-				{#if !data.canCreate}
-					<p class="muted">Contract creation authority and active project access are required.</p>
-				{:else if data.eligibleProjects.length === 0}
+			{#if data.eligibleProjects.length > 0}
+				<section class="panel compatibility-panel">
+					<p class="eyebrow">Legacy compatibility</p>
+					<h2>Projects created before contract</h2>
 					<p class="muted">
-						No proposed projects from accepted quotations are waiting for contract formation.
+						These records were created under the previous quote→project→contract sequence. NuBlox
+						keeps them operable while new work follows quote→contract→project.
 					</p>
-				{:else}
 					<div class="queue">
 						{#each data.eligibleProjects as project}
 							<article>
 								<strong>{project.projectNumber} · {project.projectName}</strong>
 								<span>{project.customerDisplayName} · {project.quotationNumber}</span>
-								<a href={`/contracts/new?project=${encodeURIComponent(project.projectPublicId)}`}
-									>Form contract</a
-								>
+								{#if data.canCreate}
+									<a href={`/contracts/new?project=${encodeURIComponent(project.projectPublicId)}`}
+										>Form legacy contract</a
+									>
+								{/if}
 							</article>
 						{/each}
 					</div>
-				{/if}
-			</section>
+				</section>
+			{/if}
 		</aside>
 	</div>
 {/if}
@@ -116,6 +128,8 @@
 	.page-heading p {
 		margin: 0;
 		color: #666;
+		max-width: 52rem;
+		line-height: 1.5;
 	}
 	.eyebrow {
 		margin: 0;
@@ -143,6 +157,12 @@
 	}
 	.panel h2 {
 		margin: 0.3rem 0 0.8rem;
+	}
+	.progression-panel {
+		border-color: #b8c8b8;
+	}
+	.compatibility-panel {
+		background: #faf9f5;
 	}
 	.muted {
 		color: #666;

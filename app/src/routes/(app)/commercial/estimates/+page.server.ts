@@ -2,10 +2,12 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { CommercialLifecycleService } from '$lib/server/commercial/commercial-lifecycle-service';
 import {
 	CommercialService,
 	CommercialValidationError
 } from '$lib/server/commercial/commercial-service';
+import { ContractValidationError } from '$lib/server/contracts/contract-common';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -32,20 +34,18 @@ export const actions: Actions = {
 			return fail(401, { createError: 'Authentication and organisation context are required.' });
 		const data = await request.formData();
 		try {
-			const estimate = await new CommercialService(getDatabase()).createEstimate(actor, {
-				opportunityPublicId: String(data.get('opportunityPublicId') ?? ''),
-				title: String(data.get('title') ?? ''),
-				currencyCode: String(data.get('currencyCode') ?? 'GBP'),
-				notes: String(data.get('notes') ?? '')
-			});
+			const estimate = await new CommercialLifecycleService(getDatabase()).developEstimate(
+				actor,
+				String(data.get('opportunityPublicId') ?? '')
+			);
 			throw redirect(303, `/commercial/estimates/${encodeURIComponent(estimate.publicId)}`);
 		} catch (error) {
-			if (error instanceof CommercialValidationError)
+			if (error instanceof CommercialValidationError || error instanceof ContractValidationError)
 				return fail(400, { createError: error.message });
 			if (error instanceof RecordNotFoundError)
 				return fail(404, { createError: 'The selected CRM opportunity is unavailable.' });
 			if (error instanceof TenantAccessError)
-				return fail(403, { createError: 'You do not have permission to create estimates.' });
+				return fail(403, { createError: 'You do not have permission to develop estimates.' });
 			throw error;
 		}
 	}

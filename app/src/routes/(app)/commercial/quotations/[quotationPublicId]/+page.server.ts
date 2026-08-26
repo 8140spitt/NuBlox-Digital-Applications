@@ -200,7 +200,7 @@ export const actions: Actions = {
 			if (responseType === 'accepted') {
 				throw redirect(
 					303,
-					`/commercial/quotations/${encodeURIComponent(params.quotationPublicId)}/convert?version=${versionNumber}`
+					`/contracts/new?quotation=${encodeURIComponent(params.quotationPublicId)}&version=${versionNumber}`
 				);
 			}
 			throw redirect(303, `/commercial/quotations/${encodeURIComponent(params.quotationPublicId)}`);

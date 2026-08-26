@@ -2,8 +2,9 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
-import { CrmService, CrmValidationError } from '$lib/server/crm/crm-service';
+import { CrmOrganisationOnboardingService } from '$lib/server/crm/crm-organisation-onboarding-service';
 import type { CrmPartyKind, CrmPartyStatus } from '$lib/server/crm/crm-repository';
+import { CrmService, CrmValidationError } from '$lib/server/crm/crm-service';
 import { getDatabase } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -48,18 +49,34 @@ export const actions: Actions = {
 		}
 
 		try {
-			const party = await new CrmService(getDatabase()).createParty(actor, {
-				kind: rawKind,
-				honorific: String(data.get('honorific') ?? ''),
-				givenNames: String(data.get('givenNames') ?? ''),
-				familyName: String(data.get('familyName') ?? ''),
-				preferredName: String(data.get('preferredName') ?? ''),
-				legalName: String(data.get('legalName') ?? ''),
-				tradingName: String(data.get('tradingName') ?? ''),
-				primaryEmail: String(data.get('primaryEmail') ?? ''),
-				primaryPhone: String(data.get('primaryPhone') ?? ''),
-				roleCodes: data.getAll('roleCode').map(String)
-			});
+			const db = getDatabase();
+			const party =
+				rawKind === 'organisation'
+					? await new CrmOrganisationOnboardingService(db).createOrganisation(actor, {
+							legalName: String(data.get('legalName') ?? ''),
+							tradingName: String(data.get('tradingName') ?? ''),
+							organisationEmail: String(data.get('organisationEmail') ?? ''),
+							organisationPhone: String(data.get('organisationPhone') ?? ''),
+							roleCodes: data.getAll('roleCode').map(String),
+							contactHonorific: String(data.get('contactHonorific') ?? ''),
+							contactGivenNames: String(data.get('contactGivenNames') ?? ''),
+							contactFamilyName: String(data.get('contactFamilyName') ?? ''),
+							contactPreferredName: String(data.get('contactPreferredName') ?? ''),
+							contactEmail: String(data.get('contactEmail') ?? ''),
+							contactPhone: String(data.get('contactPhone') ?? ''),
+							contactJobTitle: String(data.get('contactJobTitle') ?? ''),
+							contactDepartment: String(data.get('contactDepartment') ?? '')
+						})
+					: await new CrmService(db).createParty(actor, {
+							kind: 'person',
+							honorific: String(data.get('honorific') ?? ''),
+							givenNames: String(data.get('givenNames') ?? ''),
+							familyName: String(data.get('familyName') ?? ''),
+							preferredName: String(data.get('preferredName') ?? ''),
+							primaryEmail: String(data.get('primaryEmail') ?? ''),
+							primaryPhone: String(data.get('primaryPhone') ?? ''),
+							roleCodes: data.getAll('roleCode').map(String)
+						});
 			throw redirect(303, `/crm/${encodeURIComponent(party.publicId)}`);
 		} catch (error) {
 			if (error instanceof CrmValidationError) return fail(400, { createError: error.message });

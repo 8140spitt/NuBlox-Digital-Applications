@@ -347,9 +347,9 @@ describe('CRM opportunities and activity timeline', () => {
 			roleCodes: ['prospect']
 		});
 		const replacement = await crm.createParty(actorManagerA, {
-			kind: 'person',
-			givenNames: 'Morgan',
-			familyName: 'Buyer'
+			kind: 'organisation',
+			legalName: `${PREFIX}Replacement Client`,
+			roleCodes: ['prospect']
 		});
 		const service = new CrmOpportunityService(
 			db,
@@ -397,7 +397,8 @@ describe('CRM opportunities and activity timeline', () => {
 		const crm = new CrmService(db);
 		const client = await crm.createParty(actorManagerA, {
 			kind: 'organisation',
-			legalName: `${PREFIX}Participant Client`
+			legalName: `${PREFIX}Participant Client`,
+			roleCodes: ['prospect']
 		});
 		const consultant = await crm.createParty(actorManagerA, {
 			kind: 'person',
@@ -444,7 +445,8 @@ describe('CRM opportunities and activity timeline', () => {
 		const crm = new CrmService(db);
 		const client = await crm.createParty(actorManagerA, {
 			kind: 'organisation',
-			legalName: `${PREFIX}Activity Client`
+			legalName: `${PREFIX}Activity Client`,
+			roleCodes: ['prospect']
 		});
 		const contact = await crm.createParty(actorManagerA, {
 			kind: 'person',

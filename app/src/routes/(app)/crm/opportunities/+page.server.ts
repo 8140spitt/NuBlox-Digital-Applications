@@ -2,12 +2,13 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
-import { CrmPipelineProvisioningService } from '$lib/server/crm/crm-pipeline-provisioning';
+import { CrmOpportunityClientService } from '$lib/server/crm/crm-opportunity-client-service';
 import {
 	CrmOpportunityService,
 	CrmOpportunityValidationError
 } from '$lib/server/crm/crm-opportunity-service';
 import type { OpportunityStatus } from '$lib/server/crm/crm-opportunity-repository';
+import { CrmPipelineProvisioningService } from '$lib/server/crm/crm-pipeline-provisioning';
 import { getDatabase } from '$lib/server/db/database';
 import { TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -57,7 +58,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		await new CrmPipelineProvisioningService(db).ensureDefaultPipeline(actor);
 		workspace = await service.listWorkspace(actor, filters);
 	}
-	return workspace;
+	return {
+		...workspace,
+		clientAccounts: workspace.canView
+			? await new CrmOpportunityClientService(db).listClientAccounts(actor)
+			: []
+	};
 };
 
 export const actions: Actions = {
@@ -68,16 +74,20 @@ export const actions: Actions = {
 		const data = await request.formData();
 		try {
 			const selectedStage = stageSelection(data.get('stageSelection'));
-			const opportunity = await new CrmOpportunityService(getDatabase()).createOpportunity(actor, {
-				title: String(data.get('title') ?? ''),
-				description: String(data.get('description') ?? ''),
-				pipelinePublicId: selectedStage.pipelinePublicId,
-				stageName: selectedStage.stageName,
-				estimatedValue: String(data.get('estimatedValue') ?? ''),
-				currencyCode: String(data.get('currencyCode') ?? 'GBP'),
-				expectedCloseDate: String(data.get('expectedCloseDate') ?? ''),
-				primaryPartyPublicId: String(data.get('primaryPartyPublicId') ?? '')
-			});
+			const opportunity = await new CrmOpportunityClientService(getDatabase()).createOpportunity(
+				actor,
+				{
+					title: String(data.get('title') ?? ''),
+					description: String(data.get('description') ?? ''),
+					pipelinePublicId: selectedStage.pipelinePublicId,
+					stageName: selectedStage.stageName,
+					estimatedValue: String(data.get('estimatedValue') ?? ''),
+					currencyCode: String(data.get('currencyCode') ?? 'GBP'),
+					expectedCloseDate: String(data.get('expectedCloseDate') ?? ''),
+					primaryPartyPublicId: String(data.get('clientOrganisationPublicId') ?? ''),
+					clientContactPartyPublicId: String(data.get('clientContactPartyPublicId') ?? '')
+				}
+			);
 			throw redirect(303, `/crm/opportunities/${encodeURIComponent(opportunity.publicId)}`);
 		} catch (error) {
 			if (error instanceof CrmOpportunityValidationError)

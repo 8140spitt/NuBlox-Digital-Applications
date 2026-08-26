@@ -20,6 +20,8 @@ import {
 	type OpportunityStatus
 } from './crm-opportunity-repository';
 
+const OPPORTUNITY_CUSTOMER_ROLE_CODES = new Set(['prospect', 'client']);
+
 export type OpportunityListFilters = {
 	search?: string;
 	status?: OpportunityStatus;
@@ -188,6 +190,14 @@ function directionValue(value: ActivityDirection | undefined): ActivityDirection
 	throw new CrmOpportunityValidationError('CRM activity direction is invalid.');
 }
 
+function isOpportunityCustomerParty(party: CrmPartySummary): boolean {
+	return (
+		party.status === 'active' &&
+		party.kind === 'organisation' &&
+		party.roles.some((role) => OPPORTUNITY_CUSTOMER_ROLE_CODES.has(role.code))
+	);
+}
+
 function validateOpportunity(input: OpportunityInput): ValidatedOpportunityInput {
 	return {
 		title: requiredText(input.title, 255, 'Opportunity title'),
@@ -265,6 +275,20 @@ export class CrmOpportunityService {
 		return party;
 	}
 
+	private async activeCustomerParty(
+		actor: TenantActorContext,
+		partyPublicId: string,
+		db: DatabaseExecutor
+	) {
+		const party = await this.activeParty(actor, partyPublicId, db);
+		if (!isOpportunityCustomerParty(party)) {
+			throw new CrmOpportunityValidationError(
+				'Primary customer must be an active CRM organisation classified as a prospect or client.'
+			);
+		}
+		return party;
+	}
+
 	async listWorkspace(
 		actor: TenantActorContext,
 		filters: OpportunityListFilters = {}
@@ -278,7 +302,7 @@ export class CrmOpportunityService {
 		]);
 		const canView = viewDecision.allowed;
 		const repository = new CrmOpportunityRepository(this.db);
-		const [opportunities, pipelines, partyCandidates] = canView
+		const [opportunities, pipelines, parties] = canView
 			? await Promise.all([
 					repository.listOpportunities(actor.organisationId, filters),
 					repository.listPipelines(actor.organisationId),
@@ -291,7 +315,7 @@ export class CrmOpportunityService {
 			canManageActivities: activityDecision.allowed,
 			opportunities,
 			pipelines,
-			partyCandidates,
+			partyCandidates: parties.filter(isOpportunityCustomerParty),
 			filters
 		};
 	}
@@ -334,7 +358,7 @@ export class CrmOpportunityService {
 			canManageActivities: activityDecision.allowed,
 			pipelines,
 			participants,
-			partyRoleTypes,
+			partyRoleTypes: partyRoleTypes.filter((role) => role.code !== 'client_contact'),
 			activityTypes,
 			activities,
 			partyCandidates
@@ -359,7 +383,7 @@ export class CrmOpportunityService {
 			);
 			if (!stage)
 				throw new CrmOpportunityValidationError('The selected pipeline stage is unavailable.');
-			const party = await this.activeParty(actor, validated.primaryPartyPublicId, trx);
+			const party = await this.activeCustomerParty(actor, validated.primaryPartyPublicId, trx);
 			const customerRoleTypeId = await repository.findOpportunityPartyRoleTypeId('customer');
 			if (customerRoleTypeId === null)
 				throw new Error('Required opportunity customer role type is missing.');
@@ -434,7 +458,11 @@ export class CrmOpportunityService {
 			);
 			if (!stage)
 				throw new CrmOpportunityValidationError('The selected pipeline stage is unavailable.');
-			const primaryParty = await this.activeParty(actor, validated.primaryPartyPublicId, trx);
+			const primaryParty = await this.activeCustomerParty(
+				actor,
+				validated.primaryPartyPublicId,
+				trx
+			);
 			const customerRoleTypeId = await repository.findOpportunityPartyRoleTypeId('customer');
 			if (customerRoleTypeId === null)
 				throw new Error('Required opportunity customer role type is missing.');
@@ -517,6 +545,11 @@ export class CrmOpportunityService {
 		const opportunityPublicId = publicId(input.opportunityPublicId, 'Opportunity ID');
 		const partyPublicId = publicId(input.partyPublicId, 'CRM party ID');
 		const participantRoleCode = roleCode(input.roleCode);
+		if (participantRoleCode === 'client_contact') {
+			throw new CrmOpportunityValidationError(
+				'Client contact is controlled by the opportunity client context.'
+			);
+		}
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertOpportunityManage(actor, trx);
@@ -565,6 +598,11 @@ export class CrmOpportunityService {
 		const opportunityPublicId = publicId(input.opportunityPublicId, 'Opportunity ID');
 		const partyPublicId = publicId(input.partyPublicId, 'CRM party ID');
 		const participantRoleCode = roleCode(input.roleCode);
+		if (participantRoleCode === 'client_contact') {
+			throw new CrmOpportunityValidationError(
+				'Client contact is controlled by the opportunity client context.'
+			);
+		}
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.assertActiveActor(actor, trx);
 			await this.assertOpportunityManage(actor, trx);

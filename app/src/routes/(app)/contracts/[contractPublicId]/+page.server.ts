@@ -2,6 +2,7 @@ import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { CommercialLifecycleService } from '$lib/server/commercial/commercial-lifecycle-service';
 import { ContractAmendmentService } from '$lib/server/contracts/contract-amendment-service';
 import { ContractService, ContractValidationError } from '$lib/server/contracts/contract-service';
 import { getDatabase } from '$lib/server/db/database';
@@ -43,11 +44,15 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	try {
 		const db = getDatabase();
 		const workspace = await new ContractService(db).getWorkspace(actor, params.contractPublicId);
-		const [amendments, creditControl] = await Promise.all([
+		const [amendments, creditControl, mobilisation] = await Promise.all([
 			new ContractAmendmentService(db).listForContract(actor, params.contractPublicId),
-			contractCreditControlPreview(actor, params.contractPublicId, db)
+			contractCreditControlPreview(actor, params.contractPublicId, db),
+			new CommercialLifecycleService(db).getContractMobilisationState(
+				actor,
+				params.contractPublicId
+			)
 		]);
-		return { ...workspace, amendments, creditControl };
+		return { ...workspace, amendments, creditControl, mobilisation };
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Contract not found.');
 		if (cause instanceof TenantAccessError)
@@ -199,5 +204,17 @@ export const actions: Actions = {
 			return actionFailure(cause);
 		}
 		return redirectTo(params.contractPublicId);
+	},
+	mobiliseProject: async ({ locals, params }) => {
+		const actor = actorFromLocals(locals);
+		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
+		try {
+			const project = await new CommercialLifecycleService(
+				getDatabase()
+			).mobiliseProjectFromContract(actor, params.contractPublicId);
+			throw redirect(303, `/projects/${encodeURIComponent(project.publicId)}`);
+		} catch (cause) {
+			return actionFailure(cause);
+		}
 	}
 };

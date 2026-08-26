@@ -1,5 +1,10 @@
 <script lang="ts">
 	let { data, form } = $props();
+	let clientOrganisationPublicId = $state('');
+	let selectedClient = $derived(
+		data.clientAccounts.find((account) => account.publicId === clientOrganisationPublicId) ?? null
+	);
+
 	const statusLabels: Record<string, string> = {
 		open: 'Open',
 		won: 'Won',
@@ -80,7 +85,7 @@
 							<div class="card-title">
 								<div>
 									<strong>{opportunity.title}</strong>
-									<span>{opportunity.primaryPartyDisplayName ?? 'No primary customer'}</span>
+									<span>{opportunity.primaryPartyDisplayName ?? 'No client organisation'}</span>
 								</div>
 								<span class={`status status-${opportunity.status}`}
 									>{statusLabels[opportunity.status]}</span
@@ -107,26 +112,72 @@
 				<h2>Capture prospective work</h2>
 				{#if data.pipelines.length === 0}
 					<p class="error">No active CRM pipeline is configured for this organisation.</p>
-				{:else if data.partyCandidates.length === 0}
+				{:else if data.clientAccounts.length === 0}
 					<p class="error">
-						Create an active CRM person or organisation before opening an opportunity.
+						Create an active CRM prospect or client organisation with a primary contact before
+						opening an opportunity.
 					</p>
 				{:else}
 					<form method="POST" action="?/create" class="create-form">
 						<label class="wide"
 							><span>Title</span><input name="title" required maxlength="255" /></label
 						>
-						<label class="wide"
-							><span>Primary customer</span>
-							<select name="primaryPartyPublicId" required>
-								<option value="">Choose CRM party</option>
-								{#each data.partyCandidates as party}<option value={party.publicId}
-										>{party.displayName}</option
-									>{/each}
-							</select>
-						</label>
-						<label class="wide"
-							><span>Pipeline stage</span>
+
+						<div class="client-selection wide">
+							<label>
+								<span>Client organisation</span>
+								<select
+									name="clientOrganisationPublicId"
+									required
+									bind:value={clientOrganisationPublicId}
+								>
+									<option value="">Choose client organisation</option>
+									{#each data.clientAccounts as account}
+										<option value={account.publicId}>{account.displayName}</option>
+									{/each}
+								</select>
+							</label>
+
+							<label>
+								<span>Client contact <small>optional</small></span>
+								<select name="clientContactPartyPublicId" disabled={!selectedClient}>
+									{#if selectedClient}
+										<option value="">
+											{selectedClient.primaryContactDisplayName
+												? `Use CRM primary contact — ${selectedClient.primaryContactDisplayName}`
+												: 'Use CRM primary contact'}
+										</option>
+										{#each selectedClient.contacts as contact}
+											<option value={contact.publicId}
+												>{contact.displayName}{contact.jobTitle
+													? ` · ${contact.jobTitle}`
+													: ''}{contact.isPrimaryContact ? ' · Primary' : ''}</option
+											>
+										{/each}
+									{:else}
+										<option value="">Choose client organisation first</option>
+									{/if}
+								</select>
+								<small class="field-help">
+									Leave blank to use the organisation's CRM primary contact.
+								</small>
+							</label>
+						</div>
+
+						{#if selectedClient && selectedClient.contacts.length === 0}
+							<p class="error wide">
+								This client organisation has no active contacts. Add a CRM contact before creating
+								the opportunity.
+							</p>
+						{:else if selectedClient && !selectedClient.primaryContactPublicId}
+							<p class="warning wide">
+								This legacy client has no CRM primary contact. Choose a contact explicitly, or set
+								its primary contact in CRM.
+							</p>
+						{/if}
+
+						<label class="wide">
+							<span>Pipeline stage</span>
 							<select name="stageSelection" required>
 								<option value="">Choose stage</option>
 								{#each data.pipelines as pipeline}
@@ -160,7 +211,9 @@
 							></textarea></label
 						>
 						{#if form?.createError}<p class="error wide" role="alert">{form.createError}</p>{/if}
-						<button type="submit">Create opportunity</button>
+						<button type="submit" disabled={selectedClient?.contacts.length === 0}
+							>Create opportunity</button
+						>
 					</form>
 				{/if}
 			</section>
@@ -242,6 +295,11 @@
 		font-size: 0.84rem;
 		font-weight: 650;
 	}
+	label small,
+	.field-help {
+		color: #777;
+		font-weight: 500;
+	}
 	input,
 	select,
 	textarea {
@@ -251,6 +309,11 @@
 		border-radius: 0.45rem;
 		padding: 0.62rem;
 		background: white;
+	}
+	select:disabled,
+	button:disabled {
+		opacity: 0.55;
+		cursor: not-allowed;
 	}
 	textarea {
 		resize: vertical;
@@ -334,17 +397,29 @@
 	.empty h2 {
 		margin: 0.35rem 0;
 	}
-	.create-form {
+	.create-form,
+	.client-selection {
 		display: grid;
 		grid-template-columns: 1fr 1fr;
 		gap: 0.75rem;
+	}
+	.create-form {
 		margin-top: 1rem;
+	}
+	.client-selection {
+		padding: 0.8rem;
+		border: 1px solid #e0e0da;
+		border-radius: 0.55rem;
+		background: #fafaf7;
 	}
 	.wide {
 		grid-column: 1 / -1;
 	}
 	.error {
 		color: #941c1c;
+	}
+	.warning {
+		color: #72550d;
 	}
 	.empty {
 		padding: 2rem 0.5rem;
@@ -358,7 +433,8 @@
 	}
 	@media (max-width: 620px) {
 		.filters,
-		.create-form {
+		.create-form,
+		.client-selection {
 			grid-template-columns: 1fr;
 		}
 		.wide {
