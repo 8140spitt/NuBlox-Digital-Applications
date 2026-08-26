@@ -5,8 +5,8 @@
 		data.customerOptions.find((customer) => customer.publicId === customerPartyPublicId) ?? null
 	);
 	const currentClientContactPublicId =
-		data.participants.find((participant) => participant.roleCode === 'client_contact')?.partyPublicId ??
-		'';
+		data.participants.find((participant) => participant.roleCode === 'client_contact')
+			?.partyPublicId ?? '';
 
 	const statusLabels: Record<string, string> = {
 		open: 'Open',
@@ -220,9 +220,9 @@
 										selected={customerPartyPublicId === data.opportunity.primaryPartyPublicId &&
 											contact.publicId === currentClientContactPublicId}
 									>
-										{contact.displayName}{contact.jobTitle ? ` · ${contact.jobTitle}` : ''}{contact.isPrimaryContact
-											? ' · Primary'
-											: ''}
+										{contact.displayName}{contact.jobTitle
+											? ` · ${contact.jobTitle}`
+											: ''}{contact.isPrimaryContact ? ' · Primary' : ''}
 									</option>
 								{/each}
 							</select>
@@ -310,8 +310,8 @@
 				{#if form?.updateError}<p class="error wide" role="alert">{form.updateError}</p>{/if}
 				<button
 					type="submit"
-					disabled={selectedCustomer?.kind === 'organisation' && selectedCustomer.contacts.length === 0}
-					>Save opportunity</button
+					disabled={selectedCustomer?.kind === 'organisation' &&
+						selectedCustomer.contacts.length === 0}>Save opportunity</button
 				>
 			</form>
 		{:else}

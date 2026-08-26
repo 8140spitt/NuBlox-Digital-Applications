@@ -272,10 +272,9 @@ describe('CRM private person opportunity customers', () => {
 			isPrimary: 0
 		});
 
-		const commercialCandidate = await new CommercialRepository(db).findOpportunityCandidateByPublicId(
-			organisationId,
-			opportunity.publicId
-		);
+		const commercialCandidate = await new CommercialRepository(
+			db
+		).findOpportunityCandidateByPublicId(organisationId, opportunity.publicId);
 		expect(commercialCandidate?.customerPublicId).toBe(customerPublicId);
 		expect(commercialCandidate?.primaryContactPartyId).toBe(commercialCandidate?.customerPartyId);
 

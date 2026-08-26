@@ -47,8 +47,7 @@ export type OpportunityWithClientUpdateInput = OpportunityWithClientInput & {
 
 function isCustomerParty(party: CrmPartySummary): boolean {
 	return (
-		party.status === 'active' &&
-		party.roles.some((role) => CUSTOMER_ROLE_CODES.has(role.code))
+		party.status === 'active' && party.roles.some((role) => CUSTOMER_ROLE_CODES.has(role.code))
 	);
 }
 

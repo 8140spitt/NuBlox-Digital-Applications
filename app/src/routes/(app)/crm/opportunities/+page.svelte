@@ -153,9 +153,9 @@
 										</option>
 										{#each selectedCustomer.contacts as contact}
 											<option value={contact.publicId}>
-												{contact.displayName}{contact.jobTitle ? ` · ${contact.jobTitle}` : ''}{contact.isPrimaryContact
-													? ' · Primary'
-													: ''}
+												{contact.displayName}{contact.jobTitle
+													? ` · ${contact.jobTitle}`
+													: ''}{contact.isPrimaryContact ? ' · Primary' : ''}
 											</option>
 										{/each}
 									</select>
@@ -171,7 +171,9 @@
 									</span>
 								</div>
 							{:else}
-								<div class="person-context muted">Choose a customer to set the contact context.</div>
+								<div class="person-context muted">
+									Choose a customer to set the contact context.
+								</div>
 							{/if}
 						</div>
 
@@ -223,8 +225,8 @@
 						{#if form?.createError}<p class="error wide" role="alert">{form.createError}</p>{/if}
 						<button
 							type="submit"
-							disabled={selectedCustomer?.kind === 'organisation' && selectedCustomer.contacts.length === 0}
-							>Create opportunity</button
+							disabled={selectedCustomer?.kind === 'organisation' &&
+								selectedCustomer.contacts.length === 0}>Create opportunity</button
 						>
 					</form>
 				{/if}
