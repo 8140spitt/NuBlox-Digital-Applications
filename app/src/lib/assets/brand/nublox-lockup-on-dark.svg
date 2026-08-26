@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 450 100" role="img" aria-labelledby="title desc">
+  <title id="title">NuBlox</title>
+  <desc id="desc">NuBlox folded ribbon N with a white NuBlox wordmark for dark backgrounds.</desc>
+  <svg x="0" y="5" width="104" height="90" viewBox="0 0 540 470" overflow="visible">
+    <defs>
+      <linearGradient id="leftStem" x1="55" y1="18" x2="145" y2="452" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#086FFF"/><stop offset="0.40" stop-color="#087DFB"/><stop offset="0.73" stop-color="#0863F7"/><stop offset="1" stop-color="#073EF1"/></linearGradient>
+      <linearGradient id="rightStem" x1="445" y1="18" x2="455" y2="452" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1ED8EF"/><stop offset="0.30" stop-color="#18BDF0"/><stop offset="0.63" stop-color="#0A82F4"/><stop offset="1" stop-color="#084AF2"/></linearGradient>
+      <linearGradient id="ribbon" x1="60" y1="22" x2="500" y2="448" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0872FF"/><stop offset="0.21" stop-color="#1198FC"/><stop offset="0.44" stop-color="#20D0EF"/><stop offset="0.60" stop-color="#18B9F3"/><stop offset="0.79" stop-color="#0A7EF8"/><stop offset="1" stop-color="#0748F2"/></linearGradient>
+      <linearGradient id="ribbonDepth" x1="110" y1="95" x2="500" y2="448" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#0D49ED" stop-opacity="0.20"/><stop offset="0.34" stop-color="#0D5EF0" stop-opacity="0.03"/><stop offset="0.72" stop-color="#0A4BE9" stop-opacity="0.05"/><stop offset="1" stop-color="#052FCB" stop-opacity="0.19"/></linearGradient>
+      <radialGradient id="leftShadow" cx="0" cy="0" r="1" gradientTransform="translate(166 231) rotate(118) scale(56 43)" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#00113D" stop-opacity="0.82"/><stop offset="0.42" stop-color="#04246E" stop-opacity="0.55"/><stop offset="1" stop-color="#0758C9" stop-opacity="0"/></radialGradient>
+      <linearGradient id="rightShadow" x1="376" y1="187" x2="428" y2="276" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#00307D" stop-opacity="0"/><stop offset="0.46" stop-color="#00133F" stop-opacity="0.58"/><stop offset="1" stop-color="#0758C8" stop-opacity="0"/></linearGradient>
+      <filter id="blur8" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="5.5"/></filter>
+      <clipPath id="leftClip"><path d="M38 18H180V434Q180 452 162 452H38Q18 452 18 432V38Q18 18 38 18Z"/></clipPath>
+      <clipPath id="rightClip"><path d="M392 18H502Q522 18 522 38V432Q522 452 502 452H392Q374 452 374 434V38Q374 18 392 18Z"/></clipPath>
+      <clipPath id="ribbonClip"><path d="M38 18H184L522 356V432Q522 452 502 452H390L18 62V38Q18 18 38 18Z"/></clipPath>
+    </defs>
+    <path d="M38 18H180V434Q180 452 162 452H38Q18 452 18 432V38Q18 18 38 18Z" fill="url(#leftStem)"/>
+    <path d="M392 18H502Q522 18 522 38V432Q522 452 502 452H392Q374 452 374 434V38Q374 18 392 18Z" fill="url(#rightStem)"/>
+    <path d="M125 218C151 217 175 222 188 241C184 256 180 271 178 289C166 258 150 239 125 228Z" fill="url(#leftShadow)" filter="url(#blur8)" clip-path="url(#leftClip)"/>
+    <path d="M370 178C392 210 411 236 439 266C424 277 410 287 396 300C386 251 378 215 370 178Z" fill="url(#rightShadow)" filter="url(#blur8)" clip-path="url(#rightClip)"/>
+    <path d="M38 18H184L522 356V432Q522 452 502 452H390L18 62V38Q18 18 38 18Z" fill="url(#ribbon)"/>
+    <path d="M18 62L390 452H502Q516 452 522 441V418L171 67L38 18H18V62Z" fill="url(#ribbonDepth)" opacity="0.48" clip-path="url(#ribbonClip)"/>
+  </svg>
+  <text x="122" y="68" fill="#FFFFFF" font-family="Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="54" font-weight="750" letter-spacing="-2">NuBlox</text>
+</svg>

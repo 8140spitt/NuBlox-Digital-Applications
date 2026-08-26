@@ -1,0 +1,30 @@
+:root {
+	/* NuBlox master-brand tokens. Keep semantic workflow colours separate. */
+	--nb-ink: #07182e;
+	--nb-ink-raised: #0d2749;
+	--nb-blue: #146ef5;
+	--nb-blue-strong: #0b5dde;
+	--nb-cyan: #20b8d8;
+	--nb-cloud: #f7f9fc;
+	--nb-white: #ffffff;
+	--nb-charcoal: #1f2937;
+	--nb-slate: #64748b;
+	--nb-text: #172033;
+	--nb-text-muted: #667085;
+	--nb-border: #dfe4ec;
+	--nb-border-strong: #c8d0dc;
+	--nb-surface: #ffffff;
+	--nb-surface-muted: #f3f6fa;
+	--nb-focus: #146ef5;
+	--nb-brand-gradient: linear-gradient(135deg, #146ef5 0%, #0b7bff 48%, #20b8d8 100%);
+	--nb-brand-gradient-dark: linear-gradient(135deg, #0d2749 0%, #07182e 70%);
+	--nb-font-sans:
+		Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+	--nb-radius-sm: 0.5rem;
+	--nb-radius-md: 0.75rem;
+	--nb-radius-lg: 1rem;
+	--nb-radius-xl: 1.35rem;
+	--nb-shadow-sm: 0 1px 2px rgb(7 24 46 / 0.06), 0 1px 3px rgb(7 24 46 / 0.08);
+	--nb-shadow-md: 0 12px 32px rgb(7 24 46 / 0.12);
+	--nb-shadow-lg: 0 24px 64px rgb(7 24 46 / 0.16);
+}

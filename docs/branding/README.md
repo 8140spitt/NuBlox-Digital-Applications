@@ -1,6 +1,6 @@
 # NuBlox Branding
 
-This directory contains the working corporate and master-brand definition for NuBlox.
+This directory contains the corporate, master-brand and digital implementation definition for NuBlox.
 
 ## Brand documents
 
@@ -12,50 +12,55 @@ This directory contains the working corporate and master-brand definition for Nu
 6. [`05-logo-concept-directions.md`](05-logo-concept-directions.md) — first-round visual identity territories.
 7. [`06-logo-concept-evaluation.md`](06-logo-concept-evaluation.md) — first-round evaluation and selected refinement direction.
 8. [`07-selected-identity-direction.md`](07-selected-identity-direction.md) — selected Modular N identity system, wordmark principles, colour shortlist and second-round design requirements.
+9. [`08-digital-brand-implementation.md`](08-digital-brand-implementation.md) — production SVG assets, Svelte brand components, token system and bitmap-migration policy.
 
 ## Current identity direction
 
-The selected second-round identity direction is:
+The current NuBlox digital identity is:
 
 > **Modular N + precision NuBlox wordmark + restrained technical-blue visual system.**
 
-The modular symbol should express connected operating capability without becoming a literal block/cube logo. The wordmark should remain mature, highly legible and suitable for serious B2B software.
+The mark has now moved from generated concept artwork into controlled SVG and Svelte geometry. The public website header/hero are also implemented as semantic Svelte/CSS components rather than flattened raster mockups.
 
-The current generated concept artwork remains exploratory. No generated concept image is a production logo asset.
+## Production colour tokens
 
-## Current lead colour territory
-
-The second-round application tests use a working Technical Blue palette:
+The current digital implementation uses:
 
 - **NuBlox Ink:** `#07182E`
 - **NuBlox Blue:** `#146EF5`
 - **NuBlox Cyan:** `#20B8D8`
-- **Cloud:** `#F7F9FC`
+- **NuBlox Cloud:** `#F7F9FC`
 - **White:** `#FFFFFF`
 
-These are concept values only and are not yet production design tokens.
+Canonical tokens live in `app/src/lib/styles/brand.css`.
 
-## Next visual gate
+## Production implementation
 
-The next round should compare three executions of the selected modular-N strategy:
+### Vector masters
 
-1. **Continuous Modular N** — strongest simplicity and small-size clarity;
-2. **Negative-space Modular N** — strongest proprietary silhouette; and
-3. **Interlocking Modular N** — strongest visible expression of modular connection.
+`app/src/lib/assets/brand/`
 
-Each should be presented in monochrome, horizontal lockup, app-icon, favicon, `NuBlox Projects` lockup, application-header and website-header contexts.
+### Svelte brand components
 
-The objective is to select the final symbol construction before final logo geometry, colour and production assets are approved.
+`app/src/lib/components/brand/`
+
+### Public implementation route
+
+`/web`
+
+The historical `.webp` concept assets are retained temporarily as references. New production code must use SVG/Svelte/CSS rather than introduce new dependencies on those raster compositions.
+
+## Current implementation gate
+
+The remaining brand-engineering work is to migrate any outstanding runtime `.webp` identity imports—particularly the authenticated application shell—to the new `NuBloxLockup` component, then quarantine/remove the legacy bitmap identity files once no runtime references remain.
 
 ## Brand governance
 
-Before public adoption, the final identity must be:
+Before broad public adoption, the final identity must still be:
 
-- rebuilt as controlled vector geometry;
-- tested in monochrome;
-- tested at favicon/application-icon sizes;
-- tested in product and website contexts;
-- reviewed for accessibility;
-- reviewed for visual similarity and ownability;
+- reviewed at small icon sizes and in monochrome;
+- reviewed across product and website contexts;
+- checked for accessibility;
+- checked for visual similarity/ownability;
 - subject to appropriate trademark/legal clearance; and
-- exported through a controlled asset pipeline.
+- maintained through the controlled SVG/component/token pipeline.
