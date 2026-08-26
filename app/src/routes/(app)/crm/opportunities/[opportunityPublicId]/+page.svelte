@@ -1,9 +1,6 @@
 <script lang="ts">
 	let { data, form } = $props();
-	let customerPartyPublicId = $state('');
-	$effect(() => {
-		customerPartyPublicId = data.opportunity.primaryPartyPublicId ?? '';
-	});
+	let customerPartyPublicId = $derived(data.opportunity.primaryPartyPublicId ?? '');
 	let selectedCustomer = $derived(
 		data.customerOptions.find((customer) => customer.publicId === customerPartyPublicId) ?? null
 	);
