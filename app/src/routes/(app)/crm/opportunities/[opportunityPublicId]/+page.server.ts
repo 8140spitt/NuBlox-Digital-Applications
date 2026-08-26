@@ -4,6 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { CommercialLifecycleService } from '$lib/server/commercial/commercial-lifecycle-service';
 import { ContractValidationError } from '$lib/server/contracts/contract-common';
+import { CrmOpportunityClientService } from '$lib/server/crm/crm-opportunity-client-service';
 import {
 	CrmOpportunityService,
 	CrmOpportunityValidationError
@@ -66,11 +67,12 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
 		const db = getDatabase();
-		const [workspace, commercialJourney] = await Promise.all([
+		const [workspace, commercialJourney, customerOptions] = await Promise.all([
 			new CrmOpportunityService(db).getWorkspace(actor, params.opportunityPublicId),
-			new CommercialLifecycleService(db).getOpportunityJourney(actor, params.opportunityPublicId)
+			new CommercialLifecycleService(db).getOpportunityJourney(actor, params.opportunityPublicId),
+			new CrmOpportunityClientService(db).listClientAccounts(actor)
 		]);
-		return { ...workspace, commercialJourney };
+		return { ...workspace, commercialJourney, customerOptions };
 	} catch (error) {
 		if (error instanceof RecordNotFoundError) throw httpError(404, 'CRM opportunity not found.');
 		if (error instanceof TenantAccessError) throw httpError(403, 'CRM viewing is not permitted.');
@@ -103,7 +105,7 @@ export const actions: Actions = {
 		const data = await request.formData();
 		try {
 			const selectedStage = stageSelection(data.get('stageSelection'));
-			await new CrmOpportunityService(getDatabase()).updateOpportunity(actor, {
+			await new CrmOpportunityClientService(getDatabase()).updateOpportunity(actor, {
 				opportunityPublicId: params.opportunityPublicId,
 				title: String(data.get('title') ?? ''),
 				description: String(data.get('description') ?? ''),
@@ -112,7 +114,10 @@ export const actions: Actions = {
 				estimatedValue: String(data.get('estimatedValue') ?? ''),
 				currencyCode: String(data.get('currencyCode') ?? 'GBP'),
 				expectedCloseDate: String(data.get('expectedCloseDate') ?? ''),
-				primaryPartyPublicId: String(data.get('primaryPartyPublicId') ?? ''),
+				primaryPartyPublicId: String(
+					data.get('customerPartyPublicId') ?? data.get('primaryPartyPublicId') ?? ''
+				),
+				clientContactPartyPublicId: String(data.get('clientContactPartyPublicId') ?? ''),
 				status: statusValue(data.get('status'))
 			});
 			throw redirect(303, `/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}`);
