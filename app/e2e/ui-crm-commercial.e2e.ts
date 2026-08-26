@@ -47,7 +47,7 @@ test('owner creates an opportunity and estimate through the browser', async ({ p
 	await page.goto('/crm/opportunities');
 
 	await page.getByLabel('Title').fill('E2E Office Refurbishment');
-	await page.getByLabel('Client organisation').selectOption({ label: 'E2E Customer' });
+	await page.getByLabel('Customer').selectOption({ label: 'E2E Customer · Organisation' });
 	await expect(page.getByLabel(/Client contact/)).toContainText('Use CRM primary contact');
 	await page.getByLabel('Pipeline stage').selectOption({ index: 1 });
 	await page.getByLabel('Estimated value').fill('125000.00');
