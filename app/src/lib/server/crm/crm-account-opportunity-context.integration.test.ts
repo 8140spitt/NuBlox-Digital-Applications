@@ -207,6 +207,14 @@ beforeAll(async () => {
 		isPrimaryContact: false
 	});
 	secondaryContactPublicId = secondary.publicId;
+	await new CrmService(db).updateParty(actor, {
+		partyPublicId: secondary.publicId,
+		status: 'active',
+		givenNames: 'Sam',
+		familyName: 'Estimator',
+		primaryEmail: 'sam@client.example.test',
+		roleCodes: ['client']
+	});
 
 	const supplier = await onboarding.createOrganisation(actor, {
 		legalName: `${PREFIX}Supplier Ltd`,
@@ -218,8 +226,15 @@ beforeAll(async () => {
 
 	await new CrmPipelineProvisioningService(db).ensureDefaultPipeline(actor);
 	const opportunityWorkspace = await new CrmOpportunityClientService(db).listClientAccounts(actor);
-	expect(opportunityWorkspace.map((account) => account.publicId)).toContain(clientPublicId);
-	expect(opportunityWorkspace.map((account) => account.publicId)).not.toContain(supplierPublicId);
+	const customerIds = opportunityWorkspace.map((account) => account.publicId);
+	expect(customerIds).toContain(clientPublicId);
+	expect(customerIds).not.toContain(supplierPublicId);
+	expect(customerIds).not.toContain(secondaryContactPublicId);
+	expect(
+		opportunityWorkspace
+			.find((account) => account.publicId === clientPublicId)
+			?.contacts.map((contact) => contact.publicId)
+	).toContain(secondaryContactPublicId);
 	const pipelines = await db
 		.selectFrom('crm_pipelines as pipeline')
 		.innerJoin('crm_pipeline_stages as stage', (join) =>
@@ -348,6 +363,16 @@ describe('CRM organisation and opportunity client context', () => {
 			.where('role.code', '=', 'client_contact')
 			.executeTakeFirstOrThrow();
 		expect(selectedContact.partyPublicId).toBe(secondaryContactPublicId);
+
+		await expect(
+			service.createOpportunity(actor, {
+				title: `${PREFIX}Contact cannot become customer`,
+				pipelinePublicId,
+				stageName,
+				currencyCode: 'GBP',
+				primaryPartyPublicId: secondaryContactPublicId
+			})
+		).rejects.toBeInstanceOf(CrmOpportunityValidationError);
 
 		await expect(
 			service.createOpportunity(actor, {

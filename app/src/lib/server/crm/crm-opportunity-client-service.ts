@@ -153,12 +153,32 @@ export class CrmOpportunityClientService {
 		}
 	}
 
+	private async isStandalonePrivatePerson(
+		organisationId: string,
+		party: CrmPartySummary,
+		repository: CrmRepository
+	): Promise<boolean> {
+		if (party.kind !== 'person') return false;
+		const affiliations = await repository.listPersonAffiliations(organisationId, party.id);
+		return affiliations.length === 0;
+	}
+
 	async listClientAccounts(actor: TenantActorContext): Promise<OpportunityClientAccountOption[]> {
 		await this.requireView(actor);
 		const repository = new CrmRepository(this.db);
-		const customers = (
+		const roleQualified = (
 			await repository.listParties(actor.organisationId, { status: 'active' })
 		).filter(isCustomerParty);
+		const customers: CrmPartySummary[] = [];
+		for (const party of roleQualified) {
+			if (party.kind === 'organisation') {
+				customers.push(party);
+				continue;
+			}
+			if (await this.isStandalonePrivatePerson(actor.organisationId, party, repository)) {
+				customers.push(party);
+			}
+		}
 
 		return Promise.all(
 			customers.map(async (customer) => {
@@ -204,12 +224,17 @@ export class CrmOpportunityClientService {
 		const customer = await repository.findPartyByPublicId(actor.organisationId, customerPublicId);
 		if (!customer || !isCustomerParty(customer)) {
 			throw new CrmOpportunityValidationError(
-				'Customer must be an active CRM prospect or client, either an organisation or a private person.'
+				'Customer must be an active CRM prospect or client organisation, or a standalone private person.'
 			);
 		}
 
 		const explicitContactPublicId = contactPublicId?.trim() || null;
 		if (customer.kind === 'person') {
+			if (!(await this.isStandalonePrivatePerson(actor.organisationId, customer, repository))) {
+				throw new CrmOpportunityValidationError(
+					'An organisation contact cannot be the opportunity customer. Select the organisation as the customer and choose the person as its client contact.'
+				);
+			}
 			if (explicitContactPublicId && explicitContactPublicId !== customer.publicId) {
 				throw new CrmOpportunityValidationError(
 					'Private person customers do not use a separate client contact.'
