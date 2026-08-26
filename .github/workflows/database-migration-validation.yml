@@ -20,14 +20,35 @@ on:
       - 'app/e2e/**'
       - 'app/src/**'
       - '.github/workflows/database-migration-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'database/migrations/**'
+      - 'app/package.json'
+      - 'app/pnpm-lock.yaml'
+      - 'app/.kysely-codegenrc.json'
+      - 'app/.kysely-collections-codegenrc.json'
+      - 'app/.kysely-accounting-codegenrc.json'
+      - 'app/.kysely-accounts-payable-codegenrc.json'
+      - 'app/.kysely-project-controls-codegenrc.json'
+      - 'app/.prettierignore'
+      - 'app/eslint.config.js'
+      - 'app/playwright.config.ts'
+      - 'app/prettier.config.js'
+      - 'app/vite.config.ts'
+      - 'app/vitest.integration.config.ts'
+      - 'app/e2e/**'
+      - 'app/src/**'
+      - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  format-and-regenerate:
-    name: Format slice and regenerate database types
+  complete-system-validation:
+    name: Database, integration, quality, build and browser validation
     runs-on: ubuntu-latest
 
     services:
@@ -52,9 +73,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: feat/project-controlled-change
-          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
         with:
@@ -71,26 +89,62 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
+      - name: Audit production dependencies
+        working-directory: app
+        run: pnpm audit --prod --audit-level moderate
+
+      - name: Run formatting and lint checks
+        working-directory: app
+        run: pnpm lint
+
       - name: Apply authoritative migration stream
         working-directory: app
-        run: pnpm db:migrate
+        run: |
+          pnpm db:migrate
+          pnpm db:status
 
-      - name: Apply canonical Prettier formatting
-        working-directory: app
-        run: pnpm exec prettier --write e2e/project-change.e2e.ts src/lib/server/projects/project-change-service.ts src/lib/server/projects/project-change.integration.test.ts 'src/routes/(app)/projects/[projectPublicId]/changes/+page.server.ts' 'src/routes/(app)/projects/[projectPublicId]/changes/+page.svelte'
+      - name: Verify migrated application structure
+        env:
+          MYSQL_CONTAINER_ID: ${{ job.services.mysql.id }}
+        run: |
+          table_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_type='BASE TABLE' AND table_name <> 'schema_migrations';")
+          fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
+          check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
+          echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
+          test "$table_count" = '423'
+          test "$fk_count" = '995'
+          test "$check_count" = '602'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
         run: pnpm db:types
 
-      - name: Commit canonical generated output
-        run: |
-          if git diff --quiet; then
-            echo "No generated changes to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app/e2e/project-change.e2e.ts app/src/lib/server/projects/project-change-service.ts app/src/lib/server/projects/project-change.integration.test.ts 'app/src/routes/(app)/projects/[projectPublicId]/changes/+page.server.ts' 'app/src/routes/(app)/projects/[projectPublicId]/changes/+page.svelte' app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts app/src/lib/server/db/generated/project-controls.d.ts
-          git commit -m "chore(projects): format change control and regenerate types"
-          git push origin HEAD:feat/project-controlled-change
+      - name: Verify generated types are committed
+        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts app/src/lib/server/db/generated/project-controls.d.ts
+
+      - name: Run real-MySQL integration suite
+        working-directory: app
+        run: pnpm test:integration
+
+      - name: Type-check SvelteKit application
+        working-directory: app
+        run: pnpm check
+
+      - name: Install Chromium for component and browser validation
+        working-directory: app
+        run: pnpm exec playwright install chromium
+
+      - name: Run unit and component tests
+        working-directory: app
+        run: pnpm test:unit
+
+      - name: Verify validation leaves no tracked-file drift
+        run: git diff --exit-code
+
+      - name: Build production SvelteKit application
+        working-directory: app
+        run: pnpm build
+
+      - name: Run Playwright browser E2E suite
+        working-directory: app
+        run: pnpm exec playwright test
