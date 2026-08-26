@@ -93,7 +93,7 @@ test('owner governs a project change from identification to closure', async ({ p
 		.getByLabel('Rationale')
 		.fill('Proceed to preserve client value and coordinate the revised technical solution.');
 	await decisionForm
-		.getByLabel('Conditions')
+		.getByRole('textbox', { name: 'Conditions' })
 		.fill('Revised information must be issued before installation and commercial change recorded.');
 	await decisionForm.getByRole('button', { name: 'Record decision' }).click();
 	await expect(page.getByText('accepted', { exact: true }).first()).toBeVisible();
