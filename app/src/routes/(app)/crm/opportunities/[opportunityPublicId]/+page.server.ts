@@ -105,6 +105,21 @@ export const actions: Actions = {
 		const data = await request.formData();
 		try {
 			const selectedStage = stageSelection(data.get('stageSelection'));
+			const customerPartyPublicId = String(
+				data.get('customerPartyPublicId') ?? data.get('primaryPartyPublicId') ?? ''
+			);
+			let clientContactPartyPublicId = String(data.get('clientContactPartyPublicId') ?? '');
+			if (!data.has('clientContactPartyPublicId')) {
+				const workspace = await new CrmOpportunityService(getDatabase()).getWorkspace(
+					actor,
+					params.opportunityPublicId
+				);
+				if (workspace.opportunity.primaryPartyPublicId === customerPartyPublicId) {
+					clientContactPartyPublicId =
+						workspace.participants.find((participant) => participant.roleCode === 'client_contact')
+							?.partyPublicId ?? '';
+				}
+			}
 			await new CrmOpportunityClientService(getDatabase()).updateOpportunity(actor, {
 				opportunityPublicId: params.opportunityPublicId,
 				title: String(data.get('title') ?? ''),
@@ -114,10 +129,8 @@ export const actions: Actions = {
 				estimatedValue: String(data.get('estimatedValue') ?? ''),
 				currencyCode: String(data.get('currencyCode') ?? 'GBP'),
 				expectedCloseDate: String(data.get('expectedCloseDate') ?? ''),
-				primaryPartyPublicId: String(
-					data.get('customerPartyPublicId') ?? data.get('primaryPartyPublicId') ?? ''
-				),
-				clientContactPartyPublicId: String(data.get('clientContactPartyPublicId') ?? ''),
+				primaryPartyPublicId: customerPartyPublicId,
+				clientContactPartyPublicId,
 				status: statusValue(data.get('status'))
 			});
 			throw redirect(303, `/crm/opportunities/${encodeURIComponent(params.opportunityPublicId)}`);
