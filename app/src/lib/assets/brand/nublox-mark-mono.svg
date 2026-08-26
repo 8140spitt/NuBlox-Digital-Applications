@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="90 80 840 840" role="img" aria-labelledby="title desc">
+  <title id="title">NuBlox monochrome mark</title>
+  <desc id="desc">A monochrome NuBlox folded ribbon N.</desc>
+  <g fill="#07182E">
+    <rect x="150" y="130" width="260" height="740"/>
+    <rect x="670" y="130" width="190" height="740"/>
+    <path d="M150 130H410L860 580V870H650L335 545L150 360Z"/>
+  </g>
+</svg>
