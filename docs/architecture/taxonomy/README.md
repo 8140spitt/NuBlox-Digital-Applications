@@ -26,7 +26,7 @@ Canonical shards:
 
 The taxonomy sits **above business processes but beside, not inside, the capability taxonomy**.
 
-It answers **what work an enterprise performs**. The 19 native capability domains answer **what NuBlox capability owns/supports that work**. Construction lifecycle, careers, organisation roles, project roles and permissions are separate dimensions.
+It answers **what work an enterprise performs**. The 19 native capability domains answer **what NuBlox capability owns/supports that work**. Construction lifecycle, careers, functional roles, job profiles, organisation positions, organisation access roles, project roles and permissions are separate dimensions.
 
 Mappings from an enterprise activity should ultimately identify:
 
@@ -42,6 +42,18 @@ Mappings from an enterprise activity should ultimately identify:
 
 Those mappings must be governed additions. They must not be inferred simply to fill a matrix.
 
+## Functional role and job architecture
+
+The enterprise taxonomy is also the source-work catalogue for the adjacent [`../job-architecture/`](../job-architecture/) layer.
+
+That layer introduces a further governed distinction:
+
+**Enterprise Function → Functional Role → Job Profile → Organisation Position → Person**
+
+A functional role bundles coherent enterprise work and accountability. A job profile composes one or more functional roles into a reusable employable job. An organisation position is a tenant-specific instance of a job profile. Careers and access-control roles remain separate concepts.
+
+The candidate generator uses the L2/L3 taxonomy as traceable source evidence, but generated role/job mappings remain `candidate` until curated and approved.
+
 ## World-Class rebaseline relationship
 
 The taxonomy is a **coverage and operating-model catalogue, not the product delivery backlog**.
@@ -52,7 +64,7 @@ This prevents NuBlox from confusing broad enterprise coverage with the order in 
 
 The governing distinction is:
 
-**Enterprise Function ≠ Capability Domain ≠ Value Stream ≠ Lifecycle Stage ≠ Workspace**
+**Enterprise Function ≠ Capability Domain ≠ Value Stream ≠ Lifecycle Stage ≠ Workspace ≠ Functional Role ≠ Job Profile**
 
 See [`../../world-class/02-enterprise-operating-model.md`](../../world-class/02-enterprise-operating-model.md).
 
