@@ -42,6 +42,7 @@ See [07-world-class-baseline.md](07-world-class-baseline.md) and [10-capability-
 | --- | --- |
 | Product ambition, value streams and delivery priorities | this `docs/world-class/` suite |
 | Bottom-up architecture and invariants | [`../architecture/bottom-up/README.md`](../architecture/bottom-up/README.md) |
+| Target-state market/category breadth | [`../architecture/bottom-up/platform-coverage-contract.md`](../architecture/bottom-up/platform-coverage-contract.md) |
 | Construction and Built Environment domain model | [`../construction-and-built-environment.md`](../construction-and-built-environment.md) |
 | Enterprise work taxonomy | [`../architecture/taxonomy/README.md`](../architecture/taxonomy/README.md) and its JSON shards |
 | Native capability ownership | Layer 6 and `app/src/lib/navigation/capability-registry.ts` |
