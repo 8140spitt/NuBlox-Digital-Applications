@@ -13,6 +13,7 @@ import {
 } from '$lib/navigation/app-navigation';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
+import { ensureInformationStandardRoleDefaults } from '$lib/server/information/information-bootstrap';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { NotificationService } from '$lib/server/notifications/notification-service';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
@@ -51,7 +52,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	};
 	await Promise.all([
 		ensureProjectRidaStandardRoleDefaults(db, locals.tenant.organisationId),
-		ensureProjectChangeStandardRoleDefaults(db, locals.tenant.organisationId)
+		ensureProjectChangeStandardRoleDefaults(db, locals.tenant.organisationId),
+		ensureInformationStandardRoleDefaults(db, locals.tenant.organisationId)
 	]);
 	const [organisation, allowedPermissionKeys] = await Promise.all([
 		new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
@@ -101,6 +103,15 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				};
 				const ridaIndex = links.findIndex((link) => link.id === 'rida');
 				links.splice(ridaIndex >= 0 ? ridaIndex + 1 : links.length, 0, changeLink);
+			}
+			if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('information.'))) {
+				const informationLink = {
+					id: 'information',
+					label: 'Information',
+					href: `/projects/${encodeURIComponent(workspace.project.publicId)}/information`
+				};
+				const changeIndex = links.findIndex((link) => link.id === 'change');
+				links.splice(changeIndex >= 0 ? changeIndex + 1 : links.length, 0, informationLink);
 			}
 			projectContext = {
 				publicId: workspace.project.publicId,
