@@ -9,6 +9,7 @@ import {
 	ProcurementService,
 	ProcurementValidationError
 } from '$lib/server/procurement/procurement-service';
+import { listLatestRfqVersionsForRfqs } from '$lib/server/procurement/procurement-workspace-query';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
@@ -86,21 +87,28 @@ export const load: PageServerLoad = async ({ locals }) => {
 		actor.organisationId,
 		workspace.packages.map((procurementPackage) => procurementPackage.id)
 	);
-	const rfqs = [];
-	for (const row of rows) {
-		const procurementPackage = workspace.packages.find(
-			(candidate) => candidate.id === row.packageId
-		);
-		if (!procurementPackage) continue;
-		rfqs.push({
-			...row,
-			packagePublicId: procurementPackage.publicId,
-			packageNumber: procurementPackage.packageNumber,
-			packageTitle: procurementPackage.title,
-			projectPublicId: procurementPackage.projectPublicId,
-			latestVersion: (await repository.listRfqVersions(actor.organisationId, row.id))[0] ?? null
-		});
-	}
+	const latestVersions = await listLatestRfqVersionsForRfqs(
+		db,
+		actor.organisationId,
+		rows.map((row) => row.id)
+	);
+	const packageById = new Map(
+		workspace.packages.map((procurementPackage) => [procurementPackage.id, procurementPackage])
+	);
+	const rfqs = rows.flatMap((row) => {
+		const procurementPackage = packageById.get(row.packageId);
+		if (!procurementPackage) return [];
+		return [
+			{
+				...row,
+				packagePublicId: procurementPackage.publicId,
+				packageNumber: procurementPackage.packageNumber,
+				packageTitle: procurementPackage.title,
+				projectPublicId: procurementPackage.projectPublicId,
+				latestVersion: latestVersions.get(row.id) ?? null
+			}
+		];
+	});
 	return { ...workspace, rfqs };
 };
 
