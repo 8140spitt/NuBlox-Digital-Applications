@@ -1,11 +1,13 @@
 <script lang="ts">
-	import markUrl from '$lib/assets/brand/nublox-mark.svg';
+	import darkMarkUrl from '$lib/assets/brand/nublox-mark-dark.svg';
+	import lightMarkUrl from '$lib/assets/brand/nublox-mark-light.svg';
 
 	type Props = {
 		size?: number | string;
 		decorative?: boolean;
 		title?: string;
 		monochrome?: boolean;
+		theme?: 'light' | 'dark';
 		class?: string;
 	};
 
@@ -14,10 +16,12 @@
 		decorative = true,
 		title = 'NuBlox',
 		monochrome = false,
+		theme = 'light',
 		class: className = ''
 	}: Props = $props();
 
 	let dimension = $derived(typeof size === 'number' ? `${size}px` : size);
+	let markUrl = $derived(theme === 'dark' ? darkMarkUrl : lightMarkUrl);
 </script>
 
 {#if monochrome}
@@ -28,13 +32,14 @@
 		role={decorative ? undefined : 'img'}
 		aria-hidden={decorative ? 'true' : undefined}
 		aria-label={decorative ? undefined : title}
+		shape-rendering="geometricPrecision"
 	>
 		{#if !decorative}
 			<title>{title}</title>
 		{/if}
 		<g fill="currentColor">
 			<path
-				d="M277.439 37.3444H213.104C208.686 37.3444 205.104 40.9261 205.104 45.3444V290.257C205.104 294.675 208.686 298.257 213.104 298.257H277.439C281.857 298.257 285.439 294.675 285.439 290.257V45.3444C285.439 40.9261 281.857 37.3444 277.439 37.3444Z"
+				d="M277.44 37.8444H213.44C209.021 37.8444 205.44 41.4261 205.44 45.8444V290.844C205.44 295.263 209.021 298.844 213.44 298.844H277.44C281.858 298.844 285.44 295.263 285.44 290.844V45.8444C285.44 41.4261 281.858 37.8444 277.44 37.8444Z"
 			/>
 			<path
 				d="M118.44 37.8444H54.4396C50.0213 37.8444 46.4396 41.4261 46.4396 45.8444V290.844C46.4396 295.263 50.0213 298.844 54.4396 298.844H118.44C122.858 298.844 126.44 295.263 126.44 290.844V45.8444C126.44 41.4261 122.858 37.8444 118.44 37.8444Z"
