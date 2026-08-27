@@ -1,9 +1,9 @@
 import { enhance } from '$app/forms';
 import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
-import type { Pathname } from '$app/types';
 
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
+type RuntimePathResolver = (path: string) => string;
 
 function actionLabel(submitter: HTMLElement | null): string {
 	return (
@@ -64,7 +64,10 @@ export function progressiveActionScope(scope: HTMLElement) {
 			return async ({ result, update }) => {
 				try {
 					if (result.type === 'redirect') {
-						await goto(resolve(result.location as Pathname), {
+						const resolvedLocation = (resolve as unknown as RuntimePathResolver)(result.location);
+						// The runtime server redirect has already passed through SvelteKit's base-path resolver.
+						// eslint-disable-next-line svelte/no-navigation-without-resolve
+						await goto(resolvedLocation, {
 							invalidateAll: true,
 							noScroll: true,
 							keepFocus: true
