@@ -1,5 +1,6 @@
 import { enhance } from '$app/forms';
 import { goto } from '$app/navigation';
+import { resolve } from '$app/paths';
 
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
 
@@ -62,7 +63,7 @@ export function progressiveActionScope(scope: HTMLElement) {
 			return async ({ result, update }) => {
 				try {
 					if (result.type === 'redirect') {
-						await goto(result.location, {
+						await goto(resolve(result.location), {
 							invalidateAll: true,
 							noScroll: true,
 							keepFocus: true
