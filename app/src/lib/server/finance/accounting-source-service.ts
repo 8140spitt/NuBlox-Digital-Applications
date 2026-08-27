@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { sql } from 'kysely';
+
 import {
 	formatScaledDecimal,
 	lineAmount,
@@ -13,6 +15,8 @@ export const ACCOUNTING_SOURCE_TYPES = [
 	'invoice_issue',
 	'invoice_void',
 	'credit_note_issue',
+	'accounts_payable_invoice_approval',
+	'accounts_payable_credit_note_approval',
 	'payment_receipt',
 	'payment_allocation',
 	'payment_allocation_reversal',
@@ -34,6 +38,8 @@ export type AccountingMappingKey =
 	| 'customer_unapplied_cash'
 	| 'bad_debt_expense'
 	| 'bad_debt_recovery_income'
+	| 'accounts_payable'
+	| 'purchase_expense'
 	| 'retained_earnings';
 
 export type AccountingCandidateLine = {
@@ -229,6 +235,81 @@ async function documentCandidate(
 				: sourceType === 'credit_note_issue'
 					? `Post issued credit note ${number}`
 					: `Reverse voided invoice ${number}`,
+		lines
+	});
+}
+
+async function accountsPayableDocumentCandidate(
+	db: DatabaseExecutor,
+	organisationId: string,
+	sourceType: 'accounts_payable_invoice_approval' | 'accounts_payable_credit_note_approval',
+	sourcePublicId: string,
+	forUpdate: boolean
+): Promise<AccountingSourceCandidate> {
+	let query = db
+		.selectFrom('accounts_payable_documents')
+		.select([
+			'public_id as publicId',
+			'document_type as documentType',
+			'supplier_document_number as supplierDocumentNumber',
+			'currency_code as currencyCode',
+			'lifecycle_status as lifecycleStatus',
+			'net_amount as netAmount',
+			'tax_amount as taxAmount',
+			'gross_amount as grossAmount',
+			'approved_at as approvedAt'
+		])
+		.where('organisation_id', '=', organisationId)
+		.where('public_id', '=', sourcePublicId);
+	if (forUpdate) query = query.forUpdate();
+	const document = await query.executeTakeFirst();
+	if (!document || document.lifecycleStatus !== 'approved' || !document.approvedAt) {
+		throw new RecordNotFoundError('Approved supplier document source not found.');
+	}
+	if (
+		(sourceType === 'accounts_payable_invoice_approval' && document.documentType !== 'invoice') ||
+		(sourceType === 'accounts_payable_credit_note_approval' &&
+			document.documentType !== 'credit_note')
+	) {
+		throw new RecordNotFoundError('Approved supplier document source not found.');
+	}
+	if (money(document.grossAmount) <= 0n) {
+		throw new FinanceValidationError('Approved supplier document total must be positive to post.');
+	}
+
+	const number = document.supplierDocumentNumber || document.publicId;
+	const reversePurchase = document.documentType === 'credit_note';
+	const lines: AccountingCandidateLine[] = [];
+	if (reversePurchase) {
+		lines.push(
+			line('accounts_payable', `${number} payable reduction`, 'debit', document.grossAmount)
+		);
+		if (money(document.netAmount) > 0n) {
+			lines.push(
+				line('purchase_expense', `${number} purchase cost reversal`, 'credit', document.netAmount)
+			);
+		}
+		if (money(document.taxAmount) > 0n) {
+			lines.push(line('vat_control', `${number} input VAT reversal`, 'credit', document.taxAmount));
+		}
+	} else {
+		if (money(document.netAmount) > 0n) {
+			lines.push(line('purchase_expense', `${number} purchase cost`, 'debit', document.netAmount));
+		}
+		if (money(document.taxAmount) > 0n) {
+			lines.push(line('vat_control', `${number} input VAT`, 'debit', document.taxAmount));
+		}
+		lines.push(line('accounts_payable', `${number} trade payable`, 'credit', document.grossAmount));
+	}
+
+	return finish({
+		sourceType,
+		sourcePublicId: document.publicId,
+		sourceLabel: `${reversePurchase ? 'Supplier credit note' : 'Supplier invoice'} ${number}`,
+		sourceEventAt: document.approvedAt,
+		currencyCode: document.currencyCode,
+		sourceAmount: document.grossAmount,
+		memo: `${reversePurchase ? 'Post approved supplier credit note' : 'Post approved supplier invoice'} ${number}`,
 		lines
 	});
 }
@@ -588,6 +669,15 @@ export async function resolveAccountingSourceCandidate(
 		case 'invoice_void':
 		case 'credit_note_issue':
 			return documentCandidate(db, organisationId, sourceType, sourcePublicId, forUpdate);
+		case 'accounts_payable_invoice_approval':
+		case 'accounts_payable_credit_note_approval':
+			return accountsPayableDocumentCandidate(
+				db,
+				organisationId,
+				sourceType,
+				sourcePublicId,
+				forUpdate
+			);
 		case 'payment_receipt':
 		case 'payment_reversal':
 			return paymentCandidate(db, organisationId, sourceType, sourcePublicId, forUpdate);
@@ -649,6 +739,44 @@ export async function listAccountingSourceReferences(
 				at: document.voidedAt
 			});
 	}
+	const supplierDocuments = await db
+		.selectFrom('accounts_payable_documents')
+		.select(['public_id as publicId', 'document_type as documentType', 'approved_at as approvedAt'])
+		.where('organisation_id', '=', organisationId)
+		.where('lifecycle_status', '=', 'approved')
+		.where('approved_at', 'is not', null)
+		.where(
+			sql<boolean>`not exists (
+				select 1
+				from accounting_journal_entries as journal
+				left join accounting_journal_entry_reversals as reversal
+					on reversal.journal_entry_id = journal.id
+					and reversal.organisation_id = journal.organisation_id
+				where journal.organisation_id = ${organisationId}
+					and journal.source_public_id = accounts_payable_documents.public_id
+					and journal.source_type = case
+						when accounts_payable_documents.document_type = 'credit_note'
+							then 'accounts_payable_credit_note_approval'
+						else 'accounts_payable_invoice_approval'
+					end
+					and reversal.journal_entry_id is null
+			)`
+		)
+		.orderBy('approved_at', 'desc')
+		.limit(100)
+		.execute();
+	for (const document of supplierDocuments) {
+		if (!document.approvedAt) continue;
+		refs.push({
+			sourceType:
+				document.documentType === 'credit_note'
+					? 'accounts_payable_credit_note_approval'
+					: 'accounts_payable_invoice_approval',
+			sourcePublicId: document.publicId,
+			at: document.approvedAt
+		});
+	}
+
 	const payments = await db
 		.selectFrom('payments')
 		.select(['id', 'public_id as publicId', 'received_at as receivedAt'])

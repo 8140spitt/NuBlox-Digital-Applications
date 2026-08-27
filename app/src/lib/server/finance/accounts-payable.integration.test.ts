@@ -6,6 +6,8 @@ import { closeDatabase, getDatabase, type Database } from '$lib/server/db/databa
 import { TenantAccessError } from '$lib/server/kernel/errors';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 import { ProcurementService } from '$lib/server/procurement/procurement-service';
+import { AccountingPeriodService } from './accounting-period-service';
+import { AccountingService } from './accounting-service';
 import { AccountsPayableRepository } from './accounts-payable-repository';
 import { AccountsPayableService } from './accounts-payable-service';
 import { FinanceValidationError } from './finance-common';
@@ -284,6 +286,8 @@ beforeAll(async () => {
 		'project.create',
 		'project.view',
 		'project.manage',
+		'finance.view',
+		'finance.manage',
 		...PROCUREMENT_PERMISSIONS,
 		...AP_PERMISSIONS
 	]);
@@ -318,6 +322,53 @@ beforeAll(async () => {
 		memberId: otherMemberId,
 		correlationId: `ap-other-${randomUUID()}`
 	};
+
+	const accounting = new AccountingService(db);
+	for (const accountDefinition of [
+		{
+			mappingKey: 'accounts_payable',
+			accountCode: 'AP-2100',
+			name: 'Trade payables',
+			accountType: 'liability'
+		},
+		{
+			mappingKey: 'purchase_expense',
+			accountCode: 'PUR-5000',
+			name: 'Purchase and project cost',
+			accountType: 'expense'
+		},
+		{
+			mappingKey: 'vat_control',
+			accountCode: 'VAT-2200',
+			name: 'VAT control',
+			accountType: 'liability'
+		}
+	] as const) {
+		const account = await accounting.createAccount(actorMaker, {
+			accountCode: accountDefinition.accountCode,
+			name: accountDefinition.name,
+			accountType: accountDefinition.accountType
+		});
+		await accounting.assignMapping(actorMaker, {
+			mappingKey: accountDefinition.mappingKey,
+			accountPublicId: account.publicId,
+			reason: 'AP accounting digital-thread integration test mapping.'
+		});
+	}
+	const periodService = new AccountingPeriodService(db);
+	const year = await periodService.createFinancialYear(actorMaker, {
+		yearCode: 'AP-FY26',
+		name: 'AP integration financial year',
+		startsOn: '2026-01-01',
+		endsOn: '2026-12-31'
+	});
+	await periodService.createPeriod(actorMaker, {
+		financialYearPublicId: year.publicId,
+		periodNumber: 8,
+		name: 'August 2026',
+		startsOn: '2026-08-01',
+		endsOn: '2026-08-31'
+	});
 
 	const project = await new ProjectWorkspaceService(db).createProject(actorMaker, {
 		projectNumber: `AP-${randomUUID().slice(0, 8).toUpperCase()}`,
@@ -384,6 +435,71 @@ describe('Wave A native accounts payable foundation', () => {
 		document = await repository.findDocumentByPublicId(organisationAId, documentPublicId);
 		expect(document?.status).toBe('approved');
 		expect(document?.approvedAt).toBeInstanceOf(Date);
+
+		const accounting = new AccountingService(db);
+		const accountingWorkspace = await accounting.getWorkspace(actorMaker);
+		const accountingCandidate = accountingWorkspace.candidates.find(
+			(candidate) =>
+				candidate.sourceType === 'accounts_payable_invoice_approval' &&
+				candidate.sourcePublicId === documentPublicId
+		);
+		expect(accountingCandidate).toMatchObject({
+			sourceAmount: '500.0000',
+			missingMappings: []
+		});
+		expect(accountingCandidate?.lines).toEqual([
+			expect.objectContaining({
+				mappingKey: 'purchase_expense',
+				debitAmount: '500.0000',
+				creditAmount: '0.0000'
+			}),
+			expect.objectContaining({
+				mappingKey: 'accounts_payable',
+				debitAmount: '0.0000',
+				creditAmount: '500.0000'
+			})
+		]);
+		const posted = await accounting.postSource(actorMaker, {
+			sourceType: 'accounts_payable_invoice_approval',
+			sourcePublicId: documentPublicId
+		});
+		const journal = await db
+			.selectFrom('accounting_journal_entries')
+			.select(['id', 'source_type as sourceType', 'source_public_id as sourcePublicId'])
+			.where('organisation_id', '=', organisationAId)
+			.where('public_id', '=', posted.publicId)
+			.executeTakeFirstOrThrow();
+		expect(journal).toMatchObject({
+			sourceType: 'accounts_payable_invoice_approval',
+			sourcePublicId: documentPublicId
+		});
+		const journalLines = await db
+			.selectFrom('accounting_journal_lines as line')
+			.innerJoin('accounting_accounts as account', (join) =>
+				join
+					.onRef('account.id', '=', 'line.accounting_account_id')
+					.onRef('account.organisation_id', '=', 'line.organisation_id')
+			)
+			.select([
+				'account.account_code as accountCode',
+				'line.debit_amount as debitAmount',
+				'line.credit_amount as creditAmount'
+			])
+			.where('line.organisation_id', '=', organisationAId)
+			.where('line.journal_entry_id', '=', journal.id)
+			.orderBy('line.line_number')
+			.execute();
+		expect(journalLines).toEqual([
+			{ accountCode: 'PUR-5000', debitAmount: '500.0000', creditAmount: '0.0000' },
+			{ accountCode: 'AP-2100', debitAmount: '0.0000', creditAmount: '500.0000' }
+		]);
+		await expect(
+			accounting.postSource(actorMaker, {
+				sourceType: 'accounts_payable_invoice_approval',
+				sourcePublicId: documentPublicId
+			})
+		).rejects.toBeInstanceOf(FinanceValidationError);
+
 		await expect(service.voidDocument(actorMaker, documentPublicId)).rejects.toBeInstanceOf(
 			FinanceValidationError
 		);
@@ -501,5 +617,61 @@ describe('Wave A native accounts payable foundation', () => {
 		expect(
 			otherWorkspace.suppliers.some((supplier) => supplier.publicId === supplierPublicId)
 		).toBe(false);
+	});
+
+	it('keeps an older unposted approved AP document visible beyond the 100-row candidate limit', async () => {
+		const approvalBase = new Date('2026-08-21T10:00:00.000Z').getTime();
+		const documents = Array.from({ length: 101 }, (_, index) => ({
+			organisation_id: organisationAId,
+			public_id: randomUUID(),
+			document_type: 'invoice',
+			supplier_party_id: supplierPartyId,
+			project_id: null,
+			purchase_order_id: null,
+			supplier_document_number: `AP-SCALE-${index}-${randomUUID().slice(0, 8)}`,
+			invoice_date: new Date('2026-08-21T00:00:00.000Z'),
+			tax_date: null,
+			due_date: null,
+			currency_code: 'GBP',
+			lifecycle_status: 'approved',
+			net_amount: '1.0000',
+			tax_amount: '0.0000',
+			gross_amount: '1.0000',
+			created_by_member_id: makerMemberId,
+			submitted_at: new Date(approvalBase + index * 60_000 - 1_000),
+			approved_at: new Date(approvalBase + index * 60_000)
+		}));
+		await db.insertInto('accounts_payable_documents').values(documents).execute();
+
+		const oldestUnposted = documents[0]!;
+		await db
+			.insertInto('accounting_journal_entries')
+			.values(
+				documents.slice(1).map((document, index) => ({
+					organisation_id: organisationAId,
+					public_id: randomUUID(),
+					journal_number: `AP-SCALE-JRN-${String(index + 1).padStart(3, '0')}`,
+					source_type: 'accounts_payable_invoice_approval',
+					source_public_id: document.public_id,
+					source_event_at: document.approved_at,
+					source_amount: '1.0000',
+					source_fingerprint: String(index + 1).padStart(64, '0'),
+					accounting_date: new Date('2026-08-21T00:00:00.000Z'),
+					currency_code: 'GBP',
+					memo: 'Scale regression posted AP source',
+					posted_by_member_id: makerMemberId,
+					posted_at: document.approved_at
+				}))
+			)
+			.execute();
+
+		const workspace = await new AccountingService(db).getWorkspace(actorMaker);
+		expect(
+			workspace.candidates.some(
+				(candidate) =>
+					candidate.sourceType === 'accounts_payable_invoice_approval' &&
+					candidate.sourcePublicId === oldestUnposted.public_id
+			)
+		).toBe(true);
 	});
 });
