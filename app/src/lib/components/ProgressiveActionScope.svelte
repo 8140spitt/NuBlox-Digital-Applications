@@ -1,8 +1,7 @@
 <script lang="ts">
-	import type { Snippet } from 'svelte';
 	import { progressiveActionScope } from '$lib/actions/progressive-action-scope';
 
-	let { children }: { children: Snippet } = $props();
+	let { children } = $props();
 </script>
 
 <div class="progressive-action-scope" use:progressiveActionScope>
