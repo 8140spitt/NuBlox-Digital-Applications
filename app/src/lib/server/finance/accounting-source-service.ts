@@ -747,12 +747,14 @@ export async function listAccountingSourceReferences(
 		.limit(100)
 		.execute();
 	for (const document of supplierDocuments) {
-		references.push({
+		if (!document.approvedAt) continue;
+		refs.push({
 			sourceType:
 				document.documentType === 'credit_note'
 					? 'accounts_payable_credit_note_approval'
 					: 'accounts_payable_invoice_approval',
-			sourcePublicId: document.publicId
+			sourcePublicId: document.publicId,
+			at: document.approvedAt
 		});
 	}
 
