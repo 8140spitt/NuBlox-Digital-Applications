@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   apply-fix:
-    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -118,7 +117,7 @@ jobs:
 					source_public_id: document.public_id,
 					source_event_at: document.approved_at,
 					source_amount: '1.0000',
-					source_fingerprint: `${String(index + 1).padStart(64, '0')}`,
+					source_fingerprint: String(index + 1).padStart(64, '0'),
 					accounting_date: new Date('2026-08-21T00:00:00.000Z'),
 					currency_code: 'GBP',
 					memo: 'Scale regression posted AP source',
