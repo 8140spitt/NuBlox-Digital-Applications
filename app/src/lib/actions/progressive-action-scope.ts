@@ -3,6 +3,7 @@ import { goto } from '$app/navigation';
 import { resolve } from '$app/paths';
 
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
+type ResolvablePath = Parameters<typeof resolve>[0];
 
 function actionLabel(submitter: HTMLElement | null): string {
 	return (
@@ -63,7 +64,7 @@ export function progressiveActionScope(scope: HTMLElement) {
 			return async ({ result, update }) => {
 				try {
 					if (result.type === 'redirect') {
-						await goto(resolve(result.location), {
+						await goto(resolve(result.location as ResolvablePath), {
 							invalidateAll: true,
 							noScroll: true,
 							keepFocus: true
