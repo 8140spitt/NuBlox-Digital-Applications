@@ -5,10 +5,17 @@
 
 	let { children }: { children: Snippet } = $props();
 	let scope: HTMLDivElement;
-	let feedback = $state<{ kind: 'pending' | 'success' | 'error'; message: string } | null>(null);
+	let feedback = $state<{
+		kind: 'pending' | 'success' | 'error';
+		message: string;
+	} | null>(null);
 
 	function actionLabel(submitter: HTMLElement | null): string {
-		return submitter?.textContent?.trim() || submitter?.getAttribute('aria-label')?.trim() || 'Action';
+		return (
+			submitter?.textContent?.trim() ||
+			submitter?.getAttribute('aria-label')?.trim() ||
+			'Action'
+		);
 	}
 
 	function failureMessage(data: unknown): string | null {
