@@ -4,6 +4,12 @@ const EMAIL = 'e2e-owner@example.test';
 const PASSWORD = 'NuBlox-E2E-Password-2026!';
 const ORGANISATION = 'NuBlox E2E Organisation';
 
+function dateOffset(days: number): string {
+	const date = new Date();
+	date.setUTCDate(date.getUTCDate() + days);
+	return date.toISOString().slice(0, 10);
+}
+
 async function signIn(page: import('@playwright/test').Page) {
 	await page.goto('/signin');
 	await page.getByLabel('Email', { exact: true }).fill(EMAIL);
@@ -22,6 +28,10 @@ test('owner staffs, schedules and records a complete work session through the UI
 	const projectNumber = `E2E-WF-${suffix}`;
 	const projectName = `Workforce acceptance ${suffix}`;
 	const workTitle = `Install containment ${suffix}`;
+	const staffingStart = dateOffset(-7);
+	const workDate = dateOffset(1);
+	const periodStart = dateOffset(0);
+	const periodEnd = dateOffset(6);
 
 	await page.goto('/projects#create-project');
 	const projectForm = page.locator('form[action="?/create"]');
@@ -40,7 +50,7 @@ test('owner staffs, schedules and records a complete work session through the UI
 	await staffingPanel
 		.getByLabel('Project')
 		.selectOption({ label: `${projectNumber} · ${projectName}` });
-	await staffingPanel.getByLabel('Starts').fill('2026-08-17');
+	await staffingPanel.getByLabel('Starts').fill(staffingStart);
 	await staffingPanel.getByLabel('Planned allocation %').fill('100');
 	await staffingPanel.getByRole('button', { name: 'Create assignment' }).click();
 	await expect(page).toHaveURL(/\/people$/);
@@ -56,8 +66,8 @@ test('owner staffs, schedules and records a complete work session through the UI
 		.getByLabel('Project / job')
 		.selectOption({ label: `${projectNumber} · ${projectName}` });
 	await schedulePanel.getByLabel('Workers').selectOption({ label: 'NuBlox E2E Owner' });
-	await schedulePanel.getByLabel('Starts').fill('2026-08-20T08:00');
-	await schedulePanel.getByLabel('Ends').fill('2026-08-20T16:00');
+	await schedulePanel.getByLabel('Starts').fill(`${workDate}T08:00`);
+	await schedulePanel.getByLabel('Ends').fill(`${workDate}T16:00`);
 	await schedulePanel.getByLabel('Timezone').fill('Europe/London');
 	await schedulePanel
 		.getByLabel('Description')
@@ -69,14 +79,14 @@ test('owner staffs, schedules and records a complete work session through the UI
 
 	await page.goto('/time');
 	const createTimesheet = page.locator('#new-timesheet');
-	await createTimesheet.getByLabel('Period start').fill('2026-08-17');
-	await createTimesheet.getByLabel('Period end').fill('2026-08-23');
+	await createTimesheet.getByLabel('Period start').fill(periodStart);
+	await createTimesheet.getByLabel('Period end').fill(periodEnd);
 	await createTimesheet.getByRole('button', { name: 'Create timesheet' }).click();
 	await expect(page).toHaveURL(/\/time$/);
 
 	const timesheetCard = page.locator('.timesheet-card').first();
 	await timesheetCard.locator('summary').filter({ hasText: 'Add time entry' }).click();
-	await timesheetCard.getByLabel('Work date').fill('2026-08-20');
+	await timesheetCard.getByLabel('Work date').fill(workDate);
 	await timesheetCard.getByLabel('Minutes').fill('480');
 	await timesheetCard
 		.getByLabel('Project / job')
