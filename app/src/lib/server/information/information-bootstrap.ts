@@ -11,7 +11,11 @@ const INFORMATION_STANDARD_ROLE_PERMISSIONS = {
 		'information.submittal.manage',
 		'information.submittal.review',
 		'information.instruction.manage',
-		'information.instruction.issue'
+		'information.instruction.issue',
+		'information.requirement.manage',
+		'information.requirement.approve',
+		'information.responsibility.manage',
+		'information.requirement.link'
 	],
 	Administrator: [
 		'information.view',
@@ -23,7 +27,11 @@ const INFORMATION_STANDARD_ROLE_PERMISSIONS = {
 		'information.submittal.manage',
 		'information.submittal.review',
 		'information.instruction.manage',
-		'information.instruction.issue'
+		'information.instruction.issue',
+		'information.requirement.manage',
+		'information.requirement.approve',
+		'information.responsibility.manage',
+		'information.requirement.link'
 	],
 	Manager: [
 		'information.view',
@@ -35,7 +43,11 @@ const INFORMATION_STANDARD_ROLE_PERMISSIONS = {
 		'information.submittal.manage',
 		'information.submittal.review',
 		'information.instruction.manage',
-		'information.instruction.issue'
+		'information.instruction.issue',
+		'information.requirement.manage',
+		'information.requirement.approve',
+		'information.responsibility.manage',
+		'information.requirement.link'
 	],
 	'Member/Professional': [
 		'information.view',
@@ -44,7 +56,10 @@ const INFORMATION_STANDARD_ROLE_PERMISSIONS = {
 		'information.rfi.manage',
 		'information.rfi.respond',
 		'information.submittal.manage',
-		'information.instruction.manage'
+		'information.instruction.manage',
+		'information.requirement.manage',
+		'information.responsibility.manage',
+		'information.requirement.link'
 	],
 	'Field Worker': ['information.view', 'information.rfi.respond'],
 	'Finance/Commercial': ['information.view'],
