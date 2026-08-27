@@ -6,7 +6,7 @@ This directory contains the production vector assets for the NuBlox application 
 
 - `nublox-mark.svg` — canonical full-colour NuBlox N master.
 - `nublox-mark-mono.svg` — single-colour derivative for print, documents and restricted-colour contexts.
-- `nublox-app-icon.svg` — deep-navy rounded-square application/PWA icon derived from the canonical mark.
+- `nublox-app-icon.svg` — Blue 5/10 application icon derived from the canonical mark.
 - `nublox-lockup.svg` — portable light-background lockup using the canonical mark.
 - `nublox-lockup-on-dark.svg` — portable dark-background lockup using the canonical mark.
 
@@ -14,40 +14,45 @@ For Svelte application UI, prefer the components under `app/src/lib/components/b
 
 ## Source-of-truth rule
 
-`nublox-mark.svg` is the approved source-of-truth vector supplied directly for production. Its authored geometry is `335 × 338` and its three structural paths, proportions, gradients and fold treatment define the NuBlox N.
+`nublox-mark.svg` is the approved source-of-truth vector. Its authored geometry is `335 × 338`; the stem paths, diagonal ribbon, overlay fold treatments, gloss stroke and gradients define the NuBlox N.
 
-Do **not** redraw, reinterpret, simplify or replace those structural paths with an approximation. Production refinements are limited to technical finishing that preserves the design, such as aligning highlight strokes precisely to the existing ribbon boundaries, clipping blur effects inside the authored stem geometry, and enabling geometric-precision rendering.
+Do **not** redraw, reinterpret, simplify or replace the structural paths with an approximation. Derivative assets may scale, position or place the mark on a surface, but must preserve the approved geometry and material treatment.
 
-The current production master therefore preserves the supplied N while correcting visible registration artefacts from the exported SVG: the two diagonal edge strokes now use the exact ribbon-edge endpoints, the fold blurs are clipped to their respective stems, and the highlight strokes use restrained width/opacity with rounded caps.
+The monochrome variant intentionally removes colour, filters and gloss while retaining the current structural silhouette. It is a restricted-colour derivative, not an alternative logo design.
 
-The monochrome variant intentionally removes colour, filters and edge-light gradients while retaining the three canonical structural paths. It is a restricted-colour derivative, not an alternative logo design.
+## NuBlox blue scale
+
+The master-brand colour system is defined in `app/src/lib/styles/brand.css` as Blue 5 through Blue 100:
+
+- Blue 5 `#05131E`
+- Blue 10 `#09263B`
+- Blue 20 `#0C334F`
+- Blue 30 `#114870`
+- Blue 40 `#155C8F`
+- Blue 45 `#196AA4`
+- Blue 50 `#1C7ABD`
+- Blue 55 `#208AD6`
+- Blue 60 `#3599E1`
+- Blue 65 `#66B2E8`
+- Blue 70 `#8DC6EE`
+- Blue 80 `#B8DBF4`
+- Blue 90 `#D3E9F8`
+- Blue 95 `#E9F4FC`
+- Blue 100 `#FFFFFF`
+
+The full-colour mark is intentionally built from this same scale so the identity and application UI use one coherent colour language.
 
 ## Legacy `.webp` artwork
 
-The older `.webp` files in `app/src/lib/assets` were generated during concept development. They are retained temporarily as visual-reference material only. New application or website code must not introduce additional dependencies on those bitmaps.
-
-The production path is:
-
-```text
-approved supplied vector (`nublox-mark.svg`)
-        ↓
-professional vector finishing without redrawing
-        ↓
-derived SVG assets / Svelte brand components
-        ↓
-shared CSS design tokens
-        ↓
-application / website composition
-```
+The older `.webp` files in `app/src/lib/assets` were generated during concept development. They remain visual-reference material only. New application or website code must not introduce additional dependencies on those bitmaps.
 
 ## Production rules
 
 - SVG is the canonical format for marks and scalable identity graphics.
-- Do not simplify or redraw the full-colour mark independently for individual UI surfaces.
-- The favicon, app icon and portable lockups must derive from the same polished canonical geometry.
-- Edge highlights must sit on the actual diagonal ribbon boundaries rather than use visually offset guide lines.
-- Blur/fold treatments must be clipped so they do not dirty the outer silhouette.
+- Do not independently simplify or redraw the full-colour mark for individual UI surfaces.
+- The favicon, app icon and portable lockups must derive from the same canonical geometry.
+- Keep logo material effects vector-based; do not rasterise the master identity.
 - The wordmark in application UI is rendered by the Svelte lockup component so it follows application typography and remains accessible.
 - Product names are endorsements (`NuBlox Projects`, `NuBlox Commercial`, etc.), not separate logos.
-- Semantic workflow colours must remain independent of the master-brand palette.
+- Semantic workflow colours must remain independent of the master-brand blue scale.
 - Do not rasterise headers, navigation bars, buttons or UI compositions. Build them as Svelte/CSS components.
