@@ -1,30 +1,54 @@
 # NuBlox Complete Platform Coverage Contract
 
-**Status:** Governing Layer 6 companion  
-**Effective:** 22 August 2026  
-**Purpose:** define the complete software-category breadth that NuBlox: Digital Applications for the Construction and the Built Environment must provide natively as one product.
+**Status:** Governing Layer 6 target-state coverage contract  
+**Effective:** 27 August 2026  
+**Purpose:** define the complete software-category breadth NuBlox must ultimately provide natively as one enterprise operating system, without conflating target-state coverage with current implementation maturity.
+
+## 0. Authority boundary
+
+This document answers:
+
+> **What materially relevant market-category capability must the complete NuBlox operating system ultimately own?**
+
+It does **not** assert that every capability described here is implemented today and it does not sequence delivery.
+
+The governing authorities are deliberately separated:
+
+| Concern | Authority |
+| --- | --- |
+| Product ambition, value streams and delivery priorities | [`../../world-class/README.md`](../../world-class/README.md) |
+| Current 19-domain World-Class maturity and governing gaps | [`../../world-class/10-capability-control-matrix.md`](../../world-class/10-capability-control-matrix.md) |
+| Golden reference journeys | [`../../world-class/08-reference-journeys.md`](../../world-class/08-reference-journeys.md) |
+| Bottom-up engineering method and invariants | [`README.md`](README.md) and Layers 0–9 |
+| Enterprise work taxonomy | [`../taxonomy/README.md`](../taxonomy/README.md) |
+| SAP outside-in enterprise benchmark | [`../../world-class/11-sap-benchmark-coverage.md`](../../world-class/11-sap-benchmark-coverage.md) |
+| Implemented schema and runtime truth | committed migrations, domain services, tests and CI |
+
+**Coverage contract ≠ implementation claim ≠ delivery backlog.**
+
+A category may appear in this target-state contract while its owning NuBlox domain is still `partial` or `planned`. Current-state language must always follow executable repository evidence and the World-Class Capability Control Matrix.
 
 ## 1. Product invariant — one complete product
 
-**NuBlox: Digital Applications for the Construction and the Built Environment is one complete application suite.**
+**Target-state invariant:** NuBlox is one complete enterprise operating system, engineered particularly deeply for organisations that create, deliver, own and operate the built environment.
 
-A customer does not assemble NuBlox by selecting ERP, PLM, PDM, BIM, CDE, project-controls, finance, HR, asset-management or facilities modules. Those are market/category labels used to test coverage. They are not separate NuBlox products and they are not separate architectural authorities.
+Customers should not have to assemble the intended NuBlox product by purchasing separate ERP, PLM, PDM, BIM, CDE, project-controls, finance, HR, supply-chain, asset-management or facilities modules. Those are market/category labels used to test capability breadth. They are not separate NuBlox products and they are not architectural authorities.
 
-A customer buying NuBlox receives the complete native capability required to run a Construction and Built Environment enterprise end to end.
+At category-complete target state:
 
-Therefore:
+- no core NuBlox capability requires purchase of a separate NuBlox module;
+- no materially relevant native business process is deliberately absent because a module was not selected;
+- another ERP, PLM, PDM, CDE, PMIS, EAM, CMMS, IWMS or equivalent product is not required merely to fill a planned NuBlox core-capability gap;
+- external products may exchange data, provide infrastructure, statutory rails, specialist authoring or specialist algorithms, but NuBlox owns the canonical business records, state, permissions, workflow, evidence and reporting for its native process;
+- capability is hidden, surfaced or simplified by context and permissions rather than by creating contradictory product editions or duplicate records.
 
-- no core capability requires purchase of a separate NuBlox module;
-- no materially relevant business process is deliberately absent because the customer did not select a module;
-- no other ERP, PLM, PDM, CDE, PMIS, EAM, CMMS, IWMS or equivalent product is required to fill a planned NuBlox core-capability gap;
-- external products may exchange data, provide infrastructure, statutory rails or specialist algorithms, but NuBlox owns the canonical records, state, permissions, workflow, evidence and reporting for its native process;
-- capability is hidden, surfaced or simplified by context and permissions, not by pretending the capability does not exist.
+**Target product principle: complete by default; adaptive by context.**
 
-**Complete by default; adaptive by context.**
+This is a target-state product contract. Until the completeness gates in this document are met, current capability must be described using the repository maturity evidence rather than this target wording.
 
-## 2. What “out of the box” means
+## 2. What “out of the box” means at target state
 
-Out of the box means the product contains the native capability and default process foundations. It does not mean every user sees every function.
+At target state, “out of the box” means the product contains the native capability and default process foundations. It does not mean every user sees every function or that every industry variant is enabled identically.
 
 The application experience is composed using:
 
@@ -95,13 +119,13 @@ NuBlox must meet the materially relevant capability expectations represented by 
 | Integration / API / event platform | versioned APIs, webhooks, import/export, transactional outbox, idempotency, adapters and governed external exchange | 19 plus owner domains |
 | Knowledge/search/AI assistance | permission-aware retrieval, provenance, summarisation, decision support, automation and agents operating through authorised domain commands | 19 plus owner domains |
 
-These labels are a **coverage contract**, not a navigation design and not a licence catalogue.
+These labels are a **coverage contract**, not a navigation design, licence catalogue, delivery sequence or claim of current implementation completeness.
 
 ## 4. The NuBlox digital thread
 
-World-class integration is not achieved by putting many modules behind one login. NuBlox must maintain traceable continuity between the records that describe a built outcome across its complete life.
+World-class integration is not achieved by putting many modules behind one login. NuBlox must maintain traceable continuity between the records that describe an enterprise outcome and, where applicable, a built outcome across its complete life.
 
-A representative digital thread is:
+A representative built-environment digital thread is:
 
 ```text
 Market need / opportunity
@@ -123,12 +147,24 @@ Market need / opportunity
 → decommissioning / disposal
 ```
 
-That thread must also preserve related dimensions:
+The operating system must also preserve enterprise consequence threads such as:
 
-- organisation and accountable actor;
+```text
+Operational transaction
+→ authority / approval
+→ commercial or workforce consequence
+→ accounting consequence
+→ cash / liability / asset position
+→ management reporting
+→ enterprise performance / forecast
+```
+
+These threads must preserve related dimensions including:
+
+- organisation, legal entity and accountable actor;
 - project/programme and location;
-- contract/obligation;
-- cost, commitment, revenue and accounting consequence;
+- customer/supplier/contract/obligation;
+- cost, commitment, revenue, payroll and accounting consequence;
 - schedule/activity/work package;
 - risk, quality, safety and compliance evidence;
 - document/model revision and configuration;
@@ -178,7 +214,25 @@ NuBlox must extend the thread through:
 
 A building product, engineered assembly and installed asset must not become unrelated records merely because different teams work on them at different lifecycle stages.
 
-## 6. Project controls and construction-management standard
+## 6. Enterprise ERP standard
+
+Construction depth does not reduce the requirement for credible non-construction enterprise capability.
+
+A world-class NuBlox deployment must ultimately be capable of operating material enterprise functions including:
+
+- legal entities, organisation structures, master data, delegated authority and SoD;
+- customer, sales and service operations;
+- complete source-to-pay and supplier lifecycle;
+- financial accounting, AP/AR, cash/bank, tax, fixed assets, currency, intercompany and period/year-end close;
+- management accounting, planning, forecasting, treasury, consolidation and enterprise performance;
+- people, employment, competence, time, expenses, payroll and workforce planning;
+- materials, inventory, warehouses, logistics and relevant production/fabrication;
+- risk, compliance, assurance, records and governance;
+- enterprise data, workflow, reporting, analytics, integration and automation.
+
+The 29-function enterprise taxonomy defines the broader operating-model coverage catalogue. The nine enterprise value streams define how delivery should prove integrated outcomes. Neither dimension is replaced by market-product labels in this contract.
+
+## 7. Project controls and construction-management standard
 
 World-class project delivery requires more than tasks and Gantt charts. NuBlox must natively support, as applicable:
 
@@ -198,7 +252,7 @@ World-class project delivery requires more than tasks and Gantt charts. NuBlox m
 - commercial position and final account;
 - portfolio/programme/project reporting with drill-through to authoritative evidence.
 
-## 7. Asset, property and operational standard
+## 8. Asset, property and operational standard
 
 The product does not stop at handover. NuBlox must carry the same governed asset thread into operation.
 
@@ -220,36 +274,36 @@ Native target includes:
 - property, lease, space, occupancy and FM services;
 - refurbishment, adaptation and decommissioning.
 
-## 8. World-class benchmark rule
+## 9. World-class benchmark rule
 
-NuBlox does not copy another vendor's packaging or architecture. Market leaders are used to expose missing capability and control depth.
+NuBlox does not copy another vendor's packaging, terminology, data model or architecture. Market leaders are outside-in challenge sources used to expose missing business capability, control depth, usability and interoperability expectations.
 
 Representative benchmark families include:
 
-- SAP Cloud ERP / S/4HANA for integrated enterprise ERP processes;
-- Siemens Teamcenter for PLM/PDM and the product digital thread;
-- Oracle Primavera Cloud/Unifier and Aconex for project controls, capital/project lifecycle and CDE collaboration;
-- Autodesk Construction Cloud for BIM/CDE/take-off/construction information workflows;
-- IBM Maximo for EAM, reliability, maintenance, asset performance and facilities;
-- Esri ArcGIS for geospatial, GIS/BIM and built-environment digital-twin context.
+- **SAP Cloud ERP / S/4HANA** — integrated enterprise ERP, finance, source-to-pay, HCM, planning, supply chain and enterprise operations;
+- **Oracle Fusion Cloud ERP / SCM / HCM** — enterprise finance, procurement, supply chain, people and performance breadth;
+- **Microsoft Dynamics 365** — finance, supply chain, sales, service, field service and enterprise productivity expectations;
+- **Siemens Teamcenter** — PLM/PDM, configuration and the product digital thread;
+- **Oracle Primavera Cloud / Unifier / Aconex** — project controls, capital/project lifecycle, commercial control and CDE collaboration;
+- **Autodesk Construction Cloud** — BIM/CDE, take-off and construction information workflows;
+- **IBM Maximo** — EAM, reliability, maintenance, asset performance and facilities;
+- **Esri ArcGIS** — geospatial, GIS/BIM and built-environment digital-twin context.
 
-Benchmark references verified during this architecture revision:
+The maintained SAP benchmark interpretation is [`../../world-class/11-sap-benchmark-coverage.md`](../../world-class/11-sap-benchmark-coverage.md). Equivalent benchmark registers may be maintained for other families where they materially improve coverage assurance.
 
-- https://learning.sap.com/products/s4hana-cloud
-- https://blogs.sw.siemens.com/teamcenter/what-is-teamcenter/
-- https://www.oracle.com/construction-engineering/primavera-cloud-project-management/
-- https://www.oracle.com/construction-engineering/aconex/
-- https://www.autodesk.com/solutions/aec/bim/construction
-- https://www.ibm.com/products/maximo
-- https://www.esri.com/en-us/industries/aec/overview
+A benchmark identifies questions, not architecture:
 
-A benchmark identifies a question: **does NuBlox own equivalent or better materially relevant business capability for the Construction and Built Environment?**
+1. What mature business outcome or control would NuBlox otherwise overlook?
+2. Which of the 19 native domains owns the required semantics?
+3. Which value stream and golden journey proves the outcome?
+4. Does NuBlox provide materially equivalent or better enterprise capability?
+5. Where the work concerns the built environment, does NuBlox also provide deeper sector-specific capability and digital-thread continuity?
 
-If not, the gap becomes a NuBlox capability requirement rather than a permanent external dependency.
+If the answer exposes a material gap, that gap becomes a NuBlox capability requirement. Vendor module names do not become NuBlox modules, database schemas or delivery slices.
 
-## 9. Category-completeness gate
+## 10. Category-completeness gate
 
-A category label may be claimed only when its material capabilities trace downward through the bottom-up architecture.
+A category label may be claimed as **currently complete** only when its material capabilities trace downward through the bottom-up architecture and upward through a proven end-to-end outcome.
 
 For every claimed category, verify:
 
@@ -259,22 +313,31 @@ For every claimed category, verify:
 4. tenant/project/record scope;
 5. permissions, delegated authority and SoD;
 6. work, approval and decision semantics;
-7. audit, provenance and correction model;
-8. end-to-end process integration;
+7. audit, provenance and correction/reversal model;
+8. end-to-end value-stream integration;
 9. financial/commercial consequences where applicable;
-10. information/document/model consequences where applicable;
-11. reporting, KPIs and drill-through;
-12. external interchange and standards;
-13. usable contextual workspace;
-14. automated validation;
-15. evidence that the capability works with the rest of the digital thread rather than as an isolated mini-application.
+10. workforce, supply-chain or asset consequences where applicable;
+11. information/document/model consequences where applicable;
+12. reporting, KPIs, exceptions and drill-through;
+13. external interchange, APIs/events and relevant open standards;
+14. usable contextual experience, including mobile/field behaviour where required;
+15. automated database/service/browser validation;
+16. reference-journey evidence where the category participates in Journey A, B or C;
+17. evidence that the capability works with the common digital thread rather than as an isolated mini-application;
+18. a World-Class maturity assessment consistent with [`../../world-class/10-capability-control-matrix.md`](../../world-class/10-capability-control-matrix.md).
 
-The Layer 9 completeness gate remains the final product-wide definition of done.
+A market/category claim should not be described as fully delivered while its material owner domains remain `planned`, while critical value-stream links are absent, or while the evidence supports only W0–W3 maturity.
 
-## 10. Product promise
+**W4 is the normal threshold for an unqualified “world-class/category-complete” claim.**
 
-The customer proposition is deliberately simple:
+The Layer 9 completeness gate remains the final product-wide engineering definition of done.
 
-> **NuBlox: Digital Applications for the Construction and the Built Environment provides the complete native digital capability required to run the enterprise, deliver client projects and manage built assets through their whole life — in one governed platform.**
+## 11. Product promise
+
+The target customer proposition is deliberately simple:
+
+> **NuBlox is being engineered to provide the complete native digital capability required to run the enterprise, deliver projects and programmes, and manage built assets through their whole life — in one governed operating system.**
+
+Current product claims must remain evidence-led. Until a capability satisfies the relevant completeness gate, describe it using the current maturity in the capability registry and World-Class Capability Control Matrix.
 
 The complexity belongs inside NuBlox's architecture, not in the customer's purchasing decision.
