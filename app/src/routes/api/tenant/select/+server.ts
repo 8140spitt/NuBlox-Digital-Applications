@@ -9,17 +9,28 @@ type SelectTenantBody = {
 	organisationPublicId?: unknown;
 };
 
+const UUID_V4ISH_PATTERN =
+	/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 export const POST: RequestHandler = async ({ request, locals, cookies }) => {
 	if (!locals.actor) throw error(401, 'Authentication required.');
 
-	const body = (await request.json()) as SelectTenantBody;
-	if (typeof body.organisationPublicId !== 'string' || body.organisationPublicId.length > 36) {
+	let body: SelectTenantBody;
+	try {
+		body = (await request.json()) as SelectTenantBody;
+	} catch {
+		throw error(400, 'A valid JSON body is required.');
+	}
+
+	const organisationPublicId =
+		typeof body.organisationPublicId === 'string' ? body.organisationPublicId.trim() : '';
+	if (!UUID_V4ISH_PATTERN.test(organisationPublicId)) {
 		throw error(400, 'A valid organisation public ID is required.');
 	}
 
 	const membership = await new OrganisationMembershipRepository(
 		getDatabase()
-	).findActiveMembershipByOrganisationPublicId(locals.actor.userId, body.organisationPublicId);
+	).findActiveMembershipByOrganisationPublicId(locals.actor.userId, organisationPublicId);
 
 	if (!membership?.organisationPublicId) throw error(403, 'Organisation access denied.');
 

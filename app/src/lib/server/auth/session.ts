@@ -36,8 +36,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 			'[NuBlox auth] Session resolved but no active NuBlox platform user was found; reconciling.',
 			{
 				pathname,
-				authUserId: session.user.id,
-				email: session.user.email
+				authUserId: session.user.id
 			}
 		);
 
@@ -100,8 +99,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 			'[NuBlox auth] Better Auth session exists but NuBlox platform user is still unavailable.',
 			{
 				pathname,
-				authUserId: session.user.id,
-				email: session.user.email
+				authUserId: session.user.id
 			}
 		);
 		return null;

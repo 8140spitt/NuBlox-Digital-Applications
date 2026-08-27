@@ -7,10 +7,11 @@ import type { TenantContext } from '$lib/types/request-context';
 
 const CORRELATION_HEADER = 'x-correlation-id';
 const ORGANISATION_COOKIE = 'nublox_organisation';
+const CORRELATION_ID_PATTERN = /^[A-Za-z0-9._-]{8,128}$/;
 
 export function resolveCorrelationId(event: RequestEvent): string {
-	const inbound = event.request.headers.get(CORRELATION_HEADER);
-	return inbound && inbound.length > 0 ? inbound : randomUUID();
+	const inbound = event.request.headers.get(CORRELATION_HEADER)?.trim() ?? '';
+	return CORRELATION_ID_PATTERN.test(inbound) ? inbound : randomUUID();
 }
 
 export async function resolveTenantContext(event: RequestEvent): Promise<TenantContext> {

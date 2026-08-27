@@ -107,7 +107,10 @@ Critical journeys:
 - injection;
 - unsafe upload;
 - rate limiting;
-- export access.
+- export access;
+- malformed payload handling (JSON/form) at route boundaries;
+- tampered tenant-selection/correlation headers and cookies;
+- direct endpoint attempts against privileged actions without UI navigation paths.
 
 ### Accessibility tests
 
@@ -179,4 +182,7 @@ A release cannot progress to production if:
 - unresolved critical/high security defect exceeds agreed policy;
 - migration rollback/recovery is undefined;
 - required monitoring is absent;
-- acceptance criteria for the release are incomplete.
+- acceptance criteria for the release are incomplete;
+- request-boundary negative tests (malformed payload, unauthenticated, wrong-tenant, insufficient-permission) are missing or failing for changed endpoints;
+- segregation-of-duties regression scenarios for materially sensitive financial/commercial actions are missing or failing;
+- tenant isolation adversarial suite is not executed for the release candidate.

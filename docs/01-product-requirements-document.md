@@ -4,7 +4,7 @@
 
 This document defines the governing product scope for NuBlox. It is intended to be specific enough for solution design, estimation, backlog creation and delivery planning while preserving a single coherent enterprise architecture.
 
-The detailed capability architecture is defined in `57-world-class-native-erp-architecture.md`.
+The detailed capability architecture is defined in `construction-and-built-environment.md`.
 
 ## 2. Product proposition
 
@@ -357,7 +357,7 @@ Capabilities are prioritised by:
 6. current implementation maturity;
 7. ability to preserve one canonical data model.
 
-The gap-driven waves in `57-world-class-native-erp-architecture.md` govern sequencing.
+The gap-driven waves in `construction-and-built-environment.md` govern sequencing.
 
 ## 9. Professional capability packs
 
@@ -409,4 +409,8 @@ The product architecture is acceptable only when:
 - every materially relevant SAP/enterprise benchmark capability has a native NuBlox treatment or explicit native implementation boundary;
 - a complete deployment can operate its core ERP/business processes without requiring another ERP product;
 - automated tests cover critical business, accounting, lifecycle and security paths;
-- world-class capability maturity is measured domain by domain rather than by route count.
+- world-class capability maturity is measured domain by domain rather than by route count;
+- critical request boundaries fail closed with deterministic 4xx responses for malformed input, unauthenticated access and tenant-scope violations;
+- correlation and audit trace identifiers are normalised server-side and cannot be used to inject unbounded or unsafe header/log values;
+- operational-to-financial lineage is provable for material processes (source operational event -> commercial consequence -> accounting evidence) without manual re-keying;
+- privileged flows are protected by segregation-of-duties test scenarios that include adversarial direct-endpoint attempts and tampered tenant-selection cookies.

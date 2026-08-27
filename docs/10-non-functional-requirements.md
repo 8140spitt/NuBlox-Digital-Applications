@@ -161,3 +161,15 @@ Required:
 ## NFR-17 Audit/security retention
 
 Retention periods must be policy-driven rather than hard-coded. Security logs, audit logs, business documents and personal data may require different policies.
+
+## NFR-18 Request-boundary hardening
+
+- API and form-action boundaries must treat malformed JSON/body payloads as controlled client errors (4xx) rather than unhandled 5xx failures.
+- Authentication, tenancy and permission denials must fail closed with stable, non-leaky error responses.
+- Correlation identifiers accepted from inbound headers must be validated (allowed character set and bounded length) or replaced by server-generated values.
+
+## NFR-19 Sensitive logging discipline
+
+- Structured operational logs must avoid raw personal data by default (for example full email addresses and free-form external identifiers in INFO/WARN logs).
+- Security-relevant events may include required identifiers, but with minimisation/redaction and explicit retention/access policy.
+- Log schemas must distinguish operational diagnostics from audit evidence so that troubleshooting does not become an uncontrolled data store.
