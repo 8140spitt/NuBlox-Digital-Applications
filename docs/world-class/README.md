@@ -45,6 +45,7 @@ See [07-world-class-baseline.md](07-world-class-baseline.md) and [10-capability-
 | Construction and Built Environment domain model | [`../construction-and-built-environment.md`](../construction-and-built-environment.md) |
 | Enterprise work taxonomy | [`../architecture/taxonomy/README.md`](../architecture/taxonomy/README.md) and its JSON shards |
 | Native capability ownership | Layer 6 and `app/src/lib/navigation/capability-registry.ts` |
+| External benchmark challenge | this suite plus benchmark registers such as [`../sap-capability-coverage-register.csv`](../sap-capability-coverage-register.csv) |
 | Implemented schema | committed MySQL migrations |
 | Runtime behaviour | domain services, repositories and tests |
 | Delivery status | GitHub issues, PRs and CI |
@@ -76,6 +77,7 @@ No document in this suite replaces the bottom-up architecture. This suite govern
 8. [`08-reference-journeys.md`](08-reference-journeys.md) — golden journeys used to prove the operating system works as one product.
 9. [`09-delivery-governance.md`](09-delivery-governance.md) — prioritisation, completeness scoring and repository governance.
 10. [`10-capability-control-matrix.md`](10-capability-control-matrix.md) — the evidence-led 19-domain × value-stream × golden-journey control matrix and current World-Class readiness.
+11. [`11-sap-benchmark-coverage.md`](11-sap-benchmark-coverage.md) — how the 64-reference SAP coverage register challenges enterprise breadth without becoming NuBlox architecture or delivery sequencing.
 
 ## North-star outcome
 
