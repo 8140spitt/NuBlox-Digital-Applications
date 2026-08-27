@@ -34,7 +34,7 @@ These must never be conflated.
 - GitHub issues and pull requests describe delivery status.
 - A capability is not “world-class” because it appears in a document or has a screen.
 
-See [07-world-class-baseline.md](07-world-class-baseline.md).
+See [07-world-class-baseline.md](07-world-class-baseline.md) and [10-capability-control-matrix.md](10-capability-control-matrix.md).
 
 ## Authority map
 
@@ -75,6 +75,7 @@ No document in this suite replaces the bottom-up architecture. This suite govern
 7. [`07-world-class-baseline.md`](07-world-class-baseline.md) — honest current-state maturity and the largest gaps.
 8. [`08-reference-journeys.md`](08-reference-journeys.md) — golden journeys used to prove the operating system works as one product.
 9. [`09-delivery-governance.md`](09-delivery-governance.md) — prioritisation, completeness scoring and repository governance.
+10. [`10-capability-control-matrix.md`](10-capability-control-matrix.md) — the evidence-led 19-domain × value-stream × golden-journey control matrix and current World-Class readiness.
 
 ## North-star outcome
 
