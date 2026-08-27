@@ -81,8 +81,12 @@ CREATE TABLE project_information_requirements (
         CHECK (status IN ('draft', 'approved', 'withdrawn')),
     CONSTRAINT ck_project_information_requirements_approval
         CHECK (
-            (approved_by_member_id IS NULL AND approved_at IS NULL)
-            OR (approved_by_member_id IS NOT NULL AND approved_at IS NOT NULL)
+            (status = 'draft' AND approved_by_member_id IS NULL AND approved_at IS NULL)
+            OR (
+                status IN ('approved', 'withdrawn')
+                AND approved_by_member_id IS NOT NULL
+                AND approved_at IS NOT NULL
+            )
         ),
     CONSTRAINT ck_project_information_requirements_withdrawal
         CHECK (
