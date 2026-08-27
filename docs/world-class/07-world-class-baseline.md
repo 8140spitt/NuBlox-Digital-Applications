@@ -12,7 +12,7 @@ The live capability registry currently classifies the 19 native domains as:
 - **13 partial** — materially implemented but incomplete against the domain contract;
 - **3 planned** — materials/inventory/logistics; production/fabrication; sustainability/carbon.
 
-The maturity registry in `app/src/lib/navigation/capability-registry.ts` remains the executable source for current classifications.
+The maturity registry in `app/src/lib/navigation/capability-registry.ts` remains the executable source for current classifications. The finer-grained World-Class readiness assessment is maintained in [`10-capability-control-matrix.md`](10-capability-control-matrix.md).
 
 ## 2. Proven runtime chains
 
@@ -98,17 +98,19 @@ The current UX friction review identifies:
 
 Experience debt should now be treated as product debt.
 
-## 5. Governance drift identified by the rebaseline
+## 5. Governance drift corrected by the rebaseline
 
-At this baseline:
+The 27 August rebaseline identified several programme-control inconsistencies and corrected them:
 
-- GitHub issue #58 still references a superseded architecture document as governing authority;
-- issue #58 has completed project-controls items still unchecked despite merged implementation;
-- the README/product language risks reading target-state breadth as current-state completeness;
-- the delivery programme has become feature-slice oriented rather than value-stream oriented;
-- open PR #92 begins the next information-requirements slice but should be reassessed against this rebaseline before merge.
+- PR #94 established `docs/world-class/` as the product-strategy and delivery authority while preserving the bottom-up architecture as the engineering authority;
+- GitHub issue #58 was rewritten around the nine value streams and three golden reference journeys rather than the superseded architecture sequence;
+- completed project-controls foundations, including RIDA and controlled cross-domain change, are now recorded in the live programme;
+- root README language now distinguishes target-state ambition from implemented maturity;
+- PR #92 was returned to Draft for deliberate reassessment against Journey B before merge;
+- the enterprise taxonomy is explicitly governed as a completeness/operating-model catalogue rather than a 1,510-item feature backlog;
+- [`10-capability-control-matrix.md`](10-capability-control-matrix.md) now provides the evidence-led 19-domain × value-stream × reference-journey baseline used for prioritisation.
 
-These are governance problems, not reasons to discard the implementation.
+This section records the correction because governance drift itself is an important product risk. Future mismatches between roadmap, capability registry, implementation and product claims should be treated as defects in programme control.
 
 ## 6. Baseline verdict
 
