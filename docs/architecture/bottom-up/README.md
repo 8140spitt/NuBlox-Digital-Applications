@@ -39,6 +39,10 @@ NuBlox is **one complete Construction and Built Environment product**. ERP, PLM,
 
 See [`platform-coverage-contract.md`](platform-coverage-contract.md).
 
+## Implementation runtime map
+
+For an implementation-first trace of how major process chains execute through routes, services, repositories, tables and tests, see [`runtime-process-map.md`](runtime-process-map.md).
+
 ## Authority
 
 For implemented schema, committed MySQL migrations remain authoritative. The bottom-up architecture defines how new schema and services must be designed and how implemented capability is interpreted.
