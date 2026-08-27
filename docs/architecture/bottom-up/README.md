@@ -51,6 +51,8 @@ See [`platform-coverage-contract.md`](platform-coverage-contract.md) and [`../..
 
 For an implementation-first trace of how major process chains execute through routes, services, repositories, tables and tests, see [`runtime-process-map.md`](runtime-process-map.md).
 
+For the recovered code-trace of World-Class Journey A from CRM through project delivery and finance consequences, see [`journey-a-runtime-trace.md`](journey-a-runtime-trace.md). It is implementation evidence, not governing architecture.
+
 For UX and interaction-friction reduction priorities, see [`ux-friction-remediation.md`](ux-friction-remediation.md).
 
 For the current product baseline and target/current-state distinction, see [`../../world-class/07-world-class-baseline.md`](../../world-class/07-world-class-baseline.md).
