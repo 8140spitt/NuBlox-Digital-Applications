@@ -1,14 +1,37 @@
 # NuBlox: Digital Applications
 
-NuBlox is a natively engineered **Construction and Built Environment enterprise operating system**: one complete platform intended to replace the fragmented combination of ERP, PLM, PDM, CDE/BIM, project controls, finance, workforce, supply-chain, asset, property and service applications normally required to run the sector end to end.
+NuBlox is a natively engineered **enterprise operating system for organisations that create, deliver, own and operate the built environment**.
+
+It is intended to combine two ambitions that are usually split across separate software estates:
+
+1. **complete enterprise operations** — strategy, CRM, finance, people, payroll, procurement, supply chain, production, governance, property, assets, service, data and performance; and
+2. **exceptional Construction and Built Environment depth** — estimating, contracts, project controls, design/BIM/CDE, commercial management, site delivery, QHSE, commissioning, handover, asset operations, FM, maintenance and renewal.
+
+The differentiator is not the number of modules. It is one governed digital thread across enterprise, project and asset lifecycles.
+
+## Start here — World-Class operating-system rebaseline
+
+The governing product-strategy and delivery compass is [`docs/world-class/README.md`](docs/world-class/README.md).
+
+That suite defines:
+
+- the product North Star;
+- the relationship between the 29-function enterprise taxonomy and 19 native capability domains;
+- nine enterprise value streams that now govern delivery sequencing;
+- Construction and Built Environment specialisation;
+- the NuBlox digital thread;
+- the world-class experience standard;
+- the current implementation baseline;
+- three golden reference journeys;
+- delivery and repository governance.
+
+**Target state and implemented state are deliberately separate.** The architecture describes what NuBlox is being engineered to become; current maturity is proven by code, migrations, tests, the capability registry and runtime process map.
 
 ## One complete product
 
-**NuBlox: Digital Applications for the Construction and the Built Environment ships as one complete application suite.**
+Customers do not assemble NuBlox from ERP, PLM, PDM, CDE/BIM, PMIS, HCM, SCM, EAM or other separately licensed core modules. Market labels are world-class coverage benchmarks over the native architecture, not NuBlox product boundaries.
 
-Customers do not select a set of functional modules to construct their product. Core capability is included by default and the experience adapts through organisation context, career/professional context, role, explicit permission, project/contract/site/property/asset context and jurisdiction.
-
-Market labels such as **ERP, PLM, PDM, PPM/EPPM, PMIS, CDE, BIM/VDC, SCM, WMS, MES, HCM, QMS/EHS, EAM/CMMS/APM, IWMS/CAFM, FSM, GIS/digital twin, BI and workflow/AI** are world-class coverage benchmarks over the native NuBlox architecture — not separate NuBlox products.
+Capability is included by product design and exposed according to organisation context, career/professional context, explicit permission, project/contract/site/property/asset context and jurisdiction.
 
 See [`docs/architecture/bottom-up/platform-coverage-contract.md`](docs/architecture/bottom-up/platform-coverage-contract.md).
 
@@ -31,7 +54,17 @@ Primitives & invariants
 
 Start with [`docs/architecture/bottom-up/README.md`](docs/architecture/bottom-up/README.md).
 
-This architecture enforces a simple rule: **an upper layer may compose lower layers, but it may not invent contradictory semantics**. A workspace cannot invent permission, a process cannot invent duplicate master data, a market software category cannot become a parallel product architecture, and a capability cannot bypass its owning domain service.
+An upper layer may compose lower layers, but it may not invent contradictory semantics. A workspace cannot invent permission, a process cannot invent duplicate master data, a market software category cannot become a parallel architecture, and a capability cannot bypass its owning domain service.
+
+## Enterprise operating model
+
+The enterprise function taxonomy contains **29 functions, 353 sub-functions and 1,510 source activities**. It describes **what work organisations perform**. The 19 native capability domains describe **what product capability NuBlox owns**. Value streams describe **how outcomes cross functions and domains**.
+
+These dimensions are deliberately separate:
+
+**Enterprise Function ≠ Capability Domain ≠ Value Stream ≠ Lifecycle Stage ≠ Workspace**
+
+See [`docs/architecture/taxonomy/README.md`](docs/architecture/taxonomy/README.md) and [`docs/world-class/02-enterprise-operating-model.md`](docs/world-class/02-enterprise-operating-model.md).
 
 ## Construction and Built Environment
 
@@ -41,21 +74,21 @@ The sector model covers the enterprise and whole built-asset lifecycle:
 
 See [`docs/construction-and-built-environment.md`](docs/construction-and-built-environment.md).
 
-The product supports organisations ranging from sole traders to multi-entity groups across development/ownership, contracting, specialist trades, design/engineering, surveying/commercial, manufacturing, merchants/logistics, plant/fleet, infrastructure/utilities, property/FM and maintenance/service.
+Construction is NuBlox's deepest sector specialisation, but it is not the limit of the enterprise operating model. NuBlox must also run the sophisticated non-construction functions required by contractors, consultancies, developers, owners, manufacturers, property organisations and infrastructure operators.
 
 ## Native capability architecture
 
 NuBlox has 19 native capability domains covering enterprise/master data, CRM, estimating/sales, contracts/commercial, projects, design/BIM, finance, management accounting/planning, procurement, materials/logistics, production, people/payroll, site, QHSE, plant/EAM, property/FM, service, sustainability and platform data/workflow/intelligence.
 
-Those domains converge capabilities that the market usually separates into many systems. The world-class category coverage and complete built-environment digital-thread requirement are defined in [`platform-coverage-contract.md`](docs/architecture/bottom-up/platform-coverage-contract.md).
-
-The separate enterprise function taxonomy contains 29 functions, 353 sub-functions and 1,510 source activities. It describes **work performed**; capability domains describe **product capability owned**. They are mapped many-to-many.
+Those domains are ownership/composition boundaries, not 19 separate applications or a development checklist.
 
 ## Digital thread
 
-NuBlox must preserve controlled continuity from client need and requirement through estimate, design, product/system definition, procurement/fabrication, installation, commissioning and handed-over asset into operations, maintenance, refurbishment and disposal.
+NuBlox must preserve controlled continuity from market need and requirement through estimate, design, product/system definition, procurement/fabrication, installation, commissioning and handed-over asset into operation, maintenance, refurbishment and disposal.
 
 The thread connects commercial, schedule, cost, document/model revision, configuration, quality, safety, provenance, carbon, asset condition, service and accounting evidence instead of leaving those facts in disconnected applications.
+
+See [`docs/world-class/05-digital-thread.md`](docs/world-class/05-digital-thread.md).
 
 ## Security model
 
@@ -84,7 +117,7 @@ Tenant/project/record scope, lifecycle policy, delegated authority and segregati
 
 Committed SQL migrations in [`database/migrations/`](database/migrations/) are the implemented schema authority. Generated Kysely types are derivative.
 
-The last clean consolidated migration baseline measured on 22 August 2026 was 35 applied / 0 pending, 398 application tables, 904 foreign keys and 530 CHECK constraints. These are baseline observations, not permanent architecture invariants.
+Counts of migrations, tables, foreign keys, constraints and tests are observations of a particular baseline and must not be treated as permanent architecture invariants.
 
 ## Repository structure
 
@@ -95,6 +128,7 @@ database/
   docs/                      durable schema-package references
   seeds/                     controlled seed/reference data
 docs/
+  world-class/               product strategy, value streams, digital thread and delivery governance
   architecture/bottom-up/    governing architecture layers and platform coverage contract
   architecture/taxonomy/     enterprise function/activity taxonomy
   adr/                       Architecture Decision Records
@@ -105,9 +139,9 @@ docs/
 
 A material capability is not complete because a screen or table exists. It must trace through canonical records, invariants, permissions, lifecycle, service boundary, workflow/evidence, process consequences, reporting/integration, usable experience and automated validation.
 
-A software-category claim such as PLM, PMIS, EAM or digital twin additionally requires proof that its capabilities participate in the common NuBlox digital thread rather than existing as an isolated mini-application.
+A world-class claim additionally requires benchmark-competitive depth plus exceptional integration, control and experience proven through reference journeys.
 
-See [`docs/architecture/bottom-up/layer-9-completeness-validation.md`](docs/architecture/bottom-up/layer-9-completeness-validation.md).
+See [`docs/architecture/bottom-up/layer-9-completeness-validation.md`](docs/architecture/bottom-up/layer-9-completeness-validation.md) and [`docs/world-class/09-delivery-governance.md`](docs/world-class/09-delivery-governance.md).
 
 ## Local validation
 

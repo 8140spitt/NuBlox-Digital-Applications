@@ -4,6 +4,12 @@
 **Effective:** 22 August 2026  
 **Purpose:** define NuBlox from authoritative primitives upward so every capability, process and workspace is traceable to controlled data, invariants and permissions.
 
+## Product-strategy relationship
+
+The governing product-strategy and delivery rebaseline is [`../../world-class/README.md`](../../world-class/README.md).
+
+That suite defines **why and in what order** NuBlox develops enterprise and built-environment outcomes. This bottom-up architecture defines **how** those outcomes are safely engineered. Neither replaces the other.
+
 ## Core rule
 
 NuBlox is designed **bottom up**.
@@ -35,15 +41,19 @@ An upper layer may compose lower layers, but it **must not redefine them**.
 
 ## Product-scope invariant
 
-NuBlox is **one complete Construction and Built Environment product**. ERP, PLM, PDM, CDE, BIM, PPM/PMIS, SCM, HCM, QMS/EHS, EAM/CMMS, IWMS/FM, FSM, GIS/digital-twin and related market labels are completeness benchmarks over the native domains, not products the customer assembles.
+NuBlox is **one complete enterprise operating system engineered for organisations that create, deliver, own and operate the built environment**. ERP, PLM, PDM, CDE, BIM, PPM/PMIS, SCM, HCM, QMS/EHS, EAM/CMMS, IWMS/FM, FSM, GIS/digital-twin and related market labels are completeness benchmarks over the native domains, not products the customer assembles.
 
-See [`platform-coverage-contract.md`](platform-coverage-contract.md).
+Construction and the Built Environment is the deepest sector specialisation; it does not reduce the requirement for serious non-construction enterprise capability.
+
+See [`platform-coverage-contract.md`](platform-coverage-contract.md) and [`../../world-class/04-built-environment-specialisation.md`](../../world-class/04-built-environment-specialisation.md).
 
 ## Implementation runtime map
 
 For an implementation-first trace of how major process chains execute through routes, services, repositories, tables and tests, see [`runtime-process-map.md`](runtime-process-map.md).
 
 For UX and interaction-friction reduction priorities, see [`ux-friction-remediation.md`](ux-friction-remediation.md).
+
+For the current product baseline and target/current-state distinction, see [`../../world-class/07-world-class-baseline.md`](../../world-class/07-world-class-baseline.md).
 
 ## Authority
 
@@ -88,12 +98,14 @@ Before creating a route, table or feature package, answer in this order:
 
 If the answer begins with “create a screen” or “create a module”, the design is starting at the wrong layer.
 
+The product rebaseline adds a sequencing question before implementation begins: **which enterprise value-stream outcome and reference journey does this work materially strengthen?**
+
 ## Cross-cutting rule
 
 **Career ≠ Organisation Role ≠ Project Role ≠ Permission.**
 
 Likewise:
 
-**Enterprise function ≠ Capability domain ≠ Lifecycle stage ≠ Workspace ≠ Market software category.**
+**Enterprise Function ≠ Capability Domain ≠ Value Stream ≠ Lifecycle Stage ≠ Workspace ≠ Market Software Category.**
 
 Mappings between these dimensions are explicit, versioned and governed.

@@ -42,4 +42,18 @@ Mappings from an enterprise activity should ultimately identify:
 
 Those mappings must be governed additions. They must not be inferred simply to fill a matrix.
 
+## World-Class rebaseline relationship
+
+The taxonomy is a **coverage and operating-model catalogue, not the product delivery backlog**.
+
+The governing product rebaseline in [`../../world-class/README.md`](../../world-class/README.md) uses enterprise value streams and reference journeys to sequence delivery. A taxonomy activity becomes a prioritised product requirement only when it maps to a material customer outcome, canonical records, native capability ownership and an end-to-end process.
+
+This prevents NuBlox from confusing broad enterprise coverage with the order in which coherent product outcomes should be engineered.
+
+The governing distinction is:
+
+**Enterprise Function ≠ Capability Domain ≠ Value Stream ≠ Lifecycle Stage ≠ Workspace**
+
+See [`../../world-class/02-enterprise-operating-model.md`](../../world-class/02-enterprise-operating-model.md).
+
 See [`../bottom-up/README.md`](../bottom-up/README.md).
