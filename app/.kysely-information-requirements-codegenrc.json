@@ -1,0 +1,13 @@
+{
+	"dialect": "mysql",
+	"url": "env(DATABASE_URL)",
+	"outFile": "./src/lib/server/db/generated/information-requirements.d.ts",
+	"includePattern": "{project_information_requirements,project_information_requirement_*}",
+	"camelCase": false,
+	"numericParser": "string",
+	"typeMapping": {
+		"bigint": "string"
+	},
+	"typeOnlyImports": true,
+	"logLevel": "warn"
+}
