@@ -1,5 +1,7 @@
 import { createHash } from 'node:crypto';
 
+import { sql } from 'kysely';
+
 import {
 	formatScaledDecimal,
 	lineAmount,
@@ -743,6 +745,23 @@ export async function listAccountingSourceReferences(
 		.where('organisation_id', '=', organisationId)
 		.where('lifecycle_status', '=', 'approved')
 		.where('approved_at', 'is not', null)
+		.where(
+			sql<boolean>`not exists (
+				select 1
+				from accounting_journal_entries as journal
+				left join accounting_journal_entry_reversals as reversal
+					on reversal.journal_entry_id = journal.id
+					and reversal.organisation_id = journal.organisation_id
+				where journal.organisation_id = ${organisationId}
+					and journal.source_public_id = accounts_payable_documents.public_id
+					and journal.source_type = case
+						when accounts_payable_documents.document_type = 'credit_note'
+							then 'accounts_payable_credit_note_approval'
+						else 'accounts_payable_invoice_approval'
+					end
+					and reversal.journal_entry_id is null
+			)`
+		)
 		.orderBy('approved_at', 'desc')
 		.limit(100)
 		.execute();

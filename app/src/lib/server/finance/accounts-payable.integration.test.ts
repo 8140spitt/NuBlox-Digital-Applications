@@ -618,4 +618,60 @@ describe('Wave A native accounts payable foundation', () => {
 			otherWorkspace.suppliers.some((supplier) => supplier.publicId === supplierPublicId)
 		).toBe(false);
 	});
+
+	it('keeps an older unposted approved AP document visible beyond the 100-row candidate limit', async () => {
+		const approvalBase = new Date('2026-08-21T10:00:00.000Z').getTime();
+		const documents = Array.from({ length: 101 }, (_, index) => ({
+			organisation_id: organisationAId,
+			public_id: randomUUID(),
+			document_type: 'invoice',
+			supplier_party_id: supplierPartyId,
+			project_id: null,
+			purchase_order_id: null,
+			supplier_document_number: `AP-SCALE-${index}-${randomUUID().slice(0, 8)}`,
+			invoice_date: new Date('2026-08-21T00:00:00.000Z'),
+			tax_date: null,
+			due_date: null,
+			currency_code: 'GBP',
+			lifecycle_status: 'approved',
+			net_amount: '1.0000',
+			tax_amount: '0.0000',
+			gross_amount: '1.0000',
+			created_by_member_id: makerMemberId,
+			submitted_at: new Date(approvalBase + index * 60_000 - 1_000),
+			approved_at: new Date(approvalBase + index * 60_000)
+		}));
+		await db.insertInto('accounts_payable_documents').values(documents).execute();
+
+		const oldestUnposted = documents[0]!;
+		await db
+			.insertInto('accounting_journal_entries')
+			.values(
+				documents.slice(1).map((document, index) => ({
+					organisation_id: organisationAId,
+					public_id: randomUUID(),
+					journal_number: `AP-SCALE-JRN-${String(index + 1).padStart(3, '0')}`,
+					source_type: 'accounts_payable_invoice_approval',
+					source_public_id: document.public_id,
+					source_event_at: document.approved_at,
+					source_amount: '1.0000',
+					source_fingerprint: String(index + 1).padStart(64, '0'),
+					accounting_date: new Date('2026-08-21T00:00:00.000Z'),
+					currency_code: 'GBP',
+					memo: 'Scale regression posted AP source',
+					posted_by_member_id: makerMemberId,
+					posted_at: document.approved_at
+				}))
+			)
+			.execute();
+
+		const workspace = await new AccountingService(db).getWorkspace(actorMaker);
+		expect(
+			workspace.candidates.some(
+				(candidate) =>
+					candidate.sourceType === 'accounts_payable_invoice_approval' &&
+					candidate.sourcePublicId === oldestUnposted.public_id
+			)
+		).toBe(true);
+	});
 });
