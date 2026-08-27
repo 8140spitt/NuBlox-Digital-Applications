@@ -8,7 +8,9 @@
 		cash_receipts: 'Cash receipts',
 		customer_unapplied_cash: 'Customer unapplied cash',
 		bad_debt_expense: 'Bad-debt expense',
-		bad_debt_recovery_income: 'Bad-debt recovery income'
+		bad_debt_recovery_income: 'Bad-debt recovery income',
+		accounts_payable: 'Accounts payable',
+		purchase_expense: 'Purchase expense'
 	};
 
 	function dateText(value: Date | null) {
@@ -39,9 +41,10 @@
 <section class="notice">
 	<strong>Source-derived journals under period governance</strong>
 	<span
-		>Journal debit/credit roles and amounts are derived from operational finance events. Posting and
-		reversal require an open accounting period; exports require an exact closed period. Freehand
-		journals, bank reconciliation and accounting-provider sync remain outside this boundary.</span
+		>Journal debit/credit roles and amounts are derived from operational finance events, including
+		approved supplier documents. Posting and reversal require an open accounting period; exports
+		require an exact closed period. Freehand journals, bank reconciliation and accounting-provider
+		sync remain outside this boundary.</span
 	>
 </section>
 
