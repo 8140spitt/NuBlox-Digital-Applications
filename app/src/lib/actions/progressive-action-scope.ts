@@ -4,11 +4,7 @@ import { goto } from '$app/navigation';
 type SubmitControl = HTMLButtonElement | HTMLInputElement;
 
 function actionLabel(submitter: HTMLElement | null): string {
-	return (
-		submitter?.textContent?.trim() ||
-		submitter?.getAttribute('aria-label')?.trim() ||
-		'Action'
-	);
+	return submitter?.textContent?.trim() || submitter?.getAttribute('aria-label')?.trim() || 'Action';
 }
 
 function failureMessage(data: unknown): string | null {
