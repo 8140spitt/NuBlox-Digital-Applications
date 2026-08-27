@@ -43,6 +43,8 @@ See [`platform-coverage-contract.md`](platform-coverage-contract.md).
 
 For an implementation-first trace of how major process chains execute through routes, services, repositories, tables and tests, see [`runtime-process-map.md`](runtime-process-map.md).
 
+For UX and interaction-friction reduction priorities, see [`ux-friction-remediation.md`](ux-friction-remediation.md).
+
 ## Authority
 
 For implemented schema, committed MySQL migrations remain authoritative. The bottom-up architecture defines how new schema and services must be designed and how implemented capability is interpreted.
