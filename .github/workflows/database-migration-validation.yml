@@ -93,9 +93,12 @@ jobs:
         working-directory: app
         run: pnpm audit --prod --audit-level moderate
 
-      - name: Run formatting and lint checks
+      - name: Diagnose progressive action formatting
         working-directory: app
-        run: pnpm lint
+        run: |
+          pnpm exec prettier --write src/lib/actions/progressive-action-scope.ts
+          git diff -- src/lib/actions/progressive-action-scope.ts
+          exit 1
 
       - name: Apply authoritative migration stream
         working-directory: app
