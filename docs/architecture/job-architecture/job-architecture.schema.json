@@ -1,0 +1,203 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://nublox.example/schema/job-architecture.schema.json",
+  "title": "NuBlox Functional Role and Job Architecture",
+  "type": "object",
+  "$defs": {
+    "status": {
+      "type": "string",
+      "enum": ["candidate", "approved", "retired"]
+    },
+    "functionalRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "name",
+        "purpose",
+        "jobFamilyId",
+        "source",
+        "activities",
+        "accountabilities",
+        "expectedOutputs",
+        "knowledgeAndSkills",
+        "behaviouralCompetencies",
+        "defaultPerformanceMeasures"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^FR-F[0-9]{2}\\.[0-9]{2}$"
+        },
+        "status": { "$ref": "#/$defs/status" },
+        "name": { "type": "string", "minLength": 1 },
+        "purpose": { "type": "string", "minLength": 1 },
+        "jobFamilyId": {
+          "type": "string",
+          "pattern": "^JF-F[0-9]{2}$"
+        },
+        "source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["functionId", "functionName", "subfunctionId", "subfunctionName"],
+          "properties": {
+            "functionId": { "type": "string", "pattern": "^F[0-9]{2}$" },
+            "functionName": { "type": "string", "minLength": 1 },
+            "subfunctionId": { "type": "string", "pattern": "^F[0-9]{2}\\.[0-9]{2}$" },
+            "subfunctionName": { "type": "string", "minLength": 1 }
+          }
+        },
+        "activities": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "accountabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "expectedOutputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "knowledgeAndSkills": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "behaviouralCompetencies": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "defaultPerformanceMeasures": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "jobProfile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "status",
+        "title",
+        "jobFamilyId",
+        "level",
+        "purpose",
+        "primaryFunctionalRoleIds",
+        "secondaryFunctionalRoleIds",
+        "keyAccountabilities",
+        "expectedOutputs",
+        "knowledgeAndTechnicalSkills",
+        "behaviouralCompetencies",
+        "qualifications",
+        "experience",
+        "performanceMeasures",
+        "alternativeTitles",
+        "sourceMappings"
+      ],
+      "properties": {
+        "id": { "type": "string", "minLength": 1 },
+        "status": { "$ref": "#/$defs/status" },
+        "title": { "type": "string", "minLength": 1 },
+        "jobFamilyId": { "type": "string", "pattern": "^JF-F[0-9]{2}$" },
+        "level": {
+          "type": "string",
+          "enum": [
+            "executive",
+            "head",
+            "manager",
+            "lead",
+            "senior-professional",
+            "professional",
+            "associate",
+            "operational"
+          ]
+        },
+        "purpose": { "type": "string", "minLength": 1 },
+        "primaryFunctionalRoleIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^FR-F[0-9]{2}\\.[0-9]{2}$" }
+        },
+        "secondaryFunctionalRoleIds": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "pattern": "^FR-F[0-9]{2}\\.[0-9]{2}$" }
+        },
+        "keyAccountabilities": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "expectedOutputs": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "knowledgeAndTechnicalSkills": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "behaviouralCompetencies": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "qualifications": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "experience": { "type": "string", "minLength": 1 },
+        "performanceMeasures": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "alternativeTitles": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "sourceMappings": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["functionIds", "subfunctionIds"],
+          "properties": {
+            "functionIds": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^F[0-9]{2}$" }
+            },
+            "subfunctionIds": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": { "type": "string", "pattern": "^F[0-9]{2}\\.[0-9]{2}$" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "properties": {
+    "functionalRoles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/functionalRole" }
+    },
+    "jobProfiles": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/jobProfile" }
+    }
+  },
+  "additionalProperties": true
+}
