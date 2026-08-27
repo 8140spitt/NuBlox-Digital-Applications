@@ -1,12 +1,13 @@
 <script lang="ts">
 	let { data, form } = $props();
-	let customerPartyPublicId = $state(data.opportunity.primaryPartyPublicId ?? '');
+	let customerPartyPublicId = $derived(data.opportunity.primaryPartyPublicId ?? '');
 	let selectedCustomer = $derived(
 		data.customerOptions.find((customer) => customer.publicId === customerPartyPublicId) ?? null
 	);
-	const currentClientContactPublicId =
+	let currentClientContactPublicId = $derived(
 		data.participants.find((participant) => participant.roleCode === 'client_contact')
-			?.partyPublicId ?? '';
+			?.partyPublicId ?? ''
+	);
 
 	const statusLabels: Record<string, string> = {
 		open: 'Open',
