@@ -1,6 +1,8 @@
 import { enhance } from '$app/forms';
 import { goto } from '$app/navigation';
 
+type SubmitControl = HTMLButtonElement | HTMLInputElement;
+
 function actionLabel(submitter: HTMLElement | null): string {
 	return (
 		submitter?.textContent?.trim() ||
@@ -17,9 +19,18 @@ function failureMessage(data: unknown): string | null {
 	return null;
 }
 
+function submitControls(scope: HTMLElement): SubmitControl[] {
+	return Array.from(
+		scope.querySelectorAll<SubmitControl>(
+			'button:not([type]), button[type="submit"], input[type="submit"], input[type="image"]'
+		)
+	);
+}
+
 export function progressiveActionScope(scope: HTMLElement) {
 	const enhanced = new Map<HTMLFormElement, () => void>();
 	let feedback: HTMLDivElement | null = null;
+	let requestActive = false;
 
 	function showFeedback(kind: 'pending' | 'success' | 'error', message: string) {
 		if (!feedback) {
@@ -34,15 +45,20 @@ export function progressiveActionScope(scope: HTMLElement) {
 
 	function bind(form: HTMLFormElement) {
 		if (enhanced.has(form) || form.method.toLowerCase() !== 'post') return;
-		const action = enhance(form, ({ submitter }) => {
+		const action = enhance(form, ({ submitter, cancel }) => {
+			if (requestActive) {
+				cancel();
+				return;
+			}
+
+			requestActive = true;
 			const label = actionLabel(submitter);
-			const control =
-				submitter instanceof HTMLButtonElement || submitter instanceof HTMLInputElement
-					? submitter
-					: null;
-			const wasDisabled = control?.disabled ?? false;
+			const controls = submitControls(scope);
+			const disabledStates = new Map(controls.map((control) => [control, control.disabled]));
+
+			scope.setAttribute('aria-busy', 'true');
 			form.setAttribute('aria-busy', 'true');
-			if (control) control.disabled = true;
+			for (const control of controls) control.disabled = true;
 			showFeedback('pending', `${label}…`);
 
 			return async ({ result, update }) => {
@@ -67,8 +83,12 @@ export function progressiveActionScope(scope: HTMLElement) {
 						showFeedback('success', `${label} completed.`);
 					}
 				} finally {
+					requestActive = false;
+					scope.removeAttribute('aria-busy');
 					form.removeAttribute('aria-busy');
-					if (control) control.disabled = wasDisabled;
+					for (const [control, wasDisabled] of disabledStates) {
+						control.disabled = wasDisabled;
+					}
 				}
 			};
 		});
