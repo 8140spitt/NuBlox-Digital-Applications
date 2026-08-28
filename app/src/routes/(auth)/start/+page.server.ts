@@ -2,20 +2,15 @@ import { dev } from '$app/environment';
 import { error, fail, redirect, type Actions } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
-import { ensureAssetsMaintenanceStandardRoleDefaults } from '$lib/server/assets/assets-maintenance-bootstrap';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
 import { getDatabase } from '$lib/server/db/database';
-import { ensureInformationStandardRoleDefaults } from '$lib/server/information/information-bootstrap';
 import {
 	OrganisationBootstrapService,
 	OrganisationBootstrapValidationError
 } from '$lib/server/organisations/bootstrap-service';
-import { ensurePortalCollaborationStandardRoleDefaults } from '$lib/server/portal/portal-collaboration-bootstrap';
-import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';
-import { ensureSiteQualitySafetyStandardRoleDefaults } from '$lib/server/site/site-quality-safety-bootstrap';
+import { ensureStandardRolePermissionDefaults } from '$lib/server/organisations/standard-role-reconciliation';
 import { ORGANISATION_COOKIE } from '$lib/server/request-context';
-import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
 
 function field(formData: FormData, name: string): string {
 	const value = formData.get(name);
@@ -50,14 +45,7 @@ export const actions: Actions = {
 					defaultCurrencyCode: field(formData, 'defaultCurrencyCode')
 				}
 			);
-			await Promise.all([
-				ensureWorkforceStandardRoleDefaults(db, created.organisationId),
-				ensureInformationStandardRoleDefaults(db, created.organisationId),
-				ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId),
-				ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId),
-				ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId),
-				ensurePortalCollaborationStandardRoleDefaults(db, created.organisationId)
-			]);
+			await ensureStandardRolePermissionDefaults(db, created.organisationId);
 
 			cookies.set(ORGANISATION_COOKIE, created.organisationPublicId, {
 				httpOnly: true,
