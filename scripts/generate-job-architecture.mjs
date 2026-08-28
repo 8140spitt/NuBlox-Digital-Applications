@@ -320,6 +320,38 @@ const specialistTitleOverrides = {
   'Process performance': 'Process Performance Analyst',
 };
 
+const functionSkillBaselines = {
+  F01: ['Strategic analysis', 'Scenario planning', 'Decision support'],
+  F02: ['Governance', 'Policy management', 'Decision-rights management'],
+  F03: ['Performance management', 'KPI design', 'Analytical interpretation'],
+  F04: ['Strategic analysis', 'Commercial judgement', 'Decision support'],
+  F05: ['Product management', 'Requirements analysis', 'Lifecycle management'],
+  F06: ['Marketing planning', 'Audience insight', 'Campaign measurement'],
+  F07: ['Commercial judgement', 'Customer relationship management', 'Revenue management'],
+  F08: ['Customer service', 'Case management', 'Customer communication'],
+  F09: ['Procurement', 'Supplier management', 'Commercial negotiation'],
+  F10: ['Supply chain planning', 'Inventory management', 'Operational coordination'],
+  F11: ['Production operations', 'Operational control', 'Continuous improvement'],
+  F12: ['Service delivery', 'Operational coordination', 'Customer communication'],
+  F13: ['Quality management', 'Root-cause analysis', 'Control assurance'],
+  F14: ['Financial analysis', 'Financial control', 'Accounting / finance operations'],
+  F15: ['Human resources', 'People operations', 'Stakeholder management'],
+  F16: ['Technology delivery', 'IT service management', 'Technical problem solving'],
+  F17: ['Data management', 'Analytics', 'Data governance'],
+  F18: ['Information security', 'Risk assessment', 'Security controls'],
+  F19: ['Legal analysis', 'Contract interpretation', 'Regulatory awareness'],
+  F20: ['Risk management', 'Compliance', 'Assurance'],
+  F21: ['Privacy management', 'Information governance', 'Regulatory compliance'],
+  F22: ['Asset management', 'Facilities operations', 'Lifecycle planning'],
+  F23: ['HSE management', 'Risk control', 'Sustainability'],
+  F24: ['Business resilience', 'Incident coordination', 'Crisis response'],
+  F25: ['Communications', 'Stakeholder engagement', 'Reputation management'],
+  F26: ['Information management', 'Records governance', 'Knowledge management'],
+  F27: ['Project management', 'Planning and control', 'Stakeholder management'],
+  F28: ['Change management', 'Stakeholder engagement', 'Adoption planning'],
+  F29: ['Business process management', 'Process analysis', 'Continuous improvement'],
+};
+
 const skillRules = [
   [/strategy|strategic|scenario|foresight/i, ['Strategic analysis', 'Scenario planning', 'Decision support']],
   [/governance|board|committee|policy|authority/i, ['Governance', 'Policy management', 'Decision-rights management']],
@@ -425,6 +457,9 @@ function sentence(value) {
 function inferSkills(functionId, roleName, activities) {
   const haystack = `${roleName} ${activities.join(' ')}`;
   const skills = new Set(['Business communication', 'Record and evidence management']);
+  const baseline = functionSkillBaselines[functionId];
+  if (!baseline) throw new Error(`Missing skill baseline for enterprise function ${functionId}.`);
+  baseline.forEach((value) => skills.add(value));
 
   for (const [[rule, values], scopes] of skillRules.map((rule, index) => [
     rule,
@@ -693,6 +728,26 @@ function validateGeneratedQuality(functions, functionalRoles, jobProfiles, cover
     'Quality management',
     'Root-cause analysis',
     'Control assurance',
+  ]);
+
+  const assertIncludes = (profileId, expectedSkills) => {
+    const profile = profileById.get(profileId);
+    if (!profile) throw new Error(`Missing regression profile ${profileId}.`);
+    const missing = expectedSkills.filter((skill) => !profile.knowledgeAndTechnicalSkills.includes(skill));
+    if (missing.length > 0) {
+      throw new Error(`${profileId} is missing its enterprise-function skill baseline: ${missing.join(', ')}.`);
+    }
+  };
+
+  assertIncludes('JP-F01.02-PROFESSIONAL', [
+    'Strategic analysis',
+    'Scenario planning',
+    'Decision support',
+  ]);
+  assertIncludes('JP-F01.05-PROFESSIONAL', [
+    'Strategic analysis',
+    'Scenario planning',
+    'Decision support',
   ]);
 }
 

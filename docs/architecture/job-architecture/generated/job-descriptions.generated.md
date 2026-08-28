@@ -89,6 +89,9 @@ Perform and continuously improve vision & purpose work within Strategy & Enterpr
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Scenario planning
+- Decision support
 
 **Performance measures**
 
@@ -129,6 +132,9 @@ Perform and continuously improve environmental analysis work within Strategy & E
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Scenario planning
+- Decision support
 
 **Performance measures**
 
@@ -210,6 +216,9 @@ Perform and continuously improve business planning work within Strategy & Enterp
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Scenario planning
+- Decision support
 
 **Performance measures**
 
@@ -249,6 +258,9 @@ Perform and continuously improve operating model work within Strategy & Enterpri
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Scenario planning
+- Decision support
 
 **Performance measures**
 
@@ -289,6 +301,9 @@ Perform and continuously improve goal & kpi management work within Strategy & En
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Scenario planning
+- Decision support
 - Performance management
 - KPI design
 - Analytical interpretation
@@ -590,6 +605,9 @@ Perform and continuously improve executive management work within Corporate Gove
 
 - Business communication
 - Record and evidence management
+- Governance
+- Policy management
+- Decision-rights management
 
 **Performance measures**
 
@@ -886,6 +904,9 @@ Perform and continuously improve variance management work within Enterprise Perf
 
 - Business communication
 - Record and evidence management
+- Performance management
+- KPI design
+- Analytical interpretation
 
 **Performance measures**
 
@@ -1061,8 +1082,9 @@ Provide accountable leadership for Corporate Development & M&A, establishing dir
 - Business communication
 - Record and evidence management
 - Strategic analysis
-- Scenario planning
+- Commercial judgement
 - Decision support
+- Scenario planning
 
 **Performance measures**
 
@@ -1101,8 +1123,9 @@ Perform and continuously improve opportunity identification work within Corporat
 - Business communication
 - Record and evidence management
 - Strategic analysis
-- Scenario planning
+- Commercial judgement
 - Decision support
+- Scenario planning
 
 **Performance measures**
 
@@ -1142,8 +1165,9 @@ Perform and continuously improve valuation work within Corporate Development & M
 - Business communication
 - Record and evidence management
 - Strategic analysis
-- Scenario planning
+- Commercial judgement
 - Decision support
+- Scenario planning
 
 **Performance measures**
 
@@ -1185,6 +1209,9 @@ Perform and continuously improve due diligence work within Corporate Development
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Commercial judgement
+- Decision support
 
 **Performance measures**
 
@@ -1224,6 +1251,9 @@ Perform and continuously improve transaction management work within Corporate De
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Commercial judgement
+- Decision support
 
 **Performance measures**
 
@@ -1262,6 +1292,9 @@ Perform and continuously improve integration work within Corporate Development &
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Commercial judgement
+- Decision support
 
 **Performance measures**
 
@@ -1301,6 +1334,9 @@ Perform and continuously improve divestiture work within Corporate Development &
 
 - Business communication
 - Record and evidence management
+- Strategic analysis
+- Commercial judgement
+- Decision support
 
 **Performance measures**
 
@@ -1341,8 +1377,9 @@ Perform and continuously improve strategic partnerships work within Corporate De
 - Business communication
 - Record and evidence management
 - Strategic analysis
-- Scenario planning
+- Commercial judgement
 - Decision support
+- Scenario planning
 
 **Performance measures**
 
@@ -1479,6 +1516,9 @@ Perform and continuously improve market / customer needs work within Product, Se
 
 - Business communication
 - Record and evidence management
+- Product management
+- Requirements analysis
+- Lifecycle management
 
 **Performance measures**
 
@@ -1560,6 +1600,9 @@ Perform and continuously improve business case development work within Product, 
 
 - Business communication
 - Record and evidence management
+- Product management
+- Requirements analysis
+- Lifecycle management
 
 **Performance measures**
 
@@ -1682,6 +1725,9 @@ Perform and continuously improve launch management work within Product, Service 
 
 - Business communication
 - Record and evidence management
+- Product management
+- Requirements analysis
+- Lifecycle management
 
 **Performance measures**
 
@@ -1942,6 +1988,9 @@ Perform and continuously improve customer segmentation work within Marketing & B
 
 - Business communication
 - Record and evidence management
+- Marketing planning
+- Audience insight
+- Campaign measurement
 
 **Performance measures**
 
@@ -2191,6 +2240,9 @@ Perform and continuously improve events work within Marketing & Brand, producing
 
 - Business communication
 - Record and evidence management
+- Marketing planning
+- Audience insight
+- Campaign measurement
 
 **Performance measures**
 
@@ -2230,6 +2282,9 @@ Perform and continuously improve lead generation work within Marketing & Brand, 
 
 - Business communication
 - Record and evidence management
+- Marketing planning
+- Audience insight
+- Campaign measurement
 
 **Performance measures**
 
@@ -2707,6 +2762,9 @@ Perform and continuously improve contract negotiation work within Sales & Commer
 
 - Business communication
 - Record and evidence management
+- Commercial judgement
+- Customer relationship management
+- Revenue management
 
 **Performance measures**
 
@@ -3226,6 +3284,9 @@ Perform and continuously improve returns / refunds work within Customer Service,
 
 - Business communication
 - Record and evidence management
+- Customer service
+- Case management
+- Customer communication
 
 **Performance measures**
 
@@ -3469,6 +3530,9 @@ Perform and continuously improve service-level management work within Customer S
 
 - Business communication
 - Record and evidence management
+- Customer service
+- Case management
+- Customer communication
 
 **Performance measures**
 
@@ -3607,6 +3671,9 @@ Perform and continuously improve category management work within Procurement & S
 
 - Business communication
 - Record and evidence management
+- Procurement
+- Supplier management
+- Commercial negotiation
 
 **Performance measures**
 
@@ -3771,6 +3838,9 @@ Perform and continuously improve contracting work within Procurement & Supplier 
 
 - Business communication
 - Record and evidence management
+- Procurement
+- Supplier management
+- Commercial negotiation
 
 **Performance measures**
 
@@ -4319,6 +4389,9 @@ Perform and continuously improve material requirements work within Demand, Suppl
 
 - Business communication
 - Record and evidence management
+- Supply chain planning
+- Inventory management
+- Operational coordination
 
 **Performance measures**
 
@@ -4525,6 +4598,9 @@ Perform and continuously improve import / export work within Demand, Supply Chai
 
 - Business communication
 - Record and evidence management
+- Supply chain planning
+- Inventory management
+- Operational coordination
 
 **Performance measures**
 
@@ -4909,6 +4985,9 @@ Perform and continuously improve process control work within Manufacturing / Pro
 
 - Business communication
 - Record and evidence management
+- Production operations
+- Operational control
+- Continuous improvement
 
 **Performance measures**
 
@@ -5073,6 +5152,9 @@ Perform and continuously improve capacity management work within Manufacturing /
 
 - Business communication
 - Record and evidence management
+- Production operations
+- Operational control
+- Continuous improvement
 
 **Performance measures**
 
@@ -5110,6 +5192,9 @@ Perform and continuously improve maintenance coordination work within Manufactur
 
 - Business communication
 - Record and evidence management
+- Production operations
+- Operational control
+- Continuous improvement
 
 **Performance measures**
 
@@ -5204,9 +5289,11 @@ Provide accountable leadership for Service Delivery & Field Operations, establis
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 - Customer service
 - Case management
-- Customer communication
 
 **Performance measures**
 
@@ -5245,6 +5332,9 @@ Perform and continuously improve service planning work within Service Delivery &
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5282,6 +5372,9 @@ Perform and continuously improve service scheduling work within Service Delivery
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5320,6 +5413,9 @@ Perform and continuously improve resource dispatch work within Service Delivery 
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5358,6 +5454,9 @@ Perform and continuously improve service execution work within Service Delivery 
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5397,9 +5496,11 @@ Perform and continuously improve field service work within Service Delivery & Fi
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 - Customer service
 - Case management
-- Customer communication
 
 **Performance measures**
 
@@ -5438,6 +5539,9 @@ Perform and continuously improve professional services work within Service Deliv
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5476,6 +5580,9 @@ Perform and continuously improve service acceptance work within Service Delivery
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5513,6 +5620,9 @@ Perform and continuously improve service quality work within Service Delivery & 
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5550,6 +5660,9 @@ Perform and continuously improve service capacity work within Service Delivery &
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -5589,6 +5702,9 @@ Perform and continuously improve service performance work within Service Deliver
 
 - Business communication
 - Record and evidence management
+- Service delivery
+- Operational coordination
+- Customer communication
 
 **Performance measures**
 
@@ -6010,6 +6126,9 @@ Perform and continuously improve continuous improvement work within Quality Mana
 
 - Business communication
 - Record and evidence management
+- Quality management
+- Root-cause analysis
+- Control assurance
 
 **Performance measures**
 
@@ -6489,6 +6608,9 @@ Perform and continuously improve expense management work within Finance, Account
 
 - Business communication
 - Record and evidence management
+- Financial analysis
+- Financial control
+- Accounting / finance operations
 
 **Performance measures**
 
@@ -6650,6 +6772,9 @@ Perform and continuously improve consolidation work within Finance, Accounting, 
 
 - Business communication
 - Record and evidence management
+- Financial analysis
+- Financial control
+- Accounting / finance operations
 
 **Performance measures**
 
@@ -6855,6 +6980,9 @@ Perform and continuously improve debt & financing work within Finance, Accountin
 
 - Business communication
 - Record and evidence management
+- Financial analysis
+- Financial control
+- Accounting / finance operations
 
 **Performance measures**
 
@@ -6936,6 +7064,9 @@ Perform and continuously improve financial controls work within Finance, Account
 
 - Business communication
 - Record and evidence management
+- Financial analysis
+- Financial control
+- Accounting / finance operations
 
 **Performance measures**
 
@@ -6973,6 +7104,9 @@ Perform and continuously improve profitability analysis work within Finance, Acc
 
 - Business communication
 - Record and evidence management
+- Financial analysis
+- Financial control
+- Accounting / finance operations
 
 **Performance measures**
 
@@ -7012,6 +7146,9 @@ Perform and continuously improve capital expenditure work within Finance, Accoun
 
 - Business communication
 - Record and evidence management
+- Financial analysis
+- Financial control
+- Accounting / finance operations
 
 **Performance measures**
 
@@ -7204,6 +7341,9 @@ Perform and continuously improve organisation design work within Human Resources
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -7242,6 +7382,9 @@ Perform and continuously improve job architecture work within Human Resources / 
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -7283,6 +7426,9 @@ Perform and continuously improve recruitment work within Human Resources / Human
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -7321,6 +7467,9 @@ Perform and continuously improve pre-employment work within Human Resources / Hu
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -7448,6 +7597,9 @@ Perform and continuously improve time & attendance work within Human Resources /
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -7611,6 +7763,9 @@ Perform and continuously improve performance management work within Human Resour
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -7818,6 +7973,9 @@ Perform and continuously improve absence management work within Human Resources 
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -7857,6 +8015,9 @@ Perform and continuously improve offboarding work within Human Resources / Human
 
 - Business communication
 - Record and evidence management
+- Human resources
+- People operations
+- Stakeholder management
 
 **Performance measures**
 
@@ -8008,6 +8169,9 @@ Perform and continuously improve it strategy work within Information Technology,
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8129,6 +8293,9 @@ Perform and continuously improve application management work within Information 
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8417,6 +8584,9 @@ Perform and continuously improve identity administration work within Information
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8538,6 +8708,9 @@ Perform and continuously improve problem management work within Information Tech
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8578,6 +8751,9 @@ Perform and continuously improve change management work within Information Techn
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8700,6 +8876,9 @@ Perform and continuously improve it asset management work within Information Tec
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8737,6 +8916,9 @@ Perform and continuously improve availability / capacity work within Information
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8776,6 +8958,9 @@ Perform and continuously improve disaster recovery work within Information Techn
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -8815,6 +9000,9 @@ Perform and continuously improve technology vendor management work within Inform
 
 - Business communication
 - Record and evidence management
+- Technology delivery
+- IT service management
+- Technical problem solving
 
 **Performance measures**
 
@@ -10527,6 +10715,9 @@ Perform and continuously improve company secretariat work within Legal & Corpora
 
 - Business communication
 - Record and evidence management
+- Legal analysis
+- Contract interpretation
+- Regulatory awareness
 
 **Performance measures**
 
@@ -10873,12 +11064,12 @@ Provide accountable leadership for Risk, Compliance, Internal Control & Audit, e
 
 - Business communication
 - Record and evidence management
-- Governance
-- Policy management
-- Decision-rights management
 - Risk management
 - Compliance
 - Assurance
+- Governance
+- Policy management
+- Decision-rights management
 
 **Performance measures**
 
@@ -10917,12 +11108,12 @@ Perform and continuously improve risk framework work within Risk, Compliance, In
 
 - Business communication
 - Record and evidence management
-- Governance
-- Policy management
-- Decision-rights management
 - Risk management
 - Compliance
 - Assurance
+- Governance
+- Policy management
+- Decision-rights management
 
 **Performance measures**
 
@@ -11371,12 +11562,12 @@ Perform and continuously improve audit reporting work within Risk, Compliance, I
 
 - Business communication
 - Record and evidence management
-- Governance
-- Policy management
-- Decision-rights management
 - Risk management
 - Compliance
 - Assurance
+- Governance
+- Policy management
+- Decision-rights management
 
 **Performance measures**
 
@@ -11416,6 +11607,9 @@ Perform and continuously improve issue / remediation work within Risk, Complianc
 
 - Business communication
 - Record and evidence management
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -11589,12 +11783,12 @@ Provide accountable leadership for Privacy & Information Governance, establishin
 
 - Business communication
 - Record and evidence management
-- Governance
-- Policy management
-- Decision-rights management
 - Privacy management
 - Information governance
 - Regulatory compliance
+- Governance
+- Policy management
+- Decision-rights management
 
 **Performance measures**
 
@@ -11632,12 +11826,12 @@ Perform and continuously improve privacy governance work within Privacy & Inform
 
 - Business communication
 - Record and evidence management
-- Governance
-- Policy management
-- Decision-rights management
 - Privacy management
 - Information governance
 - Regulatory compliance
+- Governance
+- Policy management
+- Decision-rights management
 
 **Performance measures**
 
@@ -11881,6 +12075,9 @@ Perform and continuously improve international transfers work within Privacy & I
 
 - Business communication
 - Record and evidence management
+- Privacy management
+- Information governance
+- Regulatory compliance
 
 **Performance measures**
 
@@ -12098,6 +12295,9 @@ Perform and continuously improve capital planning work within Property, Faciliti
 
 - Business communication
 - Record and evidence management
+- Asset management
+- Facilities operations
+- Lifecycle planning
 
 **Performance measures**
 
@@ -12221,6 +12421,9 @@ Perform and continuously improve construction / project delivery work within Pro
 
 - Business communication
 - Record and evidence management
+- Asset management
+- Facilities operations
+- Lifecycle planning
 - Project management
 - Planning and control
 - Stakeholder management
@@ -12468,6 +12671,9 @@ Perform and continuously improve space management work within Property, Faciliti
 
 - Business communication
 - Record and evidence management
+- Asset management
+- Facilities operations
+- Lifecycle planning
 
 **Performance measures**
 
@@ -12647,12 +12853,12 @@ Provide accountable leadership for Health, Safety, Environment & Sustainability,
 
 - Business communication
 - Record and evidence management
-- Risk management
-- Compliance
-- Assurance
 - HSE management
 - Risk control
 - Sustainability
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -12731,12 +12937,12 @@ Perform and continuously improve hazard identification work within Health, Safet
 
 - Business communication
 - Record and evidence management
-- Risk management
-- Compliance
-- Assurance
 - HSE management
 - Risk control
 - Sustainability
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -12775,6 +12981,9 @@ Perform and continuously improve workplace inspections work within Health, Safet
 
 - Business communication
 - Record and evidence management
+- HSE management
+- Risk control
+- Sustainability
 
 **Performance measures**
 
@@ -12813,6 +13022,9 @@ Perform and continuously improve incident management work within Health, Safety,
 
 - Business communication
 - Record and evidence management
+- HSE management
+- Risk control
+- Sustainability
 
 **Performance measures**
 
@@ -12850,6 +13062,9 @@ Perform and continuously improve occupational health work within Health, Safety,
 
 - Business communication
 - Record and evidence management
+- HSE management
+- Risk control
+- Sustainability
 
 **Performance measures**
 
@@ -12929,12 +13144,12 @@ Perform and continuously improve environmental management work within Health, Sa
 
 - Business communication
 - Record and evidence management
-- Risk management
-- Compliance
-- Assurance
 - HSE management
 - Risk control
 - Sustainability
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -13220,12 +13435,12 @@ Perform and continuously improve environmental compliance work within Health, Sa
 
 - Business communication
 - Record and evidence management
-- Risk management
-- Compliance
-- Assurance
 - HSE management
 - Risk control
 - Sustainability
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -13281,12 +13496,12 @@ Provide accountable leadership for Business Continuity, Crisis & Physical Securi
 
 - Business communication
 - Record and evidence management
-- Risk management
-- Compliance
-- Assurance
 - Business resilience
 - Incident coordination
 - Crisis response
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -13366,6 +13581,9 @@ Perform and continuously improve business impact analysis work within Business C
 
 - Business communication
 - Record and evidence management
+- Business resilience
+- Incident coordination
+- Crisis response
 
 **Performance measures**
 
@@ -13606,6 +13824,9 @@ Perform and continuously improve disaster recovery coordination work within Busi
 
 - Business communication
 - Record and evidence management
+- Business resilience
+- Incident coordination
+- Crisis response
 
 **Performance measures**
 
@@ -13644,12 +13865,12 @@ Perform and continuously improve physical security work within Business Continui
 
 - Business communication
 - Record and evidence management
-- Risk management
-- Compliance
-- Assurance
 - Business resilience
 - Incident coordination
 - Crisis response
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -13688,6 +13909,9 @@ Perform and continuously improve visitor management work within Business Continu
 
 - Business communication
 - Record and evidence management
+- Business resilience
+- Incident coordination
+- Crisis response
 
 **Performance measures**
 
@@ -13726,6 +13950,9 @@ Perform and continuously improve security investigations work within Business Co
 
 - Business communication
 - Record and evidence management
+- Business resilience
+- Incident coordination
+- Crisis response
 
 **Performance measures**
 
@@ -13764,12 +13991,12 @@ Perform and continuously improve travel security work within Business Continuity
 
 - Business communication
 - Record and evidence management
-- Risk management
-- Compliance
-- Assurance
 - Business resilience
 - Incident coordination
 - Crisis response
+- Risk management
+- Compliance
+- Assurance
 
 **Performance measures**
 
@@ -14028,6 +14255,9 @@ Perform and continuously improve reputation management work within Communication
 
 - Business communication
 - Record and evidence management
+- Communications
+- Stakeholder engagement
+- Reputation management
 
 **Performance measures**
 
@@ -14106,6 +14336,9 @@ Perform and continuously improve government relations work within Communications
 
 - Business communication
 - Record and evidence management
+- Communications
+- Stakeholder engagement
+- Reputation management
 
 **Performance measures**
 
@@ -14185,6 +14418,9 @@ Perform and continuously improve annual reporting work within Communications, Pu
 
 - Business communication
 - Record and evidence management
+- Communications
+- Stakeholder engagement
+- Reputation management
 
 **Performance measures**
 
@@ -14912,6 +15148,9 @@ Perform and continuously improve investment governance work within Portfolio, Pr
 
 - Business communication
 - Record and evidence management
+- Project management
+- Planning and control
+- Stakeholder management
 
 **Performance measures**
 
@@ -15333,12 +15572,12 @@ Perform and continuously improve transformation strategy work within Change & Tr
 
 - Business communication
 - Record and evidence management
-- Strategic analysis
-- Scenario planning
-- Decision support
 - Change management
 - Stakeholder engagement
 - Adoption planning
+- Strategic analysis
+- Scenario planning
+- Decision support
 
 **Performance measures**
 
@@ -15417,6 +15656,9 @@ Perform and continuously improve stakeholder management work within Change & Tra
 
 - Business communication
 - Record and evidence management
+- Change management
+- Stakeholder engagement
+- Adoption planning
 
 **Performance measures**
 
@@ -15618,6 +15860,9 @@ Perform and continuously improve benefits tracking work within Change & Transfor
 
 - Business communication
 - Record and evidence management
+- Change management
+- Stakeholder engagement
+- Adoption planning
 
 **Performance measures**
 
@@ -15671,12 +15916,12 @@ Provide accountable leadership for Business Process & Continuous Improvement, es
 
 - Business communication
 - Record and evidence management
-- Performance management
-- KPI design
-- Analytical interpretation
 - Business process management
 - Process analysis
 - Continuous improvement
+- Performance management
+- KPI design
+- Analytical interpretation
 
 **Performance measures**
 
@@ -16083,12 +16328,12 @@ Perform and continuously improve process performance work within Business Proces
 
 - Business communication
 - Record and evidence management
-- Performance management
-- KPI design
-- Analytical interpretation
 - Business process management
 - Process analysis
 - Continuous improvement
+- Performance management
+- KPI design
+- Analytical interpretation
 
 **Performance measures**
 
