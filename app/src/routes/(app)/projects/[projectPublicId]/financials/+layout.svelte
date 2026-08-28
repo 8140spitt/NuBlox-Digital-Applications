@@ -5,8 +5,13 @@
 
 	type RuntimePathResolver = (path: string) => string;
 
+	function requiredProjectPublicId(value: string | undefined): string {
+		if (!value) throw new Error('Project financial route is missing its project context.');
+		return value;
+	}
+
 	let { children } = $props();
-	const projectPublicId = $derived(page.params.projectPublicId);
+	const projectPublicId = $derived(requiredProjectPublicId(page.params.projectPublicId));
 	const financialControlHref = $derived(
 		(resolve as unknown as RuntimePathResolver)(
 			`/projects/${encodeURIComponent(projectPublicId)}/financials`
