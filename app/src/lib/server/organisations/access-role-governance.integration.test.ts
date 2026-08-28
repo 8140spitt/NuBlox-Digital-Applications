@@ -223,11 +223,9 @@ describe('governed organisation access roles', () => {
 
 	it('allows an active Owner to delegate the Owner role', async () => {
 		const service = new OrganisationAdminService(db);
-		await service.replaceMemberRoles(
-			actor(ownerUserId, ownerMemberId),
-			targetMemberPublicId,
-			[ownerRolePublicId]
-		);
+		await service.replaceMemberRoles(actor(ownerUserId, ownerMemberId), targetMemberPublicId, [
+			ownerRolePublicId
+		]);
 
 		const assignment = await db
 			.selectFrom('member_roles')
@@ -247,11 +245,9 @@ describe('governed organisation access roles', () => {
 
 		const service = new OrganisationAdminService(db);
 		await expect(
-			service.replaceMemberRoles(
-				actor(ordinaryUserId, ordinaryMemberId),
-				targetMemberPublicId,
-				[ordinaryRolePublicId]
-			)
+			service.replaceMemberRoles(actor(ordinaryUserId, ordinaryMemberId), targetMemberPublicId, [
+				ordinaryRolePublicId
+			])
 		).rejects.toBeInstanceOf(OrganisationAdminValidationError);
 
 		const assignments = await db
