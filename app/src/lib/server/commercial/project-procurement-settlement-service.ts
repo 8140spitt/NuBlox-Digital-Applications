@@ -119,9 +119,9 @@ export class ProjectProcurementSettlementService {
 		actor: TenantActorContext,
 		projectPublicId: string
 	): Promise<ProjectRecord> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(
-			actor
-		);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 
 		const project = await new ProjectRepository(this.db).findForMemberByPublicId(
@@ -346,8 +346,7 @@ export class ProjectProcurementSettlementService {
 					bankSettled: Boolean(bankMatch),
 					bankAccountName: bankMatch?.bankAccountName ?? null,
 					bankStatementReference: bankMatch?.statementReference ?? null,
-					bankReference:
-						bankMatch?.bankReference ?? bankMatch?.externalTransactionId ?? null,
+					bankReference: bankMatch?.bankReference ?? bankMatch?.externalTransactionId ?? null,
 					bankBookedOn: bankMatch?.bookedOn ?? null
 				};
 			});
@@ -379,14 +378,21 @@ export class ProjectProcurementSettlementService {
 		});
 
 		const currencies = [...new Set(workspaceDocuments.map((row) => row.currencyCode))].sort();
-		const total = (key: keyof Pick<ProjectProcurementSettlementDocument,
-			| 'grossAmount'
-			| 'executedPaymentAmount'
-			| 'accountedPaymentAmount'
-			| 'bankSettledAmount'
-			| 'outstandingPayableAmount'
-			| 'unreconciledPaymentAmount'>) =>
-			workspaceDocuments.reduce((sum, row) => sum + money(row[key], 'Project settlement total'), 0n);
+		const total = (
+			key: keyof Pick<
+				ProjectProcurementSettlementDocument,
+				| 'grossAmount'
+				| 'executedPaymentAmount'
+				| 'accountedPaymentAmount'
+				| 'bankSettledAmount'
+				| 'outstandingPayableAmount'
+				| 'unreconciledPaymentAmount'
+			>
+		) =>
+			workspaceDocuments.reduce(
+				(sum, row) => sum + money(row[key], 'Project settlement total'),
+				0n
+			);
 
 		return {
 			project,

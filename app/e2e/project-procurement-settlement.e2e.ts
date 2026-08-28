@@ -18,8 +18,12 @@ async function signIn(page: import('@playwright/test').Page) {
 test('project financials expose the procurement settlement digital thread', async ({ page }) => {
 	await signIn(page);
 	await page.goto(`/projects/${PROJECT_PUBLIC_ID}/financials/settlement`);
-	await expect(page.getByRole('heading', { name: 'Procurement settlement', level: 1 })).toBeVisible();
-	await expect(page.getByRole('navigation', { name: 'Project financial workspaces' })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Procurement settlement', level: 1 })
+	).toBeVisible();
+	await expect(
+		page.getByRole('navigation', { name: 'Project financial workspaces' })
+	).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Financial control' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Procurement settlement' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Supplier payments' })).toBeVisible();

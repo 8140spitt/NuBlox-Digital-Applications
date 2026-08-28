@@ -32,8 +32,8 @@
 		<h1>Procurement settlement</h1>
 		<p>
 			Trace approved supplier invoices from the project into payment execution, accounting and bank
-			settlement evidence. Project actual cost remains receipt-based; this workspace shows the separate
-			gross cash and liability thread without creating another project ledger.
+			settlement evidence. Project actual cost remains receipt-based; this workspace shows the
+			separate gross cash and liability thread without creating another project ledger.
 		</p>
 	</div>
 	<div class="heading-actions">
@@ -46,8 +46,8 @@
 {#if data.currencyMismatch}
 	<p class="warning" role="status">
 		This project contains supplier invoices in multiple currencies. NuBlox does not silently convert
-		currencies, so project-level cash totals are intentionally not aggregated. Review each invoice in
-		its transaction currency.
+		currencies, so project-level cash totals are intentionally not aggregated. Review each invoice
+		in its transaction currency.
 	</p>
 {:else if data.currencyCodes.length === 1}
 	{@const currency = data.currencyCodes[0]}
@@ -86,8 +86,9 @@
 
 	{#if data.documents.length === 0}
 		<p class="muted">
-			No approved supplier invoices are currently linked to this project. Once Accounts Payable approves
-			a project supplier invoice, its accounting, payment and bank-settlement thread will appear here.
+			No approved supplier invoices are currently linked to this project. Once Accounts Payable
+			approves a project supplier invoice, its accounting, payment and bank-settlement thread will
+			appear here.
 		</p>
 	{:else}
 		<div class="document-list">
@@ -99,7 +100,8 @@
 							<h3>{document.supplierDocumentNumber}</h3>
 							<p class="muted">
 								Invoice {date(document.invoiceDate)} · due {date(document.dueDate)}
-								{#if document.purchaseOrderPublicId} · PO linked{/if}
+								{#if document.purchaseOrderPublicId}
+									· PO linked{/if}
 							</p>
 						</div>
 						<div class="right">
@@ -108,7 +110,10 @@
 						</div>
 					</header>
 
-					<div class="thread" aria-label={`Settlement thread for ${document.supplierDocumentNumber}`}>
+					<div
+						class="thread"
+						aria-label={`Settlement thread for ${document.supplierDocumentNumber}`}
+					>
 						<div>
 							<span>AP liability</span>
 							<strong>{document.liabilityPosted ? 'Posted' : 'Not posted'}</strong>
