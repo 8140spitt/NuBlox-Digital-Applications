@@ -97,6 +97,7 @@ jobs:
           cd app
           pnpm exec prettier --write "src/lib/server/finance/accounting-source-service.ts" "src/lib/server/finance/accounting-service.ts" "src/lib/server/finance/accounts-payable.integration.test.ts" "src/lib/server/finance/supplier-payment-service.ts" "src/lib/server/finance/supplier-payment-accounting-source.ts" "src/routes/(app)/finance/accounts-payable/+page.svelte" "src/routes/(app)/finance/supplier-payments/+page.server.ts" "src/routes/(app)/finance/supplier-payments/+page.svelte"
           cd ..
+          git checkout -- .github/workflows/database-migration-validation.yml
           git config user.name "NuBlox CI"
           git config user.email "actions@users.noreply.github.com"
           git add -A
