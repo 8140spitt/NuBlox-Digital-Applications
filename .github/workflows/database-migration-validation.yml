@@ -44,7 +44,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   complete-system-validation:
@@ -73,6 +73,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/project-procurement-settlement-drillthrough
 
       - uses: pnpm/action-setup@v4
         with:
@@ -88,6 +90,29 @@ jobs:
       - name: Install application dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
+
+      - name: Format project settlement slice
+        working-directory: app
+        run: |
+          pnpm exec prettier --write \
+            e2e/project-procurement-settlement.e2e.ts \
+            src/lib/server/commercial/project-procurement-settlement-service.ts \
+            'src/routes/(app)/projects/[projectPublicId]/financials/settlement/+page.svelte'
+
+      - name: Commit formatted project settlement slice
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            app/e2e/project-procurement-settlement.e2e.ts \
+            app/src/lib/server/commercial/project-procurement-settlement-service.ts \
+            'app/src/routes/(app)/projects/[projectPublicId]/financials/settlement/+page.svelte'
+          if git diff --cached --quiet; then
+            echo "Project settlement slice is already formatted."
+          else
+            git commit -m "Format project procurement settlement slice"
+            git push origin HEAD:feat/project-procurement-settlement-drillthrough
+          fi
 
       - name: Audit production dependencies
         working-directory: app
