@@ -74,7 +74,10 @@ export async function decideOrganisationRoleDelegation(
 	if (rolePublicIds.length === 0) return { allowed: true, deniedPermissionKeys: [] };
 
 	const permissionService = new PermissionService(db);
-	const authority = await permissionService.decideMany(actor, ['organisation.manage', 'member.manage']);
+	const authority = await permissionService.decideMany(actor, [
+		'organisation.manage',
+		'member.manage'
+	]);
 	const canManageOrganisation = authority.get('organisation.manage')?.allowed ?? false;
 	const canManageMembers = authority.get('member.manage')?.allowed ?? false;
 	if (!canManageOrganisation && !canManageMembers) {
