@@ -11,7 +11,6 @@
 	}
 
 	const activeMatches = $derived(data.matches.filter((match) => !match.reversalPublicId));
-	const reversedMatches = $derived(data.matches.filter((match) => match.reversalPublicId));
 </script>
 
 <svelte:head><title>Bank Reconciliation · NuBlox</title></svelte:head>
@@ -101,34 +100,15 @@
 					<select name="bankAccountPublicId" required>
 						<option value="">Choose account</option>
 						{#each data.accounts.filter((account) => account.status === 'active') as account}
-							<option value={account.publicId}
-								>{account.accountName} · {account.currencyCode}</option
-							>
+							<option value={account.publicId}>{account.accountName} · {account.currencyCode}</option>
 						{/each}
 					</select>
 				</label>
-				<label
-					>Statement reference <input name="statementReference" maxlength="160" required /></label
-				>
-				<label
-					>External transaction ID <input
-						name="externalTransactionId"
-						maxlength="160"
-						required
-					/></label
-				>
-				<label
-					>Period start <input type="date" name="periodStart" value={data.today} required /></label
-				>
+				<label>Statement reference <input name="statementReference" maxlength="160" required /></label>
+				<label>External transaction ID <input name="externalTransactionId" maxlength="160" required /></label>
+				<label>Period start <input type="date" name="periodStart" value={data.today} required /></label>
 				<label>Period end <input type="date" name="periodEnd" value={data.today} required /></label>
-				<label
-					>Opening balance <input
-						name="openingBalance"
-						inputmode="decimal"
-						value="0.0000"
-						required
-					/></label
-				>
+				<label>Opening balance <input name="openingBalance" inputmode="decimal" value="0.0000" required /></label>
 				<label>Closing balance <input name="closingBalance" inputmode="decimal" required /></label>
 				<label>Booked date <input type="date" name="bookedOn" value={data.today} required /></label>
 				<label>Value date <input type="date" name="valueOn" /></label>
@@ -140,8 +120,7 @@
 					</select>
 				</label>
 				<label>Amount <input name="amount" inputmode="decimal" required /></label>
-				<label class="wide">Description <input name="description" maxlength="500" required /></label
-				>
+				<label class="wide">Description <input name="description" maxlength="500" required /></label>
 				<label class="wide">Bank reference <input name="bankReference" maxlength="160" /></label>
 				<div class="wide"><button type="submit">Record statement evidence</button></div>
 			</form>
@@ -170,10 +149,7 @@
 							<div>
 								<strong>{money(line.amount, line.currencyCode)}</strong>
 								<span>{line.accountName} · {line.statementReference}</span>
-								<small
-									>{line.direction} · {line.bookedOn} · {line.bankReference ??
-										line.externalTransactionId}</small
-								>
+								<small>{line.direction} · {line.bookedOn} · {line.bankReference ?? line.externalTransactionId}</small>
 							</div>
 						</div>
 					{/each}
@@ -191,11 +167,7 @@
 							<div>
 								<strong>{payment.supplierName}</strong>
 								<span>{money(payment.paymentAmount, payment.currencyCode)}</span>
-								<small
-									>{payment.paymentReference ?? payment.publicId} · executed {date(
-										payment.executedAt
-									)}</small
-								>
+								<small>{payment.paymentReference ?? payment.publicId} · executed {date(payment.executedAt)}</small>
 							</div>
 						</div>
 					{/each}
@@ -211,10 +183,7 @@
 				<select name="statementLinePublicId" required>
 					<option value="">Choose bank debit</option>
 					{#each data.unmatchedLines.filter((line) => line.direction === 'debit') as line}
-						<option value={line.publicId}>
-							{line.bookedOn} · {money(line.amount, line.currencyCode)} · {line.bankReference ??
-								line.externalTransactionId}
-						</option>
+						<option value={line.publicId}>{line.bookedOn} · {money(line.amount, line.currencyCode)} · {line.bankReference ?? line.externalTransactionId}</option>
 					{/each}
 				</select>
 			</label>
@@ -223,10 +192,7 @@
 				<select name="supplierPaymentPublicId" required>
 					<option value="">Choose executed payment</option>
 					{#each data.unsettledSupplierPayments as payment}
-						<option value={payment.publicId}>
-							{payment.supplierName} · {money(payment.paymentAmount, payment.currencyCode)} · {payment.paymentReference ??
-								payment.publicId}
-						</option>
+						<option value={payment.publicId}>{payment.supplierName} · {money(payment.paymentAmount, payment.currencyCode)} · {payment.paymentReference ?? payment.publicId}</option>
 					{/each}
 				</select>
 			</label>
@@ -251,13 +217,8 @@
 				<div class="match-card">
 					<div class="list-row">
 						<div>
-							<strong
-								>{match.supplierName} · {money(match.matchedAmount, match.currencyCode)}</strong
-							>
-							<span
-								>{match.statementReference} · {match.bankReference ??
-									match.statementLinePublicId}</span
-							>
+							<strong>{match.supplierName} · {money(match.matchedAmount, match.currencyCode)}</strong>
+							<span>{match.statementReference} · {match.bankReference ?? match.statementLinePublicId}</span>
 							<small>Matched {date(match.matchedAt)}</small>
 						</div>
 						<span class={`status ${match.reversalPublicId ? 'reversed' : 'active'}`}>
@@ -269,12 +230,7 @@
 					{:else if data.canReverseReconciliation}
 						<form method="POST" action="?/reverseMatch" class="inline-form">
 							<input type="hidden" name="matchPublicId" value={match.publicId} />
-							<input
-								name="reason"
-								maxlength="1000"
-								placeholder="Why is this match incorrect?"
-								required
-							/>
+							<input name="reason" maxlength="1000" placeholder="Why is this match incorrect?" required />
 							<button type="submit" class="secondary">Reverse match</button>
 						</form>
 					{/if}
@@ -322,7 +278,8 @@
 		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
-	.heading-actions {
+	.heading-actions,
+	.inline-form {
 		flex-wrap: wrap;
 	}
 	.button,
@@ -341,36 +298,29 @@
 	.secondary {
 		background: transparent;
 	}
-	.banner {
-		padding: 0.8rem 1rem;
-		border: 1px solid currentColor;
-		border-radius: 0.65rem;
-	}
-	.error {
-		color: #a11313;
-	}
-	.metrics,
-	.grid {
-		display: grid;
-		gap: 0.8rem;
-	}
-	.metrics {
-		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-	}
-	.grid.two {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-	.metrics > div,
+	.banner,
 	.panel,
+	.metrics > div,
 	.match-card {
 		border: 1px solid var(--color-border, #d8dee8);
 		border-radius: 0.8rem;
 		background: var(--color-surface, white);
 	}
-	.metrics > div,
+	.banner,
 	.panel,
 	.match-card {
 		padding: 1rem;
+	}
+	.error {
+		color: #a11313;
+	}
+	.metrics {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+		gap: 0.75rem;
+	}
+	.metrics > div {
+		padding: 0.85rem 1rem;
 	}
 	.metrics span,
 	.metrics strong {
@@ -384,11 +334,37 @@
 		margin-top: 0.2rem;
 		font-size: 1.35rem;
 	}
+	.grid {
+		display: grid;
+		gap: 1rem;
+	}
+	.grid.two {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+	.list,
 	.form-grid {
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
 		gap: 0.75rem;
-		margin-top: 1rem;
+	}
+	.list {
+		margin-bottom: 1rem;
+	}
+	.list-row {
+		padding: 0.75rem 0;
+		border-bottom: 1px solid var(--color-border, #e5e7eb);
+	}
+	.list-row > div {
+		display: grid;
+		gap: 0.2rem;
+	}
+	.list-row.compact {
+		padding: 0.55rem 0;
+	}
+	.right {
+		text-align: right;
+	}
+	.form-grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 	.form-grid label {
 		display: grid;
@@ -408,34 +384,12 @@
 		background: inherit;
 		color: inherit;
 	}
-	.list {
-		display: grid;
-		gap: 0.65rem;
+	.reconcile-form,
+	.inline-form {
+		margin-top: 1rem;
 	}
-	.list-row {
-		padding: 0.65rem 0;
-		border-bottom: 1px solid var(--color-border, #e2e8f0);
-	}
-	.list-row:last-child {
-		border-bottom: 0;
-	}
-	.list-row > div {
-		display: grid;
-		gap: 0.15rem;
-	}
-	.right {
-		text-align: right;
-	}
-	.compact {
-		padding: 0.45rem 0;
-	}
-	.reconcile-form {
-		margin-top: 1.25rem;
-		padding-top: 1rem;
-		border-top: 1px solid var(--color-border, #e2e8f0);
-	}
-	.match-card {
-		padding: 0.8rem;
+	.match-card + .match-card {
+		margin-top: 0.75rem;
 	}
 	.status {
 		border: 1px solid currentColor;
@@ -445,34 +399,25 @@
 		font-weight: 700;
 		text-transform: capitalize;
 	}
-	.status.reversed {
-		color: #9a3412;
-	}
-	.status.active {
-		color: #166534;
-	}
-	.inline-form {
-		margin-top: 0.7rem;
-		align-items: center;
-	}
-	.inline-form input {
-		flex: 1;
-	}
 	.reversal-note {
-		margin: 0.6rem 0 0;
-		padding-top: 0.6rem;
-		border-top: 1px solid var(--color-border, #e2e8f0);
+		margin-bottom: 0;
 	}
-	@media (max-width: 850px) {
-		.page-heading,
+	@media (max-width: 800px) {
 		.grid.two,
-		.form-grid,
-		.inline-form {
-			display: grid;
+		.form-grid {
 			grid-template-columns: 1fr;
+		}
+		.page-heading,
+		.section-heading,
+		.list-row,
+		.inline-form {
+			flex-direction: column;
 		}
 		.wide {
 			grid-column: auto;
+		}
+		.right {
+			text-align: left;
 		}
 	}
 </style>
