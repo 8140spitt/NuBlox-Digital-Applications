@@ -3,13 +3,19 @@
 	import { page } from '$app/state';
 	import ProgressiveActionScope from '$lib/components/ProgressiveActionScope.svelte';
 
+	type RuntimePathResolver = (path: string) => string;
+
 	let { children } = $props();
 	const projectPublicId = $derived(page.params.projectPublicId);
 	const financialControlHref = $derived(
-		resolve('/projects/[projectPublicId]/financials', { projectPublicId })
+		(resolve as unknown as RuntimePathResolver)(
+			`/projects/${encodeURIComponent(projectPublicId)}/financials`
+		)
 	);
 	const procurementSettlementHref = $derived(
-		resolve('/projects/[projectPublicId]/financials/settlement', { projectPublicId })
+		(resolve as unknown as RuntimePathResolver)(
+			`/projects/${encodeURIComponent(projectPublicId)}/financials/settlement`
+		)
 	);
 </script>
 
