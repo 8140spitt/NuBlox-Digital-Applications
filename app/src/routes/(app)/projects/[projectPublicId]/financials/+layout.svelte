@@ -1,9 +1,49 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import ProgressiveActionScope from '$lib/components/ProgressiveActionScope.svelte';
 
 	let { children } = $props();
+	const projectPublicId = $derived(page.params.projectPublicId);
+	const financialControlHref = $derived(
+		resolve('/projects/[projectPublicId]/financials', { projectPublicId })
+	);
+	const procurementSettlementHref = $derived(
+		resolve('/projects/[projectPublicId]/financials/settlement', { projectPublicId })
+	);
 </script>
+
+<nav class="financial-subnav" aria-label="Project financial workspaces">
+	<a href={financialControlHref}>Financial control</a>
+	<a href={procurementSettlementHref}>Procurement settlement</a>
+</nav>
 
 <ProgressiveActionScope>
 	{@render children()}
 </ProgressiveActionScope>
+
+<style>
+	.financial-subnav {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.55rem;
+		margin: 0 0 1rem;
+		padding: 0.45rem;
+		border: 1px solid var(--color-border, #dbe2ea);
+		border-radius: 0.7rem;
+		background: var(--color-surface, #fff);
+	}
+
+	.financial-subnav a {
+		padding: 0.5rem 0.7rem;
+		border-radius: 0.5rem;
+		color: inherit;
+		font-weight: 650;
+		text-decoration: none;
+	}
+
+	.financial-subnav a:hover,
+	.financial-subnav a:focus-visible {
+		background: var(--color-surface-subtle, #f1f5f9);
+	}
+</style>
