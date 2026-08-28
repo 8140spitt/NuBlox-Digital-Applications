@@ -53,18 +53,30 @@ function actor(userId: string, memberId: string) {
 async function cleanup(): Promise<void> {
 	if (!db) return;
 	if (organisationId) {
-		await db.deleteFrom('audit_events').where('acting_organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('role_permissions').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', '=', organisationId).execute();
-		await db.deleteFrom('organisation_members').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', '=', organisationId)
+			.execute();
+		await db
+			.deleteFrom('organisation_members')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
 	}
 	const userIds = [ownerUserId, administratorUserId, ordinaryUserId, targetUserId].filter(Boolean);
 	if (userIds.length > 0) await db.deleteFrom('users').where('id', 'in', userIds).execute();
 }
 
-async function createMember(userId: string, publicId = randomUUID()): Promise<{ id: string; publicId: string }> {
+async function createMember(
+	userId: string,
+	publicId = randomUUID()
+): Promise<{ id: string; publicId: string }> {
 	const id = insertedId(
 		await db
 			.insertInto('organisation_members')
