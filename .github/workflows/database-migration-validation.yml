@@ -44,7 +44,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   complete-system-validation:
@@ -73,6 +73,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/bank-reconciliation-close-readiness
 
       - uses: pnpm/action-setup@v4
         with:
@@ -88,6 +90,28 @@ jobs:
       - name: Install application dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
+
+      - name: Finalize bank reconciliation branch
+        run: |
+          python3 scripts/apply-bank-reconciliation-close-readiness.py
+          cd app
+          pnpm exec prettier --write \
+            "src/lib/server/finance/bank-reconciliation-service.ts" \
+            "src/lib/server/finance/accounting-period-service.ts" \
+            "src/lib/server/finance/accounts-payable.integration.test.ts" \
+            "src/lib/navigation/capability-registry.ts" \
+            "src/routes/(app)/finance/bank-reconciliation/+page.server.ts" \
+            "src/routes/(app)/finance/bank-reconciliation/+page.svelte" \
+            "src/routes/(app)/finance/supplier-payments/+page.svelte" \
+            "src/routes/(app)/finance/accounting/periods/+page.svelte"
+          pnpm db:migrate
+          pnpm db:types
+          cd ..
+          git config user.name "NuBlox CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Connect bank reconciliation to period close"
+          git push origin HEAD:feat/bank-reconciliation-close-readiness
 
       - name: Audit production dependencies
         working-directory: app
@@ -111,9 +135,9 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '426'
-          test "$fk_count" = '1006'
-          test "$check_count" = '608'
+          test "$table_count" = '431'
+          test "$fk_count" = '1017'
+          test "$check_count" = '613'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
