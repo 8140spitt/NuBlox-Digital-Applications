@@ -127,7 +127,14 @@ This allows two organisations to use the same canonical job profile while retain
 
 - `functional-roles.generated.json` — one candidate functional role per L2 sub-function, preserving all source activities and stable mappings;
 - `job-profiles.generated.json` — a candidate specialist profile for each functional role plus one function-lead profile per L1 function;
-- `coverage.generated.json` — coverage controls proving every source function/sub-function/activity is represented.
+- `coverage.generated.json` — deterministic coverage controls proving every source function/sub-function/activity is represented.
+
+Generation v2 uses two layers for knowledge and technical skills:
+
+1. every role/profile receives an enterprise-function skill baseline appropriate to its source L1 function;
+2. heuristic skill rules may add further skills only when that rule is explicitly scoped to the source function.
+
+This prevents unrelated activity wording from leaking skills across enterprise functions. Known regressions are asserted by the generator itself, including the previous `HR`/`threats` and `account`/`accountabilities` cases. The generated coverage file no longer embeds wall-clock time, allowing CI to regenerate all artifacts and fail if committed output has drifted from the canonical taxonomy or generator.
 
 The generator intentionally marks generated profiles as `candidate`. They are architecture seed data for curation, not a claim that a machine-generated job title is automatically the preferred market title.
 
@@ -140,6 +147,7 @@ The generator intentionally marks generated profiles as `candidate`. They are ar
 5. Organisation positions may override display title and local employment metadata but do not rewrite the canonical profile.
 6. Generated `candidate` content must be curated before promotion to `approved`.
 7. Mapping changes must be explicit and reviewable; do not infer mappings merely to fill a matrix.
+8. Generated artifacts must remain reproducible from the canonical taxonomy and generator; CI drift is a release-blocking defect.
 
 ## 8. Identifier convention
 
