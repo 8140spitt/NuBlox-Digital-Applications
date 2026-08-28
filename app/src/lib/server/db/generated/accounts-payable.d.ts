@@ -105,6 +105,49 @@ export interface AccountsPayableMatchAllocations {
   purchase_order_receipt_item_id: string | null;
 }
 
+export interface AccountsPayableSupplierPaymentAllocations {
+  accounts_payable_document_id: string;
+  allocated_amount: Decimal;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  supplier_payment_id: string;
+}
+
+export interface AccountsPayableSupplierPaymentReversals {
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+  supplier_payment_id: string;
+}
+
+export interface AccountsPayableSupplierPayments {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  cancelled_at: Date | null;
+  cancelled_by_member_id: string | null;
+  cancellation_reason: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  currency_code: string;
+  executed_at: Date | null;
+  executed_by_member_id: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  payment_amount: Decimal;
+  payment_method_id: number;
+  payment_reference: string | null;
+  public_id: string;
+  requested_payment_date: Date;
+  supplier_party_id: string;
+  updated_at: Generated<Date>;
+}
+
 export interface AccountsPayableSupplierSnapshots {
   accounts_payable_document_id: string;
   address_line_1: string | null;
@@ -131,5 +174,8 @@ export interface DB {
   accounts_payable_documents: AccountsPayableDocuments;
   accounts_payable_exceptions: AccountsPayableExceptions;
   accounts_payable_match_allocations: AccountsPayableMatchAllocations;
+  accounts_payable_supplier_payment_allocations: AccountsPayableSupplierPaymentAllocations;
+  accounts_payable_supplier_payment_reversals: AccountsPayableSupplierPaymentReversals;
+  accounts_payable_supplier_payments: AccountsPayableSupplierPayments;
   accounts_payable_supplier_snapshots: AccountsPayableSupplierSnapshots;
 }
