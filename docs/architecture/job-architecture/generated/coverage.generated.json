@@ -1,0 +1,23 @@
+{
+  "generatedAt": "2026-08-28T13:58:12.839Z",
+  "source": {
+    "functions": 29,
+    "subfunctions": 353,
+    "activities": 1510
+  },
+  "generated": {
+    "jobFamilies": 29,
+    "functionalRoles": 353,
+    "jobProfiles": 382,
+    "functionLeadProfiles": 29,
+    "specialistProfiles": 353
+  },
+  "coverage": {
+    "functionsCovered": 29,
+    "subfunctionsCoveredByFunctionalRoles": 353,
+    "subfunctionsCoveredByJobProfiles": 353,
+    "activitiesInheritedByFunctionalRoles": 1510,
+    "allFunctionsCovered": true,
+    "allSubfunctionsCovered": true
+  }
+}
