@@ -11,6 +11,7 @@ import { AccountingService } from './accounting-service';
 import { AccountsPayableRepository } from './accounts-payable-repository';
 import { AccountsPayableService } from './accounts-payable-service';
 import { FinanceValidationError } from './finance-common';
+import { SupplierPaymentService } from './supplier-payment-service';
 
 const PREFIX = 'Wave A AP Integration ';
 const AP_PERMISSIONS = [
@@ -21,7 +22,12 @@ const AP_PERMISSIONS = [
 	'finance.ap.match.manage',
 	'finance.ap.exception.resolve',
 	'finance.ap.approve',
-	'finance.ap.invoice.void'
+	'finance.ap.invoice.void',
+	'finance.ap.payment.create',
+	'finance.ap.payment.approve',
+	'finance.ap.payment.execute',
+	'finance.ap.payment.cancel',
+	'finance.ap.payment.reverse'
 ] as const;
 const PROCUREMENT_PERMISSIONS = [
 	'procurement.view',
@@ -293,7 +299,8 @@ beforeAll(async () => {
 	]);
 	await assignRole(organisationAId, approverMemberId, 'Approver', [
 		'finance.ap.view',
-		'finance.ap.approve'
+		'finance.ap.approve',
+		'finance.ap.payment.approve'
 	]);
 	await assignRole(organisationAId, viewerMemberId, 'No finance', ['project.view']);
 	await assignRole(organisationBId, otherMemberId, 'Other finance manager', ['finance.manage']);
@@ -336,6 +343,12 @@ beforeAll(async () => {
 			accountCode: 'PUR-5000',
 			name: 'Purchase and project cost',
 			accountType: 'expense'
+		},
+		{
+			mappingKey: 'cash_disbursements',
+			accountCode: 'CASH-1000',
+			name: 'Cash disbursements',
+			accountType: 'asset'
 		},
 		{
 			mappingKey: 'vat_control',
@@ -673,5 +686,146 @@ describe('Wave A native accounts payable foundation', () => {
 					candidate.sourcePublicId === oldestUnposted.public_id
 			)
 		).toBe(true);
+	});
+
+	it('settles a posted AP liability through governed supplier payment, accounting and additive reversal', async () => {
+		const po = await createIssuedPurchaseOrder({
+			orderedQuantity: '4',
+			receivedQuantity: '4',
+			unitRate: '100.00'
+		});
+		const ap = new AccountsPayableService(db);
+		const documentPublicId = await ap.createSupplierDocument(
+			actorMaker,
+			invoiceInput(po.purchaseOrderPublicId, po.lineNumber, {
+				quantity: '4',
+				unitRate: '100.00'
+			})
+		);
+		await ap.submitDocument(actorMaker, documentPublicId);
+		await ap.approveDocument(
+			actorApprover,
+			documentPublicId,
+			'Independent AP approval before payment.'
+		);
+
+		const accounting = new AccountingService(db);
+		await accounting.postSource(actorMaker, {
+			sourceType: 'accounts_payable_invoice_approval',
+			sourcePublicId: documentPublicId
+		});
+
+		const supplierPayments = new SupplierPaymentService(db);
+		let paymentWorkspace = await supplierPayments.getWorkspace(actorMaker);
+		expect(
+			paymentWorkspace.eligibleInvoices.find((invoice) => invoice.publicId === documentPublicId)
+		).toMatchObject({ grossAmount: '400.0000', reservedAmount: '0.0000', openAmount: '400.0000' });
+		const bankTransfer = paymentWorkspace.paymentMethods.find(
+			(method) => method.code === 'bank_transfer'
+		);
+		expect(bankTransfer).toBeTruthy();
+
+		const paymentPublicId = await supplierPayments.createPayment(actorMaker, {
+			paymentMethodCode: bankTransfer!.code,
+			requestedPaymentDate: '2026-08-25',
+			allocations: [{ documentPublicId, amount: '250.0000' }]
+		});
+		await expect(
+			supplierPayments.approvePayment(actorMaker, paymentPublicId)
+		).rejects.toBeInstanceOf(FinanceValidationError);
+		await expect(
+			supplierPayments.createPayment(actorMaker, {
+				paymentMethodCode: bankTransfer!.code,
+				requestedPaymentDate: '2026-08-25',
+				allocations: [{ documentPublicId, amount: '151.0000' }]
+			})
+		).rejects.toThrow('open balance of 150.0000');
+
+		await supplierPayments.approvePayment(actorApprover, paymentPublicId);
+		await supplierPayments.executePayment(actorMaker, paymentPublicId, {
+			paymentReference: `BANK-${randomUUID().slice(0, 8)}`
+		});
+		paymentWorkspace = await supplierPayments.getWorkspace(actorMaker);
+		expect(
+			paymentWorkspace.payments.find((payment) => payment.publicId === paymentPublicId)
+		).toMatchObject({
+			status: 'executed',
+			paymentAmount: '250.0000'
+		});
+
+		let accountingWorkspace = await accounting.getWorkspace(actorMaker);
+		const executionCandidate = accountingWorkspace.candidates.find(
+			(candidate) =>
+				candidate.sourceType === 'supplier_payment_execution' &&
+				candidate.sourcePublicId === paymentPublicId
+		);
+		expect(executionCandidate).toMatchObject({ sourceAmount: '250.0000', missingMappings: [] });
+		expect(executionCandidate?.lines).toEqual([
+			expect.objectContaining({
+				mappingKey: 'accounts_payable',
+				debitAmount: '250.0000',
+				creditAmount: '0.0000'
+			}),
+			expect.objectContaining({
+				mappingKey: 'cash_disbursements',
+				debitAmount: '0.0000',
+				creditAmount: '250.0000'
+			})
+		]);
+		const executionJournal = await accounting.postSource(actorMaker, {
+			sourceType: 'supplier_payment_execution',
+			sourcePublicId: paymentPublicId
+		});
+		const executionJournalId = await db
+			.selectFrom('accounting_journal_entries')
+			.select('id')
+			.where('organisation_id', '=', organisationAId)
+			.where('public_id', '=', executionJournal.publicId)
+			.executeTakeFirstOrThrow();
+		const executionLines = await db
+			.selectFrom('accounting_journal_lines as line')
+			.innerJoin('accounting_accounts as account', (join) =>
+				join
+					.onRef('account.id', '=', 'line.accounting_account_id')
+					.onRef('account.organisation_id', '=', 'line.organisation_id')
+			)
+			.select([
+				'account.account_code as accountCode',
+				'line.debit_amount as debitAmount',
+				'line.credit_amount as creditAmount'
+			])
+			.where('line.organisation_id', '=', organisationAId)
+			.where('line.journal_entry_id', '=', executionJournalId.id)
+			.orderBy('line.line_number')
+			.execute();
+		expect(executionLines).toEqual([
+			{ accountCode: 'AP-2100', debitAmount: '250.0000', creditAmount: '0.0000' },
+			{ accountCode: 'CASH-1000', debitAmount: '0.0000', creditAmount: '250.0000' }
+		]);
+
+		const otherTenantWorkspace = await supplierPayments.getWorkspace(actorOtherTenant);
+		expect(
+			otherTenantWorkspace.payments.some((payment) => payment.publicId === paymentPublicId)
+		).toBe(false);
+
+		await supplierPayments.reversePayment(actorMaker, paymentPublicId, {
+			reason: 'Bank rejected the supplier payment after execution.'
+		});
+		accountingWorkspace = await accounting.getWorkspace(actorMaker);
+		const reversalCandidate = accountingWorkspace.candidates.find(
+			(candidate) =>
+				candidate.sourceType === 'supplier_payment_reversal' &&
+				candidate.sourcePublicId === paymentPublicId
+		);
+		expect(reversalCandidate).toMatchObject({ sourceAmount: '250.0000', missingMappings: [] });
+		await accounting.postSource(actorMaker, {
+			sourceType: 'supplier_payment_reversal',
+			sourcePublicId: paymentPublicId
+		});
+
+		paymentWorkspace = await supplierPayments.getWorkspace(actorMaker);
+		expect(
+			paymentWorkspace.eligibleInvoices.find((invoice) => invoice.publicId === documentPublicId)
+		).toMatchObject({ reservedAmount: '0.0000', openAmount: '400.0000' });
 	});
 });

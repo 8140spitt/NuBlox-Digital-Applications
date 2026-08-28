@@ -37,6 +37,7 @@ const MAPPING_KEYS = new Set<AccountingMappingKey>([
 	'bad_debt_recovery_income',
 	'accounts_payable',
 	'purchase_expense',
+	'cash_disbursements',
 	'retained_earnings'
 ]);
 const EXPECTED_MAPPING_ACCOUNT_TYPES: Record<AccountingMappingKey, string> = {
@@ -49,6 +50,7 @@ const EXPECTED_MAPPING_ACCOUNT_TYPES: Record<AccountingMappingKey, string> = {
 	bad_debt_recovery_income: 'revenue',
 	accounts_payable: 'liability',
 	purchase_expense: 'expense',
+	cash_disbursements: 'asset',
 	retained_earnings: 'equity'
 };
 
