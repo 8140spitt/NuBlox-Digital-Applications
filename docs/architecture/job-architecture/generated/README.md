@@ -22,4 +22,6 @@ Expected source coverage from the current taxonomy baseline:
 - all 353 source sub-functions represented;
 - all 1,510 source activities inherited into role responsibility evidence.
 
+Generation v2 applies an explicit enterprise-function skill baseline first, then only permits heuristic skill augmentation from rules scoped to the relevant function. This prevents cross-function leakage from incidental substrings or generic activity language. The generator also contains regression assertions for previously observed leakage cases and writes deterministic coverage metadata so CI can regenerate these files and fail on drift.
+
 Generated records are intentionally marked `candidate`. Curated canonical jobs should be reviewed for market-facing title, role composition, level, qualifications, professional standards and career mappings before promotion to `approved`.

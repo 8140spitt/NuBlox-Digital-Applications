@@ -1,0 +1,208 @@
+{
+  "version": 2,
+  "jobFamilies": [
+    {
+      "id": "JF-F01",
+      "status": "candidate",
+      "name": "Strategy & Enterprise Planning",
+      "sourceFunctionId": "F01",
+      "purpose": "Group canonical jobs whose primary work sits within Strategy & Enterprise Planning."
+    },
+    {
+      "id": "JF-F02",
+      "status": "candidate",
+      "name": "Corporate Governance",
+      "sourceFunctionId": "F02",
+      "purpose": "Group canonical jobs whose primary work sits within Corporate Governance."
+    },
+    {
+      "id": "JF-F03",
+      "status": "candidate",
+      "name": "Enterprise Performance Management",
+      "sourceFunctionId": "F03",
+      "purpose": "Group canonical jobs whose primary work sits within Enterprise Performance Management."
+    },
+    {
+      "id": "JF-F04",
+      "status": "candidate",
+      "name": "Corporate Development & M&A",
+      "sourceFunctionId": "F04",
+      "purpose": "Group canonical jobs whose primary work sits within Corporate Development & M&A."
+    },
+    {
+      "id": "JF-F05",
+      "status": "candidate",
+      "name": "Product, Service & Innovation Management",
+      "sourceFunctionId": "F05",
+      "purpose": "Group canonical jobs whose primary work sits within Product, Service & Innovation Management."
+    },
+    {
+      "id": "JF-F06",
+      "status": "candidate",
+      "name": "Marketing & Brand",
+      "sourceFunctionId": "F06",
+      "purpose": "Group canonical jobs whose primary work sits within Marketing & Brand."
+    },
+    {
+      "id": "JF-F07",
+      "status": "candidate",
+      "name": "Sales & Commercial Management",
+      "sourceFunctionId": "F07",
+      "purpose": "Group canonical jobs whose primary work sits within Sales & Commercial Management."
+    },
+    {
+      "id": "JF-F08",
+      "status": "candidate",
+      "name": "Customer Service, Experience & Success",
+      "sourceFunctionId": "F08",
+      "purpose": "Group canonical jobs whose primary work sits within Customer Service, Experience & Success."
+    },
+    {
+      "id": "JF-F09",
+      "status": "candidate",
+      "name": "Procurement & Supplier Management",
+      "sourceFunctionId": "F09",
+      "purpose": "Group canonical jobs whose primary work sits within Procurement & Supplier Management."
+    },
+    {
+      "id": "JF-F10",
+      "status": "candidate",
+      "name": "Demand, Supply Chain & Logistics",
+      "sourceFunctionId": "F10",
+      "purpose": "Group canonical jobs whose primary work sits within Demand, Supply Chain & Logistics."
+    },
+    {
+      "id": "JF-F11",
+      "status": "candidate",
+      "name": "Manufacturing / Production Operations",
+      "sourceFunctionId": "F11",
+      "purpose": "Group canonical jobs whose primary work sits within Manufacturing / Production Operations."
+    },
+    {
+      "id": "JF-F12",
+      "status": "candidate",
+      "name": "Service Delivery & Field Operations",
+      "sourceFunctionId": "F12",
+      "purpose": "Group canonical jobs whose primary work sits within Service Delivery & Field Operations."
+    },
+    {
+      "id": "JF-F13",
+      "status": "candidate",
+      "name": "Quality Management",
+      "sourceFunctionId": "F13",
+      "purpose": "Group canonical jobs whose primary work sits within Quality Management."
+    },
+    {
+      "id": "JF-F14",
+      "status": "candidate",
+      "name": "Finance, Accounting, Treasury & Tax",
+      "sourceFunctionId": "F14",
+      "purpose": "Group canonical jobs whose primary work sits within Finance, Accounting, Treasury & Tax."
+    },
+    {
+      "id": "JF-F15",
+      "status": "candidate",
+      "name": "Human Resources / Human Capital",
+      "sourceFunctionId": "F15",
+      "purpose": "Group canonical jobs whose primary work sits within Human Resources / Human Capital."
+    },
+    {
+      "id": "JF-F16",
+      "status": "candidate",
+      "name": "Information Technology",
+      "sourceFunctionId": "F16",
+      "purpose": "Group canonical jobs whose primary work sits within Information Technology."
+    },
+    {
+      "id": "JF-F17",
+      "status": "candidate",
+      "name": "Data, Analytics & AI",
+      "sourceFunctionId": "F17",
+      "purpose": "Group canonical jobs whose primary work sits within Data, Analytics & AI."
+    },
+    {
+      "id": "JF-F18",
+      "status": "candidate",
+      "name": "Cybersecurity & Information Security",
+      "sourceFunctionId": "F18",
+      "purpose": "Group canonical jobs whose primary work sits within Cybersecurity & Information Security."
+    },
+    {
+      "id": "JF-F19",
+      "status": "candidate",
+      "name": "Legal & Corporate Secretariat",
+      "sourceFunctionId": "F19",
+      "purpose": "Group canonical jobs whose primary work sits within Legal & Corporate Secretariat."
+    },
+    {
+      "id": "JF-F20",
+      "status": "candidate",
+      "name": "Risk, Compliance, Internal Control & Audit",
+      "sourceFunctionId": "F20",
+      "purpose": "Group canonical jobs whose primary work sits within Risk, Compliance, Internal Control & Audit."
+    },
+    {
+      "id": "JF-F21",
+      "status": "candidate",
+      "name": "Privacy & Information Governance",
+      "sourceFunctionId": "F21",
+      "purpose": "Group canonical jobs whose primary work sits within Privacy & Information Governance."
+    },
+    {
+      "id": "JF-F22",
+      "status": "candidate",
+      "name": "Property, Facilities & Physical Assets",
+      "sourceFunctionId": "F22",
+      "purpose": "Group canonical jobs whose primary work sits within Property, Facilities & Physical Assets."
+    },
+    {
+      "id": "JF-F23",
+      "status": "candidate",
+      "name": "Health, Safety, Environment & Sustainability",
+      "sourceFunctionId": "F23",
+      "purpose": "Group canonical jobs whose primary work sits within Health, Safety, Environment & Sustainability."
+    },
+    {
+      "id": "JF-F24",
+      "status": "candidate",
+      "name": "Business Continuity, Crisis & Physical Security",
+      "sourceFunctionId": "F24",
+      "purpose": "Group canonical jobs whose primary work sits within Business Continuity, Crisis & Physical Security."
+    },
+    {
+      "id": "JF-F25",
+      "status": "candidate",
+      "name": "Communications, Public Affairs & Investor Relations",
+      "sourceFunctionId": "F25",
+      "purpose": "Group canonical jobs whose primary work sits within Communications, Public Affairs & Investor Relations."
+    },
+    {
+      "id": "JF-F26",
+      "status": "candidate",
+      "name": "Knowledge, Document & Records Management",
+      "sourceFunctionId": "F26",
+      "purpose": "Group canonical jobs whose primary work sits within Knowledge, Document & Records Management."
+    },
+    {
+      "id": "JF-F27",
+      "status": "candidate",
+      "name": "Portfolio, Programme & Project Management",
+      "sourceFunctionId": "F27",
+      "purpose": "Group canonical jobs whose primary work sits within Portfolio, Programme & Project Management."
+    },
+    {
+      "id": "JF-F28",
+      "status": "candidate",
+      "name": "Change & Transformation Management",
+      "sourceFunctionId": "F28",
+      "purpose": "Group canonical jobs whose primary work sits within Change & Transformation Management."
+    },
+    {
+      "id": "JF-F29",
+      "status": "candidate",
+      "name": "Business Process & Continuous Improvement",
+      "sourceFunctionId": "F29",
+      "purpose": "Group canonical jobs whose primary work sits within Business Process & Continuous Improvement."
+    }
+  ]
+}
