@@ -81,7 +81,7 @@ jobs:
         if: github.event_name == 'pull_request' && github.head_ref == 'fix/job-architecture-quality'
         run: |
           git checkout -B "$GITHUB_HEAD_REF"
-          node scripts/patch-job-architecture-quality.mjs
+          node scripts/patch-job-architecture-baselines.mjs
           git add scripts/generate-job-architecture.mjs docs/architecture/job-architecture/generated
           if git diff --cached --quiet; then
             echo "No generated job architecture changes to commit."
@@ -89,7 +89,7 @@ jobs:
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Harden generated job architecture quality"
+          git commit -m "Add enterprise function skill baselines"
           git push origin "HEAD:$GITHUB_HEAD_REF"
 
       - uses: pnpm/action-setup@v4
