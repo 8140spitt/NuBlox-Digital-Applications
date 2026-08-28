@@ -19,6 +19,9 @@ on:
       - 'app/vitest.integration.config.ts'
       - 'app/e2e/**'
       - 'app/src/**'
+      - 'scripts/generate-job-architecture.mjs'
+      - 'docs/architecture/taxonomy/**'
+      - 'docs/architecture/job-architecture/**'
       - '.github/workflows/database-migration-validation.yml'
   push:
     branches:
@@ -40,11 +43,14 @@ on:
       - 'app/vitest.integration.config.ts'
       - 'app/e2e/**'
       - 'app/src/**'
+      - 'scripts/generate-job-architecture.mjs'
+      - 'docs/architecture/taxonomy/**'
+      - 'docs/architecture/job-architecture/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   complete-system-validation:
@@ -73,24 +79,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.pull_request.head.sha }}
-          fetch-depth: 0
-
-      - name: Finalize job architecture quality branch
-        if: github.event_name == 'pull_request' && github.head_ref == 'fix/job-architecture-quality'
-        run: |
-          git checkout -B "$GITHUB_HEAD_REF"
-          node scripts/patch-job-architecture-baselines.mjs
-          git add scripts/generate-job-architecture.mjs docs/architecture/job-architecture/generated
-          if git diff --cached --quiet; then
-            echo "No generated job architecture changes to commit."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "Add enterprise function skill baselines"
-          git push origin "HEAD:$GITHUB_HEAD_REF"
 
       - uses: pnpm/action-setup@v4
         with:
@@ -114,6 +102,11 @@ jobs:
       - name: Run formatting and lint checks
         working-directory: app
         run: pnpm lint
+
+      - name: Verify generated job architecture is current
+        run: |
+          node scripts/generate-job-architecture.mjs
+          git diff --exit-code -- docs/architecture/job-architecture/generated
 
       - name: Apply authoritative migration stream
         working-directory: app
