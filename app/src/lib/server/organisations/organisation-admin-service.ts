@@ -445,12 +445,9 @@ export class OrganisationAdminService {
 			'organisation.manage',
 			'member.manage'
 		]);
-		if (
-			decisions.get('organisation.manage')?.allowed ||
-			decisions.get('member.manage')?.allowed
-		) {
-			return;
-		}
+		const canManageOrganisation = decisions.get('organisation.manage')?.allowed ?? false;
+		const canManageMembers = decisions.get('member.manage')?.allowed ?? false;
+		if (canManageOrganisation || canManageMembers) return;
 		throw new OrganisationAdminValidationError(
 			'Member role administration permission is required.'
 		);
