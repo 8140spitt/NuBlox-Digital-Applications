@@ -5,6 +5,7 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import { unreconciledSupplierPaymentJournalCount } from './bank-reconciliation-service';
 import {
 	FinanceAccessPolicy,
 	FinanceValidationError,
@@ -219,6 +220,7 @@ export type AccountingPeriodWorkspace = {
 			endsOn: Date;
 			status: string;
 			unexportedJournalCount: number;
+			unreconciledSupplierPaymentCount: number;
 		}>;
 	}>;
 	recentEvents: Array<{
@@ -300,6 +302,12 @@ export class AccountingPeriodService {
 					periods.map(async (period) => ({
 						...period,
 						unexportedJournalCount: await unexportedJournalCount(
+							this.db,
+							actor.organisationId,
+							period.startsOn,
+							period.endsOn
+						),
+						unreconciledSupplierPaymentCount: await unreconciledSupplierPaymentJournalCount(
 							this.db,
 							actor.organisationId,
 							period.startsOn,
@@ -564,6 +572,17 @@ export class AccountingPeriodService {
 				if (missing > 0) {
 					throw new FinanceValidationError(
 						`Hard close is blocked until ${missing} journal${missing === 1 ? '' : 's'} have active accounting export evidence.`
+					);
+				}
+				const unreconciledSupplierPayments = await unreconciledSupplierPaymentJournalCount(
+					trx,
+					actor.organisationId,
+					period.startsOn,
+					period.endsOn
+				);
+				if (unreconciledSupplierPayments > 0) {
+					throw new FinanceValidationError(
+						`Hard close is blocked until ${unreconciledSupplierPayments} supplier payment${unreconciledSupplierPayments === 1 ? '' : 's'} have active bank settlement evidence.`
 					);
 				}
 			}

@@ -26,7 +26,10 @@
 			reasoned transition evidence without rewriting journal history.
 		</p>
 	</div>
-	<a class="secondary" href="/finance/accounting">Accounting workspace</a>
+	<div class="heading-actions">
+		<a class="secondary" href="/finance/bank-reconciliation">Bank reconciliation</a>
+		<a class="secondary" href="/finance/accounting">Accounting workspace</a>
+	</div>
 </section>
 
 {#if form?.actionError}<p class="error banner" role="alert">{form.actionError}</p>{/if}
@@ -35,8 +38,8 @@
 	<strong>Period policy</strong>
 	<span
 		>Journal posting and reversal require an open period. Export requires an exact soft-closed or
-		hard-closed period. Hard close is blocked until every journal in the period has active export
-		evidence.</span
+		hard-closed period. Hard close is blocked until every journal has active export evidence and
+		every active supplier-payment cash journal has bank settlement evidence.</span
 	>
 </section>
 
@@ -133,8 +136,8 @@
 								<thead
 									><tr
 										><th>Period</th><th>Dates</th><th>Status</th><th>Unexported journals</th><th
-											>Action</th
-										></tr
+											>Unreconciled supplier payments</th
+										><th>Action</th></tr
 									></thead
 								>
 								<tbody>
@@ -149,7 +152,9 @@
 													class="status">{statusText(period.status)}</span
 												></td
 											>
-											<td>{period.unexportedJournalCount}</td>
+											<td>{period.unexportedJournalCount}</td><td
+												>{period.unreconciledSupplierPaymentCount}</td
+											>
 											<td>
 												{#if period.status === 'open' && data.canClose}
 													<form method="POST" action="?/softClose" class="inline-form">
@@ -272,6 +277,11 @@
 		font-weight: 700;
 		color: #667085;
 		margin: 0;
+	}
+	.heading-actions {
+		display: flex;
+		gap: 0.75rem;
+		flex-wrap: wrap;
 	}
 	.secondary {
 		font-weight: 700;

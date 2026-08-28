@@ -151,11 +151,26 @@ const nativeCapabilityDomains: readonly NativeCapabilityDomain[] = [
 			'Financial documents, receivables, payments, ledger, periods, tax and statutory accounting.',
 		maturity: 'partial',
 		maturityNote:
-			'Core accounting and receivables are native; complete AP, banking, fixed assets and localisation remain.',
+			'Core accounting, receivables, native AP, governed supplier payments and bank reconciliation are native; fixed assets, deeper treasury and localisation remain.',
 		permissionNamespaces: ['finance.'],
 		routes: [
 			{ label: 'Finance', href: '/finance', anyPermissionNamespaces: ['finance.'] },
 			{ label: 'Accounting', href: '/finance/accounting', anyPermissionNamespaces: ['finance.'] },
+			{
+				label: 'Accounts Payable',
+				href: '/finance/accounts-payable',
+				anyPermissionNamespaces: ['finance.']
+			},
+			{
+				label: 'Supplier payments',
+				href: '/finance/supplier-payments',
+				anyPermissionNamespaces: ['finance.']
+			},
+			{
+				label: 'Bank reconciliation',
+				href: '/finance/bank-reconciliation',
+				anyPermissionNamespaces: ['finance.']
+			},
 			{ label: 'Invoices', href: '/finance/invoices', anyPermissionNamespaces: ['finance.'] },
 			{ label: 'Receivables', href: '/finance/receivables', anyPermissionNamespaces: ['finance.'] }
 		]
