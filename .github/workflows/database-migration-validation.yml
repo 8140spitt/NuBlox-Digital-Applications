@@ -44,7 +44,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   complete-system-validation:
@@ -73,6 +73,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: feat/supplier-payment-digital-thread
 
       - uses: pnpm/action-setup@v4
         with:
@@ -88,6 +90,18 @@ jobs:
       - name: Install application dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
+
+      - name: Apply supplier payment digital-thread integration
+        run: |
+          python3 scripts/apply-supplier-payment-digital-thread.py
+          cd app
+          pnpm exec prettier --write "src/lib/server/finance/accounting-source-service.ts" "src/lib/server/finance/accounting-service.ts" "src/lib/server/finance/accounts-payable.integration.test.ts" "src/lib/server/finance/supplier-payment-service.ts" "src/lib/server/finance/supplier-payment-accounting-source.ts" "src/routes/(app)/finance/accounts-payable/+page.svelte" "src/routes/(app)/finance/supplier-payments/+page.server.ts" "src/routes/(app)/finance/supplier-payments/+page.svelte"
+          cd ..
+          git config user.name "NuBlox CI"
+          git config user.email "actions@users.noreply.github.com"
+          git add -A
+          git commit -m "Connect supplier payments to accounting"
+          git push origin HEAD:feat/supplier-payment-digital-thread
 
       - name: Audit production dependencies
         working-directory: app
