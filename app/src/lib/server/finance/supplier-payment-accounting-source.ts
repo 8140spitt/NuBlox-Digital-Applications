@@ -8,8 +8,7 @@ import { RecordNotFoundError } from '$lib/server/kernel/errors';
 import { FinanceValidationError } from './finance-common';
 
 export type SupplierPaymentAccountingSourceType =
-	| 'supplier_payment_execution'
-	| 'supplier_payment_reversal';
+	'supplier_payment_execution' | 'supplier_payment_reversal';
 
 export type SupplierPaymentAccountingLine = {
 	mappingKey: 'accounts_payable' | 'cash_disbursements';
@@ -69,7 +68,9 @@ function finish(
 		credit += money(candidateLine.creditAmount);
 	}
 	if (debit <= 0n || debit !== credit || debit !== money(candidate.sourceAmount)) {
-		throw new FinanceValidationError('Derived supplier payment accounting candidate is not balanced.');
+		throw new FinanceValidationError(
+			'Derived supplier payment accounting candidate is not balanced.'
+		);
 	}
 	const fingerprint = createHash('sha256')
 		.update(
@@ -162,12 +163,32 @@ export async function resolveSupplierPaymentAccountingCandidate(
 		memo: `${reverse ? 'Reverse supplier payment' : 'Post supplier payment'} ${reference}`,
 		lines: reverse
 			? [
-					line('cash_disbursements', `${reference} cash restoration`, 'debit', payment.paymentAmount),
-					line('accounts_payable', `${reference} payable restoration`, 'credit', payment.paymentAmount)
+					line(
+						'cash_disbursements',
+						`${reference} cash restoration`,
+						'debit',
+						payment.paymentAmount
+					),
+					line(
+						'accounts_payable',
+						`${reference} payable restoration`,
+						'credit',
+						payment.paymentAmount
+					)
 				]
 			: [
-					line('accounts_payable', `${reference} payable settlement`, 'debit', payment.paymentAmount),
-					line('cash_disbursements', `${reference} cash disbursement`, 'credit', payment.paymentAmount)
+					line(
+						'accounts_payable',
+						`${reference} payable settlement`,
+						'debit',
+						payment.paymentAmount
+					),
+					line(
+						'cash_disbursements',
+						`${reference} cash disbursement`,
+						'credit',
+						payment.paymentAmount
+					)
 				]
 	});
 }

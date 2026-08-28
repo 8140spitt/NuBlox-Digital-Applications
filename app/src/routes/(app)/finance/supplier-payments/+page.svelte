@@ -13,9 +13,15 @@
 	const pendingCount = $derived(
 		data.payments.filter((payment) => payment.status === 'pending_approval').length
 	);
-	const approvedCount = $derived(data.payments.filter((payment) => payment.status === 'approved').length);
-	const executedCount = $derived(data.payments.filter((payment) => payment.status === 'executed').length);
-	const reversedCount = $derived(data.payments.filter((payment) => payment.reversalPublicId).length);
+	const approvedCount = $derived(
+		data.payments.filter((payment) => payment.status === 'approved').length
+	);
+	const executedCount = $derived(
+		data.payments.filter((payment) => payment.status === 'executed').length
+	);
+	const reversedCount = $derived(
+		data.payments.filter((payment) => payment.reversalPublicId).length
+	);
 </script>
 
 <svelte:head><title>Supplier Payments · NuBlox</title></svelte:head>
@@ -26,8 +32,8 @@
 		<h1>Supplier Payments</h1>
 		<p>
 			Settle posted Accounts Payable liabilities through a governed maker-checker payment process.
-			NuBlox reserves invoice open balance before approval, records execution evidence, and carries the
-			result into accounting without duplicating supplier-invoice facts.
+			NuBlox reserves invoice open balance before approval, records execution evidence, and carries
+			the result into accounting without duplicating supplier-invoice facts.
 		</p>
 	</div>
 	<div class="heading-actions">
@@ -65,7 +71,10 @@
 					<option value="">Choose posted AP liability</option>
 					{#each data.eligibleInvoices as invoice}
 						<option value={invoice.publicId}>
-							{invoice.supplierName} · {invoice.supplierDocumentNumber} · {money(invoice.openAmount, invoice.currencyCode)} open
+							{invoice.supplierName} · {invoice.supplierDocumentNumber} · {money(
+								invoice.openAmount,
+								invoice.currencyCode
+							)} open
 						</option>
 					{/each}
 				</select>
@@ -119,12 +128,18 @@
 					<header>
 						<div>
 							<strong>{payment.allocations[0]?.supplierName ?? 'Supplier payment'}</strong>
-							<span>{payment.paymentMethodName} · requested {date(payment.requestedPaymentDate)}</span>
+							<span
+								>{payment.paymentMethodName} · requested {date(payment.requestedPaymentDate)}</span
+							>
 							<small>{payment.paymentReference ?? 'Execution reference not yet recorded'}</small>
 						</div>
 						<div class="amount">
 							<strong>{money(payment.paymentAmount, payment.currencyCode)}</strong>
-							<small>{payment.allocations.length} allocation{payment.allocations.length === 1 ? '' : 's'}</small>
+							<small
+								>{payment.allocations.length} allocation{payment.allocations.length === 1
+									? ''
+									: 's'}</small
+							>
 						</div>
 						<span class={`status status-${payment.reversalPublicId ? 'reversed' : payment.status}`}>
 							{payment.reversalPublicId ? 'reversed' : payment.status.replace('_', ' ')}
@@ -184,7 +199,10 @@
 					</div>
 
 					{#if payment.reversalReason}
-						<p class="reversal-note"><strong>Reversal evidence:</strong> {payment.reversalReason}</p>
+						<p class="reversal-note">
+							<strong>Reversal evidence:</strong>
+							{payment.reversalReason}
+						</p>
 					{/if}
 				</article>
 			{/each}

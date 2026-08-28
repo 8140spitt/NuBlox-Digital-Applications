@@ -128,9 +128,9 @@ export interface AccountsPayableSupplierPaymentReversals {
 export interface AccountsPayableSupplierPayments {
   approved_at: Date | null;
   approved_by_member_id: string | null;
+  cancellation_reason: string | null;
   cancelled_at: Date | null;
   cancelled_by_member_id: string | null;
-  cancellation_reason: string | null;
   created_at: Generated<Date>;
   created_by_member_id: string;
   currency_code: string;

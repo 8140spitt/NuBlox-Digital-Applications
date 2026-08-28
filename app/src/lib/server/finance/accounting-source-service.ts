@@ -10,6 +10,10 @@ import {
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { RecordNotFoundError } from '$lib/server/kernel/errors';
 import { FinanceValidationError } from './finance-common';
+import {
+	listSupplierPaymentAccountingReferences,
+	resolveSupplierPaymentAccountingCandidate
+} from './supplier-payment-accounting-source';
 
 export const ACCOUNTING_SOURCE_TYPES = [
 	'invoice_issue',
@@ -17,6 +21,8 @@ export const ACCOUNTING_SOURCE_TYPES = [
 	'credit_note_issue',
 	'accounts_payable_invoice_approval',
 	'accounts_payable_credit_note_approval',
+	'supplier_payment_execution',
+	'supplier_payment_reversal',
 	'payment_receipt',
 	'payment_allocation',
 	'payment_allocation_reversal',
@@ -40,6 +46,7 @@ export type AccountingMappingKey =
 	| 'bad_debt_recovery_income'
 	| 'accounts_payable'
 	| 'purchase_expense'
+	| 'cash_disbursements'
 	| 'retained_earnings';
 
 export type AccountingCandidateLine = {
@@ -678,6 +685,15 @@ export async function resolveAccountingSourceCandidate(
 				sourcePublicId,
 				forUpdate
 			);
+		case 'supplier_payment_execution':
+		case 'supplier_payment_reversal':
+			return resolveSupplierPaymentAccountingCandidate(
+				db,
+				organisationId,
+				sourceType,
+				sourcePublicId,
+				forUpdate
+			);
 		case 'payment_receipt':
 		case 'payment_reversal':
 			return paymentCandidate(db, organisationId, sourceType, sourcePublicId, forUpdate);
@@ -776,6 +792,12 @@ export async function listAccountingSourceReferences(
 			at: document.approvedAt
 		});
 	}
+
+	const supplierPaymentReferences = await listSupplierPaymentAccountingReferences(
+		db,
+		organisationId
+	);
+	refs.push(...supplierPaymentReferences);
 
 	const payments = await db
 		.selectFrom('payments')

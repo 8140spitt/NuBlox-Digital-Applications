@@ -37,6 +37,7 @@
 		</p>
 	</div>
 	<div class="heading-actions">
+		<a class="button secondary" href="/finance/supplier-payments">Supplier payments</a>
 		<a class="button secondary" href="/purchasing">Procurement</a>
 		<a class="button secondary" href="/finance">Finance</a>
 	</div>

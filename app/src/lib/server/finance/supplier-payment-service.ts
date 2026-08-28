@@ -28,10 +28,7 @@ const SUPPLIER_PAYMENT_PERMISSIONS = {
 } as const;
 
 export type SupplierPaymentLifecycleStatus =
-	| 'pending_approval'
-	| 'approved'
-	| 'executed'
-	| 'cancelled';
+	'pending_approval' | 'approved' | 'executed' | 'cancelled';
 
 export type SupplierPaymentAllocationInput = {
 	documentPublicId: string;
@@ -173,7 +170,10 @@ export class SupplierPaymentService {
 		return new PermissionService(db).decideWithUmbrella(actor, permissionKey, 'finance.manage');
 	}
 
-	private async requireView(actor: TenantActorContext, db: DatabaseExecutor = this.db): Promise<void> {
+	private async requireView(
+		actor: TenantActorContext,
+		db: DatabaseExecutor = this.db
+	): Promise<void> {
 		await this.assertActiveActor(actor, db);
 		if (!(await this.decision(actor, 'finance.ap.view', db)).allowed) {
 			throw new TenantAccessError('Supplier-payment access is not permitted.');
@@ -301,56 +301,64 @@ export class SupplierPaymentService {
 
 	async getWorkspace(actor: TenantActorContext): Promise<SupplierPaymentWorkspace> {
 		await this.requireView(actor);
-		const [paymentMethods, invoiceRows, paymentRows, canCreate, canApprove, canExecute, canCancel, canReverse] =
-			await Promise.all([
-				this.db
-					.selectFrom('payment_methods')
-					.select(['code', 'name'])
-					.where('is_active', '=', 1)
-					.orderBy('name')
-					.execute(),
-				this.db
-					.selectFrom('accounts_payable_documents as document')
-					.innerJoin('accounts_payable_supplier_snapshots as supplier', (join) =>
-						join
-							.onRef('supplier.accounts_payable_document_id', '=', 'document.id')
-							.onRef('supplier.organisation_id', '=', 'document.organisation_id')
-					)
-					.leftJoin('accounts_payable_supplier_payment_allocations as allocation', (join) =>
-						join
-							.onRef('allocation.accounts_payable_document_id', '=', 'document.id')
-							.onRef('allocation.organisation_id', '=', 'document.organisation_id')
-					)
-					.leftJoin('accounts_payable_supplier_payments as payment', (join) =>
-						join
-							.onRef('payment.id', '=', 'allocation.supplier_payment_id')
-							.onRef('payment.organisation_id', '=', 'allocation.organisation_id')
-					)
-					.leftJoin('accounts_payable_supplier_payment_reversals as payment_reversal', (join) =>
-						join
-							.onRef('payment_reversal.supplier_payment_id', '=', 'payment.id')
-							.onRef('payment_reversal.organisation_id', '=', 'payment.organisation_id')
-					)
-					.select([
-						'document.public_id as publicId',
-						'document.supplier_party_id as supplierPartyId',
-						'supplier.display_name as supplierName',
-						'document.supplier_document_number as supplierDocumentNumber',
-						'document.currency_code as currencyCode',
-						'document.due_date as dueDate',
-						'document.gross_amount as grossAmount',
-						sql<string>`coalesce(sum(case
+		const [
+			paymentMethods,
+			invoiceRows,
+			paymentRows,
+			canCreate,
+			canApprove,
+			canExecute,
+			canCancel,
+			canReverse
+		] = await Promise.all([
+			this.db
+				.selectFrom('payment_methods')
+				.select(['code', 'name'])
+				.where('is_active', '=', 1)
+				.orderBy('name')
+				.execute(),
+			this.db
+				.selectFrom('accounts_payable_documents as document')
+				.innerJoin('accounts_payable_supplier_snapshots as supplier', (join) =>
+					join
+						.onRef('supplier.accounts_payable_document_id', '=', 'document.id')
+						.onRef('supplier.organisation_id', '=', 'document.organisation_id')
+				)
+				.leftJoin('accounts_payable_supplier_payment_allocations as allocation', (join) =>
+					join
+						.onRef('allocation.accounts_payable_document_id', '=', 'document.id')
+						.onRef('allocation.organisation_id', '=', 'document.organisation_id')
+				)
+				.leftJoin('accounts_payable_supplier_payments as payment', (join) =>
+					join
+						.onRef('payment.id', '=', 'allocation.supplier_payment_id')
+						.onRef('payment.organisation_id', '=', 'allocation.organisation_id')
+				)
+				.leftJoin('accounts_payable_supplier_payment_reversals as payment_reversal', (join) =>
+					join
+						.onRef('payment_reversal.supplier_payment_id', '=', 'payment.id')
+						.onRef('payment_reversal.organisation_id', '=', 'payment.organisation_id')
+				)
+				.select([
+					'document.public_id as publicId',
+					'document.supplier_party_id as supplierPartyId',
+					'supplier.display_name as supplierName',
+					'document.supplier_document_number as supplierDocumentNumber',
+					'document.currency_code as currencyCode',
+					'document.due_date as dueDate',
+					'document.gross_amount as grossAmount',
+					sql<string>`coalesce(sum(case
 							when payment.lifecycle_status in ('pending_approval', 'approved', 'executed')
 								and not (payment.lifecycle_status = 'executed' and payment_reversal.id is not null)
 							then allocation.allocated_amount
 							else 0
 						end), 0)`.as('reservedAmount')
-					])
-					.where('document.organisation_id', '=', actor.organisationId)
-					.where('document.document_type', '=', 'invoice')
-					.where('document.lifecycle_status', '=', 'approved')
-					.where(
-						sql<boolean>`exists (
+				])
+				.where('document.organisation_id', '=', actor.organisationId)
+				.where('document.document_type', '=', 'invoice')
+				.where('document.lifecycle_status', '=', 'approved')
+				.where(
+					sql<boolean>`exists (
 							select 1
 							from accounting_journal_entries as journal
 							left join accounting_journal_entry_reversals as journal_reversal
@@ -361,62 +369,62 @@ export class SupplierPaymentService {
 								and journal.source_public_id = document.public_id
 								and journal_reversal.journal_entry_id is null
 						)`
-					)
-					.groupBy([
-						'document.id',
-						'document.public_id',
-						'document.supplier_party_id',
-						'supplier.display_name',
-						'document.supplier_document_number',
-						'document.currency_code',
-						'document.due_date',
-						'document.gross_amount'
-					])
-					.orderBy('document.due_date', 'asc')
-					.orderBy('document.id', 'asc')
-					.limit(200)
-					.execute(),
-				this.db
-					.selectFrom('accounts_payable_supplier_payments as payment')
-					.innerJoin('payment_methods as method', 'method.id', 'payment.payment_method_id')
-					.leftJoin('accounts_payable_supplier_payment_reversals as reversal', (join) =>
-						join
-							.onRef('reversal.supplier_payment_id', '=', 'payment.id')
-							.onRef('reversal.organisation_id', '=', 'payment.organisation_id')
-					)
-					.select([
-						'payment.id',
-						'payment.public_id as publicId',
-						'payment.supplier_party_id as supplierPartyId',
-						'method.code as paymentMethodCode',
-						'method.name as paymentMethodName',
-						'payment.currency_code as currencyCode',
-						'payment.requested_payment_date as requestedPaymentDate',
-						'payment.payment_reference as paymentReference',
-						'payment.payment_amount as paymentAmount',
-						'payment.lifecycle_status as status',
-						'payment.created_by_member_id as createdByMemberId',
-						'payment.approved_by_member_id as approvedByMemberId',
-						'payment.approved_at as approvedAt',
-						'payment.executed_by_member_id as executedByMemberId',
-						'payment.executed_at as executedAt',
-						'payment.cancelled_by_member_id as cancelledByMemberId',
-						'payment.cancelled_at as cancelledAt',
-						'payment.cancellation_reason as cancellationReason',
-						'reversal.public_id as reversalPublicId',
-						'reversal.reason as reversalReason',
-						'reversal.reversed_at as reversedAt'
-					])
-					.where('payment.organisation_id', '=', actor.organisationId)
-					.orderBy('payment.created_at', 'desc')
-					.limit(100)
-					.execute(),
-				this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.create),
-				this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.approve),
-				this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.execute),
-				this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.cancel),
-				this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.reverse)
-			]);
+				)
+				.groupBy([
+					'document.id',
+					'document.public_id',
+					'document.supplier_party_id',
+					'supplier.display_name',
+					'document.supplier_document_number',
+					'document.currency_code',
+					'document.due_date',
+					'document.gross_amount'
+				])
+				.orderBy('document.due_date', 'asc')
+				.orderBy('document.id', 'asc')
+				.limit(200)
+				.execute(),
+			this.db
+				.selectFrom('accounts_payable_supplier_payments as payment')
+				.innerJoin('payment_methods as method', 'method.id', 'payment.payment_method_id')
+				.leftJoin('accounts_payable_supplier_payment_reversals as reversal', (join) =>
+					join
+						.onRef('reversal.supplier_payment_id', '=', 'payment.id')
+						.onRef('reversal.organisation_id', '=', 'payment.organisation_id')
+				)
+				.select([
+					'payment.id',
+					'payment.public_id as publicId',
+					'payment.supplier_party_id as supplierPartyId',
+					'method.code as paymentMethodCode',
+					'method.name as paymentMethodName',
+					'payment.currency_code as currencyCode',
+					'payment.requested_payment_date as requestedPaymentDate',
+					'payment.payment_reference as paymentReference',
+					'payment.payment_amount as paymentAmount',
+					'payment.lifecycle_status as status',
+					'payment.created_by_member_id as createdByMemberId',
+					'payment.approved_by_member_id as approvedByMemberId',
+					'payment.approved_at as approvedAt',
+					'payment.executed_by_member_id as executedByMemberId',
+					'payment.executed_at as executedAt',
+					'payment.cancelled_by_member_id as cancelledByMemberId',
+					'payment.cancelled_at as cancelledAt',
+					'payment.cancellation_reason as cancellationReason',
+					'reversal.public_id as reversalPublicId',
+					'reversal.reason as reversalReason',
+					'reversal.reversed_at as reversedAt'
+				])
+				.where('payment.organisation_id', '=', actor.organisationId)
+				.orderBy('payment.created_at', 'desc')
+				.limit(100)
+				.execute(),
+			this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.create),
+			this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.approve),
+			this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.execute),
+			this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.cancel),
+			this.decision(actor, SUPPLIER_PAYMENT_PERMISSIONS.reverse)
+		]);
 
 		const eligibleInvoices: SupplierPaymentEligibleInvoice[] = invoiceRows
 			.map((row) => ({
@@ -501,16 +509,27 @@ export class SupplierPaymentService {
 		};
 	}
 
-	async createPayment(actor: TenantActorContext, input: CreateSupplierPaymentInput): Promise<string> {
+	async createPayment(
+		actor: TenantActorContext,
+		input: CreateSupplierPaymentInput
+	): Promise<string> {
 		const paymentMethodCode = checkedPaymentMethodCode(input.paymentMethodCode);
-		const requestedPaymentDate = validateFinanceDate(input.requestedPaymentDate, 'Requested payment date');
-		if (!requestedPaymentDate) throw new FinanceValidationError('Requested payment date is required.');
+		const requestedPaymentDate = validateFinanceDate(
+			input.requestedPaymentDate,
+			'Requested payment date'
+		);
+		if (!requestedPaymentDate)
+			throw new FinanceValidationError('Requested payment date is required.');
 		const paymentReference = cleanFinanceText(input.paymentReference, 160, 'Payment reference');
 		if (!Array.isArray(input.allocations) || input.allocations.length === 0) {
-			throw new FinanceValidationError('At least one supplier invoice must be selected for payment.');
+			throw new FinanceValidationError(
+				'At least one supplier invoice must be selected for payment.'
+			);
 		}
 		if (input.allocations.length > 100) {
-			throw new FinanceValidationError('A supplier payment cannot contain more than 100 invoice allocations.');
+			throw new FinanceValidationError(
+				'A supplier payment cannot contain more than 100 invoice allocations.'
+			);
 		}
 		const prepared = input.allocations
 			.map((allocation) => ({
@@ -518,8 +537,12 @@ export class SupplierPaymentService {
 				amount: validateMoneyAmount(allocation.amount, 'Payment allocation')
 			}))
 			.sort((left, right) => left.documentPublicId.localeCompare(right.documentPublicId));
-		if (new Set(prepared.map((allocation) => allocation.documentPublicId)).size !== prepared.length) {
-			throw new FinanceValidationError('A supplier invoice can only be allocated once per payment.');
+		if (
+			new Set(prepared.map((allocation) => allocation.documentPublicId)).size !== prepared.length
+		) {
+			throw new FinanceValidationError(
+				'A supplier invoice can only be allocated once per payment.'
+			);
 		}
 
 		return this.db.transaction().execute(async (trx) => {
@@ -536,7 +559,11 @@ export class SupplierPaymentService {
 			let supplierPartyId: string | null = null;
 			let currencyCode: string | null = null;
 			let paymentAmount = 0n;
-			const allocationRows: Array<{ documentId: string; documentPublicId: string; amount: string }> = [];
+			const allocationRows: Array<{
+				documentId: string;
+				documentPublicId: string;
+				amount: string;
+			}> = [];
 			for (const allocation of prepared) {
 				const document = await trx
 					.selectFrom('accounts_payable_documents')
@@ -564,16 +591,25 @@ export class SupplierPaymentService {
 				if (supplierPartyId === null) supplierPartyId = document.supplierPartyId;
 				if (currencyCode === null) currencyCode = document.currencyCode;
 				if (supplierPartyId !== document.supplierPartyId) {
-					throw new FinanceValidationError('A supplier payment cannot combine different suppliers.');
+					throw new FinanceValidationError(
+						'A supplier payment cannot combine different suppliers.'
+					);
 				}
 				if (currencyCode !== document.currencyCode) {
-					throw new FinanceValidationError('A supplier payment cannot combine different currencies.');
+					throw new FinanceValidationError(
+						'A supplier payment cannot combine different currencies.'
+					);
 				}
 				const reservedAmount = await this.reservedAmount(trx, actor.organisationId, document.id);
 				const openAmount =
 					parseScaledDecimal(document.grossAmount, 4, 'Supplier invoice total', true) -
 					parseScaledDecimal(reservedAmount, 4, 'Reserved amount', true);
-				const requestedAmount = parseScaledDecimal(allocation.amount, 4, 'Payment allocation', true);
+				const requestedAmount = parseScaledDecimal(
+					allocation.amount,
+					4,
+					'Payment allocation',
+					true
+				);
 				if (requestedAmount > openAmount) {
 					throw new FinanceValidationError(
 						`Payment allocation exceeds the supplier invoice open balance of ${formatScaledDecimal(openAmount, 4)}.`
@@ -652,7 +688,9 @@ export class SupplierPaymentService {
 				throw new FinanceValidationError('Only a pending supplier payment can be approved.');
 			}
 			if (payment.createdByMemberId === membership.id) {
-				throw new FinanceValidationError('The supplier-payment maker cannot approve the same payment.');
+				throw new FinanceValidationError(
+					'The supplier-payment maker cannot approve the same payment.'
+				);
 			}
 			const approvedAt = this.now();
 			await trx
@@ -701,7 +739,9 @@ export class SupplierPaymentService {
 			)!;
 			const allocations = await this.listPaymentAllocations(trx, actor.organisationId, payment.id);
 			for (const allocation of allocations) {
-				if (!(await this.hasActiveApJournal(trx, actor.organisationId, allocation.documentPublicId))) {
+				if (
+					!(await this.hasActiveApJournal(trx, actor.organisationId, allocation.documentPublicId))
+				) {
 					throw new FinanceValidationError(
 						'An allocated supplier invoice no longer has an active AP journal; payment execution is blocked.'
 					);
