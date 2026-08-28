@@ -91,16 +91,28 @@ jobs:
         working-directory: app
         run: pnpm install --frozen-lockfile
 
-      - name: Apply supplier payment digital-thread integration
+      - name: Finalize supplier payment branch
         run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply-supplier-payment-digital-thread.py')
+          text = path.read_text()
+          marker = '# Final authoritative schema counts after adding three AP tables, eleven FKs and six CHECKs.'
+          if marker not in text:
+              raise SystemExit('Supplier-payment patch marker was not found')
+          path.write_text(text.split(marker, 1)[0].rstrip() + '\n')
+          PY
           python3 scripts/apply-supplier-payment-digital-thread.py
+          rm scripts/apply-supplier-payment-digital-thread.py
           cd app
           pnpm exec prettier --write "src/lib/server/finance/accounting-source-service.ts" "src/lib/server/finance/accounting-service.ts" "src/lib/server/finance/accounts-payable.integration.test.ts" "src/lib/server/finance/supplier-payment-service.ts" "src/lib/server/finance/supplier-payment-accounting-source.ts" "src/routes/(app)/finance/accounts-payable/+page.svelte" "src/routes/(app)/finance/supplier-payments/+page.server.ts" "src/routes/(app)/finance/supplier-payments/+page.svelte"
+          pnpm db:migrate
+          pnpm db:types
           cd ..
-          git checkout -- .github/workflows/database-migration-validation.yml
           git config user.name "NuBlox CI"
           git config user.email "actions@users.noreply.github.com"
-          git add -A
+          git add app database
+          git add -u scripts
           git commit -m "Connect supplier payments to accounting"
           git push origin HEAD:feat/supplier-payment-digital-thread
 
@@ -126,9 +138,9 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '423'
-          test "$fk_count" = '995'
-          test "$check_count" = '602'
+          test "$table_count" = '426'
+          test "$fk_count" = '1006'
+          test "$check_count" = '608'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
