@@ -323,6 +323,74 @@ export interface AuthVerifications {
   value: string;
 }
 
+export interface BankAccounts {
+  account_identifier_last4: string;
+  account_name: string;
+  accounting_account_id: string;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  currency_code: string;
+  id: Generated<string>;
+  institution_name: string;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  updated_at: Generated<Date>;
+}
+
+export interface BankReconciliationMatches {
+  bank_statement_line_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  matched_amount: Decimal;
+  matched_at: Generated<Date>;
+  matched_by_member_id: string;
+  organisation_id: string;
+  public_id: string;
+  supplier_payment_id: string;
+}
+
+export interface BankReconciliationMatchReversals {
+  bank_reconciliation_match_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  reason: string;
+  reversed_at: Generated<Date>;
+  reversed_by_member_id: string;
+}
+
+export interface BankStatementLines {
+  amount: Decimal;
+  bank_account_id: string;
+  bank_reference: string | null;
+  bank_statement_id: string;
+  booked_on: Date;
+  created_at: Generated<Date>;
+  description: string;
+  direction: string;
+  external_transaction_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  value_on: Date | null;
+}
+
+export interface BankStatements {
+  bank_account_id: string;
+  closing_balance: Decimal;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  opening_balance: Decimal;
+  organisation_id: string;
+  period_end: Date;
+  period_start: Date;
+  public_id: string;
+  statement_reference: string;
+}
+
 export interface BuildingLevels {
   created_at: Generated<Date>;
   facility_building_id: string;
@@ -4660,6 +4728,11 @@ export interface DB {
   auth_user_links: AuthUserLinks;
   auth_users: AuthUsers;
   auth_verifications: AuthVerifications;
+  bank_accounts: BankAccounts;
+  bank_reconciliation_match_reversals: BankReconciliationMatchReversals;
+  bank_reconciliation_matches: BankReconciliationMatches;
+  bank_statement_lines: BankStatementLines;
+  bank_statements: BankStatements;
   building_levels: BuildingLevels;
   building_system_types: BuildingSystemTypes;
   building_systems: BuildingSystems;

@@ -38,6 +38,7 @@
 	</div>
 	<div class="heading-actions">
 		<a class="button secondary" href="/finance/accounts-payable">Accounts Payable</a>
+		<a class="button secondary" href="/finance/bank-reconciliation">Bank reconciliation</a>
 		<a class="button secondary" href="/finance/accounting">Accounting</a>
 	</div>
 </section>

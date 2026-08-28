@@ -22,8 +22,8 @@
 		<h1>Bank Reconciliation</h1>
 		<p>
 			Connect executed supplier payments to provider-neutral bank statement evidence. Active matches
-			confirm settlement without rewriting Accounts Payable or accounting journals, and become part of
-			period-close readiness.
+			confirm settlement without rewriting Accounts Payable or accounting journals, and become part
+			of period-close readiness.
 		</p>
 	</div>
 	<div class="heading-actions">
@@ -38,7 +38,9 @@
 <section class="metrics" aria-label="Bank reconciliation position">
 	<div><span>Bank accounts</span><strong>{data.accounts.length}</strong></div>
 	<div><span>Unmatched bank lines</span><strong>{data.unmatchedLines.length}</strong></div>
-	<div><span>Unsettled supplier payments</span><strong>{data.unsettledSupplierPayments.length}</strong></div>
+	<div>
+		<span>Unsettled supplier payments</span><strong>{data.unsettledSupplierPayments.length}</strong>
+	</div>
 	<div><span>Active settlement matches</span><strong>{activeMatches.length}</strong></div>
 </section>
 
@@ -99,15 +101,34 @@
 					<select name="bankAccountPublicId" required>
 						<option value="">Choose account</option>
 						{#each data.accounts.filter((account) => account.status === 'active') as account}
-							<option value={account.publicId}>{account.accountName} · {account.currencyCode}</option>
+							<option value={account.publicId}
+								>{account.accountName} · {account.currencyCode}</option
+							>
 						{/each}
 					</select>
 				</label>
-				<label>Statement reference <input name="statementReference" maxlength="160" required /></label>
-				<label>External transaction ID <input name="externalTransactionId" maxlength="160" required /></label>
-				<label>Period start <input type="date" name="periodStart" value={data.today} required /></label>
+				<label
+					>Statement reference <input name="statementReference" maxlength="160" required /></label
+				>
+				<label
+					>External transaction ID <input
+						name="externalTransactionId"
+						maxlength="160"
+						required
+					/></label
+				>
+				<label
+					>Period start <input type="date" name="periodStart" value={data.today} required /></label
+				>
 				<label>Period end <input type="date" name="periodEnd" value={data.today} required /></label>
-				<label>Opening balance <input name="openingBalance" inputmode="decimal" value="0.0000" required /></label>
+				<label
+					>Opening balance <input
+						name="openingBalance"
+						inputmode="decimal"
+						value="0.0000"
+						required
+					/></label
+				>
 				<label>Closing balance <input name="closingBalance" inputmode="decimal" required /></label>
 				<label>Booked date <input type="date" name="bookedOn" value={data.today} required /></label>
 				<label>Value date <input type="date" name="valueOn" /></label>
@@ -119,7 +140,8 @@
 					</select>
 				</label>
 				<label>Amount <input name="amount" inputmode="decimal" required /></label>
-				<label class="wide">Description <input name="description" maxlength="500" required /></label>
+				<label class="wide">Description <input name="description" maxlength="500" required /></label
+				>
 				<label class="wide">Bank reference <input name="bankReference" maxlength="160" /></label>
 				<div class="wide"><button type="submit">Record statement evidence</button></div>
 			</form>
@@ -148,7 +170,10 @@
 							<div>
 								<strong>{money(line.amount, line.currencyCode)}</strong>
 								<span>{line.accountName} · {line.statementReference}</span>
-								<small>{line.direction} · {line.bookedOn} · {line.bankReference ?? line.externalTransactionId}</small>
+								<small
+									>{line.direction} · {line.bookedOn} · {line.bankReference ??
+										line.externalTransactionId}</small
+								>
 							</div>
 						</div>
 					{/each}
@@ -166,7 +191,11 @@
 							<div>
 								<strong>{payment.supplierName}</strong>
 								<span>{money(payment.paymentAmount, payment.currencyCode)}</span>
-								<small>{payment.paymentReference ?? payment.publicId} · executed {date(payment.executedAt)}</small>
+								<small
+									>{payment.paymentReference ?? payment.publicId} · executed {date(
+										payment.executedAt
+									)}</small
+								>
 							</div>
 						</div>
 					{/each}
@@ -183,7 +212,8 @@
 					<option value="">Choose bank debit</option>
 					{#each data.unmatchedLines.filter((line) => line.direction === 'debit') as line}
 						<option value={line.publicId}>
-							{line.bookedOn} · {money(line.amount, line.currencyCode)} · {line.bankReference ?? line.externalTransactionId}
+							{line.bookedOn} · {money(line.amount, line.currencyCode)} · {line.bankReference ??
+								line.externalTransactionId}
 						</option>
 					{/each}
 				</select>
@@ -194,7 +224,8 @@
 					<option value="">Choose executed payment</option>
 					{#each data.unsettledSupplierPayments as payment}
 						<option value={payment.publicId}>
-							{payment.supplierName} · {money(payment.paymentAmount, payment.currencyCode)} · {payment.paymentReference ?? payment.publicId}
+							{payment.supplierName} · {money(payment.paymentAmount, payment.currencyCode)} · {payment.paymentReference ??
+								payment.publicId}
 						</option>
 					{/each}
 				</select>
@@ -220,8 +251,13 @@
 				<div class="match-card">
 					<div class="list-row">
 						<div>
-							<strong>{match.supplierName} · {money(match.matchedAmount, match.currencyCode)}</strong>
-							<span>{match.statementReference} · {match.bankReference ?? match.statementLinePublicId}</span>
+							<strong
+								>{match.supplierName} · {money(match.matchedAmount, match.currencyCode)}</strong
+							>
+							<span
+								>{match.statementReference} · {match.bankReference ??
+									match.statementLinePublicId}</span
+							>
 							<small>Matched {date(match.matchedAt)}</small>
 						</div>
 						<span class={`status ${match.reversalPublicId ? 'reversed' : 'active'}`}>
@@ -233,7 +269,12 @@
 					{:else if data.canReverseReconciliation}
 						<form method="POST" action="?/reverseMatch" class="inline-form">
 							<input type="hidden" name="matchPublicId" value={match.publicId} />
-							<input name="reason" maxlength="1000" placeholder="Why is this match incorrect?" required />
+							<input
+								name="reason"
+								maxlength="1000"
+								placeholder="Why is this match incorrect?"
+								required
+							/>
 							<button type="submit" class="secondary">Reverse match</button>
 						</form>
 					{/if}

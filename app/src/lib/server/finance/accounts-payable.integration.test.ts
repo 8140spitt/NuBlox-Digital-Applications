@@ -10,6 +10,7 @@ import { AccountingPeriodService } from './accounting-period-service';
 import { AccountingService } from './accounting-service';
 import { AccountsPayableRepository } from './accounts-payable-repository';
 import { AccountsPayableService } from './accounts-payable-service';
+import { BankReconciliationService } from './bank-reconciliation-service';
 import { FinanceValidationError } from './finance-common';
 import { SupplierPaymentService } from './supplier-payment-service';
 
@@ -827,5 +828,165 @@ describe('Wave A native accounts payable foundation', () => {
 		expect(
 			paymentWorkspace.eligibleInvoices.find((invoice) => invoice.publicId === documentPublicId)
 		).toMatchObject({ reservedAmount: '0.0000', openAmount: '400.0000' });
+	});
+
+	it('requires active bank settlement evidence before hard close and freezes that evidence after close', async () => {
+		const financialYear = await db
+			.selectFrom('accounting_financial_years')
+			.select('public_id as publicId')
+			.where('organisation_id', '=', organisationAId)
+			.where('year_code', '=', 'AP-FY26')
+			.executeTakeFirstOrThrow();
+		const periodService = new AccountingPeriodService(
+			db,
+			randomUUID,
+			() => new Date('2026-09-30T17:00:00.000Z')
+		);
+		const september = await periodService.createPeriod(actorMaker, {
+			financialYearPublicId: financialYear.publicId,
+			periodNumber: 9,
+			name: 'September 2026',
+			startsOn: '2026-09-01',
+			endsOn: '2026-09-30'
+		});
+		const po = await createIssuedPurchaseOrder({
+			orderedQuantity: '3',
+			receivedQuantity: '3',
+			unitRate: '100.00'
+		});
+		const ap = new AccountsPayableService(db);
+		const documentPublicId = await ap.createSupplierDocument(
+			actorMaker,
+			invoiceInput(po.purchaseOrderPublicId, po.lineNumber, { quantity: '3', unitRate: '100.00' })
+		);
+		await ap.submitDocument(actorMaker, documentPublicId);
+		await ap.approveDocument(actorApprover, documentPublicId, 'Approved for September settlement.');
+		const accounting = new AccountingService(db);
+		await accounting.postSource(actorMaker, {
+			sourceType: 'accounts_payable_invoice_approval',
+			sourcePublicId: documentPublicId
+		});
+
+		const paymentNow = new Date('2026-09-15T12:00:00.000Z');
+		const supplierPayments = new SupplierPaymentService(db, randomUUID, () => paymentNow);
+		const paymentWorkspace = await supplierPayments.getWorkspace(actorMaker);
+		const bankTransfer = paymentWorkspace.paymentMethods.find(
+			(method) => method.code === 'bank_transfer'
+		);
+		expect(bankTransfer).toBeTruthy();
+		const paymentPublicId = await supplierPayments.createPayment(actorMaker, {
+			paymentMethodCode: bankTransfer!.code,
+			requestedPaymentDate: '2026-09-15',
+			allocations: [{ documentPublicId, amount: '250.0000' }]
+		});
+		await supplierPayments.approvePayment(actorApprover, paymentPublicId);
+		const bankReference = `BACS-${randomUUID().slice(0, 8)}`;
+		await supplierPayments.executePayment(actorMaker, paymentPublicId, {
+			paymentReference: bankReference
+		});
+		const septemberAccounting = new AccountingService(db, randomUUID, () => paymentNow);
+		await septemberAccounting.postSource(actorMaker, {
+			sourceType: 'supplier_payment_execution',
+			sourcePublicId: paymentPublicId
+		});
+		await periodService.softClose(actorMaker, september.publicId, 'September posting complete.');
+		await septemberAccounting.createExport(actorMaker, {
+			periodStart: '2026-09-01',
+			periodEnd: '2026-09-30',
+			reason: 'September accounting export before hard close.'
+		});
+
+		let periodWorkspace = await periodService.getWorkspace(actorMaker);
+		let septemberPeriod = periodWorkspace.financialYears
+			.flatMap((year) => year.periods)
+			.find((period) => period.publicId === september.publicId);
+		expect(septemberPeriod).toMatchObject({
+			status: 'soft_closed',
+			unexportedJournalCount: 0,
+			unreconciledSupplierPaymentCount: 1
+		});
+		await expect(
+			periodService.hardClose(
+				actorMaker,
+				september.publicId,
+				'Attempt close before settlement evidence.'
+			)
+		).rejects.toThrow('active bank settlement evidence');
+
+		const cashAccount = (await septemberAccounting.getWorkspace(actorMaker)).accounts.find(
+			(account) => account.accountCode === 'CASH-1000'
+		);
+		expect(cashAccount).toBeTruthy();
+		const bank = new BankReconciliationService(
+			db,
+			randomUUID,
+			() => new Date('2026-09-16T09:00:00.000Z')
+		);
+		const bankAccountPublicId = await bank.createBankAccount(actorMaker, {
+			accountingAccountPublicId: cashAccount!.publicId,
+			accountName: 'Operating bank account',
+			institutionName: 'NuBlox Test Bank',
+			accountIdentifierLast4: '2609',
+			currencyCode: 'GBP'
+		});
+		const externalTransactionId = `BANK-TXN-${randomUUID().slice(0, 8)}`;
+		await bank.recordStatement(actorMaker, {
+			bankAccountPublicId,
+			statementReference: `SEP-${randomUUID().slice(0, 8)}`,
+			periodStart: '2026-09-16',
+			periodEnd: '2026-09-16',
+			openingBalance: '1000.0000',
+			closingBalance: '750.0000',
+			lines: [
+				{
+					externalTransactionId,
+					bookedOn: '2026-09-16',
+					valueOn: '2026-09-16',
+					direction: 'debit',
+					amount: '250.0000',
+					description: 'Supplier payment settlement',
+					bankReference
+				}
+			]
+		});
+		let bankWorkspace = await bank.getWorkspace(actorMaker);
+		const statementLine = bankWorkspace.unmatchedLines.find(
+			(line) => line.externalTransactionId === externalTransactionId
+		);
+		expect(statementLine).toBeTruthy();
+		expect(
+			bankWorkspace.unsettledSupplierPayments.some(
+				(payment) => payment.publicId === paymentPublicId
+			)
+		).toBe(true);
+		const matchPublicId = await bank.matchSupplierPayment(actorMaker, {
+			statementLinePublicId: statementLine!.publicId,
+			supplierPaymentPublicId: paymentPublicId
+		});
+		bankWorkspace = await bank.getWorkspace(actorMaker);
+		expect(
+			bankWorkspace.unsettledSupplierPayments.some(
+				(payment) => payment.publicId === paymentPublicId
+			)
+		).toBe(false);
+		expect(bankWorkspace.matches.find((match) => match.publicId === matchPublicId)).toMatchObject({
+			supplierPaymentPublicId: paymentPublicId,
+			matchedAmount: '250.0000',
+			reversalPublicId: null
+		});
+
+		periodWorkspace = await periodService.getWorkspace(actorMaker);
+		septemberPeriod = periodWorkspace.financialYears
+			.flatMap((year) => year.periods)
+			.find((period) => period.publicId === september.publicId);
+		expect(septemberPeriod?.unreconciledSupplierPaymentCount).toBe(0);
+		await periodService.hardClose(
+			actorMaker,
+			september.publicId,
+			'All accounting and bank evidence complete.'
+		);
+		await expect(
+			bank.reverseMatch(actorMaker, matchPublicId, 'Attempt to remove settlement after hard close.')
+		).rejects.toThrow('Reopen accounting period');
 	});
 });

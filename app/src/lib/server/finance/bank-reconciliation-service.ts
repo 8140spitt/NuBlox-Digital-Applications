@@ -122,7 +122,9 @@ function signedMoney(value: string, label: string): string {
 	try {
 		return formatScaledDecimal(parseScaledDecimal(value, 4, label, true), 4);
 	} catch (cause) {
-		throw new FinanceValidationError(cause instanceof Error ? cause.message : `${label} is invalid.`);
+		throw new FinanceValidationError(
+			cause instanceof Error ? cause.message : `${label} is invalid.`
+		);
 	}
 }
 
@@ -137,7 +139,9 @@ function asciiReference(value: string, label: string): string {
 function last4(value: string): string {
 	const text = value.trim();
 	if (!/^[A-Za-z0-9]{4}$/.test(text)) {
-		throw new FinanceValidationError('Account identifier must contain exactly four letters or digits.');
+		throw new FinanceValidationError(
+			'Account identifier must contain exactly four letters or digits.'
+		);
 	}
 	return text.toUpperCase();
 }
@@ -195,11 +199,7 @@ async function activeMatchForPayment(
 		.executeTakeFirst();
 }
 
-async function activeMatchForLine(
-	db: DatabaseExecutor,
-	organisationId: string,
-	lineId: string
-) {
+async function activeMatchForLine(db: DatabaseExecutor, organisationId: string, lineId: string) {
 	return db
 		.selectFrom('bank_reconciliation_matches as match')
 		.leftJoin('bank_reconciliation_match_reversals as reversal', (join) =>
@@ -268,7 +268,9 @@ export class BankReconciliationService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext, db: DatabaseExecutor = this.db) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		return membership;
 	}
@@ -381,6 +383,17 @@ export class BankReconciliationService {
 				'line.bank_reference as bankReference'
 			])
 			.where('line.organisation_id', '=', actor.organisationId)
+			.where(
+				sql<boolean>`not exists (
+					select 1 from bank_reconciliation_matches as active_match
+					left join bank_reconciliation_match_reversals as active_reversal
+						on active_reversal.bank_reconciliation_match_id = active_match.id
+						and active_reversal.organisation_id = active_match.organisation_id
+					where active_match.organisation_id = ${actor.organisationId}
+						and active_match.bank_statement_line_id = line.id
+						and active_reversal.bank_reconciliation_match_id is null
+				)`
+			)
 			.orderBy('line.booked_on', 'desc')
 			.orderBy('line.id', 'desc')
 			.limit(500)
@@ -437,15 +450,6 @@ export class BankReconciliationService {
 			.limit(200)
 			.execute();
 
-		const activeLineIds = new Set(
-			matchRows.filter((match) => !match.reversalPublicId).map((match) => match.statementLinePublicId)
-		);
-		const activePaymentIds = new Set(
-			matchRows
-				.filter((match) => !match.reversalPublicId)
-				.map((match) => match.supplierPaymentPublicId)
-		);
-
 		const paymentRows = await this.db
 			.selectFrom('accounts_payable_supplier_payments as payment')
 			.innerJoin('party_organisations as supplier', (join) =>
@@ -483,6 +487,17 @@ export class BankReconciliationService {
 						and journal_reversal.journal_entry_id is null
 				)`
 			)
+			.where(
+				sql<boolean>`not exists (
+					select 1 from bank_reconciliation_matches as active_match
+					left join bank_reconciliation_match_reversals as active_reversal
+						on active_reversal.bank_reconciliation_match_id = active_match.id
+						and active_reversal.organisation_id = active_match.organisation_id
+					where active_match.organisation_id = ${actor.organisationId}
+						and active_match.supplier_payment_id = payment.id
+						and active_reversal.bank_reconciliation_match_id is null
+				)`
+			)
 			.orderBy('payment.executed_at', 'desc')
 			.limit(200)
 			.execute();
@@ -511,12 +526,14 @@ export class BankReconciliationService {
 				periodStart: formatDateOnly(statement.periodStart),
 				periodEnd: formatDateOnly(statement.periodEnd)
 			})),
-			unmatchedLines: lineRows
-				.filter((line) => !activeLineIds.has(line.publicId))
-				.map((line) => ({ ...line, bookedOn: formatDateOnly(line.bookedOn) })),
-			unsettledSupplierPayments: paymentRows
-				.filter((payment) => !activePaymentIds.has(payment.publicId))
-				.map((payment) => ({ ...payment, executedAt: payment.executedAt! })),
+			unmatchedLines: lineRows.map((line) => ({
+				...line,
+				bookedOn: formatDateOnly(line.bookedOn)
+			})),
+			unsettledSupplierPayments: paymentRows.map((payment) => ({
+				...payment,
+				executedAt: payment.executedAt!
+			})),
 			matches: matchRows,
 			cashAccountingAccounts,
 			canManageAccounts: accountManage.allowed,
@@ -625,8 +642,10 @@ export class BankReconciliationService {
 		}
 		const openingBalance = signedMoney(input.openingBalance, 'Opening balance');
 		const closingBalance = signedMoney(input.closingBalance, 'Closing balance');
-		if (input.lines.length === 0) throw new FinanceValidationError('Statement must contain at least one line.');
-		if (input.lines.length > 2000) throw new FinanceValidationError('Statement must not exceed 2,000 lines.');
+		if (input.lines.length === 0)
+			throw new FinanceValidationError('Statement must contain at least one line.');
+		if (input.lines.length > 2000)
+			throw new FinanceValidationError('Statement must not exceed 2,000 lines.');
 
 		const seen = new Set<string>();
 		let movement = 0n;
@@ -641,7 +660,9 @@ export class BankReconciliationService {
 			seen.add(externalTransactionId);
 			const bookedOn = requiredDate(entry.bookedOn, 'Booked date');
 			if (bookedOn < periodStart || bookedOn > periodEnd) {
-				throw new FinanceValidationError('Every bank line booked date must fall within the statement period.');
+				throw new FinanceValidationError(
+					'Every bank line booked date must fall within the statement period.'
+				);
 			}
 			const valueOn = entry.valueOn ? requiredDate(entry.valueOn, 'Value date') : null;
 			const lineDirection = direction(entry.direction);
@@ -741,8 +762,14 @@ export class BankReconciliationService {
 		actor: TenantActorContext,
 		input: { statementLinePublicId: string; supplierPaymentPublicId: string }
 	): Promise<string> {
-		const statementLinePublicId = checkedPublicId(input.statementLinePublicId, 'Bank statement line');
-		const supplierPaymentPublicId = checkedPublicId(input.supplierPaymentPublicId, 'Supplier payment');
+		const statementLinePublicId = checkedPublicId(
+			input.statementLinePublicId,
+			'Bank statement line'
+		);
+		const supplierPaymentPublicId = checkedPublicId(
+			input.supplierPaymentPublicId,
+			'Supplier payment'
+		);
 		return this.db.transaction().execute(async (trx) => {
 			const membership = await this.requireMutation(actor, BANK_PERMISSIONS.reconcile, trx);
 			await lockOrganisation(trx, actor.organisationId);
@@ -802,13 +829,17 @@ export class BankReconciliationService {
 			) {
 				throw new FinanceValidationError('A reversed supplier payment cannot be bank reconciled.');
 			}
-			if (!(await activeSupplierPaymentExecutionJournal(trx, actor.organisationId, payment.publicId))) {
+			if (
+				!(await activeSupplierPaymentExecutionJournal(trx, actor.organisationId, payment.publicId))
+			) {
 				throw new FinanceValidationError(
 					'Supplier payment execution must have an active accounting journal before bank reconciliation.'
 				);
 			}
 			if (await activeMatchForPayment(trx, actor.organisationId, payment.id)) {
-				throw new FinanceValidationError('The supplier payment already has active bank settlement evidence.');
+				throw new FinanceValidationError(
+					'The supplier payment already has active bank settlement evidence.'
+				);
 			}
 			if (line.currencyCode !== payment.currencyCode) {
 				throw new FinanceValidationError('Bank line and supplier payment currencies do not match.');
@@ -817,7 +848,9 @@ export class BankReconciliationService {
 				parseScaledDecimal(line.amount, 4, 'Bank amount') !==
 				parseScaledDecimal(payment.paymentAmount, 4, 'Supplier payment amount')
 			) {
-				throw new FinanceValidationError('Bank line amount must exactly match the supplier payment amount.');
+				throw new FinanceValidationError(
+					'Bank line amount must exactly match the supplier payment amount.'
+				);
 			}
 			const executedDate = new Date(
 				Date.UTC(
@@ -827,7 +860,9 @@ export class BankReconciliationService {
 				)
 			);
 			if (line.bookedOn < executedDate) {
-				throw new FinanceValidationError('Bank settlement cannot pre-date supplier payment execution.');
+				throw new FinanceValidationError(
+					'Bank settlement cannot pre-date supplier payment execution.'
+				);
 			}
 
 			const publicId = this.publicIdFactory();
@@ -883,11 +918,7 @@ export class BankReconciliationService {
 						.onRef('payment.id', '=', 'match.supplier_payment_id')
 						.onRef('payment.organisation_id', '=', 'match.organisation_id')
 				)
-				.select([
-					'match.id',
-					'match.public_id as publicId',
-					'payment.public_id as paymentPublicId'
-				])
+				.select(['match.id', 'match.public_id as publicId', 'payment.public_id as paymentPublicId'])
 				.where('match.organisation_id', '=', actor.organisationId)
 				.where('match.public_id', '=', matchPublicId)
 				.forUpdate()
