@@ -167,6 +167,7 @@ export class OrganisationAdminService {
 	): Promise<void> {
 		const rolePublicIds = uniqueStrings(rolePublicIdsInput, 50, 'roles');
 		await this.db.transaction().execute(async (trx) => {
+			await this.requireMemberRoleAdministration(trx, actor);
 			const repository = new OrganisationAdminRepository(trx);
 			const member = await repository.findMemberForUpdate(actor.organisationId, memberPublicId);
 			if (!member) throw new OrganisationAdminNotFoundError('Organisation member not found.');
@@ -434,6 +435,25 @@ export class OrganisationAdminService {
 			'organisation.manage'
 		);
 		return decision.allowed;
+	}
+
+	private async requireMemberRoleAdministration(
+		executor: DatabaseExecutor,
+		actor: TenantActorContext
+	): Promise<void> {
+		const decisions = await new PermissionService(executor).decideMany(actor, [
+			'organisation.manage',
+			'member.manage'
+		]);
+		if (
+			decisions.get('organisation.manage')?.allowed ||
+			decisions.get('member.manage')?.allowed
+		) {
+			return;
+		}
+		throw new OrganisationAdminValidationError(
+			'Member role administration permission is required.'
+		);
 	}
 
 	private async requireActiveOrganisationManager(
