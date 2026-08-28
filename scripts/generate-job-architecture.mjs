@@ -320,6 +320,38 @@ const specialistTitleOverrides = {
   'Process performance': 'Process Performance Analyst',
 };
 
+const functionSkillBaselines = {
+  F01: ['Strategic analysis', 'Scenario planning', 'Decision support'],
+  F02: ['Governance', 'Policy management', 'Decision-rights management'],
+  F03: ['Performance management', 'KPI design', 'Analytical interpretation'],
+  F04: ['Strategic analysis', 'Commercial judgement', 'Decision support'],
+  F05: ['Product management', 'Requirements analysis', 'Lifecycle management'],
+  F06: ['Marketing planning', 'Audience insight', 'Campaign measurement'],
+  F07: ['Commercial judgement', 'Customer relationship management', 'Revenue management'],
+  F08: ['Customer service', 'Case management', 'Customer communication'],
+  F09: ['Procurement', 'Supplier management', 'Commercial negotiation'],
+  F10: ['Supply chain planning', 'Inventory management', 'Operational coordination'],
+  F11: ['Production operations', 'Operational control', 'Continuous improvement'],
+  F12: ['Service delivery', 'Operational coordination', 'Customer communication'],
+  F13: ['Quality management', 'Root-cause analysis', 'Control assurance'],
+  F14: ['Financial analysis', 'Financial control', 'Accounting / finance operations'],
+  F15: ['Human resources', 'People operations', 'Stakeholder management'],
+  F16: ['Technology delivery', 'IT service management', 'Technical problem solving'],
+  F17: ['Data management', 'Analytics', 'Data governance'],
+  F18: ['Information security', 'Risk assessment', 'Security controls'],
+  F19: ['Legal analysis', 'Contract interpretation', 'Regulatory awareness'],
+  F20: ['Risk management', 'Compliance', 'Assurance'],
+  F21: ['Privacy management', 'Information governance', 'Regulatory compliance'],
+  F22: ['Asset management', 'Facilities operations', 'Lifecycle planning'],
+  F23: ['HSE management', 'Risk control', 'Sustainability'],
+  F24: ['Business resilience', 'Incident coordination', 'Crisis response'],
+  F25: ['Communications', 'Stakeholder engagement', 'Reputation management'],
+  F26: ['Information management', 'Records governance', 'Knowledge management'],
+  F27: ['Project management', 'Planning and control', 'Stakeholder management'],
+  F28: ['Change management', 'Stakeholder engagement', 'Adoption planning'],
+  F29: ['Business process management', 'Process analysis', 'Continuous improvement'],
+};
+
 const skillRules = [
   [/strategy|strategic|scenario|foresight/i, ['Strategic analysis', 'Scenario planning', 'Decision support']],
   [/governance|board|committee|policy|authority/i, ['Governance', 'Policy management', 'Decision-rights management']],
@@ -349,6 +381,40 @@ const skillRules = [
   [/change|transformation|adoption|readiness|transition/i, ['Change management', 'Stakeholder engagement', 'Adoption planning']],
   [/process|workflow|continuous improvement|SOP/i, ['Business process management', 'Process analysis', 'Continuous improvement']],
 ];
+
+const skillRuleScopes = [
+  ['F01', 'F04', 'F28'],
+  ['F02', 'F20', 'F21'],
+  ['F01', 'F03', 'F27', 'F29'],
+  ['F05'],
+  ['F06'],
+  ['F07'],
+  ['F08', 'F12'],
+  ['F09'],
+  ['F10'],
+  ['F11'],
+  ['F13'],
+  ['F14'],
+  ['F15'],
+  ['F16'],
+  ['F15', 'F17'],
+  ['F18'],
+  ['F19'],
+  ['F20', 'F23', 'F24'],
+  ['F21'],
+  ['F22'],
+  ['F23'],
+  ['F24'],
+  ['F25'],
+  ['F26'],
+  ['F22', 'F27'],
+  ['F28'],
+  ['F29'],
+];
+
+if (skillRuleScopes.length !== skillRules.length) {
+  throw new Error('Every generated skill rule must have an explicit enterprise-function scope.');
+}
 
 function titleCase(value) {
   const keepLower = new Set(['and', 'or', 'of', 'to', 'for', 'in']);
@@ -388,12 +454,21 @@ function sentence(value) {
   return /[.!?]$/.test(trimmed) ? trimmed : `${trimmed}.`;
 }
 
-function inferSkills(roleName, activities) {
+function inferSkills(functionId, roleName, activities) {
   const haystack = `${roleName} ${activities.join(' ')}`;
   const skills = new Set(['Business communication', 'Record and evidence management']);
-  for (const [rule, values] of skillRules) {
+  const baseline = functionSkillBaselines[functionId];
+  if (!baseline) throw new Error(`Missing skill baseline for enterprise function ${functionId}.`);
+  baseline.forEach((value) => skills.add(value));
+
+  for (const [[rule, values], scopes] of skillRules.map((rule, index) => [
+    rule,
+    skillRuleScopes[index],
+  ])) {
+    if (!scopes.includes(functionId)) continue;
     if (rule.test(haystack)) values.forEach((value) => skills.add(value));
   }
+
   return [...skills].slice(0, 8);
 }
 
@@ -443,7 +518,7 @@ function buildFunctionalRoles(functions) {
         activities: [...subfunction.activities],
         accountabilities: subfunction.activities.map(accountabilityFromActivity),
         expectedOutputs: inferOutputs(roleName),
-        knowledgeAndSkills: inferSkills(roleName, subfunction.activities),
+        knowledgeAndSkills: inferSkills(fn.id, roleName, subfunction.activities),
         behaviouralCompetencies: [
           'Ownership and accountability',
           'Structured problem solving',
@@ -488,7 +563,7 @@ function buildSpecialistProfile(fn, subfunction) {
     secondaryFunctionalRoleIds: [],
     keyAccountabilities: subfunction.activities.map(accountabilityFromActivity),
     expectedOutputs: inferOutputs(roleName),
-    knowledgeAndTechnicalSkills: inferSkills(roleName, subfunction.activities),
+    knowledgeAndTechnicalSkills: inferSkills(fn.id, roleName, subfunction.activities),
     behaviouralCompetencies: [
       'Ownership and accountability',
       'Analytical thinking',
@@ -540,6 +615,7 @@ function buildFunctionLeadProfile(fn) {
       'Improvement and capability roadmap',
     ],
     knowledgeAndTechnicalSkills: inferSkills(
+      fn.id,
       fn.name,
       fn.subfunctions.flatMap((subfunction) => subfunction.activities),
     ),
@@ -590,7 +666,7 @@ function buildCoverage(functions, functionalRoles, jobProfiles) {
   );
 
   return {
-    generatedAt: new Date().toISOString(),
+    generatorVersion: 2,
     source: {
       functions: functions.length,
       subfunctions: sourceSubfunctions.length,
@@ -612,6 +688,67 @@ function buildCoverage(functions, functionalRoles, jobProfiles) {
       allSubfunctionsCovered: mappedSubfunctions.size === sourceSubfunctions.length,
     },
   };
+}
+
+function validateGeneratedQuality(functions, functionalRoles, jobProfiles, coverage) {
+  if (functions.length !== 29) throw new Error(`Expected 29 enterprise functions, found ${functions.length}.`);
+  if (functionalRoles.length !== 353) {
+    throw new Error(`Expected 353 functional roles, found ${functionalRoles.length}.`);
+  }
+  if (jobProfiles.length !== 382) {
+    throw new Error(`Expected 382 candidate job profiles, found ${jobProfiles.length}.`);
+  }
+  if (coverage.source.activities !== 1510) {
+    throw new Error(`Expected 1,510 source activities, found ${coverage.source.activities}.`);
+  }
+  if (!coverage.coverage.allFunctionsCovered || !coverage.coverage.allSubfunctionsCovered) {
+    throw new Error('Generated job architecture does not fully cover the enterprise taxonomy.');
+  }
+
+  const profileById = new Map(jobProfiles.map((profile) => [profile.id, profile]));
+  const assertExcludes = (profileId, forbiddenSkills) => {
+    const profile = profileById.get(profileId);
+    if (!profile) throw new Error(`Missing regression profile ${profileId}.`);
+    const leaked = forbiddenSkills.filter((skill) => profile.knowledgeAndTechnicalSkills.includes(skill));
+    if (leaked.length > 0) {
+      throw new Error(`${profileId} contains cross-function skill leakage: ${leaked.join(', ')}.`);
+    }
+  };
+
+  assertExcludes('JP-F01.02-PROFESSIONAL', [
+    'Human resources',
+    'People operations',
+    'Customer relationship management',
+    'Revenue management',
+  ]);
+  assertExcludes('JP-F01.05-PROFESSIONAL', [
+    'Commercial judgement',
+    'Customer relationship management',
+    'Revenue management',
+    'Quality management',
+    'Root-cause analysis',
+    'Control assurance',
+  ]);
+
+  const assertIncludes = (profileId, expectedSkills) => {
+    const profile = profileById.get(profileId);
+    if (!profile) throw new Error(`Missing regression profile ${profileId}.`);
+    const missing = expectedSkills.filter((skill) => !profile.knowledgeAndTechnicalSkills.includes(skill));
+    if (missing.length > 0) {
+      throw new Error(`${profileId} is missing its enterprise-function skill baseline: ${missing.join(', ')}.`);
+    }
+  };
+
+  assertIncludes('JP-F01.02-PROFESSIONAL', [
+    'Strategic analysis',
+    'Scenario planning',
+    'Decision support',
+  ]);
+  assertIncludes('JP-F01.05-PROFESSIONAL', [
+    'Strategic analysis',
+    'Scenario planning',
+    'Decision support',
+  ]);
 }
 
 function buildMarkdown(functions, roles, profiles) {
@@ -665,14 +802,15 @@ async function main() {
   const functionalRoles = buildFunctionalRoles(functions);
   const jobProfiles = buildJobProfiles(functions);
   const coverage = buildCoverage(functions, functionalRoles, jobProfiles);
+  validateGeneratedQuality(functions, functionalRoles, jobProfiles, coverage);
   const markdown = buildMarkdown(functions, functionalRoles, jobProfiles);
 
   await mkdir(outputDir, { recursive: true });
 
   const artifacts = [
-    ['job-families.generated.json', { version: 1, jobFamilies }],
-    ['functional-roles.generated.json', { version: 1, functionalRoles }],
-    ['job-profiles.generated.json', { version: 1, jobProfiles }],
+    ['job-families.generated.json', { version: 2, jobFamilies }],
+    ['functional-roles.generated.json', { version: 2, functionalRoles }],
+    ['job-profiles.generated.json', { version: 2, jobProfiles }],
     ['coverage.generated.json', coverage],
   ];
 

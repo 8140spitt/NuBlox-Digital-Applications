@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "functionalRoles": [
     {
       "id": "FR-F01.01",
@@ -34,7 +34,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Strategic analysis",
+        "Scenario planning",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -87,12 +90,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Marketing planning",
-        "Audience insight",
-        "Campaign measurement",
-        "Human resources",
-        "People operations",
-        "Stakeholder management"
+        "Strategic analysis",
+        "Scenario planning",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -195,7 +195,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Strategic analysis",
+        "Scenario planning",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -246,12 +249,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance"
+        "Strategic analysis",
+        "Scenario planning",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -304,6 +304,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
+        "Strategic analysis",
+        "Scenario planning",
+        "Decision support",
         "Performance management",
         "KPI design",
         "Analytical interpretation"
@@ -410,10 +413,7 @@
         "Record and evidence management",
         "Strategic analysis",
         "Scenario planning",
-        "Decision support",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -517,10 +517,7 @@
         "Record and evidence management",
         "Governance",
         "Policy management",
-        "Decision-rights management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -571,10 +568,7 @@
         "Record and evidence management",
         "Governance",
         "Policy management",
-        "Decision-rights management",
-        "Human resources",
-        "People operations",
-        "Stakeholder management"
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -622,7 +616,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Governance",
+        "Policy management",
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -728,10 +725,7 @@
         "Record and evidence management",
         "Governance",
         "Policy management",
-        "Decision-rights management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -782,10 +776,7 @@
         "Record and evidence management",
         "Governance",
         "Policy management",
-        "Decision-rights management",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -883,9 +874,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Performance management",
         "KPI design",
         "Analytical interpretation"
@@ -936,7 +924,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Performance management",
+        "KPI design",
+        "Analytical interpretation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -987,10 +978,7 @@
         "Record and evidence management",
         "Performance management",
         "KPI design",
-        "Analytical interpretation",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Analytical interpretation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1041,10 +1029,7 @@
         "Record and evidence management",
         "Performance management",
         "KPI design",
-        "Analytical interpretation",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Analytical interpretation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1097,10 +1082,7 @@
         "Record and evidence management",
         "Performance management",
         "KPI design",
-        "Analytical interpretation",
-        "Human resources",
-        "People operations",
-        "Stakeholder management"
+        "Analytical interpretation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1148,11 +1130,9 @@
         "Business communication",
         "Record and evidence management",
         "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management"
+        "Decision support",
+        "Scenario planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1202,11 +1182,9 @@
         "Business communication",
         "Record and evidence management",
         "Strategic analysis",
-        "Scenario planning",
+        "Commercial judgement",
         "Decision support",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Scenario planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1261,12 +1239,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations",
-        "Human resources",
-        "People operations",
-        "Stakeholder management"
+        "Strategic analysis",
+        "Commercial judgement",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1317,9 +1292,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Strategic analysis",
+        "Commercial judgement",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1367,7 +1342,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Strategic analysis",
+        "Commercial judgement",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1418,9 +1396,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Strategic analysis",
+        "Commercial judgement",
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1472,11 +1450,9 @@
         "Business communication",
         "Record and evidence management",
         "Strategic analysis",
-        "Scenario planning",
+        "Commercial judgement",
         "Decision support",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Scenario planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1527,12 +1503,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation"
+        "Product management",
+        "Requirements analysis",
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1581,12 +1554,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Marketing planning",
-        "Audience insight",
-        "Campaign measurement",
-        "Customer service",
-        "Case management",
-        "Customer communication"
+        "Product management",
+        "Requirements analysis",
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1639,10 +1609,7 @@
         "Record and evidence management",
         "Product management",
         "Requirements analysis",
-        "Lifecycle management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1693,12 +1660,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination"
+        "Product management",
+        "Requirements analysis",
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1853,12 +1817,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Product management",
+        "Requirements analysis",
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1909,10 +1870,7 @@
         "Record and evidence management",
         "Product management",
         "Requirements analysis",
-        "Lifecycle management",
-        "Project management",
-        "Planning and control",
-        "Stakeholder management"
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -1965,10 +1923,7 @@
         "Record and evidence management",
         "Product management",
         "Requirements analysis",
-        "Lifecycle management",
-        "Customer service",
-        "Case management",
-        "Customer communication"
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2019,10 +1974,7 @@
         "Record and evidence management",
         "Product management",
         "Requirements analysis",
-        "Lifecycle management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management"
+        "Lifecycle management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2073,10 +2025,7 @@
         "Record and evidence management",
         "Marketing planning",
         "Audience insight",
-        "Campaign measurement",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2125,12 +2074,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Marketing planning",
+        "Audience insight",
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2181,10 +2127,7 @@
         "Record and evidence management",
         "Marketing planning",
         "Audience insight",
-        "Campaign measurement",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2233,9 +2176,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Marketing planning",
         "Audience insight",
         "Campaign measurement"
@@ -2293,10 +2233,7 @@
         "Record and evidence management",
         "Marketing planning",
         "Audience insight",
-        "Campaign measurement",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2351,10 +2288,7 @@
         "Record and evidence management",
         "Marketing planning",
         "Audience insight",
-        "Campaign measurement",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2405,9 +2339,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Marketing planning",
         "Audience insight",
         "Campaign measurement"
@@ -2461,9 +2392,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation"
+        "Marketing planning",
+        "Audience insight",
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2514,9 +2445,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Marketing planning",
+        "Audience insight",
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2569,9 +2500,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
         "Marketing planning",
         "Audience insight",
         "Campaign measurement"
@@ -2625,10 +2553,7 @@
         "Record and evidence management",
         "Marketing planning",
         "Audience insight",
-        "Campaign measurement",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Campaign measurement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2681,9 +2606,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Commercial judgement",
         "Customer relationship management",
         "Revenue management"
@@ -2737,10 +2659,7 @@
         "Record and evidence management",
         "Commercial judgement",
         "Customer relationship management",
-        "Revenue management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2795,10 +2714,7 @@
         "Record and evidence management",
         "Commercial judgement",
         "Customer relationship management",
-        "Revenue management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -2849,10 +2765,7 @@
         "Record and evidence management",
         "Commercial judgement",
         "Customer relationship management",
-        "Revenue management",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3011,10 +2924,7 @@
         "Record and evidence management",
         "Commercial judgement",
         "Customer relationship management",
-        "Revenue management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3067,12 +2977,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
-        "Legal analysis",
-        "Contract interpretation",
-        "Regulatory awareness"
+        "Commercial judgement",
+        "Customer relationship management",
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3178,9 +3085,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Commercial judgement",
         "Customer relationship management",
         "Revenue management"
@@ -3234,10 +3138,7 @@
         "Record and evidence management",
         "Commercial judgement",
         "Customer relationship management",
-        "Revenue management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3288,10 +3189,7 @@
         "Record and evidence management",
         "Commercial judgement",
         "Customer relationship management",
-        "Revenue management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3344,12 +3242,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management"
+        "Commercial judgement",
+        "Customer relationship management",
+        "Revenue management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3400,12 +3295,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management"
+        "Customer service",
+        "Case management",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3515,10 +3407,7 @@
         "Record and evidence management",
         "Customer service",
         "Case management",
-        "Customer communication",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3571,10 +3460,7 @@
         "Record and evidence management",
         "Customer service",
         "Case management",
-        "Customer communication",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3627,10 +3513,7 @@
         "Record and evidence management",
         "Customer service",
         "Case management",
-        "Customer communication",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3681,12 +3564,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations",
-        "Business process management",
-        "Process analysis",
-        "Continuous improvement"
+        "Customer service",
+        "Case management",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3737,10 +3617,7 @@
         "Record and evidence management",
         "Customer service",
         "Case management",
-        "Customer communication",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3791,10 +3668,7 @@
         "Record and evidence management",
         "Customer service",
         "Case management",
-        "Customer communication",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3845,10 +3719,7 @@
         "Record and evidence management",
         "Customer service",
         "Case management",
-        "Customer communication",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -3950,10 +3821,7 @@
         "Record and evidence management",
         "Customer service",
         "Case management",
-        "Customer communication",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4002,9 +3870,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation"
+        "Customer service",
+        "Case management",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4053,12 +3921,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Procurement",
+        "Supplier management",
+        "Commercial negotiation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4107,9 +3972,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Marketing planning",
-        "Audience insight",
-        "Campaign measurement"
+        "Procurement",
+        "Supplier management",
+        "Commercial negotiation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4160,10 +4025,7 @@
         "Record and evidence management",
         "Procurement",
         "Supplier management",
-        "Commercial negotiation",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Commercial negotiation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4267,10 +4129,7 @@
         "Record and evidence management",
         "Procurement",
         "Supplier management",
-        "Commercial negotiation",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Commercial negotiation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4323,9 +4182,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Legal analysis",
-        "Contract interpretation",
-        "Regulatory awareness"
+        "Procurement",
+        "Supplier management",
+        "Commercial negotiation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4374,9 +4233,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Procurement",
         "Supplier management",
         "Commercial negotiation"
@@ -4534,9 +4390,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
         "Procurement",
         "Supplier management",
         "Commercial negotiation"
@@ -4588,10 +4441,7 @@
         "Record and evidence management",
         "Procurement",
         "Supplier management",
-        "Commercial negotiation",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Commercial negotiation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4640,9 +4490,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Procurement",
         "Supplier management",
         "Commercial negotiation"
@@ -4698,10 +4545,7 @@
         "Record and evidence management",
         "Procurement",
         "Supplier management",
-        "Commercial negotiation",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Commercial negotiation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4752,10 +4596,7 @@
         "Record and evidence management",
         "Supply chain planning",
         "Inventory management",
-        "Operational coordination",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4804,12 +4645,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management"
+        "Supply chain planning",
+        "Inventory management",
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4909,10 +4747,7 @@
         "Record and evidence management",
         "Supply chain planning",
         "Inventory management",
-        "Operational coordination",
-        "HSE management",
-        "Risk control",
-        "Sustainability"
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -4959,12 +4794,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation"
+        "Supply chain planning",
+        "Inventory management",
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5072,10 +4904,7 @@
         "Record and evidence management",
         "Supply chain planning",
         "Inventory management",
-        "Operational coordination",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5228,12 +5057,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Supply chain planning",
+        "Inventory management",
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5286,9 +5112,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation",
         "Supply chain planning",
         "Inventory management",
         "Operational coordination"
@@ -5344,10 +5167,7 @@
         "Record and evidence management",
         "Supply chain planning",
         "Inventory management",
-        "Operational coordination",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance"
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5398,10 +5218,7 @@
         "Record and evidence management",
         "Supply chain planning",
         "Inventory management",
-        "Operational coordination",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Operational coordination"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5450,12 +5267,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination"
+        "Production operations",
+        "Operational control",
+        "Continuous improvement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5504,9 +5318,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
         "Production operations",
         "Operational control",
         "Continuous improvement"
@@ -5558,9 +5369,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
         "Production operations",
         "Operational control",
         "Continuous improvement"
@@ -5612,9 +5420,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
         "Production operations",
         "Operational control",
         "Continuous improvement"
@@ -5664,11 +5469,8 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
-        "Business process management",
-        "Process analysis",
+        "Production operations",
+        "Operational control",
         "Continuous improvement"
       ],
       "behaviouralCompetencies": [
@@ -5826,9 +5628,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
         "Production operations",
         "Operational control",
         "Continuous improvement"
@@ -5880,12 +5679,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Production operations",
+        "Operational control",
+        "Continuous improvement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5932,12 +5728,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Production operations",
+        "Operational control",
+        "Continuous improvement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -5988,10 +5781,7 @@
         "Record and evidence management",
         "Production operations",
         "Operational control",
-        "Continuous improvement",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Continuous improvement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6040,12 +5830,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6091,7 +5878,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6139,7 +5929,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6187,7 +5980,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6238,12 +6034,11 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
+        "Service delivery",
+        "Operational coordination",
         "Customer communication",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Customer service",
+        "Case management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6291,7 +6086,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6340,9 +6138,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6389,9 +6187,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance"
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6438,12 +6236,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Supply chain planning",
-        "Inventory management",
+        "Service delivery",
         "Operational coordination",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance"
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6494,12 +6289,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management"
+        "Service delivery",
+        "Operational coordination",
+        "Customer communication"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6548,12 +6340,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Quality management",
+        "Root-cause analysis",
+        "Control assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6651,10 +6440,7 @@
         "Record and evidence management",
         "Quality management",
         "Root-cause analysis",
-        "Control assurance",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Control assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6707,10 +6493,7 @@
         "Record and evidence management",
         "Quality management",
         "Root-cause analysis",
-        "Control assurance",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Control assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6763,10 +6546,7 @@
         "Record and evidence management",
         "Quality management",
         "Root-cause analysis",
-        "Control assurance",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Control assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6864,9 +6644,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation",
         "Quality management",
         "Root-cause analysis",
         "Control assurance"
@@ -6920,10 +6697,7 @@
         "Record and evidence management",
         "Quality management",
         "Root-cause analysis",
-        "Control assurance",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Control assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -6972,9 +6746,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Business process management",
-        "Process analysis",
-        "Continuous improvement"
+        "Quality management",
+        "Root-cause analysis",
+        "Control assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -7025,9 +6799,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
         "Quality management",
         "Root-cause analysis",
         "Control assurance"
@@ -7077,9 +6848,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7182,9 +6950,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7236,9 +7001,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7294,9 +7056,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7348,9 +7107,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7402,9 +7158,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7458,9 +7211,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7514,9 +7264,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Financial analysis",
+        "Financial control",
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -7567,9 +7317,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7619,12 +7366,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management"
+        "Financial analysis",
+        "Financial control",
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -7673,9 +7417,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7726,7 +7467,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Financial analysis",
+        "Financial control",
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -7777,9 +7521,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7833,9 +7574,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -7942,10 +7680,7 @@
         "Record and evidence management",
         "Financial analysis",
         "Financial control",
-        "Accounting / finance operations",
-        "Change management",
-        "Stakeholder engagement",
-        "Adoption planning"
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -7994,9 +7729,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Financial analysis",
+        "Financial control",
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8049,9 +7784,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Financial analysis",
         "Financial control",
         "Accounting / finance operations"
@@ -8103,9 +7835,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Financial analysis",
+        "Financial control",
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8152,12 +7884,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
-        "Customer service",
-        "Case management",
-        "Customer communication"
+        "Financial analysis",
+        "Financial control",
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8208,12 +7937,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
-        "Human resources",
-        "People operations",
-        "Stakeholder management"
+        "Financial analysis",
+        "Financial control",
+        "Accounting / finance operations"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8262,12 +7988,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Human resources",
         "People operations",
-        "Stakeholder management"
+        "Stakeholder management",
+        "Data management",
+        "Analytics",
+        "Data governance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8316,12 +8042,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance"
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8369,7 +8092,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8418,9 +8144,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving"
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8475,9 +8201,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation"
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8525,7 +8251,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8574,12 +8303,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Human resources",
         "People operations",
-        "Stakeholder management"
+        "Stakeholder management",
+        "Data management",
+        "Analytics",
+        "Data governance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8683,7 +8412,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -8736,9 +8468,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations",
         "Human resources",
         "People operations",
         "Stakeholder management"
@@ -8790,9 +8519,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
         "Human resources",
         "People operations",
         "Stakeholder management"
@@ -8842,9 +8568,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
         "Human resources",
         "People operations",
         "Stakeholder management"
@@ -8898,9 +8621,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation"
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9156,7 +8879,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9207,12 +8933,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Human resources",
+        "People operations",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9265,12 +8988,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
         "Human resources",
         "People operations",
-        "Stakeholder management"
+        "Stakeholder management",
+        "Data management",
+        "Analytics",
+        "Data governance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9319,9 +9042,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support"
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9370,10 +9093,7 @@
         "Record and evidence management",
         "Technology delivery",
         "IT service management",
-        "Technical problem solving",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9477,9 +9197,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9534,10 +9254,7 @@
         "Record and evidence management",
         "Technology delivery",
         "IT service management",
-        "Technical problem solving",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9586,9 +9303,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Technology delivery",
         "IT service management",
         "Technical problem solving"
@@ -9642,10 +9356,7 @@
         "Record and evidence management",
         "Technology delivery",
         "IT service management",
-        "Technical problem solving",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9747,10 +9458,7 @@
         "Record and evidence management",
         "Technology delivery",
         "IT service management",
-        "Technical problem solving",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -9854,12 +9562,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10011,7 +9716,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10064,9 +9772,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Change management",
-        "Stakeholder engagement",
-        "Adoption planning"
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10119,10 +9827,7 @@
         "Record and evidence management",
         "Technology delivery",
         "IT service management",
-        "Technical problem solving",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10171,10 +9876,7 @@
         "Record and evidence management",
         "Technology delivery",
         "IT service management",
-        "Technical problem solving",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10227,12 +9929,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10279,12 +9978,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance"
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10334,7 +10030,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10385,9 +10084,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Legal analysis",
-        "Contract interpretation",
-        "Regulatory awareness"
+        "Technology delivery",
+        "IT service management",
+        "Technical problem solving"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10436,12 +10135,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving"
+        "Data management",
+        "Analytics",
+        "Data governance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10490,9 +10186,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Data management",
         "Analytics",
         "Data governance"
@@ -10546,9 +10239,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving",
         "Data management",
         "Analytics",
         "Data governance"
@@ -10657,10 +10347,7 @@
         "Record and evidence management",
         "Data management",
         "Analytics",
-        "Data governance",
-        "Change management",
-        "Stakeholder engagement",
-        "Adoption planning"
+        "Data governance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10711,9 +10398,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance",
         "Data management",
         "Analytics",
         "Data governance"
@@ -10767,9 +10451,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Data management",
         "Analytics",
         "Data governance"
@@ -10819,12 +10500,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination"
+        "Data management",
+        "Analytics",
+        "Data governance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -10926,9 +10604,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Data management",
         "Analytics",
         "Data governance"
@@ -11031,9 +10706,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
         "Data management",
         "Analytics",
         "Data governance"
@@ -11087,12 +10759,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation"
+        "Data management",
+        "Analytics",
+        "Data governance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -11351,12 +11020,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Information security",
+        "Risk assessment",
+        "Security controls"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -11405,9 +11071,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Information security",
         "Risk assessment",
         "Security controls"
@@ -11457,9 +11120,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving",
         "Information security",
         "Risk assessment",
         "Security controls"
@@ -11564,9 +11224,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Information security",
         "Risk assessment",
         "Security controls"
@@ -11622,10 +11279,7 @@
         "Record and evidence management",
         "Information security",
         "Risk assessment",
-        "Security controls",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Security controls"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -11729,12 +11383,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Information security",
+        "Risk assessment",
+        "Security controls"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -11783,9 +11434,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Human resources",
-        "People operations",
-        "Stakeholder management",
         "Information security",
         "Risk assessment",
         "Security controls"
@@ -11841,10 +11489,7 @@
         "Record and evidence management",
         "Information security",
         "Risk assessment",
-        "Security controls",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management"
+        "Security controls"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -11895,12 +11540,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Human resources",
-        "People operations",
-        "Stakeholder management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Information security",
+        "Risk assessment",
+        "Security controls"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -11949,9 +11591,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation",
         "Information security",
         "Risk assessment",
         "Security controls"
@@ -12001,9 +11640,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Information security",
         "Risk assessment",
         "Security controls"
@@ -12108,10 +11744,7 @@
         "Record and evidence management",
         "Information security",
         "Risk assessment",
-        "Security controls",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Security controls"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -12319,9 +11952,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Legal analysis",
         "Contract interpretation",
         "Regulatory awareness"
@@ -12373,9 +12003,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Legal analysis",
+        "Contract interpretation",
+        "Regulatory awareness"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -12424,9 +12054,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Legal analysis",
         "Contract interpretation",
         "Regulatory awareness"
@@ -12480,9 +12107,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Legal analysis",
         "Contract interpretation",
         "Regulatory awareness"
@@ -12534,10 +12158,7 @@
         "Record and evidence management",
         "Legal analysis",
         "Contract interpretation",
-        "Regulatory awareness",
-        "Change management",
-        "Stakeholder engagement",
-        "Adoption planning"
+        "Regulatory awareness"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -12586,9 +12207,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Human resources",
-        "People operations",
-        "Stakeholder management",
         "Legal analysis",
         "Contract interpretation",
         "Regulatory awareness"
@@ -12695,10 +12313,7 @@
         "Record and evidence management",
         "Legal analysis",
         "Contract interpretation",
-        "Regulatory awareness",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Regulatory awareness"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -12747,10 +12362,7 @@
         "Record and evidence management",
         "Legal analysis",
         "Contract interpretation",
-        "Regulatory awareness",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Regulatory awareness"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -12799,12 +12411,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
+        "Risk management",
+        "Compliance",
+        "Assurance",
         "Governance",
         "Policy management",
-        "Decision-rights management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13110,10 +12722,7 @@
         "Record and evidence management",
         "Risk management",
         "Compliance",
-        "Assurance",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management"
+        "Assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13162,9 +12771,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Risk management",
         "Compliance",
         "Assurance"
@@ -13320,10 +12926,7 @@
         "Record and evidence management",
         "Risk management",
         "Compliance",
-        "Assurance",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13372,12 +12975,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Risk management",
         "Compliance",
-        "Assurance"
+        "Assurance",
+        "Governance",
+        "Policy management",
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13428,9 +13031,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management"
+        "Risk management",
+        "Compliance",
+        "Assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13477,9 +13080,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Risk management",
         "Compliance",
         "Assurance"
@@ -13629,12 +13229,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
+        "Privacy management",
+        "Information governance",
+        "Regulatory compliance",
         "Governance",
         "Policy management",
-        "Decision-rights management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Decision-rights management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13685,12 +13285,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination"
+        "Privacy management",
+        "Information governance",
+        "Regulatory compliance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13739,9 +13336,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
         "Privacy management",
         "Information governance",
         "Regulatory compliance"
@@ -13791,9 +13385,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Privacy management",
         "Information governance",
         "Regulatory compliance"
@@ -13847,9 +13438,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Privacy management",
         "Information governance",
         "Regulatory compliance"
@@ -13901,12 +13489,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Privacy management",
+        "Information governance",
+        "Regulatory compliance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -13953,9 +13538,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Privacy management",
+        "Information governance",
+        "Regulatory compliance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -14002,9 +13587,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
         "Privacy management",
         "Information governance",
         "Regulatory compliance"
@@ -14054,9 +13636,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
         "Privacy management",
         "Information governance",
         "Regulatory compliance"
@@ -14106,12 +13685,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Asset management",
+        "Facilities operations",
+        "Lifecycle planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -14158,9 +13734,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication"
+        "Asset management",
+        "Facilities operations",
+        "Lifecycle planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -14264,10 +13840,7 @@
         "Record and evidence management",
         "Asset management",
         "Facilities operations",
-        "Lifecycle planning",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Lifecycle planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -14320,6 +13893,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
+        "Asset management",
+        "Facilities operations",
+        "Lifecycle planning",
         "Project management",
         "Planning and control",
         "Stakeholder management"
@@ -14424,9 +14000,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Asset management",
         "Facilities operations",
         "Lifecycle planning"
@@ -14480,9 +14053,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Asset management",
         "Facilities operations",
         "Lifecycle planning"
@@ -14532,9 +14102,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Asset management",
         "Facilities operations",
         "Lifecycle planning"
@@ -14588,9 +14155,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Production operations",
-        "Operational control",
-        "Continuous improvement",
         "Asset management",
         "Facilities operations",
         "Lifecycle planning"
@@ -14640,9 +14204,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Change management",
-        "Stakeholder engagement",
-        "Adoption planning"
+        "Asset management",
+        "Facilities operations",
+        "Lifecycle planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -14691,9 +14255,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Asset management",
         "Facilities operations",
         "Lifecycle planning"
@@ -14743,9 +14304,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Legal analysis",
-        "Contract interpretation",
-        "Regulatory awareness",
         "Asset management",
         "Facilities operations",
         "Lifecycle planning"
@@ -14848,9 +14406,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "HSE management",
         "Risk control",
         "Sustainability"
@@ -14900,12 +14455,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
         "HSE management",
         "Risk control",
-        "Sustainability"
+        "Sustainability",
+        "Risk management",
+        "Compliance",
+        "Assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -14954,9 +14509,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance"
+        "HSE management",
+        "Risk control",
+        "Sustainability"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15005,9 +14560,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving"
+        "HSE management",
+        "Risk control",
+        "Sustainability"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15054,9 +14609,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Project management",
-        "Planning and control",
-        "Stakeholder management"
+        "HSE management",
+        "Risk control",
+        "Sustainability"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15156,12 +14711,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
         "HSE management",
         "Risk control",
-        "Sustainability"
+        "Sustainability",
+        "Risk management",
+        "Compliance",
+        "Assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15214,9 +14769,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination",
         "HSE management",
         "Risk control",
         "Sustainability"
@@ -15368,12 +14920,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "HSE management",
+        "Risk control",
+        "Sustainability"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15473,12 +15022,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Procurement",
-        "Supplier management",
-        "Commercial negotiation",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination"
+        "HSE management",
+        "Risk control",
+        "Sustainability"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15527,12 +15073,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
         "HSE management",
         "Risk control",
-        "Sustainability"
+        "Sustainability",
+        "Risk management",
+        "Compliance",
+        "Assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15581,9 +15127,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
         "Business resilience",
         "Incident coordination",
         "Crisis response"
@@ -15634,7 +15177,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15683,10 +15229,7 @@
         "Record and evidence management",
         "Business resilience",
         "Incident coordination",
-        "Crisis response",
-        "Information management",
-        "Records governance",
-        "Knowledge management"
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15737,10 +15280,7 @@
         "Record and evidence management",
         "Business resilience",
         "Incident coordination",
-        "Crisis response",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management"
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15840,12 +15380,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15892,12 +15429,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
-        "Human resources",
-        "People operations",
-        "Stakeholder management"
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15943,7 +15477,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -15992,9 +15529,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Information security",
-        "Risk assessment",
-        "Security controls",
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response",
         "Risk management",
         "Compliance",
         "Assurance"
@@ -16045,7 +15582,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16094,9 +15634,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Information security",
-        "Risk assessment",
-        "Security controls"
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16145,12 +15685,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving",
-        "Information security",
-        "Risk assessment",
-        "Security controls"
+        "Business resilience",
+        "Incident coordination",
+        "Crisis response",
+        "Risk management",
+        "Compliance",
+        "Assurance"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16197,9 +15737,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
         "Communications",
         "Stakeholder engagement",
         "Reputation management"
@@ -16251,9 +15788,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Marketing planning",
-        "Audience insight",
-        "Campaign measurement",
         "Communications",
         "Stakeholder engagement",
         "Reputation management"
@@ -16305,12 +15839,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving",
-        "Asset management",
-        "Facilities operations",
-        "Lifecycle planning"
+        "Communications",
+        "Stakeholder engagement",
+        "Reputation management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16357,12 +15888,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Marketing planning",
-        "Audience insight",
-        "Campaign measurement",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Communications",
+        "Stakeholder engagement",
+        "Reputation management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16410,7 +15938,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Communications",
+        "Stakeholder engagement",
+        "Reputation management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16457,12 +15988,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Communications",
+        "Stakeholder engagement",
+        "Reputation management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16510,7 +16038,10 @@
       ],
       "knowledgeAndSkills": [
         "Business communication",
-        "Record and evidence management"
+        "Record and evidence management",
+        "Communications",
+        "Stakeholder engagement",
+        "Reputation management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16610,9 +16141,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Marketing planning",
-        "Audience insight",
-        "Campaign measurement"
+        "Communications",
+        "Stakeholder engagement",
+        "Reputation management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16712,10 +16243,7 @@
         "Record and evidence management",
         "Communications",
         "Stakeholder engagement",
-        "Reputation management",
-        "Project management",
-        "Planning and control",
-        "Stakeholder management"
+        "Reputation management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16764,9 +16292,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Business resilience",
-        "Incident coordination",
-        "Crisis response",
         "Communications",
         "Stakeholder engagement",
         "Reputation management"
@@ -16816,12 +16341,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Strategic analysis",
-        "Scenario planning",
-        "Decision support",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Information management",
+        "Records governance",
+        "Knowledge management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -16972,12 +16494,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Marketing planning",
-        "Audience insight",
-        "Campaign measurement",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Information management",
+        "Records governance",
+        "Knowledge management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17083,9 +16602,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Information management",
         "Records governance",
         "Knowledge management"
@@ -17137,9 +16653,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
         "Information management",
         "Records governance",
         "Knowledge management"
@@ -17191,12 +16704,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Customer service",
-        "Case management",
-        "Customer communication",
-        "Privacy management",
-        "Information governance",
-        "Regulatory compliance"
+        "Information management",
+        "Records governance",
+        "Knowledge management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17245,9 +16755,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Information management",
         "Records governance",
         "Knowledge management"
@@ -17303,10 +16810,7 @@
         "Record and evidence management",
         "Information management",
         "Records governance",
-        "Knowledge management",
-        "Business process management",
-        "Process analysis",
-        "Continuous improvement"
+        "Knowledge management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17357,9 +16861,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Product management",
-        "Requirements analysis",
-        "Lifecycle management",
         "Project management",
         "Planning and control",
         "Stakeholder management"
@@ -17411,12 +16912,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
-        "Customer service",
-        "Case management",
-        "Customer communication"
+        "Project management",
+        "Planning and control",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17518,9 +17016,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management",
         "Project management",
         "Planning and control",
         "Stakeholder management"
@@ -17572,12 +17067,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Project management",
+        "Planning and control",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17679,12 +17171,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Quality management",
-        "Root-cause analysis",
-        "Control assurance",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Project management",
+        "Planning and control",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17733,12 +17222,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving"
+        "Project management",
+        "Planning and control",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17789,12 +17275,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Project management",
+        "Planning and control",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17841,12 +17324,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Supply chain planning",
-        "Inventory management",
-        "Operational coordination",
-        "Financial analysis",
-        "Financial control",
-        "Accounting / finance operations"
+        "Project management",
+        "Planning and control",
+        "Stakeholder management"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17893,12 +17373,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
+        "Change management",
+        "Stakeholder engagement",
+        "Adoption planning",
         "Strategic analysis",
         "Scenario planning",
-        "Decision support",
-        "Governance",
-        "Policy management",
-        "Decision-rights management"
+        "Decision support"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17947,12 +17427,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management",
         "Change management",
-        "Adoption planning",
-        "Business process management"
+        "Stakeholder engagement",
+        "Adoption planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -17999,9 +17476,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Communications",
+        "Change management",
         "Stakeholder engagement",
-        "Reputation management"
+        "Adoption planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -18048,10 +17525,8 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management",
         "Change management",
+        "Stakeholder engagement",
         "Adoption planning"
       ],
       "behaviouralCompetencies": [
@@ -18101,9 +17576,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
         "Change management",
         "Stakeholder engagement",
         "Adoption planning"
@@ -18208,10 +17680,7 @@
         "Record and evidence management",
         "Change management",
         "Stakeholder engagement",
-        "Adoption planning",
-        "Business process management",
-        "Process analysis",
-        "Continuous improvement"
+        "Adoption planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -18260,12 +17729,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Performance management",
-        "KPI design",
-        "Analytical interpretation",
-        "Human resources",
-        "People operations",
-        "Stakeholder management"
+        "Change management",
+        "Stakeholder engagement",
+        "Adoption planning"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -18312,9 +17778,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Technology delivery",
-        "IT service management",
-        "Technical problem solving",
         "Business process management",
         "Process analysis",
         "Continuous improvement"
@@ -18364,12 +17827,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Governance",
-        "Policy management",
-        "Decision-rights management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management"
+        "Business process management",
+        "Process analysis",
+        "Continuous improvement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -18416,12 +17876,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Data management",
-        "Analytics",
-        "Data governance",
-        "Risk management",
-        "Compliance",
-        "Assurance"
+        "Business process management",
+        "Process analysis",
+        "Continuous improvement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -18523,9 +17980,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "HSE management",
-        "Risk control",
-        "Sustainability",
         "Business process management",
         "Process analysis",
         "Continuous improvement"
@@ -18630,9 +18084,6 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Commercial judgement",
-        "Customer relationship management",
-        "Revenue management",
         "Business process management",
         "Process analysis",
         "Continuous improvement"
@@ -18735,12 +18186,9 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
-        "Risk management",
-        "Compliance",
-        "Assurance",
-        "Communications",
-        "Stakeholder engagement",
-        "Reputation management"
+        "Business process management",
+        "Process analysis",
+        "Continuous improvement"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",
@@ -18789,12 +18237,12 @@
       "knowledgeAndSkills": [
         "Business communication",
         "Record and evidence management",
+        "Business process management",
+        "Process analysis",
+        "Continuous improvement",
         "Performance management",
         "KPI design",
-        "Analytical interpretation",
-        "Data management",
-        "Analytics",
-        "Data governance"
+        "Analytical interpretation"
       ],
       "behaviouralCompetencies": [
         "Ownership and accountability",

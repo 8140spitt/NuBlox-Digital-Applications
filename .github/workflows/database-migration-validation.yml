@@ -19,6 +19,9 @@ on:
       - 'app/vitest.integration.config.ts'
       - 'app/e2e/**'
       - 'app/src/**'
+      - 'scripts/generate-job-architecture.mjs'
+      - 'docs/architecture/taxonomy/**'
+      - 'docs/architecture/job-architecture/**'
       - '.github/workflows/database-migration-validation.yml'
   push:
     branches:
@@ -40,6 +43,9 @@ on:
       - 'app/vitest.integration.config.ts'
       - 'app/e2e/**'
       - 'app/src/**'
+      - 'scripts/generate-job-architecture.mjs'
+      - 'docs/architecture/taxonomy/**'
+      - 'docs/architecture/job-architecture/**'
       - '.github/workflows/database-migration-validation.yml'
   workflow_dispatch:
 
@@ -96,6 +102,11 @@ jobs:
       - name: Run formatting and lint checks
         working-directory: app
         run: pnpm lint
+
+      - name: Verify generated job architecture is current
+        run: |
+          node scripts/generate-job-architecture.mjs
+          git diff --exit-code -- docs/architecture/job-architecture/generated
 
       - name: Apply authoritative migration stream
         working-directory: app
