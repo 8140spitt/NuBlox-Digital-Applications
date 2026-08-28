@@ -6,10 +6,8 @@ import { APIError, createAuthMiddleware } from 'better-auth/api';
 import { sveltekitCookies } from 'better-auth/svelte-kit';
 import { createPool } from 'mysql2/promise';
 
-import { ensureAssetsMaintenanceStandardRoleDefaults } from '$lib/server/assets/assets-maintenance-bootstrap';
 import { getDatabase } from '$lib/server/db/database';
 import { getEmailDelivery } from '$lib/server/email/email-delivery';
-import { ensureInformationStandardRoleDefaults } from '$lib/server/information/information-bootstrap';
 import {
 	OrganisationBootstrapAccessError,
 	OrganisationBootstrapService
@@ -18,14 +16,11 @@ import {
 	InvitationAccessError,
 	OrganisationInvitationService
 } from '$lib/server/organisations/invitation-service';
+import { ensureStandardRolePermissionDefaults } from '$lib/server/organisations/standard-role-reconciliation';
 import {
 	ProjectExternalCollaborationAccessError,
 	ProjectExternalCollaborationService
 } from '$lib/server/projects/project-external-collaboration-service';
-import { ensurePortalCollaborationStandardRoleDefaults } from '$lib/server/portal/portal-collaboration-bootstrap';
-import { ensureProcurementCommercialStandardRoleDefaults } from '$lib/server/procurement/procurement-commercial-bootstrap';
-import { ensureSiteQualitySafetyStandardRoleDefaults } from '$lib/server/site/site-quality-safety-bootstrap';
-import { ensureWorkforceStandardRoleDefaults } from '$lib/server/workforce/workforce-bootstrap';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from './bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
 import { PROJECT_COLLABORATION_SIGNUP_COOKIE } from './project-collaboration-cookie';
@@ -196,14 +191,7 @@ export const auth = betterAuth({
 							email: user.email,
 							displayName: user.name
 						});
-						await Promise.all([
-							ensureWorkforceStandardRoleDefaults(db, created.organisationId),
-							ensureInformationStandardRoleDefaults(db, created.organisationId),
-							ensureProcurementCommercialStandardRoleDefaults(db, created.organisationId),
-							ensureSiteQualitySafetyStandardRoleDefaults(db, created.organisationId),
-							ensureAssetsMaintenanceStandardRoleDefaults(db, created.organisationId),
-							ensurePortalCollaborationStandardRoleDefaults(db, created.organisationId)
-						]);
+						await ensureStandardRolePermissionDefaults(db, created.organisationId);
 					}
 				}
 			}
