@@ -54,10 +54,10 @@ async function requestsOwnerRole(
 }
 
 /**
- * Governs organisation access-role delegation at the service boundary.
+ * Governs which organisation access roles an already-authorised action may
+ * delegate. Action authority (for example member administration versus
+ * invitation creation) remains the responsibility of the calling service.
  *
- * - assigning any role requires member-management authority (or the wider
- *   organisation-management authority);
  * - the Owner role is owner-only delegable, so an Administrator cannot promote
  *   themselves or another member into ownership merely because they hold
  *   `organisation.manage`;
@@ -73,17 +73,6 @@ export async function decideOrganisationRoleDelegation(
 ): Promise<RoleDelegationDecision> {
 	if (rolePublicIds.length === 0) return { allowed: true, deniedPermissionKeys: [] };
 
-	const permissionService = new PermissionService(db);
-	const authority = await permissionService.decideMany(actor, [
-		'organisation.manage',
-		'member.manage'
-	]);
-	const canManageOrganisation = authority.get('organisation.manage')?.allowed ?? false;
-	const canManageMembers = authority.get('member.manage')?.allowed ?? false;
-	if (!canManageOrganisation && !canManageMembers) {
-		return { allowed: false, deniedPermissionKeys: ['member.manage'] };
-	}
-
 	if (
 		(await requestsOwnerRole(db, actor.organisationId, rolePublicIds)) &&
 		!(await hasActiveOwnerRole(db, actor))
@@ -91,7 +80,9 @@ export async function decideOrganisationRoleDelegation(
 		return { allowed: false, deniedPermissionKeys: [OWNER_DELEGATION_GUARD] };
 	}
 
-	if (canManageOrganisation) return { allowed: true, deniedPermissionKeys: [] };
+	const permissionService = new PermissionService(db);
+	const organisationManage = await permissionService.decide(actor, 'organisation.manage');
+	if (organisationManage.allowed) return { allowed: true, deniedPermissionKeys: [] };
 
 	const permissionKeys = await new OrganisationRoleRepository(db).listPermissionKeysForActiveRoles(
 		actor.organisationId,
