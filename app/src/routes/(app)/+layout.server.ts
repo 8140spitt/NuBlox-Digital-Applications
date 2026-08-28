@@ -16,8 +16,7 @@ import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { NotificationService } from '$lib/server/notifications/notification-service';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
-import { ensureProjectChangeStandardRoleDefaults } from '$lib/server/projects/project-change-bootstrap';
-import { ensureProjectRidaStandardRoleDefaults } from '$lib/server/projects/project-rida-bootstrap';
+import { ensureStandardRolePermissionDefaults } from '$lib/server/organisations/standard-role-reconciliation';
 import { ProjectWorkspaceService } from '$lib/server/projects/project-workspace-service';
 
 function returnTo(pathname: string): string {
@@ -49,10 +48,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		memberId: locals.tenant.memberId,
 		correlationId: locals.correlationId
 	};
-	await Promise.all([
-		ensureProjectRidaStandardRoleDefaults(db, locals.tenant.organisationId),
-		ensureProjectChangeStandardRoleDefaults(db, locals.tenant.organisationId)
-	]);
+	await ensureStandardRolePermissionDefaults(db, locals.tenant.organisationId);
 	const [organisation, allowedPermissionKeys] = await Promise.all([
 		new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
 		new PermissionService(db).listAllowedPermissionKeys(actorContext)
