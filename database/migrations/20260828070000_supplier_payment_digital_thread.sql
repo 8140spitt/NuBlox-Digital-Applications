@@ -132,10 +132,10 @@ ALTER TABLE accounting_journal_entries
             'bad_debt_write_off_reversal',
             'bad_debt_recovery',
             'bad_debt_recovery_reversal',
-            'bad_debt_tax_relief_authorisation',
-            'bad_debt_tax_relief_reversal',
-            'bad_debt_tax_repayment',
-            'bad_debt_tax_repayment_reversal'
+            'vat_relief_posting',
+            'vat_relief_posting_reversal',
+            'journal_reversal',
+            'year_end_close'
         )
     );
 
