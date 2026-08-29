@@ -7,6 +7,10 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { enqueueOutboxEvent } from '$lib/server/jobs/outbox';
 import { TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	accessConflictViolationMessage,
+	evaluateMemberAccessConflicts
+} from './access-conflict-policy';
 import { OrganisationMembershipRepository } from './membership-repository';
 import {
 	MemberPermissionOverrideRepository,
@@ -92,6 +96,17 @@ function serialiseWindow(effectiveFrom: Date | null, expiresAt: Date | null) {
 		effectiveFrom: effectiveFrom?.toISOString() ?? null,
 		expiresAt: expiresAt?.toISOString() ?? null
 	};
+}
+
+function conflictEvaluationInstants(
+	effectiveFrom: Date | null,
+	expiresAt: Date | null,
+	now = new Date()
+): Date[] {
+	const byTime = new Map<number, Date>([[now.getTime(), now]]);
+	if (effectiveFrom) byTime.set(effectiveFrom.getTime(), effectiveFrom);
+	if (expiresAt) byTime.set(expiresAt.getTime(), expiresAt);
+	return [...byTime.values()].sort((left, right) => left.getTime() - right.getTime());
 }
 
 export class MemberPermissionOverrideService {
@@ -196,6 +211,12 @@ export class MemberPermissionOverrideService {
 				permissionId: permission.id,
 				...window
 			});
+			await this.requireNoAccessConflicts(
+				trx,
+				actor,
+				member,
+				conflictEvaluationInstants(window.effectiveFrom, window.expiresAt)
+			);
 
 			if (permissionKey === 'organisation.manage' && member.status === 'active') {
 				await this.requireActiveOrganisationManager(trx, actor);
@@ -281,6 +302,7 @@ export class MemberPermissionOverrideService {
 				throw new MemberPermissionOverrideNotFoundError('Permission override not found.');
 
 			await repository.deleteOverride(actor.organisationId, member.id, permission.id);
+			await this.requireNoAccessConflicts(trx, actor, member, [new Date()]);
 			if (permissionKey === 'organisation.manage' && member.status === 'active') {
 				await this.requireActiveOrganisationManager(trx, actor);
 			}
@@ -328,6 +350,31 @@ export class MemberPermissionOverrideService {
 		const decision = await new PermissionService(executor).decide(actor, 'organisation.manage');
 		if (!decision.allowed) {
 			throw new TenantAccessError('Organisation permission override management is not permitted.');
+		}
+	}
+
+	private async requireNoAccessConflicts(
+		executor: DatabaseExecutor,
+		actor: TenantActorContext,
+		member: { id: string; userId: string },
+		instants: readonly Date[]
+	): Promise<void> {
+		for (const at of instants) {
+			const violations = await evaluateMemberAccessConflicts(
+				executor,
+				{
+					organisationId: actor.organisationId,
+					userId: member.userId,
+					memberId: member.id,
+					correlationId: actor.correlationId
+				},
+				{ at }
+			);
+			if (violations.length > 0) {
+				throw new MemberPermissionOverrideValidationError(
+					accessConflictViolationMessage(violations)
+				);
+			}
 		}
 	}
 
