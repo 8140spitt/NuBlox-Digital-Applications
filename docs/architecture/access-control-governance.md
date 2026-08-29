@@ -1,7 +1,7 @@
 # NuBlox Access-Control Governance
 
 **Status:** enforced baseline  
-**Scope:** organisation access roles, delegated administration and segregation-of-duties boundaries.
+**Scope:** organisation access roles, delegated administration, access lifecycle, segregation of duties and periodic access review.
 
 ## 1. Identity and work architecture are not access control
 
@@ -94,11 +94,39 @@ This avoids over-restricting legitimate small-organisation staffing while still 
 
 ### Static access conflicts
 
-Static role-assignment conflicts should be introduced only where merely possessing both authorities creates unacceptable control-plane risk. These rules must be permission- or stable-role-key-based and must never depend on mutable role display labels.
+The central access-conflict policy evaluates stable role keys and effective permissions. It never depends on mutable role display labels.
 
-Future static conflict rules belong in the central access-governance policy and require integration tests proving that composed multi-role access cannot bypass them.
+The first enforced static policy makes the bound `read-only` access role an exclusive least-privilege posture. It cannot be combined with another standard access role and cannot effectively hold `organisation.manage` or `finance.manage`. Explicit denies continue to take precedence and may safely neutralise a conflicting role grant. Removing such a deny is blocked if the resulting effective access would violate policy.
 
-## 7. Audit requirements
+Financial and other domain-specific static conflicts should be added only where merely possessing both authorities creates unacceptable control-plane risk. Record-specific maker/checker controls remain preferable where the risk belongs to a particular transaction.
+
+## 7. Periodic access review and attestation
+
+Periodic access review is represented by normalized review campaigns and immutable review items:
+
+- `access_review_campaigns` records the organisation review window, snapshot instant, due date and terminal state;
+- `access_review_items` snapshots every current member role assignment and explicit member permission override at campaign opening;
+- each item preserves the member public identity, source role/permission identity, stable standard-role key where applicable, lifecycle state, effective/expiry bounds, source reason and final review decision;
+- role display names are evidence only; standard-role governance continues to use stable role keys;
+- review items survive the revocation of their source access so the attestation record is not destroyed by the remediation it triggered;
+- campaigns may be completed only when every snapshotted item has been certified or revoked;
+- cancelled campaigns retain their snapshot and any decisions already made.
+
+The initial organisation-level review authority is `organisation.manage`. This deliberately avoids creating a second reviewer-permission hierarchy before delegated reviewer scope is designed. A future reviewer model may add manager/project/value boundaries without changing the snapshot or decision evidence model.
+
+Review-driven revocation is subject to the same security invariants as ordinary administration:
+
+1. a bound Owner assignment may be revoked only by an active Owner;
+2. revocation cannot remove the last active Owner;
+3. revocation cannot leave the organisation without an active `organisation.manage` path;
+4. removing an explicit deny is re-evaluated against static access-conflict policy before commit;
+5. access mutation and review decision are committed atomically, so a failed governance check leaves both the access source and pending review item unchanged.
+
+Certification does not mutate access. Revocation removes the snapshotted assignment/override when it is still present and records whether remediation was actually applied. If an administrator removed the source before the reviewer acted, the review may still be closed with a revoke decision while retaining that historical fact in audit evidence.
+
+Access review governs security assignments only. It does not certify job profiles, careers, functional roles, positions or project business roles.
+
+## 8. Audit requirements
 
 The following actions require append-oriented audit evidence with organisation, acting user/member, correlation identifier and subject identity:
 
@@ -108,12 +136,13 @@ The following actions require append-oriented audit evidence with organisation, 
 - member permission override changes, including effective/expiry bounds;
 - role-assignment lifecycle changes;
 - ownership-sensitive membership changes;
-- standard access-role template binding or template-version changes.
+- standard access-role template binding or template-version changes;
+- access-review campaign opening, item decisions, completion and cancellation.
 
 Audit evidence is not a substitute for current-state relational integrity, and current-state tables are not a substitute for immutable audit evidence.
 
-## 8. Governance direction
+## 9. Governance direction
 
-With stable standard-role identity, template provenance and synchronous access expiry established, the next RBAC evolution should focus on narrowly justified toxic-access/segregation-of-duties rules, delegated authority by scope/value/effective dates, and periodic access review/attestation.
+With stable role identity, lifecycle enforcement, SoD controls and organisation-level attestation established, the next access-control evolution should focus on delegated authority by scope/value/effective dates, reviewer independence/scoping, and explicit audit evidence for automatic standard-role binding/reconciliation.
 
 Organisation positions may carry recommended access templates in future, but activation must remain an explicit, auditable access-control decision.
