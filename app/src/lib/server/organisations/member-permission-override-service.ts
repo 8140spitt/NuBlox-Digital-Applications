@@ -61,15 +61,17 @@ function optionalUtcInstant(value: string | null | undefined, label: string): Da
 	const normalised = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text) ? `${text}:00.000Z` : text;
 	const instant = new Date(normalised);
 	if (Number.isNaN(instant.getTime())) {
-		throw new MemberPermissionOverrideValidationError(`${label} must be a valid UTC date and time.`);
+		throw new MemberPermissionOverrideValidationError(
+			`${label} must be a valid UTC date and time.`
+		);
 	}
 	return instant;
 }
 
-function accessWindow(input: {
-	effectiveFrom?: string | null;
-	expiresAt?: string | null;
-}): { effectiveFrom: Date | null; expiresAt: Date | null } {
+function accessWindow(input: { effectiveFrom?: string | null; expiresAt?: string | null }): {
+	effectiveFrom: Date | null;
+	expiresAt: Date | null;
+} {
 	const effectiveFrom = optionalUtcInstant(input.effectiveFrom, 'Effective from');
 	const expiresAt = optionalUtcInstant(input.expiresAt, 'Expiry');
 	if (effectiveFrom && expiresAt && effectiveFrom >= expiresAt) {
