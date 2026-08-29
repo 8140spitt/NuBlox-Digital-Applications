@@ -185,14 +185,17 @@ async function createFixture(): Promise<void> {
 }
 
 async function setWorkerRoleWindow(effectiveFrom: Date | null, expiresAt: Date | null) {
-	await db.insertInto('member_role_access_windows').values({
-		organisation_id: organisationId,
-		organisation_member_id: workerMemberId,
-		organisation_role_id: workerRoleId,
-		effective_from: effectiveFrom,
-		expires_at: expiresAt,
-		reason: 'Integration-test access lifecycle.'
-	}).executeTakeFirstOrThrow();
+	await db
+		.insertInto('member_role_access_windows')
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: workerMemberId,
+			organisation_role_id: workerRoleId,
+			effective_from: effectiveFrom,
+			expires_at: expiresAt,
+			reason: 'Integration-test access lifecycle.'
+		})
+		.executeTakeFirstOrThrow();
 }
 
 async function setWorkerOverride(
@@ -200,21 +203,27 @@ async function setWorkerOverride(
 	effectiveFrom: Date | null,
 	expiresAt: Date | null
 ) {
-	await db.insertInto('member_permission_overrides').values({
-		organisation_id: organisationId,
-		organisation_member_id: workerMemberId,
-		permission_id: workViewPermissionId,
-		effect,
-		reason: 'Integration-test explicit exception.'
-	}).executeTakeFirstOrThrow();
+	await db
+		.insertInto('member_permission_overrides')
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: workerMemberId,
+			permission_id: workViewPermissionId,
+			effect,
+			reason: 'Integration-test explicit exception.'
+		})
+		.executeTakeFirstOrThrow();
 	if (!effectiveFrom && !expiresAt) return;
-	await db.insertInto('member_permission_override_access_windows').values({
-		organisation_id: organisationId,
-		organisation_member_id: workerMemberId,
-		permission_id: workViewPermissionId,
-		effective_from: effectiveFrom,
-		expires_at: expiresAt
-	}).executeTakeFirstOrThrow();
+	await db
+		.insertInto('member_permission_override_access_windows')
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: workerMemberId,
+			permission_id: workViewPermissionId,
+			effective_from: effectiveFrom,
+			expires_at: expiresAt
+		})
+		.executeTakeFirstOrThrow();
 }
 
 describe('time-bounded organisation access', () => {
@@ -248,7 +257,9 @@ describe('time-bounded organisation access', () => {
 		const service = new PermissionService(db);
 		const subject = actor(workerUserId, workerMemberId);
 
-		expect(await service.decide(subject, 'work.view', { at: new Date('2030-01-01T09:59:59Z') })).toEqual({
+		expect(
+			await service.decide(subject, 'work.view', { at: new Date('2030-01-01T09:59:59Z') })
+		).toEqual({
 			allowed: false,
 			reason: 'default-deny'
 		});
@@ -291,20 +302,21 @@ describe('time-bounded organisation access', () => {
 	});
 
 	it('does not let an expired Owner assignment cross the ownership delegation boundary', async () => {
-		await db.insertInto('member_role_access_windows').values({
-			organisation_id: organisationId,
-			organisation_member_id: ownerMemberId,
-			organisation_role_id: ownerRoleId,
-			effective_from: new Date(Date.now() - 60_000),
-			expires_at: new Date(Date.now() - 1_000),
-			reason: 'Expired Owner test window.'
-		}).executeTakeFirstOrThrow();
+		await db
+			.insertInto('member_role_access_windows')
+			.values({
+				organisation_id: organisationId,
+				organisation_member_id: ownerMemberId,
+				organisation_role_id: ownerRoleId,
+				effective_from: new Date(Date.now() - 60_000),
+				expires_at: new Date(Date.now() - 1_000),
+				reason: 'Expired Owner test window.'
+			})
+			.executeTakeFirstOrThrow();
 
-		const decision = await decideOrganisationRoleDelegation(
-			db,
-			actor(ownerUserId, ownerMemberId),
-			[ownerRolePublicId]
-		);
+		const decision = await decideOrganisationRoleDelegation(db, actor(ownerUserId, ownerMemberId), [
+			ownerRolePublicId
+		]);
 		expect(decision.allowed).toBe(false);
 		expect(decision.deniedPermissionKeys).toContain('access-role.owner.delegate');
 	});
