@@ -7,8 +7,7 @@ import {
 } from './standard-access-roles';
 
 export type AccessConflictSubject =
-	| { kind: 'standard_role'; key: StandardAccessRoleKey }
-	| { kind: 'permission'; key: string };
+	{ kind: 'standard_role'; key: StandardAccessRoleKey } | { kind: 'permission'; key: string };
 
 export type AccessConflictPolicy = {
 	policyKey: string;
@@ -112,16 +111,21 @@ export async function evaluateMemberAccessConflicts(
 		...new Set(
 			SYSTEM_ACCESS_CONFLICT_POLICIES.flatMap((policy) =>
 				[policy.left, policy.right]
-					.filter((subject): subject is Extract<AccessConflictSubject, { kind: 'permission' }> =>
-						subject.kind === 'permission'
+					.filter(
+						(subject): subject is Extract<AccessConflictSubject, { kind: 'permission' }> =>
+							subject.kind === 'permission'
 					)
 					.map((subject) => subject.key)
 			)
 		)
 	];
-	const decisions = await new PermissionService(db).decideMany(actor, referencedPermissionKeys, { at });
+	const decisions = await new PermissionService(db).decideMany(actor, referencedPermissionKeys, {
+		at
+	});
 	const allowedPermissionKeys = new Set(
-		referencedPermissionKeys.filter((permissionKey) => decisions.get(permissionKey)?.allowed === true)
+		referencedPermissionKeys.filter(
+			(permissionKey) => decisions.get(permissionKey)?.allowed === true
+		)
 	);
 
 	return SYSTEM_ACCESS_CONFLICT_POLICIES.filter(
