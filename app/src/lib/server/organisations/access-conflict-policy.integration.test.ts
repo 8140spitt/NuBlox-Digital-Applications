@@ -40,7 +40,7 @@ function actor() {
 		organisationId,
 		userId: ownerUserId,
 		memberId: ownerMemberId,
-		correlationId: `access-conflict-policy-${randomUUID()}`
+		correlationId: `sod-${randomUUID()}`
 	};
 }
 
