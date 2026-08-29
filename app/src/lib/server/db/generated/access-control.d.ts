@@ -9,6 +9,50 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface AccessReviewCampaigns {
+  cancelled_at: Date | null;
+  completed_at: Date | null;
+  created_at: Generated<Date>;
+  due_at: Date | null;
+  id: Generated<string>;
+  name: string;
+  opened_at: Date;
+  opened_by_member_id: string;
+  organisation_id: string;
+  public_id: string;
+  snapshot_at: Date;
+  status: Generated<string>;
+  updated_at: Generated<Date>;
+}
+
+export interface AccessReviewItems {
+  access_type: string;
+  campaign_id: string;
+  created_at: Generated<Date>;
+  decided_at: Date | null;
+  decided_by_member_id: string | null;
+  decision: string | null;
+  decision_reason: string | null;
+  display_label: string;
+  effective_from: Date | null;
+  expires_at: Date | null;
+  id: Generated<string>;
+  lifecycle_state: string;
+  member_public_id: string;
+  organisation_id: string;
+  organisation_member_id: string;
+  organisation_role_id: string | null;
+  permission_effect: string | null;
+  permission_id: string | null;
+  permission_key: string | null;
+  public_id: string;
+  revocation_applied_at: Date | null;
+  role_public_id: string | null;
+  source_key: string;
+  source_reason: string | null;
+  stable_role_key: string | null;
+}
+
 export interface MemberPermissionOverrideAccessWindows {
   created_at: Generated<Date>;
   effective_from: Date | null;
@@ -41,6 +85,8 @@ export interface OrganisationRoleTemplateBindings {
 }
 
 export interface DB {
+  access_review_campaigns: AccessReviewCampaigns;
+  access_review_items: AccessReviewItems;
   member_permission_override_access_windows: MemberPermissionOverrideAccessWindows;
   member_role_access_windows: MemberRoleAccessWindows;
   organisation_role_template_bindings: OrganisationRoleTemplateBindings;

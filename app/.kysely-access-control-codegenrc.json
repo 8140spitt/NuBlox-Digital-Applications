@@ -2,7 +2,7 @@
 	"dialect": "mysql",
 	"url": "env(DATABASE_URL)",
 	"outFile": "./src/lib/server/db/generated/access-control.d.ts",
-	"includePattern": "{organisation_role_template_bindings,member_role_access_windows,member_permission_override_access_windows}",
+	"includePattern": "{organisation_role_template_bindings,member_role_access_windows,member_permission_override_access_windows,access_review_campaigns,access_review_items}",
 	"camelCase": false,
 	"numericParser": "string",
 	"typeMapping": {
