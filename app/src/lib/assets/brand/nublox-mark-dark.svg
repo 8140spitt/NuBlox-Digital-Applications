@@ -1,0 +1,46 @@
+<svg width="335" height="338" viewBox="0 0 335 338" fill="none" xmlns="http://www.w3.org/2000/svg" shape-rendering="geometricPrecision">
+  <path d="M277.439 37.3444H213.104C208.686 37.3444 205.104 40.9261 205.104 45.3444V290.257C205.104 294.675 208.686 298.257 213.104 298.257H277.439C281.857 298.257 285.439 294.675 285.439 290.257V45.3444C285.439 40.9261 281.857 37.3444 277.439 37.3444Z" fill="#B8DBF4"/>
+  <path d="M277.44 37.8444H213.44C209.021 37.8444 205.44 41.4261 205.44 45.8444V290.844C205.44 295.263 209.021 298.844 213.44 298.844H277.44C281.858 298.844 285.44 295.263 285.44 290.844V45.8444C285.44 41.4261 281.858 37.8444 277.44 37.8444Z" fill="url(#dark-right)"/>
+  <path d="M118.44 37.8444H54.4396C50.0213 37.8444 46.4396 41.4261 46.4396 45.8444V290.844C46.4396 295.263 50.0213 298.844 54.4396 298.844H118.44C122.858 298.844 126.44 295.263 126.44 290.844V45.8444C126.44 41.4261 122.858 37.8444 118.44 37.8444Z" fill="url(#dark-left)"/>
+  <g filter="url(#dark-fold-right)" style="mix-blend-mode:overlay">
+    <path d="M274.393 227.759L195.063 156.017L274.393 277.386V227.759Z" fill="black"/>
+  </g>
+  <g filter="url(#dark-fold-left)" style="mix-blend-mode:overlay">
+    <path d="M60 109.627L139.331 181.369L60 60V109.627Z" fill="black"/>
+  </g>
+  <path d="M53.8817 37.8444H117.713C120.339 37.8446 122.802 39.1952 124.279 41.4597L283.563 285.595C287.13 291.062 283.349 298.385 277.044 298.424L209.958 298.844C207.285 298.861 204.778 297.479 203.297 295.158L47.2694 50.6032C43.7657 45.1116 47.5922 37.8445 53.8817 37.8444Z" fill="url(#dark-ribbon)" stroke="url(#dark-edge)"/>
+  <defs>
+    <filter id="dark-fold-right" x="135.063" y="96.0165" width="199.331" height="241.369" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+      <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_dark"/>
+    </filter>
+    <filter id="dark-fold-left" x="0" y="0" width="199.331" height="241.369" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="BackgroundImageFix" result="shape"/>
+      <feGaussianBlur stdDeviation="30" result="effect1_foregroundBlur_dark_left"/>
+    </filter>
+    <linearGradient id="dark-right" x1="205.773" y1="37.8444" x2="269.107" y2="302.835" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0C334F"/>
+      <stop offset="0.5" stop-color="#1C7ABD"/>
+      <stop offset="1" stop-color="#09263B"/>
+    </linearGradient>
+    <linearGradient id="dark-left" x1="46.4396" y1="37.8444" x2="109.774" y2="302.835" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#09263B"/>
+      <stop offset="0.556811" stop-color="#1C7ABD"/>
+      <stop offset="0.788462" stop-color="#0C334F"/>
+    </linearGradient>
+    <linearGradient id="dark-ribbon" x1="165.439" y1="37.3444" x2="186.125" y2="297.701" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#114870"/>
+      <stop offset="0.341346" stop-color="#3599E1"/>
+      <stop offset="0.5" stop-color="#B8DBF4"/>
+      <stop offset="0.66" stop-color="#3599E1"/>
+      <stop offset="1" stop-color="#114870"/>
+    </linearGradient>
+    <linearGradient id="dark-edge" x1="165.439" y1="37.3444" x2="165.439" y2="299.344" gradientUnits="userSpaceOnUse">
+      <stop offset="0.4" stop-color="#E9F4FC"/>
+      <stop offset="0.5" stop-color="#0C334F"/>
+      <stop offset="0.6" stop-color="#E9F4FC"/>
+    </linearGradient>
+  </defs>
+</svg>

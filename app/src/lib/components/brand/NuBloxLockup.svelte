@@ -23,7 +23,11 @@
 </script>
 
 {#snippet identity()}
-	<NuBloxMark size="var(--nb-lockup-mark)" monochrome={theme === 'mono'} />
+	<NuBloxMark
+		size="var(--nb-lockup-mark)"
+		monochrome={theme === 'mono'}
+		theme={theme === 'dark' ? 'dark' : 'light'}
+	/>
 	<span class="wordmark">NuBlox</span>
 	{#if product}
 		<span class="divider" aria-hidden="true"></span>
@@ -44,7 +48,7 @@
 <style>
 	.lockup {
 		--nb-lockup-mark: 2.25rem;
-		--nb-lockup-color: var(--nb-ink, #07182e);
+		--nb-lockup-color: var(--nb-blue-5, #05131e);
 		display: inline-flex;
 		align-items: center;
 		gap: 0.65rem;
@@ -65,7 +69,7 @@
 	}
 
 	.theme-dark {
-		--nb-lockup-color: var(--nb-white, #ffffff);
+		--nb-lockup-color: var(--nb-blue-95, #e9f4fc);
 	}
 
 	.theme-mono {
