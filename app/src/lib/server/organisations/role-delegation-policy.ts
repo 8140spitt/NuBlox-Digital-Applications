@@ -2,8 +2,12 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { OrganisationRoleRepository } from './role-repository';
+import {
+	ensureStandardAccessRoleBindings,
+	OWNER_ACCESS_ROLE_KEY,
+	STANDARD_ACCESS_ROLE_TEMPLATE_KEY
+} from './standard-access-roles';
 
-const OWNER_ROLE_NAME = 'Owner';
 const OWNER_DELEGATION_GUARD = 'access-role.owner.delegate';
 
 export type RoleDelegationDecision = {
@@ -22,6 +26,11 @@ async function hasActiveOwnerRole(
 				.onRef('role.id', '=', 'assignment.organisation_role_id')
 				.onRef('role.organisation_id', '=', 'assignment.organisation_id')
 		)
+		.innerJoin('organisation_role_template_bindings as binding', (join) =>
+			join
+				.onRef('binding.organisation_role_id', '=', 'role.id')
+				.onRef('binding.organisation_id', '=', 'role.organisation_id')
+		)
 		.innerJoin('organisation_members as member', (join) =>
 			join
 				.onRef('member.id', '=', 'assignment.organisation_member_id')
@@ -31,7 +40,8 @@ async function hasActiveOwnerRole(
 		.where('assignment.organisation_id', '=', actor.organisationId)
 		.where('assignment.organisation_member_id', '=', actor.memberId)
 		.where('member.status', '=', 'active')
-		.where('role.name', '=', OWNER_ROLE_NAME)
+		.where('binding.template_key', '=', STANDARD_ACCESS_ROLE_TEMPLATE_KEY)
+		.where('binding.role_key', '=', OWNER_ACCESS_ROLE_KEY)
 		.where('role.is_active', '=', 1)
 		.executeTakeFirst();
 	return Boolean(row);
@@ -43,12 +53,18 @@ async function requestsOwnerRole(
 	rolePublicIds: readonly string[]
 ): Promise<boolean> {
 	const row = await db
-		.selectFrom('organisation_roles')
-		.select('id')
-		.where('organisation_id', '=', organisationId)
-		.where('public_id', 'in', [...rolePublicIds])
-		.where('name', '=', OWNER_ROLE_NAME)
-		.where('is_active', '=', 1)
+		.selectFrom('organisation_roles as role')
+		.innerJoin('organisation_role_template_bindings as binding', (join) =>
+			join
+				.onRef('binding.organisation_role_id', '=', 'role.id')
+				.onRef('binding.organisation_id', '=', 'role.organisation_id')
+		)
+		.select('role.id')
+		.where('role.organisation_id', '=', organisationId)
+		.where('role.public_id', 'in', [...rolePublicIds])
+		.where('binding.template_key', '=', STANDARD_ACCESS_ROLE_TEMPLATE_KEY)
+		.where('binding.role_key', '=', OWNER_ACCESS_ROLE_KEY)
+		.where('role.is_active', '=', 1)
 		.executeTakeFirst();
 	return Boolean(row);
 }
@@ -72,6 +88,8 @@ export async function decideOrganisationRoleDelegation(
 	rolePublicIds: readonly string[]
 ): Promise<RoleDelegationDecision> {
 	if (rolePublicIds.length === 0) return { allowed: true, deniedPermissionKeys: [] };
+
+	await ensureStandardAccessRoleBindings(db, actor.organisationId);
 
 	if (
 		(await requestsOwnerRole(db, actor.organisationId, rolePublicIds)) &&
