@@ -55,6 +55,43 @@ function validateReason(value: string): string {
 	return reason;
 }
 
+function optionalUtcInstant(value: string | null | undefined, label: string): Date | null {
+	const text = value?.trim() ?? '';
+	if (!text) return null;
+	const normalised = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(text) ? `${text}:00.000Z` : text;
+	const instant = new Date(normalised);
+	if (Number.isNaN(instant.getTime())) {
+		throw new MemberPermissionOverrideValidationError(`${label} must be a valid UTC date and time.`);
+	}
+	return instant;
+}
+
+function accessWindow(input: {
+	effectiveFrom?: string | null;
+	expiresAt?: string | null;
+}): { effectiveFrom: Date | null; expiresAt: Date | null } {
+	const effectiveFrom = optionalUtcInstant(input.effectiveFrom, 'Effective from');
+	const expiresAt = optionalUtcInstant(input.expiresAt, 'Expiry');
+	if (effectiveFrom && expiresAt && effectiveFrom >= expiresAt) {
+		throw new MemberPermissionOverrideValidationError('Expiry must be later than effective from.');
+	}
+	if (expiresAt && expiresAt <= new Date()) {
+		throw new MemberPermissionOverrideValidationError('Expiry must be in the future.');
+	}
+	return { effectiveFrom, expiresAt };
+}
+
+function sameInstant(left: Date | null, right: Date | null): boolean {
+	return left?.getTime() === right?.getTime();
+}
+
+function serialiseWindow(effectiveFrom: Date | null, expiresAt: Date | null) {
+	return {
+		effectiveFrom: effectiveFrom?.toISOString() ?? null,
+		expiresAt: expiresAt?.toISOString() ?? null
+	};
+}
+
 export class MemberPermissionOverrideService {
 	constructor(private readonly db: Database = getDatabase()) {}
 
@@ -81,6 +118,8 @@ export class MemberPermissionOverrideService {
 			permissionKey: string;
 			effect: string;
 			reason: string;
+			effectiveFrom?: string | null;
+			expiresAt?: string | null;
 		}
 	): Promise<void> {
 		const memberPublicId = input.memberPublicId.trim();
@@ -90,6 +129,7 @@ export class MemberPermissionOverrideService {
 		const permissionKey = validatePermissionKey(input.permissionKey);
 		const effect = validateEffect(input.effect);
 		const reason = validateReason(input.reason);
+		const window = accessWindow(input);
 
 		await this.db.transaction().execute(async (trx) => {
 			await this.requireOrganisationManager(trx, actor);
@@ -122,7 +162,14 @@ export class MemberPermissionOverrideService {
 				member.id,
 				permission.id
 			);
-			if (existing?.effect === effect && existing.reason === reason) return;
+			if (
+				existing?.effect === effect &&
+				existing.reason === reason &&
+				sameInstant(existing.effectiveFrom, window.effectiveFrom) &&
+				sameInstant(existing.expiresAt, window.expiresAt)
+			) {
+				return;
+			}
 
 			if (existing) {
 				await repository.updateOverride({
@@ -141,16 +188,34 @@ export class MemberPermissionOverrideService {
 					reason
 				});
 			}
+			await repository.replaceAccessWindow({
+				organisationId: actor.organisationId,
+				memberId: member.id,
+				permissionId: permission.id,
+				...window
+			});
 
 			if (permissionKey === 'organisation.manage' && member.status === 'active') {
 				await this.requireActiveOrganisationManager(trx, actor);
+				if (window.effectiveFrom) {
+					await this.requireActiveOrganisationManager(trx, actor, window.effectiveFrom);
+				}
+				if (window.expiresAt) {
+					await this.requireActiveOrganisationManager(trx, actor, window.expiresAt);
+				}
 			}
 
 			const change = {
 				memberPublicId: member.publicId,
 				permissionKey,
-				from: existing ? { effect: existing.effect, reason: existing.reason } : null,
-				to: { effect, reason }
+				from: existing
+					? {
+							effect: existing.effect,
+							reason: existing.reason,
+							...serialiseWindow(existing.effectiveFrom, existing.expiresAt)
+						}
+					: null,
+				to: { effect, reason, ...serialiseWindow(window.effectiveFrom, window.expiresAt) }
 			};
 			await new AuditRepository(trx).append({
 				eventPublicId: randomUUID(),
@@ -221,7 +286,11 @@ export class MemberPermissionOverrideService {
 			const change = {
 				memberPublicId: member.publicId,
 				permissionKey,
-				from: { effect: existing.effect, reason: existing.reason },
+				from: {
+					effect: existing.effect,
+					reason: existing.reason,
+					...serialiseWindow(existing.effectiveFrom, existing.expiresAt)
+				},
 				to: null
 			};
 			await new AuditRepository(trx).append({
@@ -262,7 +331,8 @@ export class MemberPermissionOverrideService {
 
 	private async requireActiveOrganisationManager(
 		executor: DatabaseExecutor,
-		actor: TenantActorContext
+		actor: TenantActorContext,
+		at = new Date()
 	): Promise<void> {
 		const repository = new MemberPermissionOverrideRepository(executor);
 		const activeMembers = await repository.listActiveMembersForPermissionCheck(
@@ -276,7 +346,8 @@ export class MemberPermissionOverrideService {
 					memberId: member.id,
 					correlationId: actor.correlationId
 				},
-				'organisation.manage'
+				'organisation.manage',
+				{ at }
 			);
 			if (decision.allowed) return;
 		}
