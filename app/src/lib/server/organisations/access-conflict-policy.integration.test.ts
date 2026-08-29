@@ -40,7 +40,7 @@ function actor() {
 		organisationId,
 		userId: ownerUserId,
 		memberId: ownerMemberId,
-		correlationId: `sod-${randomUUID()}`
+		correlationId: `sod-${randomUUID().slice(0, 12)}`
 	};
 }
 
