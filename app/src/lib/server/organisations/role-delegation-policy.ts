@@ -15,7 +15,7 @@ export type RoleDelegationDecision = {
 	deniedPermissionKeys: string[];
 };
 
-async function hasActiveOwnerRole(
+export async function hasActiveOwnerRole(
 	db: DatabaseExecutor,
 	actor: TenantActorContext,
 	at = new Date()
