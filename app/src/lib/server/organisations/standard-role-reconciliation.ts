@@ -78,9 +78,8 @@ function markReconciled(key: string): void {
 function desiredPermissionKeysForRole(defaultName: string): string[] {
 	const permissionKeys = new Set<string>();
 	for (const permissionMap of STANDARD_ROLE_PERMISSION_MAPS) {
-		const keys = permissionMap[defaultName as keyof typeof permissionMap] as
-			| readonly string[]
-			| undefined;
+		const rolePermissions = permissionMap as Record<string, readonly string[] | undefined>;
+		const keys = rolePermissions[defaultName];
 		for (const permissionKey of keys ?? []) permissionKeys.add(permissionKey);
 	}
 	return [...permissionKeys];
