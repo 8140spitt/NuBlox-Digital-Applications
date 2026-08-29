@@ -19,7 +19,7 @@
 		"test:e2e": "playwright install && playwright test",
 		"db:migrate": "dbmate --migrations-dir ../database/migrations --no-dump-schema up",
 		"db:status": "dbmate --migrations-dir ../database/migrations --no-dump-schema status",
-		"db:types": "kysely-codegen --config-file .kysely-codegenrc.json && kysely-codegen --config-file .kysely-collections-codegenrc.json && kysely-codegen --config-file .kysely-accounting-codegenrc.json && kysely-codegen --config-file .kysely-accounts-payable-codegenrc.json && kysely-codegen --config-file .kysely-project-controls-codegenrc.json"
+		"db:types": "kysely-codegen --config-file .kysely-codegenrc.json && kysely-codegen --config-file .kysely-access-control-codegenrc.json && kysely-codegen --config-file .kysely-collections-codegenrc.json && kysely-codegen --config-file .kysely-accounting-codegenrc.json && kysely-codegen --config-file .kysely-accounts-payable-codegenrc.json && kysely-codegen --config-file .kysely-project-controls-codegenrc.json"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
