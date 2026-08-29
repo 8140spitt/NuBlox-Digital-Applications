@@ -1,0 +1,13 @@
+{
+	"dialect": "mysql",
+	"url": "env(DATABASE_URL)",
+	"outFile": "./src/lib/server/db/generated/access-control.d.ts",
+	"includePattern": "organisation_role_template_bindings",
+	"camelCase": false,
+	"numericParser": "string",
+	"typeMapping": {
+		"bigint": "string"
+	},
+	"typeOnlyImports": true,
+	"logLevel": "warn"
+}
