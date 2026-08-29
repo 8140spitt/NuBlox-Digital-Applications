@@ -1,6 +1,6 @@
 import type { Database } from '$lib/server/db/database';
 
-const SLICE4_STANDARD_ROLE_PERMISSIONS = {
+export const SLICE4_STANDARD_ROLE_PERMISSIONS = {
 	Owner: [
 		'procurement.view',
 		'procurement.package.manage',
