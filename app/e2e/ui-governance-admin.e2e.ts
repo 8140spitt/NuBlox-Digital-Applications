@@ -180,6 +180,7 @@ test('owner controls explicit member permission exceptions through the browser',
 	await expect(overridesPanel.getByText('NuBlox E2E Viewer', { exact: true })).toBeVisible();
 	await expect(overridesPanel.getByText('crm.party.manage', { exact: true })).toBeVisible();
 	await expect(overridesPanel.getByText('deny', { exact: true })).toBeVisible();
+	await expect(overridesPanel.getByText('Ongoing', { exact: true })).toBeVisible();
 	await expect(
 		overridesPanel.getByText('E2E explicit deny exception.', { exact: true })
 	).toBeVisible();
@@ -189,6 +190,6 @@ test('owner controls explicit member permission exceptions through the browser',
 		overridesPanel.getByText('E2E explicit deny exception.', { exact: true })
 	).toHaveCount(0);
 	await expect(
-		overridesPanel.getByText('No explicit member permission exceptions are active.')
+		overridesPanel.getByText('No explicit member permission exceptions are configured.')
 	).toBeVisible();
 });

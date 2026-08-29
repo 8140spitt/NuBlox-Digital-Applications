@@ -25,6 +25,8 @@ export type MemberPermissionOverrideSummary = {
 	permissionName: string;
 	effect: MemberPermissionOverrideEffect;
 	reason: string | null;
+	effectiveFrom: Date | null;
+	expiresAt: Date | null;
 	updatedAt: Date;
 };
 
@@ -32,6 +34,8 @@ export type LockedMemberPermissionOverride = {
 	permissionId: string;
 	effect: MemberPermissionOverrideEffect;
 	reason: string | null;
+	effectiveFrom: Date | null;
+	expiresAt: Date | null;
 };
 
 function overrideEffect(value: string): MemberPermissionOverrideEffect {
@@ -77,6 +81,12 @@ export class MemberPermissionOverrideRepository {
 	async listOverrides(organisationId: string): Promise<MemberPermissionOverrideSummary[]> {
 		const rows = await this.db
 			.selectFrom('member_permission_overrides as override')
+			.leftJoin('member_permission_override_access_windows as window', (join) =>
+				join
+					.onRef('window.organisation_id', '=', 'override.organisation_id')
+					.onRef('window.organisation_member_id', '=', 'override.organisation_member_id')
+					.onRef('window.permission_id', '=', 'override.permission_id')
+			)
 			.innerJoin('organisation_members as member', (join) =>
 				join
 					.onRef('member.id', '=', 'override.organisation_member_id')
@@ -91,6 +101,8 @@ export class MemberPermissionOverrideRepository {
 				'permission.name as permissionName',
 				'override.effect as effect',
 				'override.reason as reason',
+				'window.effective_from as effectiveFrom',
+				'window.expires_at as expiresAt',
 				'override.updated_at as updatedAt'
 			])
 			.where('override.organisation_id', '=', organisationId)
@@ -145,11 +157,23 @@ export class MemberPermissionOverrideRepository {
 		permissionId: string
 	): Promise<LockedMemberPermissionOverride | null> {
 		const row = await this.db
-			.selectFrom('member_permission_overrides')
-			.select(['permission_id as permissionId', 'effect', 'reason'])
-			.where('organisation_id', '=', organisationId)
-			.where('organisation_member_id', '=', memberId)
-			.where('permission_id', '=', permissionId)
+			.selectFrom('member_permission_overrides as override')
+			.leftJoin('member_permission_override_access_windows as window', (join) =>
+				join
+					.onRef('window.organisation_id', '=', 'override.organisation_id')
+					.onRef('window.organisation_member_id', '=', 'override.organisation_member_id')
+					.onRef('window.permission_id', '=', 'override.permission_id')
+			)
+			.select([
+				'override.permission_id as permissionId',
+				'override.effect as effect',
+				'override.reason as reason',
+				'window.effective_from as effectiveFrom',
+				'window.expires_at as expiresAt'
+			])
+			.where('override.organisation_id', '=', organisationId)
+			.where('override.organisation_member_id', '=', memberId)
+			.where('override.permission_id', '=', permissionId)
 			.forUpdate()
 			.executeTakeFirst();
 		if (!row) return null;
@@ -188,6 +212,32 @@ export class MemberPermissionOverrideRepository {
 			.where('organisation_id', '=', input.organisationId)
 			.where('organisation_member_id', '=', input.memberId)
 			.where('permission_id', '=', input.permissionId)
+			.executeTakeFirstOrThrow();
+	}
+
+	async replaceAccessWindow(input: {
+		organisationId: string;
+		memberId: string;
+		permissionId: string;
+		effectiveFrom: Date | null;
+		expiresAt: Date | null;
+	}): Promise<void> {
+		await this.db
+			.deleteFrom('member_permission_override_access_windows')
+			.where('organisation_id', '=', input.organisationId)
+			.where('organisation_member_id', '=', input.memberId)
+			.where('permission_id', '=', input.permissionId)
+			.execute();
+		if (!input.effectiveFrom && !input.expiresAt) return;
+		await this.db
+			.insertInto('member_permission_override_access_windows')
+			.values({
+				organisation_id: input.organisationId,
+				organisation_member_id: input.memberId,
+				permission_id: input.permissionId,
+				effective_from: input.effectiveFrom,
+				expires_at: input.expiresAt
+			})
 			.executeTakeFirstOrThrow();
 	}
 

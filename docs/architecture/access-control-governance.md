@@ -46,25 +46,43 @@ Rules:
 1. assigning any access role requires `member.manage` or the wider `organisation.manage` authority;
 2. a delegated member administrator may assign only permissions they effectively hold;
 3. `organisation.manage` may administer the ordinary organisation role catalogue;
-4. the stable `owner` access-role identity is an ownership boundary and may be delegated only by an active member who already holds that bound role;
+4. the stable `owner` access-role identity is an ownership boundary and may be delegated only by an active member whose bound Owner assignment is effective at the decision instant;
 5. explicit member permission overrides remain subject to their own governed service and must not be used as an undocumented privilege-escalation path.
 
-The ownership rule prevents an Administrator from turning `organisation.manage` into ownership merely by renaming or assigning the Owner template to themselves or another member.
+The ownership rule prevents an Administrator from turning `organisation.manage` into ownership merely by renaming or assigning the Owner template to themselves or another member. An expired or not-yet-effective Owner assignment is not an ownership credential.
 
 ## 4. Permission decision precedence
 
 The effective organisation-level decision remains:
 
 ```text
-explicit member deny
-  > explicit member allow
+active explicit member deny
+  > active explicit member allow
   > active role grant
   > default deny
 ```
 
-Project/record scope is applied after the organisation-level decision.
+A role assignment or member override is active only when its access lifecycle window is effective. Project/record scope is applied after the organisation-level decision.
 
-## 5. Segregation of duties
+## 5. Access lifecycle and expiry
+
+NuBlox treats time bounds as metadata on an access assignment or exception, not as lifecycle attributes on the role or permission definition itself.
+
+- `member_role_access_windows` governs an existing `member_roles` assignment.
+- `member_permission_override_access_windows` governs an existing `member_permission_overrides` exception.
+- absence of a lifecycle row means the parent assignment/exception is indefinite and preserves legacy behaviour;
+- `effective_from` and `expires_at` are UTC instants;
+- windows are half-open: `[effective_from, expires_at)`, so access becomes effective at `effective_from` and ceases exactly at `expires_at`;
+- either bound may be omitted, but where both are present `effective_from < expires_at` is enforced by the database;
+- deleting a parent assignment/override cascades its lifecycle metadata;
+- expiry is enforced synchronously by every permission decision and does not depend on a background cleanup job;
+- scheduled and expired exceptions may remain in current-state administration views until explicitly removed so governance evidence is visible alongside audit history.
+
+The permission engine accepts an explicit evaluation instant for deterministic boundary testing and governance checks. This also permits service-layer continuity checks at a scheduled activation or expiry transition rather than relying only on the present moment.
+
+Lifecycle applies only to access security. It does not make careers, job profiles, functional roles, organisation positions or project business roles into security assignments.
+
+## 6. Segregation of duties
 
 NuBlox uses two complementary controls.
 
@@ -80,21 +98,22 @@ Static role-assignment conflicts should be introduced only where merely possessi
 
 Future static conflict rules belong in the central access-governance policy and require integration tests proving that composed multi-role access cannot bypass them.
 
-## 6. Audit requirements
+## 7. Audit requirements
 
 The following actions require append-oriented audit evidence with organisation, acting user/member, correlation identifier and subject identity:
 
 - member role assignment/replacement;
 - role creation and modification;
 - invitation role assignment;
-- member permission override changes;
+- member permission override changes, including effective/expiry bounds;
+- role-assignment lifecycle changes;
 - ownership-sensitive membership changes;
 - standard access-role template binding or template-version changes.
 
 Audit evidence is not a substitute for current-state relational integrity, and current-state tables are not a substitute for immutable audit evidence.
 
-## 7. Governance direction
+## 8. Governance direction
 
-With stable standard-role identity and template provenance established, the next RBAC evolution should focus on role-assignment lifecycle and expiry, narrowly justified toxic-access/segregation-of-duties rules, delegated authority by scope/value/effective dates, and periodic access review/attestation.
+With stable standard-role identity, template provenance and synchronous access expiry established, the next RBAC evolution should focus on narrowly justified toxic-access/segregation-of-duties rules, delegated authority by scope/value/effective dates, and periodic access review/attestation.
 
 Organisation positions may carry recommended access templates in future, but activation must remain an explicit, auditable access-control decision.

@@ -86,7 +86,9 @@ export const actions: Actions = {
 				memberPublicId: stringField(formData, 'memberPublicId'),
 				permissionKey: stringField(formData, 'permissionKey'),
 				effect: stringField(formData, 'effect'),
-				reason: stringField(formData, 'reason')
+				reason: stringField(formData, 'reason'),
+				effectiveFrom: stringField(formData, 'effectiveFrom'),
+				expiresAt: stringField(formData, 'expiresAt')
 			});
 		} catch (cause) {
 			return overrideFailure(cause);
