@@ -6,6 +6,10 @@ import { PermissionService } from '$lib/server/capabilities/permission-service';
 import type { Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { getEmailDelivery, type EmailDelivery } from '$lib/server/email/email-delivery';
+import {
+	accessConflictViolationMessage,
+	evaluateMemberAccessConflicts
+} from './access-conflict-policy';
 import { OrganisationInvitationService, type InvitationSummary } from './invitation-service';
 import {
 	OrganisationAdminRepository,
@@ -142,6 +146,9 @@ export class OrganisationAdminService {
 				);
 			}
 
+			if (nextStatus === 'active') {
+				await this.requireNoAccessConflicts(trx, actor, member);
+			}
 			if (targetWasManager && nextStatus !== 'active') {
 				await this.requireActiveOrganisationManager(trx, actor);
 			}
@@ -216,6 +223,7 @@ export class OrganisationAdminService {
 			}
 
 			await repository.replaceMemberRoles(actor.organisationId, member.id, roleIds);
+			await this.requireNoAccessConflicts(trx, actor, member);
 			if (targetWasManager && member.status === 'active') {
 				await this.requireActiveOrganisationManager(trx, actor);
 			}
@@ -435,6 +443,27 @@ export class OrganisationAdminService {
 			'organisation.manage'
 		);
 		return decision.allowed;
+	}
+
+	private async requireNoAccessConflicts(
+		executor: DatabaseExecutor,
+		actor: TenantActorContext,
+		member: { id: string; userId: string },
+		at = new Date()
+	): Promise<void> {
+		const violations = await evaluateMemberAccessConflicts(
+			executor,
+			{
+				organisationId: actor.organisationId,
+				userId: member.userId,
+				memberId: member.id,
+				correlationId: actor.correlationId
+			},
+			{ at }
+		);
+		if (violations.length > 0) {
+			throw new OrganisationAdminValidationError(accessConflictViolationMessage(violations));
+		}
 	}
 
 	private async requireMemberRoleAdministration(
