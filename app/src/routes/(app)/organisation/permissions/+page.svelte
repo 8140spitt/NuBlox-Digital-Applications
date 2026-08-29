@@ -1,6 +1,23 @@
 <script lang="ts">
 	let { data, form } = $props();
 	let assignableMembers = $derived(data.members.filter((member) => !member.isCurrent));
+
+	function formatUtc(value: Date | string | null): string {
+		if (!value) return '—';
+		return `${new Intl.DateTimeFormat('en-GB', {
+			dateStyle: 'medium',
+			timeStyle: 'short',
+			timeZone: 'UTC'
+		}).format(new Date(value))} UTC`;
+	}
+
+	function lifecycleStatus(override: (typeof data.overrides)[number]): string {
+		const now = Date.now();
+		if (override.effectiveFrom && new Date(override.effectiveFrom).getTime() > now) return 'Scheduled';
+		if (override.expiresAt && new Date(override.expiresAt).getTime() <= now) return 'Expired';
+		if (!override.effectiveFrom && !override.expiresAt) return 'Ongoing';
+		return 'Active';
+	}
 </script>
 
 <svelte:head>
@@ -17,8 +34,8 @@
 
 <section class="precedence" aria-label="Permission precedence">
 	<strong>Effective precedence</strong>
-	<span>member deny</span>
-	<span>member allow</span>
+	<span>active member deny</span>
+	<span>active member allow</span>
 	<span>active role grant</span>
 	<span>default deny</span>
 </section>
@@ -34,8 +51,8 @@
 			<h2 id="new-override-heading">Set member override</h2>
 		</div>
 		<p>
-			Every exception requires a reason and is written to audit history and the transactional event
-			outbox.
+			Every exception requires a reason, may be time-bounded, and is written to audit history and
+			the transactional event outbox.
 		</p>
 	</div>
 
@@ -77,6 +94,21 @@
 			</select>
 		</label>
 
+		<label>
+			<span>Effective from (UTC)</span>
+			<input type="datetime-local" name="effectiveFrom" />
+		</label>
+
+		<label>
+			<span>Expires at (UTC)</span>
+			<input type="datetime-local" name="expiresAt" />
+		</label>
+
+		<p class="window-help">
+			Leave both dates blank for an ongoing exception. Expiry is exclusive: access changes at the
+			exact expiry instant.
+		</p>
+
 		<label class="reason-field">
 			<span>Reason</span>
 			<textarea name="reason" maxlength="500" rows="3" required></textarea>
@@ -91,16 +123,16 @@
 <section class="panel" aria-labelledby="current-overrides-heading">
 	<div class="panel-heading compact">
 		<div>
-			<p class="eyebrow">Effective exceptions</p>
-			<h2 id="current-overrides-heading">Current member overrides</h2>
+			<p class="eyebrow">Governed exceptions</p>
+			<h2 id="current-overrides-heading">Configured member overrides</h2>
 		</div>
 		<p>
-			Removing an exception returns permission evaluation to the next rule in the precedence chain.
+			Scheduled and expired exceptions remain visible as governance evidence until they are removed.
 		</p>
 	</div>
 
 	{#if data.overrides.length === 0}
-		<p class="empty-state">No explicit member permission exceptions are active.</p>
+		<p class="empty-state">No explicit member permission exceptions are configured.</p>
 	{:else}
 		<div class="table-wrap">
 			<table>
@@ -109,6 +141,7 @@
 						<th scope="col">Member</th>
 						<th scope="col">Permission</th>
 						<th scope="col">Effect</th>
+						<th scope="col">Lifecycle</th>
 						<th scope="col">Reason</th>
 						<th scope="col"><span class="sr-only">Actions</span></th>
 					</tr>
@@ -126,6 +159,11 @@
 									>{override.effect}</span
 								></td
 							>
+							<td>
+								<strong>{lifecycleStatus(override)}</strong>
+								<small>From {formatUtc(override.effectiveFrom)}</small>
+								<small>Until {formatUtc(override.expiresAt)}</small>
+							</td>
 							<td>{override.reason}</td>
 							<td class="row-action">
 								<form method="POST" action="?/removeOverride">
@@ -170,6 +208,7 @@
 	.page-header > p:last-child,
 	.panel-heading > p,
 	.empty-state,
+	.window-help,
 	td small {
 		color: var(--nb-text-muted);
 		line-height: 1.5;
@@ -249,6 +288,12 @@
 		display: grid;
 		gap: 0.35rem;
 		font-weight: 700;
+	}
+
+	.window-help {
+		align-self: end;
+		margin: 0;
+		font-size: 0.86rem;
 	}
 
 	.reason-field,
