@@ -1,6 +1,6 @@
 import type { Database } from '$lib/server/db/database';
 
-const INFORMATION_STANDARD_ROLE_PERMISSIONS = {
+export const INFORMATION_STANDARD_ROLE_PERMISSIONS = {
 	Owner: [
 		'information.view',
 		'information.manage',
