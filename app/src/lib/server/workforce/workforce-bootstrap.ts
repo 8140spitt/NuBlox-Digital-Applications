@@ -1,6 +1,6 @@
 import type { Database } from '$lib/server/db/database';
 
-const WORKFORCE_STANDARD_ROLE_PERMISSIONS = {
+export const WORKFORCE_STANDARD_ROLE_PERMISSIONS = {
 	Owner: [
 		'workforce.view',
 		'workforce.manage',

@@ -6,6 +6,16 @@ import {
 	OrganisationAdminValidationError,
 	OrganisationAdminService
 } from './organisation-admin-service';
+import {
+	ensureStandardAccessRoleBindings,
+	OWNER_ACCESS_ROLE_KEY,
+	STANDARD_ACCESS_ROLE_TEMPLATE_KEY
+} from './standard-access-roles';
+import {
+	ensureStandardRolePermissionDefaults,
+	resetStandardRolePermissionReconciliationCache,
+	STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION
+} from './standard-role-reconciliation';
 
 const PREFIX = 'Access Role Governance Integration ';
 
@@ -59,6 +69,10 @@ async function cleanup(): Promise<void> {
 			.execute();
 		await db.deleteFrom('member_roles').where('organisation_id', '=', organisationId).execute();
 		await db.deleteFrom('role_permissions').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('organisation_role_template_bindings')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db
 			.deleteFrom('organisation_roles')
 			.where('organisation_id', '=', organisationId)
@@ -158,6 +172,14 @@ async function createFixture(): Promise<void> {
 			.executeTakeFirstOrThrow()
 	);
 
+	await ensureStandardAccessRoleBindings(db, organisationId);
+	await db
+		.updateTable('organisation_roles')
+		.set({ name: 'Organisation Owner' })
+		.where('id', '=', ownerRoleId)
+		.where('organisation_id', '=', organisationId)
+		.execute();
+
 	await db
 		.insertInto('role_permissions')
 		.values([
@@ -202,7 +224,7 @@ describe('governed organisation access roles', () => {
 		await closeDatabase();
 	});
 
-	it('does not let organisation administrators delegate ownership', async () => {
+	it('does not let organisation administrators delegate renamed ownership', async () => {
 		const service = new OrganisationAdminService(db);
 		await expect(
 			service.replaceMemberRoles(
@@ -221,7 +243,7 @@ describe('governed organisation access roles', () => {
 		expect(assignments).toEqual([]);
 	});
 
-	it('allows an active Owner to delegate the Owner role', async () => {
+	it('allows an active bound Owner to delegate the renamed Owner role', async () => {
 		const service = new OrganisationAdminService(db);
 		await service.replaceMemberRoles(actor(ownerUserId, ownerMemberId), targetMemberPublicId, [
 			ownerRolePublicId
@@ -258,5 +280,54 @@ describe('governed organisation access roles', () => {
 			.execute();
 		expect(assignments).toEqual([]);
 		expect(ordinaryRoleId).toBeTruthy();
+	});
+
+	it('repairs permissions for a renamed standard role and records template provenance', async () => {
+		const workViewPermissionId = (
+			await db
+				.selectFrom('permissions')
+				.select('id')
+				.where('permission_key', '=', 'work.view')
+				.executeTakeFirstOrThrow()
+		).id;
+
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_role_id', '=', ownerRoleId)
+			.where('permission_id', '=', workViewPermissionId)
+			.execute();
+
+		resetStandardRolePermissionReconciliationCache();
+		await ensureStandardRolePermissionDefaults(db, organisationId);
+
+		const repairedGrant = await db
+			.selectFrom('role_permissions')
+			.select('permission_id')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_role_id', '=', ownerRoleId)
+			.where('permission_id', '=', workViewPermissionId)
+			.executeTakeFirst();
+		expect(repairedGrant?.permission_id).toBe(workViewPermissionId);
+
+		const ownerBinding = await db
+			.selectFrom('organisation_role_template_bindings')
+			.select(['role_key', 'template_key', 'template_version'])
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_role_id', '=', ownerRoleId)
+			.executeTakeFirstOrThrow();
+		expect(ownerBinding).toEqual({
+			role_key: OWNER_ACCESS_ROLE_KEY,
+			template_key: STANDARD_ACCESS_ROLE_TEMPLATE_KEY,
+			template_version: STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION
+		});
+
+		const customBinding = await db
+			.selectFrom('organisation_role_template_bindings')
+			.select('organisation_role_id')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_role_id', '=', ordinaryRoleId)
+			.executeTakeFirst();
+		expect(customBinding).toBeUndefined();
 	});
 });

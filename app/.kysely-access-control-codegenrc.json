@@ -1,8 +1,8 @@
 {
 	"dialect": "mysql",
 	"url": "env(DATABASE_URL)",
-	"outFile": "./src/lib/server/db/generated/database.d.ts",
-	"excludePattern": "{receivable_*,accounting_*,accounts_payable_*,project_control_register_*,organisation_role_template_bindings}",
+	"outFile": "./src/lib/server/db/generated/access-control.d.ts",
+	"includePattern": "organisation_role_template_bindings",
 	"camelCase": false,
 	"numericParser": "string",
 	"typeMapping": {
