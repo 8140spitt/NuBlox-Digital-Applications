@@ -13,7 +13,8 @@
 
 	function lifecycleStatus(override: (typeof data.overrides)[number]): string {
 		const now = Date.now();
-		if (override.effectiveFrom && new Date(override.effectiveFrom).getTime() > now) return 'Scheduled';
+		if (override.effectiveFrom && new Date(override.effectiveFrom).getTime() > now)
+			return 'Scheduled';
 		if (override.expiresAt && new Date(override.expiresAt).getTime() <= now) return 'Expired';
 		if (!override.effectiveFrom && !override.expiresAt) return 'Ongoing';
 		return 'Active';
