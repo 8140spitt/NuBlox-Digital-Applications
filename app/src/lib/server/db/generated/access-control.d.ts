@@ -9,6 +9,27 @@ export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
 
+export interface MemberPermissionOverrideAccessWindows {
+  created_at: Generated<Date>;
+  effective_from: Date | null;
+  expires_at: Date | null;
+  organisation_id: string;
+  organisation_member_id: string;
+  permission_id: string;
+  updated_at: Generated<Date>;
+}
+
+export interface MemberRoleAccessWindows {
+  created_at: Generated<Date>;
+  effective_from: Date | null;
+  expires_at: Date | null;
+  organisation_id: string;
+  organisation_member_id: string;
+  organisation_role_id: string;
+  reason: string;
+  updated_at: Generated<Date>;
+}
+
 export interface OrganisationRoleTemplateBindings {
   created_at: Generated<Date>;
   organisation_id: string;
@@ -20,5 +41,7 @@ export interface OrganisationRoleTemplateBindings {
 }
 
 export interface DB {
+  member_permission_override_access_windows: MemberPermissionOverrideAccessWindows;
+  member_role_access_windows: MemberRoleAccessWindows;
   organisation_role_template_bindings: OrganisationRoleTemplateBindings;
 }
