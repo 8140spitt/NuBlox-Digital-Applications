@@ -332,7 +332,9 @@ describe('organisation access review and attestation', () => {
 	it('does not let an Administrator revoke the stable Owner assignment through a review', async () => {
 		const service = new AccessReviewService(db);
 		const adminActor = actor(adminUserId, adminMemberId);
-		const campaignPublicId = await service.openCampaign(adminActor, { name: 'Owner boundary review' });
+		const campaignPublicId = await service.openCampaign(adminActor, {
+			name: 'Owner boundary review'
+		});
 		const detail = await service.loadCampaign(adminActor, campaignPublicId);
 		const ownerItem = detail.items.find((item) => item.rolePublicId === ownerRolePublicId);
 		if (!ownerItem) throw new Error('Expected Owner review item.');
@@ -363,7 +365,9 @@ describe('organisation access review and attestation', () => {
 	it('revokes an assignment transactionally while retaining the immutable review item', async () => {
 		const service = new AccessReviewService(db);
 		const ownerActor = actor(ownerUserId, ownerMemberId);
-		const campaignPublicId = await service.openCampaign(ownerActor, { name: 'Worker access review' });
+		const campaignPublicId = await service.openCampaign(ownerActor, {
+			name: 'Worker access review'
+		});
 		const detail = await service.loadCampaign(ownerActor, campaignPublicId);
 		const elevatedItem = detail.items.find((item) => item.rolePublicId === elevatedRolePublicId);
 		if (!elevatedItem) throw new Error('Expected elevated-role review item.');
@@ -394,7 +398,9 @@ describe('organisation access review and attestation', () => {
 	it('rolls back removal of a deny when the review would expose toxic access', async () => {
 		const service = new AccessReviewService(db);
 		const adminActor = actor(adminUserId, adminMemberId);
-		const campaignPublicId = await service.openCampaign(adminActor, { name: 'Deny safeguard review' });
+		const campaignPublicId = await service.openCampaign(adminActor, {
+			name: 'Deny safeguard review'
+		});
 		const detail = await service.loadCampaign(adminActor, campaignPublicId);
 		const denyItem = detail.items.find((item) => item.permissionKey === 'organisation.manage');
 		if (!denyItem) throw new Error('Expected organisation.manage override review item.');

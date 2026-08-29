@@ -91,7 +91,9 @@ function insertedId(result: { insertId?: bigint }): string {
 function campaignName(value: string): string {
 	const name = value.trim();
 	if (!name || name.length > 160) {
-		throw new AccessReviewValidationError('Access review name must be between 1 and 160 characters.');
+		throw new AccessReviewValidationError(
+			'Access review name must be between 1 and 160 characters.'
+		);
 	}
 	return name;
 }
@@ -542,7 +544,9 @@ export class AccessReviewService {
 				.executeTakeFirst();
 			if (!campaign) throw new AccessReviewNotFoundError('Access review campaign not found.');
 			if (campaign.status !== 'open') {
-				throw new AccessReviewValidationError('Only open access review campaigns can be completed.');
+				throw new AccessReviewValidationError(
+					'Only open access review campaigns can be completed.'
+				);
 			}
 			const pending = await trx
 				.selectFrom('access_review_items')
@@ -588,7 +592,9 @@ export class AccessReviewService {
 				.executeTakeFirst();
 			if (!campaign) throw new AccessReviewNotFoundError('Access review campaign not found.');
 			if (campaign.status !== 'open') {
-				throw new AccessReviewValidationError('Only open access review campaigns can be cancelled.');
+				throw new AccessReviewValidationError(
+					'Only open access review campaigns can be cancelled.'
+				);
 			}
 
 			await trx
@@ -834,9 +840,7 @@ export class AccessReviewService {
 			.where((eb) =>
 				eb.or([eb('window.effective_from', 'is', null), eb('window.effective_from', '<=', at)])
 			)
-			.where((eb) =>
-				eb.or([eb('window.expires_at', 'is', null), eb('window.expires_at', '>', at)])
-			)
+			.where((eb) => eb.or([eb('window.expires_at', 'is', null), eb('window.expires_at', '>', at)]))
 			.executeTakeFirst();
 		if (!row) {
 			throw new AccessReviewValidationError(
