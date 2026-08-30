@@ -30,7 +30,6 @@ let targetUserId: string;
 let targetMemberId: string;
 let targetMemberPublicId: string;
 let ownerRoleId: string;
-let ownerRolePublicId: string;
 let administratorRoleId: string;
 let managerRoleId: string;
 let managerRolePublicId: string;
@@ -178,7 +177,7 @@ async function createFixture(): Promise<void> {
 	({ id: adminMemberId, publicId: adminMemberPublicId } = await createMember(adminUserId));
 	({ id: targetMemberId, publicId: targetMemberPublicId } = await createMember(targetUserId));
 
-	({ id: ownerRoleId, publicId: ownerRolePublicId } = await createRole('Owner'));
+	({ id: ownerRoleId } = await createRole('Owner'));
 	({ id: administratorRoleId } = await createRole('Administrator'));
 	({ id: managerRoleId, publicId: managerRolePublicId } = await createRole('Manager'));
 	({ id: financeRoleId, publicId: financeRolePublicId } = await createRole('Finance/Commercial'));
