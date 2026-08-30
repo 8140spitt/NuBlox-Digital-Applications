@@ -81,7 +81,9 @@ function policyReason(value: string): string {
 
 function validateWindow(effectiveFrom: Date | null, expiresAt: Date | null, now: Date): void {
 	if (effectiveFrom !== null && Number.isNaN(effectiveFrom.getTime())) {
-		throw new DelegatedAccessAuthorityValidationError('Delegated authority effective-from is invalid.');
+		throw new DelegatedAccessAuthorityValidationError(
+			'Delegated authority effective-from is invalid.'
+		);
 	}
 	if (expiresAt !== null && Number.isNaN(expiresAt.getTime())) {
 		throw new DelegatedAccessAuthorityValidationError('Delegated authority expiry is invalid.');
@@ -184,7 +186,8 @@ export class DelegatedAccessAuthorityService {
 				.where('public_id', '=', memberPublicId)
 				.forUpdate()
 				.executeTakeFirst();
-			if (!member) throw new DelegatedAccessAuthorityNotFoundError('Organisation member not found.');
+			if (!member)
+				throw new DelegatedAccessAuthorityNotFoundError('Organisation member not found.');
 			if (member.status !== 'active') {
 				throw new DelegatedAccessAuthorityValidationError(
 					'Delegated authority can only be configured for an active organisation member.'
@@ -317,7 +320,8 @@ export class DelegatedAccessAuthorityService {
 				.where('public_id', '=', memberPublicId)
 				.forUpdate()
 				.executeTakeFirst();
-			if (!member) throw new DelegatedAccessAuthorityNotFoundError('Organisation member not found.');
+			if (!member)
+				throw new DelegatedAccessAuthorityNotFoundError('Organisation member not found.');
 
 			const policy = await trx
 				.selectFrom('organisation_delegation_policies')
@@ -332,7 +336,10 @@ export class DelegatedAccessAuthorityService {
 				);
 			}
 
-			await trx.deleteFrom('organisation_delegation_policies').where('id', '=', policy.id).execute();
+			await trx
+				.deleteFrom('organisation_delegation_policies')
+				.where('id', '=', policy.id)
+				.execute();
 			await new AuditRepository(trx).append({
 				eventPublicId: randomUUID(),
 				actingOrganisationId: actor.organisationId,

@@ -9,11 +9,11 @@ import {
 	DelegatedAccessAuthorityValidationError
 } from './delegated-access-authority-service';
 import { OrganisationInvitationService } from './invitation-service';
-import { OrganisationAdminService, OrganisationAdminValidationError } from './organisation-admin-service';
 import {
-	decideOrganisationRoleDelegation,
-	hasActiveOwnerRole
-} from './role-delegation-policy';
+	OrganisationAdminService,
+	OrganisationAdminValidationError
+} from './organisation-admin-service';
+import { decideOrganisationRoleDelegation, hasActiveOwnerRole } from './role-delegation-policy';
 import { ensureStandardAccessRoleBindings } from './standard-access-roles';
 
 const PREFIX = 'Delegated Access Authority Integration ';
@@ -128,7 +128,10 @@ async function cleanup(): Promise<void> {
 	if (!db) return;
 	if (organisationId) {
 		await clearPolicies();
-		await db.deleteFrom('audit_events').where('acting_organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('audit_events')
+			.where('acting_organisation_id', '=', organisationId)
+			.execute();
 		await db
 			.deleteFrom('organisation_invitation_roles')
 			.where('organisation_id', '=', organisationId)
@@ -143,7 +146,10 @@ async function cleanup(): Promise<void> {
 			.deleteFrom('organisation_role_template_bindings')
 			.where('organisation_id', '=', organisationId)
 			.execute();
-		await db.deleteFrom('organisation_roles').where('organisation_id', '=', organisationId).execute();
+		await db
+			.deleteFrom('organisation_roles')
+			.where('organisation_id', '=', organisationId)
+			.execute();
 		await db
 			.deleteFrom('organisation_members')
 			.where('organisation_id', '=', organisationId)
@@ -265,11 +271,9 @@ describe('Owner-governed delegated access authority', () => {
 	});
 
 	it('preserves legacy non-Owner delegation when no policy is configured', async () => {
-		const decision = await decideOrganisationRoleDelegation(
-			db,
-			actor(adminUserId, adminMemberId),
-			[financeRolePublicId]
-		);
+		const decision = await decideOrganisationRoleDelegation(db, actor(adminUserId, adminMemberId), [
+			financeRolePublicId
+		]);
 		expect(decision).toEqual({ allowed: true, deniedPermissionKeys: [] });
 	});
 
