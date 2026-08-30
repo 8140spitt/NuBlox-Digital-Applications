@@ -74,6 +74,31 @@ export interface MemberRoleAccessWindows {
   updated_at: Generated<Date>;
 }
 
+export interface OrganisationDelegationPermissionGrants {
+  created_at: Generated<Date>;
+  permission_id: string;
+  policy_id: string;
+}
+
+export interface OrganisationDelegationPolicies {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  effective_from: Date | null;
+  expires_at: Date | null;
+  id: Generated<string>;
+  organisation_id: string;
+  organisation_member_id: string;
+  public_id: string;
+  reason: string;
+  updated_at: Generated<Date>;
+}
+
+export interface OrganisationDelegationRoleGrants {
+  created_at: Generated<Date>;
+  policy_id: string;
+  role_key: string;
+}
+
 export interface OrganisationRoleTemplateBindings {
   created_at: Generated<Date>;
   organisation_id: string;
@@ -89,5 +114,8 @@ export interface DB {
   access_review_items: AccessReviewItems;
   member_permission_override_access_windows: MemberPermissionOverrideAccessWindows;
   member_role_access_windows: MemberRoleAccessWindows;
+  organisation_delegation_permission_grants: OrganisationDelegationPermissionGrants;
+  organisation_delegation_policies: OrganisationDelegationPolicies;
+  organisation_delegation_role_grants: OrganisationDelegationRoleGrants;
   organisation_role_template_bindings: OrganisationRoleTemplateBindings;
 }
