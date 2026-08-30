@@ -2,7 +2,7 @@
 	"dialect": "mysql",
 	"url": "env(DATABASE_URL)",
 	"outFile": "./src/lib/server/db/generated/database.d.ts",
-	"excludePattern": "{receivable_*,accounting_*,accounts_payable_*,project_control_register_*,organisation_role_template_bindings,member_role_access_windows,member_permission_override_access_windows,access_review_campaigns,access_review_items}",
+	"excludePattern": "{receivable_*,accounting_*,accounts_payable_*,project_control_register_*,organisation_role_template_bindings,member_role_access_windows,member_permission_override_access_windows,access_review_campaigns,access_review_items,organisation_delegation_policies,organisation_delegation_role_grants,organisation_delegation_permission_grants}",
 	"camelCase": false,
 	"numericParser": "string",
 	"typeMapping": {
