@@ -82,7 +82,6 @@ async function requestsOwnerRole(
 		.where('role.public_id', 'in', [...rolePublicIds])
 		.where('binding.template_key', '=', STANDARD_ACCESS_ROLE_TEMPLATE_KEY)
 		.where('binding.role_key', '=', OWNER_ACCESS_ROLE_KEY)
-		.where('role.is_active', '=', 1)
 		.executeTakeFirst();
 	return Boolean(row);
 }
@@ -121,7 +120,6 @@ async function configuredPolicyDecision(
 			.where('role.organisation_id', '=', actor.organisationId)
 			.where('role.public_id', 'in', [...rolePublicIds])
 			.where('binding.template_key', '=', STANDARD_ACCESS_ROLE_TEMPLATE_KEY)
-			.where('role.is_active', '=', 1)
 			.execute();
 		const allowedRoleKeys = new Set(
 			(
