@@ -23,7 +23,9 @@ CREATE TABLE access_review_reviewer_assignments (
     UNIQUE KEY uq_access_review_reviewer_assignments_public_id (public_id),
     UNIQUE KEY uq_access_review_reviewer_assignments_subject (campaign_id, subject_member_id),
     KEY idx_access_review_reviewer_assignments_reviewer (organisation_id, reviewer_member_id, campaign_id),
-    KEY idx_access_review_reviewer_assignments_assigned_by (assigned_by_member_id, assigned_at),
+    KEY idx_access_review_reviewer_assignments_subject_org (subject_member_id, organisation_id),
+    KEY idx_access_review_reviewer_assignments_reviewer_org (reviewer_member_id, organisation_id),
+    KEY idx_access_review_reviewer_assignments_assigned_by_org (assigned_by_member_id, organisation_id),
 
     CONSTRAINT fk_access_review_reviewer_assignments_campaign
         FOREIGN KEY (campaign_id)
@@ -34,16 +36,16 @@ CREATE TABLE access_review_reviewer_assignments (
         REFERENCES organisations (id)
         ON UPDATE RESTRICT ON DELETE CASCADE,
     CONSTRAINT fk_access_review_reviewer_assignments_subject_member
-        FOREIGN KEY (subject_member_id)
-        REFERENCES organisation_members (id)
+        FOREIGN KEY (subject_member_id, organisation_id)
+        REFERENCES organisation_members (id, organisation_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_access_review_reviewer_assignments_reviewer_member
-        FOREIGN KEY (reviewer_member_id)
-        REFERENCES organisation_members (id)
+        FOREIGN KEY (reviewer_member_id, organisation_id)
+        REFERENCES organisation_members (id, organisation_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT fk_access_review_reviewer_assignments_assigned_by_member
-        FOREIGN KEY (assigned_by_member_id)
-        REFERENCES organisation_members (id)
+        FOREIGN KEY (assigned_by_member_id, organisation_id)
+        REFERENCES organisation_members (id, organisation_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
     CONSTRAINT ck_access_review_reviewer_assignments_independent
         CHECK (subject_member_id <> reviewer_member_id)
