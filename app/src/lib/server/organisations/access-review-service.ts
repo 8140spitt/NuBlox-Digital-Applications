@@ -20,6 +20,12 @@ export type AccessReviewCampaignStatus = 'open' | 'completed' | 'cancelled';
 export type AccessReviewAccessType = 'role_assignment' | 'permission_override';
 export type AccessReviewLifecycleState = 'effective' | 'scheduled' | 'expired';
 export type AccessReviewDecision = 'certify' | 'revoke';
+export type AccessReviewReviewerMode = 'organisation_manage' | 'assigned';
+
+export type AccessReviewReviewerAssignmentInput = {
+	subjectMemberPublicId: string;
+	reviewerMemberPublicId: string;
+};
 
 export type AccessReviewCampaignSummary = {
 	publicId: string;
@@ -27,6 +33,7 @@ export type AccessReviewCampaignSummary = {
 	status: AccessReviewCampaignStatus;
 	snapshotAt: Date;
 	dueAt: Date | null;
+	reviewerMode: AccessReviewReviewerMode;
 	openedAt: Date;
 	completedAt: Date | null;
 	cancelledAt: Date | null;
@@ -48,6 +55,7 @@ export type AccessReviewItemSummary = {
 	effectiveFrom: Date | null;
 	expiresAt: Date | null;
 	sourceReason: string | null;
+	reviewerMemberPublicId: string | null;
 	decision: AccessReviewDecision | null;
 	decisionReason: string | null;
 	decidedAt: Date | null;
@@ -77,8 +85,8 @@ export class AccessReviewNotFoundError extends Error {
 
 export class AccessReviewAuthorisationError extends Error {
 	readonly code = 'ACCESS_REVIEW_FORBIDDEN';
-	constructor() {
-		super('Organisation management authority is required to administer access reviews.');
+	constructor(message = 'Access review authority is required for this operation.') {
+		super(message);
 		this.name = 'AccessReviewAuthorisationError';
 	}
 }
@@ -112,6 +120,11 @@ function reviewReason(value: string | null | undefined, required: boolean): stri
 function campaignStatus(value: string): AccessReviewCampaignStatus {
 	if (value === 'open' || value === 'completed' || value === 'cancelled') return value;
 	throw new Error(`Unexpected access review campaign status: ${value}`);
+}
+
+function reviewerMode(value: string): AccessReviewReviewerMode {
+	if (value === 'organisation_manage' || value === 'assigned') return value;
+	throw new Error(`Unexpected access review reviewer mode: ${value}`);
 }
 
 function accessType(value: string): AccessReviewAccessType {
@@ -158,6 +171,7 @@ export class AccessReviewService {
 				'status',
 				'snapshot_at',
 				'due_at',
+				'reviewer_mode',
 				'opened_at',
 				'completed_at',
 				'cancelled_at'
@@ -185,11 +199,73 @@ export class AccessReviewService {
 		return campaigns.map((campaign) => this.mapCampaign(campaign, counts.get(campaign.id)));
 	}
 
+	async listAssignedCampaigns(actor: TenantActorContext): Promise<AccessReviewCampaignSummary[]> {
+		if (
+			(await this.memberActor(
+				this.db,
+				actor.organisationId,
+				actor.memberId,
+				actor.correlationId
+			)) === null
+		) {
+			throw new AccessReviewAuthorisationError();
+		}
+		const campaigns = await this.db
+			.selectFrom('access_review_campaigns as campaign')
+			.innerJoin('access_review_reviewer_assignments as assignment', (join) =>
+				join
+					.onRef('assignment.campaign_id', '=', 'campaign.id')
+					.onRef('assignment.organisation_id', '=', 'campaign.organisation_id')
+			)
+			.select([
+				'campaign.id as id',
+				'campaign.public_id as public_id',
+				'campaign.name as name',
+				'campaign.status as status',
+				'campaign.snapshot_at as snapshot_at',
+				'campaign.due_at as due_at',
+				'campaign.reviewer_mode as reviewer_mode',
+				'campaign.opened_at as opened_at',
+				'campaign.completed_at as completed_at',
+				'campaign.cancelled_at as cancelled_at'
+			])
+			.where('campaign.organisation_id', '=', actor.organisationId)
+			.where('assignment.reviewer_member_id', '=', actor.memberId)
+			.distinct()
+			.orderBy('campaign.opened_at', 'desc')
+			.execute();
+
+		const campaignIds = campaigns.map((campaign) => campaign.id);
+		const counts = new Map<string, { total: number; pending: number }>();
+		if (campaignIds.length > 0) {
+			const rows = await this.db
+				.selectFrom('access_review_items as item')
+				.innerJoin('access_review_reviewer_assignments as assignment', (join) =>
+					join
+						.onRef('assignment.campaign_id', '=', 'item.campaign_id')
+						.onRef('assignment.subject_member_id', '=', 'item.organisation_member_id')
+						.onRef('assignment.organisation_id', '=', 'item.organisation_id')
+				)
+				.select(['item.campaign_id as campaignId', 'item.decision as decision'])
+				.where('item.campaign_id', 'in', campaignIds)
+				.where('assignment.reviewer_member_id', '=', actor.memberId)
+				.where('assignment.organisation_id', '=', actor.organisationId)
+				.execute();
+			for (const row of rows) {
+				const current = counts.get(row.campaignId) ?? { total: 0, pending: 0 };
+				current.total += 1;
+				if (row.decision === null) current.pending += 1;
+				counts.set(row.campaignId, current);
+			}
+		}
+
+		return campaigns.map((campaign) => this.mapCampaign(campaign, counts.get(campaign.id)));
+	}
+
 	async loadCampaign(
 		actor: TenantActorContext,
 		campaignPublicId: string
 	): Promise<AccessReviewCampaignDetail> {
-		await this.requireManage(this.db, actor, new Date());
 		const campaign = await this.db
 			.selectFrom('access_review_campaigns')
 			.select([
@@ -199,6 +275,7 @@ export class AccessReviewService {
 				'status',
 				'snapshot_at',
 				'due_at',
+				'reviewer_mode',
 				'opened_at',
 				'completed_at',
 				'cancelled_at'
@@ -208,10 +285,36 @@ export class AccessReviewService {
 			.executeTakeFirst();
 		if (!campaign) throw new AccessReviewNotFoundError('Access review campaign not found.');
 
-		const items = await this.db
+		const mode = reviewerMode(campaign.reviewer_mode);
+		const canManage = await this.canManage(this.db, actor, new Date());
+		let visibleSubjectIds: string[] | null = null;
+		if (mode === 'organisation_manage') {
+			if (!canManage) {
+				throw new AccessReviewAuthorisationError(
+					'Organisation management authority is required to administer this access review.'
+				);
+			}
+		} else if (!canManage) {
+			const assignments = await this.db
+				.selectFrom('access_review_reviewer_assignments')
+				.select('subject_member_id')
+				.where('campaign_id', '=', campaign.id)
+				.where('organisation_id', '=', actor.organisationId)
+				.where('reviewer_member_id', '=', actor.memberId)
+				.execute();
+			visibleSubjectIds = assignments.map((assignment) => assignment.subject_member_id);
+			if (visibleSubjectIds.length === 0) {
+				throw new AccessReviewAuthorisationError(
+					'You are not assigned to review any subjects in this campaign.'
+				);
+			}
+		}
+
+		let itemQuery = this.db
 			.selectFrom('access_review_items')
 			.select([
 				'public_id',
+				'organisation_member_id',
 				'member_public_id',
 				'access_type',
 				'source_key',
@@ -229,13 +332,38 @@ export class AccessReviewService {
 				'decided_at',
 				'revocation_applied_at'
 			])
-			.where('campaign_id', '=', campaign.id)
+			.where('campaign_id', '=', campaign.id);
+		if (visibleSubjectIds !== null) {
+			itemQuery = itemQuery.where('organisation_member_id', 'in', visibleSubjectIds);
+		}
+		const items = await itemQuery
 			.orderBy('organisation_member_id', 'asc')
 			.orderBy('access_type', 'asc')
 			.orderBy('display_label', 'asc')
 			.execute();
-		const pendingItems = items.filter((item) => item.decision === null).length;
 
+		const reviewerBySubject = new Map<string, string>();
+		if (mode === 'assigned') {
+			const reviewerRows = await this.db
+				.selectFrom('access_review_reviewer_assignments as assignment')
+				.innerJoin('organisation_members as reviewer', (join) =>
+					join
+						.onRef('reviewer.id', '=', 'assignment.reviewer_member_id')
+						.onRef('reviewer.organisation_id', '=', 'assignment.organisation_id')
+				)
+				.select([
+					'assignment.subject_member_id as subjectMemberId',
+					'reviewer.public_id as reviewerMemberPublicId'
+				])
+				.where('assignment.campaign_id', '=', campaign.id)
+				.where('assignment.organisation_id', '=', actor.organisationId)
+				.execute();
+			for (const row of reviewerRows) {
+				reviewerBySubject.set(row.subjectMemberId, row.reviewerMemberPublicId);
+			}
+		}
+
+		const pendingItems = items.filter((item) => item.decision === null).length;
 		return {
 			campaign: this.mapCampaign(campaign, { total: items.length, pending: pendingItems }),
 			items: items.map((item) => ({
@@ -252,6 +380,7 @@ export class AccessReviewService {
 				effectiveFrom: item.effective_from,
 				expiresAt: item.expires_at,
 				sourceReason: item.source_reason,
+				reviewerMemberPublicId: reviewerBySubject.get(item.organisation_member_id) ?? null,
 				decision: reviewDecision(item.decision),
 				decisionReason: item.decision_reason,
 				decidedAt: item.decided_at,
@@ -262,10 +391,22 @@ export class AccessReviewService {
 
 	async openCampaign(
 		actor: TenantActorContext,
-		input: { name: string; dueAt?: Date | null }
+		input: {
+			name: string;
+			dueAt?: Date | null;
+			reviewerMode?: AccessReviewReviewerMode;
+			reviewerAssignments?: AccessReviewReviewerAssignmentInput[];
+		}
 	): Promise<string> {
 		const name = campaignName(input.name);
 		const dueAt = input.dueAt ?? null;
+		const mode = reviewerMode(input.reviewerMode ?? 'organisation_manage');
+		const reviewerAssignments = input.reviewerAssignments ?? [];
+		if (mode === 'organisation_manage' && reviewerAssignments.length > 0) {
+			throw new AccessReviewValidationError(
+				'Reviewer assignments may be supplied only for assigned-mode campaigns.'
+			);
+		}
 		const publicId = randomUUID();
 
 		await this.db.transaction().execute(async (trx) => {
@@ -286,6 +427,7 @@ export class AccessReviewService {
 						status: 'open',
 						snapshot_at: snapshotAt,
 						due_at: dueAt,
+						reviewer_mode: mode,
 						opened_by_member_id: actor.memberId,
 						opened_at: snapshotAt,
 						completed_at: null,
@@ -416,6 +558,28 @@ export class AccessReviewService {
 				await trx.insertInto('access_review_items').values(itemValues).execute();
 			}
 
+			const reviewerCount =
+				mode === 'assigned'
+					? await this.createReviewerAssignments(
+							trx,
+							actor,
+							campaignId,
+							reviewerAssignments,
+							[
+								...roleRows.map((row) => ({
+									memberId: row.memberId,
+									memberPublicId: row.memberPublicId
+								})),
+								...overrideRows.map((row) => ({
+									memberId: row.memberId,
+									memberPublicId: row.memberPublicId
+								}))
+							],
+							snapshotAt,
+							publicId
+						)
+					: 0;
+
 			await new AuditRepository(trx).append({
 				eventPublicId: randomUUID(),
 				actingOrganisationId: actor.organisationId,
@@ -429,6 +593,8 @@ export class AccessReviewService {
 					name,
 					snapshotAt: snapshotAt.toISOString(),
 					dueAt: dueAt?.toISOString() ?? null,
+					reviewerMode: mode,
+					reviewerCount,
 					itemCount: itemValues.length
 				}
 			});
@@ -450,10 +616,9 @@ export class AccessReviewService {
 
 		await this.db.transaction().execute(async (trx) => {
 			const now = new Date();
-			await this.requireManage(trx, actor, now);
 			const campaign = await trx
 				.selectFrom('access_review_campaigns')
-				.select(['id', 'public_id', 'status'])
+				.select(['id', 'public_id', 'status', 'reviewer_mode'])
 				.where('organisation_id', '=', actor.organisationId)
 				.where('public_id', '=', campaignPublicId)
 				.forUpdate()
@@ -485,6 +650,14 @@ export class AccessReviewService {
 				.forUpdate()
 				.executeTakeFirst();
 			if (!item) throw new AccessReviewNotFoundError('Access review item not found.');
+			await this.requireDecisionAuthority(
+				trx,
+				actor,
+				campaign.id,
+				reviewerMode(campaign.reviewer_mode),
+				item.organisation_member_id,
+				now
+			);
 			if (item.decision !== null) {
 				throw new AccessReviewValidationError('This access review item has already been decided.');
 			}
@@ -523,6 +696,7 @@ export class AccessReviewService {
 					stableRoleKey: item.stable_role_key,
 					permissionKey: item.permission_key,
 					permissionEffect: item.permission_effect,
+					reviewerMode: campaign.reviewer_mode,
 					decision: input.decision,
 					reason,
 					sourceExisted
@@ -622,6 +796,7 @@ export class AccessReviewService {
 			status: string;
 			snapshot_at: Date;
 			due_at: Date | null;
+			reviewer_mode: string;
 			opened_at: Date;
 			completed_at: Date | null;
 			cancelled_at: Date | null;
@@ -634,6 +809,7 @@ export class AccessReviewService {
 			status: campaignStatus(campaign.status),
 			snapshotAt: campaign.snapshot_at,
 			dueAt: campaign.due_at,
+			reviewerMode: reviewerMode(campaign.reviewer_mode),
 			openedAt: campaign.opened_at,
 			completedAt: campaign.completed_at,
 			cancelledAt: campaign.cancelled_at,
@@ -648,7 +824,176 @@ export class AccessReviewService {
 		at: Date
 	): Promise<void> {
 		const decision = await new PermissionService(db).decide(actor, 'organisation.manage', { at });
-		if (!decision.allowed) throw new AccessReviewAuthorisationError();
+		if (!decision.allowed) {
+			throw new AccessReviewAuthorisationError(
+				'Organisation management authority is required to administer access reviews.'
+			);
+		}
+	}
+
+	private async canManage(
+		db: DatabaseExecutor,
+		actor: TenantActorContext,
+		at: Date
+	): Promise<boolean> {
+		return (await new PermissionService(db).decide(actor, 'organisation.manage', { at })).allowed;
+	}
+
+	private async requireDecisionAuthority(
+		db: DatabaseExecutor,
+		actor: TenantActorContext,
+		campaignId: string,
+		mode: AccessReviewReviewerMode,
+		subjectMemberId: string,
+		at: Date
+	): Promise<void> {
+		if (mode === 'organisation_manage') {
+			await this.requireManage(db, actor, at);
+			return;
+		}
+		if (
+			(await this.memberActor(db, actor.organisationId, actor.memberId, actor.correlationId)) ===
+			null
+		) {
+			throw new AccessReviewAuthorisationError();
+		}
+		const assignment = await db
+			.selectFrom('access_review_reviewer_assignments')
+			.select('id')
+			.where('campaign_id', '=', campaignId)
+			.where('organisation_id', '=', actor.organisationId)
+			.where('subject_member_id', '=', subjectMemberId)
+			.where('reviewer_member_id', '=', actor.memberId)
+			.executeTakeFirst();
+		if (!assignment) {
+			throw new AccessReviewAuthorisationError(
+				'You are not the assigned reviewer for this access review subject.'
+			);
+		}
+	}
+
+	private async createReviewerAssignments(
+		db: DatabaseExecutor,
+		actor: TenantActorContext,
+		campaignId: string,
+		assignments: AccessReviewReviewerAssignmentInput[],
+		subjects: Array<{ memberId: string; memberPublicId: string }>,
+		assignedAt: Date,
+		campaignPublicId: string
+	): Promise<number> {
+		const subjectByPublicId = new Map<string, string>();
+		for (const subject of subjects) subjectByPublicId.set(subject.memberPublicId, subject.memberId);
+		if (subjectByPublicId.size === 0) {
+			if (assignments.length > 0) {
+				throw new AccessReviewValidationError('This review has no subjects to assign.');
+			}
+			return 0;
+		}
+
+		const assignmentBySubject = new Map<string, AccessReviewReviewerAssignmentInput>();
+		for (const assignment of assignments) {
+			if (!subjectByPublicId.has(assignment.subjectMemberPublicId)) {
+				throw new AccessReviewValidationError(
+					`Reviewer assignment references a member outside the review snapshot: ${assignment.subjectMemberPublicId}`
+				);
+			}
+			if (assignmentBySubject.has(assignment.subjectMemberPublicId)) {
+				throw new AccessReviewValidationError(
+					'Each reviewed member must have exactly one reviewer.'
+				);
+			}
+			assignmentBySubject.set(assignment.subjectMemberPublicId, assignment);
+		}
+		if (assignmentBySubject.size !== subjectByPublicId.size) {
+			throw new AccessReviewValidationError(
+				'Assigned-mode campaigns require exactly one reviewer for every reviewed member.'
+			);
+		}
+
+		const reviewerPublicIds = [
+			...new Set(assignments.map((assignment) => assignment.reviewerMemberPublicId))
+		];
+		const reviewerRows = await db
+			.selectFrom('organisation_members')
+			.select(['id', 'public_id', 'status'])
+			.where('organisation_id', '=', actor.organisationId)
+			.where('public_id', 'in', reviewerPublicIds)
+			.execute();
+		const reviewerByPublicId = new Map(
+			reviewerRows.map((reviewer) => [reviewer.public_id, reviewer])
+		);
+		if (reviewerRows.length !== reviewerPublicIds.length) {
+			throw new AccessReviewValidationError('Every reviewer must belong to this organisation.');
+		}
+
+		const values: Array<{
+			public_id: string;
+			campaign_id: string;
+			organisation_id: string;
+			subject_member_id: string;
+			reviewer_member_id: string;
+			assigned_by_member_id: string;
+			assigned_at: Date;
+			subjectPublicId: string;
+			reviewerPublicId: string;
+		}> = [];
+		for (const [subjectPublicId, subjectMemberId] of subjectByPublicId) {
+			const input = assignmentBySubject.get(subjectPublicId);
+			if (!input) throw new Error('Expected reviewer assignment coverage.');
+			const reviewer = reviewerByPublicId.get(input.reviewerMemberPublicId);
+			if (!reviewer || reviewer.status !== 'active') {
+				throw new AccessReviewValidationError(
+					'Every reviewer must be an active organisation member.'
+				);
+			}
+			if (reviewer.id === subjectMemberId) {
+				throw new AccessReviewValidationError('Members cannot attest their own access.');
+			}
+			values.push({
+				public_id: randomUUID(),
+				campaign_id: campaignId,
+				organisation_id: actor.organisationId,
+				subject_member_id: subjectMemberId,
+				reviewer_member_id: reviewer.id,
+				assigned_by_member_id: actor.memberId,
+				assigned_at: assignedAt,
+				subjectPublicId,
+				reviewerPublicId: reviewer.public_id
+			});
+		}
+
+		await db
+			.insertInto('access_review_reviewer_assignments')
+			.values(
+				values.map((value) => ({
+					public_id: value.public_id,
+					campaign_id: value.campaign_id,
+					organisation_id: value.organisation_id,
+					subject_member_id: value.subject_member_id,
+					reviewer_member_id: value.reviewer_member_id,
+					assigned_by_member_id: value.assigned_by_member_id,
+					assigned_at: value.assigned_at
+				}))
+			)
+			.execute();
+		for (const value of values) {
+			await new AuditRepository(db).append({
+				eventPublicId: randomUUID(),
+				actingOrganisationId: actor.organisationId,
+				actorUserId: actor.userId,
+				actorMemberId: actor.memberId,
+				actionKey: 'organisation.access-review.reviewer.assigned',
+				subjectType: 'access_review_reviewer_assignment',
+				subjectPublicId: value.public_id,
+				correlationId: actor.correlationId,
+				changeSummary: {
+					campaignPublicId,
+					subjectMemberPublicId: value.subjectPublicId,
+					reviewerMemberPublicId: value.reviewerPublicId
+				}
+			});
+		}
+		return values.length;
 	}
 
 	private async revokeSource(

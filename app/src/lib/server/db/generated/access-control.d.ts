@@ -20,6 +20,7 @@ export interface AccessReviewCampaigns {
   opened_by_member_id: string;
   organisation_id: string;
   public_id: string;
+  reviewer_mode: Generated<string>;
   snapshot_at: Date;
   status: Generated<string>;
   updated_at: Generated<Date>;
@@ -51,6 +52,18 @@ export interface AccessReviewItems {
   source_key: string;
   source_reason: string | null;
   stable_role_key: string | null;
+}
+
+export interface AccessReviewReviewerAssignments {
+  assigned_at: Date;
+  assigned_by_member_id: string;
+  campaign_id: string;
+  created_at: Generated<Date>;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  reviewer_member_id: string;
+  subject_member_id: string;
 }
 
 export interface MemberPermissionOverrideAccessWindows {
@@ -112,6 +125,7 @@ export interface OrganisationRoleTemplateBindings {
 export interface DB {
   access_review_campaigns: AccessReviewCampaigns;
   access_review_items: AccessReviewItems;
+  access_review_reviewer_assignments: AccessReviewReviewerAssignments;
   member_permission_override_access_windows: MemberPermissionOverrideAccessWindows;
   member_role_access_windows: MemberRoleAccessWindows;
   organisation_delegation_permission_grants: OrganisationDelegationPermissionGrants;
