@@ -8,7 +8,8 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { getEmailDelivery, type EmailDelivery } from '$lib/server/email/email-delivery';
 import {
 	accessConflictViolationMessage,
-	evaluateMemberAccessConflicts
+	evaluateMemberAccessConflicts,
+	listMemberAccessConflictEvaluationInstants
 } from './access-conflict-policy';
 import { OrganisationInvitationService, type InvitationSummary } from './invitation-service';
 import {
@@ -326,6 +327,11 @@ export class OrganisationAdminService {
 				throw new OrganisationAdminValidationError('A role with this name already exists.');
 			}
 			const currentRole = currentRoles.find((candidate) => candidate.publicId === role.publicId);
+			const addedPermissionKeys = permissionKeys.filter(
+				(permissionKey) => !currentRole?.permissionKeys.includes(permissionKey)
+			);
+			const accessMayIncrease =
+				input.isActive && (!role.isActive || addedPermissionKeys.length > 0);
 			const couldRemoveManagerGrant =
 				role.isActive &&
 				Boolean(currentRole?.permissionKeys.includes('organisation.manage')) &&
@@ -355,6 +361,25 @@ export class OrganisationAdminService {
 				isActive: input.isActive
 			});
 			await repository.replaceRolePermissions(actor.organisationId, role.id, permissionIds);
+
+			if (accessMayIncrease) {
+				const affectedMembers = await repository.listActiveMembersAssignedToRole(
+					actor.organisationId,
+					role.id
+				);
+				for (const member of affectedMembers) {
+					const memberActor = {
+						organisationId: actor.organisationId,
+						userId: member.userId,
+						memberId: member.id,
+						correlationId: actor.correlationId
+					};
+					const instants = await listMemberAccessConflictEvaluationInstants(trx, memberActor);
+					for (const at of instants) {
+						await this.requireNoAccessConflicts(trx, actor, member, at);
+					}
+				}
+			}
 
 			if (couldRemoveManagerGrant) await this.requireActiveOrganisationManager(trx, actor);
 

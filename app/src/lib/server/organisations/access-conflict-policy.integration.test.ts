@@ -28,7 +28,10 @@ let financeRoleId: string;
 let financeRolePublicId: string;
 let customManagerRoleId: string;
 let customManagerRolePublicId: string;
+let customFinanceRoleId: string;
+let customFinanceRolePublicId: string;
 let organisationManagePermissionId: string;
+let financeManagePermissionId: string;
 
 function insertedId(result: { insertId?: bigint }): string {
 	if (result.insertId === undefined) throw new Error('Expected an AUTO_INCREMENT insert ID.');
@@ -108,6 +111,19 @@ async function resetTargetAccess(): Promise<void> {
 		.where('organisation_id', '=', organisationId)
 		.where('organisation_member_id', '=', targetMemberId)
 		.execute();
+	if (customFinanceRoleId) {
+		await db
+			.deleteFrom('role_permissions')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_role_id', '=', customFinanceRoleId)
+			.execute();
+		await db
+			.updateTable('organisation_roles')
+			.set({ is_active: 1 })
+			.where('organisation_id', '=', organisationId)
+			.where('id', '=', customFinanceRoleId)
+			.execute();
+	}
 	await db.deleteFrom('outbox_events').where('organisation_id', '=', organisationId).execute();
 	await db
 		.deleteFrom('audit_events')
@@ -150,6 +166,13 @@ async function createFixture(): Promise<void> {
 			.where('permission_key', '=', 'organisation.manage')
 			.executeTakeFirstOrThrow()
 	).id;
+	financeManagePermissionId = (
+		await db
+			.selectFrom('permissions')
+			.select('id')
+			.where('permission_key', '=', 'finance.manage')
+			.executeTakeFirstOrThrow()
+	).id;
 
 	organisationId = insertedId(
 		await db
@@ -175,6 +198,9 @@ async function createFixture(): Promise<void> {
 	const customManagerRole = await createRole(`${PREFIX}Custom Manager`);
 	customManagerRoleId = customManagerRole.id;
 	customManagerRolePublicId = customManagerRole.publicId;
+	const customFinanceRole = await createRole(`${PREFIX}Custom Finance`);
+	customFinanceRoleId = customFinanceRole.id;
+	customFinanceRolePublicId = customFinanceRole.publicId;
 
 	await ensureStandardAccessRoleBindings(db, organisationId);
 	await db
@@ -184,6 +210,11 @@ async function createFixture(): Promise<void> {
 				organisation_id: organisationId,
 				organisation_role_id: ownerRoleId,
 				permission_id: organisationManagePermissionId
+			},
+			{
+				organisation_id: organisationId,
+				organisation_role_id: ownerRoleId,
+				permission_id: financeManagePermissionId
 			},
 			{
 				organisation_id: organisationId,
@@ -277,6 +308,110 @@ describe('system access conflict policies', () => {
 				effectiveFrom
 			})
 		).rejects.toBeInstanceOf(MemberPermissionOverrideValidationError);
+	});
+
+	it('rolls back an access-increasing role definition that would make an existing assignee toxic', async () => {
+		const admin = new OrganisationAdminService(db);
+		await admin.replaceMemberRoles(actor(), targetMemberPublicId, [
+			readOnlyRolePublicId,
+			customFinanceRolePublicId
+		]);
+
+		await expect(
+			admin.updateRole(actor(), {
+				rolePublicId: customFinanceRolePublicId,
+				name: `${PREFIX}Custom Finance`,
+				description: null,
+				isActive: true,
+				permissionKeys: ['finance.manage']
+			})
+		).rejects.toBeInstanceOf(OrganisationAdminValidationError);
+
+		const grants = await db
+			.selectFrom('role_permissions')
+			.select('permission_id')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_role_id', '=', customFinanceRoleId)
+			.execute();
+		expect(grants).toEqual([]);
+	});
+
+	it('rejects a role definition that would become toxic when a scheduled role activates', async () => {
+		const admin = new OrganisationAdminService(db);
+		await admin.replaceMemberRoles(actor(), targetMemberPublicId, [
+			readOnlyRolePublicId,
+			customFinanceRolePublicId
+		]);
+		const effectiveFrom = new Date(Date.now() + 60 * 60 * 1000);
+		await db
+			.insertInto('member_role_access_windows')
+			.values({
+				organisation_id: organisationId,
+				organisation_member_id: targetMemberId,
+				organisation_role_id: readOnlyRoleId,
+				effective_from: effectiveFrom,
+				expires_at: null,
+				reason: 'Scheduled Read Only posture'
+			})
+			.execute();
+
+		await expect(
+			admin.updateRole(actor(), {
+				rolePublicId: customFinanceRolePublicId,
+				name: `${PREFIX}Custom Finance`,
+				description: null,
+				isActive: true,
+				permissionKeys: ['finance.manage']
+			})
+		).rejects.toBeInstanceOf(OrganisationAdminValidationError);
+	});
+
+	it('rejects a role definition that would become toxic when a temporary deny expires', async () => {
+		const admin = new OrganisationAdminService(db);
+		await admin.replaceMemberRoles(actor(), targetMemberPublicId, [
+			readOnlyRolePublicId,
+			customFinanceRolePublicId
+		]);
+		const expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+		await new MemberPermissionOverrideService(db).setOverride(actor(), {
+			memberPublicId: targetMemberPublicId,
+			permissionKey: 'finance.manage',
+			effect: 'deny',
+			reason: 'Temporary conflict suppression',
+			expiresAt
+		});
+
+		await expect(
+			admin.updateRole(actor(), {
+				rolePublicId: customFinanceRolePublicId,
+				name: `${PREFIX}Custom Finance`,
+				description: null,
+				isActive: true,
+				permissionKeys: ['finance.manage']
+			})
+		).rejects.toBeInstanceOf(OrganisationAdminValidationError);
+	});
+
+	it('allows a legitimate access increase when no assignee conflict exists', async () => {
+		const admin = new OrganisationAdminService(db);
+		await admin.replaceMemberRoles(actor(), targetMemberPublicId, [customFinanceRolePublicId]);
+
+		await admin.updateRole(actor(), {
+			rolePublicId: customFinanceRolePublicId,
+			name: `${PREFIX}Custom Finance`,
+			description: 'Finance administration without Read Only',
+			isActive: true,
+			permissionKeys: ['finance.manage']
+		});
+
+		const grant = await db
+			.selectFrom('role_permissions')
+			.select('permission_id')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_role_id', '=', customFinanceRoleId)
+			.where('permission_id', '=', financeManagePermissionId)
+			.executeTakeFirstOrThrow();
+		expect(grant.permission_id).toBe(financeManagePermissionId);
 	});
 
 	it('allows a deny to neutralise a custom grant but blocks removing the deny when toxicity would reappear', async () => {

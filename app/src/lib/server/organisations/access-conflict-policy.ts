@@ -135,6 +135,40 @@ export async function evaluateMemberAccessConflicts(
 	);
 }
 
+export async function listMemberAccessConflictEvaluationInstants(
+	db: DatabaseExecutor,
+	actor: TenantActorContext,
+	now = new Date()
+): Promise<Date[]> {
+	const [roleWindows, overrideWindows] = await Promise.all([
+		db
+			.selectFrom('member_role_access_windows')
+			.select(['effective_from', 'expires_at'])
+			.where('organisation_id', '=', actor.organisationId)
+			.where('organisation_member_id', '=', actor.memberId)
+			.execute(),
+		db
+			.selectFrom('member_permission_override_access_windows')
+			.select(['effective_from', 'expires_at'])
+			.where('organisation_id', '=', actor.organisationId)
+			.where('organisation_member_id', '=', actor.memberId)
+			.execute()
+	]);
+
+	const instants = new Map<number, Date>([[now.getTime(), now]]);
+	const addInstant = (value: Date | null) => {
+		if (value !== null && value.getTime() >= now.getTime()) {
+			instants.set(value.getTime(), value);
+		}
+	};
+	for (const window of [...roleWindows, ...overrideWindows]) {
+		addInstant(window.effective_from);
+		addInstant(window.expires_at);
+	}
+
+	return [...instants.values()].sort((left, right) => left.getTime() - right.getTime());
+}
+
 export function accessConflictViolationMessage(
 	violations: readonly AccessConflictViolation[]
 ): string {

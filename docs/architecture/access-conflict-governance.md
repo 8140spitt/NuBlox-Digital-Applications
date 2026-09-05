@@ -61,6 +61,8 @@ Member permission overrides are evaluated after the proposed override is written
 
 Reactivating a member is checked before the status transition commits, preventing dormant legacy assignments from becoming active if they violate current policy.
 
+Access-increasing role-definition changes are also evaluated transactionally against every active assignee of the role. Evaluation includes the current instant plus persisted future role-assignment and permission-override lifecycle boundaries for each affected member, so a role edit cannot create toxicity at a scheduled activation or when a temporary deny expires. Access-reducing role edits are not blocked by unrelated pre-existing conflict state. Member-role replacement locks selected role rows, serialising ordinary assignment changes with concurrent role-definition mutation.
+
 ## Precedence example
 
 A member may hold `read-only` and a custom role containing `organisation.manage` only while an effective explicit deny for `organisation.manage` neutralises that grant. Removing the deny is rejected because the resulting effective access would violate `read-only.permission.organisation-manage`.

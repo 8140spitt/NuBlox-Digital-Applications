@@ -320,6 +320,24 @@ export class OrganisationAdminRepository {
 			.execute();
 	}
 
+	async listActiveMembersAssignedToRole(
+		organisationId: string,
+		roleId: string
+	): Promise<Array<{ id: string; userId: string }>> {
+		return this.db
+			.selectFrom('member_roles as assignment')
+			.innerJoin('organisation_members as member', (join) =>
+				join
+					.onRef('member.id', '=', 'assignment.organisation_member_id')
+					.onRef('member.organisation_id', '=', 'assignment.organisation_id')
+			)
+			.select(['member.id as id', 'member.user_id as userId'])
+			.where('assignment.organisation_id', '=', organisationId)
+			.where('assignment.organisation_role_id', '=', roleId)
+			.where('member.status', '=', 'active')
+			.execute();
+	}
+
 	async updateMemberStatus(
 		organisationId: string,
 		memberId: string,
@@ -353,6 +371,7 @@ export class OrganisationAdminRepository {
 			.where('organisation_id', '=', organisationId)
 			.where('public_id', 'in', [...rolePublicIds])
 			.where('is_active', '=', 1)
+			.forUpdate()
 			.execute();
 		return rows.map((row) => row.id);
 	}
