@@ -18,8 +18,13 @@ let ownerMemberId: string;
 let ownerMemberPublicId: string;
 let adminUserId: string;
 let adminMemberId: string;
+let adminMemberPublicId: string;
 let workerUserId: string;
 let workerMemberId: string;
+let workerMemberPublicId: string;
+let reviewerUserId: string;
+let reviewerMemberId: string;
+let reviewerMemberPublicId: string;
 let ownerRoleId: string;
 let ownerRolePublicId: string;
 let adminRoleId: string;
@@ -108,7 +113,7 @@ async function cleanup(): Promise<void> {
 			.execute();
 		await db.deleteFrom('organisations').where('id', '=', organisationId).execute();
 	}
-	const userIds = [ownerUserId, adminUserId, workerUserId].filter(Boolean);
+	const userIds = [ownerUserId, adminUserId, workerUserId, reviewerUserId].filter(Boolean);
 	if (userIds.length > 0) await db.deleteFrom('users').where('id', 'in', userIds).execute();
 }
 
@@ -200,11 +205,19 @@ async function createFixture(): Promise<void> {
 	ownerUserId = await createUser('Owner');
 	adminUserId = await createUser('Administrator');
 	workerUserId = await createUser('Worker');
+	reviewerUserId = await createUser('Independent reviewer');
 	const ownerMember = await createMember(ownerUserId);
 	ownerMemberId = ownerMember.id;
 	ownerMemberPublicId = ownerMember.publicId;
-	adminMemberId = (await createMember(adminUserId)).id;
-	workerMemberId = (await createMember(workerUserId)).id;
+	const adminMember = await createMember(adminUserId);
+	adminMemberId = adminMember.id;
+	adminMemberPublicId = adminMember.publicId;
+	const workerMember = await createMember(workerUserId);
+	workerMemberId = workerMember.id;
+	workerMemberPublicId = workerMember.publicId;
+	const reviewerMember = await createMember(reviewerUserId);
+	reviewerMemberId = reviewerMember.id;
+	reviewerMemberPublicId = reviewerMember.publicId;
 
 	ownerRolePublicId = randomUUID();
 	ownerRoleId = insertedId(
@@ -279,6 +292,23 @@ async function createFixture(): Promise<void> {
 		])
 		.execute();
 	await resetAccessState();
+}
+
+function assignedReviewerInputs() {
+	return [
+		{
+			subjectMemberPublicId: ownerMemberPublicId,
+			reviewerMemberPublicId: adminMemberPublicId
+		},
+		{
+			subjectMemberPublicId: adminMemberPublicId,
+			reviewerMemberPublicId: ownerMemberPublicId
+		},
+		{
+			subjectMemberPublicId: workerMemberPublicId,
+			reviewerMemberPublicId
+		}
+	];
 }
 
 describe('organisation access review and attestation', () => {
@@ -448,4 +478,98 @@ describe('organisation access review and attestation', () => {
 		expect(completed.campaign.pendingItems).toBe(0);
 		expect(completed.campaign.completedAt).toBeInstanceOf(Date);
 	});
+	it('requires complete independent reviewer coverage for assigned-mode campaigns', async () => {
+		const service = new AccessReviewService(db);
+		const adminActor = actor(adminUserId, adminMemberId);
+		await expect(
+			service.openCampaign(adminActor, {
+				name: 'Incomplete assigned review',
+				reviewerMode: 'assigned',
+				reviewerAssignments: assignedReviewerInputs().slice(0, 2)
+			})
+		).rejects.toBeInstanceOf(AccessReviewValidationError);
+
+		await expect(
+			service.openCampaign(adminActor, {
+				name: 'Self review attempt',
+				reviewerMode: 'assigned',
+				reviewerAssignments: assignedReviewerInputs().map((assignment) =>
+					assignment.subjectMemberPublicId === workerMemberPublicId
+						? { ...assignment, reviewerMemberPublicId: workerMemberPublicId }
+						: assignment
+				)
+			})
+		).rejects.toBeInstanceOf(AccessReviewValidationError);
+	});
+
+	it('lets only the assigned independent reviewer attest a scoped subject', async () => {
+		const service = new AccessReviewService(db);
+		const adminActor = actor(adminUserId, adminMemberId);
+		const reviewerActor = actor(reviewerUserId, reviewerMemberId);
+		const campaignPublicId = await service.openCampaign(adminActor, {
+			name: 'Independent assigned review',
+			reviewerMode: 'assigned',
+			reviewerAssignments: assignedReviewerInputs()
+		});
+
+		const assignedCampaigns = await service.listAssignedCampaigns(reviewerActor);
+		expect(assignedCampaigns).toHaveLength(1);
+		expect(assignedCampaigns[0]?.publicId).toBe(campaignPublicId);
+		expect(assignedCampaigns[0]?.reviewerMode).toBe('assigned');
+		expect(assignedCampaigns[0]?.totalItems).toBe(3);
+
+		const reviewerDetail = await service.loadCampaign(reviewerActor, campaignPublicId);
+		expect(reviewerDetail.campaign.totalItems).toBe(3);
+		expect(reviewerDetail.items.every((item) => item.memberPublicId === workerMemberPublicId)).toBe(true);
+		expect(
+			reviewerDetail.items.every((item) => item.reviewerMemberPublicId === reviewerMemberPublicId)
+		).toBe(true);
+		const elevatedItem = reviewerDetail.items.find((item) => item.rolePublicId === elevatedRolePublicId);
+		if (!elevatedItem) throw new Error('Expected assigned elevated-role review item.');
+
+		await expect(
+			service.decideItem(adminActor, campaignPublicId, elevatedItem.publicId, { decision: 'certify' })
+		).rejects.toBeInstanceOf(AccessReviewAuthorisationError);
+
+		await service.decideItem(reviewerActor, campaignPublicId, elevatedItem.publicId, {
+			decision: 'certify'
+		});
+		const decision = await db
+			.selectFrom('access_review_items')
+			.select(['decision', 'decided_by_member_id'])
+			.where('public_id', '=', elevatedItem.publicId)
+			.executeTakeFirstOrThrow();
+		expect(decision.decision).toBe('certify');
+		expect(decision.decided_by_member_id).toBe(reviewerMemberId);
+	});
+
+	it('keeps the Owner revocation boundary inside assigned reviewer campaigns', async () => {
+		const service = new AccessReviewService(db);
+		const adminActor = actor(adminUserId, adminMemberId);
+		const campaignPublicId = await service.openCampaign(adminActor, {
+			name: 'Assigned Owner boundary review',
+			reviewerMode: 'assigned',
+			reviewerAssignments: assignedReviewerInputs()
+		});
+		const detail = await service.loadCampaign(adminActor, campaignPublicId);
+		const ownerItem = detail.items.find((item) => item.rolePublicId === ownerRolePublicId);
+		if (!ownerItem) throw new Error('Expected Owner review item.');
+
+		await expect(
+			service.decideItem(adminActor, campaignPublicId, ownerItem.publicId, {
+				decision: 'revoke',
+				reason: 'Assigned reviewer is still not an Owner.'
+			})
+		).rejects.toBeInstanceOf(AccessReviewAuthorisationError);
+
+		const assignment = await db
+			.selectFrom('member_roles')
+			.select('organisation_role_id')
+			.where('organisation_id', '=', organisationId)
+			.where('organisation_member_id', '=', ownerMemberId)
+			.where('organisation_role_id', '=', ownerRoleId)
+			.executeTakeFirst();
+		expect(assignment).toBeTruthy();
+	});
+
 });

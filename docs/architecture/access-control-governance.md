@@ -144,7 +144,7 @@ Periodic access review is represented by normalized review campaigns and immutab
 - campaigns may be completed only when every snapshotted item has been certified or revoked;
 - cancelled campaigns retain their snapshot and any decisions already made.
 
-The initial organisation-level review authority is `organisation.manage`. This deliberately avoids creating a second reviewer-permission hierarchy before delegated reviewer scope is designed. A future reviewer model may add manager/project/value boundaries without changing the snapshot or decision evidence model.
+Campaign administration remains governed by `organisation.manage`, but campaigns now support two reviewer modes. `organisation_manage` preserves the original manager-attestation behaviour. `assigned` mode records exactly one active same-organisation reviewer for every reviewed member in `access_review_reviewer_assignments`; self-attestation is prohibited. In assigned mode, `organisation.manage` does not bypass the recorded reviewer for item decisions. Reviewer assignment grants attestation authority for that campaign subject only and never grants runtime permissions. Managers retain full campaign visibility and terminal administration, while non-manager reviewers can see and decide only the subjects assigned to them.
 
 Review-driven revocation is subject to the same security invariants as ordinary administration:
 
@@ -170,12 +170,12 @@ The following actions require append-oriented audit evidence with organisation, 
 - ownership-sensitive membership changes;
 - standard access-role template binding or template-version changes;
 - delegated-authority policy creation/update and removal, including stable-role keys, permission ceiling and effective/expiry bounds;
-- access-review campaign opening, item decisions, completion and cancellation.
+- access-review campaign opening, reviewer assignment, item decisions, completion and cancellation.
 
 Audit evidence is not a substitute for current-state relational integrity, and current-state tables are not a substitute for immutable audit evidence.
 
 ## 9. Governance direction
 
-With stable role identity, lifecycle enforcement, SoD controls, organisation-level attestation and Owner-governed delegation ceilings established, the next access-control evolution should focus on delegated authority by project/value/domain scope, reviewer independence/scoping, and explicit audit evidence for automatic standard-role binding/reconciliation.
+With stable role identity, lifecycle enforcement, SoD controls, independent scoped attestation and Owner-governed delegation ceilings established, the next access-control evolution should focus on delegated authority by project/value/domain scope, access-policy decision evidence, and explicit audit evidence for automatic standard-role binding/reconciliation.
 
 Organisation positions may carry recommended access templates in future, but activation must remain an explicit, auditable access-control decision.
