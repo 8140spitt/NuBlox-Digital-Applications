@@ -1,0 +1,110 @@
+name: Patch AP Accounting Date Drift
+
+on:
+  push:
+    branches:
+      - fix/ap-accounting-period-date-drift
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/ap-accounting-period-date-drift
+
+      - name: Pin AP integration accounting dates
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/src/lib/server/finance/accounts-payable.integration.test.ts')
+          text = path.read_text()
+
+          first_marker = "\tit('matches a supplier invoice to issued PO and accepted receipt facts and enforces maker/checker approval', async () => {"
+          settlement_marker = "\tit('settles a posted AP liability through governed supplier payment, accounting and additive reversal', async () => {"
+          bank_marker = "\tit('requires active bank settlement evidence before hard close and freezes that evidence after close', async () => {"
+
+          for marker in (first_marker, settlement_marker, bank_marker):
+              if marker not in text:
+                  raise SystemExit(f'Expected test marker not found: {marker}')
+
+          generic = {
+              'accounts_payable_invoice_approval': (
+                  "\t\t\tsourceType: 'accounts_payable_invoice_approval',\n\t\t\tsourcePublicId: documentPublicId\n",
+              ),
+              'supplier_payment_execution': (
+                  "\t\t\tsourceType: 'supplier_payment_execution',\n\t\t\tsourcePublicId: paymentPublicId\n",
+              ),
+              'supplier_payment_reversal': (
+                  "\t\t\tsourceType: 'supplier_payment_reversal',\n\t\t\tsourcePublicId: paymentPublicId\n",
+              )
+          }
+
+          def patch_section(source, start_marker, end_marker, dates):
+              start = source.index(start_marker)
+              end = source.index(end_marker, start) if end_marker else len(source)
+              section = source[start:end]
+              for source_type, accounting_date in dates.items():
+                  old = generic[source_type][0]
+                  count = section.count(old)
+                  if count == 0:
+                      raise SystemExit(f'Expected {source_type} postSource call not found in section {start_marker}')
+                  new = old.replace(
+                      "\n\t\t\tsourcePublicId:",
+                      "\n\t\t\tsourcePublicId:"
+                  ).replace(
+                      "\n\t\t});" if False else "__never__",
+                      "__never__"
+                  )
+                  # Add accountingDate after the sourcePublicId line while preserving existing formatting.
+                  old_tail = old.rsplit('\n', 1)[0]
+                  new = old_tail + f",\n\t\t\taccountingDate: '{accounting_date}'\n"
+                  section = section.replace(old, new)
+              return source[:start] + section + source[end:]
+
+          # The first AP test contains both the primary post and duplicate-post assertion.
+          text = patch_section(
+              text,
+              first_marker,
+              settlement_marker,
+              {'accounts_payable_invoice_approval': '2026-08-21'}
+          )
+          text = patch_section(
+              text,
+              settlement_marker,
+              bank_marker,
+              {
+                  'accounts_payable_invoice_approval': '2026-08-21',
+                  'supplier_payment_execution': '2026-08-25',
+                  'supplier_payment_reversal': '2026-08-25'
+              }
+          )
+          text = patch_section(
+              text,
+              bank_marker,
+              None,
+              {
+                  'accounts_payable_invoice_approval': '2026-09-15',
+                  'supplier_payment_execution': '2026-09-15'
+              }
+          )
+
+          path.write_text(text)
+          PY
+
+      - name: Commit deterministic accounting dates
+        run: |
+          if git diff --quiet; then
+            echo "No patch produced"
+            exit 1
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/lib/server/finance/accounts-payable.integration.test.ts
+          git commit -m "Make AP accounting integration dates deterministic"
+          git push origin HEAD:fix/ap-accounting-period-date-drift
