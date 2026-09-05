@@ -1,0 +1,311 @@
+name: Implement role definition SoD safeguards fixed
+
+on:
+  push:
+    branches:
+      - rbac/role-definition-sod
+
+permissions:
+  contents: write
+
+jobs:
+  implement:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: rbac/role-definition-sod
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Apply safeguards
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          conflict = Path('app/src/lib/server/organisations/access-conflict-policy.ts')
+          text = conflict.read_text()
+          marker = "export function accessConflictViolationMessage(\n"
+          helper = '''export async function listMemberAccessConflictEvaluationInstants(
+\tdb: DatabaseExecutor,
+\tactor: TenantActorContext,
+\tnow = new Date()
+): Promise<Date[]> {
+\tconst [roleWindows, overrideWindows] = await Promise.all([
+\t\tdb
+\t\t\t.selectFrom('member_role_access_windows')
+\t\t\t.select(['effective_from', 'expires_at'])
+\t\t\t.where('organisation_id', '=', actor.organisationId)
+\t\t\t.where('organisation_member_id', '=', actor.memberId)
+\t\t\t.execute(),
+\t\tdb
+\t\t\t.selectFrom('member_permission_override_access_windows')
+\t\t\t.select(['effective_from', 'expires_at'])
+\t\t\t.where('organisation_id', '=', actor.organisationId)
+\t\t\t.where('organisation_member_id', '=', actor.memberId)
+\t\t\t.execute()
+\t]);
+
+\tconst instants = new Map<number, Date>([[now.getTime(), now]]);
+\tconst addInstant = (value: Date | null) => {
+\t\tif (value !== null && value.getTime() >= now.getTime()) {
+\t\t\tinstants.set(value.getTime(), value);
+\t\t}
+\t};
+\tfor (const window of [...roleWindows, ...overrideWindows]) {
+\t\taddInstant(window.effective_from);
+\t\taddInstant(window.expires_at);
+\t}
+
+\treturn [...instants.values()].sort((left, right) => left.getTime() - right.getTime());
+}
+
+'''
+          if 'listMemberAccessConflictEvaluationInstants' not in text:
+              if marker not in text:
+                  raise SystemExit('access conflict insertion marker not found')
+              text = text.replace(marker, helper + marker, 1)
+          conflict.write_text(text)
+
+          repository = Path('app/src/lib/server/organisations/organisation-admin-repository.ts')
+          text = repository.read_text()
+          marker = "\n\tasync updateMemberStatus(\n"
+          method = '''
+\tasync listActiveMembersAssignedToRole(
+\t\torganisationId: string,
+\t\troleId: string
+\t): Promise<Array<{ id: string; userId: string }>> {
+\t\treturn this.db
+\t\t\t.selectFrom('member_roles as assignment')
+\t\t\t.innerJoin('organisation_members as member', (join) =>
+\t\t\t\tjoin
+\t\t\t\t\t.onRef('member.id', '=', 'assignment.organisation_member_id')
+\t\t\t\t\t.onRef('member.organisation_id', '=', 'assignment.organisation_id')
+\t\t\t)
+\t\t\t.select(['member.id as id', 'member.user_id as userId'])
+\t\t\t.where('assignment.organisation_id', '=', organisationId)
+\t\t\t.where('assignment.organisation_role_id', '=', roleId)
+\t\t\t.where('member.status', '=', 'active')
+\t\t\t.execute();
+\t}
+'''
+          if 'listActiveMembersAssignedToRole' not in text:
+              if marker not in text:
+                  raise SystemExit('repository member insertion marker not found')
+              text = text.replace(marker, method + marker, 1)
+
+          old = "\t\t\t.where('is_active', '=', 1)\n\t\t\t.execute();\n\t\treturn rows.map((row) => row.id);\n\t}\n\n\tasync replaceMemberRoles("
+          new = "\t\t\t.where('is_active', '=', 1)\n\t\t\t.forUpdate()\n\t\t\t.execute();\n\t\treturn rows.map((row) => row.id);\n\t}\n\n\tasync replaceMemberRoles("
+          segment = text[text.find('async findActiveRoleIdsByPublicIds'):text.find('async replaceMemberRoles')]
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif '.forUpdate()' not in segment:
+              raise SystemExit('role lock replacement marker not found')
+          repository.write_text(text)
+
+          service = Path('app/src/lib/server/organisations/organisation-admin-service.ts')
+          text = service.read_text()
+          old = "\taccessConflictViolationMessage,\n\tevaluateMemberAccessConflicts\n} from './access-conflict-policy';"
+          new = "\taccessConflictViolationMessage,\n\tevaluateMemberAccessConflicts,\n\tlistMemberAccessConflictEvaluationInstants\n} from './access-conflict-policy';"
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'listMemberAccessConflictEvaluationInstants' not in text:
+              raise SystemExit('service import marker not found')
+
+          old = "\t\t\tconst currentRole = currentRoles.find((candidate) => candidate.publicId === role.publicId);\n\t\t\tconst couldRemoveManagerGrant ="
+          new = "\t\t\tconst currentRole = currentRoles.find((candidate) => candidate.publicId === role.publicId);\n\t\t\tconst addedPermissionKeys = permissionKeys.filter(\n\t\t\t\t(permissionKey) => !currentRole?.permissionKeys.includes(permissionKey)\n\t\t\t);\n\t\t\tconst accessMayIncrease =\n\t\t\t\tinput.isActive && (!role.isActive || addedPermissionKeys.length > 0);\n\t\t\tconst couldRemoveManagerGrant ="
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'const accessMayIncrease =' not in text:
+              raise SystemExit('service access increase marker not found')
+
+          old = "\t\t\tawait repository.replaceRolePermissions(actor.organisationId, role.id, permissionIds);\n\n\t\t\tif (couldRemoveManagerGrant) await this.requireActiveOrganisationManager(trx, actor);"
+          new = "\t\t\tawait repository.replaceRolePermissions(actor.organisationId, role.id, permissionIds);\n\n\t\t\tif (accessMayIncrease) {\n\t\t\t\tconst affectedMembers = await repository.listActiveMembersAssignedToRole(\n\t\t\t\t\tactor.organisationId,\n\t\t\t\t\trole.id\n\t\t\t\t);\n\t\t\t\tfor (const member of affectedMembers) {\n\t\t\t\t\tconst memberActor = {\n\t\t\t\t\t\torganisationId: actor.organisationId,\n\t\t\t\t\t\tuserId: member.userId,\n\t\t\t\t\t\tmemberId: member.id,\n\t\t\t\t\t\tcorrelationId: actor.correlationId\n\t\t\t\t\t};\n\t\t\t\t\tconst instants = await listMemberAccessConflictEvaluationInstants(\n\t\t\t\t\t\ttrx,\n\t\t\t\t\t\tmemberActor\n\t\t\t\t\t);\n\t\t\t\t\tfor (const at of instants) {\n\t\t\t\t\t\tawait this.requireNoAccessConflicts(trx, actor, member, at);\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tif (couldRemoveManagerGrant) await this.requireActiveOrganisationManager(trx, actor);"
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'const affectedMembers = await repository.listActiveMembersAssignedToRole' not in text:
+              raise SystemExit('service enforcement marker not found')
+          service.write_text(text)
+
+          tests = Path('app/src/lib/server/organisations/access-conflict-policy.integration.test.ts')
+          text = tests.read_text()
+          old = "let customManagerRoleId: string;\nlet customManagerRolePublicId: string;\nlet organisationManagePermissionId: string;"
+          new = "let customManagerRoleId: string;\nlet customManagerRolePublicId: string;\nlet customFinanceRoleId: string;\nlet customFinanceRolePublicId: string;\nlet organisationManagePermissionId: string;\nlet financeManagePermissionId: string;"
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'let customFinanceRoleId: string;' not in text:
+              raise SystemExit('test variable marker not found')
+
+          old = "\tawait db\n\t\t.deleteFrom('member_roles')\n\t\t.where('organisation_id', '=', organisationId)\n\t\t.where('organisation_member_id', '=', targetMemberId)\n\t\t.execute();\n\tawait db.deleteFrom('outbox_events').where('organisation_id', '=', organisationId).execute();"
+          new = "\tawait db\n\t\t.deleteFrom('member_roles')\n\t\t.where('organisation_id', '=', organisationId)\n\t\t.where('organisation_member_id', '=', targetMemberId)\n\t\t.execute();\n\tif (customFinanceRoleId) {\n\t\tawait db\n\t\t\t.deleteFrom('role_permissions')\n\t\t\t.where('organisation_id', '=', organisationId)\n\t\t\t.where('organisation_role_id', '=', customFinanceRoleId)\n\t\t\t.execute();\n\t\tawait db\n\t\t\t.updateTable('organisation_roles')\n\t\t\t.set({ is_active: 1 })\n\t\t\t.where('organisation_id', '=', organisationId)\n\t\t\t.where('id', '=', customFinanceRoleId)\n\t\t\t.execute();\n\t}\n\tawait db.deleteFrom('outbox_events').where('organisation_id', '=', organisationId).execute();"
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif "if (customFinanceRoleId)" not in text:
+              raise SystemExit('test reset marker not found')
+
+          old = "\torganisationManagePermissionId = (\n\t\tawait db\n\t\t\t.selectFrom('permissions')\n\t\t\t.select('id')\n\t\t\t.where('permission_key', '=', 'organisation.manage')\n\t\t\t.executeTakeFirstOrThrow()\n\t).id;\n"
+          new = old + "\tfinanceManagePermissionId = (\n\t\tawait db\n\t\t\t.selectFrom('permissions')\n\t\t\t.select('id')\n\t\t\t.where('permission_key', '=', 'finance.manage')\n\t\t\t.executeTakeFirstOrThrow()\n\t).id;\n"
+          if old in text and 'financeManagePermissionId = (' not in text:
+              text = text.replace(old, new, 1)
+
+          old = "\tconst customManagerRole = await createRole(`${PREFIX}Custom Manager`);\n\tcustomManagerRoleId = customManagerRole.id;\n\tcustomManagerRolePublicId = customManagerRole.publicId;\n"
+          new = old + "\tconst customFinanceRole = await createRole(`${PREFIX}Custom Finance`);\n\tcustomFinanceRoleId = customFinanceRole.id;\n\tcustomFinanceRolePublicId = customFinanceRole.publicId;\n"
+          if old in text and 'const customFinanceRole =' not in text:
+              text = text.replace(old, new, 1)
+
+          old = "\t\t\t{\n\t\t\t\torganisation_id: organisationId,\n\t\t\t\torganisation_role_id: ownerRoleId,\n\t\t\t\tpermission_id: organisationManagePermissionId\n\t\t\t},\n\t\t\t{\n\t\t\t\torganisation_id: organisationId,\n\t\t\t\torganisation_role_id: customManagerRoleId,\n\t\t\t\tpermission_id: organisationManagePermissionId\n\t\t\t}"
+          new = "\t\t\t{\n\t\t\t\torganisation_id: organisationId,\n\t\t\t\torganisation_role_id: ownerRoleId,\n\t\t\t\tpermission_id: organisationManagePermissionId\n\t\t\t},\n\t\t\t{\n\t\t\t\torganisation_id: organisationId,\n\t\t\t\torganisation_role_id: ownerRoleId,\n\t\t\t\tpermission_id: financeManagePermissionId\n\t\t\t},\n\t\t\t{\n\t\t\t\torganisation_id: organisationId,\n\t\t\t\torganisation_role_id: customManagerRoleId,\n\t\t\t\tpermission_id: organisationManagePermissionId\n\t\t\t}"
+          if old in text:
+              text = text.replace(old, new, 1)
+          elif 'permission_id: financeManagePermissionId' not in text:
+              raise SystemExit('owner finance permission marker not found')
+
+          marker = "\n\tit('allows a deny to neutralise a custom grant but blocks removing the deny when toxicity would reappear', async () => {"
+          additions = '''
+\tit('rolls back an access-increasing role definition that would make an existing assignee toxic', async () => {
+\t\tconst admin = new OrganisationAdminService(db);
+\t\tawait admin.replaceMemberRoles(actor(), targetMemberPublicId, [
+\t\t\treadOnlyRolePublicId,
+\t\t\tcustomFinanceRolePublicId
+\t\t]);
+
+\t\tawait expect(
+\t\t\tadmin.updateRole(actor(), {
+\t\t\t\trolePublicId: customFinanceRolePublicId,
+\t\t\t\tname: `${PREFIX}Custom Finance`,
+\t\t\t\tdescription: null,
+\t\t\t\tisActive: true,
+\t\t\t\tpermissionKeys: ['finance.manage']
+\t\t\t})
+\t\t).rejects.toBeInstanceOf(OrganisationAdminValidationError);
+
+\t\tconst grants = await db
+\t\t\t.selectFrom('role_permissions')
+\t\t\t.select('permission_id')
+\t\t\t.where('organisation_id', '=', organisationId)
+\t\t\t.where('organisation_role_id', '=', customFinanceRoleId)
+\t\t\t.execute();
+\t\texpect(grants).toEqual([]);
+\t});
+
+\tit('rejects a role definition that would become toxic when a scheduled role activates', async () => {
+\t\tconst admin = new OrganisationAdminService(db);
+\t\tawait admin.replaceMemberRoles(actor(), targetMemberPublicId, [
+\t\t\treadOnlyRolePublicId,
+\t\t\tcustomFinanceRolePublicId
+\t\t]);
+\t\tconst effectiveFrom = new Date(Date.now() + 60 * 60 * 1000);
+\t\tawait db
+\t\t\t.insertInto('member_role_access_windows')
+\t\t\t.values({
+\t\t\t\torganisation_id: organisationId,
+\t\t\t\torganisation_member_id: targetMemberId,
+\t\t\t\torganisation_role_id: readOnlyRoleId,
+\t\t\t\teffective_from: effectiveFrom,
+\t\t\t\texpires_at: null,
+\t\t\t\treason: 'Scheduled Read Only posture'
+\t\t\t})
+\t\t\t.execute();
+
+\t\tawait expect(
+\t\t\tadmin.updateRole(actor(), {
+\t\t\t\trolePublicId: customFinanceRolePublicId,
+\t\t\t\tname: `${PREFIX}Custom Finance`,
+\t\t\t\tdescription: null,
+\t\t\t\tisActive: true,
+\t\t\t\tpermissionKeys: ['finance.manage']
+\t\t\t})
+\t\t).rejects.toBeInstanceOf(OrganisationAdminValidationError);
+\t});
+
+\tit('rejects a role definition that would become toxic when a temporary deny expires', async () => {
+\t\tconst admin = new OrganisationAdminService(db);
+\t\tawait admin.replaceMemberRoles(actor(), targetMemberPublicId, [
+\t\t\treadOnlyRolePublicId,
+\t\t\tcustomFinanceRolePublicId
+\t\t]);
+\t\tconst expiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
+\t\tawait new MemberPermissionOverrideService(db).setOverride(actor(), {
+\t\t\tmemberPublicId: targetMemberPublicId,
+\t\t\tpermissionKey: 'finance.manage',
+\t\t\teffect: 'deny',
+\t\t\treason: 'Temporary conflict suppression',
+\t\t\texpiresAt
+\t\t});
+
+\t\tawait expect(
+\t\t\tadmin.updateRole(actor(), {
+\t\t\t\trolePublicId: customFinanceRolePublicId,
+\t\t\t\tname: `${PREFIX}Custom Finance`,
+\t\t\t\tdescription: null,
+\t\t\t\tisActive: true,
+\t\t\t\tpermissionKeys: ['finance.manage']
+\t\t\t})
+\t\t).rejects.toBeInstanceOf(OrganisationAdminValidationError);
+\t});
+
+\tit('allows a legitimate access increase when no assignee conflict exists', async () => {
+\t\tconst admin = new OrganisationAdminService(db);
+\t\tawait admin.replaceMemberRoles(actor(), targetMemberPublicId, [customFinanceRolePublicId]);
+
+\t\tawait admin.updateRole(actor(), {
+\t\t\trolePublicId: customFinanceRolePublicId,
+\t\t\tname: `${PREFIX}Custom Finance`,
+\t\t\tdescription: 'Finance administration without Read Only',
+\t\t\tisActive: true,
+\t\t\tpermissionKeys: ['finance.manage']
+\t\t});
+
+\t\tconst grant = await db
+\t\t\t.selectFrom('role_permissions')
+\t\t\t.select('permission_id')
+\t\t\t.where('organisation_id', '=', organisationId)
+\t\t\t.where('organisation_role_id', '=', customFinanceRoleId)
+\t\t\t.where('permission_id', '=', financeManagePermissionId)
+\t\t\t.executeTakeFirstOrThrow();
+\t\texpect(grant.permission_id).toBe(financeManagePermissionId);
+\t});
+'''
+          if 'rolls back an access-increasing role definition' not in text:
+              if marker not in text:
+                  raise SystemExit('test insertion marker not found')
+              text = text.replace(marker, additions + marker, 1)
+          tests.write_text(text)
+
+          docs = Path('docs/architecture/access-conflict-governance.md')
+          text = docs.read_text()
+          marker = "Reactivating a member is checked before the status transition commits, preventing dormant legacy assignments from becoming active if they violate current policy.\n"
+          paragraph = "\nAccess-increasing role-definition changes are also evaluated transactionally against every active assignee of the role. Evaluation includes the current instant plus persisted future role-assignment and permission-override lifecycle boundaries for each affected member, so a role edit cannot create toxicity at a scheduled activation or when a temporary deny expires. Access-reducing role edits are not blocked by unrelated pre-existing conflict state. Member-role replacement locks selected role rows, serialising ordinary assignment changes with concurrent role-definition mutation.\n"
+          if marker in text and 'Access-increasing role-definition changes are also evaluated' not in text:
+              text = text.replace(marker, marker + paragraph, 1)
+          docs.write_text(text)
+          PY
+      - name: Format changed TypeScript
+        working-directory: app
+        run: pnpm exec prettier --write src/lib/server/organisations/access-conflict-policy.ts src/lib/server/organisations/organisation-admin-repository.ts src/lib/server/organisations/organisation-admin-service.ts src/lib/server/organisations/access-conflict-policy.integration.test.ts
+      - name: Verify targeted lint
+        working-directory: app
+        run: pnpm exec eslint src/lib/server/organisations/access-conflict-policy.ts src/lib/server/organisations/organisation-admin-repository.ts src/lib/server/organisations/organisation-admin-service.ts src/lib/server/organisations/access-conflict-policy.integration.test.ts
+      - name: Commit implementation
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/lib/server/organisations/access-conflict-policy.ts \
+                  app/src/lib/server/organisations/organisation-admin-repository.ts \
+                  app/src/lib/server/organisations/organisation-admin-service.ts \
+                  app/src/lib/server/organisations/access-conflict-policy.integration.test.ts \
+                  docs/architecture/access-conflict-governance.md
+          git diff --cached --check
+          git commit -m 'Enforce SoD on access-increasing role definitions'
+          git push origin HEAD:rbac/role-definition-sod
