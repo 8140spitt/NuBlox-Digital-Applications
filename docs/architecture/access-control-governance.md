@@ -1,7 +1,7 @@
 # NuBlox Access-Control Governance
 
 **Status:** enforced baseline  
-**Scope:** organisation access roles, delegated administration, access lifecycle, segregation of duties and periodic access review.
+**Scope:** organisation access roles, delegated administration, delegated authority ceilings, access lifecycle, segregation of duties and periodic access review.
 
 ## 1. Identity and work architecture are not access control
 
@@ -37,19 +37,51 @@ Canonical display names are used only to bootstrap/backfill a missing binding fo
 
 Organisation-specific access requirements should be represented by explicit custom organisation roles rather than by converting careers or job profiles into security rules.
 
-## 3. Delegated administration
+## 3. Delegated administration and authority ceilings
 
 Role delegation is governed at the service boundary as well as the UI boundary.
 
-Rules:
+Baseline rules:
 
-1. assigning any access role requires `member.manage` or the wider `organisation.manage` authority;
-2. a delegated member administrator may assign only permissions they effectively hold;
-3. `organisation.manage` may administer the ordinary organisation role catalogue;
+1. assigning any access role requires `member.manage` or the wider `organisation.manage` action authority;
+2. a delegated member administrator without `organisation.manage` may assign only permissions they effectively hold unless an Owner has explicitly configured a delegated-authority policy for that member;
+3. an unrestricted `organisation.manage` holder retains the existing non-Owner delegation behavior when no delegated-authority policy is configured;
 4. the stable `owner` access-role identity is an ownership boundary and may be delegated only by an active member whose bound Owner assignment is effective at the decision instant;
 5. explicit member permission overrides remain subject to their own governed service and must not be used as an undocumented privilege-escalation path.
 
 The ownership rule prevents an Administrator from turning `organisation.manage` into ownership merely by renaming or assigning the Owner template to themselves or another member. An expired or not-yet-effective Owner assignment is not an ownership credential.
+
+### Owner-governed delegated authority policy
+
+An active Owner may place a non-Owner member under an explicit delegation ceiling using normalized policy state:
+
+- `organisation_delegation_policies` stores one policy per organisation member, its effective/expiry window, reason and original Owner author;
+- `organisation_delegation_role_grants` stores the standard access-role keys that may be delegated;
+- `organisation_delegation_permission_grants` stores the permission keys that may be carried by delegated roles.
+
+A configured policy does **not** grant runtime permissions or action authority. The caller still needs the normal capability required by the operation, such as member administration or organisation administration. The policy only limits what access the caller may grant to somebody else.
+
+Configured policies are intentionally fail-closed:
+
+- before `effective_from`, delegation is denied;
+- at `effective_from`, the configured ceiling becomes usable;
+- at `expires_at`, delegation is denied exactly at that instant and thereafter;
+- an expired or scheduled policy never falls back to unrestricted `organisation.manage` behavior;
+- only explicit Owner removal of the policy restores the legacy unrestricted behavior.
+
+The Owner role is not permitted in delegated role grants and an active Owner cannot themselves be placed under a delegated-authority policy.
+
+For an effective configured policy:
+
+1. every requested bound standard access role must appear in the policy's stable-role allow-list;
+2. every permission carried by every requested role must appear in the policy's permission allow-list;
+3. custom organisation roles have no stable NuBlox role key and are therefore governed by the permission ceiling;
+4. role creation and role updates are checked against the same permission ceiling so a restricted administrator cannot bypass assignment controls by widening a role first;
+5. updates to a bound standard role are also subject to the stable-role allow-list, while Owner-role mutation remains Owner-only.
+
+The ceiling is evaluated centrally so member-role replacement and organisation invitations cannot diverge into separate delegation rules.
+
+Delegated authority remains security governance only. Enterprise functions, functional roles, job profiles, careers, organisation positions and project business roles neither configure nor inherit these policies.
 
 ## 4. Permission decision precedence
 
@@ -137,12 +169,13 @@ The following actions require append-oriented audit evidence with organisation, 
 - role-assignment lifecycle changes;
 - ownership-sensitive membership changes;
 - standard access-role template binding or template-version changes;
+- delegated-authority policy creation/update and removal, including stable-role keys, permission ceiling and effective/expiry bounds;
 - access-review campaign opening, item decisions, completion and cancellation.
 
 Audit evidence is not a substitute for current-state relational integrity, and current-state tables are not a substitute for immutable audit evidence.
 
 ## 9. Governance direction
 
-With stable role identity, lifecycle enforcement, SoD controls and organisation-level attestation established, the next access-control evolution should focus on delegated authority by scope/value/effective dates, reviewer independence/scoping, and explicit audit evidence for automatic standard-role binding/reconciliation.
+With stable role identity, lifecycle enforcement, SoD controls, organisation-level attestation and Owner-governed delegation ceilings established, the next access-control evolution should focus on delegated authority by project/value/domain scope, reviewer independence/scoping, and explicit audit evidence for automatic standard-role binding/reconciliation.
 
 Organisation positions may carry recommended access templates in future, but activation must remain an explicit, auditable access-control decision.

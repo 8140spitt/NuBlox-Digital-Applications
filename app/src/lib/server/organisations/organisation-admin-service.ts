@@ -15,7 +15,11 @@ import {
 	OrganisationAdminRepository,
 	type OrganisationMemberStatus
 } from './organisation-admin-repository';
-import { decideOrganisationRoleDelegation } from './role-delegation-policy';
+import {
+	decideOrganisationPermissionDelegation,
+	decideOrganisationRoleDefinitionDelegation,
+	decideOrganisationRoleDelegation
+} from './role-delegation-policy';
 
 export class OrganisationAdminValidationError extends Error {
 	readonly code = 'ORGANISATION_ADMIN_VALIDATION';
@@ -218,7 +222,7 @@ export class OrganisationAdminService {
 			const delegation = await decideOrganisationRoleDelegation(trx, actor, rolePublicIds);
 			if (!delegation.allowed) {
 				throw new OrganisationAdminValidationError(
-					`You cannot delegate role permissions you do not hold: ${delegation.deniedPermissionKeys.join(', ')}.`
+					`Delegated authority prohibits this role assignment: ${delegation.deniedPermissionKeys.join(', ')}.`
 				);
 			}
 
@@ -260,6 +264,12 @@ export class OrganisationAdminService {
 			const permissionIds = await repository.findActivePermissionIdsByKeys(permissionKeys);
 			if (permissionIds.length !== permissionKeys.length) {
 				throw new OrganisationAdminValidationError('One or more permissions are not active.');
+			}
+			const delegation = await decideOrganisationPermissionDelegation(trx, actor, permissionKeys);
+			if (!delegation.allowed) {
+				throw new OrganisationAdminValidationError(
+					`Delegated authority prohibits this role definition: ${delegation.deniedPermissionKeys.join(', ')}.`
+				);
 			}
 
 			const roleId = await repository.createRole({
@@ -324,6 +334,17 @@ export class OrganisationAdminService {
 			const permissionIds = await repository.findActivePermissionIdsByKeys(permissionKeys);
 			if (permissionIds.length !== permissionKeys.length) {
 				throw new OrganisationAdminValidationError('One or more permissions are not active.');
+			}
+			const delegation = await decideOrganisationRoleDefinitionDelegation(
+				trx,
+				actor,
+				role.publicId,
+				permissionKeys
+			);
+			if (!delegation.allowed) {
+				throw new OrganisationAdminValidationError(
+					`Delegated authority prohibits this role definition: ${delegation.deniedPermissionKeys.join(', ')}.`
+				);
 			}
 
 			await repository.updateRole({

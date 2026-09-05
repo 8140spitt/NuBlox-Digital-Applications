@@ -386,12 +386,20 @@ describe('organisation administration', () => {
 			.executeTakeFirst();
 		expect(removedGrant).toBeUndefined();
 
-		await service.updateRole(actor(), {
-			rolePublicId: adminRolePublicId,
-			name: `${PREFIX}Administrator`,
-			isActive: true,
-			permissionKeys: ['organisation.manage', 'member.manage', 'member.invite']
-		});
+		await service.updateRole(
+			{
+				organisationId,
+				userId: backupUserId,
+				memberId: backupMemberId,
+				correlationId: `organisation-admin-backup-it-${randomUUID()}`
+			},
+			{
+				rolePublicId: adminRolePublicId,
+				name: `${PREFIX}Administrator`,
+				isActive: true,
+				permissionKeys: ['organisation.manage', 'member.manage', 'member.invite']
+			}
+		);
 	});
 
 	it('resends and revokes invitations while preserving tenant role intent and audit evidence', async () => {
