@@ -475,7 +475,8 @@ describe('Wave A native accounts payable foundation', () => {
 		]);
 		const posted = await accounting.postSource(actorMaker, {
 			sourceType: 'accounts_payable_invoice_approval',
-			sourcePublicId: documentPublicId
+			sourcePublicId: documentPublicId,
+			accountingDate: '2026-08-21'
 		});
 		const journal = await db
 			.selectFrom('accounting_journal_entries')
@@ -713,7 +714,8 @@ describe('Wave A native accounts payable foundation', () => {
 		const accounting = new AccountingService(db);
 		await accounting.postSource(actorMaker, {
 			sourceType: 'accounts_payable_invoice_approval',
-			sourcePublicId: documentPublicId
+			sourcePublicId: documentPublicId,
+			accountingDate: '2026-08-21'
 		});
 
 		const supplierPayments = new SupplierPaymentService(db);
@@ -775,7 +777,8 @@ describe('Wave A native accounts payable foundation', () => {
 		]);
 		const executionJournal = await accounting.postSource(actorMaker, {
 			sourceType: 'supplier_payment_execution',
-			sourcePublicId: paymentPublicId
+			sourcePublicId: paymentPublicId,
+			accountingDate: '2026-08-25'
 		});
 		const executionJournalId = await db
 			.selectFrom('accounting_journal_entries')
@@ -821,7 +824,8 @@ describe('Wave A native accounts payable foundation', () => {
 		expect(reversalCandidate).toMatchObject({ sourceAmount: '250.0000', missingMappings: [] });
 		await accounting.postSource(actorMaker, {
 			sourceType: 'supplier_payment_reversal',
-			sourcePublicId: paymentPublicId
+			sourcePublicId: paymentPublicId,
+			accountingDate: '2026-08-25'
 		});
 
 		paymentWorkspace = await supplierPayments.getWorkspace(actorMaker);
@@ -864,7 +868,8 @@ describe('Wave A native accounts payable foundation', () => {
 		const accounting = new AccountingService(db);
 		await accounting.postSource(actorMaker, {
 			sourceType: 'accounts_payable_invoice_approval',
-			sourcePublicId: documentPublicId
+			sourcePublicId: documentPublicId,
+			accountingDate: '2026-09-15'
 		});
 
 		const paymentNow = new Date('2026-09-15T12:00:00.000Z');
@@ -887,7 +892,8 @@ describe('Wave A native accounts payable foundation', () => {
 		const septemberAccounting = new AccountingService(db, randomUUID, () => paymentNow);
 		await septemberAccounting.postSource(actorMaker, {
 			sourceType: 'supplier_payment_execution',
-			sourcePublicId: paymentPublicId
+			sourcePublicId: paymentPublicId,
+			accountingDate: '2026-09-15'
 		});
 		await periodService.softClose(actorMaker, september.publicId, 'September posting complete.');
 		await septemberAccounting.createExport(actorMaker, {
