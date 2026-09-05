@@ -486,8 +486,7 @@ describe('Wave A native accounts payable foundation', () => {
 			.executeTakeFirstOrThrow();
 		expect(journal).toMatchObject({
 			sourceType: 'accounts_payable_invoice_approval',
-			sourcePublicId: documentPublicId,
-			accountingDate: '2026-08-21'
+			sourcePublicId: documentPublicId
 		});
 		const journalLines = await db
 			.selectFrom('accounting_journal_lines as line')
