@@ -199,10 +199,15 @@ export class AccessReviewService {
 		return campaigns.map((campaign) => this.mapCampaign(campaign, counts.get(campaign.id)));
 	}
 
-	async listAssignedCampaigns(
-		actor: TenantActorContext
-	): Promise<AccessReviewCampaignSummary[]> {
-		if ((await this.memberActor(this.db, actor.organisationId, actor.memberId, actor.correlationId)) === null) {
+	async listAssignedCampaigns(actor: TenantActorContext): Promise<AccessReviewCampaignSummary[]> {
+		if (
+			(await this.memberActor(
+				this.db,
+				actor.organisationId,
+				actor.memberId,
+				actor.correlationId
+			)) === null
+		) {
 			throw new AccessReviewAuthorisationError();
 		}
 		const campaigns = await this.db
@@ -561,8 +566,14 @@ export class AccessReviewService {
 							campaignId,
 							reviewerAssignments,
 							[
-								...roleRows.map((row) => ({ memberId: row.memberId, memberPublicId: row.memberPublicId })),
-								...overrideRows.map((row) => ({ memberId: row.memberId, memberPublicId: row.memberPublicId }))
+								...roleRows.map((row) => ({
+									memberId: row.memberId,
+									memberPublicId: row.memberPublicId
+								})),
+								...overrideRows.map((row) => ({
+									memberId: row.memberId,
+									memberPublicId: row.memberPublicId
+								}))
 							],
 							snapshotAt,
 							publicId
@@ -840,7 +851,10 @@ export class AccessReviewService {
 			await this.requireManage(db, actor, at);
 			return;
 		}
-		if ((await this.memberActor(db, actor.organisationId, actor.memberId, actor.correlationId)) === null) {
+		if (
+			(await this.memberActor(db, actor.organisationId, actor.memberId, actor.correlationId)) ===
+			null
+		) {
 			throw new AccessReviewAuthorisationError();
 		}
 		const assignment = await db
@@ -884,7 +898,9 @@ export class AccessReviewService {
 				);
 			}
 			if (assignmentBySubject.has(assignment.subjectMemberPublicId)) {
-				throw new AccessReviewValidationError('Each reviewed member must have exactly one reviewer.');
+				throw new AccessReviewValidationError(
+					'Each reviewed member must have exactly one reviewer.'
+				);
 			}
 			assignmentBySubject.set(assignment.subjectMemberPublicId, assignment);
 		}
@@ -894,14 +910,18 @@ export class AccessReviewService {
 			);
 		}
 
-		const reviewerPublicIds = [...new Set(assignments.map((assignment) => assignment.reviewerMemberPublicId))];
+		const reviewerPublicIds = [
+			...new Set(assignments.map((assignment) => assignment.reviewerMemberPublicId))
+		];
 		const reviewerRows = await db
 			.selectFrom('organisation_members')
 			.select(['id', 'public_id', 'status'])
 			.where('organisation_id', '=', actor.organisationId)
 			.where('public_id', 'in', reviewerPublicIds)
 			.execute();
-		const reviewerByPublicId = new Map(reviewerRows.map((reviewer) => [reviewer.public_id, reviewer]));
+		const reviewerByPublicId = new Map(
+			reviewerRows.map((reviewer) => [reviewer.public_id, reviewer])
+		);
 		if (reviewerRows.length !== reviewerPublicIds.length) {
 			throw new AccessReviewValidationError('Every reviewer must belong to this organisation.');
 		}
@@ -922,7 +942,9 @@ export class AccessReviewService {
 			if (!input) throw new Error('Expected reviewer assignment coverage.');
 			const reviewer = reviewerByPublicId.get(input.reviewerMemberPublicId);
 			if (!reviewer || reviewer.status !== 'active') {
-				throw new AccessReviewValidationError('Every reviewer must be an active organisation member.');
+				throw new AccessReviewValidationError(
+					'Every reviewer must be an active organisation member.'
+				);
 			}
 			if (reviewer.id === subjectMemberId) {
 				throw new AccessReviewValidationError('Members cannot attest their own access.');

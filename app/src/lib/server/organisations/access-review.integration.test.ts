@@ -520,15 +520,21 @@ describe('organisation access review and attestation', () => {
 
 		const reviewerDetail = await service.loadCampaign(reviewerActor, campaignPublicId);
 		expect(reviewerDetail.campaign.totalItems).toBe(3);
-		expect(reviewerDetail.items.every((item) => item.memberPublicId === workerMemberPublicId)).toBe(true);
+		expect(reviewerDetail.items.every((item) => item.memberPublicId === workerMemberPublicId)).toBe(
+			true
+		);
 		expect(
 			reviewerDetail.items.every((item) => item.reviewerMemberPublicId === reviewerMemberPublicId)
 		).toBe(true);
-		const elevatedItem = reviewerDetail.items.find((item) => item.rolePublicId === elevatedRolePublicId);
+		const elevatedItem = reviewerDetail.items.find(
+			(item) => item.rolePublicId === elevatedRolePublicId
+		);
 		if (!elevatedItem) throw new Error('Expected assigned elevated-role review item.');
 
 		await expect(
-			service.decideItem(adminActor, campaignPublicId, elevatedItem.publicId, { decision: 'certify' })
+			service.decideItem(adminActor, campaignPublicId, elevatedItem.publicId, {
+				decision: 'certify'
+			})
 		).rejects.toBeInstanceOf(AccessReviewAuthorisationError);
 
 		await service.decideItem(reviewerActor, campaignPublicId, elevatedItem.publicId, {
@@ -571,5 +577,4 @@ describe('organisation access review and attestation', () => {
 			.executeTakeFirst();
 		expect(assignment).toBeTruthy();
 	});
-
 });
