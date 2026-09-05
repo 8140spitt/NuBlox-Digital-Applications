@@ -171,6 +171,7 @@ export class AccessReviewService {
 				'status',
 				'snapshot_at',
 				'due_at',
+				'reviewer_mode',
 				'opened_at',
 				'completed_at',
 				'cancelled_at'
@@ -905,7 +906,17 @@ export class AccessReviewService {
 			throw new AccessReviewValidationError('Every reviewer must belong to this organisation.');
 		}
 
-		const values = [];
+		const values: Array<{
+			public_id: string;
+			campaign_id: string;
+			organisation_id: string;
+			subject_member_id: string;
+			reviewer_member_id: string;
+			assigned_by_member_id: string;
+			assigned_at: Date;
+			subjectPublicId: string;
+			reviewerPublicId: string;
+		}> = [];
 		for (const [subjectPublicId, subjectMemberId] of subjectByPublicId) {
 			const input = assignmentBySubject.get(subjectPublicId);
 			if (!input) throw new Error('Expected reviewer assignment coverage.');
@@ -932,7 +943,15 @@ export class AccessReviewService {
 		await db
 			.insertInto('access_review_reviewer_assignments')
 			.values(
-				values.map(({ subjectPublicId: _subjectPublicId, reviewerPublicId: _reviewerPublicId, ...value }) => value)
+				values.map((value) => ({
+					public_id: value.public_id,
+					campaign_id: value.campaign_id,
+					organisation_id: value.organisation_id,
+					subject_member_id: value.subject_member_id,
+					reviewer_member_id: value.reviewer_member_id,
+					assigned_by_member_id: value.assigned_by_member_id,
+					assigned_at: value.assigned_at
+				}))
 			)
 			.execute();
 		for (const value of values) {
