@@ -54,7 +54,19 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw redirect(303, '/signin');
 	try {
-		return await new StrategyService(getDatabase()).getWorkspace(actor, url.searchParams.get('framework'));
+		const db = getDatabase();
+		const [workspace, members] = await Promise.all([
+			new StrategyService(db).getWorkspace(actor, url.searchParams.get('framework')),
+			db
+				.selectFrom('organisation_members as member')
+				.innerJoin('users as user', 'user.id', 'member.user_id')
+				.select(['member.id as id', 'user.display_name as display_name'])
+				.where('member.organisation_id', '=', actor.organisationId)
+				.where('member.status', '=', 'active')
+				.orderBy('user.display_name', 'asc')
+				.execute()
+		]);
+		return { ...workspace, members };
 	} catch (error) {
 		if (error instanceof RecordNotFoundError) throw redirect(303, '/strategy');
 		throw error;
