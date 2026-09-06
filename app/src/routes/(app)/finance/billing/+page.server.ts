@@ -4,6 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { BillingSettingsService } from '$lib/server/finance/billing-settings-service';
 import { FinanceValidationError } from '$lib/server/finance/finance-common';
+import { PaymentTermCatalogueService } from '$lib/server/finance/payment-term-catalogue-service';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 
@@ -33,7 +34,12 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	try {
-		return await new BillingSettingsService(getDatabase()).getWorkspace(actor);
+		const db = getDatabase();
+		const [workspace, paymentTermCatalogue] = await Promise.all([
+			new BillingSettingsService(db).getWorkspace(actor),
+			new PaymentTermCatalogueService(db).getCatalogue(actor)
+		]);
+		return { ...workspace, paymentTermCatalogue };
 	} catch (cause) {
 		if (cause instanceof TenantAccessError)
 			throw httpError(403, 'Accounts-receivable access is not permitted.');
@@ -53,6 +59,16 @@ export const actions: Actions = {
 				daysOffset: Number(String(data.get('daysOffset') ?? '0')),
 				isDefault: data.get('isDefault') === 'on'
 			});
+		} catch (cause) {
+			return actionFailure(cause);
+		}
+		return redirectHere();
+	},
+	provisionStandardTerms: async ({ locals }) => {
+		const actor = actorFromLocals(locals);
+		if (!actor) return fail(401, { actionError: 'Authentication is required.' });
+		try {
+			await new PaymentTermCatalogueService(getDatabase()).provisionInvoiceCompatibleTerms(actor);
 		} catch (cause) {
 			return actionFailure(cause);
 		}

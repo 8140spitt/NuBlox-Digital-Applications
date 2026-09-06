@@ -28,6 +28,50 @@
 			</div>
 			<span>{data.paymentTerms.length}</span>
 		</div>
+
+		<div class="catalogue-card">
+			<div>
+				<strong>Enterprise catalogue</strong>
+				<p class="muted">
+					{data.paymentTermCatalogue.templates.length} canonical definitions · {data
+						.paymentTermCatalogue.invoiceCompatibleCount}
+					ready for the current invoice lifecycle
+				</p>
+			</div>
+			{#if data.canManage}
+				<form method="POST" action="?/provisionStandardTerms">
+					<button type="submit" class="secondary catalogue-button"
+						>Install standard invoice terms</button
+					>
+				</form>
+			{/if}
+		</div>
+
+		<details class="catalogue-details">
+			<summary>View canonical payment-term catalogue</summary>
+			<div class="catalogue-list">
+				{#each data.paymentTermCatalogue.templates as template}
+					<article class="catalogue-row">
+						<div>
+							<strong>{template.name}</strong>
+							<small>
+								{template.calculationBasis.replaceAll('_', ' ')} · {template.daysOffset} day offset
+								{#if template.monthOffset > 0}
+									· +{template.monthOffset} month{/if}
+								{#if template.fixedDayOfMonth}
+									· day {template.fixedDayOfMonth}{/if}
+								{#if template.dayType === 'business'}
+									· business days{/if}
+							</small>
+						</div>
+						<span class:reference-required={!template.invoiceCompatible}
+							>{template.invoiceCompatible ? 'Invoice ready' : 'Reference event'}</span
+						>
+					</article>
+				{/each}
+			</div>
+		</details>
+
 		{#if data.paymentTerms.length === 0}<p class="muted">
 				No payment terms have been configured yet.
 			</p>{:else}
@@ -201,6 +245,59 @@
 		background: var(--surface, #fff);
 		padding: 1rem;
 	}
+	.catalogue-card {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+		align-items: center;
+		margin: 0.8rem 0;
+		padding: 0.8rem;
+		border: 1px solid var(--border, #d0d5dd);
+		border-radius: 10px;
+		background: var(--surface-subtle, #f8fafc);
+	}
+	.catalogue-card p {
+		margin: 0.25rem 0 0;
+	}
+	.catalogue-button {
+		white-space: nowrap;
+	}
+	.catalogue-details {
+		margin: 0.8rem 0 1rem;
+	}
+	.catalogue-details summary {
+		cursor: pointer;
+		font-weight: 700;
+	}
+	.catalogue-list {
+		display: grid;
+		gap: 0.4rem;
+		max-height: 24rem;
+		overflow: auto;
+		margin-top: 0.7rem;
+	}
+	.catalogue-row {
+		display: flex;
+		justify-content: space-between;
+		gap: 0.75rem;
+		align-items: center;
+		padding: 0.55rem 0.65rem;
+		border-radius: 8px;
+		background: var(--surface-subtle, #f8fafc);
+	}
+	.catalogue-row small {
+		display: block;
+		margin-top: 0.15rem;
+		color: var(--muted, #667085);
+	}
+	.catalogue-row span {
+		font-size: 0.75rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+	.catalogue-row .reference-required {
+		color: var(--muted, #667085);
+	}
 	.rows {
 		display: grid;
 		gap: 0.55rem;
@@ -312,14 +409,16 @@
 	}
 	@media (min-width: 1000px) {
 		.layout {
-			grid-template-columns: minmax(280px, 0.7fr) minmax(0, 1.5fr);
+			grid-template-columns: minmax(360px, 0.9fr) minmax(0, 1.5fr);
 		}
 	}
 	@media (max-width: 650px) {
 		.page-heading,
 		.section-heading,
 		.card-heading,
-		.row {
+		.row,
+		.catalogue-card,
+		.catalogue-row {
 			flex-wrap: wrap;
 		}
 		.form-grid,
