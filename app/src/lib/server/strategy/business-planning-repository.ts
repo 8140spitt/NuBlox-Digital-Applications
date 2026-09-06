@@ -62,10 +62,7 @@ export class BusinessPlanningRepository {
 			.executeTakeFirst();
 	}
 
-	async findPlanById(
-		organisationId: string,
-		id: string
-	): Promise<BusinessPlanRecord | undefined> {
+	async findPlanById(organisationId: string, id: string): Promise<BusinessPlanRecord | undefined> {
 		return this.db
 			.selectFrom('strategy_business_plans')
 			.selectAll()
@@ -139,7 +136,9 @@ export class BusinessPlanningRepository {
 			.executeTakeFirst();
 	}
 
-	async insertInitiative(values: Insertable<StrategyInitiatives>): Promise<StrategyInitiativeRecord> {
+	async insertInitiative(
+		values: Insertable<StrategyInitiatives>
+	): Promise<StrategyInitiativeRecord> {
 		const result = await this.db
 			.insertInto('strategy_initiatives')
 			.values(values)
@@ -167,7 +166,11 @@ export class BusinessPlanningRepository {
 	async listMilestones(planId: string): Promise<StrategyInitiativeMilestoneRecord[]> {
 		return this.db
 			.selectFrom('strategy_initiative_milestones as milestone')
-			.innerJoin('strategy_initiatives as initiative', 'initiative.id', 'milestone.strategy_initiative_id')
+			.innerJoin(
+				'strategy_initiatives as initiative',
+				'initiative.id',
+				'milestone.strategy_initiative_id'
+			)
 			.selectAll('milestone')
 			.where('initiative.strategy_business_plan_id', '=', planId)
 			.orderBy('milestone.target_date', 'asc')
@@ -201,7 +204,10 @@ export class BusinessPlanningRepository {
 	}
 
 	async insertDependency(values: Insertable<StrategyInitiativeDependencies>): Promise<void> {
-		await this.db.insertInto('strategy_initiative_dependencies').values(values).executeTakeFirstOrThrow();
+		await this.db
+			.insertInto('strategy_initiative_dependencies')
+			.values(values)
+			.executeTakeFirstOrThrow();
 	}
 
 	async listComponents(planId: string): Promise<OperatingModelComponentRecord[]> {
@@ -286,7 +292,9 @@ export class BusinessPlanningRepository {
 			.executeTakeFirstOrThrow();
 	}
 
-	async listInitiativeComponentLinks(planId: string): Promise<InitiativeOperatingModelLinkRecord[]> {
+	async listInitiativeComponentLinks(
+		planId: string
+	): Promise<InitiativeOperatingModelLinkRecord[]> {
 		return this.db
 			.selectFrom('strategy_initiative_operating_model_links as link')
 			.innerJoin('strategy_initiatives as initiative', 'initiative.id', 'link.initiative_id')
@@ -335,7 +343,9 @@ export class BusinessPlanningRepository {
 				status: row.status
 			});
 		}
-		return [...unique.values()].sort((left, right) => left.projectNumber.localeCompare(right.projectNumber));
+		return [...unique.values()].sort((left, right) =>
+			left.projectNumber.localeCompare(right.projectNumber)
+		);
 	}
 
 	async findExecutionProject(
@@ -370,7 +380,10 @@ export class BusinessPlanningRepository {
 			.where('budget.lifecycle_status', '=', 'active')
 			.where('version.version_status', '=', 'approved');
 		if (projectId) query = query.where('budget.project_id', '=', projectId);
-		const rows = await query.orderBy('budget.budget_number', 'asc').orderBy('version.version_number', 'desc').execute();
+		const rows = await query
+			.orderBy('budget.budget_number', 'asc')
+			.orderBy('version.version_number', 'desc')
+			.execute();
 		const unique = new Map<string, ExecutionBudget>();
 		for (const row of rows) {
 			if (unique.has(row.id)) continue;

@@ -48,7 +48,8 @@ async function runAction(
 				: '/strategy/planning'
 		);
 	} catch (error) {
-		if (error instanceof BusinessPlanningValidationError) return fail(400, { error: error.message });
+		if (error instanceof BusinessPlanningValidationError)
+			return fail(400, { error: error.message });
 		if (error instanceof TenantAccessError)
 			return fail(403, { error: 'You do not have access to this business-planning action.' });
 		if (error instanceof RecordNotFoundError) return fail(404, { error: error.message });
@@ -208,11 +209,7 @@ export const actions: Actions = {
 					planPublicId,
 					componentPublicId: text(data, 'componentPublicId'),
 					accountabilityType: text(data, 'accountabilityType') as
-						| 'accountable'
-						| 'responsible'
-						| 'consulted'
-						| 'informed'
-						| 'assured',
+						'accountable' | 'responsible' | 'consulted' | 'informed' | 'assured',
 					positionLabel: text(data, 'positionLabel'),
 					memberId: nullableText(data, 'memberId'),
 					notes: nullableText(data, 'notes')
@@ -230,7 +227,8 @@ export const actions: Actions = {
 					planPublicId,
 					initiativePublicId: text(data, 'initiativePublicId'),
 					componentPublicId: text(data, 'componentPublicId'),
-					changeRole: text(data, 'changeRole') as 'create' | 'transform' | 'enable' | 'consume' | 'retire'
+					changeRole: text(data, 'changeRole') as
+						'create' | 'transform' | 'enable' | 'consume' | 'retire'
 				}),
 			planPublicId
 		);
@@ -246,6 +244,8 @@ export const actions: Actions = {
 	},
 	revisePlan: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, (service, actor) => service.revisePlan(actor, text(data, 'planPublicId')));
+		return runAction(locals, (service, actor) =>
+			service.revisePlan(actor, text(data, 'planPublicId'))
+		);
 	}
 };

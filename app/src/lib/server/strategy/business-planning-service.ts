@@ -148,7 +148,9 @@ const CURRENCY = /^[A-Z]{3}$/;
 function requiredText(value: string, label: string, maximum: number): string {
 	const normalized = value.trim();
 	if (!normalized || normalized.length > maximum) {
-		throw new BusinessPlanningValidationError(`${label} must be between 1 and ${maximum} characters.`);
+		throw new BusinessPlanningValidationError(
+			`${label} must be between 1 and ${maximum} characters.`
+		);
 	}
 	return normalized;
 }
@@ -164,21 +166,25 @@ function optionalText(value: string | null | undefined, maximum: number): string
 
 function code(value: string, label: string): string {
 	const normalized = value.trim().toUpperCase();
-	if (!CODE.test(normalized)) throw new BusinessPlanningValidationError(`${label} has an invalid format.`);
+	if (!CODE.test(normalized))
+		throw new BusinessPlanningValidationError(`${label} has an invalid format.`);
 	return normalized;
 }
 
 function currency(value: string): string {
 	const normalized = value.trim().toUpperCase();
 	if (!CURRENCY.test(normalized)) {
-		throw new BusinessPlanningValidationError('Currency code must be a three-letter ISO-style code.');
+		throw new BusinessPlanningValidationError(
+			'Currency code must be a three-letter ISO-style code.'
+		);
 	}
 	return normalized;
 }
 
 function dateOnly(value: string | Date, label: string): Date {
 	const parsed = value instanceof Date ? value : new Date(`${value.trim()}T00:00:00.000Z`);
-	if (Number.isNaN(parsed.getTime())) throw new BusinessPlanningValidationError(`${label} is invalid.`);
+	if (Number.isNaN(parsed.getTime()))
+		throw new BusinessPlanningValidationError(`${label} is invalid.`);
 	return new Date(`${parsed.toISOString().slice(0, 10)}T00:00:00.000Z`);
 }
 
@@ -198,7 +204,9 @@ function nonNegativeDecimal(
 	if (value === null || value === undefined || value === '') return '0.0000';
 	const parsed = typeof value === 'number' ? value : Number(value);
 	if (!Number.isFinite(parsed) || parsed < 0 || parsed > maximum) {
-		throw new BusinessPlanningValidationError(`${label} must be a non-negative number within supported range.`);
+		throw new BusinessPlanningValidationError(
+			`${label} must be a non-negative number within supported range.`
+		);
 	}
 	return parsed.toFixed(4);
 }
@@ -207,14 +215,18 @@ function nonNegativeFte(value: number | string | null | undefined): string {
 	if (value === null || value === undefined || value === '') return '0.00';
 	const parsed = typeof value === 'number' ? value : Number(value);
 	if (!Number.isFinite(parsed) || parsed < 0 || parsed > 9_999_999_999.99) {
-		throw new BusinessPlanningValidationError('Planned FTE must be a non-negative number within supported range.');
+		throw new BusinessPlanningValidationError(
+			'Planned FTE must be a non-negative number within supported range.'
+		);
 	}
 	return parsed.toFixed(2);
 }
 
 function assertDateWithin(date: Date, start: Date, end: Date, label: string): void {
 	if (date < start || date > end) {
-		throw new BusinessPlanningValidationError(`${label} must sit within the governing planning period.`);
+		throw new BusinessPlanningValidationError(
+			`${label} must sit within the governing planning period.`
+		);
 	}
 }
 
@@ -226,14 +238,17 @@ function assertAcyclic(
 	const graph = new Map<string, string[]>();
 	for (const node of nodes) graph.set(node, []);
 	for (const dependency of dependencies) {
-		if (!nodes.has(dependency.initiative_id) || !nodes.has(dependency.depends_on_initiative_id)) continue;
+		if (!nodes.has(dependency.initiative_id) || !nodes.has(dependency.depends_on_initiative_id))
+			continue;
 		graph.get(dependency.initiative_id)?.push(dependency.depends_on_initiative_id);
 	}
 	const visiting = new Set<string>();
 	const visited = new Set<string>();
 	const visit = (node: string): void => {
 		if (visiting.has(node)) {
-			throw new BusinessPlanningValidationError('Initiative dependencies must form an acyclic delivery network.');
+			throw new BusinessPlanningValidationError(
+				'Initiative dependencies must form an acyclic delivery network.'
+			);
 		}
 		if (visited.has(node)) return;
 		visiting.add(node);
@@ -252,7 +267,9 @@ export class BusinessPlanningService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext): Promise<void> {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 	}
 
@@ -276,7 +293,8 @@ export class BusinessPlanningService {
 	): Promise<void> {
 		await this.assertActiveActor(actor);
 		const decision = await new PermissionService(this.db).decide(actor, permissionKey);
-		if (!decision.allowed) throw new TenantAccessError('Business planning action is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('Business planning action is not permitted.');
 	}
 
 	private async appendEvidence(
@@ -325,7 +343,8 @@ export class BusinessPlanningService {
 			.where('organisation_id', '=', organisationId)
 			.where('status', '=', 'active')
 			.executeTakeFirst();
-		if (!member) throw new BusinessPlanningValidationError(`${label} must be an active organisation member.`);
+		if (!member)
+			throw new BusinessPlanningValidationError(`${label} must be an active organisation member.`);
 		return member.id;
 	}
 
@@ -342,7 +361,9 @@ export class BusinessPlanningService {
 			.where('lifecycle_status', '=', 'approved')
 			.executeTakeFirst();
 		if (!framework) {
-			throw new BusinessPlanningValidationError('Business plans must be governed by an approved strategy version.');
+			throw new BusinessPlanningValidationError(
+				'Business plans must be governed by an approved strategy version.'
+			);
 		}
 		return framework;
 	}
@@ -352,7 +373,10 @@ export class BusinessPlanningService {
 		organisationId: string,
 		publicId: string
 	): Promise<BusinessPlanRecord> {
-		const plan = await new BusinessPlanningRepository(db).findPlanByPublicId(organisationId, publicId.trim());
+		const plan = await new BusinessPlanningRepository(db).findPlanByPublicId(
+			organisationId,
+			publicId.trim()
+		);
 		if (!plan) throw new RecordNotFoundError('Business plan not found.');
 		if (plan.lifecycle_status !== 'draft') {
 			throw new BusinessPlanningValidationError(
@@ -377,7 +401,9 @@ export class BusinessPlanningService {
 			.where('lifecycle_status', '=', 'active')
 			.executeTakeFirst();
 		if (!objective) {
-			throw new BusinessPlanningValidationError('Initiative objective must be active in the governing strategy version.');
+			throw new BusinessPlanningValidationError(
+				'Initiative objective must be active in the governing strategy version.'
+			);
 		}
 		return objective;
 	}
@@ -391,13 +417,22 @@ export class BusinessPlanningService {
 		const normalizedProject = projectPublicId?.trim() || null;
 		const normalizedBudget = projectBudgetPublicId?.trim() || null;
 		if (!normalizedProject && normalizedBudget) {
-			throw new BusinessPlanningValidationError('A project must be selected before a project budget can be linked.');
+			throw new BusinessPlanningValidationError(
+				'A project must be selected before a project budget can be linked.'
+			);
 		}
 		if (!normalizedProject) return { projectId: null, projectBudgetId: null };
 		const project = await repository.findExecutionProject(organisationId, normalizedProject);
-		if (!project) throw new BusinessPlanningValidationError('Execution project is not active in the organisation scope.');
+		if (!project)
+			throw new BusinessPlanningValidationError(
+				'Execution project is not active in the organisation scope.'
+			);
 		if (!normalizedBudget) return { projectId: project.id, projectBudgetId: null };
-		const budget = await repository.findApprovedExecutionBudget(organisationId, project.id, normalizedBudget);
+		const budget = await repository.findApprovedExecutionBudget(
+			organisationId,
+			project.id,
+			normalizedBudget
+		);
 		if (!budget) {
 			throw new BusinessPlanningValidationError(
 				'Execution budget must be an active project budget with an approved version in the organisation scope.'
@@ -428,7 +463,8 @@ export class BusinessPlanningService {
 		let selectedPlan = plans[0] ?? null;
 		if (selectedPlanPublicId?.trim()) {
 			selectedPlan =
-				(await repository.findPlanByPublicId(actor.organisationId, selectedPlanPublicId.trim())) ?? null;
+				(await repository.findPlanByPublicId(actor.organisationId, selectedPlanPublicId.trim())) ??
+				null;
 			if (!selectedPlan) throw new RecordNotFoundError('Business plan not found.');
 		}
 		if (!selectedPlan) {
@@ -449,28 +485,36 @@ export class BusinessPlanningService {
 				...flags
 			};
 		}
-		const [selectedFramework, objectives, initiatives, milestones, dependencies, components, accountabilities, links] =
-			await Promise.all([
-				this.db
-					.selectFrom('strategy_frameworks')
-					.selectAll()
-					.where('organisation_id', '=', actor.organisationId)
-					.where('id', '=', selectedPlan.strategy_framework_id)
-					.executeTakeFirst(),
-				this.db
-					.selectFrom('strategy_objectives')
-					.selectAll()
-					.where('organisation_id', '=', actor.organisationId)
-					.where('strategy_framework_id', '=', selectedPlan.strategy_framework_id)
-					.orderBy('priority_rank', 'asc')
-					.execute(),
-				repository.listInitiatives(selectedPlan.id),
-				repository.listMilestones(selectedPlan.id),
-				repository.listDependencies(selectedPlan.id),
-				repository.listComponents(selectedPlan.id),
-				repository.listAccountabilities(selectedPlan.id),
-				repository.listInitiativeComponentLinks(selectedPlan.id)
-			]);
+		const [
+			selectedFramework,
+			objectives,
+			initiatives,
+			milestones,
+			dependencies,
+			components,
+			accountabilities,
+			links
+		] = await Promise.all([
+			this.db
+				.selectFrom('strategy_frameworks')
+				.selectAll()
+				.where('organisation_id', '=', actor.organisationId)
+				.where('id', '=', selectedPlan.strategy_framework_id)
+				.executeTakeFirst(),
+			this.db
+				.selectFrom('strategy_objectives')
+				.selectAll()
+				.where('organisation_id', '=', actor.organisationId)
+				.where('strategy_framework_id', '=', selectedPlan.strategy_framework_id)
+				.orderBy('priority_rank', 'asc')
+				.execute(),
+			repository.listInitiatives(selectedPlan.id),
+			repository.listMilestones(selectedPlan.id),
+			repository.listDependencies(selectedPlan.id),
+			repository.listComponents(selectedPlan.id),
+			repository.listAccountabilities(selectedPlan.id),
+			repository.listInitiativeComponentLinks(selectedPlan.id)
+		]);
 		return {
 			approvedFrameworks,
 			plans,
@@ -489,11 +533,18 @@ export class BusinessPlanningService {
 		};
 	}
 
-	async createPlan(actor: TenantActorContext, input: BusinessPlanInput): Promise<BusinessPlanRecord> {
+	async createPlan(
+		actor: TenantActorContext,
+		input: BusinessPlanInput
+	): Promise<BusinessPlanRecord> {
 		await this.requirePermission(actor, 'strategy.manage');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new BusinessPlanningRepository(trx);
-			const framework = await this.requireApprovedFramework(trx, actor.organisationId, input.frameworkPublicId);
+			const framework = await this.requireApprovedFramework(
+				trx,
+				actor.organisationId,
+				input.frameworkPublicId
+			);
 			const planCode = code(input.planCode, 'Plan code');
 			if (await repository.findLatestPlanVersion(actor.organisationId, planCode)) {
 				throw new BusinessPlanningValidationError(
@@ -502,9 +553,20 @@ export class BusinessPlanningService {
 			}
 			const periodStart = dateOnly(input.periodStart, 'Plan period start');
 			const periodEnd = dateOnly(input.periodEnd, 'Plan period end');
-			if (periodEnd < periodStart) throw new BusinessPlanningValidationError('Plan period end must not precede its start.');
-			assertDateWithin(periodStart, framework.horizon_start, framework.horizon_end, 'Plan period start');
-			assertDateWithin(periodEnd, framework.horizon_start, framework.horizon_end, 'Plan period end');
+			if (periodEnd < periodStart)
+				throw new BusinessPlanningValidationError('Plan period end must not precede its start.');
+			assertDateWithin(
+				periodStart,
+				framework.horizon_start,
+				framework.horizon_end,
+				'Plan period start'
+			);
+			assertDateWithin(
+				periodEnd,
+				framework.horizon_start,
+				framework.horizon_end,
+				'Plan period end'
+			);
 			const ownerMemberId = await this.validateActiveMember(
 				trx,
 				actor.organisationId,
@@ -523,8 +585,14 @@ export class BusinessPlanningService {
 				narrative: requiredText(input.narrative, 'Plan narrative', 20_000),
 				currency_code: currency(input.currencyCode),
 				planned_revenue_amount: nonNegativeDecimal(input.plannedRevenueAmount, 'Planned revenue'),
-				planned_opex_amount: nonNegativeDecimal(input.plannedOpexAmount, 'Planned operating expenditure'),
-				planned_capex_amount: nonNegativeDecimal(input.plannedCapexAmount, 'Planned capital expenditure'),
+				planned_opex_amount: nonNegativeDecimal(
+					input.plannedOpexAmount,
+					'Planned operating expenditure'
+				),
+				planned_capex_amount: nonNegativeDecimal(
+					input.plannedCapexAmount,
+					'Planned capital expenditure'
+				),
 				lifecycle_status: 'draft',
 				supersedes_business_plan_id: null,
 				owner_member_id: ownerMemberId,
@@ -538,14 +606,22 @@ export class BusinessPlanningService {
 				'strategy.business_plan.create',
 				'strategy_business_plan',
 				plan.public_id,
-				{ planCode, versionNumber: 1, frameworkPublicId: framework.public_id, lifecycleStatus: 'draft' },
+				{
+					planCode,
+					versionNumber: 1,
+					frameworkPublicId: framework.public_id,
+					lifecycleStatus: 'draft'
+				},
 				{ function: 'F01', subfunction: 'F01.04' }
 			);
 			return plan;
 		});
 	}
 
-	async addInitiative(actor: TenantActorContext, input: InitiativeInput): Promise<StrategyInitiativeRecord> {
+	async addInitiative(
+		actor: TenantActorContext,
+		input: InitiativeInput
+	): Promise<StrategyInitiativeRecord> {
 		await this.requirePermission(actor, 'strategy.manage');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new BusinessPlanningRepository(trx);
@@ -558,13 +634,31 @@ export class BusinessPlanningService {
 			);
 			const startDate = dateOnly(input.startDate, 'Initiative start date');
 			const endDate = dateOnly(input.endDate, 'Initiative end date');
-			if (endDate < startDate) throw new BusinessPlanningValidationError('Initiative end date must not precede its start.');
+			if (endDate < startDate)
+				throw new BusinessPlanningValidationError(
+					'Initiative end date must not precede its start.'
+				);
 			assertDateWithin(startDate, plan.period_start, plan.period_end, 'Initiative start date');
 			assertDateWithin(endDate, plan.period_start, plan.period_end, 'Initiative end date');
 			const [ownerMemberId, sponsorMemberId, execution] = await Promise.all([
-				this.validateActiveMember(trx, actor.organisationId, input.ownerMemberId, 'Initiative owner'),
-				this.validateActiveMember(trx, actor.organisationId, input.sponsorMemberId, 'Initiative sponsor'),
-				this.resolveExecutionLink(repository, actor.organisationId, input.projectPublicId, input.projectBudgetPublicId)
+				this.validateActiveMember(
+					trx,
+					actor.organisationId,
+					input.ownerMemberId,
+					'Initiative owner'
+				),
+				this.validateActiveMember(
+					trx,
+					actor.organisationId,
+					input.sponsorMemberId,
+					'Initiative sponsor'
+				),
+				this.resolveExecutionLink(
+					repository,
+					actor.organisationId,
+					input.projectPublicId,
+					input.projectBudgetPublicId
+				)
 			]);
 			const initiative = await repository.insertInitiative({
 				organisation_id: actor.organisationId,
@@ -582,7 +676,10 @@ export class BusinessPlanningService {
 				end_date: endDate,
 				owner_member_id: ownerMemberId,
 				sponsor_member_id: sponsorMemberId,
-				planned_investment_amount: nonNegativeDecimal(input.plannedInvestmentAmount, 'Planned initiative investment'),
+				planned_investment_amount: nonNegativeDecimal(
+					input.plannedInvestmentAmount,
+					'Planned initiative investment'
+				),
 				planned_fte: nonNegativeFte(input.plannedFte),
 				currency_code: currency(input.currencyCode),
 				project_id: execution.projectId,
@@ -624,7 +721,12 @@ export class BusinessPlanningService {
 			);
 			if (!initiative) throw new RecordNotFoundError('Strategy initiative not found.');
 			const targetDate = dateOnly(input.targetDate, 'Milestone target date');
-			assertDateWithin(targetDate, initiative.start_date, initiative.end_date, 'Milestone target date');
+			assertDateWithin(
+				targetDate,
+				initiative.start_date,
+				initiative.end_date,
+				'Milestone target date'
+			);
 			const ownerMemberId = await this.validateActiveMember(
 				trx,
 				actor.organisationId,
@@ -649,7 +751,10 @@ export class BusinessPlanningService {
 				'strategy.initiative_milestone.create',
 				'strategy_initiative_milestone',
 				milestone.public_id,
-				{ initiativePublicId: initiative.public_id, targetDate: targetDate.toISOString().slice(0, 10) },
+				{
+					initiativePublicId: initiative.public_id,
+					targetDate: targetDate.toISOString().slice(0, 10)
+				},
 				{ function: 'F01', subfunction: 'F01.04' }
 			);
 			return milestone;
@@ -662,14 +767,19 @@ export class BusinessPlanningService {
 			const repository = new BusinessPlanningRepository(trx);
 			const plan = await this.requireDraftPlan(trx, actor.organisationId, input.planPublicId);
 			const [initiative, dependsOn] = await Promise.all([
-				repository.findInitiativeByPublicId(actor.organisationId, plan.id, input.initiativePublicId.trim()),
+				repository.findInitiativeByPublicId(
+					actor.organisationId,
+					plan.id,
+					input.initiativePublicId.trim()
+				),
 				repository.findInitiativeByPublicId(
 					actor.organisationId,
 					plan.id,
 					input.dependsOnInitiativePublicId.trim()
 				)
 			]);
-			if (!initiative || !dependsOn) throw new RecordNotFoundError('Strategy initiative not found.');
+			if (!initiative || !dependsOn)
+				throw new RecordNotFoundError('Strategy initiative not found.');
 			if (initiative.id === dependsOn.id) {
 				throw new BusinessPlanningValidationError('An initiative cannot depend on itself.');
 			}
@@ -744,7 +854,11 @@ export class BusinessPlanningService {
 				'strategy.operating_model_component.create',
 				'strategy_operating_model_component',
 				component.public_id,
-				{ planPublicId: plan.public_id, componentCode: component.component_code, componentType: component.component_type },
+				{
+					planPublicId: plan.public_id,
+					componentCode: component.component_code,
+					componentType: component.component_type
+				},
 				{ function: 'F01', subfunction: 'F01.05' }
 			);
 			return component;
@@ -812,8 +926,16 @@ export class BusinessPlanningService {
 			const repository = new BusinessPlanningRepository(trx);
 			const plan = await this.requireDraftPlan(trx, actor.organisationId, input.planPublicId);
 			const [initiative, component] = await Promise.all([
-				repository.findInitiativeByPublicId(actor.organisationId, plan.id, input.initiativePublicId.trim()),
-				repository.findComponentByPublicId(actor.organisationId, plan.id, input.componentPublicId.trim())
+				repository.findInitiativeByPublicId(
+					actor.organisationId,
+					plan.id,
+					input.initiativePublicId.trim()
+				),
+				repository.findComponentByPublicId(
+					actor.organisationId,
+					plan.id,
+					input.componentPublicId.trim()
+				)
 			]);
 			if (!initiative) throw new RecordNotFoundError('Strategy initiative not found.');
 			if (!component) throw new RecordNotFoundError('Operating-model component not found.');
@@ -841,14 +963,18 @@ export class BusinessPlanningService {
 		organisationId: string,
 		plan: BusinessPlanRecord
 	): Promise<void> {
-		await this.requireApprovedFramework(db, organisationId, (
-			await db
-				.selectFrom('strategy_frameworks')
-				.select('public_id')
-				.where('id', '=', plan.strategy_framework_id)
-				.where('organisation_id', '=', organisationId)
-				.executeTakeFirstOrThrow()
-		).public_id);
+		await this.requireApprovedFramework(
+			db,
+			organisationId,
+			(
+				await db
+					.selectFrom('strategy_frameworks')
+					.select('public_id')
+					.where('id', '=', plan.strategy_framework_id)
+					.where('organisation_id', '=', organisationId)
+					.executeTakeFirstOrThrow()
+			).public_id
+		);
 		const repository = new BusinessPlanningRepository(db);
 		const [initiatives, dependencies, components, accountabilities, links] = await Promise.all([
 			repository.listInitiatives(plan.id),
@@ -858,10 +984,14 @@ export class BusinessPlanningService {
 			repository.listInitiativeComponentLinks(plan.id)
 		]);
 		if (!initiatives.length) {
-			throw new BusinessPlanningValidationError('At least one strategic initiative is required before business-plan approval.');
+			throw new BusinessPlanningValidationError(
+				'At least one strategic initiative is required before business-plan approval.'
+			);
 		}
 		if (!components.length) {
-			throw new BusinessPlanningValidationError('At least one target operating-model component is required before business-plan approval.');
+			throw new BusinessPlanningValidationError(
+				'At least one target operating-model component is required before business-plan approval.'
+			);
 		}
 		for (const component of components) {
 			if (
@@ -892,9 +1022,9 @@ export class BusinessPlanningService {
 					);
 				}
 				if (initiative.project_budget_id) {
-					const budget = (await repository.listApprovedExecutionBudgets(organisationId, initiative.project_id)).find(
-						(candidate) => candidate.id === initiative.project_budget_id
-					);
+					const budget = (
+						await repository.listApprovedExecutionBudgets(organisationId, initiative.project_id)
+					).find((candidate) => candidate.id === initiative.project_budget_id);
 					if (!budget) {
 						throw new BusinessPlanningValidationError(
 							`Initiative ${initiative.initiative_code} no longer references an active approved project budget.`
@@ -913,11 +1043,18 @@ export class BusinessPlanningService {
 			const plan = await this.requireDraftPlan(trx, actor.organisationId, planPublicId);
 			await this.validateApprovalReadiness(trx, actor.organisationId, plan);
 			if (plan.supersedes_business_plan_id) {
-				const source = await repository.findPlanById(actor.organisationId, plan.supersedes_business_plan_id);
+				const source = await repository.findPlanById(
+					actor.organisationId,
+					plan.supersedes_business_plan_id
+				);
 				if (!source || source.lifecycle_status !== 'approved') {
-					throw new BusinessPlanningValidationError('The superseded business-plan evidence is no longer in an approvable lineage state.');
+					throw new BusinessPlanningValidationError(
+						'The superseded business-plan evidence is no longer in an approvable lineage state.'
+					);
 				}
-				await repository.updatePlan(actor.organisationId, source.id, { lifecycle_status: 'superseded' });
+				await repository.updatePlan(actor.organisationId, source.id, {
+					lifecycle_status: 'superseded'
+				});
 			}
 			const approvedAt = this.now();
 			const approved = await repository.updatePlan(actor.organisationId, plan.id, {
@@ -935,7 +1072,11 @@ export class BusinessPlanningService {
 				'strategy.business_plan.approve',
 				'strategy_business_plan',
 				approved.public_id,
-				{ planCode: approved.plan_code, versionNumber: approved.version_number, lifecycleStatus: 'approved' },
+				{
+					planCode: approved.plan_code,
+					versionNumber: approved.version_number,
+					lifecycleStatus: 'approved'
+				},
 				{ function: 'F01', subfunctions: ['F01.04', 'F01.05'] }
 			);
 			return approved;
@@ -949,7 +1090,9 @@ export class BusinessPlanningService {
 			const source = await repository.findPlanByPublicId(actor.organisationId, planPublicId.trim());
 			if (!source) throw new RecordNotFoundError('Business plan not found.');
 			if (source.lifecycle_status !== 'approved') {
-				throw new BusinessPlanningValidationError('Only an approved business plan can start a controlled revision.');
+				throw new BusinessPlanningValidationError(
+					'Only an approved business plan can start a controlled revision.'
+				);
 			}
 			await this.requireApprovedFramework(
 				trx,
@@ -990,19 +1133,30 @@ export class BusinessPlanningService {
 				approved_by_member_id: null,
 				approved_at: null
 			});
-			const [initiatives, milestones, dependencies, components, accountabilities, links] = await Promise.all([
-				repository.listInitiatives(source.id),
-				repository.listMilestones(source.id),
-				repository.listDependencies(source.id),
-				repository.listComponents(source.id),
-				repository.listAccountabilities(source.id),
-				repository.listInitiativeComponentLinks(source.id)
-			]);
+			const [initiatives, milestones, dependencies, components, accountabilities, links] =
+				await Promise.all([
+					repository.listInitiatives(source.id),
+					repository.listMilestones(source.id),
+					repository.listDependencies(source.id),
+					repository.listComponents(source.id),
+					repository.listAccountabilities(source.id),
+					repository.listInitiativeComponentLinks(source.id)
+				]);
 			const initiativeMap = new Map<string, StrategyInitiativeRecord>();
 			for (const initiative of initiatives) {
 				const [ownerMemberId, sponsorMemberId] = await Promise.all([
-					this.validateActiveMember(trx, actor.organisationId, initiative.owner_member_id, 'Initiative owner').catch(() => null),
-					this.validateActiveMember(trx, actor.organisationId, initiative.sponsor_member_id, 'Initiative sponsor').catch(() => null)
+					this.validateActiveMember(
+						trx,
+						actor.organisationId,
+						initiative.owner_member_id,
+						'Initiative owner'
+					).catch(() => null),
+					this.validateActiveMember(
+						trx,
+						actor.organisationId,
+						initiative.sponsor_member_id,
+						'Initiative sponsor'
+					).catch(() => null)
 				]);
 				const copy = await repository.insertInitiative({
 					organisation_id: actor.organisationId,
@@ -1068,9 +1222,13 @@ export class BusinessPlanningService {
 			const pendingComponents = [...components];
 			while (pendingComponents.length) {
 				const nextIndex = pendingComponents.findIndex(
-					(component) => !component.parent_component_id || componentMap.has(component.parent_component_id)
+					(component) =>
+						!component.parent_component_id || componentMap.has(component.parent_component_id)
 				);
-				if (nextIndex < 0) throw new BusinessPlanningValidationError('Operating-model component hierarchy is cyclic.');
+				if (nextIndex < 0)
+					throw new BusinessPlanningValidationError(
+						'Operating-model component hierarchy is cyclic.'
+					);
 				const [component] = pendingComponents.splice(nextIndex, 1);
 				const copy = await repository.insertComponent({
 					organisation_id: actor.organisationId,
@@ -1078,7 +1236,7 @@ export class BusinessPlanningService {
 					public_id: this.publicIdFactory(),
 					component_code: component.component_code,
 					parent_component_id: component.parent_component_id
-						? componentMap.get(component.parent_component_id)?.id ?? null
+						? (componentMap.get(component.parent_component_id)?.id ?? null)
 						: null,
 					component_type: component.component_type,
 					title: component.title,

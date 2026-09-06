@@ -5,7 +5,10 @@ import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { closeDatabase, getDatabase, type Database } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { StrategyService } from './strategy-service';
-import { BusinessPlanningService, BusinessPlanningValidationError } from './business-planning-service';
+import {
+	BusinessPlanningService,
+	BusinessPlanningValidationError
+} from './business-planning-service';
 
 const PREFIX = 'Business Planning Integration ';
 let db: Database;
@@ -88,7 +91,9 @@ async function assignPermissionRole(
 		.where('permission_key', 'in', permissionKeys)
 		.where('is_active', '=', 1)
 		.execute();
-	expect(permissions.map((permission) => permission.permission_key).sort()).toEqual([...permissionKeys].sort());
+	expect(permissions.map((permission) => permission.permission_key).sort()).toEqual(
+		[...permissionKeys].sort()
+	);
 	await db
 		.insertInto('role_permissions')
 		.values(
@@ -119,28 +124,61 @@ async function cleanup(): Promise<void> {
 	const organisationIds = organisations.map((row) => row.id);
 	if (!organisationIds.length) return;
 
-	await db.deleteFrom('strategy_initiative_operating_model_links').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('strategy_operating_model_accountabilities').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('strategy_initiative_dependencies').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('strategy_initiative_milestones').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('strategy_operating_model_components').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('strategy_initiatives').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('strategy_initiative_operating_model_links')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('strategy_operating_model_accountabilities')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('strategy_initiative_dependencies')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('strategy_initiative_milestones')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('strategy_operating_model_components')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('strategy_initiatives')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db
 		.updateTable('strategy_business_plans')
 		.set({ supersedes_business_plan_id: null })
 		.where('organisation_id', 'in', organisationIds)
 		.execute();
-	await db.deleteFrom('strategy_business_plans').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('strategy_environment_factors').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('strategy_business_plans')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('strategy_environment_factors')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('strategy_options').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('strategy_objectives').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('strategy_objectives')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db
 		.updateTable('strategy_frameworks')
 		.set({ supersedes_strategy_framework_id: null })
 		.where('organisation_id', 'in', organisationIds)
 		.execute();
-	await db.deleteFrom('strategy_frameworks').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('project_budget_versions').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('strategy_frameworks')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('project_budget_versions')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('project_budgets').where('organisation_id', 'in', organisationIds).execute();
 
 	const projectRows = await db
@@ -156,12 +194,24 @@ async function cleanup(): Promise<void> {
 		await db.deleteFrom('projects').where('id', 'in', projectIds).execute();
 	}
 	await db.deleteFrom('outbox_events').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('audit_events').where('acting_organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('member_permission_overrides').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('audit_events')
+		.where('acting_organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('member_permission_overrides')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('member_roles').where('organisation_id', 'in', organisationIds).execute();
 	await db.deleteFrom('role_permissions').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_roles').where('organisation_id', 'in', organisationIds).execute();
-	await db.deleteFrom('organisation_members').where('organisation_id', 'in', organisationIds).execute();
+	await db
+		.deleteFrom('organisation_roles')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
+	await db
+		.deleteFrom('organisation_members')
+		.where('organisation_id', 'in', organisationIds)
+		.execute();
 	await db.deleteFrom('organisations').where('id', 'in', organisationIds).execute();
 	await db.deleteFrom('users').where('display_name', 'like', `${PREFIX}%`).execute();
 }
@@ -180,7 +230,9 @@ beforeAll(async () => {
 		'strategy.manage',
 		'strategy.approve'
 	]);
-	await assignPermissionRole(organisationBId, externalMemberId, 'External viewer', ['strategy.view']);
+	await assignPermissionRole(organisationBId, externalMemberId, 'External viewer', [
+		'strategy.view'
+	]);
 	owner = {
 		organisationId: organisationAId,
 		userId: ownerUserId,
@@ -258,7 +310,11 @@ afterAll(async () => {
 
 describe('F01 business planning and operating model', () => {
 	it('governs strategy-to-plan-to-operating-model-to-funded-execution as immutable evidence', async () => {
-		const strategy = new StrategyService(db, randomUUID, () => new Date('2026-09-06T11:00:00.000Z'));
+		const strategy = new StrategyService(
+			db,
+			randomUUID,
+			() => new Date('2026-09-06T11:00:00.000Z')
+		);
 		const framework = await strategy.createFramework(owner, {
 			frameworkCode: 'BP-STRATEGY',
 			title: '2027–2031 Strategy',
@@ -354,7 +410,8 @@ describe('F01 business planning and operating model', () => {
 			componentType: 'business_capability',
 			title: 'Integrated enterprise delivery',
 			currentStateText: 'Function-led handoffs with duplicated reporting.',
-			targetStateText: 'Cross-functional value streams execute from shared canonical enterprise records.'
+			targetStateText:
+				'Cross-functional value streams execute from shared canonical enterprise records.'
 		});
 		await planning.addAccountability(owner, {
 			planPublicId: plan.public_id,
@@ -411,7 +468,10 @@ describe('F01 business planning and operating model', () => {
 			.select(['lifecycle_status', 'title'])
 			.where('id', '=', approved.id)
 			.executeTakeFirstOrThrow();
-		expect(source).toEqual({ lifecycle_status: 'approved', title: '2027 Enterprise Business Plan' });
+		expect(source).toEqual({
+			lifecycle_status: 'approved',
+			title: '2027 Enterprise Business Plan'
+		});
 
 		const auditActions = await db
 			.selectFrom('audit_events')
@@ -447,6 +507,8 @@ describe('F01 business planning and operating model', () => {
 				currencyCode: 'GBP'
 			})
 		).rejects.toBeInstanceOf(TenantAccessError);
-		await expect(planning.getWorkspace(external, randomUUID())).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(planning.getWorkspace(external, randomUUID())).rejects.toBeInstanceOf(
+			RecordNotFoundError
+		);
 	});
 });
