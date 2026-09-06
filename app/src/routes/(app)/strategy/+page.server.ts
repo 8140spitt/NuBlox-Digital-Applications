@@ -37,7 +37,7 @@ async function runAction(
 	if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
 	try {
 		const result = await operation(new StrategyService(getDatabase()), actor);
-		const frameworkPublicId = result?.public_id ?? fallbackFrameworkPublicId ?? null;
+		const frameworkPublicId = fallbackFrameworkPublicId ?? result?.public_id ?? null;
 		throw redirect(
 			303,
 			frameworkPublicId
