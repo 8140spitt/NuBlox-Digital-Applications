@@ -1,0 +1,53 @@
+name: F01 Test Cleanup Helper
+
+on:
+  push:
+    branches:
+      - feat/f01-strategy-intent-analysis
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: ${{ !contains(github.event.head_commit.message, 'Fix F01 integration cleanup') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-strategy-intent-analysis
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Fix strategy integration cleanup
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('app/src/lib/server/strategy/strategy.integration.test.ts')
+          text = path.read_text()
+          anchor = """\t\tawait db\n\t\t\t.deleteFrom('strategy_objectives')\n\t\t\t.where('organisation_id', 'in', organisationIds)\n\t\t\t.execute();\n\t\tawait db\n\t\t\t.deleteFrom('strategy_frameworks')\n"""
+          replacement = """\t\tawait db\n\t\t\t.deleteFrom('strategy_objectives')\n\t\t\t.where('organisation_id', 'in', organisationIds)\n\t\t\t.execute();\n\t\tawait db\n\t\t\t.updateTable('strategy_frameworks')\n\t\t\t.set({ supersedes_strategy_framework_id: null })\n\t\t\t.where('organisation_id', 'in', organisationIds)\n\t\t\t.execute();\n\t\tawait db\n\t\t\t.deleteFrom('strategy_frameworks')\n"""
+          if anchor not in text:
+              raise SystemExit('strategy cleanup anchor not found')
+          path.write_text(text.replace(anchor, replacement, 1))
+      - name: Format test
+        working-directory: app
+        run: pnpm exec prettier --write src/lib/server/strategy/strategy.integration.test.ts
+      - name: Commit cleanup fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/lib/server/strategy/strategy.integration.test.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Fix F01 integration cleanup"
+          git push origin feat/f01-strategy-intent-analysis
