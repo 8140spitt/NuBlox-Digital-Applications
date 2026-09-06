@@ -77,9 +77,7 @@ export class StrategyRepository {
 			.executeTakeFirst();
 	}
 
-	async insertFramework(
-		values: Insertable<StrategyFrameworks>
-	): Promise<StrategyFrameworkRecord> {
+	async insertFramework(values: Insertable<StrategyFrameworks>): Promise<StrategyFrameworkRecord> {
 		const result = await this.db
 			.insertInto('strategy_frameworks')
 			.values(values)
@@ -193,9 +191,7 @@ export class StrategyRepository {
 			.execute();
 	}
 
-	async insertObjective(
-		values: Insertable<StrategyObjectives>
-	): Promise<StrategyObjectiveRecord> {
+	async insertObjective(values: Insertable<StrategyObjectives>): Promise<StrategyObjectiveRecord> {
 		const result = await this.db
 			.insertInto('strategy_objectives')
 			.values(values)

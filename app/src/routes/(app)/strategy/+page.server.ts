@@ -27,7 +27,10 @@ function nullableText(data: FormData, name: string): string | null {
 
 async function runAction(
 	locals: App.Locals,
-	operation: (service: StrategyService, actor: TenantActorContext) => Promise<{ public_id?: string } | void>,
+	operation: (
+		service: StrategyService,
+		actor: TenantActorContext
+	) => Promise<{ public_id?: string } | void>,
 	fallbackFrameworkPublicId?: string | null
 ) {
 	const actor = actorFromLocals(locals);
@@ -125,11 +128,7 @@ export const actions: Actions = {
 						| 'operational'
 						| 'other',
 					direction: text(data, 'direction') as
-						| 'strength'
-						| 'weakness'
-						| 'opportunity'
-						| 'threat'
-						| 'neutral',
+						'strength' | 'weakness' | 'opportunity' | 'threat' | 'neutral',
 					title: text(data, 'title'),
 					analysisText: text(data, 'analysisText'),
 					evidenceReference: nullableText(data, 'evidenceReference'),

@@ -50,13 +50,7 @@ export type EnvironmentFactorInput = {
 	frameworkPublicId: string;
 	contextScope: 'internal' | 'external';
 	dimension:
-		| 'economic'
-		| 'competitive'
-		| 'market'
-		| 'technology'
-		| 'regulatory'
-		| 'operational'
-		| 'other';
+		'economic' | 'competitive' | 'market' | 'technology' | 'regulatory' | 'operational' | 'other';
 	direction: 'strength' | 'weakness' | 'opportunity' | 'threat' | 'neutral';
 	title: string;
 	analysisText: string;
@@ -541,7 +535,9 @@ export class StrategyService {
 				targetDate &&
 				(targetDate < framework.horizon_start || targetDate > framework.horizon_end)
 			) {
-				throw new StrategyValidationError('Objective target date must sit within the strategy horizon.');
+				throw new StrategyValidationError(
+					'Objective target date must sit within the strategy horizon.'
+				);
 			}
 			const priorityRank = positiveInteger(input.priorityRank, 'Priority rank');
 			if (!priorityRank) throw new StrategyValidationError('Priority rank is required.');
@@ -598,13 +594,19 @@ export class StrategyService {
 				);
 			}
 			if (!objectives.length) {
-				throw new StrategyValidationError('At least one strategic objective is required before approval.');
+				throw new StrategyValidationError(
+					'At least one strategic objective is required before approval.'
+				);
 			}
 			if (options.some((option) => option.decision_status === 'proposed')) {
-				throw new StrategyValidationError('Every strategic option must be selected or rejected before approval.');
+				throw new StrategyValidationError(
+					'Every strategic option must be selected or rejected before approval.'
+				);
 			}
 			if (!options.some((option) => option.decision_status === 'selected')) {
-				throw new StrategyValidationError('At least one strategic option must be selected before approval.');
+				throw new StrategyValidationError(
+					'At least one strategic option must be selected before approval.'
+				);
 			}
 
 			const previouslyApproved = await repository.findApprovedVersion(

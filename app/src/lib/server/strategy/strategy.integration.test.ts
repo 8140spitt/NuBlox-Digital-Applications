@@ -216,7 +216,8 @@ describe('F01 strategy intent and analysis', () => {
 			horizonEnd: '2031-12-31',
 			purposeText: 'Create enduring value through the built environment.',
 			visionText: 'Be the most trusted digitally integrated built-environment enterprise.',
-			missionText: 'Connect customer, project, asset and enterprise decisions through governed evidence.',
+			missionText:
+				'Connect customer, project, asset and enterprise decisions through governed evidence.',
 			ownerMemberId
 		});
 		expect(framework.framework_code).toBe('ENTERPRISE');
@@ -239,7 +240,8 @@ describe('F01 strategy intent and analysis', () => {
 		const option = await service.addOption(owner, {
 			frameworkPublicId: framework.public_id,
 			title: 'Lead with one governed digital thread',
-			description: 'Differentiate by carrying strategic intent through delivery into operating assets.',
+			description:
+				'Differentiate by carrying strategic intent through delivery into operating assets.',
 			evaluationSummary: 'High strategic fit and defensible sector differentiation.',
 			priorityRank: 1
 		});
@@ -254,7 +256,8 @@ describe('F01 strategy intent and analysis', () => {
 			frameworkPublicId: framework.public_id,
 			objectiveCode: 'OBJ-01',
 			title: 'Prove enterprise-to-asset continuity',
-			description: 'Run the enterprise and preserve traceability into delivered and operated assets.',
+			description:
+				'Run the enterprise and preserve traceability into delivered and operated assets.',
 			priorityRank: 1,
 			ownerMemberId,
 			targetDate: '2028-12-31'
