@@ -77,7 +77,7 @@ jobs:
     env:
       DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
       DB_POOL_MAX: '5'
-      BETTER_AUTH_SECRET: ci-only-secret-0123456789abcdef0123456789abcdef
+      BETTER_AUTH_SECRET: ci-validation-${{ github.run_id }}-${{ github.run_attempt }}-nublox-test-key
       BETTER_AUTH_URL: http://127.0.0.1:4173
       EMAIL_DELIVERY_MODE: console
 
@@ -126,9 +126,9 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '448'
-          test "$fk_count" = '1063'
-          test "$check_count" = '661'
+          test "$table_count" = '455'
+          test "$fk_count" = '1097'
+          test "$check_count" = '683'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
