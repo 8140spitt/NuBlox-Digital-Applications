@@ -1,133 +1,81 @@
 # SAP Benchmark Coverage in the World-Class NuBlox Rebaseline
 
-**Status:** Governing benchmark interpretation  
+**Status:** Governing enterprise-completeness benchmark and delivery-control input  
 **Effective:** 27 August 2026  
+**Reaffirmed:** 6 September 2026  
 **Source register:** [`../sap-capability-coverage-register.csv`](../sap-capability-coverage-register.csv)
 
-## 1. Purpose
+## 1. Reaffirmation
 
-The repository contains a 64-line SAP capability coverage register spanning enterprise ERP, planning, finance, HCM, procurement, supply chain, manufacturing, warehouse/logistics, service, asset/property management, governance and platform capability.
+NuBlox is still being built to become a complete enterprise operating system for organisations that create, deliver, own and operate the built environment. The 64-line SAP capability register remains a mandatory outside-in completeness benchmark for that ambition.
 
-The register remains strategically valuable because it asks a hard enterprise question:
+The benchmark is reaffirmed because recent delivery has demonstrated a risk that technically valuable horizontal work can become detached from the enterprise and built-environment outcomes the product is meant to deliver. Access control, testing, platform and architecture work remain essential, but they must normally be justified by the active enterprise value stream, reference journey or benchmark gap they unblock.
 
-> **Could a sophisticated organisation run the materially relevant enterprise capability represented by this SAP benchmark natively in NuBlox, with equal or better continuity into projects and built assets?**
+The governing question is therefore not whether NuBlox has an SAP-named module. It is:
 
-It is not a NuBlox architecture, module catalogue or delivery plan.
+> **Could a sophisticated organisation perform the materially relevant enterprise outcome represented by this SAP benchmark natively in NuBlox, with equal or better continuity into projects and built assets?**
 
-SAP product/module names are benchmark labels. NuBlox capability is owned by the 19 native domains and delivered through the nine enterprise value streams, three golden reference journeys and bottom-up architecture.
+If the answer is no, the capability remains a material product gap unless it is explicitly classified as a contextual sector extension.
 
-## 2. Rebaseline rule
+## 2. What the SAP benchmark is and is not
 
-The CSV predates the 27 August 2026 World-Class rebaseline. Three columns are therefore historical rather than governing:
+The register is an **outside-in enterprise completeness control**. It prevents NuBlox from becoming a strong construction application with an underpowered enterprise back office.
 
-- `nublox_domain` uses the former `E##` domain notation;
-- `current_state` was a coarse benchmark judgement made before the World-Class readiness matrix;
-- `target_slice` describes the superseded feature-slice sequence.
+SAP product/module names are benchmark labels only. NuBlox does not copy SAP module boundaries. Capability is owned by the 19 native domains and delivered through the nine enterprise value streams and three golden reference journeys.
 
-These fields may be useful as provenance, but **must not be used to sequence new work**.
+The CSV retains the original `nublox_domain`, `current_state` and `target_slice` columns for provenance. They pre-date the World-Class rebaseline and are not governing sequencing fields. The governing columns are now:
 
-The governing interpretation is now:
+- `world_class_priority` — which reaffirmed delivery pressure the row belongs to;
+- `governing_streams` — which end-to-end value streams must prove the outcome;
+- `governing_journeys` — which golden reference journeys provide browser-level proof where applicable;
+- `delivery_treatment` — whether the row is a sequential priority, active stream depth, mandatory cross-cutting control or contextual extension.
 
-```text
-SAP benchmark capability
-        ↓
-Material enterprise outcome represented
-        ↓
-NuBlox native domain ownership (1–19)
-        ↓
-Enterprise value stream(s)
-        ↓
-Golden reference journey(s), where applicable
-        ↓
-Current evidence / World-Class readiness
-        ↓
-Gap that blocks an end-to-end outcome
-        ↓
-Architecturally complete delivery tranche
-```
+## 3. Mandatory delivery rule
 
-## 3. What the SAP register contributes
+From 6 September 2026 every material product tranche and PR must state:
 
-The SAP benchmark is particularly useful for preventing NuBlox from becoming a construction application with an underpowered enterprise back office.
+1. the enterprise value stream and reference journey it strengthens;
+2. the relevant SAP benchmark row(s) or benchmark family it advances, or explicitly state that no SAP row is materially relevant;
+3. the canonical upstream and downstream records involved;
+4. the user-visible end-to-end outcome that becomes possible or materially better;
+5. the control, reporting, interoperability and automated proof added;
+6. the benchmark/current-state evidence that should be updated after merge.
 
-It tests capability that can otherwise be obscured when focusing on projects and assets, including:
+Horizontal work such as RBAC, platform plumbing, test infrastructure, observability or developer tooling should not become an independent product programme unless it is a blocking prerequisite for an active delivery objective or a material assurance requirement.
 
-- enterprise financial accounting, controlling, treasury, cash and consolidation;
-- HCM, time, attendance, travel and workforce planning;
-- supplier lifecycle and strategic sourcing;
-- material master, inventory, warehouse and logistics execution;
-- demand/supply planning and integrated business planning;
-- production planning, product/process engineering and variant configuration;
-- real-estate and property operations;
-- enterprise GRC and master-data governance;
-- data integration, event management, analytics, platform operations and extensibility.
+## 4. Reaffirmed delivery spine
 
-That breadth is part of the NuBlox target state.
+The programme is deliberately sequential. We do not attempt 64 SAP references in parallel. We close coherent enterprise outcomes that satisfy multiple benchmark rows at once.
 
-## 4. Benchmark families mapped to NuBlox
+### P1 — Complete enterprise finance and record-to-report
 
-The mapping below replaces any interpretation of SAP module boundaries as NuBlox product boundaries.
+**Benchmark pressure:** FI, S/4HANA Finance, EFM, CO, Cash Management, TRM, BPC, SEM, SEM-IP and related planning/consolidation capability.
 
-| SAP benchmark family | Representative references in the CSV | Primary NuBlox native domains | Primary value streams | World-Class interpretation |
-| --- | --- | --- | --- | --- |
-| Enterprise identity, master data and governance | MDG, MDG-M, MDG-S, GRC | **1**, 9, 10, 14, 19 | All; especially VS2, VS8, VS9 | Canonical master records, stewardship, duplicate/merge control, delegated authority, SoD and assurance. |
-| CRM, sales, pricing and customer service | CRM, SD, RTOM, CC, CS, ICM | **2, 3, 4, 17**, 7, 19 | **VS1 Customer-to-cash** | Customer → opportunity → offer/contract → service/revenue continuity without a separate CX architecture. |
-| Finance, controlling, treasury and enterprise performance | FI, S/4HANA Finance, EFM, CO, CM, TRM, BPC, SEM, SEM-IP, FM | **7, 8, 19** | **VS8 Record-to-report**, VS3, VS1, VS2 | Full enterprise accounting, planning, cash/liquidity, profitability, close/consolidation and management drill-through. |
-| Procurement and supplier management | SLC, SRM, MM, S/4HANA Supply Chain | **9, 10**, 7, 19 | **VS2 Source-to-pay**, VS6 | Supplier onboarding → sourcing → order → receipt → verification/AP → payment/ledger. |
-| Supply-chain planning, inventory, warehouse and transport | APO, IBP, SCM, EWM, WM, TM, SPP, GTS | **9, 10, 11, 15, 19** | **VS2**, **VS6 Design-to-asset** | Demand/supply, stock, stores, traceability, logistics and site/asset supply consequences on one thread. |
-| Product engineering, PLM and production | IPPE, PLM, PP, VC | **6, 10, 11, 19** | **VS6 Design-to-asset** | Requirement/product/system/configuration → BOM/production/procurement → installation → handed-over asset. |
-| Portfolio, programme and project controls | PPM, PS | **5, 8, 19** | **VS4 Plan-to-perform**, VS3, VS9 | Portfolio/programme/project, WBS, schedule, resources, progress, cost, risk and controlled change. |
-| People, HCM and multi-resource planning | HCM, TAM, Travel Management, MRS | **12**, 5, 15, 17, 19 | **VS5 Hire-to-retire**, VS4 | Employment → competence → capacity/scheduling → time/payroll → project/service cost and performance. |
-| Quality, EHS and compliance | QM, EHS, GRC | **14**, 12, 13, 18, 19 | **VS9 Risk-to-assurance**, VS6, VS7 | Inspection/test/quality/safety/environment/control evidence through delivery and operations. |
-| Assets, plant, fleet, maintenance and service | EAM, PM, VMS, CS, SPP | **15, 17**, 10, 12, 19 | **VS7 Asset-to-retirement** | Installed asset → work/parts/labour/cost → condition/reliability → renewal/retirement. |
-| Property and real estate | RE, RE-FX | **16**, 8, 17, 19 | **VS7**, VS3 | Property/space/lease/occupancy/FM and enterprise performance. |
-| Data, integration, workflow, analytics and platform operations | BI, DS, EM, NetWeaver, PI, Predictive Analytics, SolMan, TDMS, UX, Xapps | **19**, 1 plus source domains | All | Governed semantic data, APIs/events, automation, observability, migration, UX and permission-aware intelligence. |
-| Merchant/distribution and other sector extensions | POS, Retail, TPM, Oil & Gas | Relevant native domains by business semantics | Relevant value streams | Sector overlays only where the underlying enterprise/built-environment semantics genuinely apply. |
-
-## 5. Relationship to the 19-domain control matrix
-
-The SAP register is an **outside-in benchmark**. The World-Class Capability Control Matrix is the **inside-out NuBlox control baseline**.
-
-They answer different questions:
-
-| Artefact | Question |
-| --- | --- |
-| SAP coverage register | What mature enterprise capability might NuBlox otherwise overlook? |
-| 19-domain control matrix | What does NuBlox own today, how mature is it and which thread is incomplete? |
-| 29-function enterprise taxonomy | What work does a complete enterprise perform? |
-| Platform coverage contract | Which market software categories must the one NuBlox product materially subsume? |
-| Golden journeys | Does the product actually work end to end? |
-
-None should replace another.
-
-## 6. SAP benchmark pressure by current NuBlox readiness
-
-The current control matrix shows the following high-value pressure points where SAP benchmarking reinforces existing rebaseline priorities.
-
-### Priority 1 — complete enterprise finance and record-to-report
-
-SAP FI, S/4HANA Finance, CO, Cash Management, TRM, BPC and SEM expose the remaining gap between NuBlox's strong accounting/project-financial foundations and complete enterprise finance.
-
-The material NuBlox outcome is not “implement FI”. It is:
+**Target outcome:**
 
 ```text
 Operational fact
-→ accounting consequence
-→ AP/AR/cash
+→ AP/AR/cash consequence
 → ledger
+→ bank/clearing evidence
 → period close
+→ fixed assets/intercompany where relevant
 → consolidation
-→ statutory/management reporting
+→ statutory and management reporting
 → drill-through to source evidence
 ```
 
-Primary domains: **7, 8, 19**.
+NuBlox already has meaningful accounting, receivables, AP, supplier-payment and bank-reconciliation foundations. The remaining benchmark gap is full enterprise finance depth rather than another isolated accounting screen.
 
-### Priority 2 — source-to-pay plus material/warehouse continuity
+Primary domains: **7, 8, 19**.  
+Primary streams: **VS8 Record-to-report**, with VS1 and VS2 consequences.  
+Primary proof: **Journey A** plus enterprise reporting evidence.
 
-SAP SLC/SRM/MM/EWM/WM/SCM exposes the gap after NuBlox's current RFQ/PO foundations.
+### P2 — Complete source-to-pay plus materials, inventory and warehouse continuity
 
-The material outcome is:
+**Benchmark pressure:** SLC, SRM, MM, MDG-M, EWM, WM, SCM, TM, SPP and related supply-chain planning capability.
+
+**Target outcome:**
 
 ```text
 Supplier qualification
@@ -135,41 +83,50 @@ Supplier qualification
 → sourcing
 → order/subcontract
 → receipt
-→ inventory/material movement
+→ material identity and stock consequence
+→ issue/return/transfer/site logistics
 → invoice verification
 → AP/payment
 → ledger/project/asset consequence
 ```
 
-Primary domains: **9, 10, 7, 19**.
+The accounting seam is no longer enough. Domain 10 remains a major planned gap and is required before NuBlox can credibly claim enterprise supply-chain capability.
 
-This aligns directly with the planned Materials/Inventory/Logistics domain and the current UX-friction priority in purchasing.
+Primary domains: **9, 10, 7, 19**.  
+Primary streams: **VS2 Source-to-pay** and **VS6 Design-to-asset**.  
+Primary proof: **Journeys A and B**.
 
-### Priority 3 — design/product/production-to-asset continuity
+### P3 — Complete design/product/production-to-installed-asset continuity
 
-SAP PLM/IPPE/PP/VC reinforces the biggest Journey B weakness.
+**Benchmark pressure:** PLM, IPPE, PP, VC plus the design, material, quality, plant and asset consequences represented elsewhere in the register.
 
-The material outcome is:
+**Target outcome:**
 
 ```text
 Requirement
-→ design/system/product definition
-→ approved configuration
+→ information requirement and design responsibility
+→ system/product/configuration definition
+→ approved design
 → material/BOM/production or procurement
 → installation
-→ verification/commissioning
+→ inspection/test
+→ commissioning
+→ handover
 → installed asset configuration
+→ warranty/maintenance obligation
 ```
 
-Primary domains: **6, 10, 11, 13, 14, 15, 19**.
+This is NuBlox's strongest potential differentiator because it joins enterprise product/supply data directly to project delivery and the long-lived built asset.
 
-This is more important to NuBlox than copying SAP PLM packaging because it is where enterprise product data, project delivery and long-lived built assets converge.
+Primary domains: **6, 10, 11, 13, 14, 15, 19**.  
+Primary stream: **VS6 Design-to-asset**.  
+Primary proof: **Journey B**.
 
-### Priority 4 — complete hire-to-retire and cost continuity
+### P4 — Complete hire-to-retire and workforce cost continuity
 
-SAP HCM/TAM/MRS/Travel highlights the difference between workforce scheduling/time foundations and enterprise HCM.
+**Benchmark pressure:** HCM, TAM, MRS and Travel Management.
 
-The material outcome is:
+**Target outcome:**
 
 ```text
 Person
@@ -177,65 +134,109 @@ Person
 → competence
 → mobilisation/capacity
 → schedule/time/attendance
-→ payroll/expenses
+→ leave/expenses/payroll
 → project/service actual cost
 → utilisation/performance
 → exit
 ```
 
-Primary domains: **12, 5, 7, 19**.
+Primary domains: **12, 5, 7, 19**.  
+Primary streams: **VS5 Hire-to-retire** and VS4.  
+Primary proof: **Journeys A/B/C where workforce consequences occur**.
 
-### Priority 5 — enterprise data/platform maturity
+### P5 — Complete enterprise data, integration, analytics and operations
 
-SAP BI/DS/PI/NetWeaver/SolMan/TDMS-style references are useful only as capability questions, not platform templates.
+**Benchmark pressure:** BI, DS, EM, PI, NetWeaver, Predictive Analytics, SolMan, TDMS, UX and Xapps.
 
-NuBlox must strengthen:
+**Target outcome:** governed semantic data and KPIs; cross-domain analytics and drill-through; versioned APIs/events/webhooks; governed import/export and migration; observability and administrative operations; controlled environment/test data; permission/provenance-aware automation and intelligence.
 
-- governed semantic/KPI definitions;
-- cross-domain analytics and drill-through;
-- versioned APIs and webhooks;
-- integration/adaptor governance;
-- data import/export and migration;
-- observability and administrative operations;
-- controlled test-data/environment tooling;
-- permission/provenance-aware automation and intelligence.
+Primary domain: **19** with Domain 1 governance and source-domain ownership.  
+Primary streams: **all**.  
+Primary proof: **all three journeys plus operational evidence**.
 
-Primary domain: **19**.
+P5 is not permission to disappear into platform engineering. Platform work must demonstrate how it enables or proves P1–P4 and the active value stream.
 
-## 7. What is not automatically core
+## 5. Benchmark families mapped to NuBlox
 
-Several entries in the CSV represent industry or operating-model extensions rather than universal NuBlox core scope, for example:
+| SAP benchmark family | Representative references | Primary NuBlox domains | Primary value streams | World-Class interpretation |
+| --- | --- | --- | --- | --- |
+| Enterprise identity, master data and governance | MDG, MDG-M, MDG-S, GRC | **1**, 9, 10, 14, 19 | All; especially VS2, VS8, VS9 | Canonical masters, stewardship, duplicate/merge control, delegated authority, SoD, access review and assurance. |
+| CRM, sales, pricing and customer service | CRM, SD, RTOM, CC, CS, ICM | **2, 3, 4, 17**, 7, 19 | **VS1 Customer-to-cash** | Customer → opportunity → offer/contract → service/revenue continuity. |
+| Finance, controlling, treasury and enterprise performance | FI, S/4HANA Finance, EFM, CO, CM, TRM, BPC, SEM, SEM-IP, FM | **7, 8, 19** | **VS8**, VS3, VS1, VS2 | Accounting, planning, cash/liquidity, profitability, close/consolidation and drill-through. |
+| Procurement and supplier management | SLC, SRM, MM, S/4HANA Supply Chain | **9, 10**, 7, 19 | **VS2**, VS6 | Supplier onboarding → sourcing → order → receipt → verification/AP → payment/ledger. |
+| Supply-chain planning, inventory, warehouse and transport | APO, IBP, SCM, EWM, WM, TM, SPP, GTS | **9, 10, 11, 15, 19** | **VS2**, **VS6** | Demand/supply, stock, stores, traceability, logistics and site/asset consequences. |
+| Product engineering, PLM and production | IPPE, PLM, PP, VC | **6, 10, 11, 19** | **VS6** | Requirement/product/system/configuration → BOM/production/procurement → installation → handed-over asset. |
+| Portfolio, programme and project controls | PPM, PS | **5, 8, 19** | **VS4**, VS3, VS9 | Portfolio/programme/project, WBS, schedule, resources, progress, cost, risk and controlled change. |
+| People, HCM and multi-resource planning | HCM, TAM, Travel Management, MRS | **12**, 5, 15, 17, 19 | **VS5**, VS4 | Employment → competence → capacity/time/payroll → project/service cost and performance. |
+| Quality, EHS and compliance | QM, EHS, GRC | **14**, 12, 13, 18, 19 | **VS9**, VS6, VS7 | Inspection/test/quality/safety/environment/control evidence across delivery and operations. |
+| Assets, plant, fleet, maintenance and service | EAM, PM, VMS, CS, SPP | **15, 17**, 10, 12, 19 | **VS7** | Installed asset → work/parts/labour/cost → condition/reliability → renewal/retirement. |
+| Property and real estate | RE, RE-FX | **16**, 8, 17, 19 | **VS7**, VS3 | Property/space/lease/occupancy/FM and enterprise performance. |
+| Data, integration, workflow, analytics and platform operations | BI, DS, EM, NetWeaver, PI, Predictive Analytics, SolMan, TDMS, UX, Xapps | **19**, 1 plus source domains | All | Semantic data, APIs/events, automation, observability, migration, UX and governed intelligence. |
+| Merchant/distribution and sector extensions | POS, Retail, TPM, Oil & Gas | Relevant native domains | Relevant streams | Contextual extensions only where target organisations materially require the semantics. |
 
-- Oil & Gas;
-- retail;
-- trade-promotion management;
-- point of sale;
-- funds management;
-- incentive/commission management;
-- convergent charging.
+## 6. Relationship to the 19-domain control matrix
 
-These remain useful benchmarks where NuBlox's target organisations genuinely require the underlying semantics. They should be delivered as contextual sector/operating-pattern capability over canonical domains, not as permanent SAP-shaped modules.
+The SAP register and World-Class control matrix are complementary controls:
 
-## 8. Governance of the CSV going forward
+| Artefact | Governing question |
+| --- | --- |
+| SAP coverage register | What mature enterprise capability might NuBlox otherwise overlook? |
+| 19-domain control matrix | Where is NuBlox currently strong or weak and which digital thread is incomplete? |
+| 29-function enterprise taxonomy | What work does a complete enterprise perform? |
+| Platform coverage contract | Which software-category outcomes must the one NuBlox product materially subsume? |
+| Golden journeys | Does the integrated product actually work end to end? |
 
-The existing CSV is retained as benchmark provenance. From this rebaseline forward:
+A capability is not treated as delivered merely because a table, service or route exists. World-Class evidence must include enterprise depth, control, digital-thread continuity, experience, reporting/intelligence, interoperability where relevant and automated proof.
 
-1. `sap_reference` remains a benchmark label only.
-2. `classification` remains useful for distinguishing functional, platform and industry-extension references.
-3. the legacy `E##` mapping must be translated to current native domain IDs before using a row in planning.
-4. `target_slice` is superseded and must not drive priority.
-5. current capability judgement must be reconciled with `10-capability-control-matrix.md` and executable repository evidence.
-6. a SAP gap becomes a delivery candidate only when it blocks an enterprise value stream, golden journey, statutory/operational requirement or a materially relevant world-class benchmark.
-7. NuBlox may deliberately solve a benchmark outcome differently and more coherently than SAP.
+## 7. Current programme reset
 
-## 9. Benchmark success criterion
+As of 6 September 2026 the Source-to-Pay accounting seam has materially advanced through approved AP → accounting → supplier payment → bank settlement → project-financial drill-through. Recent RBAC and access-governance work has also materially strengthened the GRC benchmark.
+
+Those achievements do not close the broader benchmark. The next product work must return visibly to the delivery spine above.
+
+The programme sequence is:
+
+1. **close Journey A / P1 enterprise-finance proof** rather than add more isolated finance controls;
+2. **enter P2 materials/inventory/warehouse continuity**, closing the Domain 10 W0 gap;
+3. **drive P3 Journey B requirement-to-installed-asset continuity**, including production/fabrication where required;
+4. **complete P4 hire-to-retire/workforce cost continuity**;
+5. **deepen P5 platform/data capability in service of the active streams and then as an enterprise operations layer**;
+6. continue stream-core depth in CRM/commercial/projects/QHSE/assets/property/service where golden journeys expose blocking gaps;
+7. implement contextual sector extensions only when a target operating model requires them.
+
+This sequence can be changed only by an explicit programme rebaseline supported by evidence, not by convenience or the availability of an isolated technical task.
+
+## 8. PR and tranche acceptance gate
+
+A material tranche is acceptable only when reviewers can answer all of the following:
+
+- Which benchmark row/family does it advance?
+- Which value-stream outcome becomes more complete?
+- Which golden journey proves the consequence?
+- What canonical records and transaction boundaries are used?
+- What downstream project/asset/financial consequences are preserved?
+- What control and correction semantics apply?
+- What user workflow becomes materially better?
+- What reporting or drill-through evidence is available?
+- What integration boundary is required, if any?
+- What real database and browser proof demonstrates the result?
+
+If the work cannot answer these questions, it is either an explicitly justified prerequisite or it should not displace the active product objective.
+
+## 9. Contextual extensions
+
+Oil & Gas, retail, trade-promotion management, point of sale, funds management, incentive/commission management and convergent charging are not automatically universal core scope. They remain benchmark questions and are implemented only where the underlying operating model is materially relevant.
+
+They must be expressed through canonical NuBlox domains rather than permanent SAP-shaped module boundaries.
+
+## 10. Benchmark success criterion
 
 NuBlox does not succeed by reproducing SAP's catalogue.
 
-It succeeds when the materially relevant enterprise outcomes represented by that catalogue can be performed natively, efficiently and governably while preserving a digital thread that SAP-style ERP boundaries often leave to adjacent project, BIM/CDE, PLM, EAM or specialist systems.
+It succeeds when the materially relevant enterprise outcomes represented by that catalogue can be performed natively, efficiently and governably while preserving a stronger digital thread across enterprise management, construction delivery and the resulting built asset.
 
-The decisive question is therefore:
+The decisive test remains:
 
 > **Can NuBlox equal or exceed the enterprise capability represented by this SAP benchmark while connecting it more directly to construction delivery and the resulting built asset?**
 
-That is how this register should guide the World-Class programme.
+From this reaffirmation forward, that question is part of delivery control rather than background strategy.
