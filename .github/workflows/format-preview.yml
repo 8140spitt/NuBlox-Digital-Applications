@@ -5,11 +5,17 @@ on:
     branches:
       - rbac/access-policy-decision-evidence
 
+permissions:
+  contents: write
+
 jobs:
   format:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: rbac/access-policy-decision-evidence
       - uses: pnpm/action-setup@v4
         with:
           version: 10.14.0
@@ -22,17 +28,21 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
-      - name: Format changed TypeScript and print exact content
+      - name: Format changed TypeScript
         working-directory: app
         run: |
           pnpm exec prettier --write \
             src/lib/server/organisations/role-delegation-policy.ts \
             src/lib/server/organisations/role-delegation-decision-evidence.integration.test.ts
-          echo 'POLICY_BEGIN'
-          base64 -w 0 src/lib/server/organisations/role-delegation-policy.ts
-          echo
-          echo 'POLICY_END'
-          echo 'TEST_BEGIN'
-          base64 -w 0 src/lib/server/organisations/role-delegation-decision-evidence.integration.test.ts
-          echo
-          echo 'TEST_END'
+      - name: Commit formatter output
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add \
+            app/src/lib/server/organisations/role-delegation-policy.ts \
+            app/src/lib/server/organisations/role-delegation-decision-evidence.integration.test.ts
+          git commit -m 'Format delegation decision evidence'
+          git push origin HEAD:rbac/access-policy-decision-evidence
