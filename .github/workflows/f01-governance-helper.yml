@@ -1,0 +1,76 @@
+name: F01 Governance Helper
+
+on:
+  push:
+    branches:
+      - feat/f01-strategy-intent-analysis
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: ${{ !contains(github.event.head_commit.message, 'Align F01 capability evidence') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-strategy-intent-analysis
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Align F01 capability evidence
+        shell: python
+        run: |
+          from pathlib import Path
+
+          registry = Path('app/src/lib/navigation/capability-registry.ts')
+          text = registry.read_text()
+          old_note = "\t\tmaturityNote:\n\t\t\t'Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native; treasury, consolidation and enterprise-planning depth remain.',"
+          new_note = "\t\tmaturityNote:\n\t\t\t'Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native. F01 strategic intent, environmental analysis, strategic options/objectives and controlled strategy version approval are now native; business planning, operating-model, KPI/review/scenario, treasury and consolidation depth remain.',"
+          if old_note not in text:
+              raise SystemExit('D8 maturity note anchor not found')
+          text = text.replace(old_note, new_note, 1)
+
+          old_permissions = "\t\t\t'commercial.cash_flow.',\n\t\t\t'finance.accounting.'\n\t\t],"
+          new_permissions = "\t\t\t'commercial.cash_flow.',\n\t\t\t'finance.accounting.',\n\t\t\t'strategy.'\n\t\t],"
+          if old_permissions not in text:
+              raise SystemExit('D8 permission anchor not found')
+          text = text.replace(old_permissions, new_permissions, 1)
+
+          route_anchor = "\t\troutes: [\n\t\t\t{\n\t\t\t\tlabel: 'Project cost control',"
+          route_replacement = "\t\troutes: [\n\t\t\t{\n\t\t\t\tlabel: 'Strategy & enterprise planning',\n\t\t\t\thref: '/strategy',\n\t\t\t\tanyPermissionNamespaces: ['strategy.']\n\t\t\t},\n\t\t\t{\n\t\t\t\tlabel: 'Project cost control',"
+          if route_anchor not in text:
+              raise SystemExit('D8 route anchor not found')
+          registry.write_text(text.replace(route_anchor, route_replacement, 1))
+
+          function_map = Path('docs/architecture/function-capability-map/map-f01-f08.md')
+          text = function_map.read_text()
+          old_reality = "**Current reality:** Native foundations exist; material depth remains in D8. Domain maturity is not proof that every sub-function is complete."
+          new_reality = "**Current reality:** F01.01–F01.03 now have native canonical strategic intent, environmental analysis, strategic options/objectives, controlled approval and version supersession through PR #127. F01.04–F01.08 remain incomplete: business planning, operating-model linkage, KPI management, strategic review and scenario/foresight depth are still required."
+          if old_reality not in text:
+              raise SystemExit('F01 current-reality anchor not found')
+          function_map.write_text(text.replace(old_reality, new_reality, 1))
+      - name: Format changed application files
+        working-directory: app
+        run: pnpm exec prettier --write src/lib/navigation/capability-registry.ts src/lib/server/organisations/standard-role-reconciliation.ts src/lib/server/strategy/strategy-bootstrap.ts
+      - name: Commit governance alignment
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/lib/navigation/capability-registry.ts \
+            app/src/lib/server/organisations/standard-role-reconciliation.ts \
+            app/src/lib/server/strategy/strategy-bootstrap.ts \
+            docs/architecture/function-capability-map/map-f01-f08.md
+          git diff --cached --quiet && exit 0
+          git commit -m "Align F01 capability evidence"
+          git push origin feat/f01-strategy-intent-analysis
