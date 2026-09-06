@@ -28,6 +28,8 @@ The taxonomy sits **above business processes but beside, not inside, the capabil
 
 It answers **what work an enterprise performs**. The 19 native capability domains answer **what NuBlox capability owns/supports that work**. Construction lifecycle, careers, functional roles, job profiles, organisation positions, organisation access roles, project roles and permissions are separate dimensions.
 
+The complete product-side crosswalk is governed by [`../../world-class/12-enterprise-function-native-capability-map.md`](../../world-class/12-enterprise-function-native-capability-map.md) and the detailed [`../function-capability-map/`](../function-capability-map/) shards. That map covers all 29 functions and all 353 L2 sub-functions and shows which native NuBlox domains must compose each area of work.
+
 Mappings from an enterprise activity should ultimately identify:
 
 - canonical input/output records (Layer 1);
