@@ -45,10 +45,10 @@ jobs:
               'app/src/lib/server/capabilities/native-capability-registry.ts',
               'app/src/lib/navigation/capability-registry.ts'
           )
+          script = script.split('# Governing evidence reflects Tranche B once this PR is merged.', 1)[0]
           Path('/tmp/f01-review-fixes.py').write_text(script + '\n')
           PY
           python /tmp/f01-review-fixes.py
-          # The Actions token cannot update workflow definitions; that count-only update is committed separately.
           git checkout -- .github/workflows/database-migration-validation.yml
       - name: Format changed application files
         working-directory: app
@@ -80,7 +80,6 @@ jobs:
             app/src/lib/navigation/capability-registry.ts \
             'app/src/routes/(app)/strategy/+page.svelte' \
             'app/src/routes/(app)/strategy/planning/+page.svelte' \
-            database/migrations/20260906204500_strategy_business_planning_operating_model.sql \
-            docs/architecture/function-capability-map/map-f01-f08.md
+            database/migrations/20260906204500_strategy_business_planning_operating_model.sql
           git commit -m 'Address F01 tranche B review findings'
           git push origin HEAD:feat/f01-business-planning-operating-model
