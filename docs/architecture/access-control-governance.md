@@ -81,6 +81,19 @@ For an effective configured policy:
 
 The ceiling is evaluated centrally so member-role replacement and organisation invitations cannot diverge into separate delegation rules.
 
+### Delegation decision provenance
+
+The delegation policy boundary exposes explainable evaluation entry points alongside the compatibility decision APIs. An explanation returns the unchanged allow/deny decision plus evidence describing how that result was reached:
+
+- the exact evaluation instant;
+- the decision basis: no access change, Owner boundary, active Owner, configured delegated-authority policy, `organisation.manage`, or the actor's effective-permission ceiling;
+- the configured policy public identity when a policy governed the decision;
+- the policy lifecycle state (`active`, `not-effective` or `expired`) when applicable.
+
+The existing `decideOrganisationRoleDelegation`, `decideOrganisationRoleDefinitionDelegation` and `decideOrganisationPermissionDelegation` contracts remain unchanged and are implemented through their explainable counterparts. This keeps existing authorization call sites stable while allowing governed mutations and future policy engines to retain decision provenance deliberately.
+
+Decision evidence never grants action authority and is not a replacement for audit. A service that persists or communicates the evidence remains responsible for preserving correlation, subject identity and the surrounding business mutation.
+
 Delegated authority remains security governance only. Enterprise functions, functional roles, job profiles, careers, organisation positions and project business roles neither configure nor inherit these policies.
 
 ## 4. Permission decision precedence
@@ -176,6 +189,8 @@ Audit evidence is not a substitute for current-state relational integrity, and c
 
 ## 9. Governance direction
 
-With stable role identity, lifecycle enforcement, SoD controls, independent scoped attestation and Owner-governed delegation ceilings established, the next access-control evolution should focus on delegated authority by project/value/domain scope, access-policy decision evidence, and explicit audit evidence for automatic standard-role binding/reconciliation.
+With stable role identity, lifecycle enforcement, SoD controls, independent scoped attestation, Owner-governed delegation ceilings and explainable delegation decisions established, the next access-control evolution should focus on a true scoped access-assignment primitive for delegated authority by project/value/domain, durable propagation of policy-decision evidence into access-mutation audit records, and explicit audit evidence for automatic standard-role binding/reconciliation.
+
+Project scope must not be represented only as metadata on a delegation policy while the resulting `member_roles` assignment remains organisation-wide. Any project/value/domain delegation model must constrain the resulting access grant itself and participate in runtime permission precedence, lifecycle, SoD and access review.
 
 Organisation positions may carry recommended access templates in future, but activation must remain an explicit, auditable access-control decision.

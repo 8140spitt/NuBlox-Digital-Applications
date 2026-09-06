@@ -17,9 +17,49 @@ export type RoleDelegationDecision = {
 	deniedPermissionKeys: string[];
 };
 
+export type RoleDelegationDecisionBasis =
+	| 'no-access-change'
+	| 'owner-required'
+	| 'active-owner'
+	| 'configured-policy'
+	| 'organisation-manage'
+	| 'effective-permission-ceiling';
+
+export type RoleDelegationPolicyState = 'active' | 'not-effective' | 'expired';
+
+export type RoleDelegationDecisionEvidence = {
+	evaluatedAt: string;
+	basis: RoleDelegationDecisionBasis;
+	policyPublicId: string | null;
+	policyState: RoleDelegationPolicyState | null;
+};
+
+export type RoleDelegationEvaluation = {
+	decision: RoleDelegationDecision;
+	evidence: RoleDelegationDecisionEvidence;
+};
+
 export type RoleDelegationOptions = {
 	at?: Date;
 };
+
+function evaluation(
+	decision: RoleDelegationDecision,
+	basis: RoleDelegationDecisionBasis,
+	at: Date,
+	policyPublicId: string | null = null,
+	policyState: RoleDelegationPolicyState | null = null
+): RoleDelegationEvaluation {
+	return {
+		decision,
+		evidence: {
+			evaluatedAt: at.toISOString(),
+			basis,
+			policyPublicId,
+			policyState
+		}
+	};
+}
 
 export async function hasActiveOwnerRole(
 	db: DatabaseExecutor,
@@ -86,25 +126,37 @@ async function requestsOwnerRole(
 	return Boolean(row);
 }
 
-async function configuredPolicyDecision(
+async function configuredPolicyEvaluation(
 	db: DatabaseExecutor,
 	actor: TenantActorContext,
 	rolePublicIds: readonly string[],
 	permissionKeys: readonly string[],
 	at: Date
-): Promise<RoleDelegationDecision | null> {
+): Promise<RoleDelegationEvaluation | null> {
 	const policy = await db
 		.selectFrom('organisation_delegation_policies')
-		.select(['id', 'effective_from', 'expires_at'])
+		.select(['id', 'public_id', 'effective_from', 'expires_at'])
 		.where('organisation_id', '=', actor.organisationId)
 		.where('organisation_member_id', '=', actor.memberId)
 		.executeTakeFirst();
 	if (!policy) return null;
 	if (policy.effective_from !== null && policy.effective_from > at) {
-		return { allowed: false, deniedPermissionKeys: [POLICY_NOT_EFFECTIVE_GUARD] };
+		return evaluation(
+			{ allowed: false, deniedPermissionKeys: [POLICY_NOT_EFFECTIVE_GUARD] },
+			'configured-policy',
+			at,
+			policy.public_id,
+			'not-effective'
+		);
 	}
 	if (policy.expires_at !== null && policy.expires_at <= at) {
-		return { allowed: false, deniedPermissionKeys: [POLICY_EXPIRED_GUARD] };
+		return evaluation(
+			{ allowed: false, deniedPermissionKeys: [POLICY_EXPIRED_GUARD] },
+			'configured-policy',
+			at,
+			policy.public_id,
+			'expired'
+		);
 	}
 
 	const denied = new Set<string>();
@@ -153,54 +205,92 @@ async function configuredPolicyDecision(
 		}
 	}
 
-	return { allowed: denied.size === 0, deniedPermissionKeys: [...denied].sort() };
+	return evaluation(
+		{ allowed: denied.size === 0, deniedPermissionKeys: [...denied].sort() },
+		'configured-policy',
+		at,
+		policy.public_id,
+		'active'
+	);
 }
 
-async function decidePermissionCeiling(
+async function evaluatePermissionCeiling(
 	db: DatabaseExecutor,
 	actor: TenantActorContext,
 	permissionKeys: readonly string[],
 	at: Date
-): Promise<RoleDelegationDecision> {
+): Promise<RoleDelegationEvaluation> {
 	const uniquePermissionKeys = [...new Set(permissionKeys)];
-	if (uniquePermissionKeys.length === 0) return { allowed: true, deniedPermissionKeys: [] };
+	if (uniquePermissionKeys.length === 0) {
+		return evaluation({ allowed: true, deniedPermissionKeys: [] }, 'no-access-change', at);
+	}
 
 	const permissionService = new PermissionService(db);
 	const organisationManage = await permissionService.decide(actor, 'organisation.manage', { at });
-	if (organisationManage.allowed) return { allowed: true, deniedPermissionKeys: [] };
+	if (organisationManage.allowed) {
+		return evaluation({ allowed: true, deniedPermissionKeys: [] }, 'organisation-manage', at);
+	}
 
 	const decisions = await permissionService.decideMany(actor, uniquePermissionKeys, { at });
 	const deniedPermissionKeys = uniquePermissionKeys.filter(
 		(permissionKey) => !(decisions.get(permissionKey)?.allowed ?? false)
 	);
-	return {
-		allowed: deniedPermissionKeys.length === 0,
-		deniedPermissionKeys
-	};
+	return evaluation(
+		{
+			allowed: deniedPermissionKeys.length === 0,
+			deniedPermissionKeys
+		},
+		'effective-permission-ceiling',
+		at
+	);
 }
 
-async function decideRoleAndPermissionDelegation(
+async function evaluateRoleAndPermissionDelegation(
 	db: DatabaseExecutor,
 	actor: TenantActorContext,
 	rolePublicIds: readonly string[],
 	permissionKeys: readonly string[],
 	at: Date
-): Promise<RoleDelegationDecision> {
+): Promise<RoleDelegationEvaluation> {
 	await ensureStandardAccessRoleBindings(db, actor.organisationId);
+	const activeOwner = await hasActiveOwnerRole(db, actor, at);
 
-	if (
-		(await requestsOwnerRole(db, actor.organisationId, rolePublicIds)) &&
-		!(await hasActiveOwnerRole(db, actor, at))
-	) {
-		return { allowed: false, deniedPermissionKeys: [OWNER_DELEGATION_GUARD] };
+	if ((await requestsOwnerRole(db, actor.organisationId, rolePublicIds)) && !activeOwner) {
+		return evaluation(
+			{ allowed: false, deniedPermissionKeys: [OWNER_DELEGATION_GUARD] },
+			'owner-required',
+			at
+		);
 	}
-	if (await hasActiveOwnerRole(db, actor, at)) {
-		return { allowed: true, deniedPermissionKeys: [] };
+	if (activeOwner) {
+		return evaluation({ allowed: true, deniedPermissionKeys: [] }, 'active-owner', at);
 	}
 
-	const configured = await configuredPolicyDecision(db, actor, rolePublicIds, permissionKeys, at);
+	const configured = await configuredPolicyEvaluation(db, actor, rolePublicIds, permissionKeys, at);
 	if (configured !== null) return configured;
-	return decidePermissionCeiling(db, actor, permissionKeys, at);
+	return evaluatePermissionCeiling(db, actor, permissionKeys, at);
+}
+
+/**
+ * Explains which organisation access roles an already-authorised action may
+ * delegate. The decision remains identical to decideOrganisationRoleDelegation,
+ * while the evidence identifies which access-control path produced that result.
+ */
+export async function explainOrganisationRoleDelegation(
+	db: DatabaseExecutor,
+	actor: TenantActorContext,
+	rolePublicIds: readonly string[],
+	options: RoleDelegationOptions = {}
+): Promise<RoleDelegationEvaluation> {
+	const at = options.at ?? new Date();
+	if (rolePublicIds.length === 0) {
+		return evaluation({ allowed: true, deniedPermissionKeys: [] }, 'no-access-change', at);
+	}
+	const permissionKeys = await new OrganisationRoleRepository(db).listPermissionKeysForActiveRoles(
+		actor.organisationId,
+		rolePublicIds
+	);
+	return evaluateRoleAndPermissionDelegation(db, actor, rolePublicIds, permissionKeys, at);
 }
 
 /**
@@ -218,13 +308,26 @@ export async function decideOrganisationRoleDelegation(
 	rolePublicIds: readonly string[],
 	options: RoleDelegationOptions = {}
 ): Promise<RoleDelegationDecision> {
-	if (rolePublicIds.length === 0) return { allowed: true, deniedPermissionKeys: [] };
-	const at = options.at ?? new Date();
-	const permissionKeys = await new OrganisationRoleRepository(db).listPermissionKeysForActiveRoles(
-		actor.organisationId,
-		rolePublicIds
+	return (await explainOrganisationRoleDelegation(db, actor, rolePublicIds, options)).decision;
+}
+
+/**
+ * Explains the delegation ceiling applied to a proposed access-role definition.
+ */
+export async function explainOrganisationRoleDefinitionDelegation(
+	db: DatabaseExecutor,
+	actor: TenantActorContext,
+	rolePublicId: string,
+	permissionKeys: readonly string[],
+	options: RoleDelegationOptions = {}
+): Promise<RoleDelegationEvaluation> {
+	return evaluateRoleAndPermissionDelegation(
+		db,
+		actor,
+		[rolePublicId],
+		permissionKeys,
+		options.at ?? new Date()
 	);
-	return decideRoleAndPermissionDelegation(db, actor, rolePublicIds, permissionKeys, at);
 }
 
 /**
@@ -239,13 +342,33 @@ export async function decideOrganisationRoleDefinitionDelegation(
 	permissionKeys: readonly string[],
 	options: RoleDelegationOptions = {}
 ): Promise<RoleDelegationDecision> {
-	return decideRoleAndPermissionDelegation(
-		db,
-		actor,
-		[rolePublicId],
-		permissionKeys,
-		options.at ?? new Date()
-	);
+	return (
+		await explainOrganisationRoleDefinitionDelegation(
+			db,
+			actor,
+			rolePublicId,
+			permissionKeys,
+			options
+		)
+	).decision;
+}
+
+/**
+ * Explains the delegation ceiling applied while defining a new custom role.
+ */
+export async function explainOrganisationPermissionDelegation(
+	db: DatabaseExecutor,
+	actor: TenantActorContext,
+	permissionKeys: readonly string[],
+	options: RoleDelegationOptions = {}
+): Promise<RoleDelegationEvaluation> {
+	const at = options.at ?? new Date();
+	if (await hasActiveOwnerRole(db, actor, at)) {
+		return evaluation({ allowed: true, deniedPermissionKeys: [] }, 'active-owner', at);
+	}
+	const configured = await configuredPolicyEvaluation(db, actor, [], permissionKeys, at);
+	if (configured !== null) return configured;
+	return evaluatePermissionCeiling(db, actor, permissionKeys, at);
 }
 
 /**
@@ -258,11 +381,6 @@ export async function decideOrganisationPermissionDelegation(
 	permissionKeys: readonly string[],
 	options: RoleDelegationOptions = {}
 ): Promise<RoleDelegationDecision> {
-	const at = options.at ?? new Date();
-	if (await hasActiveOwnerRole(db, actor, at)) {
-		return { allowed: true, deniedPermissionKeys: [] };
-	}
-	const configured = await configuredPolicyDecision(db, actor, [], permissionKeys, at);
-	if (configured !== null) return configured;
-	return decidePermissionCeiling(db, actor, permissionKeys, at);
+	return (await explainOrganisationPermissionDelegation(db, actor, permissionKeys, options))
+		.decision;
 }
