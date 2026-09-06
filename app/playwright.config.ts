@@ -26,6 +26,7 @@ if (!process.env.E2E_DATABASE_URL) {
 }
 
 process.env.BETTER_AUTH_URL = appUrl;
+process.env.NUBLOX_BROWSER_E2E = '1';
 
 export default defineConfig({
 	globalSetup: './e2e/global-setup.mjs',

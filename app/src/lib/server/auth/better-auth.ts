@@ -75,6 +75,7 @@ const devTrustedOrigins = Array.from(
 	new Set([betterAuthUrl, 'http://localhost:5173', 'http://127.0.0.1:5173'])
 );
 const runningUnderVitest = import.meta.env.MODE === 'test';
+const runningUnderBrowserE2E = env.NUBLOX_BROWSER_E2E === '1';
 
 export const authPool = createPool({
 	uri: requireEnv('DATABASE_URL'),
@@ -95,6 +96,7 @@ export const auth = betterAuth({
 	secret: requireEnv('BETTER_AUTH_SECRET'),
 	trustedOrigins: dev ? devTrustedOrigins : [betterAuthUrl],
 	database: authPool,
+	...(runningUnderBrowserE2E ? { rateLimit: { enabled: false } } : {}),
 	user: {
 		modelName: 'auth_users',
 		fields: {
