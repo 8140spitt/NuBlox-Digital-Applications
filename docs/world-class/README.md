@@ -41,6 +41,7 @@ See [07-world-class-baseline.md](07-world-class-baseline.md) and [10-capability-
 | Concern | Authority |
 | --- | --- |
 | Product ambition, value streams and delivery priorities | this `docs/world-class/` suite |
+| How all 29 enterprise functions / 353 sub-functions are carried out through native NuBlox capability | [`12-enterprise-function-native-capability-map.md`](12-enterprise-function-native-capability-map.md) and its detailed crosswalk shards |
 | Bottom-up architecture and invariants | [`../architecture/bottom-up/README.md`](../architecture/bottom-up/README.md) |
 | Target-state market/category breadth | [`../architecture/bottom-up/platform-coverage-contract.md`](../architecture/bottom-up/platform-coverage-contract.md) |
 | Construction and Built Environment domain model | [`../construction-and-built-environment.md`](../construction-and-built-environment.md) |
@@ -79,6 +80,7 @@ No document in this suite replaces the bottom-up architecture. This suite govern
 9. [`09-delivery-governance.md`](09-delivery-governance.md) — prioritisation, completeness scoring and repository governance.
 10. [`10-capability-control-matrix.md`](10-capability-control-matrix.md) — the evidence-led 19-domain × value-stream × golden-journey control matrix and current World-Class readiness.
 11. [`11-sap-benchmark-coverage.md`](11-sap-benchmark-coverage.md) — how the 64-reference SAP coverage register challenges enterprise breadth without becoming NuBlox architecture or delivery sequencing.
+12. [`12-enterprise-function-native-capability-map.md`](12-enterprise-function-native-capability-map.md) — the complete 29-function / 353-sub-function map into native NuBlox domains, value streams and practical operating surfaces.
 
 ## North-star outcome
 
