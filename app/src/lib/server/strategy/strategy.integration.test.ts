@@ -48,6 +48,11 @@ async function cleanup(): Promise<void> {
 			.where('organisation_id', 'in', organisationIds)
 			.execute();
 		await db
+			.updateTable('strategy_frameworks')
+			.set({ supersedes_strategy_framework_id: null })
+			.where('organisation_id', 'in', organisationIds)
+			.execute();
+		await db
 			.deleteFrom('strategy_frameworks')
 			.where('organisation_id', 'in', organisationIds)
 			.execute();
