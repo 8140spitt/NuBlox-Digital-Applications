@@ -1,0 +1,112 @@
+name: F01 Owner Validation Helper
+
+on:
+  push:
+    branches:
+      - feat/f01-strategy-intent-analysis
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: ${{ !contains(github.event.head_commit.message, 'Revalidate F01 revision owners') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-strategy-intent-analysis
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Revalidate copied strategy owners
+        shell: python
+        run: |
+          from pathlib import Path
+
+          service = Path('app/src/lib/server/strategy/strategy-service.ts')
+          text = service.read_text()
+
+          validate_anchor = """\tprivate async validateOwnerMember(\n\t\tdb: DatabaseExecutor,\n\t\torganisationId: string,\n\t\tmemberId: string | null | undefined\n\t): Promise<string | null> {\n\t\tconst normalized = memberId?.trim() || null;\n\t\tif (!normalized) return null;\n\t\tconst row = await db\n\t\t\t.selectFrom('organisation_members')\n\t\t\t.select('id')\n\t\t\t.where('id', '=', normalized)\n\t\t\t.where('organisation_id', '=', organisationId)\n\t\t\t.where('status', '=', 'active')\n\t\t\t.executeTakeFirst();\n\t\tif (!row) throw new StrategyValidationError('Owner must be an active organisation member.');\n\t\treturn normalized;\n\t}\n"""
+          validate_replacement = validate_anchor + """\n\tprivate async activeOwnerMemberOrNull(\n\t\tdb: DatabaseExecutor,\n\t\torganisationId: string,\n\t\tmemberId: string | null | undefined\n\t): Promise<string | null> {\n\t\tconst normalized = memberId?.trim() || null;\n\t\tif (!normalized) return null;\n\t\tconst row = await db\n\t\t\t.selectFrom('organisation_members')\n\t\t\t.select('id')\n\t\t\t.where('id', '=', normalized)\n\t\t\t.where('organisation_id', '=', organisationId)\n\t\t\t.where('status', '=', 'active')\n\t\t\t.executeTakeFirst();\n\t\treturn row?.id ?? null;\n\t}\n"""
+          if validate_anchor not in text:
+              raise SystemExit('validateOwnerMember anchor not found')
+          text = text.replace(validate_anchor, validate_replacement, 1)
+
+          approval_anchor = """\t\t\tif (!options.some((option) => option.decision_status === 'selected')) {\n\t\t\t\tthrow new StrategyValidationError(\n\t\t\t\t\t'At least one strategic option must be selected before approval.'\n\t\t\t\t);\n\t\t\t}\n\n\t\t\tconst previouslyApproved = await repository.findApprovedVersion(\n"""
+          approval_replacement = """\t\t\tif (!options.some((option) => option.decision_status === 'selected')) {\n\t\t\t\tthrow new StrategyValidationError(\n\t\t\t\t\t'At least one strategic option must be selected before approval.'\n\t\t\t\t);\n\t\t\t}\n\n\t\t\tconst approvalOwnerMemberIds = new Set(\n\t\t\t\t[\n\t\t\t\t\tframework.owner_member_id,\n\t\t\t\t\t...factors.map((factor) => factor.owner_member_id),\n\t\t\t\t\t...objectives.map((objective) => objective.owner_member_id)\n\t\t\t\t].filter((memberId): memberId is string => Boolean(memberId))\n\t\t\t);\n\t\t\tfor (const ownerMemberId of approvalOwnerMemberIds) {\n\t\t\t\tawait this.validateOwnerMember(trx, actor.organisationId, ownerMemberId);\n\t\t\t}\n\n\t\t\tconst previouslyApproved = await repository.findApprovedVersion(\n"""
+          if approval_anchor not in text:
+              raise SystemExit('approval owner anchor not found')
+          text = text.replace(approval_anchor, approval_replacement, 1)
+
+          revision_anchor = """\t\t\tconst revision = await repository.insertFramework({\n"""
+          revision_replacement = """\t\t\tconst revisionOwnerMemberId = await this.activeOwnerMemberOrNull(\n\t\t\t\ttrx,\n\t\t\t\tactor.organisationId,\n\t\t\t\tsource.owner_member_id\n\t\t\t);\n\t\t\tconst revision = await repository.insertFramework({\n"""
+          if revision_anchor not in text:
+              raise SystemExit('revision insert anchor not found')
+          text = text.replace(revision_anchor, revision_replacement, 1)
+          owner_anchor = "\t\t\t\towner_member_id: source.owner_member_id,"
+          if owner_anchor not in text:
+              raise SystemExit('revision owner anchor not found')
+          text = text.replace(owner_anchor, "\t\t\t\towner_member_id: revisionOwnerMemberId,", 1)
+          service.write_text(text)
+
+          repository = Path('app/src/lib/server/strategy/strategy-repository.ts')
+          text = repository.read_text()
+          constructor_anchor = """export class StrategyRepository {\n\tconstructor(private readonly db: DatabaseExecutor) {}\n"""
+          constructor_replacement = constructor_anchor + """\n\tprivate async activeOrganisationMemberIds(\n\t\torganisationId: string,\n\t\tmemberIds: Array<string | null>\n\t): Promise<Set<string>> {\n\t\tconst uniqueMemberIds = [\n\t\t\t...new Set(memberIds.filter((memberId): memberId is string => Boolean(memberId)))\n\t\t];\n\t\tif (uniqueMemberIds.length === 0) return new Set();\n\t\tconst rows = await this.db\n\t\t\t.selectFrom('organisation_members')\n\t\t\t.select('id')\n\t\t\t.where('organisation_id', '=', organisationId)\n\t\t\t.where('status', '=', 'active')\n\t\t\t.where('id', 'in', uniqueMemberIds)\n\t\t\t.execute();\n\t\treturn new Set(rows.map((row) => row.id));\n\t}\n"""
+          if constructor_anchor not in text:
+              raise SystemExit('repository constructor anchor not found')
+          text = text.replace(constructor_anchor, constructor_replacement, 1)
+
+          factor_anchor = """\t\tconst factors = await this.listEnvironmentFactors(fromFrameworkId);\n\t\tif (!factors.length) return;\n\t\tawait this.db\n"""
+          factor_replacement = """\t\tconst factors = await this.listEnvironmentFactors(fromFrameworkId);\n\t\tif (!factors.length) return;\n\t\tconst activeOwnerMemberIds = await this.activeOrganisationMemberIds(\n\t\t\torganisationId,\n\t\t\tfactors.map((factor) => factor.owner_member_id)\n\t\t);\n\t\tawait this.db\n"""
+          if factor_anchor not in text:
+              raise SystemExit('factor copy anchor not found')
+          text = text.replace(factor_anchor, factor_replacement, 1)
+          factor_owner = "\t\t\t\t\towner_member_id: factor.owner_member_id,"
+          factor_owner_replacement = """\t\t\t\t\towner_member_id:\n\t\t\t\t\t\tfactor.owner_member_id && activeOwnerMemberIds.has(factor.owner_member_id)\n\t\t\t\t\t\t\t? factor.owner_member_id\n\t\t\t\t\t\t\t: null,"""
+          if factor_owner not in text:
+              raise SystemExit('factor owner anchor not found')
+          text = text.replace(factor_owner, factor_owner_replacement, 1)
+
+          objective_anchor = """\t\tconst objectives = await this.listObjectives(fromFrameworkId);\n\t\tif (!objectives.length) return;\n\t\tawait this.db\n"""
+          objective_replacement = """\t\tconst objectives = await this.listObjectives(fromFrameworkId);\n\t\tif (!objectives.length) return;\n\t\tconst activeOwnerMemberIds = await this.activeOrganisationMemberIds(\n\t\t\torganisationId,\n\t\t\tobjectives.map((objective) => objective.owner_member_id)\n\t\t);\n\t\tawait this.db\n"""
+          if objective_anchor not in text:
+              raise SystemExit('objective copy anchor not found')
+          text = text.replace(objective_anchor, objective_replacement, 1)
+          objective_owner = "\t\t\t\t\towner_member_id: objective.owner_member_id,"
+          objective_owner_replacement = """\t\t\t\t\towner_member_id:\n\t\t\t\t\t\tobjective.owner_member_id && activeOwnerMemberIds.has(objective.owner_member_id)\n\t\t\t\t\t\t\t? objective.owner_member_id\n\t\t\t\t\t\t\t: null,"""
+          if objective_owner not in text:
+              raise SystemExit('objective owner anchor not found')
+          text = text.replace(objective_owner, objective_owner_replacement, 1)
+          repository.write_text(text)
+
+          test = Path('app/src/lib/server/strategy/strategy.integration.test.ts')
+          text = test.read_text()
+          test_anchor = """\n\tit('keeps view-only and cross-tenant authority fail-closed', async () => {\n"""
+          test_block = """\n\tit('clears inactive copied owners on revision and rejects inactive owners at approval', async () => {\n\t\tconst service = new StrategyService(db, randomUUID, () => new Date('2026-09-06T13:00:00.000Z'));\n\t\tconst accountableUserId = await createUser('Inactive accountable owner');\n\t\tconst accountableMemberId = await createMember(organisationAId, accountableUserId);\n\t\tconst framework = await service.createFramework(owner, {\n\t\t\tframeworkCode: 'OWNER-REVALIDATION',\n\t\t\ttitle: 'Owner revalidation strategy',\n\t\t\thorizonStart: '2027-01-01',\n\t\t\thorizonEnd: '2029-12-31',\n\t\t\tpurposeText: 'Keep accountable ownership current.',\n\t\t\tvisionText: 'Only active members own approved strategy records.',\n\t\t\tmissionText: 'Revalidate ownership at controlled lifecycle boundaries.',\n\t\t\townerMemberId: accountableMemberId\n\t\t});\n\t\tawait service.addEnvironmentFactor(owner, {\n\t\t\tframeworkPublicId: framework.public_id,\n\t\t\tcontextScope: 'internal',\n\t\t\tdimension: 'operational',\n\t\t\tdirection: 'strength',\n\t\t\ttitle: 'Named accountable owner',\n\t\t\tanalysisText: 'Accountability must remain assigned to an active organisation member.',\n\t\t\townerMemberId: accountableMemberId\n\t\t});\n\t\tconst option = await service.addOption(owner, {\n\t\t\tframeworkPublicId: framework.public_id,\n\t\t\ttitle: 'Revalidate lifecycle owners',\n\t\t\tdescription: 'Clear stale copied assignments and block stale approval ownership.'\n\t\t});\n\t\tawait service.decideOption(\n\t\t\towner,\n\t\t\tframework.public_id,\n\t\t\toption.public_id,\n\t\t\t'selected',\n\t\t\t'Preserves accountable ownership integrity.'\n\t\t);\n\t\tawait service.addObjective(owner, {\n\t\t\tframeworkPublicId: framework.public_id,\n\t\t\tobjectiveCode: 'OWNER-01',\n\t\t\ttitle: 'Maintain active ownership',\n\t\t\tdescription: 'Ensure approved strategic accountability resolves to active members.',\n\t\t\tpriorityRank: 1,\n\t\t\townerMemberId: accountableMemberId\n\t\t});\n\t\tconst approved = await service.approveFramework(owner, framework.public_id);\n\t\tawait db\n\t\t\t.updateTable('organisation_members')\n\t\t\t.set({ status: 'disabled', disabled_at: new Date('2026-09-06T13:30:00.000Z') })\n\t\t\t.where('id', '=', accountableMemberId)\n\t\t\t.where('organisation_id', '=', organisationAId)\n\t\t\t.executeTakeFirstOrThrow();\n\n\t\tconst revision = await service.reviseFramework(owner, approved.public_id);\n\t\texpect(revision.owner_member_id).toBeNull();\n\t\tconst revisionWorkspace = await service.getWorkspace(owner, revision.public_id);\n\t\texpect(revisionWorkspace.environmentFactors[0]?.owner_member_id).toBeNull();\n\t\texpect(revisionWorkspace.objectives[0]?.owner_member_id).toBeNull();\n\n\t\tawait service.updateFramework(owner, revision.public_id, {\n\t\t\ttitle: revision.title,\n\t\t\thorizonStart: revision.horizon_start,\n\t\t\thorizonEnd: revision.horizon_end,\n\t\t\tpurposeText: revision.purpose_text,\n\t\t\tvisionText: revision.vision_text,\n\t\t\tmissionText: revision.mission_text,\n\t\t\townerMemberId: ownerMemberId\n\t\t});\n\t\tawait db\n\t\t\t.updateTable('strategy_objectives')\n\t\t\t.set({ owner_member_id: accountableMemberId })\n\t\t\t.where('strategy_framework_id', '=', revision.id)\n\t\t\t.executeTakeFirstOrThrow();\n\t\tawait expect(service.approveFramework(owner, revision.public_id)).rejects.toBeInstanceOf(\n\t\t\tStrategyValidationError\n\t\t);\n\t});\n"""
+          if test_anchor not in text:
+              raise SystemExit('integration test anchor not found')
+          test.write_text(text.replace(test_anchor, test_block + test_anchor, 1))
+      - name: Format changed files
+        working-directory: app
+        run: pnpm exec prettier --write src/lib/server/strategy/strategy-service.ts src/lib/server/strategy/strategy-repository.ts src/lib/server/strategy/strategy.integration.test.ts
+      - name: Commit owner revalidation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/lib/server/strategy/strategy-service.ts \
+            app/src/lib/server/strategy/strategy-repository.ts \
+            app/src/lib/server/strategy/strategy.integration.test.ts
+          git diff --cached --quiet && exit 0
+          git commit -m "Revalidate F01 revision owners"
+          git push origin feat/f01-strategy-intent-analysis
