@@ -18,7 +18,8 @@ export const PAYMENT_TERM_CALCULATION_BASES = [
 export type PaymentTermCalculationBasis = (typeof PAYMENT_TERM_CALCULATION_BASES)[number];
 export type PaymentTermDayType = 'calendar' | 'business';
 export type BusinessDayConvention = 'none' | 'following' | 'preceding' | 'modified_following';
-export type PaymentTermKind = 'single' | 'recurring' | 'milestone' | 'split' | 'retention' | 'trade';
+export type PaymentTermKind =
+	'single' | 'recurring' | 'milestone' | 'split' | 'retention' | 'trade';
 
 export const PAYMENT_TERM_DAY_TYPES = new Set<PaymentTermDayType>(['calendar', 'business']);
 export const PAYMENT_TERM_BUSINESS_DAY_CONVENTIONS = new Set<BusinessDayConvention>([
@@ -96,7 +97,8 @@ const WEEKDAY_CALENDAR: BusinessCalendar = {
 };
 
 function utcDate(date: Date): Date {
-	if (Number.isNaN(date.getTime())) throw new PaymentTermEngineError('Payment-term reference date is invalid.');
+	if (Number.isNaN(date.getTime()))
+		throw new PaymentTermEngineError('Payment-term reference date is invalid.');
 	return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
@@ -122,7 +124,9 @@ function addUtcBusinessDays(date: Date, days: number, calendar: BusinessCalendar
 
 function addUtcMonthsClamped(date: Date, months: number): Date {
 	const source = utcDate(date);
-	const targetMonthStart = new Date(Date.UTC(source.getUTCFullYear(), source.getUTCMonth() + months, 1));
+	const targetMonthStart = new Date(
+		Date.UTC(source.getUTCFullYear(), source.getUTCMonth() + months, 1)
+	);
 	const targetDay = Math.min(
 		source.getUTCDate(),
 		daysInUtcMonth(targetMonthStart.getUTCFullYear(), targetMonthStart.getUTCMonth())
@@ -134,7 +138,10 @@ function addUtcMonthsClamped(date: Date, months: number): Date {
 
 function withFixedUtcDay(date: Date, fixedDay: number): Date {
 	const source = utcDate(date);
-	const targetDay = Math.min(fixedDay, daysInUtcMonth(source.getUTCFullYear(), source.getUTCMonth()));
+	const targetDay = Math.min(
+		fixedDay,
+		daysInUtcMonth(source.getUTCFullYear(), source.getUTCMonth())
+	);
 	return new Date(Date.UTC(source.getUTCFullYear(), source.getUTCMonth(), targetDay));
 }
 
@@ -169,10 +176,7 @@ function applyBusinessDayConvention(
 	return precedingBusinessDay(source, calendar);
 }
 
-function referenceDate(
-	basis: PaymentTermCalculationBasis,
-	context: PaymentTermDateContext
-): Date {
+function referenceDate(basis: PaymentTermCalculationBasis, context: PaymentTermDateContext): Date {
 	const values: Record<PaymentTermCalculationBasis, Date | null | undefined> = {
 		invoice_date: context.invoiceDate,
 		invoice_receipt_date: context.invoiceReceiptDate,
@@ -253,17 +257,25 @@ export function calculatePaymentTermDate(
 }
 
 export function validatePaymentSchedule(lines: PaymentTermScheduleLine[]): void {
-	if (lines.length === 0) throw new PaymentTermEngineError('A staged payment term requires schedule lines.');
+	if (lines.length === 0)
+		throw new PaymentTermEngineError('A staged payment term requires schedule lines.');
 	const seen = new Set<number>();
 	let total = 0;
 	for (const line of lines) {
 		if (!Number.isSafeInteger(line.lineNumber) || line.lineNumber < 1) {
 			throw new PaymentTermEngineError('Payment schedule line numbers must start at 1.');
 		}
-		if (seen.has(line.lineNumber)) throw new PaymentTermEngineError('Payment schedule line numbers must be unique.');
+		if (seen.has(line.lineNumber))
+			throw new PaymentTermEngineError('Payment schedule line numbers must be unique.');
 		seen.add(line.lineNumber);
-		if (!Number.isFinite(line.percentageDue) || line.percentageDue <= 0 || line.percentageDue > 100) {
-			throw new PaymentTermEngineError('Payment schedule percentages must be greater than 0 and at most 100.');
+		if (
+			!Number.isFinite(line.percentageDue) ||
+			line.percentageDue <= 0 ||
+			line.percentageDue > 100
+		) {
+			throw new PaymentTermEngineError(
+				'Payment schedule percentages must be greater than 0 and at most 100.'
+			);
 		}
 		validatePaymentTermRule(line);
 		total += line.percentageDue;
@@ -297,10 +309,14 @@ export function calculateDiscountDeadline(
 		discount.discountPercentage <= 0 ||
 		discount.discountPercentage >= 100
 	) {
-		throw new PaymentTermEngineError('Payment discount percentage must be greater than 0 and below 100.');
+		throw new PaymentTermEngineError(
+			'Payment discount percentage must be greater than 0 and below 100.'
+		);
 	}
 	if (!Number.isSafeInteger(discount.eligibilityDays) || discount.eligibilityDays < 0) {
-		throw new PaymentTermEngineError('Payment discount eligibility days must be a non-negative integer.');
+		throw new PaymentTermEngineError(
+			'Payment discount eligibility days must be a non-negative integer.'
+		);
 	}
 	return calculatePaymentTermDate(
 		{
