@@ -33,13 +33,16 @@
 			<div>
 				<strong>Enterprise catalogue</strong>
 				<p class="muted">
-					{data.paymentTermCatalogue.templates.length} canonical definitions · {data.paymentTermCatalogue.invoiceCompatibleCount}
+					{data.paymentTermCatalogue.templates.length} canonical definitions · {data
+						.paymentTermCatalogue.invoiceCompatibleCount}
 					ready for the current invoice lifecycle
 				</p>
 			</div>
 			{#if data.canManage}
 				<form method="POST" action="?/provisionStandardTerms">
-					<button type="submit" class="secondary catalogue-button">Install standard invoice terms</button>
+					<button type="submit" class="secondary catalogue-button"
+						>Install standard invoice terms</button
+					>
 				</form>
 			{/if}
 		</div>
@@ -53,9 +56,12 @@
 							<strong>{template.name}</strong>
 							<small>
 								{template.calculationBasis.replaceAll('_', ' ')} · {template.daysOffset} day offset
-								{#if template.monthOffset > 0} · +{template.monthOffset} month{/if}
-								{#if template.fixedDayOfMonth} · day {template.fixedDayOfMonth}{/if}
-								{#if template.dayType === 'business'} · business days{/if}
+								{#if template.monthOffset > 0}
+									· +{template.monthOffset} month{/if}
+								{#if template.fixedDayOfMonth}
+									· day {template.fixedDayOfMonth}{/if}
+								{#if template.dayType === 'business'}
+									· business days{/if}
 							</small>
 						</div>
 						<span class:reference-required={!template.invoiceCompatible}
