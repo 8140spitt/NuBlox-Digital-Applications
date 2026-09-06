@@ -29,6 +29,7 @@ export type PaymentTermCatalogue = {
 export type ProvisionPaymentTermsResult = {
 	created: number;
 	alreadyPresent: number;
+	conflicts: number;
 };
 
 type TemplateRow = {
@@ -98,9 +99,9 @@ export class PaymentTermCatalogueService {
 			if (!decision.allowed)
 				throw new TenantAccessError('Billing settings management is not permitted.');
 
-			await trx
+			const organisation = await trx
 				.selectFrom('organisations')
-				.select('id')
+				.select(['id', 'public_id as publicId'])
 				.where('id', '=', actor.organisationId)
 				.forUpdate()
 				.executeTakeFirstOrThrow();
@@ -125,18 +126,25 @@ export class PaymentTermCatalogueService {
 
 			const existing = await trx
 				.selectFrom('payment_terms')
-				.select(['id', 'name'])
+				.select([
+					'id',
+					'name',
+					'calculation_basis as calculationBasis',
+					'days_offset as daysOffset'
+				])
 				.where('organisation_id', '=', actor.organisationId)
 				.execute();
-			const byName = new Map(existing.map((row) => [row.name.toLocaleLowerCase(), row.id]));
+			const byName = new Map(existing.map((row) => [row.name.toLocaleLowerCase(), row]));
 
 			let created = 0;
 			let alreadyPresent = 0;
+			let conflicts = 0;
 			for (const template of templatesResult.rows) {
-				let paymentTermId = byName.get(template.name.toLocaleLowerCase()) ?? null;
-				let paymentTermPublicId: string | null = null;
-				if (!paymentTermId) {
-					paymentTermPublicId = this.publicIdFactory();
+				const nameKey = template.name.toLocaleLowerCase();
+				const existingTerm = byName.get(nameKey);
+				let paymentTermId: string;
+				if (!existingTerm) {
+					const paymentTermPublicId = this.publicIdFactory();
 					await trx
 						.insertInto('payment_terms')
 						.values({
@@ -151,12 +159,17 @@ export class PaymentTermCatalogueService {
 						.executeTakeFirstOrThrow();
 					const inserted = await trx
 						.selectFrom('payment_terms')
-						.select('id')
+						.select([
+							'id',
+							'name',
+							'calculation_basis as calculationBasis',
+							'days_offset as daysOffset'
+						])
 						.where('organisation_id', '=', actor.organisationId)
 						.where('public_id', '=', paymentTermPublicId)
 						.executeTakeFirstOrThrow();
 					paymentTermId = inserted.id;
-					byName.set(template.name.toLocaleLowerCase(), paymentTermId);
+					byName.set(nameKey, inserted);
 					created += 1;
 					await new AuditRepository(trx).append({
 						eventPublicId: this.publicIdFactory(),
@@ -175,6 +188,14 @@ export class PaymentTermCatalogueService {
 						}
 					});
 				} else {
+					paymentTermId = existingTerm.id;
+					if (
+						existingTerm.calculationBasis !== template.calculationBasis ||
+						existingTerm.daysOffset !== template.daysOffset
+					) {
+						conflicts += 1;
+						continue;
+					}
 					alreadyPresent += 1;
 				}
 
@@ -219,12 +240,12 @@ export class PaymentTermCatalogueService {
 				actorMemberId: membership.id,
 				actionKey: 'finance.payment_term.catalogue_provisioned',
 				subjectType: 'organisation',
-				subjectPublicId: actor.organisationId,
+				subjectPublicId: organisation.publicId,
 				correlationId: actor.correlationId,
-				changeSummary: { created, alreadyPresent }
+				changeSummary: { created, alreadyPresent, conflicts }
 			});
 
-			return { created, alreadyPresent };
+			return { created, alreadyPresent, conflicts };
 		});
 	}
 }
