@@ -5,9 +5,36 @@
 
 import type { ColumnType } from "kysely";
 
+export type Decimal = ColumnType<string, number | string>;
+
 export type Generated<T> = T extends ColumnType<infer S, infer I, infer U>
   ? ColumnType<S, I | undefined, U>
   : ColumnType<T, T | undefined, T>;
+
+export interface StrategyBusinessPlans {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  currency_code: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  narrative: string;
+  organisation_id: string;
+  owner_member_id: string | null;
+  period_end: Date;
+  period_start: Date;
+  plan_code: string;
+  planned_capex_amount: Generated<Decimal>;
+  planned_opex_amount: Generated<Decimal>;
+  planned_revenue_amount: Generated<Decimal>;
+  public_id: string;
+  strategy_framework_id: string;
+  supersedes_business_plan_id: string | null;
+  title: string;
+  updated_at: Generated<Date>;
+  version_number: number;
+}
 
 export interface StrategyEnvironmentFactors {
   analysis_text: string;
@@ -52,6 +79,68 @@ export interface StrategyFrameworks {
   vision_text: string;
 }
 
+export interface StrategyInitiativeDependencies {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  dependency_type: Generated<string>;
+  depends_on_initiative_id: string;
+  initiative_id: string;
+  organisation_id: string;
+}
+
+export interface StrategyInitiativeMilestones {
+  actual_date: Date | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  milestone_code: string;
+  organisation_id: string;
+  owner_member_id: string | null;
+  public_id: string;
+  strategy_initiative_id: string;
+  target_date: Date;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyInitiativeOperatingModelLinks {
+  change_role: string;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  initiative_id: string;
+  operating_model_component_id: string;
+  organisation_id: string;
+}
+
+export interface StrategyInitiatives {
+  benefit_statement: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  currency_code: string;
+  end_date: Date;
+  id: Generated<string>;
+  initiative_code: string;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  outcome_text: string;
+  owner_member_id: string | null;
+  planned_fte: Generated<Decimal>;
+  planned_investment_amount: Generated<Decimal>;
+  priority_rank: number;
+  project_budget_id: string | null;
+  project_id: string | null;
+  public_id: string;
+  resource_assumptions: string | null;
+  risk_summary: string | null;
+  sponsor_member_id: string | null;
+  start_date: Date;
+  strategy_business_plan_id: string;
+  strategy_objective_id: string;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
 export interface StrategyObjectives {
   created_at: Generated<Date>;
   created_by_member_id: string;
@@ -65,6 +154,36 @@ export interface StrategyObjectives {
   public_id: string;
   strategy_framework_id: string;
   target_date: Date | null;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyOperatingModelAccountabilities {
+  accountability_type: string;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  member_id: string | null;
+  notes: string | null;
+  operating_model_component_id: string;
+  organisation_id: string;
+  position_label: string;
+  public_id: string;
+}
+
+export interface StrategyOperatingModelComponents {
+  component_code: string;
+  component_type: string;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  current_state_text: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  parent_component_id: string | null;
+  public_id: string;
+  strategy_business_plan_id: string;
+  target_state_text: string;
   title: string;
   updated_at: Generated<Date>;
 }
@@ -88,8 +207,15 @@ export interface StrategyOptions {
 }
 
 export interface DB {
+  strategy_business_plans: StrategyBusinessPlans;
   strategy_environment_factors: StrategyEnvironmentFactors;
   strategy_frameworks: StrategyFrameworks;
+  strategy_initiative_dependencies: StrategyInitiativeDependencies;
+  strategy_initiative_milestones: StrategyInitiativeMilestones;
+  strategy_initiative_operating_model_links: StrategyInitiativeOperatingModelLinks;
+  strategy_initiatives: StrategyInitiatives;
   strategy_objectives: StrategyObjectives;
+  strategy_operating_model_accountabilities: StrategyOperatingModelAccountabilities;
+  strategy_operating_model_components: StrategyOperatingModelComponents;
   strategy_options: StrategyOptions;
 }
