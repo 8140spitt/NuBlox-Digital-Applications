@@ -42,7 +42,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 		return { ...workspace, paymentTermCatalogue };
 	} catch (cause) {
 		if (cause instanceof TenantAccessError)
-			throw httpError(403, 'Accounts-reivable access is not permitted.');
+			throw httpError(403, 'Accounts-receivable access is not permitted.');
 		throw cause;
 	}
 };
