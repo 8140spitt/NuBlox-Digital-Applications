@@ -21,7 +21,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	const actor = actorFromLocals(locals);
 	if (!actor) throw httpError(401, 'Authentication and organisation context are required.');
 	const periodPublicId = url.searchParams.get('period');
-	if (!periodPublicId) throw httpError(400, 'Accounting period is required for report drill-through.');
+	if (!periodPublicId)
+		throw httpError(400, 'Accounting period is required for report drill-through.');
 	try {
 		return await new AccountingReportDrillthroughService(getDatabase()).getAccountWorkspace(actor, {
 			accountPublicId: params.accountPublicId,
@@ -31,7 +32,8 @@ export const load: PageServerLoad = async ({ locals, params, url }) => {
 	} catch (cause) {
 		if (cause instanceof TenantAccessError)
 			throw httpError(403, 'Accounting reporting access is not permitted.');
-		if (cause instanceof RecordNotFoundError) throw httpError(404, 'Accounting report detail not found.');
+		if (cause instanceof RecordNotFoundError)
+			throw httpError(404, 'Accounting report detail not found.');
 		if (cause instanceof FinanceValidationError) throw httpError(400, cause.message);
 		throw cause;
 	}

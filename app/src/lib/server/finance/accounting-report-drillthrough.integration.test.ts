@@ -397,11 +397,14 @@ describe.sequential('accounting report source drill-through', () => {
 	});
 
 	it('preserves earlier-period reporting while exposing later reversal provenance', async () => {
-		const january = await new AccountingReportDrillthroughService(db).getAccountWorkspace(actorOwnerA, {
-			accountPublicId: receivablePublicId,
-			periodPublicId: januaryPublicId,
-			currencyCode: 'GBP'
-		});
+		const january = await new AccountingReportDrillthroughService(db).getAccountWorkspace(
+			actorOwnerA,
+			{
+				accountPublicId: receivablePublicId,
+				periodPublicId: januaryPublicId,
+				currencyCode: 'GBP'
+			}
+		);
 		expect(january.summary.periodDebit).toBe('100.0000');
 		expect(january.summary.periodCredit).toBe('0.0000');
 		expect(january.summary.closingDebit).toBe('100.0000');

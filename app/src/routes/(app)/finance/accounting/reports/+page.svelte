@@ -82,18 +82,22 @@
 	<section class="report-context">
 		<div>
 			<span>Period</span>
-			<strong>{data.selectedPeriod.financialYearCode} · {data.selectedPeriod.periodNumber} · {data
-				.selectedPeriod.name}</strong>
+			<strong
+				>{data.selectedPeriod.financialYearCode} · {data.selectedPeriod.periodNumber} · {data
+					.selectedPeriod.name}</strong
+			>
 		</div>
 		<div>
 			<span>Dates</span>
-			<strong>{dateText(data.selectedPeriod.startsOn)}–{dateText(data.selectedPeriod.endsOn)}</strong>
+			<strong
+				>{dateText(data.selectedPeriod.startsOn)}–{dateText(data.selectedPeriod.endsOn)}</strong
+			>
 		</div>
 		<div>
 			<span>Status</span>
-			<strong class:open={data.selectedPeriod.status === 'open'}>{statusText(
-				data.selectedPeriod.status
-			)}</strong>
+			<strong class:open={data.selectedPeriod.status === 'open'}
+				>{statusText(data.selectedPeriod.status)}</strong
+			>
 		</div>
 		<div><span>Currency</span><strong>{data.selectedCurrency}</strong></div>
 	</section>
@@ -252,7 +256,9 @@
 				{/each}
 			</div>
 			<div class="statement-total">
-				<span>Configured equity accounts</span><strong>{money(data.balanceSheet.equityTotal)}</strong>
+				<span>Configured equity accounts</span><strong
+					>{money(data.balanceSheet.equityTotal)}</strong
+				>
 			</div>
 			<div class="statement-total">
 				<span>Unclosed earnings from journal history</span><strong

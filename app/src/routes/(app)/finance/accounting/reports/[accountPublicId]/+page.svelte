@@ -36,7 +36,9 @@
 
 <nav class="breadcrumbs" aria-label="Breadcrumb">
 	<a href="/finance/invoices">Finance</a><span>/</span><a href="/finance/accounting">Accounting</a
-	><span>/</span><a href={reportHref()}>Reports</a><span>/</span><span>{data.account.accountCode}</span>
+	><span>/</span><a href={reportHref()}>Reports</a><span>/</span><span
+		>{data.account.accountCode}</span
+	>
 </nav>
 
 <section class="page-heading">
@@ -63,13 +65,14 @@
 		>
 	</div>
 	<div>
-		<span>Status</span><strong class:open={data.period.status === 'open'}>{statusText(
-			data.period.status
-		)}</strong><small>{data.period.status === 'open' ? 'Provisional reporting' : 'Controlled period'}</small>
+		<span>Status</span><strong class:open={data.period.status === 'open'}
+			>{statusText(data.period.status)}</strong
+		><small>{data.period.status === 'open' ? 'Provisional reporting' : 'Controlled period'}</small>
 	</div>
 	<div>
-		<span>Currency</span><strong>{data.currencyCode}</strong><small>{data.account.accountType} · {data
-			.account.normalBalance} normal balance</small>
+		<span>Currency</span><strong>{data.currencyCode}</strong><small
+			>{data.account.accountType} · {data.account.normalBalance} normal balance</small
+		>
 	</div>
 </section>
 
@@ -113,7 +116,8 @@
 	{#if data.entries.length === 0}
 		<div class="empty-state">
 			<strong>No journal evidence in this reporting horizon.</strong>
-			<span>This account has no movement up to the selected period end in {data.currencyCode}.</span>
+			<span>This account has no movement up to the selected period end in {data.currencyCode}.</span
+			>
 		</div>
 	{:else}
 		<div class="table-wrap">
@@ -133,7 +137,10 @@
 					{#each data.entries as entry}
 						<tr class:reversed={entry.reversedAt}>
 							<td>{dateText(entry.accountingDate)}</td>
-							<td><span class:period={entry.phase === 'period'} class="phase">{entry.phase}</span></td>
+							<td
+								><span class:period={entry.phase === 'period'} class="phase">{entry.phase}</span
+								></td
+							>
 							<td>
 								<strong>{entry.journalNumber}</strong>
 								<small>{entry.description}</small>
@@ -161,9 +168,9 @@
 <section class="notice">
 	<strong>Audit interpretation</strong>
 	<span>
-		A reversed journal remains visible because NuBlox does not rewrite posted accounting history. Its
-		separate reversal journal contributes from the reversal accounting date, preserving the report as it
-		was known in earlier periods.
+		A reversed journal remains visible because NuBlox does not rewrite posted accounting history.
+		Its separate reversal journal contributes from the reversal accounting date, preserving the
+		report as it was known in earlier periods.
 	</span>
 </section>
 
