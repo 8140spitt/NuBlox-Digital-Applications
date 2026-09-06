@@ -105,10 +105,7 @@ jobs:
 
       - name: Run formatting and lint checks
         working-directory: app
-        run: |
-          pnpm exec prettier --write src/lib/server/finance/payment-term-engine.ts "src/routes/(app)/finance/billing/+page.server.ts" "src/routes/(app)/finance/billing/+page.svelte"
-          git diff -- src/lib/server/finance/payment-term-engine.ts "src/routes/(app)/finance/billing/+page.server.ts" "src/routes/(app)/finance/billing/+page.svelte"
-          exit 1
+        run: pnpm lint
 
       - name: Verify generated job architecture is current
         run: |
