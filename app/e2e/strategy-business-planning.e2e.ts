@@ -73,7 +73,8 @@ test('F01 business plan governs objective through operating model to approved re
 	await page.getByRole('button', { name: 'Approve version 1' }).click();
 	await expect(page.getByText('Approved strategy version')).toBeVisible();
 
-	await page.goto('/strategy/planning');
+	await page.getByRole('link', { name: 'Business planning & operating model →' }).click();
+	await expect(page).toHaveURL(/\/strategy\/planning/);
 	await expect(
 		page.getByRole('heading', { name: 'Business planning & operating model', level: 1 })
 	).toBeVisible();

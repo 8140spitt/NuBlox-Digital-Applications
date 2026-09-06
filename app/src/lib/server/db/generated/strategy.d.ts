@@ -129,6 +129,7 @@ export interface StrategyInitiatives {
   planned_investment_amount: Generated<Decimal>;
   priority_rank: number;
   project_budget_id: string | null;
+  project_budget_version_id: string | null;
   project_id: string | null;
   public_id: string;
   resource_assumptions: string | null;

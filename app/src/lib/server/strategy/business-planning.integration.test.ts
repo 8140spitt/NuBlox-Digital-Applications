@@ -20,7 +20,9 @@ let ownerMemberId = '';
 let externalMemberId = '';
 let projectId = '';
 let projectPublicId = '';
+let budgetId = '';
 let budgetPublicId = '';
+let budgetVersionOneId = '';
 let owner: TenantActorContext;
 let external: TenantActorContext;
 
@@ -272,7 +274,7 @@ beforeAll(async () => {
 		})
 		.executeTakeFirstOrThrow();
 	budgetPublicId = randomUUID();
-	const budgetId = insertedId(
+	budgetId = insertedId(
 		await db
 			.insertInto('project_budgets')
 			.values({
@@ -301,6 +303,15 @@ beforeAll(async () => {
 			locked_at: new Date('2026-09-06T10:00:00.000Z')
 		})
 		.executeTakeFirstOrThrow();
+	budgetVersionOneId = (
+		await db
+			.selectFrom('project_budget_versions')
+			.select('id')
+			.where('organisation_id', '=', organisationAId)
+			.where('project_budget_id', '=', budgetId)
+			.where('version_number', '=', 1)
+			.executeTakeFirstOrThrow()
+	).id;
 });
 
 afterAll(async () => {
@@ -371,11 +382,12 @@ describe('F01 business planning and operating model', () => {
 			periodEnd: '2027-12-31',
 			narrative: 'Convert approved strategic objectives into funded accountable enterprise change.',
 			currencyCode: 'GBP',
-			plannedRevenueAmount: '120000000',
+			plannedRevenueAmount: '123456789012345.6789',
 			plannedOpexAmount: '90000000',
 			plannedCapexAmount: '12000000',
 			ownerMemberId
 		});
+		expect(plan.planned_revenue_amount).toBe('123456789012345.6789');
 		const initiative = await planning.addInitiative(owner, {
 			planPublicId: plan.public_id,
 			objectivePublicId: objective.public_id,
@@ -390,12 +402,14 @@ describe('F01 business planning and operating model', () => {
 			endDate: '2027-11-30',
 			ownerMemberId,
 			sponsorMemberId: ownerMemberId,
-			plannedInvestmentAmount: '2500000',
+			plannedInvestmentAmount: '987654321098765.4321',
 			plannedFte: '18.5',
 			currencyCode: 'GBP',
 			projectPublicId,
 			projectBudgetPublicId: budgetPublicId
 		});
+		expect(initiative.planned_investment_amount).toBe('987654321098765.4321');
+		expect(initiative.project_budget_version_id).toBe(budgetVersionOneId);
 		await planning.addMilestone(owner, {
 			planPublicId: plan.public_id,
 			initiativePublicId: initiative.public_id,
@@ -435,10 +449,37 @@ describe('F01 business planning and operating model', () => {
 		expect(approvedWorkspace.initiatives).toHaveLength(1);
 		expect(approvedWorkspace.initiatives[0]?.lifecycle_status).toBe('approved');
 		expect(approvedWorkspace.initiatives[0]?.project_id).toBe(projectId);
-		expect(approvedWorkspace.initiatives[0]?.project_budget_id).not.toBeNull();
+		expect(approvedWorkspace.initiatives[0]?.project_budget_id).toBe(budgetId);
+		expect(approvedWorkspace.initiatives[0]?.project_budget_version_id).toBe(budgetVersionOneId);
 		expect(approvedWorkspace.operatingModelComponents[0]?.lifecycle_status).toBe('approved');
 		expect(approvedWorkspace.accountabilities[0]?.position_label).toBe('Chief Operating Officer');
 		expect(approvedWorkspace.initiativeComponentLinks).toHaveLength(1);
+
+		await db
+			.insertInto('project_budget_versions')
+			.values({
+				organisation_id: organisationAId,
+				project_budget_id: budgetId,
+				version_number: 2,
+				currency_code: 'GBP',
+				version_status: 'approved',
+				effective_on: new Date('2027-07-01T00:00:00.000Z'),
+				created_by_member_id: ownerMemberId,
+				approved_by_member_id: ownerMemberId,
+				approved_at: new Date('2026-09-06T12:30:00.000Z'),
+				locked_at: new Date('2026-09-06T12:30:00.000Z')
+			})
+			.executeTakeFirstOrThrow();
+		const refreshedApprovedWorkspace = await planning.getWorkspace(owner, approved.public_id);
+		expect(refreshedApprovedWorkspace.approvedExecutionBudgets[0]?.approvedVersion).toBe(2);
+		expect(
+			refreshedApprovedWorkspace.executionBudgets.find(
+				(budget) => budget.versionId === budgetVersionOneId
+			)?.approvedVersion
+		).toBe(1);
+		expect(refreshedApprovedWorkspace.initiatives[0]?.project_budget_version_id).toBe(
+			budgetVersionOneId
+		);
 
 		await expect(
 			planning.addOperatingModelComponent(owner, {
@@ -451,12 +492,15 @@ describe('F01 business planning and operating model', () => {
 		).rejects.toBeInstanceOf(BusinessPlanningValidationError);
 
 		const revision = await planning.revisePlan(owner, approved.public_id);
+		const existingRevision = await planning.revisePlan(owner, approved.public_id);
+		expect(existingRevision.public_id).toBe(revision.public_id);
 		expect(revision.version_number).toBe(2);
 		expect(revision.lifecycle_status).toBe('draft');
 		expect(revision.supersedes_business_plan_id).toBe(approved.id);
 		const revisionWorkspace = await planning.getWorkspace(owner, revision.public_id);
 		expect(revisionWorkspace.initiatives).toHaveLength(1);
 		expect(revisionWorkspace.initiatives[0]?.lifecycle_status).toBe('proposed');
+		expect(revisionWorkspace.initiatives[0]?.project_budget_version_id).toBe(budgetVersionOneId);
 		expect(revisionWorkspace.milestones).toHaveLength(1);
 		expect(revisionWorkspace.operatingModelComponents).toHaveLength(1);
 		expect(revisionWorkspace.operatingModelComponents[0]?.lifecycle_status).toBe('proposed');

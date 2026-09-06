@@ -45,6 +45,7 @@ export type BusinessPlanningWorkspace = {
 	initiativeComponentLinks: InitiativeOperatingModelLinkRecord[];
 	executionProjects: ExecutionProject[];
 	executionBudgets: ExecutionBudget[];
+	approvedExecutionBudgets: ExecutionBudget[];
 	canManage: boolean;
 	canApprove: boolean;
 };
@@ -196,30 +197,37 @@ function positiveInteger(value: number | string, label: string): number {
 	return parsed;
 }
 
-function nonNegativeDecimal(
+function nonNegativeFixedPoint(
 	value: number | string | null | undefined,
 	label: string,
-	maximum = 999_999_999_999_999.9999
+	scale: number,
+	maximumIntegerDigits: number
 ): string {
-	if (value === null || value === undefined || value === '') return '0.0000';
-	const parsed = typeof value === 'number' ? value : Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0 || parsed > maximum) {
+	if (value === null || value === undefined || value === '') {
+		return `0.${'0'.repeat(scale)}`;
+	}
+	const raw = typeof value === 'number' ? String(value) : value.trim();
+	if (!/^\d+(?:\.\d+)?$/.test(raw)) {
 		throw new BusinessPlanningValidationError(
-			`${label} must be a non-negative number within supported range.`
+			`${label} must be a non-negative fixed-point number within supported range.`
 		);
 	}
-	return parsed.toFixed(4);
+	const [integerRaw, fractionRaw = ''] = raw.split('.');
+	const integer = integerRaw.replace(/^0+(?=\d)/, '');
+	if (integer.length > maximumIntegerDigits || fractionRaw.length > scale) {
+		throw new BusinessPlanningValidationError(
+			`${label} must be a non-negative fixed-point number within supported range.`
+		);
+	}
+	return `${integer}.${fractionRaw.padEnd(scale, '0')}`;
+}
+
+function nonNegativeDecimal(value: number | string | null | undefined, label: string): string {
+	return nonNegativeFixedPoint(value, label, 4, 15);
 }
 
 function nonNegativeFte(value: number | string | null | undefined): string {
-	if (value === null || value === undefined || value === '') return '0.00';
-	const parsed = typeof value === 'number' ? value : Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0 || parsed > 9_999_999_999.99) {
-		throw new BusinessPlanningValidationError(
-			'Planned FTE must be a non-negative number within supported range.'
-		);
-	}
-	return parsed.toFixed(2);
+	return nonNegativeFixedPoint(value, 'Planned FTE', 2, 10);
 }
 
 function assertDateWithin(date: Date, start: Date, end: Date, label: string): void {
@@ -413,7 +421,11 @@ export class BusinessPlanningService {
 		organisationId: string,
 		projectPublicId?: string | null,
 		projectBudgetPublicId?: string | null
-	): Promise<{ projectId: string | null; projectBudgetId: string | null }> {
+	): Promise<{
+		projectId: string | null;
+		projectBudgetId: string | null;
+		projectBudgetVersionId: string | null;
+	}> {
 		const normalizedProject = projectPublicId?.trim() || null;
 		const normalizedBudget = projectBudgetPublicId?.trim() || null;
 		if (!normalizedProject && normalizedBudget) {
@@ -421,13 +433,17 @@ export class BusinessPlanningService {
 				'A project must be selected before a project budget can be linked.'
 			);
 		}
-		if (!normalizedProject) return { projectId: null, projectBudgetId: null };
+		if (!normalizedProject) {
+			return { projectId: null, projectBudgetId: null, projectBudgetVersionId: null };
+		}
 		const project = await repository.findExecutionProject(organisationId, normalizedProject);
 		if (!project)
 			throw new BusinessPlanningValidationError(
 				'Execution project is not active in the organisation scope.'
 			);
-		if (!normalizedBudget) return { projectId: project.id, projectBudgetId: null };
+		if (!normalizedBudget) {
+			return { projectId: project.id, projectBudgetId: null, projectBudgetVersionId: null };
+		}
 		const budget = await repository.findApprovedExecutionBudget(
 			organisationId,
 			project.id,
@@ -438,7 +454,11 @@ export class BusinessPlanningService {
 				'Execution budget must be an active project budget with an approved version in the organisation scope.'
 			);
 		}
-		return { projectId: project.id, projectBudgetId: budget.id };
+		return {
+			projectId: project.id,
+			projectBudgetId: budget.id,
+			projectBudgetVersionId: budget.versionId
+		};
 	}
 
 	async getWorkspace(
@@ -447,7 +467,13 @@ export class BusinessPlanningService {
 	): Promise<BusinessPlanningWorkspace> {
 		const flags = await this.permissionFlags(actor);
 		const repository = new BusinessPlanningRepository(this.db);
-		const [approvedFrameworks, plans, executionProjects, executionBudgets] = await Promise.all([
+		const [
+			approvedFrameworks,
+			plans,
+			executionProjects,
+			executionBudgets,
+			approvedExecutionBudgets
+		] = await Promise.all([
 			this.db
 				.selectFrom('strategy_frameworks')
 				.selectAll()
@@ -458,9 +484,10 @@ export class BusinessPlanningService {
 				.execute(),
 			repository.listPlans(actor.organisationId),
 			repository.listExecutionProjects(actor.organisationId),
+			repository.listExecutionBudgets(actor.organisationId),
 			repository.listApprovedExecutionBudgets(actor.organisationId)
 		]);
-		let selectedPlan = plans[0] ?? null;
+		let selectedPlan: (typeof plans)[number] | null = plans[0] ?? null;
 		if (selectedPlanPublicId?.trim()) {
 			selectedPlan =
 				(await repository.findPlanByPublicId(actor.organisationId, selectedPlanPublicId.trim())) ??
@@ -482,6 +509,7 @@ export class BusinessPlanningService {
 				initiativeComponentLinks: [],
 				executionProjects,
 				executionBudgets,
+				approvedExecutionBudgets,
 				...flags
 			};
 		}
@@ -529,6 +557,7 @@ export class BusinessPlanningService {
 			initiativeComponentLinks: links,
 			executionProjects,
 			executionBudgets,
+			approvedExecutionBudgets,
 			...flags
 		};
 	}
@@ -684,6 +713,7 @@ export class BusinessPlanningService {
 				currency_code: currency(input.currencyCode),
 				project_id: execution.projectId,
 				project_budget_id: execution.projectBudgetId,
+				project_budget_version_id: execution.projectBudgetVersionId,
 				lifecycle_status: 'proposed',
 				created_by_member_id: actor.memberId
 			});
@@ -698,7 +728,8 @@ export class BusinessPlanningService {
 					objectivePublicId: objective.public_id,
 					initiativeCode: initiative.initiative_code,
 					projectLinked: Boolean(execution.projectId),
-					approvedBudgetLinked: Boolean(execution.projectBudgetId)
+					approvedBudgetLinked: Boolean(execution.projectBudgetId),
+					approvedBudgetVersionLinked: Boolean(execution.projectBudgetVersionId)
 				},
 				{ function: 'F01', subfunction: 'F01.04' }
 			);
@@ -1022,12 +1053,21 @@ export class BusinessPlanningService {
 					);
 				}
 				if (initiative.project_budget_id) {
+					if (!initiative.project_budget_version_id) {
+						throw new BusinessPlanningValidationError(
+							`Initiative ${initiative.initiative_code} is missing its immutable project-budget version reference.`
+						);
+					}
 					const budget = (
-						await repository.listApprovedExecutionBudgets(organisationId, initiative.project_id)
-					).find((candidate) => candidate.id === initiative.project_budget_id);
+						await repository.listExecutionBudgets(organisationId, initiative.project_id)
+					).find(
+						(candidate) =>
+							candidate.id === initiative.project_budget_id &&
+							candidate.versionId === initiative.project_budget_version_id
+					);
 					if (!budget) {
 						throw new BusinessPlanningValidationError(
-							`Initiative ${initiative.initiative_code} no longer references an active approved project budget.`
+							`Initiative ${initiative.initiative_code} no longer references the canonical project-budget version selected for this plan.`
 						);
 					}
 				}
@@ -1092,6 +1132,18 @@ export class BusinessPlanningService {
 			if (source.lifecycle_status !== 'approved') {
 				throw new BusinessPlanningValidationError(
 					'Only an approved business plan can start a controlled revision.'
+				);
+			}
+			const latest = await repository.findLatestPlanVersion(actor.organisationId, source.plan_code);
+			if (latest && latest.id !== source.id) {
+				if (
+					latest.lifecycle_status === 'draft' &&
+					latest.supersedes_business_plan_id === source.id
+				) {
+					return latest;
+				}
+				throw new BusinessPlanningValidationError(
+					'Only the latest approved business-plan version can start a controlled revision.'
 				);
 			}
 			await this.requireApprovedFramework(
@@ -1179,6 +1231,7 @@ export class BusinessPlanningService {
 					currency_code: initiative.currency_code,
 					project_id: initiative.project_id,
 					project_budget_id: initiative.project_budget_id,
+					project_budget_version_id: initiative.project_budget_version_id,
 					lifecycle_status: 'proposed',
 					created_by_member_id: actor.memberId
 				});

@@ -26,16 +26,14 @@
 		return id ? data.executionProjects.find((project) => project.id === id) : undefined;
 	}
 
-	function budgetFor(id: string | null) {
-		return id ? data.executionBudgets.find((budget) => budget.id === id) : undefined;
+	function budgetFor(versionId: string | null) {
+		return versionId
+			? data.executionBudgets.find((budget) => budget.versionId === versionId)
+			: undefined;
 	}
 
 	function initiativeFor(id: string) {
 		return data.initiatives.find((initiative) => initiative.id === id);
-	}
-
-	function componentFor(id: string) {
-		return data.operatingModelComponents.find((component) => component.id === id);
 	}
 
 	function memberFor(id: string | null) {
@@ -277,7 +275,7 @@
 				{#each data.initiatives as initiative}
 					{@const objective = objectiveFor(initiative.strategy_objective_id)}
 					{@const project = projectFor(initiative.project_id)}
-					{@const budget = budgetFor(initiative.project_budget_id)}
+					{@const budget = budgetFor(initiative.project_budget_version_id)}
 					<article class="initiative-card">
 						<div class="record-meta">
 							<span>{initiative.initiative_code}</span><span
@@ -422,7 +420,7 @@
 								<label
 									>Approved project budget <select name="projectBudgetPublicId"
 										><option value="">No budget link</option
-										>{#each data.executionBudgets as budget}<option value={budget.publicId}
+										>{#each data.approvedExecutionBudgets as budget}<option value={budget.publicId}
 												>{budget.budgetNumber} · {budget.name} · v{budget.approvedVersion}</option
 											>{/each}</select
 									></label

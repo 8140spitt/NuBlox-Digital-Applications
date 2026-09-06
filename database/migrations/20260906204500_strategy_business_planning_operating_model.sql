@@ -75,6 +75,7 @@ CREATE TABLE strategy_initiatives (
     currency_code CHAR(3) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
     project_id BIGINT UNSIGNED NULL,
     project_budget_id BIGINT UNSIGNED NULL,
+    project_budget_version_id BIGINT UNSIGNED NULL,
     lifecycle_status VARCHAR(24) CHARACTER SET ascii COLLATE ascii_bin NOT NULL DEFAULT 'proposed',
     created_by_member_id BIGINT UNSIGNED NOT NULL,
     created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
@@ -83,7 +84,7 @@ CREATE TABLE strategy_initiatives (
     UNIQUE KEY uq_strategy_initiative_public (organisation_id, public_id),
     UNIQUE KEY uq_strategy_initiative_code (strategy_business_plan_id, initiative_code),
     KEY ix_strategy_initiative_objective (strategy_objective_id, lifecycle_status, priority_rank),
-    KEY ix_strategy_initiative_project (project_id, project_budget_id),
+    KEY ix_strategy_initiative_project (project_id, project_budget_id, project_budget_version_id),
     CONSTRAINT fk_strategy_initiative_organisation
         FOREIGN KEY (organisation_id) REFERENCES organisations(id),
     CONSTRAINT fk_strategy_initiative_plan
@@ -98,6 +99,8 @@ CREATE TABLE strategy_initiatives (
         FOREIGN KEY (project_id) REFERENCES projects(id),
     CONSTRAINT fk_strategy_initiative_budget
         FOREIGN KEY (project_budget_id) REFERENCES project_budgets(id),
+    CONSTRAINT fk_strategy_initiative_budget_version
+        FOREIGN KEY (project_budget_version_id) REFERENCES project_budget_versions(id),
     CONSTRAINT fk_strategy_initiative_created_by
         FOREIGN KEY (created_by_member_id) REFERENCES organisation_members(id),
     CONSTRAINT chk_strategy_initiative_priority CHECK (priority_rank >= 1),
@@ -106,7 +109,8 @@ CREATE TABLE strategy_initiatives (
     CONSTRAINT chk_strategy_initiative_fte CHECK (planned_fte >= 0),
     CONSTRAINT chk_strategy_initiative_currency CHECK (currency_code REGEXP '^[A-Z]{3}$'),
     CONSTRAINT chk_strategy_initiative_status CHECK (lifecycle_status IN ('proposed', 'approved', 'in_progress', 'completed', 'cancelled')),
-    CONSTRAINT chk_strategy_initiative_budget_project CHECK (project_budget_id IS NULL OR project_id IS NOT NULL)
+    CONSTRAINT chk_strategy_initiative_budget_project CHECK (project_budget_id IS NULL OR project_id IS NOT NULL),
+    CONSTRAINT chk_strategy_initiative_budget_version CHECK ((project_budget_id IS NULL AND project_budget_version_id IS NULL) OR (project_budget_id IS NOT NULL AND project_budget_version_id IS NOT NULL))
 )
 ENGINE=InnoDB
 DEFAULT CHARACTER SET utf8mb4

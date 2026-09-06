@@ -29,12 +29,14 @@ export type ExecutionProject = {
 
 export type ExecutionBudget = {
 	id: string;
+	versionId: string;
 	publicId: string;
 	projectId: string;
 	budgetNumber: string;
 	name: string;
 	currencyCode: string;
 	approvedVersion: number;
+	versionStatus: string;
 };
 
 export class BusinessPlanningRepository {
@@ -356,7 +358,7 @@ export class BusinessPlanningRepository {
 		return projects.find((project) => project.publicId === publicId);
 	}
 
-	async listApprovedExecutionBudgets(
+	async listExecutionBudgets(
 		organisationId: string,
 		projectId?: string | null
 	): Promise<ExecutionBudget[]> {
@@ -369,33 +371,44 @@ export class BusinessPlanningRepository {
 			)
 			.select([
 				'budget.id as id',
+				'version.id as version_id',
 				'budget.public_id as public_id',
 				'budget.project_id as project_id',
 				'budget.budget_number as budget_number',
 				'budget.name as name',
 				'version.currency_code as currency_code',
-				'version.version_number as version_number'
+				'version.version_number as version_number',
+				'version.version_status as version_status'
 			])
 			.where('budget.organisation_id', '=', organisationId)
-			.where('budget.lifecycle_status', '=', 'active')
-			.where('version.version_status', '=', 'approved');
+			.where('budget.lifecycle_status', '=', 'active');
 		if (projectId) query = query.where('budget.project_id', '=', projectId);
 		const rows = await query
 			.orderBy('budget.budget_number', 'asc')
 			.orderBy('version.version_number', 'desc')
 			.execute();
+		return rows.map((row) => ({
+			id: row.id,
+			versionId: row.version_id,
+			publicId: row.public_id,
+			projectId: row.project_id,
+			budgetNumber: row.budget_number,
+			name: row.name,
+			currencyCode: row.currency_code,
+			approvedVersion: row.version_number,
+			versionStatus: row.version_status
+		}));
+	}
+
+	async listApprovedExecutionBudgets(
+		organisationId: string,
+		projectId?: string | null
+	): Promise<ExecutionBudget[]> {
+		const rows = await this.listExecutionBudgets(organisationId, projectId);
 		const unique = new Map<string, ExecutionBudget>();
 		for (const row of rows) {
-			if (unique.has(row.id)) continue;
-			unique.set(row.id, {
-				id: row.id,
-				publicId: row.public_id,
-				projectId: row.project_id,
-				budgetNumber: row.budget_number,
-				name: row.name,
-				currencyCode: row.currency_code,
-				approvedVersion: row.version_number
-			});
+			if (row.versionStatus !== 'approved' || unique.has(row.id)) continue;
+			unique.set(row.id, row);
 		}
 		return [...unique.values()];
 	}
