@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 
 const EMAIL = 'e2e-owner@example.test';
 const PASSWORD = 'NuBlox-E2E-Password-2026!';
 
-async function signIn(page: Parameters<typeof test>[0]['page']) {
+async function signIn(page: Page) {
 	await page.goto('/signin');
 	await page.getByLabel('Email').fill(EMAIL);
 	await page.getByLabel('Password').fill(PASSWORD);
