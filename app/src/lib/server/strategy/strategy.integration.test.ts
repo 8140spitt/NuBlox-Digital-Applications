@@ -328,6 +328,82 @@ describe('F01 strategy intent and analysis', () => {
 		expect(Number(outboxCount.count)).toBeGreaterThanOrEqual(7);
 	});
 
+	it('clears inactive copied owners on revision and rejects inactive owners at approval', async () => {
+		const service = new StrategyService(db, randomUUID, () => new Date('2026-09-06T13:00:00.000Z'));
+		const accountableUserId = await createUser('Inactive accountable owner');
+		const accountableMemberId = await createMember(organisationAId, accountableUserId);
+		const framework = await service.createFramework(owner, {
+			frameworkCode: 'OWNER-REVALIDATION',
+			title: 'Owner revalidation strategy',
+			horizonStart: '2027-01-01',
+			horizonEnd: '2029-12-31',
+			purposeText: 'Keep accountable ownership current.',
+			visionText: 'Only active members own approved strategy records.',
+			missionText: 'Revalidate ownership at controlled lifecycle boundaries.',
+			ownerMemberId: accountableMemberId
+		});
+		await service.addEnvironmentFactor(owner, {
+			frameworkPublicId: framework.public_id,
+			contextScope: 'internal',
+			dimension: 'operational',
+			direction: 'strength',
+			title: 'Named accountable owner',
+			analysisText: 'Accountability must remain assigned to an active organisation member.',
+			ownerMemberId: accountableMemberId
+		});
+		const option = await service.addOption(owner, {
+			frameworkPublicId: framework.public_id,
+			title: 'Revalidate lifecycle owners',
+			description: 'Clear stale copied assignments and block stale approval ownership.'
+		});
+		await service.decideOption(
+			owner,
+			framework.public_id,
+			option.public_id,
+			'selected',
+			'Preserves accountable ownership integrity.'
+		);
+		await service.addObjective(owner, {
+			frameworkPublicId: framework.public_id,
+			objectiveCode: 'OWNER-01',
+			title: 'Maintain active ownership',
+			description: 'Ensure approved strategic accountability resolves to active members.',
+			priorityRank: 1,
+			ownerMemberId: accountableMemberId
+		});
+		const approved = await service.approveFramework(owner, framework.public_id);
+		await db
+			.updateTable('organisation_members')
+			.set({ status: 'disabled', disabled_at: new Date('2026-09-06T13:30:00.000Z') })
+			.where('id', '=', accountableMemberId)
+			.where('organisation_id', '=', organisationAId)
+			.executeTakeFirstOrThrow();
+
+		const revision = await service.reviseFramework(owner, approved.public_id);
+		expect(revision.owner_member_id).toBeNull();
+		const revisionWorkspace = await service.getWorkspace(owner, revision.public_id);
+		expect(revisionWorkspace.environmentFactors[0]?.owner_member_id).toBeNull();
+		expect(revisionWorkspace.objectives[0]?.owner_member_id).toBeNull();
+
+		await service.updateFramework(owner, revision.public_id, {
+			title: revision.title,
+			horizonStart: revision.horizon_start,
+			horizonEnd: revision.horizon_end,
+			purposeText: revision.purpose_text,
+			visionText: revision.vision_text,
+			missionText: revision.mission_text,
+			ownerMemberId: ownerMemberId
+		});
+		await db
+			.updateTable('strategy_objectives')
+			.set({ owner_member_id: accountableMemberId })
+			.where('strategy_framework_id', '=', revision.id)
+			.executeTakeFirstOrThrow();
+		await expect(service.approveFramework(owner, revision.public_id)).rejects.toBeInstanceOf(
+			StrategyValidationError
+		);
+	});
+
 	it('keeps view-only and cross-tenant authority fail-closed', async () => {
 		const service = new StrategyService(db);
 		const workspace = await service.getWorkspace(viewer);

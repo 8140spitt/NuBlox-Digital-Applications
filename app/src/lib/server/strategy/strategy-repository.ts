@@ -16,6 +16,24 @@ export type StrategyObjectiveRecord = Selectable<StrategyObjectives>;
 export class StrategyRepository {
 	constructor(private readonly db: DatabaseExecutor) {}
 
+	private async activeOrganisationMemberIds(
+		organisationId: string,
+		memberIds: Array<string | null>
+	): Promise<Set<string>> {
+		const uniqueMemberIds = [
+			...new Set(memberIds.filter((memberId): memberId is string => Boolean(memberId)))
+		];
+		if (uniqueMemberIds.length === 0) return new Set();
+		const rows = await this.db
+			.selectFrom('organisation_members')
+			.select('id')
+			.where('organisation_id', '=', organisationId)
+			.where('status', '=', 'active')
+			.where('id', 'in', uniqueMemberIds)
+			.execute();
+		return new Set(rows.map((row) => row.id));
+	}
+
 	async listFrameworks(organisationId: string): Promise<StrategyFrameworkRecord[]> {
 		return this.db
 			.selectFrom('strategy_frameworks')
@@ -223,6 +241,10 @@ export class StrategyRepository {
 	): Promise<void> {
 		const factors = await this.listEnvironmentFactors(fromFrameworkId);
 		if (!factors.length) return;
+		const activeOwnerMemberIds = await this.activeOrganisationMemberIds(
+			organisationId,
+			factors.map((factor) => factor.owner_member_id)
+		);
 		await this.db
 			.insertInto('strategy_environment_factors')
 			.values(
@@ -240,7 +262,10 @@ export class StrategyRepository {
 					likelihood_score: factor.likelihood_score,
 					impact_score: factor.impact_score,
 					lifecycle_status: 'active',
-					owner_member_id: factor.owner_member_id,
+					owner_member_id:
+						factor.owner_member_id && activeOwnerMemberIds.has(factor.owner_member_id)
+							? factor.owner_member_id
+							: null,
 					created_by_member_id: createdByMemberId
 				}))
 			)
@@ -286,6 +311,10 @@ export class StrategyRepository {
 	): Promise<void> {
 		const objectives = await this.listObjectives(fromFrameworkId);
 		if (!objectives.length) return;
+		const activeOwnerMemberIds = await this.activeOrganisationMemberIds(
+			organisationId,
+			objectives.map((objective) => objective.owner_member_id)
+		);
 		await this.db
 			.insertInto('strategy_objectives')
 			.values(
@@ -297,7 +326,10 @@ export class StrategyRepository {
 					title: objective.title,
 					description: objective.description,
 					priority_rank: objective.priority_rank,
-					owner_member_id: objective.owner_member_id,
+					owner_member_id:
+						objective.owner_member_id && activeOwnerMemberIds.has(objective.owner_member_id)
+							? objective.owner_member_id
+							: null,
 					target_date: objective.target_date,
 					lifecycle_status: 'draft',
 					created_by_member_id: createdByMemberId

@@ -193,6 +193,23 @@ export class StrategyService {
 		return normalized;
 	}
 
+	private async activeOwnerMemberOrNull(
+		db: DatabaseExecutor,
+		organisationId: string,
+		memberId: string | null | undefined
+	): Promise<string | null> {
+		const normalized = memberId?.trim() || null;
+		if (!normalized) return null;
+		const row = await db
+			.selectFrom('organisation_members')
+			.select('id')
+			.where('id', '=', normalized)
+			.where('organisation_id', '=', organisationId)
+			.where('status', '=', 'active')
+			.executeTakeFirst();
+		return row?.id ?? null;
+	}
+
 	private async requireDraftFramework(
 		db: DatabaseExecutor,
 		organisationId: string,
@@ -609,6 +626,17 @@ export class StrategyService {
 				);
 			}
 
+			const approvalOwnerMemberIds = new Set(
+				[
+					framework.owner_member_id,
+					...factors.map((factor) => factor.owner_member_id),
+					...objectives.map((objective) => objective.owner_member_id)
+				].filter((memberId): memberId is string => Boolean(memberId))
+			);
+			for (const ownerMemberId of approvalOwnerMemberIds) {
+				await this.validateOwnerMember(trx, actor.organisationId, ownerMemberId);
+			}
+
 			const previouslyApproved = await repository.findApprovedVersion(
 				actor.organisationId,
 				framework.framework_code
@@ -669,6 +697,11 @@ export class StrategyService {
 					'A newer strategy version already exists; revise the latest version instead.'
 				);
 			}
+			const revisionOwnerMemberId = await this.activeOwnerMemberOrNull(
+				trx,
+				actor.organisationId,
+				source.owner_member_id
+			);
 			const revision = await repository.insertFramework({
 				organisation_id: actor.organisationId,
 				public_id: this.publicIdFactory(),
@@ -682,7 +715,7 @@ export class StrategyService {
 				mission_text: source.mission_text,
 				lifecycle_status: 'draft',
 				supersedes_strategy_framework_id: source.id,
-				owner_member_id: source.owner_member_id,
+				owner_member_id: revisionOwnerMemberId,
 				created_by_member_id: actor.memberId,
 				approved_by_member_id: null,
 				approved_at: null
