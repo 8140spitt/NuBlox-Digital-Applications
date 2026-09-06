@@ -1,0 +1,51 @@
+name: F01 Tranche B Format Helper
+
+on:
+  push:
+    branches:
+      - feat/f01-business-planning-operating-model
+    paths:
+      - 'app/e2e/strategy-business-planning.e2e.ts'
+      - 'app/src/lib/server/strategy/business-planning-repository.ts'
+      - 'app/src/lib/server/strategy/business-planning-service.ts'
+      - 'app/src/lib/server/strategy/business-planning.integration.test.ts'
+      - 'app/src/routes/(app)/strategy/planning/+page.server.ts'
+      - 'app/src/routes/(app)/strategy/planning/+page.svelte'
+      - '.github/workflows/f01-tranche-b-format.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-business-planning-operating-model
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Format tranche files
+        working-directory: app
+        run: pnpm exec prettier --write e2e/strategy-business-planning.e2e.ts src/lib/server/strategy/business-planning-repository.ts src/lib/server/strategy/business-planning-service.ts src/lib/server/strategy/business-planning.integration.test.ts 'src/routes/(app)/strategy/planning/+page.server.ts' 'src/routes/(app)/strategy/planning/+page.svelte'
+      - name: Commit formatting when needed
+        run: |
+          if git diff --quiet; then
+            echo 'No formatting changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/e2e/strategy-business-planning.e2e.ts app/src/lib/server/strategy/business-planning-repository.ts app/src/lib/server/strategy/business-planning-service.ts app/src/lib/server/strategy/business-planning.integration.test.ts 'app/src/routes/(app)/strategy/planning/+page.server.ts' 'app/src/routes/(app)/strategy/planning/+page.svelte'
+          git commit -m 'Format F01 tranche B implementation'
+          git push origin HEAD:feat/f01-business-planning-operating-model
