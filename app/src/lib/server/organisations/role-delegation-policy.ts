@@ -381,5 +381,6 @@ export async function decideOrganisationPermissionDelegation(
 	permissionKeys: readonly string[],
 	options: RoleDelegationOptions = {}
 ): Promise<RoleDelegationDecision> {
-	return (await explainOrganisationPermissionDelegation(db, actor, permissionKeys, options)).decision;
+	return (await explainOrganisationPermissionDelegation(db, actor, permissionKeys, options))
+		.decision;
 }

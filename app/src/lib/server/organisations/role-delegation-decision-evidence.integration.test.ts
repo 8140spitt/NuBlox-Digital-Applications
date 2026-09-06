@@ -234,9 +234,9 @@ describe('role delegation decision evidence', () => {
 			policyPublicId: null,
 			policyState: null
 		});
-		expect(await decideOrganisationRoleDelegation(db, adminActor, [managerRolePublicId], { at })).toEqual(
-			managerEvaluation.decision
-		);
+		expect(
+			await decideOrganisationRoleDelegation(db, adminActor, [managerRolePublicId], { at })
+		).toEqual(managerEvaluation.decision);
 
 		const memberEvaluation = await explainOrganisationRoleDelegation(
 			db,
@@ -292,16 +292,19 @@ describe('role delegation decision evidence', () => {
 				[managerRolePublicId],
 				{ at }
 			);
-			expect(explained.decision).toEqual({ allowed, deniedPermissionKeys: [...deniedPermissionKeys] });
+			expect(explained.decision).toEqual({
+				allowed,
+				deniedPermissionKeys: [...deniedPermissionKeys]
+			});
 			expect(explained.evidence).toEqual({
 				evaluatedAt: at.toISOString(),
 				basis: 'configured-policy',
 				policyPublicId,
 				policyState
 			});
-			expect(await decideOrganisationRoleDelegation(db, adminActor, [managerRolePublicId], { at })).toEqual(
-				explained.decision
-			);
+			expect(
+				await decideOrganisationRoleDelegation(db, adminActor, [managerRolePublicId], { at })
+			).toEqual(explained.decision);
 		}
 	});
 });
