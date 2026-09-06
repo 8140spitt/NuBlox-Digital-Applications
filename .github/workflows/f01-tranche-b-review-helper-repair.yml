@@ -1,0 +1,27 @@
+name: F01 Tranche B Review Helper Repair
+
+on:
+  push:
+    branches:
+      - feat/f01-business-planning-operating-model
+    paths:
+      - '.github/workflows/f01-tranche-b-review-helper-repair.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-business-planning-operating-model
+      - name: Repair capability registry path
+        run: |
+          sed -i 's#app/src/lib/server/capabilities/native-capability-registry.ts#app/src/lib/navigation/capability-registry.ts#g' .github/workflows/f01-tranche-b-review-fixes.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .github/workflows/f01-tranche-b-review-fixes.yml
+          git commit -m 'Repair F01 review helper capability path'
+          git push origin HEAD:feat/f01-business-planning-operating-model
