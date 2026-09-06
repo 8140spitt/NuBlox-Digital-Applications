@@ -57,6 +57,22 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 
 	const notifications = await new NotificationService(db).listForMember(actorContext, 12);
 	const capabilityRegistry = resolveNativeCapabilityRegistry(allowedPermissionKeys);
+	const workspaceDirectory = resolveWorkspaceDirectory(allowedPermissionKeys);
+	if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('strategy.'))) {
+		workspaceDirectory.unshift({
+			id: 'enterprise-planning',
+			label: 'Strategy & enterprise planning',
+			items: [
+				{
+					id: 'strategy',
+					label: 'Strategy & enterprise planning',
+					href: '/strategy',
+					description:
+						'Purpose, environmental analysis, strategic choices and objectives with controlled versioning.'
+				}
+			]
+		});
+	}
 	const requestedProjectPublicId = projectPublicIdFromUrl(url);
 	let projectContext: {
 		publicId: string;
@@ -121,7 +137,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 			name: organisation.tradingName ?? organisation.legalName
 		},
 		navigation: resolveAppNavigation(allowedPermissionKeys),
-		workspaceDirectory: resolveWorkspaceDirectory(allowedPermissionKeys),
+		workspaceDirectory,
 		quickActions: resolveQuickActions(allowedPermissionKeys),
 		capabilityRegistry,
 		capabilitySummary: summariseCapabilityRegistry(capabilityRegistry),

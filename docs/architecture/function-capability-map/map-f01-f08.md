@@ -10,7 +10,7 @@ Domain order indicates primary native ownership first, followed by material supp
 **Outcome:** Set direction, translate strategy into funded plans and measure/correct performance.  
 **Value streams:** VS3, VS8  
 **Operating surface:** Strategy & performance workspace; objectives/KPIs; plans, scenarios, budgets, reviews and governed actions  
-**Current reality:** Native foundations exist; material depth remains in D8. Domain maturity is not proof that every sub-function is complete.
+**Current reality:** F01.01–F01.03 now have native canonical strategic intent, environmental analysis, strategic options/objectives, controlled approval and version supersession through PR #127. F01.04–F01.08 remain incomplete: business planning, operating-model linkage, KPI management, strategic review and scenario/foresight depth are still required.
 
 | Sub-function | Native NuBlox domain composition |
 | --- | --- |

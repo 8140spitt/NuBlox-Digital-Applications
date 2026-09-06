@@ -7,6 +7,7 @@ import type { DB as CollectionsDB } from './generated/collections.js';
 import type { DB as AccountingDB } from './generated/accounting.js';
 import type { DB as AccountsPayableDB } from './generated/accounts-payable.js';
 import type { DB as ProjectControlsDB } from './generated/project-controls.js';
+import type { DB as StrategyDB } from './generated/strategy.js';
 import { getDatabaseRuntimeConfig } from './config.js';
 
 export type DatabaseSchema = CoreDB &
@@ -14,7 +15,8 @@ export type DatabaseSchema = CoreDB &
 	CollectionsDB &
 	AccountingDB &
 	AccountsPayableDB &
-	ProjectControlsDB;
+	ProjectControlsDB &
+	StrategyDB;
 export type Database = Kysely<DatabaseSchema>;
 
 type DatabaseGlobal = typeof globalThis & {

@@ -28,6 +28,10 @@ import {
 	SITE_QUALITY_SAFETY_STANDARD_ROLE_PERMISSIONS
 } from '$lib/server/site/site-quality-safety-bootstrap';
 import {
+	ensureStrategyStandardRoleDefaults,
+	STRATEGY_STANDARD_ROLE_PERMISSIONS
+} from '$lib/server/strategy/strategy-bootstrap';
+import {
 	ensureWorkKernelStandardRoleDefaults,
 	WORK_KERNEL_STANDARD_ROLE_PERMISSIONS
 } from '$lib/server/work/work-item-bootstrap';
@@ -46,7 +50,7 @@ import {
  * Increment this value whenever the composed standard-role permission templates
  * change in a way that must be re-applied to active organisations after deploy.
  */
-export const STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION = '2026-08-29.1';
+export const STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION = '2026-09-06.1';
 
 const MAX_RECONCILED_ORGANISATIONS = 1_000;
 const reconciledOrganisations = new Set<string>();
@@ -61,7 +65,8 @@ const STANDARD_ROLE_PERMISSION_MAPS = [
 	ASSETS_MAINTENANCE_STANDARD_ROLE_PERMISSIONS,
 	PORTAL_COLLABORATION_STANDARD_ROLE_PERMISSIONS,
 	PROJECT_RIDA_STANDARD_ROLE_PERMISSIONS,
-	PROJECT_CHANGE_STANDARD_ROLE_PERMISSIONS
+	PROJECT_CHANGE_STANDARD_ROLE_PERMISSIONS,
+	STRATEGY_STANDARD_ROLE_PERMISSIONS
 ] as const;
 
 function reconciliationKey(organisationId: string): string {
@@ -181,7 +186,8 @@ export async function ensureStandardRolePermissionDefaults(
 			ensureAssetsMaintenanceStandardRoleDefaults(db, organisationId),
 			ensurePortalCollaborationStandardRoleDefaults(db, organisationId),
 			ensureProjectRidaStandardRoleDefaults(db, organisationId),
-			ensureProjectChangeStandardRoleDefaults(db, organisationId)
+			ensureProjectChangeStandardRoleDefaults(db, organisationId),
+			ensureStrategyStandardRoleDefaults(db, organisationId)
 		]);
 		await ensureBoundStandardRolePermissionDefaults(db, organisationId);
 	})();
