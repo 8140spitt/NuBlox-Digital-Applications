@@ -38,6 +38,12 @@ The canonical source remains `../taxonomy/`:
 
 The enterprise taxonomy is not modified by this layer. Functional roles and job profiles reference it.
 
+### Product-enablement crosswalk
+
+The product-side answer to **how those functions and sub-functions are carried out in NuBlox** is governed separately by [`../../world-class/12-enterprise-function-native-capability-map.md`](../../world-class/12-enterprise-function-native-capability-map.md) and the detailed `../function-capability-map/` shards.
+
+That crosswalk maps every one of the 353 L2 sub-functions into the 19 native NuBlox capability domains and the practical operating surfaces that compose them. Job architecture therefore describes **who performs the work**; the function-capability map describes **which native NuBlox capability enables the work**. Neither mapping creates permissions automatically.
+
 ## 3. Functional-role baseline
 
 The first mechanical baseline treats each L2 sub-function as a candidate functional role because an L2 already represents a coherent area of enterprise work.
