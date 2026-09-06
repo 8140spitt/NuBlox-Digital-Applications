@@ -1,0 +1,38 @@
+name: Format Preview
+
+on:
+  push:
+    branches:
+      - rbac/access-policy-decision-evidence
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Format changed TypeScript and print exact content
+        working-directory: app
+        run: |
+          pnpm exec prettier --write \
+            src/lib/server/organisations/role-delegation-policy.ts \
+            src/lib/server/organisations/role-delegation-decision-evidence.integration.test.ts
+          echo 'POLICY_BEGIN'
+          base64 -w 0 src/lib/server/organisations/role-delegation-policy.ts
+          echo
+          echo 'POLICY_END'
+          echo 'TEST_BEGIN'
+          base64 -w 0 src/lib/server/organisations/role-delegation-decision-evidence.integration.test.ts
+          echo
+          echo 'TEST_END'
