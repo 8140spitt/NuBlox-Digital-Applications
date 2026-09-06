@@ -51,12 +51,21 @@ jobs:
           python /tmp/f01-review-fixes.py
           python - <<'PY'
           from pathlib import Path
-          path = Path('app/src/routes/(app)/strategy/planning/+page.svelte')
-          text = path.read_text()
+
+          page = Path('app/src/routes/(app)/strategy/planning/+page.svelte')
+          text = page.read_text()
           block = "\n\tfunction componentFor(id: string) {\n\t\treturn data.operatingModelComponents.find((component) => component.id === id);\n\t}\n"
           if block not in text:
               raise SystemExit('Expected obsolete componentFor helper not found')
-          path.write_text(text.replace(block, '', 1))
+          page.write_text(text.replace(block, '', 1))
+
+          service = Path('app/src/lib/server/strategy/business-planning-service.ts')
+          service_text = service.read_text()
+          old = "\t\tlet selectedPlan = plans[0] ?? null;"
+          new = "\t\tlet selectedPlan: (typeof plans)[number] | null = plans[0] ?? null;"
+          if old not in service_text:
+              raise SystemExit('Expected selectedPlan declaration not found')
+          service.write_text(service_text.replace(old, new, 1))
           PY
           git checkout -- .github/workflows/database-migration-validation.yml
       - name: Format changed application files
