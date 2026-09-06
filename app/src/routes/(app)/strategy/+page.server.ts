@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { error as httpError, fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
@@ -71,7 +71,12 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		]);
 		return { ...workspace, members };
 	} catch (error) {
-		if (error instanceof RecordNotFoundError) throw redirect(303, '/strategy');
+		if (error instanceof RecordNotFoundError) {
+			throw httpError(404, 'Enterprise strategy workspace not found in the active scope.');
+		}
+		if (error instanceof TenantAccessError) {
+			throw httpError(403, 'You do not have access to the enterprise strategy workspace.');
+		}
 		throw error;
 	}
 };
