@@ -12,6 +12,15 @@
 	function statusText(value: string) {
 		return value.replaceAll('_', ' ');
 	}
+
+	function drillthroughHref(accountPublicId: string) {
+		if (!data.selectedPeriod) return '/finance/accounting/reports';
+		const query = new URLSearchParams({
+			period: data.selectedPeriod.publicId,
+			currency: data.selectedCurrency
+		});
+		return `/finance/accounting/reports/${accountPublicId}?${query.toString()}`;
+	}
 </script>
 
 <svelte:head><title>Financial reports · NuBlox</title></svelte:head>
@@ -27,7 +36,8 @@
 		<h1>Trial balance and financial reports</h1>
 		<p>
 			Opening, period and closing balances are derived from immutable accounting journal lines.
-			Reports are currency-specific and never create an editable reporting ledger.
+			Every account line now drills through to the journal and originating business evidence behind
+			the reported amount.
 		</p>
 	</div>
 	<a class="secondary" href="/finance/accounting/periods">Accounting periods</a>
@@ -35,8 +45,8 @@
 
 <section class="panel filters">
 	<form method="GET">
-		<label
-			>Accounting period
+		<label>
+			Accounting period
 			<select name="period">
 				{#each data.periods as period}
 					<option
@@ -50,13 +60,12 @@
 				{/each}
 			</select>
 		</label>
-		<label
-			>Currency
+		<label>
+			Currency
 			<select name="currency">
-				{#each data.currencies as currency}<option
-						value={currency}
-						selected={data.selectedCurrency === currency}>{currency}</option
-					>{/each}
+				{#each data.currencies as currency}
+					<option value={currency} selected={data.selectedCurrency === currency}>{currency}</option>
+				{/each}
 			</select>
 		</label>
 		<button type="submit">View report</button>
@@ -72,18 +81,21 @@
 {:else}
 	<section class="report-context">
 		<div>
-			<span>Period</span><strong
+			<span>Period</span>
+			<strong
 				>{data.selectedPeriod.financialYearCode} · {data.selectedPeriod.periodNumber} · {data
 					.selectedPeriod.name}</strong
 			>
 		</div>
 		<div>
-			<span>Dates</span><strong
+			<span>Dates</span>
+			<strong
 				>{dateText(data.selectedPeriod.startsOn)}–{dateText(data.selectedPeriod.endsOn)}</strong
 			>
 		</div>
 		<div>
-			<span>Status</span><strong class:open={data.selectedPeriod.status === 'open'}
+			<span>Status</span>
+			<strong class:open={data.selectedPeriod.status === 'open'}
 				>{statusText(data.selectedPeriod.status)}</strong
 			>
 		</div>
@@ -92,10 +104,11 @@
 
 	{#if data.selectedPeriod.status === 'open'}
 		<section class="notice provisional">
-			<strong>Live period</strong><span
-				>This report is provisional because the selected accounting period is still open. Later
-				journals or reversals dated in this period will change the result.</span
-			>
+			<strong>Live period</strong>
+			<span>
+				This report is provisional because the selected accounting period is still open. Later
+				journals or additive reversals dated in this period will change the result.
+			</span>
 		</section>
 	{/if}
 
@@ -119,36 +132,41 @@
 		</div>
 		<div class="table-wrap">
 			<table>
-				<thead
-					><tr
-						><th rowspan="2">Account</th><th colspan="2">Opening</th><th colspan="2"
-							>Period movement</th
-						><th colspan="2">Closing</th></tr
-					><tr
-						><th>Debit</th><th>Credit</th><th>Debit</th><th>Credit</th><th>Debit</th><th>Credit</th
-						></tr
-					></thead
-				>
+				<thead>
+					<tr>
+						<th rowspan="2">Account</th>
+						<th colspan="2">Opening</th>
+						<th colspan="2">Period movement</th>
+						<th colspan="2">Closing</th>
+					</tr>
+					<tr>
+						<th>Debit</th><th>Credit</th><th>Debit</th><th>Credit</th><th>Debit</th><th>Credit</th>
+					</tr>
+				</thead>
 				<tbody>
 					{#each data.trialBalance.rows as row}
-						<tr
-							><td
-								><strong>{row.accountCode}</strong><small>{row.name} · {row.accountType}</small></td
-							><td>{row.openingDebit}</td><td>{row.openingCredit}</td><td>{row.periodDebit}</td><td
+						<tr>
+							<td>
+								<a class="account-link" href={drillthroughHref(row.accountPublicId)}>
+									<strong>{row.accountCode}</strong><small>{row.name} · {row.accountType}</small>
+									<em>View journal and source evidence</em>
+								</a>
+							</td>
+							<td>{row.openingDebit}</td><td>{row.openingCredit}</td><td>{row.periodDebit}</td><td
 								>{row.periodCredit}</td
-							><td>{row.closingDebit}</td><td>{row.closingCredit}</td></tr
-						>
+							><td>{row.closingDebit}</td><td>{row.closingCredit}</td>
+						</tr>
 					{/each}
 				</tbody>
-				<tfoot
-					><tr
-						><th>Totals</th><th>{data.trialBalance.openingDebit}</th><th
+				<tfoot>
+					<tr>
+						<th>Totals</th><th>{data.trialBalance.openingDebit}</th><th
 							>{data.trialBalance.openingCredit}</th
 						><th>{data.trialBalance.periodDebit}</th><th>{data.trialBalance.periodCredit}</th><th
 							>{data.trialBalance.closingDebit}</th
-						><th>{data.trialBalance.closingCredit}</th></tr
-					></tfoot
-				>
+						><th>{data.trialBalance.closingCredit}</th>
+					</tr>
+				</tfoot>
 			</table>
 		</div>
 	</section>
@@ -163,18 +181,22 @@
 			</div>
 			<h3>Revenue</h3>
 			<div class="statement-lines">
-				{#each data.profitAndLoss.revenue as row}<div>
+				{#each data.profitAndLoss.revenue as row}
+					<a href={drillthroughHref(row.accountPublicId)}>
 						<span>{row.accountCode} · {row.name}</span><strong>{money(row.amount)}</strong>
-					</div>{/each}
+					</a>
+				{/each}
 			</div>
 			<div class="statement-total">
 				<span>Period revenue</span><strong>{money(data.profitAndLoss.periodRevenue)}</strong>
 			</div>
 			<h3>Expenses</h3>
 			<div class="statement-lines">
-				{#each data.profitAndLoss.expenses as row}<div>
+				{#each data.profitAndLoss.expenses as row}
+					<a href={drillthroughHref(row.accountPublicId)}>
 						<span>{row.accountCode} · {row.name}</span><strong>{money(row.amount)}</strong>
-					</div>{/each}
+					</a>
+				{/each}
 			</div>
 			<div class="statement-total">
 				<span>Period expenses</span><strong>{money(data.profitAndLoss.periodExpenses)}</strong>
@@ -185,11 +207,11 @@
 			<div class="ytd">
 				<span>Financial-year-to-date profit / (loss)</span><strong
 					>{money(data.profitAndLoss.yearToDateProfit)}</strong
-				><small
-					>Revenue {money(data.profitAndLoss.yearToDateRevenue)} · expenses {money(
+				><small>
+					Revenue {money(data.profitAndLoss.yearToDateRevenue)} · expenses {money(
 						data.profitAndLoss.yearToDateExpenses
-					)}</small
-				>
+					)}
+				</small>
 			</div>
 		</section>
 
@@ -205,27 +227,33 @@
 			</div>
 			<h3>Assets</h3>
 			<div class="statement-lines">
-				{#each data.balanceSheet.assets as row}<div>
+				{#each data.balanceSheet.assets as row}
+					<a href={drillthroughHref(row.accountPublicId)}>
 						<span>{row.accountCode} · {row.name}</span><strong>{money(row.amount)}</strong>
-					</div>{/each}
+					</a>
+				{/each}
 			</div>
 			<div class="statement-total">
 				<span>Total assets</span><strong>{money(data.balanceSheet.assetsTotal)}</strong>
 			</div>
 			<h3>Liabilities</h3>
 			<div class="statement-lines">
-				{#each data.balanceSheet.liabilities as row}<div>
+				{#each data.balanceSheet.liabilities as row}
+					<a href={drillthroughHref(row.accountPublicId)}>
 						<span>{row.accountCode} · {row.name}</span><strong>{money(row.amount)}</strong>
-					</div>{/each}
+					</a>
+				{/each}
 			</div>
 			<div class="statement-total">
 				<span>Total liabilities</span><strong>{money(data.balanceSheet.liabilitiesTotal)}</strong>
 			</div>
 			<h3>Equity</h3>
 			<div class="statement-lines">
-				{#each data.balanceSheet.equity as row}<div>
+				{#each data.balanceSheet.equity as row}
+					<a href={drillthroughHref(row.accountPublicId)}>
 						<span>{row.accountCode} · {row.name}</span><strong>{money(row.amount)}</strong>
-					</div>{/each}
+					</a>
+				{/each}
 			</div>
 			<div class="statement-total">
 				<span>Configured equity accounts</span><strong
@@ -243,9 +271,9 @@
 				>
 			</div>
 			<p class="explain">
-				Until a later year-end closing-journal boundary exists, cumulative revenue less expenses is
-				shown separately as unclosed earnings rather than being silently moved into retained
-				earnings.
+				Year-end close transfers operating results through controlled closing journals. Until then,
+				cumulative revenue less expenses remains visible as unclosed earnings rather than being
+				silently moved into equity.
 			</p>
 		</section>
 	</div>
@@ -281,6 +309,7 @@
 		margin: 0.2rem 0;
 		color: #667085;
 		max-width: 72rem;
+		line-height: 1.45;
 	}
 	.secondary {
 		font-weight: 700;
@@ -349,9 +378,6 @@
 		text-transform: uppercase;
 		color: #667085;
 	}
-	.report-context strong {
-		text-transform: capitalize;
-	}
 	.report-context strong.open {
 		color: #b54708;
 	}
@@ -401,10 +427,24 @@
 	thead tr:first-child th:first-child {
 		text-align: left;
 	}
-	td small {
+	td small,
+	.account-link small,
+	.account-link em {
 		display: block;
-		color: #667085;
 		margin-top: 0.12rem;
+	}
+	.account-link {
+		color: inherit;
+		text-decoration: none;
+	}
+	.account-link em {
+		color: #175cd3;
+		font-size: 0.75rem;
+		font-style: normal;
+		font-weight: 700;
+	}
+	.account-link small {
+		color: #667085;
 	}
 	tfoot th {
 		border-top: 2px solid #98a2b3;
@@ -423,7 +463,7 @@
 		display: grid;
 		gap: 0.25rem;
 	}
-	.statement-lines div,
+	.statement-lines a,
 	.statement-total,
 	.statement-result,
 	.ytd {
@@ -432,10 +472,16 @@
 		gap: 1rem;
 		padding: 0.45rem 0.55rem;
 	}
-	.statement-lines div {
+	.statement-lines a {
 		background: #f8fafc;
 		border-radius: 7px;
 		font-size: 0.86rem;
+		color: inherit;
+		text-decoration: none;
+	}
+	.statement-lines a:hover,
+	.account-link:hover em {
+		text-decoration: underline;
 	}
 	.statement-total {
 		border-top: 1px solid #e4e7ec;

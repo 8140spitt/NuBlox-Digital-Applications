@@ -2,9 +2,10 @@
 
 **Status:** Non-governing implementation trace  
 **Recovered:** 27 August 2026  
-**Purpose:** preserve the useful code-trace evidence from the former `docs/ux-friction-remediation` branch while aligning it to the World-Class Journey A definition.
+**Updated:** 6 September 2026  
+**Purpose:** preserve useful implementation evidence for the World-Class Journey A definition and expose the next incomplete seam without turning this trace into product authority.
 
-This document is an implementation aid, not product or architecture authority. The governing Journey A definition is [`../../world-class/08-reference-journeys.md`](../../world-class/08-reference-journeys.md), and current maturity is governed by [`../../world-class/10-capability-control-matrix.md`](../../world-class/10-capability-control-matrix.md).
+This document is an implementation aid, not product or architecture authority. The governing Journey A definition is [`../../world-class/08-reference-journeys.md`](../../world-class/08-reference-journeys.md), current maturity is governed by [`../../world-class/10-capability-control-matrix.md`](../../world-class/10-capability-control-matrix.md), and SAP benchmark pressure is governed by [`../../world-class/11-sap-benchmark-coverage.md`](../../world-class/11-sap-benchmark-coverage.md).
 
 ## Journey A
 
@@ -180,7 +181,11 @@ The later Journey A stages are represented by the finance runtime:
 - invoices: `app/src/routes/(app)/finance/invoices/`
 - payments: `app/src/routes/(app)/finance/payments/`
 - receivables: `app/src/routes/(app)/finance/receivables/`
+- accounts payable: `app/src/routes/(app)/finance/accounts-payable/`
+- supplier payments: `app/src/routes/(app)/finance/supplier-payments/`
+- bank reconciliation: `app/src/routes/(app)/finance/bank-reconciliation/`
 - accounting: `app/src/routes/(app)/finance/accounting/`
+- financial reports: `app/src/routes/(app)/finance/accounting/reports/`
 
 Primary service evidence includes:
 
@@ -190,8 +195,33 @@ Primary service evidence includes:
 - `app/src/lib/server/finance/receivable-position-service.ts`
 - `app/src/lib/server/finance/accounting-service.ts`
 - `app/src/lib/server/finance/accounting-source-service.ts`
+- `app/src/lib/server/finance/accounting-reporting-service.ts`
+- `app/src/lib/server/finance/accounts-payable-service.ts`
+- `app/src/lib/server/finance/supplier-payment-service.ts`
+- `app/src/lib/server/finance/bank-reconciliation-service.ts`
 
 The Journey A proof must demonstrate that these are consequences of the same customer/commercial/project thread rather than independent finance demonstrations.
+
+### P1 financial-report source drill-through
+
+The 6 September 2026 P1 tranche adds the missing evidence seam from a financial statement account into the immutable journal history and originating operational source:
+
+```text
+Trial balance / P&L / balance-sheet account
+→ account ledger movement
+→ immutable journal entry and line
+→ source type + source public identity
+→ originating finance evidence where a direct workspace exists
+```
+
+Implementation:
+
+- `app/src/lib/server/finance/accounting-report-drillthrough-service.ts`
+- `app/src/routes/(app)/finance/accounting/reports/[accountPublicId]/+page.server.ts`
+- `app/src/routes/(app)/finance/accounting/reports/[accountPublicId]/+page.svelte`
+- `app/src/lib/server/finance/accounting-report-drillthrough.integration.test.ts`
+
+The service deliberately reuses `accounting_journal_entries` and `accounting_journal_lines`; it does not create a reporting ledger. It preserves accounting-period and currency boundaries, the existing finance/accounting-view permission model, tenant masking, immutable posted history and additive reversal semantics. This directly advances P1 SAP FI / S/4HANA Finance / CO pressure by making management and financial reporting reconcilable to source evidence.
 
 ## 7. Existing executable evidence
 
@@ -202,6 +232,11 @@ Primary commercial/browser chain:
 Golden reference context:
 
 - `app/e2e/golden-reference-enterprise.e2e.ts`
+
+Finance/report browser coverage:
+
+- `app/e2e/authenticated-workspaces.e2e.ts`
+- `app/e2e/ui-rendering-diagnostics.e2e.ts`
 
 Project-focused browser suites:
 
@@ -228,9 +263,12 @@ Representative real-MySQL integration proof:
 - `app/src/lib/server/projects/project-rida.integration.test.ts`
 - `app/src/lib/server/projects/project-change.integration.test.ts`
 - `app/src/lib/server/commercial/project-financial-control.integration.test.ts`
+- `app/src/lib/server/finance/accounting-report-drillthrough.integration.test.ts`
 
 ## 8. Gap this trace exposes
 
-The repository has many strong component proofs, but the World-Class target requires one continuous browser-level proof that starts from the golden reference customer/opportunity and ends in governed accounting and profitability consequences.
+The financial-report drill-through tranche closes the account-line → journal → source-evidence seam, but it is not the complete Journey A proof.
 
-This document should therefore be used to build the Journey A E2E test, not as a substitute for that test.
+The remaining high-value P1 gap is one continuous golden-reference browser journey that starts from the customer/opportunity, progresses through commercial/project delivery, reaches valuation/invoice/receivable/cash, and finishes in accounting/reporting with drill-through back to the same business thread. Enterprise finance depth also still requires the remaining governed P1 capabilities identified by the World-Class matrix and SAP benchmark, including fixed assets, foreign currency/intercompany where materially required, consolidation and stronger enterprise management reporting.
+
+This trace should therefore guide the next Journey A tranche; it is evidence of progress, not a substitute for end-to-end proof.
