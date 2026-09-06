@@ -42,7 +42,6 @@ on:
       - 'app/.prettierignore'
       - 'app/eslint.config.js'
       - 'app/playwright.config.ts'
-      - 'app/prettier.config.ts'
       - 'app/prettier.config.js'
       - 'app/vite.config.ts'
       - 'app/vitest.integration.config.ts'
