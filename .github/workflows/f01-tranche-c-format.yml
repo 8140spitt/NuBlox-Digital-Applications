@@ -1,0 +1,61 @@
+name: F01 Tranche C Formatter
+
+on:
+  push:
+    branches:
+      - feat/f01-performance-foresight
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-performance-foresight
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Fix Svelte expression and format tranche files
+        working-directory: app
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/routes/(app)/strategy/performance/+page.svelte')
+          text = path.read_text()
+          text = text.replace("aria-label={`Completion note ${action.action_code}`}", "aria-label={'Completion note ' + action.action_code}")
+          path.write_text(text)
+          PY
+          pnpm exec prettier --write \
+            e2e/strategy-performance-foresight.e2e.ts \
+            src/lib/server/strategy/performance-foresight-repository.ts \
+            src/lib/server/strategy/performance-foresight-service.ts \
+            src/lib/server/strategy/performance-foresight.integration.test.ts \
+            'src/routes/(app)/strategy/performance/+page.server.ts' \
+            'src/routes/(app)/strategy/performance/+page.svelte'
+      - name: Commit formatter result and remove one-time workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/e2e/strategy-performance-foresight.e2e.ts \
+            app/src/lib/server/strategy/performance-foresight-repository.ts \
+            app/src/lib/server/strategy/performance-foresight-service.ts \
+            app/src/lib/server/strategy/performance-foresight.integration.test.ts \
+            'app/src/routes/(app)/strategy/performance/+page.server.ts' \
+            'app/src/routes/(app)/strategy/performance/+page.svelte'
+          git rm .github/workflows/f01-tranche-c-format.yml
+          git commit -m 'Format F01 tranche C implementation'
+          git push origin HEAD:feat/f01-performance-foresight
