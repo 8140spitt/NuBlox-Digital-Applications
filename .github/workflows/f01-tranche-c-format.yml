@@ -29,22 +29,42 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
-      - name: Fix Svelte expressions and format tranche files
+      - name: Repair and format tranche files
         working-directory: app
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
 
           page = Path('src/routes/(app)/strategy/performance/+page.svelte')
           text = page.read_text()
-          text = text.replace("aria-label={`Completion note ${action.action_code}`}", 'aria-label="Completion note"')
-          text = text.replace("aria-label={'Completion note ' + action.action_code}", 'aria-label="Completion note"')
-          text = text.replace("{#if ['open', 'in_progress'].includes(action.lifecycle_status)}", "{#if actionOpen(action.lifecycle_status)}")
-          text = text.replace(
-              "\n</script>",
-              "\n\tfunction actionOpen(status: string) {\n\t\treturn status === 'open' || status === 'in_progress';\n\t}\n</script>",
-              1,
-          )
+          replacement = '''{#if data.actions.length}
+				<div class="card-grid">
+					{#each data.actions as item}
+						<article class="record-card">
+							<div class="record-head">
+								<div><small>{kpiFor(item.strategy_kpi_id)?.kpi_code ?? '—'}</small><h3>{item.action_code} · {item.title}</h3></div>
+								<span class="pill">{label(item.lifecycle_status)}</span>
+							</div>
+							<p>{item.action_text}</p>
+							<small>{memberFor(item.owner_member_id)?.display_name ?? '—'} · due {dateValue(item.due_date)}</small>
+							{#if item.lifecycle_status === 'open' || item.lifecycle_status === 'in_progress'}
+								<form method="POST" action="?/completeAction" class="inline-form compact">
+									<input type="hidden" name="frameworkPublicId" value={data.selectedFramework.public_id} />
+									<input type="hidden" name="actionPublicId" value={item.public_id} />
+									<input name="completionNote" aria-label="Completion note" placeholder="Completion evidence" required />
+									<button type="submit">Complete</button>
+								</form>
+							{:else if item.completion_note}
+								<div class="snapshot"><b>Completion evidence</b><span>{item.completion_note}</span></div>
+							{/if}
+						</article>
+					{/each}
+				</div>
+			{/if}'''
+          text, count = re.subn(r'\{#if data\.actions\.length\}<div class="table-wrap">.*?</div>\{/if\}', replacement, text, count=1, flags=re.S)
+          if count != 1:
+              raise SystemExit('Corrective action block was not found exactly once')
           page.write_text(text)
 
           e2e = Path('e2e/strategy-performance-foresight.e2e.ts')
