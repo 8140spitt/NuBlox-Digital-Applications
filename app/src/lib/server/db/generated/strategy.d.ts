@@ -142,6 +142,76 @@ export interface StrategyInitiatives {
   updated_at: Generated<Date>;
 }
 
+export interface StrategyKpiActions {
+  action_code: string;
+  action_text: string;
+  completed_at: Date | null;
+  completed_by_member_id: string | null;
+  completion_note: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  due_date: Date;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  owner_member_id: string;
+  public_id: string;
+  strategy_kpi_id: string;
+  strategy_kpi_observation_id: string | null;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyKpiObservations {
+  actual_value: Decimal;
+  commentary: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  forecast_value: Decimal | null;
+  id: Generated<string>;
+  observed_on: Date;
+  organisation_id: string;
+  public_id: string;
+  source_domain: string | null;
+  source_measure_key: string | null;
+  source_mode: Generated<string>;
+  source_public_id: string | null;
+  source_record_type: string | null;
+  strategy_kpi_id: string;
+}
+
+export interface StrategyKpis {
+  aggregation_method: Generated<string>;
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  baseline_value: Decimal;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  critical_threshold: Decimal | null;
+  description: string;
+  direction: string;
+  id: Generated<string>;
+  kpi_code: string;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  owner_member_id: string;
+  public_id: string;
+  source_domain: string | null;
+  source_measure_key: string | null;
+  source_mode: Generated<string>;
+  source_record_type: string | null;
+  strategy_framework_id: string;
+  strategy_objective_id: string;
+  supersedes_strategy_kpi_id: string | null;
+  target_date: Date | null;
+  target_value: Decimal;
+  title: string;
+  unit_label: string;
+  updated_at: Generated<Date>;
+  version_number: number;
+  warning_threshold: Decimal | null;
+}
+
 export interface StrategyObjectives {
   created_at: Generated<Date>;
   created_by_member_id: string;
@@ -207,6 +277,91 @@ export interface StrategyOptions {
   updated_at: Generated<Date>;
 }
 
+export interface StrategyReviewKpis {
+  actual_value_snapshot: Decimal;
+  assessment: string;
+  commentary: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  strategy_kpi_id: string;
+  strategy_kpi_observation_id: string;
+  strategy_review_id: string;
+  target_value_snapshot: Decimal;
+  variance_percent: Decimal | null;
+  variance_value: Decimal;
+}
+
+export interface StrategyReviews {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  decisions_text: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  review_code: string;
+  review_date: Date;
+  strategy_framework_id: string;
+  summary: string;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyScenarioAssumptions {
+  assumption_code: string;
+  baseline_value: Decimal;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  description: string;
+  id: Generated<string>;
+  organisation_id: string;
+  public_id: string;
+  scenario_value: Decimal;
+  sensitivity_percent: Decimal | null;
+  strategy_scenario_id: string;
+  title: string;
+  unit_label: string;
+  variable_key: string;
+}
+
+export interface StrategyScenarioKpiProjections {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  projected_value: Decimal;
+  projection_date: Date;
+  public_id: string;
+  rationale: string;
+  strategy_kpi_id: string;
+  strategy_scenario_id: string;
+}
+
+export interface StrategyScenarios {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  horizon_end: Date;
+  horizon_start: Date;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  narrative: string;
+  organisation_id: string;
+  public_id: string;
+  scenario_code: string;
+  scenario_type: string;
+  strategy_framework_id: string;
+  supersedes_strategy_scenario_id: string | null;
+  title: string;
+  updated_at: Generated<Date>;
+  version_number: number;
+}
+
 export interface DB {
   strategy_business_plans: StrategyBusinessPlans;
   strategy_environment_factors: StrategyEnvironmentFactors;
@@ -215,8 +370,16 @@ export interface DB {
   strategy_initiative_milestones: StrategyInitiativeMilestones;
   strategy_initiative_operating_model_links: StrategyInitiativeOperatingModelLinks;
   strategy_initiatives: StrategyInitiatives;
+  strategy_kpi_actions: StrategyKpiActions;
+  strategy_kpi_observations: StrategyKpiObservations;
+  strategy_kpis: StrategyKpis;
   strategy_objectives: StrategyObjectives;
   strategy_operating_model_accountabilities: StrategyOperatingModelAccountabilities;
   strategy_operating_model_components: StrategyOperatingModelComponents;
   strategy_options: StrategyOptions;
+  strategy_review_kpis: StrategyReviewKpis;
+  strategy_reviews: StrategyReviews;
+  strategy_scenario_assumptions: StrategyScenarioAssumptions;
+  strategy_scenario_kpi_projections: StrategyScenarioKpiProjections;
+  strategy_scenarios: StrategyScenarios;
 }
