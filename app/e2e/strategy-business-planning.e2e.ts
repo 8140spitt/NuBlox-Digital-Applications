@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const EMAIL = 'e2e-owner@example.test';
 const PASSWORD = ['NuBlox', 'E2E', 'Password', '2026!'].join('-');
-const ORGANISATION = 'NuBlox E2E Organisation';
+const ORGANISATION = 'NuBlox Strategy E2E Organisation';
 
 async function signIn(page: Page) {
 	await page.goto('/signin');
@@ -79,7 +79,9 @@ test('F01 business plan governs objective through operating model to approved re
 		page.getByRole('heading', { name: 'Business planning & operating model', level: 1 })
 	).toBeVisible();
 	const createPlan = page.locator('form[action="?/createPlan"]');
-	await createPlan.getByLabel('Approved strategy').selectOption({ label: /PLAN-E2E · v1/ });
+	await createPlan.getByLabel('Approved strategy').selectOption({
+		label: 'PLAN-E2E · v1 — 2027–2030 Planning Strategy'
+	});
 	await createPlan.getByLabel('Plan code').fill('BP-E2E-2027');
 	await createPlan.getByLabel('Title').fill('2027 E2E Enterprise Business Plan');
 	await createPlan.getByLabel('Period start').fill('2027-01-01');
@@ -98,7 +100,9 @@ test('F01 business plan governs objective through operating model to approved re
 
 	await page.getByText('Add strategic initiative', { exact: true }).click();
 	const initiative = page.locator('form[action="?/addInitiative"]');
-	await initiative.getByLabel('Strategic objective').selectOption({ label: /OBJ-PLAN-01/ });
+	await initiative.getByLabel('Strategic objective').selectOption({
+		label: 'OBJ-PLAN-01 · Implement target enterprise operating model'
+	});
 	await initiative.getByLabel('Initiative code').fill('INIT-E2E-01');
 	await initiative.getByLabel('Priority rank').fill('1');
 	await initiative.getByLabel('Currency').fill('GBP');
