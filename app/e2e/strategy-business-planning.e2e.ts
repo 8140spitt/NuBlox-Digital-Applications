@@ -142,7 +142,7 @@ test('F01 business plan governs objective through operating model to approved re
 		.getByLabel('Target state')
 		.fill('Value streams coordinate through canonical records and explicit accountability.');
 	await component.getByRole('button', { name: 'Add target component' }).click();
-	await expect(page.getByRole('heading', { name: 'Integrated enterprise delivery' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Integrated enterprise delivery', exact: true })).toBeVisible();
 
 	await page.getByText('Add business accountability', { exact: true }).click();
 	const accountability = page.locator('form[action="?/addAccountability"]');
@@ -168,6 +168,6 @@ test('F01 business plan governs objective through operating model to approved re
 	await expect(
 		page.getByRole('heading', { name: 'Mobilise integrated enterprise delivery' })
 	).toBeVisible();
-	await expect(page.getByRole('heading', { name: 'Integrated enterprise delivery' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Integrated enterprise delivery', exact: true })).toBeVisible();
 	await expect(page.getByText('Chief Operating Officer')).toBeVisible();
 });
