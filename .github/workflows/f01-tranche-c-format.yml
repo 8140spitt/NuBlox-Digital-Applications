@@ -29,61 +29,42 @@ jobs:
       - name: Install dependencies
         working-directory: app
         run: pnpm install --frozen-lockfile
-      - name: Repair and format tranche files
+      - name: Repair tranche sources
         working-directory: app
         run: |
           python3 - <<'PY'
-          from pathlib import Path
+          import base64
           import re
+          from pathlib import Path
 
+          replacement = base64.b64decode('eyNpZiBkYXRhLmFjdGlvbnMubGVuZ3RofQoJCQkJPGRpdiBjbGFzcz0iY2FyZC1ncmlkIj4KCQkJCQl7I2VhY2ggZGF0YS5hY3Rpb25zIGFzIGl0ZW19CgkJCQkJCTxhcnRpY2xlIGNsYXNzPSJyZWNvcmQtY2FyZCI+CgkJCQkJCQk8ZGl2IGNsYXNzPSJyZWNvcmQtaGVhZCI+CgkJCQkJCQkJPGRpdj4KCQkJCQkJCQkJPHNtYWxsPntrcGlGb3IoaXRlbS5zdHJhdGVneV9rcGlfaWQpPy5rcGlfY29kZSA/PyAn4oCUJ308L3NtYWxsPgoJCQkJCQkJCQk8aDM+e2l0ZW0uYWN0aW9uX2NvZGV9IMK3IHtpdGVtLnRpdGxlfTwvaDM+CgkJCQkJCQkJPC9kaXY+CgkJCQkJCQkJPHNwYW4gY2xhc3M9InBpbGwiPntsYWJlbChpdGVtLmxpZmVjeWNsZV9zdGF0dXMpfTwvc3Bhbj4KCQkJCQkJCTwvZGl2PgoJCQkJCQkJPHA+e2l0ZW0uYWN0aW9uX3RleHR9PC9wPgoJCQkJCQkJPHNtYWxsPnttZW1iZXJGb3IoaXRlbS5vd25lcl9tZW1iZXJfaWQpPy5kaXNwbGF5X25hbWUgPz8gJ+KAlCd9IMK3IGR1ZSB7ZGF0ZVZhbHVlKGl0ZW0uZHVlX2RhdGUpfTwvc21hbGw+CgkJCQkJCQl7I2lmIGl0ZW0ubGlmZWN5Y2xlX3N0YXR1cyA9PT0gJ29wZW4nIHx8IGl0ZW0ubGlmZWN5Y2xlX3N0YXR1cyA9PT0gJ2luX3Byb2dyZXNzJ30KCQkJCQkJCQk8Zm9ybSBtZXRob2Q9IlBPU1QiIGFjdGlvbj0iPy9jb21wbGV0ZUFjdGlvbiIgY2xhc3M9ImlubGluZS1mb3JtIGNvbXBhY3QiPgoJCQkJCQkJCQk8aW5wdXQgdHlwZT0iaGlkZGVuIiBuYW1lPSJmcmFtZXdvcmtQdWJsaWNJZCIgdmFsdWU9e2RhdGEuc2VsZWN0ZWRGcmFtZXdvcmsucHVibGljX2lkfSAvPgoJCQkJCQkJCQk8aW5wdXQgdHlwZT0iaGlkZGVuIiBuYW1lPSJhY3Rpb25QdWJsaWNJZCIgdmFsdWU9e2l0ZW0ucHVibGljX2lkfSAvPgoJCQkJCQkJCQk8aW5wdXQgbmFtZT0iY29tcGxldGlvbk5vdGUiIGFyaWEtbGFiZWw9IkNvbXBsZXRpb24gbm90ZSIgcGxhY2Vob2xkZXI9IkNvbXBsZXRpb24gZXZpZGVuY2UiIHJlcXVpcmVkIC8+CgkJCQkJCQkJCTxidXR0b24gdHlwZT0ic3VibWl0Ij5Db21wbGV0ZTwvYnV0dG9uPgoJCQkJCQkJCTwvZm9ybT4KCQkJCQkJCXs6ZWxzZSBpZiBpdGVtLmNvbXBsZXRpb25fbm90ZX0KCQkJCQkJCQk8ZGl2IGNsYXNzPSJzbmFwc2hvdCI+CgkJCQkJCQkJCTxiPkNvbXBsZXRpb24gZXZpZGVuY2U8L2I+CgkJCQkJCQkJCTxzcGFuPntpdGVtLmNvbXBsZXRpb25fbm90ZX08L3NwYW4+CgkJCQkJCQkJPC9kaXY+CgkJCQkJCQl7L2lmfQoJCQkJCQk8L2FydGljbGU+CgkJCQkJey9lYWNofQoJCQkJPC9kaXY+CgkJCXsvaWZ9').decode()
           page = Path('src/routes/(app)/strategy/performance/+page.svelte')
-          text = page.read_text()
-          replacement = '''{#if data.actions.length}
-				<div class="card-grid">
-					{#each data.actions as item}
-						<article class="record-card">
-							<div class="record-head">
-								<div><small>{kpiFor(item.strategy_kpi_id)?.kpi_code ?? '—'}</small><h3>{item.action_code} · {item.title}</h3></div>
-								<span class="pill">{label(item.lifecycle_status)}</span>
-							</div>
-							<p>{item.action_text}</p>
-							<small>{memberFor(item.owner_member_id)?.display_name ?? '—'} · due {dateValue(item.due_date)}</small>
-							{#if item.lifecycle_status === 'open' || item.lifecycle_status === 'in_progress'}
-								<form method="POST" action="?/completeAction" class="inline-form compact">
-									<input type="hidden" name="frameworkPublicId" value={data.selectedFramework.public_id} />
-									<input type="hidden" name="actionPublicId" value={item.public_id} />
-									<input name="completionNote" aria-label="Completion note" placeholder="Completion evidence" required />
-									<button type="submit">Complete</button>
-								</form>
-							{:else if item.completion_note}
-								<div class="snapshot"><b>Completion evidence</b><span>{item.completion_note}</span></div>
-							{/if}
-						</article>
-					{/each}
-				</div>
-			{/if}'''
-          text, count = re.subn(r'\{#if data\.actions\.length\}<div class="table-wrap">.*?</div>\{/if\}', replacement, text, count=1, flags=re.S)
+          source = page.read_text()
+          pattern = r'\{#if data\.actions\.length\}<div class="table-wrap">.*?</div>\{/if\}'
+          source, count = re.subn(pattern, replacement, source, count=1, flags=re.S)
           if count != 1:
-              raise SystemExit('Corrective action block was not found exactly once')
-          page.write_text(text)
+              raise SystemExit('Corrective-action block not found exactly once')
+          page.write_text(source)
 
           e2e = Path('e2e/strategy-performance-foresight.e2e.ts')
-          text = e2e.read_text().replace("getByLabel('Completion note ACT-PERF-E2E')", "getByLabel('Completion note')")
-          e2e.write_text(text)
+          source = e2e.read_text().replace("getByLabel('Completion note ACT-PERF-E2E')", "getByLabel('Completion note')")
+          e2e.write_text(source)
 
           integration = Path('src/lib/server/strategy/performance-foresight.integration.test.ts')
-          text = integration.read_text()
-          text = text.replace("\n\t\texpect(new Set(auditActions.map((row) => row.action_key))).toEqual(expect.objectContaining ? expect.any(Set) : new Set());", "")
-          integration.write_text(text)
+          source = integration.read_text()
+          source = source.replace("\n\t\texpect(new Set(auditActions.map((row) => row.action_key))).toEqual(expect.objectContaining ? expect.any(Set) : new Set());", "")
+          integration.write_text(source)
 
           strategy_page = Path('src/routes/(app)/strategy/+page.svelte')
-          text = strategy_page.read_text()
+          source = strategy_page.read_text()
           needle = '\t\t<a href="/strategy/planning">Business planning & operating model →</a>\n'
-          addition = needle + '\t\t<a href="/strategy/performance">Strategy performance & foresight →</a>\n'
-          if '/strategy/performance' not in text:
-              text = text.replace(needle, addition)
-          strategy_page.write_text(text)
+          if '/strategy/performance' not in source:
+              source = source.replace(needle, needle + '\t\t<a href="/strategy/performance">Strategy performance & foresight →</a>\n')
+          strategy_page.write_text(source)
           PY
+      - name: Format tranche files
+        working-directory: app
+        run: |
           pnpm exec prettier --write \
             e2e/strategy-performance-foresight.e2e.ts \
             src/lib/server/strategy/performance-foresight-repository.ts \
