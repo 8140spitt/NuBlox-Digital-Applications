@@ -30,6 +30,7 @@
 	<div class="heading-actions">
 		<span class="status-badge">VS3 Strategy-to-performance</span>
 		<span class="status-badge">D8 + D19</span>
+		<a href="/strategy/planning">Business planning & operating model →</a>
 	</div>
 </section>
 

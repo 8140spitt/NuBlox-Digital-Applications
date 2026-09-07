@@ -66,6 +66,7 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				.select(['member.id as id', 'user.display_name as display_name'])
 				.where('member.organisation_id', '=', actor.organisationId)
 				.where('member.status', '=', 'active')
+				.where('user.status', '=', 'active')
 				.orderBy('user.display_name', 'asc')
 				.execute()
 		]);
