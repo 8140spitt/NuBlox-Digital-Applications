@@ -329,14 +329,13 @@ describe('F01 canonical KPI source continuity', () => {
 			forecastValue: '11.4'
 		});
 		expect(repeated.observation.public_id).toBe(first.observation.public_id);
-		expect(
-			await db
-				.selectFrom('strategy_kpi_observations')
-				.select(({ fn }) => fn.countAll<number>().as('count'))
-				.where('organisation_id', '=', organisationId)
-				.where('strategy_kpi_id', '=', first.observation.strategy_kpi_id)
-				.executeTakeFirstOrThrow()
-		).toMatchObject({ count: 1 });
+		const observationCount = await db
+			.selectFrom('strategy_kpi_observations')
+			.select(({ fn }) => fn.countAll<number>().as('count'))
+			.where('organisation_id', '=', organisationId)
+			.where('strategy_kpi_id', '=', first.observation.strategy_kpi_id)
+			.executeTakeFirstOrThrow();
+		expect(Number(observationCount.count)).toBe(1);
 
 		await expect(
 			new PerformanceForesightService(db).recordObservation(actor, {
