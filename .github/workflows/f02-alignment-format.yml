@@ -1,0 +1,121 @@
+name: F02 Alignment Formatter
+
+on:
+  push:
+    branches:
+      - feat/f02-corporate-governance
+    paths:
+      - '.github/workflows/f02-alignment-format.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  align:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f02-corporate-governance
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+
+      - name: Align governing F01/F02 and SAP evidence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          registry = Path('app/src/lib/navigation/capability-registry.ts')
+          text = registry.read_text()
+          text = text.replace(
+              "'Organisation, membership, roles, permissions, careers and audit foundations are native.'",
+              "'Organisation, membership, roles, permissions, careers, audit and F02 corporate-governance foundations are native.'"
+          )
+          text = text.replace(
+              "permissionNamespaces: ['organisation.', 'member.', 'role.', 'permission.', 'career.', 'audit.'],\n\t\troutes: [{ label: 'Organisation', href: '/organisation', memberAvailable: true }]",
+              "permissionNamespaces: [\n\t\t\t'organisation.',\n\t\t\t'member.',\n\t\t\t'role.',\n\t\t\t'permission.',\n\t\t\t'career.',\n\t\t\t'audit.',\n\t\t\t'governance.'\n\t\t],\n\t\troutes: [\n\t\t\t{ label: 'Organisation', href: '/organisation', memberAvailable: true },\n\t\t\t{\n\t\t\t\tlabel: 'Corporate governance',\n\t\t\t\thref: '/governance',\n\t\t\t\tanyPermissionNamespaces: ['governance.']\n\t\t\t}\n\t\t]"
+          )
+          text = text.replace(
+              "'Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native. F01 strategic intent, environmental analysis, strategic options/objectives, business planning and target operating-model governance are now native; KPI/review/scenario, treasury and consolidation depth remain.'",
+              "'Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native. F01 strategy, business planning, target operating model, KPI/review/scenario and canonical Finance-actual drill-through are native; treasury, broader management accounting and consolidation depth remain.'"
+          )
+          text = text.replace(
+              "\t\t\t{\n\t\t\t\tlabel: 'Business planning & operating model',\n\t\t\t\thref: '/strategy/planning',\n\t\t\t\tanyPermissionNamespaces: ['strategy.']\n\t\t\t},\n\t\t\t{\n\t\t\t\tlabel: 'Project cost control'",
+              "\t\t\t{\n\t\t\t\tlabel: 'Business planning & operating model',\n\t\t\t\thref: '/strategy/planning',\n\t\t\t\tanyPermissionNamespaces: ['strategy.']\n\t\t\t},\n\t\t\t{\n\t\t\t\tlabel: 'Strategy performance & foresight',\n\t\t\t\thref: '/strategy/performance',\n\t\t\t\tanyPermissionNamespaces: ['strategy.']\n\t\t\t},\n\t\t\t{\n\t\t\t\tlabel: 'Project cost control'"
+          )
+          registry.write_text(text)
+
+          fmap = Path('docs/architecture/function-capability-map/map-f01-f08.md')
+          text = fmap.read_text()
+          old_f01 = "**Current reality:** F01.01–F01.03 are delivered through PR #127; F01.04–F01.05 through PR #131; and F01.06–F01.08 through PR #132. The final closure tranche in PR #133 removes the remaining digital-thread gap by resolving canonical KPI actuals from authoritative journal-derived Finance P&L facts, preserving direct source drill-through, and proving one browser thread across strategic intent, business planning/resource envelope, target operating model, KPI/target, actual, variance/action, forecast, strategic review and scenario/foresight. F01 is treated as complete only after #133 and its merged `main` commit pass the full validation gate."
+          new_f01 = "**Current reality:** Complete. F01.01–F01.03 were delivered through PR #127, F01.04–F01.05 through PR #131, F01.06–F01.08 through PR #132, and PR #133 closed the remaining digital-thread gap by resolving canonical KPI actuals from authoritative journal-derived Finance P&L facts with direct source drill-through. The exact PR and merged `main` validations passed and issue #124 is closed."
+          text = text.replace(old_f01, new_f01)
+          text = text.replace(
+              "**Current reality:** Native foundations exist; material depth remains in D14. Domain maturity is not proof that every sub-function is complete.",
+              "**Current reality:** PR #135 implements F02.01–F02.07 as one native governance thread: versioned governance framework, board/executive/committee bodies and appointments, business delegation of authority, quorum-controlled meetings, attributable decisions/actions, governed policy/attestation and conflict/ethics evidence. F02 remains merge-candidate until exact-head and merged-`main` validation pass and issue #134 closes."
+          )
+          fmap.write_text(text)
+
+          sap = Path('docs/world-class/11-sap-benchmark-coverage.md')
+          text = sap.read_text()
+          text = text.replace(
+              "| Enterprise identity, master data and governance | MDG, MDG-M, MDG-S, GRC | **1**, 9, 10, 14, 19 | All; especially VS2, VS8, VS9 | Canonical masters, stewardship, duplicate/merge control, delegated authority, SoD, access review and assurance. |",
+              "| Enterprise identity, master data and governance | MDG, MDG-M, MDG-S, GRC | **1**, 9, 10, 14, 19 | All; especially VS2, VS8, VS9 | Canonical masters and stewardship; business governance framework/bodies/DoA/decisions/policy/ethics; access delegation, SoD, access review and assurance. |"
+          )
+          text = text.replace(
+              "As of 6 September 2026 the Source-to-Pay accounting seam has materially advanced through approved AP → accounting → supplier payment → bank settlement → project-financial drill-through. Recent RBAC and access-governance work has also materially strengthened the GRC benchmark.",
+              "As of 8 September 2026 the Source-to-Pay accounting seam has materially advanced through approved AP → accounting → supplier payment → bank settlement → project-financial drill-through. Access governance already strengthened the GRC benchmark; F02 implementation in PR #135 now adds the distinct corporate-governance layer of approved governance frameworks, board/executive/committee authority, business DoA, quorum-controlled decisions/actions, governed policy and ethics/conflict evidence. F02 remains merge-candidate until its exact-head and merged-`main` validation gates pass."
+          )
+          sap.write_text(text)
+
+          register = Path('docs/sap-capability-coverage-register.csv')
+          text = register.read_text()
+          text = text.replace(
+              "19,Governance Risk and Compliance (GRC),functional,E23 Governance risk compliance,partial,21,cross-cutting-control,ALL|VS9,A|B|C,mandatory-enabler,RBAC audit SoD time-bounded access delegated authority and access review now exist; broader enterprise risk compliance control testing and assurance remain",
+              "19,Governance Risk and Compliance (GRC),functional,E23 Governance risk compliance,partial,21,cross-cutting-control,ALL|VS9,A|B|C,mandatory-enabler,RBAC audit SoD time-bounded access delegated access authority and access review exist; PR #135 adds corporate governance frameworks bodies business DoA quorum-controlled decisions policy attestations conflicts and ethics evidence; broader enterprise risk regulatory obligations control testing and assurance remain"
+          )
+          register.write_text(text)
+          PY
+
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+
+      - name: Format F02 source
+        working-directory: app
+        run: |
+          pnpm exec prettier --write \
+            .kysely-governance-codegenrc.json \
+            package.json \
+            e2e/corporate-governance.e2e.ts \
+            src/lib/navigation/capability-registry.ts \
+            src/lib/server/db/database.ts \
+            src/lib/server/governance/governance-bootstrap.ts \
+            src/lib/server/governance/governance-repository.ts \
+            src/lib/server/governance/governance-service.ts \
+            src/lib/server/governance/governance.integration.test.ts \
+            src/lib/server/organisations/standard-role-reconciliation.ts \
+            'src/routes/(app)/+layout.server.ts' \
+            'src/routes/(app)/governance/+page.server.ts' \
+            'src/routes/(app)/governance/+page.svelte'
+
+      - name: Commit aligned source
+        run: |
+          git config user.name '8140spitt'
+          git config user.email '56647740+8140spitt@users.noreply.github.com'
+          git add app docs
+          if git diff --cached --quiet; then
+            echo 'No alignment changes required.'
+          else
+            git commit -m 'Align and format F02 governance delivery'
+            git push origin HEAD:feat/f02-corporate-governance
+          fi
