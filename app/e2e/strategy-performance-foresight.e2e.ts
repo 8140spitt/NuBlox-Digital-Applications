@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 
 const EMAIL = 'e2e-owner@example.test';
 const PASSWORD = ['NuBlox', 'E2E', 'Password', '2026!'].join('-');
-const ORGANISATION = 'NuBlox Strategy E2E Organisation';
+const ORGANISATION = 'NuBlox Performance E2E Organisation';
 
 async function signIn(page: Page) {
 	await page.goto('/signin');
