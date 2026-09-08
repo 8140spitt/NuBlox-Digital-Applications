@@ -4,6 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import { CanonicalPerformanceObservationService } from '$lib/server/strategy/canonical-performance-observation-service';
 import {
 	PerformanceForesightService,
 	PerformanceForesightValidationError
@@ -79,6 +80,29 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 	}
 };
 
+async function runCanonicalAction(
+	locals: App.Locals,
+	frameworkPublicId: string,
+	operation: (service: CanonicalPerformanceObservationService, actor: TenantActorContext) => Promise<unknown>
+) {
+	const actor = actorFromLocals(locals);
+	if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
+	try {
+		await operation(new CanonicalPerformanceObservationService(getDatabase()), actor);
+		throw redirect(
+			303,
+			`/strategy/performance?framework=${encodeURIComponent(frameworkPublicId)}`
+		);
+	} catch (error) {
+		if (error instanceof PerformanceForesightValidationError)
+			return fail(400, { error: error.message });
+		if (error instanceof TenantAccessError)
+			return fail(403, { error: 'Canonical source access is not permitted.' });
+		if (error instanceof RecordNotFoundError) return fail(404, { error: error.message });
+		throw error;
+	}
+}
+
 export const actions: Actions = {
 	createKpi: async ({ request, locals }) => {
 		const data = await request.formData();
@@ -118,6 +142,18 @@ export const actions: Actions = {
 		const data = await request.formData();
 		return runAction(locals, text(data, 'frameworkPublicId'), (service, actor) =>
 			service.reviseKpi(actor, text(data, 'kpiPublicId'))
+		);
+	},
+	refreshCanonicalObservation: async ({ request, locals }) => {
+		const data = await request.formData();
+		const frameworkPublicId = text(data, 'frameworkPublicId');
+		return runCanonicalAction(locals, frameworkPublicId, (service, actor) =>
+			service.record(actor, {
+				kpiPublicId: text(data, 'kpiPublicId'),
+				sourcePublicId: text(data, 'sourcePublicId'),
+				forecastValue: nullableText(data, 'forecastValue'),
+				commentary: nullableText(data, 'commentary')
+			})
 		);
 	},
 	recordObservation: async ({ request, locals }) => {

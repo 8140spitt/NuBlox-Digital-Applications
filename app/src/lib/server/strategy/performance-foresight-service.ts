@@ -532,6 +532,10 @@ export class PerformanceForesightService {
 			);
 			if (!kpi || kpi.lifecycle_status !== 'approved')
 				throw new RecordNotFoundError('Approved strategy KPI not found.');
+			if (kpi.source_mode === 'canonical')
+				throw new PerformanceForesightValidationError(
+					'Canonical KPI actuals must be refreshed from authoritative source evidence.'
+				);
 			const sourceDomain = sourceToken(input.sourceDomain, 'Source domain');
 			const sourceRecordType = sourceToken(input.sourceRecordType, 'Source record type');
 			const sourcePublicId = sourceToken(input.sourcePublicId, 'Source public ID');

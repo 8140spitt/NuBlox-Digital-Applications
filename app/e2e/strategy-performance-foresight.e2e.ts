@@ -75,6 +75,58 @@ test('F01 performance closes the strategy loop through KPI, review and foresight
 	await page.getByRole('button', { name: 'Approve version 1' }).click();
 	await expect(page.getByText('Approved strategy version')).toBeVisible();
 
+	await page.getByRole('link', { name: 'Business planning & operating model →' }).click();
+	const createPlan = page.locator('form[action="?/createPlan"]');
+	await createPlan.getByLabel('Approved strategy').selectOption({ label: 'PERF-E2E · v1 — 2027–2030 Performance Strategy' });
+	await createPlan.getByLabel('Plan code').fill('BP-PERF-E2E');
+	await createPlan.getByLabel('Title').fill('2027 Performance Business Plan');
+	await createPlan.getByLabel('Period start').fill('2027-01-01');
+	await createPlan.getByLabel('Period end').fill('2027-12-31');
+	await createPlan.getByLabel('Currency').fill('GBP');
+	await createPlan.getByLabel('Planned revenue').fill('1000000');
+	await createPlan.getByLabel('Planned operating expenditure').fill('880000');
+	await createPlan.getByLabel('Planned capital expenditure').fill('50000');
+	await createPlan.getByLabel('Plan narrative').fill('Fund the approved strategy and hold the operating model accountable for margin performance.');
+	await createPlan.getByRole('button', { name: 'Create business-plan draft' }).click();
+
+	await page.getByText('Add strategic initiative', { exact: true }).click();
+	const initiative = page.locator('form[action="?/addInitiative"]');
+	await initiative.getByLabel('Strategic objective').selectOption({ label: 'OBJ-PERF-E2E · Improve operating margin' });
+	await initiative.getByLabel('Initiative code').fill('INIT-PERF-E2E');
+	await initiative.getByLabel('Priority rank').fill('1');
+	await initiative.getByLabel('Currency').fill('GBP');
+	await initiative.getByLabel('Initiative title').fill('Protect operating margin');
+	await initiative.getByLabel('Target outcome').fill('Deliver the approved operating-margin target through controlled enterprise execution.');
+	await initiative.getByLabel('Benefit statement').fill('Improved operating margin with traceable financial evidence.');
+	await initiative.getByLabel('Start date').fill('2027-01-15');
+	await initiative.getByLabel('End date').fill('2027-11-30');
+	await initiative.getByLabel('Planned investment').fill('75000');
+	await initiative.getByLabel('Planned FTE').fill('6');
+	await initiative.getByRole('button', { name: 'Add initiative' }).click();
+
+	await page.getByText('Add operating-model component', { exact: true }).click();
+	const component = page.locator('form[action="?/addComponent"]');
+	await component.getByLabel('Component code').fill('CAP-PERF-E2E');
+	await component.getByLabel('Component type').selectOption('business_capability');
+	await component.getByLabel('Component title').fill('Margin performance management');
+	await component.getByLabel('Current state').fill('Performance is reviewed after the fact.');
+	await component.getByLabel('Target state').fill('Canonical finance actuals drive governed KPI variance and action.');
+	await component.getByRole('button', { name: 'Add target component' }).click();
+
+	await page.getByText('Add business accountability', { exact: true }).click();
+	const accountability = page.locator('form[action="?/addAccountability"]');
+	await accountability.getByLabel('Accountability').selectOption('accountable');
+	await accountability.getByLabel('Business position label').fill('Chief Financial Officer');
+	await accountability.getByLabel('Notes').fill('Accountable for strategy-to-finance performance evidence.');
+	await accountability.getByRole('button', { name: 'Add accountability' }).click();
+
+	await page.getByText('Link initiative to operating model', { exact: true }).click();
+	const changeLink = page.locator('form[action="?/linkInitiativeComponent"]');
+	await changeLink.getByLabel('Change role').selectOption('transform');
+	await changeLink.getByRole('button', { name: 'Link change' }).click();
+	await page.getByRole('button', { name: 'Approve plan version 1' }).click();
+	await expect(page.getByText('Approved business-plan evidence')).toBeVisible();
+
 	await page.goto('/strategy/performance');
 	await page.getByRole('link', { name: /PERF-E2E · v1/ }).click();
 	await expect(
@@ -107,22 +159,23 @@ test('F01 performance closes the strategy loop through KPI, review and foresight
 	await expect(page.getByRole('heading', { name: 'Operating margin' })).toBeVisible();
 	await page.getByRole('button', { name: 'Approve KPI version 1' }).click();
 
-	const observation = page.locator('form[action="?/recordObservation"]');
+	const observation = page.locator('form[action="?/refreshCanonicalObservation"]');
 	await observation
-		.getByLabel('Approved KPI')
+		.getByLabel('Canonical KPI')
 		.selectOption({ label: 'KPI-PERF-E2E · Operating margin' });
-	await observation.getByLabel('Observed date').fill('2027-06-30');
-	await observation.getByLabel('Actual value').fill('9.75');
+	await observation.getByLabel('Canonical source period').fill('F01-PERF-PERIOD-2027-H1');
 	await observation.getByLabel('Forecast value').fill('11.4');
-	await observation.getByLabel('Source mode').selectOption('canonical');
-	await observation.getByLabel('Source domain').fill('finance');
-	await observation.getByLabel('Source record type').fill('accounting_report');
-	await observation.getByLabel('Source public ID').fill('E2E-FIN-REPORT-H1');
-	await observation.getByLabel('Source measure key').fill('operating_margin_percent');
-	await observation.getByLabel('Commentary').fill('Performance improving but below target.');
-	await observation.getByRole('button', { name: 'Record KPI observation' }).click();
+	await observation.getByLabel('Commentary').fill('Canonical finance performance is improving but below target.');
+	await observation.getByRole('button', { name: 'Refresh canonical KPI actual' }).click();
 	await expect(page.getByText('9.75 %')).toBeVisible();
-	await expect(page.getByText(/E2E-FIN-REPORT-H1/)).toBeVisible();
+	await expect(page.getByText(/F01-PERF-PERIOD-2027-H1/)).toBeVisible();
+	const sourceLink = page.getByRole('link', { name: 'Open canonical source →' });
+	await expect(sourceLink).toHaveAttribute('href', /finance\/accounting\/reports\?period=F01-PERF-PERIOD-2027-H1/);
+	await sourceLink.click();
+	await expect(page.getByRole('heading', { name: 'Trial balance and financial reports' })).toBeVisible();
+	await expect(page.getByText('GBP 97500.0000')).toBeVisible();
+	await page.goto('/strategy/performance');
+	await page.getByRole('link', { name: /PERF-E2E · v1/ }).click();
 
 	const action = page.locator('form[action="?/createAction"]');
 	await action
