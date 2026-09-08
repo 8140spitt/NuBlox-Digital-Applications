@@ -19,7 +19,7 @@ This evidence closes the implementation and proof gap across all eight canonical
 
 The governing F01 browser proof executes one business thread through:
 
-`Purpose/Vision → Strategy → Objective → Business Plan → Initiative/Resource envelope → Target Operating Model → KPI/Target → canonical Finance Actual → Variance → Corrective Action → Forecast → Strategic Review → Scenario/Foresight`
+`Purpose/Vision → Strategy → Objective → Business Plan → Initiative/Resource envelope → Initiative milestone → Target Operating Model → KPI/Target → canonical Finance Actual → Variance → Corrective Action → Forecast → Strategic Review → Scenario/Foresight`
 
 The final closure tranche deliberately removes a false seam that previously allowed a user to type an actual value while merely labelling it as a canonical finance source.
 
@@ -67,7 +67,7 @@ Merge acceptance requires the exact PR head to pass Complete System Validation, 
 
 The closure-specific database proof verifies that a 1,000,000 revenue fact and 902,500 expense fact produce 97,500 profit and a 9.75% operating-margin KPI actual from canonical accounting reporting, that repeated unchanged refresh is idempotent, and that a forged canonical actual is rejected.
 
-The closure-specific browser proof verifies the complete F01 thread and navigates from the 9.75% strategy KPI observation back to the accounting report that produced the fact.
+The closure-specific browser proof verifies the complete F01 thread, including the funded initiative milestone and target operating-model change, and navigates from the 9.75% strategy KPI observation back to the accounting report that produced the fact.
 
 ## Closure gate
 
