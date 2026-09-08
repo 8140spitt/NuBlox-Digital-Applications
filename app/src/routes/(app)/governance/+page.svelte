@@ -26,7 +26,6 @@
 		return data.bodies.find((body) => body.id === bodyId)?.title ?? `Body ${bodyId}`;
 	}
 
-
 	function decisionForAgenda(agendaId: string) {
 		return data.decisions.find((decision) => decision.governance_agenda_item_id === agendaId);
 	}
