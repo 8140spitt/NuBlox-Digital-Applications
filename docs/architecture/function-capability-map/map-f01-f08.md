@@ -10,7 +10,7 @@ Domain order indicates primary native ownership first, followed by material supp
 **Outcome:** Set direction, translate strategy into funded plans and measure/correct performance.  
 **Value streams:** VS3, VS8  
 **Operating surface:** Strategy & performance workspace; objectives/KPIs; plans, scenarios, budgets, reviews and governed actions  
-**Current reality:** F01.01–F01.03 have native canonical strategic intent, environmental analysis, strategic options/objectives, controlled approval and version supersession through PR #127. F01.04–F01.05 are advanced by Tranche B through versioned strategy-linked business plans, objective-linked initiatives, milestones/dependencies, planning envelopes, target operating-model components and explicit business accountabilities, with optional validated references to canonical projects and approved project-budget versions rather than a duplicate execution ledger. F01.06–F01.08 remain incomplete: KPI management, strategic review and scenario/foresight depth are still required before F01 is complete.
+**Current reality:** F01.01–F01.03 are delivered through PR #127; F01.04–F01.05 through PR #131; and F01.06–F01.08 through PR #132. The final closure tranche in PR #133 removes the remaining digital-thread gap by resolving canonical KPI actuals from authoritative journal-derived Finance P&L facts, preserving direct source drill-through, and proving one browser thread across strategic intent, business planning/resource envelope, target operating model, KPI/target, actual, variance/action, forecast, strategic review and scenario/foresight. F01 is treated as complete only after #133 and its merged `main` commit pass the full validation gate.
 
 | Sub-function | Native NuBlox domain composition |
 | --- | --- |

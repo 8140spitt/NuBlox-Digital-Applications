@@ -145,6 +145,159 @@ try {
 		[performanceOrganisationId, performanceMemberId, performanceRoleId]
 	);
 
+	const performancePeriodPublicId = 'F01-PERF-PERIOD-2027-H1';
+	const [performanceYear] = await db.execute(
+		`INSERT INTO accounting_financial_years
+		(organisation_id, public_id, year_code, name, starts_on, ends_on, created_by_member_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?)`,
+		[
+			performanceOrganisationId,
+			'F01-PERF-FY-2027',
+			'FY27',
+			'F01 Performance FY27',
+			'2027-01-01',
+			'2027-12-31',
+			performanceMemberId
+		]
+	);
+	const performanceYearId = String(performanceYear.insertId);
+	await db.execute(
+		`INSERT INTO accounting_periods
+		(organisation_id, financial_year_id, public_id, period_number, name, starts_on, ends_on, created_by_member_id)
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+		[
+			performanceOrganisationId,
+			performanceYearId,
+			performancePeriodPublicId,
+			1,
+			'H1 2027',
+			'2027-01-01',
+			'2027-06-30',
+			performanceMemberId
+		]
+	);
+
+	async function performanceAccount(publicId, code, name, type, normalBalance) {
+		const [result] = await db.execute(
+			`INSERT INTO accounting_accounts
+			(organisation_id, public_id, account_code, name, account_type, normal_balance, created_by_member_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?)`,
+			[performanceOrganisationId, publicId, code, name, type, normalBalance, performanceMemberId]
+		);
+		return String(result.insertId);
+	}
+	const performanceCashId = await performanceAccount(
+		'F01-PERF-ACC-CASH',
+		'1000',
+		'Cash',
+		'asset',
+		'debit'
+	);
+	const performanceRevenueId = await performanceAccount(
+		'F01-PERF-ACC-REV',
+		'4000',
+		'Operating revenue',
+		'revenue',
+		'credit'
+	);
+	const performanceExpenseId = await performanceAccount(
+		'F01-PERF-ACC-OPEX',
+		'5000',
+		'Operating expenditure',
+		'expense',
+		'debit'
+	);
+
+	async function performanceJournal(
+		number,
+		sourceType,
+		sourcePublicId,
+		amount,
+		fingerprint,
+		lines
+	) {
+		const [journal] = await db.execute(
+			`INSERT INTO accounting_journal_entries
+			(organisation_id, public_id, journal_number, source_type, source_public_id, source_event_at,
+			 source_amount, source_fingerprint, accounting_date, currency_code, memo, posted_by_member_id)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+			[
+				performanceOrganisationId,
+				randomUUID(),
+				number,
+				sourceType,
+				sourcePublicId,
+				new Date('2027-06-30T12:00:00.000Z'),
+				amount,
+				fingerprint,
+				'2027-06-30',
+				'GBP',
+				`F01 canonical KPI source ${number}`,
+				performanceMemberId
+			]
+		);
+		const journalId = String(journal.insertId);
+		for (let index = 0; index < lines.length; index += 1) {
+			const line = lines[index];
+			await db.execute(
+				`INSERT INTO accounting_journal_lines
+				(organisation_id, journal_entry_id, accounting_account_id, line_number, description, debit_amount, credit_amount)
+				VALUES (?, ?, ?, ?, ?, ?, ?)`,
+				[
+					performanceOrganisationId,
+					journalId,
+					line.accountId,
+					index + 1,
+					line.description,
+					line.debit,
+					line.credit
+				]
+			);
+		}
+	}
+	await performanceJournal(
+		'F01-PERF-JRN-001',
+		'invoice_issue',
+		'F01-PERF-REVENUE-SOURCE',
+		'1000000.0000',
+		'a'.repeat(64),
+		[
+			{
+				accountId: performanceCashId,
+				description: 'Canonical cash receipt',
+				debit: '1000000.0000',
+				credit: '0.0000'
+			},
+			{
+				accountId: performanceRevenueId,
+				description: 'Canonical operating revenue',
+				debit: '0.0000',
+				credit: '1000000.0000'
+			}
+		]
+	);
+	await performanceJournal(
+		'F01-PERF-JRN-002',
+		'accounts_payable_invoice_approval',
+		'F01-PERF-EXPENSE-SOURCE',
+		'902500.0000',
+		'b'.repeat(64),
+		[
+			{
+				accountId: performanceExpenseId,
+				description: 'Canonical operating expenditure',
+				debit: '902500.0000',
+				credit: '0.0000'
+			},
+			{
+				accountId: performanceCashId,
+				description: 'Canonical cash outflow',
+				debit: '0.0000',
+				credit: '902500.0000'
+			}
+		]
+	);
+
 	const viewerUserPublicId = randomUUID();
 	const viewerAuthUserId = randomUUID();
 	const viewerMemberPublicId = randomUUID();

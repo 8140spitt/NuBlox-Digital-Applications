@@ -47,6 +47,21 @@
 	function scenarioProjections(id: string) {
 		return data.scenarioProjections.filter((projection) => projection.strategy_scenario_id === id);
 	}
+
+	function canonicalSourceHref(observation: {
+		source_domain: string | null;
+		source_record_type: string | null;
+		source_public_id: string | null;
+	}) {
+		if (
+			observation.source_domain === 'finance' &&
+			observation.source_record_type === 'accounting_profit_and_loss' &&
+			observation.source_public_id
+		) {
+			return `/finance/accounting/reports?period=${encodeURIComponent(observation.source_public_id)}`;
+		}
+		return null;
+	}
 </script>
 
 <svelte:head><title>Strategy performance & foresight · NuBlox</title></svelte:head>
@@ -81,7 +96,9 @@
 	<div class="arrow">→</div>
 	<div><strong>KPI + target</strong><span>Governed definition</span></div>
 	<div class="arrow">→</div>
-	<div><strong>Actual + forecast</strong><span>Manual or canonical evidence</span></div>
+	<div>
+		<strong>Actual + forecast</strong><span>Canonical facts or governed manual evidence</span>
+	</div>
 	<div class="arrow">→</div>
 	<div><strong>Variance + action</strong><span>Accountable response</span></div>
 	<div class="arrow">→</div>
@@ -189,8 +206,15 @@
 								><span
 									>{dateValue(observation.observed_on)} · forecast {observation.forecast_value ??
 										'—'}</span
-								>{#if observation.source_mode === 'canonical'}<small
+								>{#if observation.source_mode === 'canonical'}
+									<small
 										>Source: {observation.source_domain}/{observation.source_record_type}/{observation.source_public_id}/{observation.source_measure_key}</small
+									>
+									{#if canonicalSourceHref(observation)}
+										<a class="source-link" href={canonicalSourceHref(observation) ?? '#'}
+											>Open canonical source →</a
+										>
+									{/if}
 									>{/if}
 							</div>
 						{/if}
@@ -297,33 +321,66 @@
 				</form>
 			</div>
 			<div>
-				<h2>Record actual & forecast</h2>
-				<form method="POST" action="?/recordObservation" class="form-grid">
-					<input type="hidden" name="frameworkPublicId" value={data.selectedFramework.public_id} />
-					<label
-						>Approved KPI<select name="kpiPublicId" required
-							>{#each data.kpis.filter((kpi) => kpi.lifecycle_status === 'approved') as kpi}<option
-									value={kpi.public_id}>{kpi.kpi_code} · {kpi.title}</option
-								>{/each}</select
-						></label
-					>
-					<label>Observed date<input type="date" name="observedOn" required /></label>
-					<label>Actual value<input type="number" step="any" name="actualValue" required /></label>
-					<label>Forecast value<input type="number" step="any" name="forecastValue" /></label>
-					<label
-						>Source mode<select name="sourceMode"
-							><option value="manual">Manual evidence</option><option value="canonical"
-								>Canonical source</option
-							></select
-						></label
-					>
-					<label>Source domain<input name="sourceDomain" /></label>
-					<label>Source record type<input name="sourceRecordType" /></label>
-					<label>Source public ID<input name="sourcePublicId" /></label>
-					<label>Source measure key<input name="sourceMeasureKey" /></label>
-					<label class="wide">Commentary<textarea name="commentary" rows="3"></textarea></label>
-					<div class="form-actions"><button type="submit">Record KPI observation</button></div>
-				</form>
+				<h2>Record governed actual & forecast</h2>
+				{#if data.kpis.some((kpi) => kpi.lifecycle_status === 'approved' && kpi.source_mode === 'manual')}
+					<form method="POST" action="?/recordObservation" class="form-grid">
+						<input
+							type="hidden"
+							name="frameworkPublicId"
+							value={data.selectedFramework.public_id}
+						/>
+						<input type="hidden" name="sourceMode" value="manual" />
+						<label
+							>Manual KPI<select name="kpiPublicId" required
+								>{#each data.kpis.filter((kpi) => kpi.lifecycle_status === 'approved' && kpi.source_mode === 'manual') as kpi}<option
+										value={kpi.public_id}>{kpi.kpi_code} · {kpi.title}</option
+									>{/each}</select
+							></label
+						>
+						<label>Observed date<input type="date" name="observedOn" required /></label>
+						<label>Actual value<input type="number" step="any" name="actualValue" required /></label
+						>
+						<label>Forecast value<input type="number" step="any" name="forecastValue" /></label>
+						<label class="wide">Commentary<textarea name="commentary" rows="3"></textarea></label>
+						<div class="form-actions">
+							<button type="submit">Record manual KPI observation</button>
+						</div>
+					</form>
+				{/if}
+
+				{#if data.kpis.some((kpi) => kpi.lifecycle_status === 'approved' && kpi.source_mode === 'canonical')}
+					<h3 class="compact-top">Refresh canonical actual</h3>
+					<p class="muted">
+						The actual is calculated from the configured authoritative source. Only forecast and
+						commentary remain management inputs.
+					</p>
+					<form method="POST" action="?/refreshCanonicalObservation" class="form-grid">
+						<input
+							type="hidden"
+							name="frameworkPublicId"
+							value={data.selectedFramework.public_id}
+						/>
+						<label
+							>Canonical KPI<select name="kpiPublicId" required
+								>{#each data.kpis.filter((kpi) => kpi.lifecycle_status === 'approved' && kpi.source_mode === 'canonical') as kpi}<option
+										value={kpi.public_id}>{kpi.kpi_code} · {kpi.title}</option
+									>{/each}</select
+							></label
+						>
+						<label
+							>Canonical source period<input
+								name="sourcePublicId"
+								placeholder="Accounting period public ID"
+								required
+							/></label
+						>
+						<label>Forecast value<input type="number" step="any" name="forecastValue" /></label>
+						<label class="wide">Commentary<textarea name="commentary" rows="3"></textarea></label>
+						<div class="form-actions">
+							<button type="submit">Refresh canonical KPI actual</button>
+						</div>
+					</form>
+				{/if}
 			</div>
 		</section>
 

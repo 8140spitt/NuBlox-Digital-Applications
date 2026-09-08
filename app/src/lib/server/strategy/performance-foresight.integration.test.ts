@@ -260,10 +260,10 @@ describe('F01 strategy performance and foresight', () => {
 			warningThreshold: '10.0',
 			criticalThreshold: '9.0',
 			targetDate: '2028-12-31',
-			sourceMode: 'canonical',
-			sourceDomain: 'finance',
-			sourceRecordType: 'accounting_report',
-			sourceMeasureKey: 'operating_margin_percent',
+			sourceMode: 'manual',
+			sourceDomain: null,
+			sourceRecordType: null,
+			sourceMeasureKey: null,
 			ownerMemberId
 		});
 		expect(kpi.lifecycle_status).toBe('draft');
@@ -276,13 +276,13 @@ describe('F01 strategy performance and foresight', () => {
 			actualValue: '9.75',
 			forecastValue: '11.4',
 			commentary: 'Margin is improving but remains below target.',
-			sourceMode: 'canonical',
-			sourceDomain: 'finance',
-			sourceRecordType: 'accounting_report',
-			sourcePublicId: 'REPORT-2027-H1',
-			sourceMeasureKey: 'operating_margin_percent'
+			sourceMode: 'manual',
+			sourceDomain: null,
+			sourceRecordType: null,
+			sourcePublicId: null,
+			sourceMeasureKey: null
 		});
-		expect(observation.source_public_id).toBe('REPORT-2027-H1');
+		expect(observation.source_mode).toBe('manual');
 
 		const action = await service.createAction(owner, {
 			kpiPublicId: approvedKpi.public_id,
