@@ -10,6 +10,12 @@
 		return value.replaceAll('_', ' ');
 	}
 
+	function numberValue(value: string | number | null | undefined) {
+		if (value === null || value === undefined || value === '') return '—';
+		const numeric = Number(value);
+		return Number.isFinite(numeric) ? String(numeric) : String(value);
+	}
+
 	function objectiveFor(id: string) {
 		return data.objectives.find((objective) => objective.id === id);
 	}
@@ -165,8 +171,8 @@
 								><b>Objective</b>{objectiveFor(kpi.strategy_objective_id)?.objective_code ??
 									'—'}</span
 							>
-							<span><b>Baseline</b>{kpi.baseline_value} {kpi.unit_label}</span>
-							<span><b>Target</b>{kpi.target_value} {kpi.unit_label}</span>
+							<span><b>Baseline</b>{numberValue(kpi.baseline_value)} {kpi.unit_label}</span>
+							<span><b>Target</b>{numberValue(kpi.target_value)} {kpi.unit_label}</span>
 							<span><b>Direction</b>{label(kpi.direction)}</span>
 							<span><b>Owner</b>{memberFor(kpi.owner_member_id)?.display_name ?? '—'}</span>
 							<span
@@ -178,7 +184,8 @@
 						{#if latestObservation(kpi.id)}
 							{@const observation = latestObservation(kpi.id)}
 							<div class="observation">
-								<b>Latest actual</b><strong>{observation.actual_value} {kpi.unit_label}</strong
+								<b>Latest actual</b><strong
+									>{numberValue(observation.actual_value)} {kpi.unit_label}</strong
 								><span
 									>{dateValue(observation.observed_on)} · forecast {observation.forecast_value ??
 										'—'}</span
@@ -380,7 +387,7 @@
 						>{#each data.observations as observation}<option value={observation.public_id}
 								>{kpiFor(observation.strategy_kpi_id)?.kpi_code} · {dateValue(
 									observation.observed_on
-								)} · {observation.actual_value}</option
+								)} · {numberValue(observation.actual_value)}</option
 							>{/each}</select
 					></label
 				>
@@ -415,9 +422,14 @@
 					<p>{review.summary}</p>
 					{#each reviewSnapshots(review.id) as snapshot}<div class="snapshot">
 							<b>{kpiFor(snapshot.strategy_kpi_id)?.kpi_code}</b><span
-								>actual {snapshot.actual_value_snapshot} / target {snapshot.target_value_snapshot}</span
+								>actual {numberValue(snapshot.actual_value_snapshot)} / target {numberValue(
+									snapshot.target_value_snapshot
+								)}</span
 							><strong>{label(snapshot.assessment)}</strong><small
-								>variance {snapshot.variance_value} ({snapshot.variance_percent ?? 'n/a'}%)</small
+								>variance {numberValue(snapshot.variance_value)} ({snapshot.variance_percent ===
+								null
+									? 'n/a'
+									: numberValue(snapshot.variance_percent)}%)</small
 							>
 						</div>{/each}
 					{#if data.canApprove && review.lifecycle_status === 'draft'}<form
@@ -468,7 +480,7 @@
 							>{#each data.observations as observation}<option value={observation.public_id}
 									>{kpiFor(observation.strategy_kpi_id)?.kpi_code} · {dateValue(
 										observation.observed_on
-									)} · {observation.actual_value}</option
+									)} · {numberValue(observation.actual_value)}</option
 								>{/each}</select
 						></label
 					><label
@@ -507,16 +519,19 @@
 					<small>{dateValue(scenario.horizon_start)} → {dateValue(scenario.horizon_end)}</small>
 					{#each scenarioAssumptions(scenario.id) as assumption}<div class="snapshot">
 							<b>{assumption.assumption_code} · {assumption.title}</b><span
-								>{assumption.baseline_value} → {assumption.scenario_value}
+								>{numberValue(assumption.baseline_value)} → {numberValue(assumption.scenario_value)}
 								{assumption.unit_label}</span
 							><small
-								>{assumption.variable_key} · sensitivity {assumption.sensitivity_percent ??
-									'—'}%</small
+								>{assumption.variable_key} · sensitivity {numberValue(
+									assumption.sensitivity_percent
+								)}%</small
 							>
 						</div>{/each}
 					{#each scenarioProjections(scenario.id) as projection}<div class="snapshot">
 							<b>{kpiFor(projection.strategy_kpi_id)?.kpi_code} projection</b><span
-								>{projection.projected_value} · {dateValue(projection.projection_date)}</span
+								>{numberValue(projection.projected_value)} · {dateValue(
+									projection.projection_date
+								)}</span
 							><small>{projection.rationale}</small>
 						</div>{/each}
 					{#if data.canApprove && scenario.lifecycle_status === 'draft'}<form
