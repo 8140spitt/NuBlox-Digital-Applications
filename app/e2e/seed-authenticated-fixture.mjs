@@ -161,7 +161,7 @@ try {
 		]
 	);
 	const performanceYearId = String(performanceYear.insertId);
-	const [performancePeriod] = await db.execute(
+	await db.execute(
 		`INSERT INTO accounting_periods
 		(organisation_id, financial_year_id, public_id, period_number, name, starts_on, ends_on, created_by_member_id)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,

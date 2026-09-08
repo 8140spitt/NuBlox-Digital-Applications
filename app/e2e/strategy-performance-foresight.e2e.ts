@@ -116,6 +116,16 @@ test('F01 performance closes the strategy loop through KPI, review and foresight
 	await initiative.getByLabel('Planned FTE').fill('6');
 	await initiative.getByRole('button', { name: 'Add initiative' }).click();
 
+	await page.getByText('Add initiative milestone', { exact: true }).click();
+	const milestone = page.locator('form[action="?/addMilestone"]');
+	await milestone.getByLabel('Milestone code').fill('MS-PERF-E2E');
+	await milestone.getByLabel('Title').fill('Canonical margin performance mobilised');
+	await milestone.getByLabel('Target date').fill('2027-06-30');
+	await milestone.getByRole('button', { name: 'Add milestone' }).click();
+	await expect(
+		page.getByText(/MS-PERF-E2E · Canonical margin performance mobilised/)
+	).toBeVisible();
+
 	await page.getByText('Add operating-model component', { exact: true }).click();
 	const component = page.locator('form[action="?/addComponent"]');
 	await component.getByLabel('Component code').fill('CAP-PERF-E2E');
