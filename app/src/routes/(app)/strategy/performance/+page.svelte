@@ -857,21 +857,6 @@
 	.secondary {
 		background: var(--color-text-muted, #5d6673);
 	}
-	.table-wrap {
-		overflow: auto;
-	}
-	table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-	th,
-	td {
-		text-align: left;
-		padding: 0.65rem;
-		border-bottom: 1px solid var(--color-border, #dfe3e8);
-		vertical-align: top;
-		font-size: 0.82rem;
-	}
 	@media (max-width: 900px) {
 		.page-heading,
 		.version-strip {

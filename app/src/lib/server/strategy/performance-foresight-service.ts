@@ -302,7 +302,7 @@ export class PerformanceForesightService {
 		const frameworks = (await strategy.listFrameworks(actor.organisationId)).filter(
 			(row) => row.lifecycle_status === 'approved'
 		);
-		let selectedFramework = frameworks[0] ?? null;
+		let selectedFramework: StrategyFrameworkRecord | null = frameworks[0] ?? null;
 		if (selectedFrameworkPublicId?.trim()) {
 			selectedFramework =
 				frameworks.find((row) => row.public_id === selectedFrameworkPublicId.trim()) ?? null;
