@@ -26,11 +26,6 @@
 		return data.bodies.find((body) => body.id === bodyId)?.title ?? `Body ${bodyId}`;
 	}
 
-	function meetingName(meetingId: string) {
-		return (
-			data.meetings.find((meeting) => meeting.id === meetingId)?.title ?? `Meeting ${meetingId}`
-		);
-	}
 
 	function decisionForAgenda(agendaId: string) {
 		return data.decisions.find((decision) => decision.governance_agenda_item_id === agendaId);
