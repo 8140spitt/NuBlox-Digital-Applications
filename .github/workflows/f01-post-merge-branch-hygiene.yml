@@ -1,0 +1,23 @@
+name: F01 Post-Merge Branch Hygiene
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/f01-post-merge-branch-hygiene.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete merged F01 branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git -c http.extraheader="AUTHORIZATION: bearer ${GH_TOKEN}" \
+            push https://github.com/${{ github.repository }}.git \
+            --delete feat/f01-digital-thread-closure
