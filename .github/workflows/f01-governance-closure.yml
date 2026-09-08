@@ -1,0 +1,68 @@
+name: F01 Governance Closure
+
+on:
+  push:
+    branches: [feat/f01-digital-thread-closure]
+    paths: [.github/workflows/f01-governance-closure.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-digital-thread-closure
+      - shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import csv
+
+          map_path = Path('docs/architecture/function-capability-map/map-f01-f08.md')
+          text = map_path.read_text()
+          old = '**Current reality:** F01.01–F01.03 have native canonical strategic intent, environmental analysis, strategic options/objectives, controlled approval and version supersession through PR #127. F01.04–F01.05 are advanced by Tranche B through versioned strategy-linked business plans, objective-linked initiatives, milestones/dependencies, planning envelopes, target operating-model components and explicit business accountabilities, with optional validated references to canonical projects and approved project-budget versions rather than a duplicate execution ledger. F01.06–F01.08 remain incomplete: KPI management, strategic review and scenario/foresight depth are still required before F01 is complete.'
+          new = '**Current reality:** F01.01–F01.03 are delivered through PR #127; F01.04–F01.05 through PR #131; and F01.06–F01.08 through PR #132. The final closure tranche in PR #133 removes the remaining digital-thread gap by resolving canonical KPI actuals from authoritative journal-derived Finance P&L facts, preserving direct source drill-through, and proving one browser thread across strategic intent, business planning/resource envelope, target operating model, KPI/target, actual, variance/action, forecast, strategic review and scenario/foresight. F01 is treated as complete only after #133 and its merged `main` commit pass the full validation gate.'
+          if old not in text:
+              raise SystemExit('F01 current reality marker not found')
+          map_path.write_text(text.replace(old, new, 1))
+
+          csv_path = Path('docs/sap-capability-coverage-register.csv')
+          with csv_path.open(newline='') as f:
+              rows = list(csv.DictReader(f))
+              fields = list(rows[0].keys())
+          for row in rows:
+              no = row['sap_no']
+              if no == '3':
+                  row['current_state'] = 'partial'
+                  row['notes'] = 'Governed strategy-linked business planning, KPI targets and forecasts, strategic review and versioned scenarios now exist with canonical Finance actual sourcing; enterprise consolidation remains'
+              elif no == '49':
+                  row['current_state'] = 'partial'
+                  row['notes'] = 'Native strategy objectives, KPI performance, variance/action, strategic review, scenarios and canonical Finance drill-through now exist; broader enterprise performance depth remains'
+              elif no == '50':
+                  row['current_state'] = 'partial'
+                  row['notes'] = 'Native strategy-linked plans, KPI targets/forecasts and versioned scenario assumptions/projections now exist; broader enterprise-wide integrated planning remains'
+          with csv_path.open('w', newline='') as f:
+              writer = csv.DictWriter(f, fieldnames=fields, lineterminator='\n')
+              writer.writeheader()
+              writer.writerows(rows)
+
+          sap_path = Path('docs/world-class/11-sap-benchmark-coverage.md')
+          text = sap_path.read_text()
+          marker = 'NuBlox already has meaningful accounting, receivables, AP, supplier-payment and bank-reconciliation foundations. The remaining benchmark gap is full enterprise finance depth rather than another isolated accounting screen.\n'
+          addition = marker + '\nF01 Strategy & Enterprise Planning now provides governed strategy-linked business planning, KPI targets and forecasts, strategic review and scenario/foresight foundations. Its closure proof resolves a canonical accounting P&L actual into the strategy KPI and drills back to the accounting report/source thread. This materially advances the BPC, SEM and SEM-IP benchmark outcomes without claiming that consolidation, treasury or the remaining P1 enterprise-finance gaps are complete.\n'
+          if marker not in text:
+              raise SystemExit('SAP P1 paragraph marker not found')
+          sap_path.write_text(text.replace(marker, addition, 1))
+
+          Path('.github/workflows/f01-governance-closure.yml').unlink()
+          PY
+      - shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Align F01 capability and SAP closure evidence"
+          git push origin HEAD:feat/f01-digital-thread-closure
