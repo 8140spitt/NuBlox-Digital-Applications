@@ -36,7 +36,7 @@ The first supported provider is Finance / Accounting Profit & Loss:
 - source computation: journal-derived accounting reporting, not a copied strategy ledger
 - access: the caller must also have the applicable Finance and Accounting reporting authority
 - evidence: append-only KPI observation, attributable audit event and outbox event
-- replay: unchanged canonical evidence is idempotent
+- replay: unchanged canonical evidence is idempotent, including numerically equivalent decimal representations with different database scale
 - drill-through: the KPI observation links directly to the selected accounting report, which retains account → journal → originating business-source drill-through
 
 This establishes the governing ownership boundary: Strategy owns targets, management forecasts, variance/action/review and scenarios; Finance owns the accounting fact used as the actual.
@@ -65,7 +65,7 @@ The SAP references remain benchmark labels rather than NuBlox module boundaries.
 
 Merge acceptance requires the exact PR head to pass Complete System Validation, including formatting/lint, migration/schema validation, generated types, the full real-MySQL integration suite, Svelte/TypeScript validation, unit/component tests, production build and Playwright E2E.
 
-The closure-specific database proof verifies that a 1,000,000 revenue fact and 902,500 expense fact produce 97,500 profit and a 9.75% operating-margin KPI actual from canonical accounting reporting, that repeated unchanged refresh is idempotent, and that a forged canonical actual is rejected.
+The closure-specific database proof verifies that a 1,000,000 revenue fact and 902,500 expense fact produce 97,500 profit and a 9.75% operating-margin KPI actual from canonical accounting reporting, that repeated unchanged refresh is idempotent across equivalent decimal scales, and that a forged canonical actual is rejected.
 
 The closure-specific browser proof verifies the complete F01 thread, including the funded initiative milestone and target operating-model change, and navigates from the 9.75% strategy KPI observation back to the accounting report that produced the fact.
 
