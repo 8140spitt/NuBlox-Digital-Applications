@@ -110,8 +110,8 @@ export interface GovernanceBodyMemberships {
 
 export interface GovernanceConflictDeclarations {
   created_at: Generated<Date>;
-  declared_on: Date;
   declaration_type: string;
+  declared_on: Date;
   details: string;
   governance_policy_id: string | null;
   id: Generated<string>;
