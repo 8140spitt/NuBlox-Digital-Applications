@@ -150,8 +150,8 @@ test('F01 performance closes the strategy loop through KPI, review and foresight
 	await kpi.getByLabel('Target date').fill('2028-12-31');
 	await kpi.getByLabel('Source mode').selectOption('canonical');
 	await kpi.getByLabel('Source domain').fill('finance');
-	await kpi.getByLabel('Source record type').fill('accounting_report');
-	await kpi.getByLabel('Source measure key').fill('operating_margin_percent');
+	await kpi.getByLabel('Source record type').fill('accounting_profit_and_loss');
+	await kpi.getByLabel('Source measure key').fill('period_profit_margin_percent');
 	await kpi
 		.getByLabel('KPI description')
 		.fill('Operating margin from canonical finance reporting.');
@@ -173,7 +173,7 @@ test('F01 performance closes the strategy loop through KPI, review and foresight
 	await expect(sourceLink).toHaveAttribute('href', /finance\/accounting\/reports\?period=F01-PERF-PERIOD-2027-H1/);
 	await sourceLink.click();
 	await expect(page.getByRole('heading', { name: 'Trial balance and financial reports' })).toBeVisible();
-	await expect(page.getByText('GBP 97500.0000')).toBeVisible();
+	await expect(page.getByText('GBP 97500.0000').first()).toBeVisible();
 	await page.goto('/strategy/performance');
 	await page.getByRole('link', { name: /PERF-E2E · v1/ }).click();
 
