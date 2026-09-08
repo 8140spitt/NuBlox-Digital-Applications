@@ -46,6 +46,12 @@ function optionalDecimal(value: string | number | null | undefined, label: strin
 	return normalized;
 }
 
+function sameDecimalValue(left: string, right: string): boolean {
+	const leftNumber = Number(left);
+	const rightNumber = Number(right);
+	return Number.isFinite(leftNumber) && Number.isFinite(rightNumber) && leftNumber === rightNumber;
+}
+
 export class CanonicalPerformanceObservationService {
 	constructor(
 		private readonly db: Database = getDatabase(),
@@ -109,7 +115,7 @@ export class CanonicalPerformanceObservationService {
 					row.source_record_type === source.sourceRecordType &&
 					row.source_public_id === source.sourcePublicId &&
 					row.source_measure_key === source.sourceMeasureKey &&
-					row.actual_value === source.value
+					sameDecimalValue(row.actual_value, source.value)
 			);
 			if (existing) return { observation: existing, source };
 
