@@ -81,7 +81,9 @@ export class GovernanceRepository {
 			.executeTakeFirst();
 	}
 
-	async insertFramework(values: Insertable<GovernanceFrameworks>): Promise<GovernanceFrameworkRecord> {
+	async insertFramework(
+		values: Insertable<GovernanceFrameworks>
+	): Promise<GovernanceFrameworkRecord> {
 		const result = await this.db
 			.insertInto('governance_frameworks')
 			.values(values)
@@ -357,7 +359,9 @@ export class GovernanceRepository {
 			.executeTakeFirst();
 	}
 
-	async findDecisionByAgendaItemId(agendaItemId: string): Promise<GovernanceDecisionRecord | undefined> {
+	async findDecisionByAgendaItemId(
+		agendaItemId: string
+	): Promise<GovernanceDecisionRecord | undefined> {
 		return this.db
 			.selectFrom('governance_decisions')
 			.selectAll()
@@ -569,7 +573,8 @@ export class GovernanceRepository {
 			.values(values)
 			.executeTakeFirstOrThrow();
 		const id = result.insertId?.toString();
-		if (!id) throw new Error('Governance conflict declaration insert did not return an identifier.');
+		if (!id)
+			throw new Error('Governance conflict declaration insert did not return an identifier.');
 		return this.db
 			.selectFrom('governance_conflict_declarations')
 			.selectAll()

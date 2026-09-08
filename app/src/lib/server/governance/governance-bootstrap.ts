@@ -15,12 +15,7 @@ export const GOVERNANCE_STANDARD_ROLE_PERMISSIONS = {
 		'governance.ethics.view',
 		'governance.ethics.manage'
 	],
-	Manager: [
-		'governance.view',
-		'governance.manage',
-		'governance.approve',
-		'governance.ethics.view'
-	],
+	Manager: ['governance.view', 'governance.manage', 'governance.approve', 'governance.ethics.view'],
 	'Finance/Commercial': ['governance.view'],
 	'Member/Professional': ['governance.view'],
 	'Field Worker': ['governance.view'],

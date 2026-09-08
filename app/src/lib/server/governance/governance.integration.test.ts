@@ -30,8 +30,14 @@ async function cleanup() {
 		.execute();
 	const ids = organisations.map((row) => row.id);
 	if (!ids.length) return;
-	await db.deleteFrom('governance_policy_attestations').where('organisation_id', 'in', ids).execute();
-	await db.deleteFrom('governance_conflict_declarations').where('organisation_id', 'in', ids).execute();
+	await db
+		.deleteFrom('governance_policy_attestations')
+		.where('organisation_id', 'in', ids)
+		.execute();
+	await db
+		.deleteFrom('governance_conflict_declarations')
+		.where('organisation_id', 'in', ids)
+		.execute();
 	await db.deleteFrom('governance_ethics_cases').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('governance_actions').where('organisation_id', 'in', ids).execute();
 	await db.deleteFrom('governance_decisions').where('organisation_id', 'in', ids).execute();
@@ -89,7 +95,12 @@ beforeAll(async () => {
 	const roleId = insertedId(
 		await db
 			.insertInto('organisation_roles')
-			.values({ organisation_id: organisationId, public_id: randomUUID(), name: `${PREFIX}Owner`, is_active: 1 })
+			.values({
+				organisation_id: organisationId,
+				public_id: randomUUID(),
+				name: `${PREFIX}Owner`,
+				is_active: 1
+			})
 			.executeTakeFirstOrThrow()
 	);
 	const permissionKeys = [
@@ -118,7 +129,11 @@ beforeAll(async () => {
 		.execute();
 	await db
 		.insertInto('member_roles')
-		.values({ organisation_id: organisationId, organisation_member_id: memberId, organisation_role_id: roleId })
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: memberId,
+			organisation_role_id: roleId
+		})
 		.executeTakeFirstOrThrow();
 	actor = { organisationId, userId, memberId, correlationId: randomUUID() };
 
@@ -233,23 +248,33 @@ describe('F02 corporate governance', () => {
 			agendaItemPublicId: agenda.public_id,
 			decisionCode: 'RES-2026-001',
 			decisionOutcome: 'approved',
-			resolutionText: 'Resolved that the strategic investment is approved under the recorded authority.'
+			resolutionText:
+				'Resolved that the strategic investment is approved under the recorded authority.'
 		});
 		expect(decision.governance_authority_rule_id).toBe(authority.id);
 		const action = await service.createAction(actor, {
 			decisionPublicId: decision.public_id,
 			actionCode: 'ACT-2026-001',
 			title: 'Mobilise approved strategy',
-			description: 'Execute the approved strategic investment through the canonical planning record.',
+			description:
+				'Execute the approved strategic investment through the canonical planning record.',
 			ownerMemberId: memberId,
 			dueDate: '2026-10-01',
 			sourceDomain: 'strategy',
 			sourceRecordType: 'strategy_business_plan',
 			sourcePublicId: 'STRATEGY-BP-2026'
 		});
-		const completedAction = await service.completeAction(actor, action.public_id, 'Canonical strategy plan mobilised and evidence attached.');
+		const completedAction = await service.completeAction(
+			actor,
+			action.public_id,
+			'Canonical strategy plan mobilised and evidence attached.'
+		);
 		expect(completedAction.lifecycle_status).toBe('completed');
-		const closedMeeting = await service.closeMeeting(actor, meeting.public_id, 'Quorum was proven. The strategic investment was approved and an accountable action assigned.');
+		const closedMeeting = await service.closeMeeting(
+			actor,
+			meeting.public_id,
+			'Quorum was proven. The strategic investment was approved and an accountable action assigned.'
+		);
 		expect(closedMeeting.lifecycle_status).toBe('closed');
 
 		const policy = await service.createPolicy(actor, {
@@ -259,14 +284,20 @@ describe('F02 corporate governance', () => {
 			title: 'Ethics and Conflicts Policy',
 			policyCategory: 'ethics',
 			scopeText: 'All enterprise members and governance bodies.',
-			policyText: 'Conflicts must be declared, reviewed and managed before affected decisions proceed.',
+			policyText:
+				'Conflicts must be declared, reviewed and managed before affected decisions proceed.',
 			effectiveFrom: '2026-09-08',
 			reviewDueOn: '2027-09-08',
 			ownerMemberId: memberId
 		});
 		const approvedPolicy = await service.approvePolicy(actor, policy.public_id);
 		expect(approvedPolicy.lifecycle_status).toBe('approved');
-		const attestation = await service.attestPolicy(actor, approvedPolicy.public_id, 'acknowledged', 'Understood and accepted.');
+		const attestation = await service.attestPolicy(
+			actor,
+			approvedPolicy.public_id,
+			'acknowledged',
+			'Understood and accepted.'
+		);
 		expect(attestation.attestation_status).toBe('acknowledged');
 
 		const conflict = await service.declareConflict(actor, {
@@ -276,7 +307,13 @@ describe('F02 corporate governance', () => {
 			details: 'A potential conflict exists and must be managed before supplier decisions.',
 			declaredOn: '2026-09-08'
 		});
-		const managedConflict = await service.reviewConflict(actor, conflict.public_id, 'Potential conflict confirmed.', 'Member recused from the relevant supplier decision.', true);
+		const managedConflict = await service.reviewConflict(
+			actor,
+			conflict.public_id,
+			'Potential conflict confirmed.',
+			'Member recused from the relevant supplier decision.',
+			true
+		);
 		expect(managedConflict.lifecycle_status).toBe('closed');
 
 		const ethicsCase = await service.createEthicsCase(actor, {
@@ -287,7 +324,11 @@ describe('F02 corporate governance', () => {
 			severity: 'medium',
 			ownerMemberId: memberId
 		});
-		const resolvedCase = await service.resolveEthicsCase(actor, ethicsCase.public_id, 'Concern investigated, controls confirmed and case resolved.');
+		const resolvedCase = await service.resolveEthicsCase(
+			actor,
+			ethicsCase.public_id,
+			'Concern investigated, controls confirmed and case resolved.'
+		);
 		expect(resolvedCase.lifecycle_status).toBe('resolved');
 
 		const workspace = await service.getWorkspace(actor, approvedFramework.public_id);
@@ -315,7 +356,9 @@ describe('F02 corporate governance', () => {
 			.execute();
 		expect(auditTopics.some((row) => row.action_key === 'governance.decision.record')).toBe(true);
 		expect(auditTopics.some((row) => row.action_key === 'governance.policy.approve')).toBe(true);
-		expect(auditTopics.some((row) => row.action_key === 'governance.ethics.case.resolve')).toBe(true);
+		expect(auditTopics.some((row) => row.action_key === 'governance.ethics.case.resolve')).toBe(
+			true
+		);
 	});
 
 	it('fails closed for an active organisation member without governance authority', async () => {
@@ -325,6 +368,8 @@ describe('F02 corporate governance', () => {
 			memberId: isolatedMemberId,
 			correlationId: randomUUID()
 		};
-		await expect(new GovernanceService(db).getWorkspace(isolatedActor)).rejects.toBeInstanceOf(RecordNotFoundError);
+		await expect(new GovernanceService(db).getWorkspace(isolatedActor)).rejects.toBeInstanceOf(
+			RecordNotFoundError
+		);
 	});
 });

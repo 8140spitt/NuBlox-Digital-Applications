@@ -31,7 +31,9 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 		.fill('Govern enterprise authority, decisions, policy obligations and ethical accountability.');
 	await framework
 		.getByLabel('Governance principles')
-		.fill('Authority is explicit, decisions are attributable, evidence is immutable and ethics is reviewable.');
+		.fill(
+			'Authority is explicit, decisions are attributable, evidence is immutable and ethics is reviewable.'
+		);
 	await framework.getByLabel('Accountable owner').selectOption({ label: OWNER });
 	await framework.getByRole('button', { name: 'Create governance draft' }).click();
 	await expect(page.getByText('F02-E2E · version 1')).toBeVisible();
@@ -51,7 +53,9 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 
 	await page.getByText('Appoint governance-body member', { exact: true }).click();
 	const appointment = page.locator('form[action="?/appointMember"]');
-	await appointment.getByLabel('Governance body').selectOption({ label: 'BOARD-E2E · Enterprise Board' });
+	await appointment
+		.getByLabel('Governance body')
+		.selectOption({ label: 'BOARD-E2E · Enterprise Board' });
 	await appointment.getByLabel('Member').selectOption({ label: OWNER });
 	await appointment.getByLabel('Governance role').selectOption('chair');
 	await appointment.getByLabel('Appointed on').fill('2026-01-01');
@@ -61,7 +65,9 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await page.getByText('Add delegation-of-authority rule', { exact: true }).click();
 	const authority = page.locator('form[action="?/addAuthorityRule"]');
 	await authority.getByLabel('Authority code').fill('BOARD-PROGRAMME-APPROVAL');
-	await authority.getByLabel('Authority body').selectOption({ label: 'BOARD-E2E · Enterprise Board' });
+	await authority
+		.getByLabel('Authority body')
+		.selectOption({ label: 'BOARD-E2E · Enterprise Board' });
 	await authority.getByLabel('Subject domain').fill('governance');
 	await authority.getByLabel('Action key').fill('governance.programme.approve');
 	await authority.getByLabel('Maximum amount').fill('1000000');
@@ -73,9 +79,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await authority.getByRole('button', { name: 'Add authority rule' }).click();
 	await expect(page.getByText('BOARD-PROGRAMME-APPROVAL')).toBeVisible();
 
-	await page
-		.getByRole('button', { name: 'Approve governance framework version 1' })
-		.click();
+	await page.getByRole('button', { name: 'Approve governance framework version 1' }).click();
 	await expect(page.getByText('Approved governance constitution')).toBeVisible();
 
 	await page.getByText('Create governed policy', { exact: true }).click();
@@ -92,19 +96,26 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 		.fill('All enterprise decision makers, employees and appointed governance-body members.');
 	await policy
 		.getByLabel('Policy text')
-		.fill('Conflicts must be declared, independently reviewed and managed before affected decisions are taken.');
+		.fill(
+			'Conflicts must be declared, independently reviewed and managed before affected decisions are taken.'
+		);
 	await policy.getByRole('button', { name: 'Create policy draft' }).click();
 	await expect(page.getByRole('heading', { name: 'Ethics & Conflicts Policy' })).toBeVisible();
 
 	const policyArticle = page.locator('article').filter({ hasText: 'ETHICS-E2E · v1' });
-	const policyPublicId = await policyArticle.locator('input[name="policyPublicId"]').first().inputValue();
+	const policyPublicId = await policyArticle
+		.locator('input[name="policyPublicId"]')
+		.first()
+		.inputValue();
 	await policyArticle.getByRole('button', { name: 'Approve policy version 1' }).click();
 	await expect(page.getByText('ETHICS-E2E · v1').first()).toBeVisible();
 	await page.getByRole('button', { name: 'Acknowledge policy' }).click();
 
 	await page.getByText('Create governance meeting', { exact: true }).click();
 	const meeting = page.locator('form[action="?/createMeeting"]');
-	await meeting.getByLabel('Governance body').selectOption({ label: 'BOARD-E2E · Enterprise Board' });
+	await meeting
+		.getByLabel('Governance body')
+		.selectOption({ label: 'BOARD-E2E · Enterprise Board' });
 	await meeting.getByLabel('Meeting code').fill('BOARD-E2E-001');
 	await meeting.getByLabel('Meeting type').selectOption('scheduled');
 	await meeting.getByLabel('Scheduled date/time').fill('2026-09-09T10:00');
@@ -165,20 +176,26 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await action.getByRole('button', { name: 'Create action' }).click();
 	await expect(page.getByText('ACT-E2E-001 · Publish assurance operating procedure')).toBeVisible();
 
-	await page.getByPlaceholder('Completion evidence').fill('Procedure GOV-ASSURE-01 published and communicated.');
+	await page
+		.getByPlaceholder('Completion evidence')
+		.fill('Procedure GOV-ASSURE-01 published and communicated.');
 	await page.getByRole('button', { name: 'Complete action' }).click();
 	await expect(page.getByText(/ACT-E2E-001.*completed/)).toBeVisible();
 
 	const closeMeeting = page.locator('form[action="?/closeMeeting"]');
 	await closeMeeting
 		.getByLabel('Approved minutes')
-		.fill('Quorum was proven. The assurance programme was approved within the Board delegation of authority.');
+		.fill(
+			'Quorum was proven. The assurance programme was approved within the Board delegation of authority.'
+		);
 	await closeMeeting.getByRole('button', { name: 'Close meeting with minutes' }).click();
 	await expect(page.getByText('Closed minutes')).toBeVisible();
 
 	await page.getByText('Declare conflict of interest', { exact: true }).click();
 	const conflict = page.locator('form[action="?/declareConflict"]');
-	await conflict.getByLabel('Related policy').selectOption({ label: 'ETHICS-E2E · Ethics & Conflicts Policy' });
+	await conflict
+		.getByLabel('Related policy')
+		.selectOption({ label: 'ETHICS-E2E · Ethics & Conflicts Policy' });
 	await conflict.getByLabel('Declaration type').selectOption('potential');
 	await conflict.getByLabel('Conflict subject').fill('Supplier assurance relationship');
 	await conflict.getByLabel('Declared on').fill('2026-09-08');
@@ -188,8 +205,12 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await conflict.getByRole('button', { name: 'Declare conflict' }).click();
 	await expect(page.getByText('Supplier assurance relationship')).toBeVisible();
 
-	const conflictArticle = page.locator('article').filter({ hasText: 'Supplier assurance relationship' });
-	await conflictArticle.getByLabel('Review outcome').fill('Potential conflict confirmed and manageable.');
+	const conflictArticle = page
+		.locator('article')
+		.filter({ hasText: 'Supplier assurance relationship' });
+	await conflictArticle
+		.getByLabel('Review outcome')
+		.fill('Potential conflict confirmed and manageable.');
 	await conflictArticle
 		.getByLabel('Management action')
 		.fill('Declarant recused from supplier selection and evaluation.');
@@ -200,7 +221,9 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await page.getByText('Raise ethics case', { exact: true }).click();
 	const ethics = page.locator('form[action="?/createEthicsCase"]');
 	await ethics.getByLabel('Case code').fill('ETH-E2E-001');
-	await ethics.getByLabel('Related policy').selectOption({ label: 'ETHICS-E2E · Ethics & Conflicts Policy' });
+	await ethics
+		.getByLabel('Related policy')
+		.selectOption({ label: 'ETHICS-E2E · Ethics & Conflicts Policy' });
 	await ethics.getByLabel('Case subject').fill('Undeclared hospitality concern');
 	await ethics.getByLabel('Severity').selectOption('medium');
 	await ethics.getByLabel('Case owner').selectOption({ label: OWNER });

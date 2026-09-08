@@ -130,10 +130,7 @@ export const actions: Actions = {
 					bodyPublicId: text(data, 'bodyPublicId'),
 					memberId: text(data, 'memberId'),
 					governanceRole: text(data, 'governanceRole') as
-						| 'chair'
-						| 'member'
-						| 'secretary'
-						| 'executive',
+						'chair' | 'member' | 'secretary' | 'executive',
 					votingRights: checked(data, 'votingRights'),
 					appointedOn: text(data, 'appointedOn'),
 					termEndsOn: nullableText(data, 'termEndsOn')
@@ -186,10 +183,7 @@ export const actions: Actions = {
 				service.createMeeting(actor, {
 					bodyPublicId: text(data, 'bodyPublicId'),
 					meetingCode: text(data, 'meetingCode'),
-					meetingType: text(data, 'meetingType') as
-						| 'scheduled'
-						| 'special'
-						| 'written_resolution',
+					meetingType: text(data, 'meetingType') as 'scheduled' | 'special' | 'written_resolution',
 					title: text(data, 'title'),
 					scheduledAt: text(data, 'scheduledAt'),
 					locationText: nullableText(data, 'locationText')
@@ -219,11 +213,7 @@ export const actions: Actions = {
 					meetingPublicId: text(data, 'meetingPublicId'),
 					agendaNumber: text(data, 'agendaNumber'),
 					itemType: text(data, 'itemType') as
-						| 'decision'
-						| 'information'
-						| 'review'
-						| 'policy'
-						| 'ethics',
+						'decision' | 'information' | 'review' | 'policy' | 'ethics',
 					title: text(data, 'title'),
 					description: text(data, 'description'),
 					sourceDomain: nullableText(data, 'sourceDomain'),
@@ -253,10 +243,7 @@ export const actions: Actions = {
 					agendaItemPublicId: text(data, 'agendaItemPublicId'),
 					decisionCode: text(data, 'decisionCode'),
 					decisionOutcome: text(data, 'decisionOutcome') as
-						| 'approved'
-						| 'rejected'
-						| 'deferred'
-						| 'noted',
+						'approved' | 'rejected' | 'deferred' | 'noted',
 					resolutionText: text(data, 'resolutionText')
 				}),
 			nullableText(data, 'frameworkPublicId')
@@ -315,13 +302,7 @@ export const actions: Actions = {
 					policyCode: text(data, 'policyCode'),
 					title: text(data, 'title'),
 					policyCategory: text(data, 'policyCategory') as
-						| 'corporate'
-						| 'finance'
-						| 'people'
-						| 'safety'
-						| 'information'
-						| 'ethics'
-						| 'other',
+						'corporate' | 'finance' | 'people' | 'safety' | 'information' | 'ethics' | 'other',
 					scopeText: text(data, 'scopeText'),
 					policyText: text(data, 'policyText'),
 					effectiveFrom: text(data, 'effectiveFrom'),
@@ -413,11 +394,7 @@ export const actions: Actions = {
 		return runAction(
 			locals,
 			(service, actor) =>
-				service.resolveEthicsCase(
-					actor,
-					text(data, 'casePublicId'),
-					text(data, 'resolutionText')
-				),
+				service.resolveEthicsCase(actor, text(data, 'casePublicId'), text(data, 'resolutionText')),
 			nullableText(data, 'frameworkPublicId')
 		);
 	}
