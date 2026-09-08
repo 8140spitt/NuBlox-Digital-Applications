@@ -1,6 +1,6 @@
 # F01 — Strategy & Enterprise Planning closure evidence
 
-**Status:** Merge-candidate evidence; F01 remains open until PR #133 is merged and the merged `main` commit passes Complete System Validation.
+**Status:** Complete. F01.01–F01.08 are merged to `main`, the exact PR head and merged `main` commit both passed Complete System Validation, issue #124 is closed as completed, there are zero open pull requests, and `main` is the only remote branch.
 
 ## Scope
 
@@ -63,18 +63,23 @@ The SAP references remain benchmark labels rather than NuBlox module boundaries.
 
 ## Automated proof
 
-Merge acceptance requires the exact PR head to pass Complete System Validation, including formatting/lint, migration/schema validation, generated types, the full real-MySQL integration suite, Svelte/TypeScript validation, unit/component tests, production build and Playwright E2E.
+The final PR head `785fc1d40affd5a35a646293ac13b2a1ee722c77` passed Complete System Validation run `34271951528`, including formatting/lint, migration/schema validation, generated types, the full real-MySQL integration suite, Svelte/TypeScript validation, unit/component tests, production build and Playwright E2E.
+
+PR #133 merged to `main` as commit `220cd1b9ff44572daad5074477b89d08488ea0ce`. The merged commit passed Complete System Validation run `34272774275` with every validation step successful.
 
 The closure-specific database proof verifies that a 1,000,000 revenue fact and 902,500 expense fact produce 97,500 profit and a 9.75% operating-margin KPI actual from canonical accounting reporting, that repeated unchanged refresh is idempotent across equivalent decimal scales, and that a forged canonical actual is rejected.
 
 The closure-specific browser proof verifies the complete F01 thread, including the funded initiative milestone and target operating-model change, and navigates from the 9.75% strategy KPI observation back to the accounting report that produced the fact.
 
-## Closure gate
+## Closure result
 
-Issue #124 may be closed only after:
+All closure gates are satisfied:
 
 1. PR #133 exact-head Complete System Validation is green;
 2. PR #133 is merged to `main`;
 3. the merge commit's Complete System Validation is green;
-4. the F01 function-capability map and SAP benchmark current-state evidence reflect the delivered capability; and
-5. repository hygiene is restored to zero open pull requests and only `main` remotely.
+4. the F01 function-capability map and SAP benchmark current-state evidence reflect the delivered capability;
+5. issue #124 is closed as completed; and
+6. repository hygiene is restored to zero open pull requests and only `main` remotely.
+
+F02 may now proceed under the sequential F01 → F29 programme.
