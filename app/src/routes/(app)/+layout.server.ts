@@ -58,6 +58,21 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	const notifications = await new NotificationService(db).listForMember(actorContext, 12);
 	const capabilityRegistry = resolveNativeCapabilityRegistry(allowedPermissionKeys);
 	const workspaceDirectory = resolveWorkspaceDirectory(allowedPermissionKeys);
+	if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('governance.'))) {
+		workspaceDirectory.unshift({
+			id: 'corporate-governance',
+			label: 'Corporate governance',
+			items: [
+				{
+					id: 'governance',
+					label: 'Corporate governance',
+					href: '/governance',
+					description:
+						'Boards, committees, business authority, meetings, decisions, policy and ethics with controlled evidence.'
+				}
+			]
+		});
+	}
 	if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('strategy.'))) {
 		workspaceDirectory.unshift({
 			id: 'enterprise-planning',
