@@ -9,6 +9,7 @@ export const E2E_EMAIL = 'e2e-owner@example.test';
 export const E2E_PASSWORD = 'NuBlox-E2E-Password-2026!';
 export const E2E_ORGANISATION = 'NuBlox E2E Organisation';
 export const E2E_STRATEGY_ORGANISATION = 'NuBlox Strategy E2E Organisation';
+export const E2E_PERFORMANCE_ORGANISATION = 'NuBlox Performance E2E Organisation';
 export const E2E_VIEWER_EMAIL = 'e2e-viewer@example.test';
 export const E2E_VIEWER_PASSWORD = 'NuBlox-E2E-Viewer-2026!';
 
@@ -110,6 +111,38 @@ try {
 		`INSERT INTO member_roles (organisation_id, organisation_member_id, organisation_role_id)
 		VALUES (?, ?, ?)`,
 		[strategyOrganisationId, strategyMemberId, strategyRoleId]
+	);
+
+	const [performanceOrganisation] = await db.execute(
+		`INSERT INTO organisations
+		(public_id, legal_name, default_timezone, default_currency_code, status)
+		VALUES (?, ?, ?, ?, ?)`,
+		[randomUUID(), E2E_PERFORMANCE_ORGANISATION, 'Europe/London', 'GBP', 'active']
+	);
+	const performanceOrganisationId = String(performanceOrganisation.insertId);
+	const [performanceMember] = await db.execute(
+		`INSERT INTO organisation_members
+		(organisation_id, user_id, public_id, status, joined_at)
+		VALUES (?, ?, ?, 'active', ?)`,
+		[performanceOrganisationId, platformUserId, randomUUID(), now]
+	);
+	const performanceMemberId = String(performanceMember.insertId);
+	const [performanceRole] = await db.execute(
+		`INSERT INTO organisation_roles
+		(organisation_id, public_id, name, is_active)
+		VALUES (?, ?, 'E2E Performance Owner', 1)`,
+		[performanceOrganisationId, randomUUID()]
+	);
+	const performanceRoleId = String(performanceRole.insertId);
+	await db.execute(
+		`INSERT INTO role_permissions (organisation_id, organisation_role_id, permission_id)
+		SELECT ?, ?, id FROM permissions WHERE is_active = 1`,
+		[performanceOrganisationId, performanceRoleId]
+	);
+	await db.execute(
+		`INSERT INTO member_roles (organisation_id, organisation_member_id, organisation_role_id)
+		VALUES (?, ?, ?)`,
+		[performanceOrganisationId, performanceMemberId, performanceRoleId]
 	);
 
 	const viewerUserPublicId = randomUUID();
@@ -225,7 +258,7 @@ try {
 	}
 
 	console.log(
-		`Seeded authenticated browser fixtures for ${E2E_EMAIL} and ${E2E_VIEWER_EMAIL}, including ${E2E_STRATEGY_ORGANISATION}.`
+		`Seeded authenticated browser fixtures for ${E2E_EMAIL} and ${E2E_VIEWER_EMAIL}, including ${E2E_STRATEGY_ORGANISATION} and ${E2E_PERFORMANCE_ORGANISATION}.`
 	);
 } finally {
 	await db.end();
