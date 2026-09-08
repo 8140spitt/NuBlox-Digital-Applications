@@ -205,7 +205,12 @@ test('F01 performance closes the strategy loop through KPI, review and foresight
 	await expect(page.getByText(/8.2 · 2028-12-31/)).toBeVisible();
 	await page.getByRole('button', { name: 'Approve scenario version 1' }).click();
 	await page.getByRole('button', { name: 'Create scenario revision' }).click();
-	await expect(page.getByText('SCN-PERF-E2E · v2 · downside')).toBeVisible();
-	await expect(page.getByText('Revenue demand')).toBeVisible();
-	await expect(page.getByText(/8.2 · 2028-12-31/).last()).toBeVisible();
+	const revisedScenario = page
+		.locator('article.record-card')
+		.filter({ hasText: 'SCN-PERF-E2E · v2 · downside' });
+	await expect(revisedScenario).toBeVisible();
+	await expect(
+		revisedScenario.getByText('ASSUMP-PERF-E2E · Revenue demand', { exact: true })
+	).toBeVisible();
+	await expect(revisedScenario.getByText(/8.2 · 2028-12-31/)).toBeVisible();
 });
