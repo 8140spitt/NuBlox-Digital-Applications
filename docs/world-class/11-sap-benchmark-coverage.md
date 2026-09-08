@@ -67,6 +67,8 @@ Operational fact
 
 NuBlox already has meaningful accounting, receivables, AP, supplier-payment and bank-reconciliation foundations. The remaining benchmark gap is full enterprise finance depth rather than another isolated accounting screen.
 
+F01 Strategy & Enterprise Planning now provides governed strategy-linked business planning, KPI targets and forecasts, strategic review and scenario/foresight foundations. Its closure proof resolves a canonical accounting P&L actual into the strategy KPI and drills back to the accounting report/source thread. This materially advances the BPC, SEM and SEM-IP benchmark outcomes without claiming that consolidation, treasury or the remaining P1 enterprise-finance gaps are complete.
+
 Primary domains: **7, 8, 19**.  
 Primary streams: **VS8 Record-to-report**, with VS1 and VS2 consequences.  
 Primary proof: **Journey A** plus enterprise reporting evidence.
