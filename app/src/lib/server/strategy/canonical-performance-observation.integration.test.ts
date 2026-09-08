@@ -87,7 +87,12 @@ beforeAll(async () => {
 	const roleId = insertedId(
 		await db
 			.insertInto('organisation_roles')
-			.values({ organisation_id: organisationId, public_id: randomUUID(), name: `${PREFIX}Owner`, is_active: 1 })
+			.values({
+				organisation_id: organisationId,
+				public_id: randomUUID(),
+				name: `${PREFIX}Owner`,
+				is_active: 1
+			})
 			.executeTakeFirstOrThrow()
 	);
 	const permissionKeys = [
@@ -246,7 +251,11 @@ beforeAll(async () => {
 	const revenueId = await account('4000', 'revenue', 'credit');
 	const expenseId = await account('5000', 'expense', 'debit');
 
-	async function journal(sequence: number, amount: string, lines: Array<{ accountId: string; debit: string; credit: string }>) {
+	async function journal(
+		sequence: number,
+		amount: string,
+		lines: Array<{ accountId: string; debit: string; credit: string }>
+	) {
 		const result = await db
 			.insertInto('accounting_journal_entries')
 			.values({
@@ -277,6 +286,7 @@ beforeAll(async () => {
 					debit_amount: line.debit,
 					credit_amount: line.credit
 				}))
+			)
 			.execute();
 	}
 	await journal(1, '1000000.0000', [
@@ -309,7 +319,9 @@ describe('F01 canonical KPI source continuity', () => {
 		expect(first.observation.source_record_type).toBe('accounting_profit_and_loss');
 		expect(first.observation.source_public_id).toBe(periodPublicId);
 		expect(first.observation.source_measure_key).toBe('period_profit_margin_percent');
-		expect(first.source.sourceHref).toContain(`/finance/accounting/reports?period=${periodPublicId}`);
+		expect(first.source.sourceHref).toContain(
+			`/finance/accounting/reports?period=${periodPublicId}`
+		);
 
 		const repeated = await canonical.record(actor, {
 			kpiPublicId,

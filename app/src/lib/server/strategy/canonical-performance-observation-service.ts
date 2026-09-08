@@ -68,10 +68,7 @@ export class CanonicalPerformanceObservationService {
 	): Promise<CanonicalObservationResult> {
 		await this.requireManage(actor);
 		const repository = new PerformanceForesightRepository(this.db);
-		const kpi = await repository.findKpiByPublicId(
-			actor.organisationId,
-			input.kpiPublicId.trim()
-		);
+		const kpi = await repository.findKpiByPublicId(actor.organisationId, input.kpiPublicId.trim());
 		if (!kpi || kpi.lifecycle_status !== 'approved')
 			throw new RecordNotFoundError('Approved strategy KPI not found.');
 		if (kpi.source_mode !== 'canonical')
@@ -99,10 +96,7 @@ export class CanonicalPerformanceObservationService {
 
 		return this.db.transaction().execute(async (trx) => {
 			const txRepository = new PerformanceForesightRepository(trx);
-			const latestKpi = await txRepository.findKpiByPublicId(
-				actor.organisationId,
-				kpi.public_id
-			);
+			const latestKpi = await txRepository.findKpiByPublicId(actor.organisationId, kpi.public_id);
 			if (!latestKpi || latestKpi.lifecycle_status !== 'approved')
 				throw new PerformanceForesightValidationError(
 					'KPI changed while canonical evidence was being resolved; refresh again.'

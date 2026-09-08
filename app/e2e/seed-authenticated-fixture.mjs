@@ -186,20 +186,54 @@ try {
 		);
 		return String(result.insertId);
 	}
-	const performanceCashId = await performanceAccount('F01-PERF-ACC-CASH', '1000', 'Cash', 'asset', 'debit');
-	const performanceRevenueId = await performanceAccount('F01-PERF-ACC-REV', '4000', 'Operating revenue', 'revenue', 'credit');
-	const performanceExpenseId = await performanceAccount('F01-PERF-ACC-OPEX', '5000', 'Operating expenditure', 'expense', 'debit');
+	const performanceCashId = await performanceAccount(
+		'F01-PERF-ACC-CASH',
+		'1000',
+		'Cash',
+		'asset',
+		'debit'
+	);
+	const performanceRevenueId = await performanceAccount(
+		'F01-PERF-ACC-REV',
+		'4000',
+		'Operating revenue',
+		'revenue',
+		'credit'
+	);
+	const performanceExpenseId = await performanceAccount(
+		'F01-PERF-ACC-OPEX',
+		'5000',
+		'Operating expenditure',
+		'expense',
+		'debit'
+	);
 
-	async function performanceJournal(number, sourceType, sourcePublicId, amount, fingerprint, lines) {
+	async function performanceJournal(
+		number,
+		sourceType,
+		sourcePublicId,
+		amount,
+		fingerprint,
+		lines
+	) {
 		const [journal] = await db.execute(
 			`INSERT INTO accounting_journal_entries
 			(organisation_id, public_id, journal_number, source_type, source_public_id, source_event_at,
 			 source_amount, source_fingerprint, accounting_date, currency_code, memo, posted_by_member_id)
 			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			[
-				performanceOrganisationId, randomUUID(), number, sourceType, sourcePublicId,
-				new Date('2027-06-30T12:00:00.000Z'), amount, fingerprint, '2027-06-30', 'GBP',
-				`F01 canonical KPI source ${number}`, performanceMemberId
+				performanceOrganisationId,
+				randomUUID(),
+				number,
+				sourceType,
+				sourcePublicId,
+				new Date('2027-06-30T12:00:00.000Z'),
+				amount,
+				fingerprint,
+				'2027-06-30',
+				'GBP',
+				`F01 canonical KPI source ${number}`,
+				performanceMemberId
 			]
 		);
 		const journalId = String(journal.insertId);
@@ -209,7 +243,15 @@ try {
 				`INSERT INTO accounting_journal_lines
 				(organisation_id, journal_entry_id, accounting_account_id, line_number, description, debit_amount, credit_amount)
 				VALUES (?, ?, ?, ?, ?, ?, ?)`,
-				[performanceOrganisationId, journalId, line.accountId, index + 1, line.description, line.debit, line.credit]
+				[
+					performanceOrganisationId,
+					journalId,
+					line.accountId,
+					index + 1,
+					line.description,
+					line.debit,
+					line.credit
+				]
 			);
 		}
 	}
@@ -220,8 +262,18 @@ try {
 		'1000000.0000',
 		'a'.repeat(64),
 		[
-			{ accountId: performanceCashId, description: 'Canonical cash receipt', debit: '1000000.0000', credit: '0.0000' },
-			{ accountId: performanceRevenueId, description: 'Canonical operating revenue', debit: '0.0000', credit: '1000000.0000' }
+			{
+				accountId: performanceCashId,
+				description: 'Canonical cash receipt',
+				debit: '1000000.0000',
+				credit: '0.0000'
+			},
+			{
+				accountId: performanceRevenueId,
+				description: 'Canonical operating revenue',
+				debit: '0.0000',
+				credit: '1000000.0000'
+			}
 		]
 	);
 	await performanceJournal(
@@ -231,8 +283,18 @@ try {
 		'902500.0000',
 		'b'.repeat(64),
 		[
-			{ accountId: performanceExpenseId, description: 'Canonical operating expenditure', debit: '902500.0000', credit: '0.0000' },
-			{ accountId: performanceCashId, description: 'Canonical cash outflow', debit: '0.0000', credit: '902500.0000' }
+			{
+				accountId: performanceExpenseId,
+				description: 'Canonical operating expenditure',
+				debit: '902500.0000',
+				credit: '0.0000'
+			},
+			{
+				accountId: performanceCashId,
+				description: 'Canonical cash outflow',
+				debit: '0.0000',
+				credit: '902500.0000'
+			}
 		]
 	);
 

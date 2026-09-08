@@ -91,7 +91,8 @@ export class CanonicalKpiSourceService {
 				'Unsupported canonical KPI source. F01 currently resolves governed finance profit-and-loss measures.'
 			);
 		}
-		if (!sourcePublicId) throw new CanonicalKpiSourceValidationError('Canonical source period is required.');
+		if (!sourcePublicId)
+			throw new CanonicalKpiSourceValidationError('Canonical source period is required.');
 		if (!SUPPORTED_MEASURES.has(sourceMeasureKey)) {
 			throw new CanonicalKpiSourceValidationError(
 				`Unsupported accounting profit-and-loss measure: ${sourceMeasureKey}.`

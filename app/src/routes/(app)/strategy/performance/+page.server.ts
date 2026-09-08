@@ -83,16 +83,16 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 async function runCanonicalAction(
 	locals: App.Locals,
 	frameworkPublicId: string,
-	operation: (service: CanonicalPerformanceObservationService, actor: TenantActorContext) => Promise<unknown>
+	operation: (
+		service: CanonicalPerformanceObservationService,
+		actor: TenantActorContext
+	) => Promise<unknown>
 ) {
 	const actor = actorFromLocals(locals);
 	if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
 	try {
 		await operation(new CanonicalPerformanceObservationService(getDatabase()), actor);
-		throw redirect(
-			303,
-			`/strategy/performance?framework=${encodeURIComponent(frameworkPublicId)}`
-		);
+		throw redirect(303, `/strategy/performance?framework=${encodeURIComponent(frameworkPublicId)}`);
 	} catch (error) {
 		if (error instanceof PerformanceForesightValidationError)
 			return fail(400, { error: error.message });

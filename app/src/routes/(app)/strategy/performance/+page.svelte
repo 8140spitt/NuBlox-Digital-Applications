@@ -96,7 +96,9 @@
 	<div class="arrow">→</div>
 	<div><strong>KPI + target</strong><span>Governed definition</span></div>
 	<div class="arrow">→</div>
-	<div><strong>Actual + forecast</strong><span>Canonical facts or governed manual evidence</span></div>
+	<div>
+		<strong>Actual + forecast</strong><span>Canonical facts or governed manual evidence</span>
+	</div>
 	<div class="arrow">→</div>
 	<div><strong>Variance + action</strong><span>Accountable response</span></div>
 	<div class="arrow">→</div>
@@ -209,9 +211,11 @@
 										>Source: {observation.source_domain}/{observation.source_record_type}/{observation.source_public_id}/{observation.source_measure_key}</small
 									>
 									{#if canonicalSourceHref(observation)}
-										<a class="source-link" href={canonicalSourceHref(observation) ?? '#'}>Open canonical source →</a>
+										<a class="source-link" href={canonicalSourceHref(observation) ?? '#'}
+											>Open canonical source →</a
+										>
 									{/if}
-								>{/if}
+									>{/if}
 							</div>
 						{/if}
 						{#if data.canApprove && kpi.lifecycle_status === 'draft'}
@@ -320,7 +324,11 @@
 				<h2>Record governed actual & forecast</h2>
 				{#if data.kpis.some((kpi) => kpi.lifecycle_status === 'approved' && kpi.source_mode === 'manual')}
 					<form method="POST" action="?/recordObservation" class="form-grid">
-						<input type="hidden" name="frameworkPublicId" value={data.selectedFramework.public_id} />
+						<input
+							type="hidden"
+							name="frameworkPublicId"
+							value={data.selectedFramework.public_id}
+						/>
 						<input type="hidden" name="sourceMode" value="manual" />
 						<label
 							>Manual KPI<select name="kpiPublicId" required
@@ -330,18 +338,28 @@
 							></label
 						>
 						<label>Observed date<input type="date" name="observedOn" required /></label>
-						<label>Actual value<input type="number" step="any" name="actualValue" required /></label>
+						<label>Actual value<input type="number" step="any" name="actualValue" required /></label
+						>
 						<label>Forecast value<input type="number" step="any" name="forecastValue" /></label>
 						<label class="wide">Commentary<textarea name="commentary" rows="3"></textarea></label>
-						<div class="form-actions"><button type="submit">Record manual KPI observation</button></div>
+						<div class="form-actions">
+							<button type="submit">Record manual KPI observation</button>
+						</div>
 					</form>
 				{/if}
 
 				{#if data.kpis.some((kpi) => kpi.lifecycle_status === 'approved' && kpi.source_mode === 'canonical')}
 					<h3 class="compact-top">Refresh canonical actual</h3>
-					<p class="muted">The actual is calculated from the configured authoritative source. Only forecast and commentary remain management inputs.</p>
+					<p class="muted">
+						The actual is calculated from the configured authoritative source. Only forecast and
+						commentary remain management inputs.
+					</p>
 					<form method="POST" action="?/refreshCanonicalObservation" class="form-grid">
-						<input type="hidden" name="frameworkPublicId" value={data.selectedFramework.public_id} />
+						<input
+							type="hidden"
+							name="frameworkPublicId"
+							value={data.selectedFramework.public_id}
+						/>
 						<label
 							>Canonical KPI<select name="kpiPublicId" required
 								>{#each data.kpis.filter((kpi) => kpi.lifecycle_status === 'approved' && kpi.source_mode === 'canonical') as kpi}<option
@@ -349,10 +367,18 @@
 									>{/each}</select
 							></label
 						>
-						<label>Canonical source period<input name="sourcePublicId" placeholder="Accounting period public ID" required /></label>
+						<label
+							>Canonical source period<input
+								name="sourcePublicId"
+								placeholder="Accounting period public ID"
+								required
+							/></label
+						>
 						<label>Forecast value<input type="number" step="any" name="forecastValue" /></label>
 						<label class="wide">Commentary<textarea name="commentary" rows="3"></textarea></label>
-						<div class="form-actions"><button type="submit">Refresh canonical KPI actual</button></div>
+						<div class="form-actions">
+							<button type="submit">Refresh canonical KPI actual</button>
+						</div>
 					</form>
 				{/if}
 			</div>
