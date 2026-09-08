@@ -1,0 +1,71 @@
+name: F01 Performance Number Display Fix
+
+on:
+  push:
+    branches:
+      - feat/f01-performance-foresight
+    paths:
+      - .github/workflows/f01-performance-number-display-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f01-performance-foresight
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Format governed decimal display
+        working-directory: app
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('src/routes/(app)/strategy/performance/+page.svelte')
+          source = path.read_text()
+          anchor = "\tfunction label(value: string) {\n\t\treturn value.replaceAll('_', ' ');\n\t}\n"
+          helper = anchor + "\n\tfunction numberValue(value: string | number | null | undefined) {\n\t\tif (value === null || value === undefined || value === '') return '—';\n\t\tconst numeric = Number(value);\n\t\treturn Number.isFinite(numeric) ? String(numeric) : String(value);\n\t}\n"
+          if 'function numberValue(' not in source:
+              if anchor not in source:
+                  raise SystemExit('number display helper anchor not found')
+              source = source.replace(anchor, helper, 1)
+          replacements = {
+              '{kpi.baseline_value} {kpi.unit_label}': '{numberValue(kpi.baseline_value)} {kpi.unit_label}',
+              '{kpi.target_value} {kpi.unit_label}': '{numberValue(kpi.target_value)} {kpi.unit_label}',
+              '{observation.actual_value} {kpi.unit_label}': '{numberValue(observation.actual_value)} {kpi.unit_label}',
+              "{observation.forecast_value ??\n\t\t\t\t\t\t'—'}": "{numberValue(observation.forecast_value)}",
+              '} · {observation.actual_value}</option': '} · {numberValue(observation.actual_value)}</option',
+              '>actual {snapshot.actual_value_snapshot} / target {snapshot.target_value_snapshot}</span': '>actual {numberValue(snapshot.actual_value_snapshot)} / target {numberValue(snapshot.target_value_snapshot)}</span',
+              '>variance {snapshot.variance_value} ({snapshot.variance_percent ?? '"'"'n/a'"'"'}%)</small': '>variance {numberValue(snapshot.variance_value)} ({snapshot.variance_percent === null ? '"'"'n/a'"'"' : numberValue(snapshot.variance_percent)}%)</small',
+              '>{assumption.baseline_value} → {assumption.scenario_value}\n\t\t\t\t\t\t\t\t{assumption.unit_label}</span': '>{numberValue(assumption.baseline_value)} → {numberValue(assumption.scenario_value)}\n\t\t\t\t\t\t\t\t{assumption.unit_label}</span',
+              '>{assumption.variable_key} · sensitivity {assumption.sensitivity_percent ??\n\t\t\t\t\t\t\t\t\t'"'"'—'"'"'}%</small': '>{assumption.variable_key} · sensitivity {numberValue(assumption.sensitivity_percent)}%</small',
+              '>{projection.projected_value} · {dateValue(projection.projection_date)}</span': '>{numberValue(projection.projected_value)} · {dateValue(projection.projection_date)}</span'
+          }
+          for old, new in replacements.items():
+              source = source.replace(old, new)
+          path.write_text(source)
+          PY
+          pnpm exec prettier --write 'src/routes/(app)/strategy/performance/+page.svelte'
+          pnpm check
+      - name: Commit fix and remove one-time workflow
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add 'app/src/routes/(app)/strategy/performance/+page.svelte'
+          git rm .github/workflows/f01-performance-number-display-fix.yml
+          git commit -m 'Format F01 performance decimal evidence'
+          git push origin HEAD:feat/f01-performance-foresight
