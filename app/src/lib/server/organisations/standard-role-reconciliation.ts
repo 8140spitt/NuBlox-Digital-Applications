@@ -4,6 +4,10 @@ import {
 } from '$lib/server/assets/assets-maintenance-bootstrap';
 import type { Database } from '$lib/server/db/database';
 import {
+	ensureGovernanceStandardRoleDefaults,
+	GOVERNANCE_STANDARD_ROLE_PERMISSIONS
+} from '$lib/server/governance/governance-bootstrap';
+import {
 	ensureInformationStandardRoleDefaults,
 	INFORMATION_STANDARD_ROLE_PERMISSIONS
 } from '$lib/server/information/information-bootstrap';
@@ -50,7 +54,7 @@ import {
  * Increment this value whenever the composed standard-role permission templates
  * change in a way that must be re-applied to active organisations after deploy.
  */
-export const STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION = '2026-09-06.1';
+export const STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION = '2026-09-08.1';
 
 const MAX_RECONCILED_ORGANISATIONS = 1_000;
 const reconciledOrganisations = new Set<string>();
@@ -66,7 +70,8 @@ const STANDARD_ROLE_PERMISSION_MAPS = [
 	PORTAL_COLLABORATION_STANDARD_ROLE_PERMISSIONS,
 	PROJECT_RIDA_STANDARD_ROLE_PERMISSIONS,
 	PROJECT_CHANGE_STANDARD_ROLE_PERMISSIONS,
-	STRATEGY_STANDARD_ROLE_PERMISSIONS
+	STRATEGY_STANDARD_ROLE_PERMISSIONS,
+	GOVERNANCE_STANDARD_ROLE_PERMISSIONS
 ] as const;
 
 function reconciliationKey(organisationId: string): string {
@@ -90,11 +95,6 @@ function desiredPermissionKeysForRole(defaultName: string): string[] {
 	return [...permissionKeys];
 }
 
-/**
- * Apply the composed permission template through durable role bindings. This is
- * the name-independent pass: once a standard role is bound, changing its
- * display label cannot change which security template it represents.
- */
 async function ensureBoundStandardRolePermissionDefaults(
 	db: Database,
 	organisationId: string
@@ -153,18 +153,6 @@ async function ensureBoundStandardRolePermissionDefaults(
 	);
 }
 
-/**
- * Idempotently aligns all NuBlox standard organisation access roles with the
- * current permission templates.
- *
- * This deliberately operates on access roles only. Functional roles, job
- * profiles, careers and organisation positions remain separate business/job
- * architecture concepts and never grant permissions implicitly.
- *
- * Reconciliation is cached per organisation and template version for the life
- * of the server process. A failed run is never cached, so the next request can
- * retry after the underlying problem has been corrected.
- */
 export async function ensureStandardRolePermissionDefaults(
 	db: Database,
 	organisationId: string
@@ -187,7 +175,8 @@ export async function ensureStandardRolePermissionDefaults(
 			ensurePortalCollaborationStandardRoleDefaults(db, organisationId),
 			ensureProjectRidaStandardRoleDefaults(db, organisationId),
 			ensureProjectChangeStandardRoleDefaults(db, organisationId),
-			ensureStrategyStandardRoleDefaults(db, organisationId)
+			ensureStrategyStandardRoleDefaults(db, organisationId),
+			ensureGovernanceStandardRoleDefaults(db, organisationId)
 		]);
 		await ensureBoundStandardRolePermissionDefaults(db, organisationId);
 	})();
@@ -201,7 +190,6 @@ export async function ensureStandardRolePermissionDefaults(
 	}
 }
 
-/** Test-only escape hatch for deterministic reconciliation assertions. */
 export function resetStandardRolePermissionReconciliationCache(): void {
 	reconciledOrganisations.clear();
 	inFlightReconciliations.clear();
