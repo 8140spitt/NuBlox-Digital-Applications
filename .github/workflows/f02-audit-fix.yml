@@ -37,7 +37,6 @@ jobs:
           path = Path('app/package.json')
           data = json.loads(path.read_text())
           data['devDependencies']['vitest'] = '^4.1.11'
-          data['devDependencies']['@vitest/browser-playwright'] = '^4.1.11'
           overrides = data.setdefault('pnpm', {}).setdefault('overrides', {})
           overrides['vitest'] = '4.1.11'
           overrides['@vitest/mocker'] = '4.1.11'
@@ -47,7 +46,7 @@ jobs:
       - name: Refresh lockfile and prove production audit
         working-directory: app
         run: |
-          pnpm install
+          pnpm install --no-frozen-lockfile
           pnpm audit --prod --audit-level moderate
 
       - name: Self-clean and commit patched dependency graph
