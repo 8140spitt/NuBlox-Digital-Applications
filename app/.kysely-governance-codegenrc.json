@@ -1,0 +1,13 @@
+{
+	"dialect": "mysql",
+	"url": "env(DATABASE_URL)",
+	"outFile": "./src/lib/server/db/generated/governance.d.ts",
+	"includePattern": "governance_*",
+	"camelCase": false,
+	"numericParser": "string",
+	"typeMapping": {
+		"bigint": "string"
+	},
+	"typeOnlyImports": true,
+	"logLevel": "warn"
+}
