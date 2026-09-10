@@ -1,0 +1,25 @@
+name: F04 Lint Fix
+on:
+  push:
+    branches: [feat/f04-corporate-development-ma]
+    paths:
+      - '.github/workflows/f04-lint-fix.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f04-corporate-development-ma
+      - name: Remove unused import
+        run: sed -i "s/import { closeDatabase, getDatabase } from '\$lib\/server\/db\/database';/import { getDatabase } from '\$lib\/server\/db\/database';/" app/src/lib/server/corporate-development/corporate-development.integration.test.ts
+      - name: Remove workflow and commit
+        run: |
+          git rm .github/workflows/f04-lint-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/lib/server/corporate-development/corporate-development.integration.test.ts
+          git commit -m 'Fix F04 integration lint'
+          git push origin HEAD:feat/f04-corporate-development-ma
