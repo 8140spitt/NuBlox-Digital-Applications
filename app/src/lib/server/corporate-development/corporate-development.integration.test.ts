@@ -9,76 +9,94 @@ import { CorporateDevelopmentService } from './corporate-development-service';
 
 let actor: { organisationId: string; userId: string; memberId: string; correlationId: string };
 
+function insertedId(result: { insertId?: bigint }): string {
+	if (result.insertId === undefined) throw new Error('Expected an AUTO_INCREMENT insert ID.');
+	return result.insertId.toString();
+}
+
 async function seedActor() {
 	const db = getDatabase();
 	const suffix = Math.random().toString(36).slice(2, 10);
-	const organisationPublicId = crypto.randomUUID();
-	const userPublicId = crypto.randomUUID();
-	await db
-		.insertInto('organisations')
-		.values({
-			public_id: organisationPublicId,
-			name: `F04 Test ${suffix}`,
-			slug: `f04-${suffix}`,
-			status: 'active'
-		})
-		.executeTakeFirstOrThrow();
-	const organisation = await db
-		.selectFrom('organisations')
-		.selectAll()
-		.where('public_id', '=', organisationPublicId)
-		.executeTakeFirstOrThrow();
-	await db
-		.insertInto('users')
-		.values({
-			public_id: userPublicId,
-			email: `f04-${suffix}@example.test`,
-			display_name: 'F04 Owner',
-			status: 'active'
-		})
-		.executeTakeFirstOrThrow();
-	const user = await db
-		.selectFrom('users')
-		.selectAll()
-		.where('public_id', '=', userPublicId)
-		.executeTakeFirstOrThrow();
-	await db
-		.insertInto('organisation_members')
-		.values({
-			public_id: crypto.randomUUID(),
-			organisation_id: organisation.id,
-			user_id: user.id,
-			status: 'active'
-		})
-		.executeTakeFirstOrThrow();
-	const member = await db
-		.selectFrom('organisation_members')
-		.selectAll()
-		.where('organisation_id', '=', organisation.id)
-		.where('user_id', '=', user.id)
-		.executeTakeFirstOrThrow();
-	actor = {
-		organisationId: organisation.id,
-		userId: user.id,
-		memberId: member.id,
-		correlationId: crypto.randomUUID()
-	};
+	const organisationId = insertedId(
+		await db
+			.insertInto('organisations')
+			.values({
+				public_id: crypto.randomUUID(),
+				legal_name: `F04 Test ${suffix}`,
+				default_timezone: 'Europe/London',
+				default_currency_code: 'GBP',
+				status: 'active'
+			})
+			.executeTakeFirstOrThrow()
+	);
+	const userId = insertedId(
+		await db
+			.insertInto('users')
+			.values({
+				public_id: crypto.randomUUID(),
+				display_name: `F04 Owner ${suffix}`,
+				status: 'active'
+			})
+			.executeTakeFirstOrThrow()
+	);
+	const memberId = insertedId(
+		await db
+			.insertInto('organisation_members')
+			.values({
+				public_id: crypto.randomUUID(),
+				organisation_id: organisationId,
+				user_id: userId,
+				status: 'active',
+				joined_at: new Date('2026-09-10T20:00:00.000Z')
+			})
+			.executeTakeFirstOrThrow()
+	);
+	const roleId = insertedId(
+		await db
+			.insertInto('organisation_roles')
+			.values({
+				organisation_id: organisationId,
+				public_id: crypto.randomUUID(),
+				name: `F04 owner ${suffix}`,
+				is_active: 1
+			})
+			.executeTakeFirstOrThrow()
+	);
 	const permissionRows = await db
 		.selectFrom('permissions')
 		.select(['id', 'permission_key'])
 		.where('permission_key', 'in', ['strategy.view', 'strategy.manage', 'strategy.approve'])
+		.where('is_active', '=', 1)
 		.execute();
-	for (const permission of permissionRows) {
-		await db
-			.insertInto('member_permission_overrides')
-			.values({
-				organisation_member_id: actor.memberId,
-				permission_id: permission.id,
-				effect: 'allow',
-				created_by_user_id: actor.userId
-			})
-			.executeTakeFirst();
-	}
+	expect(permissionRows.map((row) => row.permission_key).sort()).toEqual([
+		'strategy.approve',
+		'strategy.manage',
+		'strategy.view'
+	]);
+	await db
+		.insertInto('role_permissions')
+		.values(
+			permissionRows.map((permission) => ({
+				organisation_id: organisationId,
+				organisation_role_id: roleId,
+				permission_id: permission.id
+			}))
+		)
+		.execute();
+	await db
+		.insertInto('member_roles')
+		.values({
+			organisation_id: organisationId,
+			organisation_member_id: memberId,
+			organisation_role_id: roleId
+		})
+		.executeTakeFirstOrThrow();
+	actor = {
+		organisationId,
+		userId,
+		memberId,
+		correlationId: crypto.randomUUID()
+	};
 }
 
 describe('F04 corporate development', () => {
