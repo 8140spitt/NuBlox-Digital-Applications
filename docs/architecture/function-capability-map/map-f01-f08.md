@@ -61,7 +61,7 @@ Domain order indicates primary native ownership first, followed by material supp
 **Outcome:** Identify, evaluate, execute and integrate acquisitions, divestitures and strategic partnerships.  
 **Value streams:** VS3, VS8  
 **Operating surface:** Corporate-development pipeline; valuation/business cases; due diligence information rooms; transaction/approval and integration plans  
-**Current reality:** Native foundations exist; material depth remains in D8, D4. Domain maturity is not proof that every sub-function is complete.
+**Current reality:** Native end-to-end F04 coverage is implemented through the Corporate Development command centre: governed opportunity origination, versioned valuation, due diligence, transaction controls, integration, divestiture and strategic partnerships with cross-domain evidence and F02/F03 links. Ongoing domain maturity remains governed by executable proof rather than this mapping statement.
 
 | Sub-function | Native NuBlox domain composition |
 | --- | --- |

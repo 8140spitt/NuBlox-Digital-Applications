@@ -1,0 +1,530 @@
+<script lang="ts">
+	let { data, form } = $props();
+	const selected = $derived(data.selectedOpportunity);
+</script>
+
+<svelte:head><title>Corporate Development | NuBlox</title></svelte:head>
+
+<section class="workspace">
+	<header>
+		<p class="eyebrow">F04 · Corporate Development &amp; M&amp;A</p>
+		<h1>Corporate Development command centre</h1>
+		<p>
+			Originate, evaluate, diligence, transact and realise strategic deals through one
+			evidence-backed control thread.
+		</p>
+	</header>
+
+	{#if form?.error}<div class="error" role="alert">{form.error}</div>{/if}
+
+	<div class="metrics">
+		<div><strong>{data.opportunities.length}</strong><span>Opportunities</span></div>
+		<div><strong>{data.diligenceFindings.length}</strong><span>Diligence findings</span></div>
+		<div><strong>{data.transactions.length}</strong><span>Transactions</span></div>
+		<div><strong>{data.partnerships.length}</strong><span>Partnerships</span></div>
+	</div>
+
+	<div class="grid two">
+		<section class="panel">
+			<h2>F04.01 · Opportunity pipeline</h2>
+			{#if data.opportunities.length}
+				<ul class="list">
+					{#each data.opportunities as opportunity}
+						<li>
+							<a
+								href={`/corporate-development?opportunity=${opportunity.public_id}`}
+								class:selected={selected?.public_id === opportunity.public_id}
+							>
+								<strong>{opportunity.opportunity_code} · {opportunity.title}</strong>
+								<span
+									>{opportunity.target_name} · {opportunity.pipeline_stage} · {opportunity.priority}</span
+								>
+							</a>
+						</li>
+					{/each}
+				</ul>
+			{:else}<p>No corporate-development opportunities yet.</p>{/if}
+		</section>
+
+		{#if data.canManage}
+			<section class="panel">
+				<h2>Create opportunity</h2>
+				<form method="POST" action="?/createOpportunity" class="form-grid">
+					<label>Code <input name="opportunityCode" maxlength="50" required /></label><label
+						>Title <input name="title" required /></label
+					>
+					<label
+						>Deal type <select name="dealType"
+							><option value="acquisition">Acquisition</option><option value="minority_investment"
+								>Minority investment</option
+							><option value="joint_venture">Joint venture</option><option
+								value="strategic_partnership">Strategic partnership</option
+							><option value="divestiture">Divestiture</option><option value="other">Other</option
+							></select
+						></label
+					>
+					<label>Target / partner <input name="targetName" required /></label>
+					<label
+						>Owner <select name="ownerMemberId" required
+							>{#each data.members as member}<option value={member.id}>{member.display_name}</option
+								>{/each}</select
+						></label
+					>
+					<label
+						>Priority <select name="priority"
+							><option value="medium">Medium</option><option value="high">High</option><option
+								value="critical">Critical</option
+							><option value="low">Low</option></select
+						></label
+					>
+					<label>Identified on <input name="identifiedOn" type="date" required /></label><label
+						>Target decision <input name="targetDecisionDate" type="date" /></label
+					>
+					<label class="wide"
+						>Strategic thesis <textarea name="strategicThesis" required></textarea></label
+					><label class="wide"
+						>Strategic rationale <textarea name="strategicRationale" required></textarea></label
+					>
+					<label
+						>Source domain <input
+							name="targetSourceDomain"
+							maxlength="50"
+							placeholder="crm"
+						/></label
+					><label>Source record type <input name="targetSourceRecordType" /></label><label
+						>Source public ID <input name="targetSourcePublicId" /></label
+					><label>Source reference <input name="sourceReference" /></label>
+					<label>F01 objective public ID <input name="strategyObjectivePublicId" /></label><label
+						>F01 KPI public ID <input name="strategyKpiPublicId" /></label
+					><label>F03 evidence public ID <input name="performanceEvidencePublicId" /></label>
+					<button type="submit">Create opportunity</button>
+				</form>
+			</section>
+		{/if}
+	</div>
+
+	{#if selected}
+		<section class="panel hero">
+			<p class="eyebrow">{selected.opportunity_code} · {selected.deal_type}</p>
+			<h2>{selected.title}</h2>
+			<p>
+				<strong>Target:</strong>
+				{selected.target_name} · <strong>Stage:</strong>
+				{selected.pipeline_stage} · <strong>Priority:</strong>
+				{selected.priority}
+			</p>
+			<p>{selected.strategic_thesis}</p>
+		</section>
+
+		<div class="grid two">
+			<section class="panel">
+				<h2>F04.02 · Valuation</h2>
+				{#if data.valuations.length}{#each data.valuations as valuation}<article class="card">
+							<strong
+								>{valuation.valuation_code} v{valuation.version_number} · {valuation.title}</strong
+							>
+							<p>
+								{valuation.primary_method} · {valuation.currency_code} · {valuation.lifecycle_status}
+							</p>
+							<p>
+								EV base: {valuation.enterprise_value_base ?? '—'} · Equity base: {valuation.equity_value_base ??
+									'—'}
+							</p>
+							<p>{valuation.recommendation}</p>
+							{#if data.canApprove && valuation.lifecycle_status === 'draft'}<form
+									method="POST"
+									action="?/approveValuation"
+								>
+									<input type="hidden" name="valuationPublicId" value={valuation.public_id} /><input
+										type="hidden"
+										name="opportunityPublicId"
+										value={selected.public_id}
+									/><button type="submit">Approve valuation</button>
+								</form>{/if}
+						</article>{/each}{:else}<p>No valuation cases yet.</p>{/if}
+			</section>
+			{#if data.canManage}<section class="panel">
+					<h2>Create valuation</h2>
+					<form method="POST" action="?/createValuation" class="form-grid">
+						<input type="hidden" name="opportunityPublicId" value={selected.public_id} /><label
+							>Code <input name="valuationCode" maxlength="50" required /></label
+						><label>Title <input name="title" required /></label><label
+							>Valuation date <input type="date" name="valuationDate" required /></label
+						><label>Currency <input name="currencyCode" maxlength="3" value="GBP" required /></label
+						><label
+							>Method <select name="primaryMethod"
+								><option value="dcf">DCF</option><option value="trading_comparables"
+									>Trading comparables</option
+								><option value="precedent_transactions">Precedent transactions</option><option
+									value="asset_based">Asset based</option
+								><option value="sum_of_parts">Sum of parts</option><option value="venture_method"
+									>Venture method</option
+								><option value="other">Other</option></select
+							></label
+						><label>EV low <input name="enterpriseValueLow" inputmode="decimal" /></label><label
+							>EV base <input name="enterpriseValueBase" inputmode="decimal" /></label
+						><label>EV high <input name="enterpriseValueHigh" inputmode="decimal" /></label><label
+							>Equity low <input name="equityValueLow" inputmode="decimal" /></label
+						><label>Equity base <input name="equityValueBase" inputmode="decimal" /></label><label
+							>Equity high <input name="equityValueHigh" inputmode="decimal" /></label
+						><label class="wide"
+							>Recommendation <textarea name="recommendation" required></textarea></label
+						><button type="submit">Create valuation</button>
+					</form>
+				</section>{/if}
+		</div>
+
+		<div class="grid two">
+			<section class="panel">
+				<h2>F04.03 · Due diligence</h2>
+				<p>
+					{data.diligenceWorkstreams.length} workstreams · {data.diligenceRequests.length} requests ·
+					{data.diligenceFindings.length} findings
+				</p>
+				{#each data.diligenceWorkstreams as workstream}<article class="card">
+						<strong>{workstream.workstream_code} · {workstream.title}</strong>
+						<p>{workstream.diligence_domain} · {workstream.lifecycle_status}</p>
+					</article>{/each}
+			</section>
+			{#if data.canManage}<section class="panel">
+					<h2>Create diligence workstream</h2>
+					<form method="POST" action="?/createDiligenceWorkstream" class="form-grid">
+						<input type="hidden" name="opportunityPublicId" value={selected.public_id} /><label
+							>Code <input name="workstreamCode" required /></label
+						><label>Title <input name="title" required /></label><label
+							>Domain <select name="diligenceDomain"
+								><option value="finance_tax">Finance &amp; tax</option><option
+									value="legal_commercial">Legal &amp; commercial</option
+								><option value="compliance_qhse">Compliance &amp; QHSE</option><option
+									value="workforce">Workforce</option
+								><option value="technology_data">Technology &amp; data</option><option
+									value="operations">Operations</option
+								><option value="property_assets">Property &amp; assets</option><option
+									value="sustainability">Sustainability</option
+								></select
+							></label
+						><label
+							>Lead <select name="leadMemberId"
+								>{#each data.members as member}<option value={member.id}
+										>{member.display_name}</option
+									>{/each}</select
+							></label
+						><label class="wide">Scope <textarea name="scopeText" required></textarea></label
+						><button type="submit">Create workstream</button>
+					</form>
+				</section>{/if}
+		</div>
+
+		<div class="grid two">
+			<section class="panel">
+				<h2>F04.04 · Transaction management</h2>
+				<p>
+					{data.transactions.length} transactions · {data.transactionConditions.length} conditions
+				</p>
+				{#each data.transactions as transaction}<article class="card">
+						<strong>{transaction.transaction_code} · {transaction.title}</strong>
+						<p>
+							{transaction.transaction_structure} · {transaction.currency_code}
+							{transaction.consideration_value ?? '—'} · {transaction.lifecycle_status}
+						</p>
+						{#if data.canApprove && transaction.lifecycle_status !== 'closed'}<form
+								method="POST"
+								action="?/closeTransaction"
+							>
+								<input
+									type="hidden"
+									name="transactionPublicId"
+									value={transaction.public_id}
+								/><input
+									type="hidden"
+									name="opportunityPublicId"
+									value={selected.public_id}
+								/><button type="submit">Close transaction</button>
+							</form>{/if}
+					</article>{/each}
+			</section>
+			{#if data.canManage}<section class="panel">
+					<h2>Create transaction</h2>
+					<form method="POST" action="?/createTransaction" class="form-grid">
+						<input type="hidden" name="opportunityPublicId" value={selected.public_id} /><label
+							>Code <input name="transactionCode" required /></label
+						><label>Title <input name="title" required /></label><label
+							>Type <select name="transactionType"
+								><option value="acquisition">Acquisition</option><option value="divestiture"
+									>Divestiture</option
+								><option value="joint_venture">Joint venture</option><option
+									value="minority_investment">Minority investment</option
+								><option value="strategic_partnership">Strategic partnership</option></select
+							></label
+						><label
+							>Structure <input
+								name="transactionStructure"
+								placeholder="Share purchase"
+								required
+							/></label
+						><label>Currency <input name="currencyCode" maxlength="3" value="GBP" required /></label
+						><label>Consideration <input name="considerationValue" inputmode="decimal" /></label
+						><label>F02 decision public ID <input name="governanceDecisionPublicId" /></label><label
+							>F02 DoA public ID <input name="delegationAuthorityPublicId" /></label
+						><button type="submit">Create transaction</button>
+					</form>
+				</section>{/if}
+		</div>
+
+		<div class="grid three">
+			<section class="panel">
+				<h2>F04.05 · Integration</h2>
+				<p>
+					{data.integrationPlans.length} integration plans · {data.integrationWorkstreams.length} workstreams
+				</p>
+				{#each data.integrationPlans as plan}<article class="card">
+						<strong>{plan.integration_code} · {plan.title}</strong>
+						<p>{plan.lifecycle_status}</p>
+					</article>{/each}{#if data.canManage}<form
+						method="POST"
+						action="?/createIntegrationPlan"
+						class="stack"
+					>
+						<input type="hidden" name="opportunityPublicId" value={selected.public_id} /><input
+							name="integrationCode"
+							placeholder="Integration code"
+							required
+						/><input name="title" placeholder="Title" required /><input
+							name="transactionPublicId"
+							placeholder="Transaction public ID"
+						/><textarea name="integrationThesis" placeholder="Integration thesis" required
+						></textarea><textarea name="dayOneOutcomes" placeholder="Day 1 outcomes" required
+						></textarea><textarea
+							name="dayOneHundredOutcomes"
+							placeholder="Day 100 outcomes"
+							required></textarea><textarea
+							name="targetOperatingModelOutcomes"
+							placeholder="Target operating model outcomes"
+							required></textarea><select name="ownerMemberId"
+							>{#each data.members as member}<option value={member.id}>{member.display_name}</option
+								>{/each}</select
+						><input name="performanceBenefitPublicId" placeholder="F03 benefit public ID" /><button
+							type="submit">Create integration plan</button
+						>
+					</form>{/if}
+			</section>
+			<section class="panel">
+				<h2>F04.06 · Divestiture</h2>
+				<p>
+					{data.divestiturePlans.length} separation plans · {data.separationObligations.length} obligations
+				</p>
+				{#each data.divestiturePlans as plan}<article class="card">
+						<strong>{plan.divestiture_code} · {plan.title}</strong>
+						<p>{plan.lifecycle_status}</p>
+					</article>{/each}{#if data.canManage}<form
+						method="POST"
+						action="?/createDivestiturePlan"
+						class="stack"
+					>
+						<input type="hidden" name="opportunityPublicId" value={selected.public_id} /><input
+							name="divestitureCode"
+							placeholder="Divestiture code"
+							required
+						/><input name="title" placeholder="Title" required /><input
+							name="transactionPublicId"
+							placeholder="Transaction public ID"
+						/><input name="buyerName" placeholder="Buyer" /><textarea
+							name="perimeterText"
+							placeholder="Carve-out perimeter"
+							required></textarea><textarea
+							name="separationStrategy"
+							placeholder="Separation strategy"
+							required></textarea><select name="ownerMemberId"
+							>{#each data.members as member}<option value={member.id}>{member.display_name}</option
+								>{/each}</select
+						><button type="submit">Create divestiture plan</button>
+					</form>{/if}
+			</section>
+			<section class="panel">
+				<h2>F04.07 · Strategic partnerships</h2>
+				<p>
+					{data.partnerships.length} partnerships · {data.partnershipCommitments.length} commitments ·
+					{data.partnershipReviews.length} reviews
+				</p>
+				{#each data.partnerships as partnership}<article class="card">
+						<strong>{partnership.partnership_code} · {partnership.partner_name}</strong>
+						<p>{partnership.partnership_type} · {partnership.lifecycle_status}</p>
+						{#if data.canApprove && partnership.lifecycle_status === 'draft'}<form
+								method="POST"
+								action="?/activatePartnership"
+							>
+								<input
+									type="hidden"
+									name="partnershipPublicId"
+									value={partnership.public_id}
+								/><input
+									type="hidden"
+									name="opportunityPublicId"
+									value={selected.public_id}
+								/><button type="submit">Activate partnership</button>
+							</form>{/if}
+					</article>{/each}{#if data.canManage}<form
+						method="POST"
+						action="?/createPartnership"
+						class="stack"
+					>
+						<input type="hidden" name="opportunityPublicId" value={selected.public_id} /><input
+							name="partnershipCode"
+							placeholder="Partnership code"
+							required
+						/><input name="title" placeholder="Title" required /><input
+							name="partnerName"
+							placeholder="Partner"
+							required
+						/><select name="partnershipType"
+							><option value="strategic_alliance">Strategic alliance</option><option
+								value="joint_venture">Joint venture</option
+							><option value="technology">Technology</option><option value="supply">Supply</option
+							><option value="research">Research</option><option value="consortium"
+								>Consortium</option
+							></select
+						><textarea name="objectivesText" placeholder="Objectives" required></textarea><textarea
+							name="commercialStructure"
+							placeholder="Commercial structure"
+							required></textarea><textarea
+							name="governanceText"
+							placeholder="Governance model"
+							required></textarea><select name="ownerMemberId"
+							>{#each data.members as member}<option value={member.id}>{member.display_name}</option
+								>{/each}</select
+						><input type="date" name="effectiveFrom" required /><select name="reviewCadence"
+							><option value="quarterly">Quarterly</option><option value="monthly">Monthly</option
+							><option value="semiannual">Semiannual</option><option value="annual">Annual</option
+							></select
+						><input name="governanceDecisionPublicId" placeholder="F02 decision public ID" /><button
+							type="submit">Create partnership</button
+						>
+					</form>{/if}
+			</section>
+		</div>
+	{/if}
+</section>
+
+<style>
+	.workspace {
+		display: grid;
+		gap: 1.25rem;
+		max-width: 1500px;
+		margin: 0 auto;
+		padding: 1.5rem;
+	}
+	.eyebrow {
+		text-transform: uppercase;
+		letter-spacing: 0.08em;
+		font-size: 0.78rem;
+	}
+	.metrics {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+		gap: 0.75rem;
+	}
+	.metrics div {
+		display: grid;
+		gap: 0.25rem;
+		border: 1px solid var(--border-color, #d7d7d7);
+		border-radius: 10px;
+		padding: 0.8rem;
+	}
+	.metrics strong {
+		font-size: 1.5rem;
+	}
+	.metrics span {
+		font-size: 0.82rem;
+		opacity: 0.72;
+	}
+	.grid {
+		display: grid;
+		gap: 1rem;
+	}
+	.two {
+		grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+	}
+	.three {
+		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+	}
+	.panel {
+		border: 1px solid var(--border-color, #d7d7d7);
+		border-radius: 12px;
+		padding: 1rem;
+		background: var(--surface-color, #fff);
+	}
+	.hero {
+		padding: 1.25rem;
+	}
+	.list {
+		list-style: none;
+		padding: 0;
+		margin: 0;
+		display: grid;
+		gap: 0.5rem;
+	}
+	.list a {
+		display: grid;
+		gap: 0.2rem;
+		padding: 0.75rem;
+		border-radius: 8px;
+		text-decoration: none;
+		color: inherit;
+		border: 1px solid transparent;
+	}
+	.list a.selected {
+		border-color: currentColor;
+	}
+	.list span {
+		opacity: 0.72;
+		font-size: 0.9rem;
+	}
+	.form-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 0.75rem;
+	}
+	.form-grid label {
+		display: grid;
+		gap: 0.3rem;
+		font-size: 0.9rem;
+	}
+	.form-grid .wide,
+	.form-grid button {
+		grid-column: 1/-1;
+	}
+	.stack {
+		display: grid;
+		gap: 0.6rem;
+		margin-top: 0.8rem;
+	}
+	input,
+	select,
+	textarea,
+	button {
+		font: inherit;
+		padding: 0.6rem;
+		border-radius: 7px;
+		border: 1px solid #aaa;
+	}
+	textarea {
+		min-height: 80px;
+	}
+	.card {
+		border-top: 1px solid #ddd;
+		padding: 0.9rem 0;
+	}
+	.error {
+		padding: 0.8rem;
+		border: 1px solid #b00020;
+		border-radius: 8px;
+	}
+	.card form {
+		margin-top: 0.6rem;
+	}
+	@media (max-width: 700px) {
+		.form-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+</style>
