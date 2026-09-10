@@ -69,6 +69,8 @@ NuBlox already has meaningful accounting, receivables, AP, supplier-payment and 
 
 F01 Strategy & Enterprise Planning now provides governed strategy-linked business planning, KPI targets and forecasts, strategic review and scenario/foresight foundations. Its closure proof resolves a canonical accounting P&L actual into the strategy KPI and drills back to the accounting report/source thread. This materially advances the BPC, SEM and SEM-IP benchmark outcomes without claiming that consolidation, treasury or the remaining P1 enterprise-finance gaps are complete.
 
+F03 Enterprise Performance Management now extends that canonical KPI thread into governed enterprise execution: versioned performance frameworks, reporting periods and KPI packs, root-cause variance intervention, executive review, comparable-period benchmarks, and measured benefits. F03 snapshots canonical KPI observations for evidence rather than creating a second performance ledger, and preserves cross-domain project/governance references for drill-through. This materially deepens the SEM benchmark while leaving broader analytics, consolidation and treasury gaps explicitly open.
+
 Primary domains: **7, 8, 19**.  
 Primary streams: **VS8 Record-to-report**, with VS1 and VS2 consequences.  
 Primary proof: **Journey A** plus enterprise reporting evidence.

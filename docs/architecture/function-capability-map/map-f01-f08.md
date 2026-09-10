@@ -45,7 +45,7 @@ Domain order indicates primary native ownership first, followed by material supp
 **Outcome:** Measure enterprise performance, explain variance and drive corrective decisions.  
 **Value streams:** VS3, VS8  
 **Operating surface:** Enterprise performance, KPI/management reporting, variance/action workflows and benefits tracking  
-**Current reality:** Native foundations exist; material depth remains in D8, D5. Domain maturity is not proof that every sub-function is complete.
+**Current reality:** PR #137 implements F03.01–F03.06 as one native enterprise-performance thread: versioned performance frameworks composed from approved F01 KPIs, period-bound authoritative KPI reporting packs, variance/root-cause/corrective-action controls, executive reviews with optional F02 governance linkage, comparable-period benchmarking, and evidence-based benefits realisation. F03 remains a merge candidate until exact-head and merged-`main` validation pass and issue #136 closes.
 
 | Sub-function | Native NuBlox domain composition |
 | --- | --- |
