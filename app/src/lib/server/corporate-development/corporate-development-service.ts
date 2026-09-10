@@ -218,7 +218,8 @@ export class CorporateDevelopmentService {
 		const flags = await this.permissionFlags(actor);
 		const repository = new CorporateDevelopmentRepository(this.db);
 		const opportunities = await repository.listOpportunities(actor.organisationId);
-		let selectedOpportunity = opportunities[0] ?? null;
+		let selectedOpportunity: CorporateDevelopmentOpportunityRecord | null =
+			opportunities[0] ?? null;
 		if (selectedOpportunityPublicId?.trim()) {
 			selectedOpportunity =
 				(await repository.findOpportunityByPublicId(
