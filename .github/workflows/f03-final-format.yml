@@ -1,0 +1,40 @@
+name: F03 Final Format
+
+on:
+  push:
+    branches:
+      - feat/f03-enterprise-performance-management
+    paths:
+      - '.github/workflows/f03-final-format.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f03-enterprise-performance-management
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - working-directory: app
+        run: pnpm install --frozen-lockfile
+      - working-directory: app
+        run: pnpm exec prettier --write e2e/enterprise-performance.e2e.ts
+      - name: Commit formatting and remove workflow
+        run: |
+          rm .github/workflows/f03-final-format.yml
+          git config user.name '8140spitt'
+          git config user.email '56647740+8140spitt@users.noreply.github.com'
+          git add app/e2e/enterprise-performance.e2e.ts .github/workflows/f03-final-format.yml
+          git commit -m 'F03: format final browser proof'
+          git push origin HEAD:feat/f03-enterprise-performance-management
