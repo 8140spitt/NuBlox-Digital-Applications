@@ -184,9 +184,9 @@ describe('F04 corporate development', () => {
 			currencyCode: 'GBP',
 			considerationValue: '10000000'
 		});
-		await expect(lifecycle.closeTransaction(actor, transactionWithoutApproval.public_id)).rejects.toBeInstanceOf(
-			CorporateDevelopmentLifecycleValidationError
-		);
+		await expect(
+			lifecycle.closeTransaction(actor, transactionWithoutApproval.public_id)
+		).rejects.toBeInstanceOf(CorporateDevelopmentLifecycleValidationError);
 		const transaction = await lifecycle.createTransaction(actor, {
 			opportunityPublicId: opportunity.public_id,
 			transactionCode: 'TX-001',
@@ -239,9 +239,9 @@ describe('F04 corporate development', () => {
 			effectiveFrom: '2026-10-01',
 			reviewCadence: 'quarterly'
 		});
-		await expect(lifecycle.activatePartnership(actor, draftPartnership.public_id)).rejects.toBeInstanceOf(
-			CorporateDevelopmentLifecycleValidationError
-		);
+		await expect(
+			lifecycle.activatePartnership(actor, draftPartnership.public_id)
+		).rejects.toBeInstanceOf(CorporateDevelopmentLifecycleValidationError);
 		const partnership = await lifecycle.createPartnership(actor, {
 			opportunityPublicId: opportunity.public_id,
 			partnershipCode: 'PART-001',
