@@ -129,5 +129,16 @@ new = """\t\t\tconst targetDirection = compareDecimal(benefit.target_value, bene
 if old not in s:
     raise SystemExit('Benefit achievement block not found')
 s = s.replace(old, new, 1)
-
 p.write_text(s)
+
+server = Path('app/src/routes/(app)/performance/+page.server.ts')
+t = server.read_text()
+t = t.replace("operation: (\n\t\tservice: EnterprisePerformanceService,\n\t\tactor: TenantActorContext\n\t) => Promise<{ public_id?: string } | void>,", "operation: (\n\t\tservice: EnterprisePerformanceService,\n\t\tactor: TenantActorContext\n\t) => Promise<unknown>,")
+t = t.replace("\t\tconst result = await operation(new EnterprisePerformanceService(getDatabase()), actor);\n\t\tconst selected = frameworkPublicId ?? result?.public_id ?? null;", "\t\tconst result = await operation(new EnterprisePerformanceService(getDatabase()), actor);\n\t\tconst selected =\n\t\t\tframeworkPublicId ??\n\t\t\t(typeof result === 'object' && result !== null && 'public_id' in result\n\t\t\t\t? String(result.public_id)\n\t\t\t\t: null);")
+server.write_text(t)
+
+page = Path('app/src/routes/(app)/performance/+page.svelte')
+u = page.read_text()
+u = u.replace("\n\tconst packById = $derived(new Map(data.packs.map((row) => [row.id, row])));", '')
+u = u.replace("\n\tconst varianceById = $derived(new Map(data.variances.map((row) => [row.id, row])));", '')
+page.write_text(u)
