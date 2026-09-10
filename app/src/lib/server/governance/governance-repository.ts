@@ -165,16 +165,23 @@ export class GovernanceRepository {
 
 	async findActiveBodyMembership(
 		bodyId: string,
-		memberId: string
+		memberId: string,
+		effectiveAt: Date
 	): Promise<GovernanceBodyMembershipRecord | undefined> {
-		return this.db
+		const day = effectiveAt.toISOString().slice(0, 10);
+		const memberships = await this.db
 			.selectFrom('governance_body_memberships')
 			.selectAll()
 			.where('governance_body_id', '=', bodyId)
 			.where('organisation_member_id', '=', memberId)
 			.where('lifecycle_status', '=', 'active')
 			.orderBy('appointed_on', 'desc')
-			.executeTakeFirst();
+			.execute();
+		return memberships.find(
+			(membership) =>
+				membership.appointed_on.toISOString().slice(0, 10) <= day &&
+				(!membership.term_ends_on || membership.term_ends_on.toISOString().slice(0, 10) >= day)
+		);
 	}
 
 	async insertBodyMembership(

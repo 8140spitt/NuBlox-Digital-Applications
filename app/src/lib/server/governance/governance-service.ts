@@ -244,10 +244,44 @@ function positiveInteger(value: number | string, label: string): number {
 
 function amount(value: number | string | null | undefined, label: string): string | null {
 	if (value === null || value === undefined || value === '') return null;
-	const parsed = typeof value === 'number' ? value : Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0)
-		throw new GovernanceValidationError(`${label} must be a non-negative number.`);
-	return parsed.toFixed(4);
+	if (
+		typeof value === 'number' &&
+		(!Number.isFinite(value) || !Number.isSafeInteger(value * 10_000))
+	) {
+		throw new GovernanceValidationError(
+			`${label} must be an exact non-negative amount with at most four decimal places.`
+		);
+	}
+	const raw = String(value).trim();
+	const match = /^(\d{1,15})(?:\.(\d{1,4}))?$/.exec(raw);
+	if (!match)
+		throw new GovernanceValidationError(`${label} must be a non-negative DECIMAL(19,4) amount.`);
+	const whole = BigInt(match[1]).toString();
+	const fraction = (match[2] ?? '').padEnd(4, '0');
+	return `${whole}.${fraction}`;
+}
+
+function amountUnits(value: string): bigint {
+	const [whole, fraction = ''] = value.split('.');
+	return BigInt(whole) * 10_000n + BigInt(fraction.padEnd(4, '0'));
+}
+
+function compareAmounts(left: string, right: string): number {
+	const leftUnits = amountUnits(left);
+	const rightUnits = amountUnits(right);
+	return leftUnits === rightUnits ? 0 : leftUnits < rightUnits ? -1 : 1;
+}
+
+function membershipEffectiveOn(
+	membership: GovernanceBodyMembershipRecord,
+	effectiveAt: Date
+): boolean {
+	const day = effectiveAt.toISOString().slice(0, 10);
+	return (
+		membership.lifecycle_status === 'active' &&
+		membership.appointed_on.toISOString().slice(0, 10) <= day &&
+		(!membership.term_ends_on || membership.term_ends_on.toISOString().slice(0, 10) >= day)
+	);
 }
 
 function currency(value: string | null | undefined): string | null {
@@ -623,12 +657,14 @@ export class GovernanceService {
 				'Appointee'
 			);
 			if (!memberId) throw new GovernanceValidationError('Appointee is required.');
-			if (await new GovernanceRepository(trx).findActiveBodyMembership(body.id, memberId)) {
+			const appointedOn = dateOnly(input.appointedOn, 'Appointed on');
+			if (
+				await new GovernanceRepository(trx).findActiveBodyMembership(body.id, memberId, appointedOn)
+			) {
 				throw new GovernanceValidationError(
 					'This member already has an active appointment to the governance body.'
 				);
 			}
-			const appointedOn = dateOnly(input.appointedOn, 'Appointed on');
 			const termEndsOn = optionalDateOnly(input.termEndsOn, 'Term ends on');
 			if (termEndsOn && termEndsOn < appointedOn)
 				throw new GovernanceValidationError('Term end must not be before appointment date.');
@@ -675,7 +711,7 @@ export class GovernanceService {
 			throw new GovernanceValidationError(
 				'Currency is only valid when an authority amount is supplied.'
 			);
-		if (minAmount && maxAmount && Number(maxAmount) < Number(minAmount))
+		if (minAmount && maxAmount && compareAmounts(maxAmount, minAmount) < 0)
 			throw new GovernanceValidationError(
 				'Maximum authority amount must not be below minimum amount.'
 			);
@@ -752,9 +788,10 @@ export class GovernanceService {
 				throw new GovernanceValidationError(
 					'Governance approval requires at least one active board.'
 				);
+			const approvalAt = this.now();
 			const memberships = (
 				await repository.listBodyMemberships(bodies.map((body) => body.id))
-			).filter((membership) => membership.lifecycle_status === 'active');
+			).filter((membership) => membershipEffectiveOn(membership, approvalAt));
 			for (const body of bodies) {
 				const bodyMemberships = memberships.filter(
 					(membership) => membership.governance_body_id === body.id
@@ -804,7 +841,7 @@ export class GovernanceService {
 			const approved = await repository.updateFramework(actor.organisationId, framework.id, {
 				lifecycle_status: 'approved',
 				approved_by_member_id: actor.memberId,
-				approved_at: this.now()
+				approved_at: approvalAt
 			});
 			await this.appendEvidence(
 				trx,
@@ -987,7 +1024,8 @@ export class GovernanceService {
 			if (!memberId) throw new GovernanceValidationError('Attendee is required.');
 			const membership = await repository.findActiveBodyMembership(
 				meeting.governance_body_id,
-				memberId
+				memberId,
+				meeting.scheduled_at
 			);
 			if (!membership)
 				throw new GovernanceValidationError(
@@ -1148,9 +1186,10 @@ export class GovernanceService {
 		if (rule.effective_to && rule.effective_to.toISOString().slice(0, 10) < day) return false;
 		if (item.decision_amount === null) return rule.min_amount === null && rule.max_amount === null;
 		if (rule.currency_code !== item.currency_code) return false;
-		const value = Number(item.decision_amount);
-		if (rule.min_amount !== null && value < Number(rule.min_amount)) return false;
-		if (rule.max_amount !== null && value > Number(rule.max_amount)) return false;
+		if (rule.min_amount !== null && compareAmounts(item.decision_amount, rule.min_amount) < 0)
+			return false;
+		if (rule.max_amount !== null && compareAmounts(item.decision_amount, rule.max_amount) > 0)
+			return false;
 		return true;
 	}
 
@@ -1468,7 +1507,14 @@ export class GovernanceService {
 			if (!policy) throw new RecordNotFoundError('Governance policy not found.');
 			if (policy.lifecycle_status !== 'draft')
 				throw new GovernanceValidationError('Only a draft policy can be approved.');
-			if (!(await repository.findActiveBodyMembership(policy.approval_body_id, actor.memberId)))
+			const approvalAt = this.now();
+			if (
+				!(await repository.findActiveBodyMembership(
+					policy.approval_body_id,
+					actor.memberId,
+					approvalAt
+				))
+			)
 				throw new GovernanceValidationError(
 					'Policy approver must hold an active appointment to the approval body.'
 				);
@@ -1481,7 +1527,7 @@ export class GovernanceService {
 			const approved = await repository.updatePolicy(actor.organisationId, policy.id, {
 				lifecycle_status: 'approved',
 				approved_by_member_id: actor.memberId,
-				approved_at: this.now()
+				approved_at: approvalAt
 			});
 			await this.appendEvidence(
 				trx,
@@ -1648,6 +1694,10 @@ export class GovernanceService {
 				conflictPublicId.trim()
 			);
 			if (!conflict) throw new RecordNotFoundError('Conflict declaration not found.');
+			if (conflict.lifecycle_status !== 'open')
+				throw new GovernanceValidationError(
+					'Only an open conflict declaration can receive its governed review outcome.'
+				);
 			const updated = await repository.updateConflict(actor.organisationId, conflict.id, {
 				lifecycle_status: close ? 'closed' : 'managed',
 				reviewer_member_id: actor.memberId,

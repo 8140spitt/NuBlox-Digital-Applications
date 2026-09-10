@@ -77,7 +77,14 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 				.orderBy('user.display_name', 'asc')
 				.execute()
 		]);
-		return { ...workspace, members, actorMemberId: actor.memberId };
+		const clientWorkspace = {
+			...workspace,
+			ethicsCases: workspace.ethicsCases.map(({ created_by_member_id, ...ethicsCase }) => {
+				void created_by_member_id;
+				return ethicsCase;
+			})
+		};
+		return { ...clientWorkspace, members, actorMemberId: actor.memberId };
 	} catch (error) {
 		if (error instanceof RecordNotFoundError)
 			throw httpError(404, 'Corporate governance workspace not found in the active scope.');
