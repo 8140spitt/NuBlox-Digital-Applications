@@ -1,0 +1,39 @@
+name: F02 E2E Selector Fix
+
+on:
+  push:
+    branches:
+      - feat/f02-corporate-governance
+    paths:
+      - .github/workflows/f02-e2e-selector-fix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f02-corporate-governance
+          fetch-depth: 0
+      - name: Use canonical appointment field selector
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          path = Path('app/e2e/corporate-governance.e2e.ts')
+          content = path.read_text()
+          old = "await appointment.getByLabel('Member', { exact: true }).selectOption({ label: OWNER });"
+          new = "await appointment.locator('select[name=\"memberId\"]').selectOption({ label: OWNER });"
+          assert old in content, 'target selector not found'
+          path.write_text(content.replace(old, new, 1))
+          PY
+      - name: Commit fix and remove maintenance workflow
+        run: |
+          rm .github/workflows/f02-e2e-selector-fix.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Use canonical F02 appointment selector"
+          git push origin HEAD:feat/f02-corporate-governance
