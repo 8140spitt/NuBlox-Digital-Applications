@@ -506,13 +506,13 @@
 
 						<div class="agenda-list">
 							{#each data.agendaItems.filter((item) => item.governance_meeting_id === meeting.id) as item}
+								{@const decision = decisionForAgenda(item.id)}
 								<div class="agenda-item">
 									<strong>{item.agenda_number}. {item.title}</strong><small
 										>{label(item.item_type)}{#if item.source_domain}
 											· source {item.source_domain}/{item.source_record_type}/{item.source_public_id}{/if}</small
 									>
 									<p>{item.description}</p>
-									{@const decision = decisionForAgenda(item.id)}
 									{#if decision}<div class="decision-evidence">
 											<strong>{decision.decision_code} · {label(decision.decision_outcome)}</strong>
 											<p>{decision.resolution_text}</p>
