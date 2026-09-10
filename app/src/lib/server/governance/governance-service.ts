@@ -424,7 +424,7 @@ export class GovernanceService {
 		const flags = await this.permissionFlags(actor);
 		const repository = new GovernanceRepository(this.db);
 		const frameworks = await repository.listFrameworks(actor.organisationId);
-		let selectedFramework = frameworks[0] ?? null;
+		let selectedFramework: GovernanceFrameworkRecord | null = frameworks[0] ?? null;
 		if (selectedFrameworkPublicId?.trim()) {
 			selectedFramework =
 				(await repository.findFrameworkByPublicId(
