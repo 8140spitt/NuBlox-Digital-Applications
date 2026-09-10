@@ -1,0 +1,53 @@
+name: F04 Codegen
+on:
+  push:
+    branches: [feat/f04-corporate-development-ma]
+    paths:
+      - '.github/workflows/f04-codegen.yml'
+permissions:
+  contents: write
+jobs:
+  codegen:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
+      BETTER_AUTH_SECRET: f04-codegen-secret
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f04-corporate-development-ma
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Migrate and generate types
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm db:migrate
+          pnpm db:types
+      - name: Remove temporary workflow and commit generated types
+        run: |
+          git rm .github/workflows/f04-codegen.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/lib/server/db/generated
+          git commit -m 'Generate F04 corporate development database types'
+          git push origin HEAD:feat/f04-corporate-development-ma
