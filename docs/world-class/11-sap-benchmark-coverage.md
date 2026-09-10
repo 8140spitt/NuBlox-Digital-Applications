@@ -71,6 +71,8 @@ F01 Strategy & Enterprise Planning now provides governed strategy-linked busines
 
 F03 Enterprise Performance Management now extends that canonical KPI thread into governed enterprise execution: versioned performance frameworks, reporting periods and KPI packs, root-cause variance intervention, executive review, comparable-period benchmarks, and measured benefits. F03 snapshots canonical KPI observations for evidence rather than creating a second performance ledger, and preserves cross-domain project/governance references for drill-through. This materially deepens the SEM benchmark while leaving broader analytics, consolidation and treasury gaps explicitly open.
 
+F04 Corporate Development & M&A now extends strategy-to-performance into governed inorganic growth and portfolio change: opportunity origination, versioned valuation/business cases, cross-functional due diligence, transaction conditions and F02 approval gates, integration/divestiture execution references, and strategic-partnership governance. F04 reuses Finance, CRM, document, workforce and project truth and links expected benefits back to F03 rather than creating parallel ledgers. This materially strengthens the SEM/BPC enterprise-management benchmark around investment decisions and benefit traceability without claiming the remaining consolidation, treasury or analytics gaps are closed.
+
 Primary domains: **7, 8, 19**.  
 Primary streams: **VS8 Record-to-report**, with VS1 and VS2 consequences.  
 Primary proof: **Journey A** plus enterprise reporting evidence.
