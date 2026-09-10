@@ -60,7 +60,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await appointment
 		.getByLabel('Governance body')
 		.selectOption({ label: 'BOARD-E2E · Enterprise Board' });
-	await appointment.getByLabel('Member').selectOption({ label: OWNER });
+	await appointment.getByLabel('Member', { exact: true }).selectOption({ label: OWNER });
 	await appointment.getByLabel('Governance role').selectOption('chair');
 	await appointment.getByLabel('Appointed on').fill('2026-01-01');
 	await appointment.getByRole('button', { name: 'Appoint member' }).click();
