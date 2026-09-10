@@ -18,7 +18,9 @@ async function signIn(page: Page) {
 test('F04 creates a corporate-development opportunity and valuation', async ({ page }) => {
 	await signIn(page);
 	await page.goto('/corporate-development');
-	await expect(page.getByRole('heading', { name: 'Corporate Development command centre', level: 1 })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Corporate Development command centre', level: 1 })
+	).toBeVisible();
 	await expect(page.getByText('F04 · Corporate Development & M&A')).toBeVisible();
 
 	const opportunity = page.locator('form[action="?/createOpportunity"]');
@@ -29,11 +31,17 @@ test('F04 creates a corporate-development opportunity and valuation', async ({ p
 	await opportunity.getByLabel('Owner').selectOption({ label: OWNER });
 	await opportunity.getByLabel('Priority').selectOption('high');
 	await opportunity.getByLabel('Identified on').fill('2026-09-10');
-	await opportunity.getByLabel('Strategic thesis').fill('Acquire capability that accelerates the governed enterprise strategy.');
-	await opportunity.getByLabel('Strategic rationale').fill('Adds capability, improves market position and creates measurable enterprise value.');
+	await opportunity
+		.getByLabel('Strategic thesis')
+		.fill('Acquire capability that accelerates the governed enterprise strategy.');
+	await opportunity
+		.getByLabel('Strategic rationale')
+		.fill('Adds capability, improves market position and creates measurable enterprise value.');
 	await opportunity.getByRole('button', { name: 'Create opportunity' }).click();
 
-	await expect(page.getByRole('heading', { name: 'E2E strategic acquisition', level: 2 })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'E2E strategic acquisition', level: 2 })
+	).toBeVisible();
 	await expect(page.getByText('E2E Target Ltd', { exact: false }).first()).toBeVisible();
 
 	const valuation = page.locator('form[action="?/createValuation"]');
@@ -46,7 +54,9 @@ test('F04 creates a corporate-development opportunity and valuation', async ({ p
 	await valuation.getByLabel('EV base').fill('10000000');
 	await valuation.getByLabel('EV high').fill('11500000');
 	await valuation.getByLabel('Equity base').fill('8500000');
-	await valuation.getByLabel('Recommendation').fill('Proceed to due diligence subject to downside protection and governance approval.');
+	await valuation
+		.getByLabel('Recommendation')
+		.fill('Proceed to due diligence subject to downside protection and governance approval.');
 	await valuation.getByRole('button', { name: 'Create valuation' }).click();
 
 	await expect(page.getByText('VAL-E2E v1', { exact: false })).toBeVisible();
