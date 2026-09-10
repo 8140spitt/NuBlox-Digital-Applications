@@ -34,17 +34,18 @@ function checked(data: FormData, name: string): boolean {
 
 async function runAction(
 	locals: App.Locals,
-	operation: (
-		service: EnterprisePerformanceService,
-		actor: TenantActorContext
-	) => Promise<{ public_id?: string } | void>,
+	operation: (service: EnterprisePerformanceService, actor: TenantActorContext) => Promise<unknown>,
 	frameworkPublicId?: string | null
 ) {
 	const actor = actorFromLocals(locals);
 	if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });
 	try {
 		const result = await operation(new EnterprisePerformanceService(getDatabase()), actor);
-		const selected = frameworkPublicId ?? result?.public_id ?? null;
+		const selected =
+			frameworkPublicId ??
+			(typeof result === 'object' && result !== null && 'public_id' in result
+				? String(result.public_id)
+				: null);
 		throw redirect(
 			303,
 			selected ? `/performance?framework=${encodeURIComponent(selected)}` : '/performance'

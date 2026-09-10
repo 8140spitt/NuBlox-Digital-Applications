@@ -6,8 +6,6 @@
 	const selected = $derived(data.selectedFramework);
 	const kpiById = $derived(new Map(data.kpis.map((row) => [row.id, row])));
 	const periodById = $derived(new Map(data.periods.map((row) => [row.id, row])));
-	const packById = $derived(new Map(data.packs.map((row) => [row.id, row])));
-	const varianceById = $derived(new Map(data.variances.map((row) => [row.id, row])));
 
 	function formatDate(value: Date | string | null | undefined) {
 		if (!value) return '—';

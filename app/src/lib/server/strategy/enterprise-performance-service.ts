@@ -225,14 +225,40 @@ function optionalDateOnly(value: string | Date | null | undefined, label: string
 
 function decimal(value: number | string, label: string): string {
 	const normalized = String(value).trim();
-	if (!normalized || !Number.isFinite(Number(normalized)))
-		throw new EnterprisePerformanceValidationError(`${label} must be numeric.`);
+	if (!/^-?\d{1,16}(?:\.\d{1,8})?$/.test(normalized))
+		throw new EnterprisePerformanceValidationError(
+			`${label} must be a decimal with up to 16 integer and 8 fractional digits.`
+		);
 	return normalized;
 }
 
 function optionalDecimal(value: number | string | null | undefined, label: string): string | null {
 	if (value === null || value === undefined || value === '') return null;
 	return decimal(value, label);
+}
+
+const DECIMAL_SCALE = 100_000_000n;
+
+function decimalUnits(value: string): bigint {
+	const negative = value.startsWith('-');
+	const unsigned = negative ? value.slice(1) : value;
+	const [whole, fraction = ''] = unsigned.split('.');
+	const units = BigInt(whole) * DECIMAL_SCALE + BigInt(fraction.padEnd(8, '0'));
+	return negative ? -units : units;
+}
+
+function decimalFromUnits(units: bigint): string {
+	const negative = units < 0n;
+	const absolute = negative ? -units : units;
+	const whole = absolute / DECIMAL_SCALE;
+	const fraction = (absolute % DECIMAL_SCALE).toString().padStart(8, '0').replace(/0+$/, '');
+	return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
+}
+
+function compareDecimal(left: string, right: string): number {
+	const leftUnits = decimalUnits(left);
+	const rightUnits = decimalUnits(right);
+	return leftUnits < rightUnits ? -1 : leftUnits > rightUnits ? 1 : 0;
 }
 
 function positiveInteger(value: number | string | undefined, fallback = 1): number {
@@ -244,12 +270,16 @@ function positiveInteger(value: number | string | undefined, fallback = 1): numb
 }
 
 function variance(target: string, actual: string): { value: string; percent: string | null } {
-	const targetNumber = Number(target);
-	const actualNumber = Number(actual);
-	const value = actualNumber - targetNumber;
+	const targetUnits = decimalUnits(target);
+	const actualUnits = decimalUnits(actual);
+	const difference = actualUnits - targetUnits;
+	const absoluteTarget = targetUnits < 0n ? -targetUnits : targetUnits;
 	return {
-		value: value.toString(),
-		percent: targetNumber === 0 ? null : ((value / Math.abs(targetNumber)) * 100).toString()
+		value: decimalFromUnits(difference),
+		percent:
+			targetUnits === 0n
+				? null
+				: decimalFromUnits((difference * 100n * DECIMAL_SCALE) / absoluteTarget)
 	};
 }
 
@@ -258,10 +288,10 @@ function assess(
 	actualValue: string,
 	materialityThresholdPercent: string | null
 ): 'on_track' | 'watch' | 'off_track' {
-	const actual = Number(actualValue);
-	const target = Number(kpi.target_value);
-	const warning = kpi.warning_threshold === null ? null : Number(kpi.warning_threshold);
-	const critical = kpi.critical_threshold === null ? null : Number(kpi.critical_threshold);
+	const actual = decimalUnits(actualValue);
+	const target = decimalUnits(kpi.target_value);
+	const warning = kpi.warning_threshold === null ? null : decimalUnits(kpi.warning_threshold);
+	const critical = kpi.critical_threshold === null ? null : decimalUnits(kpi.critical_threshold);
 	if (kpi.direction === 'higher_is_better') {
 		if (actual >= target) return 'on_track';
 		if (warning !== null && actual >= warning) return 'watch';
@@ -274,11 +304,13 @@ function assess(
 		if (critical !== null && actual <= critical) return 'watch';
 		return 'off_track';
 	}
-	const threshold = materialityThresholdPercent === null ? 5 : Number(materialityThresholdPercent);
+	const threshold = decimalUnits(materialityThresholdPercent ?? '5');
+	const difference = actual >= target ? actual - target : target - actual;
+	const absoluteTarget = target < 0n ? -target : target;
 	const deviation =
-		target === 0 ? Math.abs(actual - target) : (Math.abs(actual - target) / Math.abs(target)) * 100;
+		target === 0n ? difference : (difference * 100n * DECIMAL_SCALE) / absoluteTarget;
 	if (deviation <= threshold) return 'on_track';
-	if (deviation <= threshold * 2) return 'watch';
+	if (deviation <= threshold * 2n) return 'watch';
 	return 'off_track';
 }
 
@@ -740,17 +772,17 @@ export class EnterprisePerformanceService {
 					.selectAll()
 					.where('organisation_id', '=', actor.organisationId)
 					.where('id', '=', link.strategy_kpi_id)
-					.where('lifecycle_status', '=', 'approved')
 					.executeTakeFirst();
-				if (!kpi)
+				if (!kpi || !['approved', 'superseded'].includes(kpi.lifecycle_status))
 					throw new EnterprisePerformanceValidationError(
-						'Framework references a KPI that is no longer approved.'
+						'Framework references a KPI version that is not available for governed reporting.'
 					);
 				const observation = await trx
 					.selectFrom('strategy_kpi_observations')
 					.selectAll()
 					.where('organisation_id', '=', actor.organisationId)
 					.where('strategy_kpi_id', '=', kpi.id)
+					.where('observed_on', '>=', period.period_start)
 					.where('observed_on', '<=', period.period_end)
 					.orderBy('observed_on', 'desc')
 					.orderBy('created_at', 'desc')
@@ -1180,6 +1212,13 @@ export class EnterprisePerformanceService {
 			);
 			if (!benchmark || !observation || benchmark.strategy_kpi_id !== observation.strategy_kpi_id)
 				throw new RecordNotFoundError('Comparable benchmark and KPI observation not found.');
+			if (
+				observation.observed_on < benchmark.period_start ||
+				observation.observed_on > benchmark.period_end
+			)
+				throw new EnterprisePerformanceValidationError(
+					'Benchmark comparison requires an observation inside the benchmark period.'
+				);
 			const delta = variance(benchmark.benchmark_value, observation.actual_value);
 			const row = await repository.insertBenchmarkResult({
 				organisation_id: actor.organisationId,
@@ -1272,8 +1311,8 @@ export class EnterprisePerformanceService {
 			);
 			if (!benefit || ['closed', 'cancelled'].includes(benefit.lifecycle_status))
 				throw new RecordNotFoundError('Active performance benefit not found.');
-			const confidence = Number(decimal(input.confidencePercent, 'Confidence percent'));
-			if (confidence < 0 || confidence > 100)
+			const confidence = decimal(input.confidencePercent, 'Confidence percent');
+			if (compareDecimal(confidence, '0') < 0 || compareDecimal(confidence, '100') > 0)
 				throw new EnterprisePerformanceValidationError(
 					'Confidence percent must be between 0 and 100.'
 				);
@@ -1283,14 +1322,21 @@ export class EnterprisePerformanceService {
 				public_id: this.publicIdFactory(),
 				measured_on: dateOnly(input.measuredOn, 'Measured date'),
 				realised_value: decimal(input.realisedValue, 'Realised value'),
-				confidence_percent: confidence.toString(),
+				confidence_percent: confidence,
 				evidence_text: requiredText(input.evidenceText, 'Benefit evidence', 20_000),
 				source_domain: token(input.sourceDomain, 'Source domain'),
 				source_record_type: token(input.sourceRecordType, 'Source record type'),
 				source_public_id: optionalText(input.sourcePublicId, 128),
 				created_by_member_id: actor.memberId
 			});
-			if (Number(row.realised_value) >= Number(benefit.target_value))
+			const targetDirection = compareDecimal(benefit.target_value, benefit.baseline_value);
+			const targetReached =
+				targetDirection > 0
+					? compareDecimal(row.realised_value, benefit.target_value) >= 0
+					: targetDirection < 0
+						? compareDecimal(row.realised_value, benefit.target_value) <= 0
+						: compareDecimal(row.realised_value, benefit.target_value) === 0;
+			if (targetReached)
 				await repository.updateBenefit(actor.organisationId, benefit.id, {
 					lifecycle_status: 'achieved'
 				});
