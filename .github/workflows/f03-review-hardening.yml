@@ -1,0 +1,164 @@
+name: F03 Review Hardening
+
+on:
+  push:
+    branches:
+      - feat/f03-enterprise-performance-management
+    paths:
+      - '.github/workflows/f03-review-hardening.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  harden:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f03-enterprise-performance-management
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Apply review hardening
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('app/src/lib/server/strategy/enterprise-performance-service.ts')
+          s = p.read_text()
+
+          start = s.index('function decimal(value: number | string, label: string): string {')
+          end = s.index('export class EnterprisePerformanceService {')
+          helpers = r'''function decimal(value: number | string, label: string): string {
+	const normalized = String(value).trim();
+	if (!/^-?\d{1,16}(?:\.\d{1,8})?$/.test(normalized))
+		throw new EnterprisePerformanceValidationError(
+			`${label} must be a decimal with up to 16 integer and 8 fractional digits.`
+		);
+	return normalized;
+}
+
+function optionalDecimal(value: number | string | null | undefined, label: string): string | null {
+	if (value === null || value === undefined || value === '') return null;
+	return decimal(value, label);
+}
+
+const DECIMAL_SCALE = 100_000_000n;
+
+function decimalUnits(value: string): bigint {
+	const negative = value.startsWith('-');
+	const unsigned = negative ? value.slice(1) : value;
+	const [whole, fraction = ''] = unsigned.split('.');
+	const units = BigInt(whole) * DECIMAL_SCALE + BigInt(fraction.padEnd(8, '0'));
+	return negative ? -units : units;
+}
+
+function decimalFromUnits(units: bigint): string {
+	const negative = units < 0n;
+	const absolute = negative ? -units : units;
+	const whole = absolute / DECIMAL_SCALE;
+	const fraction = (absolute % DECIMAL_SCALE).toString().padStart(8, '0').replace(/0+$/, '');
+	return `${negative ? '-' : ''}${whole}${fraction ? `.${fraction}` : ''}`;
+}
+
+function compareDecimal(left: string, right: string): number {
+	const leftUnits = decimalUnits(left);
+	const rightUnits = decimalUnits(right);
+	return leftUnits < rightUnits ? -1 : leftUnits > rightUnits ? 1 : 0;
+}
+
+function positiveInteger(value: number | string | undefined, fallback = 1): number {
+	if (value === undefined || value === '') return fallback;
+	const result = Number(value);
+	if (!Number.isInteger(result) || result < 1)
+		throw new EnterprisePerformanceValidationError('Display order must be a positive integer.');
+	return result;
+}
+
+function variance(target: string, actual: string): { value: string; percent: string | null } {
+	const targetUnits = decimalUnits(target);
+	const actualUnits = decimalUnits(actual);
+	const difference = actualUnits - targetUnits;
+	const absoluteTarget = targetUnits < 0n ? -targetUnits : targetUnits;
+	return {
+		value: decimalFromUnits(difference),
+		percent:
+			targetUnits === 0n
+				? null
+				: decimalFromUnits((difference * 100n * DECIMAL_SCALE) / absoluteTarget)
+	};
+}
+
+function assess(
+	kpi: PerformanceKpiRecord,
+	actualValue: string,
+	materialityThresholdPercent: string | null
+): 'on_track' | 'watch' | 'off_track' {
+	const actual = decimalUnits(actualValue);
+	const target = decimalUnits(kpi.target_value);
+	const warning = kpi.warning_threshold === null ? null : decimalUnits(kpi.warning_threshold);
+	const critical = kpi.critical_threshold === null ? null : decimalUnits(kpi.critical_threshold);
+	if (kpi.direction === 'higher_is_better') {
+		if (actual >= target) return 'on_track';
+		if (warning !== null && actual >= warning) return 'watch';
+		if (critical !== null && actual >= critical) return 'watch';
+		return 'off_track';
+	}
+	if (kpi.direction === 'lower_is_better') {
+		if (actual <= target) return 'on_track';
+		if (warning !== null && actual <= warning) return 'watch';
+		if (critical !== null && actual <= critical) return 'watch';
+		return 'off_track';
+	}
+	const threshold = decimalUnits(materialityThresholdPercent ?? '5');
+	const difference = actual >= target ? actual - target : target - actual;
+	const absoluteTarget = target < 0n ? -target : target;
+	const deviation =
+		target === 0n ? difference : (difference * 100n * DECIMAL_SCALE) / absoluteTarget;
+	if (deviation <= threshold) return 'on_track';
+	if (deviation <= threshold * 2n) return 'watch';
+	return 'off_track';
+}
+
+'''
+          s = s[:start] + helpers + s[end:]
+
+          s = s.replace("\t\t\t\t\t.where('id', '=', link.strategy_kpi_id)\n\t\t\t\t\t.where('lifecycle_status', '=', 'approved')\n\t\t\t\t\t.executeTakeFirst();\n\t\t\t\tif (!kpi)\n\t\t\t\t\tthrow new EnterprisePerformanceValidationError(\n\t\t\t\t\t\t'Framework references a KPI that is no longer approved.'\n\t\t\t\t\t);",
+          "\t\t\t\t\t.where('id', '=', link.strategy_kpi_id)\n\t\t\t\t\t.executeTakeFirst();\n\t\t\t\tif (!kpi || !['approved', 'superseded'].includes(kpi.lifecycle_status))\n\t\t\t\t\tthrow new EnterprisePerformanceValidationError(\n\t\t\t\t\t\t'Framework references a KPI version that is not available for governed reporting.'\n\t\t\t\t\t);")
+
+          s = s.replace("\t\t\t\t\t.where('strategy_kpi_id', '=', kpi.id)\n\t\t\t\t\t.where('observed_on', '<=', period.period_end)",
+          "\t\t\t\t\t.where('strategy_kpi_id', '=', kpi.id)\n\t\t\t\t\t.where('observed_on', '>=', period.period_start)\n\t\t\t\t\t.where('observed_on', '<=', period.period_end)")
+
+          s = s.replace("\t\t\tif (!benchmark || !observation || benchmark.strategy_kpi_id !== observation.strategy_kpi_id)\n\t\t\t\tthrow new RecordNotFoundError('Comparable benchmark and KPI observation not found.');\n\t\t\tconst delta = variance(benchmark.benchmark_value, observation.actual_value);",
+          "\t\t\tif (!benchmark || !observation || benchmark.strategy_kpi_id !== observation.strategy_kpi_id)\n\t\t\t\tthrow new RecordNotFoundError('Comparable benchmark and KPI observation not found.');\n\t\t\tif (observation.observed_on < benchmark.period_start || observation.observed_on > benchmark.period_end)\n\t\t\t\tthrow new EnterprisePerformanceValidationError(\n\t\t\t\t\t'Benchmark comparison requires an observation inside the benchmark period.'\n\t\t\t\t);\n\t\t\tconst delta = variance(benchmark.benchmark_value, observation.actual_value);")
+
+          s = s.replace("\t\t\tconst confidence = Number(decimal(input.confidencePercent, 'Confidence percent'));\n\t\t\tif (confidence < 0 || confidence > 100)",
+          "\t\t\tconst confidence = decimal(input.confidencePercent, 'Confidence percent');\n\t\t\tif (compareDecimal(confidence, '0') < 0 || compareDecimal(confidence, '100') > 0)")
+          s = s.replace("\t\t\t\tconfidence_percent: confidence.toString(),", "\t\t\t\tconfidence_percent: confidence,")
+          s = s.replace("\t\t\tif (Number(row.realised_value) >= Number(benefit.target_value))\n\t\t\t\tawait repository.updateBenefit(actor.organisationId, benefit.id, {\n\t\t\t\t\tlifecycle_status: 'achieved'\n\t\t\t\t});",
+          "\t\t\tconst targetDirection = compareDecimal(benefit.target_value, benefit.baseline_value);\n\t\t\tconst targetReached =\n\t\t\t\ttargetDirection > 0\n\t\t\t\t\t? compareDecimal(row.realised_value, benefit.target_value) >= 0\n\t\t\t\t\t: targetDirection < 0\n\t\t\t\t\t\t? compareDecimal(row.realised_value, benefit.target_value) <= 0\n\t\t\t\t\t\t: compareDecimal(row.realised_value, benefit.target_value) === 0;\n\t\t\tif (targetReached)\n\t\t\t\tawait repository.updateBenefit(actor.organisationId, benefit.id, {\n\t\t\t\t\tlifecycle_status: 'achieved'\n\t\t\t\t});")
+
+          p.write_text(s)
+          PY
+      - name: Format and type check
+        working-directory: app
+        run: |
+          pnpm exec prettier --write src/lib/server/strategy/enterprise-performance-service.ts
+          pnpm check
+          pnpm lint
+      - name: Commit hardening and remove workflow
+        run: |
+          rm .github/workflows/f03-review-hardening.yml
+          git config user.name '8140spitt'
+          git config user.email '56647740+8140spitt@users.noreply.github.com'
+          git add app/src/lib/server/strategy/enterprise-performance-service.ts .github/workflows/f03-review-hardening.yml
+          git commit -m 'F03: harden governed performance comparisons and periods'
+          git push origin HEAD:feat/f03-enterprise-performance-management
