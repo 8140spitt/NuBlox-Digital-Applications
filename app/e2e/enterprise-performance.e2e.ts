@@ -22,8 +22,12 @@ test('F03 exposes a governed enterprise performance command centre', async ({ pa
 		page.getByRole('heading', { name: 'Performance command centre', level: 1 })
 	).toBeVisible();
 	await expect(page.getByText('F03 · Enterprise Performance Management')).toBeVisible();
-	await expect(page.getByRole('heading', { name: 'Performance framework', level: 2 })).toBeVisible();
-	await expect(page.getByRole('heading', { name: 'Operate the performance cycle', level: 2 })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Performance framework', level: 2 })
+	).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Operate the performance cycle', level: 2 })
+	).toBeVisible();
 
 	const form = page.locator('form[action="?/createFramework"]');
 	await form.getByLabel('Code').fill('F03-E2E');
