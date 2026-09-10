@@ -1,0 +1,43 @@
+name: F04 Format
+on:
+  workflow_dispatch:
+  push:
+    branches: [feat/f04-corporate-development-ma]
+    paths:
+      - '.github/workflows/f04-format.yml'
+permissions:
+  contents: write
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f04-corporate-development-ma
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Format F04 files
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write \
+            e2e/corporate-development.e2e.ts \
+            src/lib/server/corporate-development/corporate-development-repository.ts \
+            src/lib/server/corporate-development/corporate-development-service.ts \
+            src/lib/server/corporate-development/corporate-development.integration.test.ts \
+            'src/routes/(app)/corporate-development/+page.server.ts' \
+            'src/routes/(app)/corporate-development/+page.svelte'
+      - name: Remove temporary workflow and commit
+        run: |
+          git rm .github/workflows/f04-format.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app
+          git commit -m 'Format F04 corporate development slice'
+          git push origin HEAD:feat/f04-corporate-development-ma
