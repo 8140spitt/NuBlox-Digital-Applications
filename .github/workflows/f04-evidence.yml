@@ -1,0 +1,96 @@
+name: F04 Evidence
+on:
+  push:
+    branches: [feat/f04-corporate-development-ma]
+    paths:
+      - '.github/workflows/f04-evidence.yml'
+permissions:
+  contents: write
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f04-corporate-development-ma
+      - name: Update F04 architecture and benchmark evidence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import csv, io
+
+          p=Path('docs/architecture/function-capability-map/map-f01-f08.md')
+          s=p.read_text()
+          s=s.replace('**Current reality:** Native foundations exist; material depth remains in D8, D4. Domain maturity is not proof that every sub-function is complete.', '**Current reality:** Native end-to-end F04 coverage is implemented through the Corporate Development command centre: governed opportunity origination, versioned valuation, due diligence, transaction controls, integration, divestiture and strategic partnerships with cross-domain evidence and F02/F03 links. Ongoing domain maturity remains governed by executable proof rather than this mapping statement.')
+          p.write_text(s)
+
+          p=Path('docs/world-class/12-enterprise-function-native-capability-map.md')
+          lines=p.read_text().splitlines()
+          for i,line in enumerate(lines):
+              if line.startswith('| **F04 — Corporate Development & M&A** |'):
+                  lines[i]='| **F04 — Corporate Development & M&A** | Identify, evaluate, execute and integrate acquisitions, divestitures and strategic partnerships. | D8, D4, D1, D19 | VS3, VS8 | Native `/corporate-development` control thread: governed opportunity pipeline; versioned valuation and assumptions; due-diligence workstreams/requests/findings with evidence references; transactions/terms/milestones/conditions with F02 approval gates; integration and divestiture plans; strategic partnerships, commitments and reviews; F03 benefit/performance linkage. |'
+          p.write_text('\n'.join(lines)+'\n')
+
+          p=Path('docs/world-class/11-sap-benchmark-coverage.md')
+          s=p.read_text()
+          anchor='F03 Enterprise Performance Management now extends that canonical KPI thread into governed enterprise execution: versioned performance frameworks, reporting periods and KPI packs, root-cause variance intervention, executive review, comparable-period benchmarks, and measured benefits. F03 snapshots canonical KPI observations for evidence rather than creating a second performance ledger, and preserves cross-domain project/governance references for drill-through. This materially deepens the SEM benchmark while leaving broader analytics, consolidation and treasury gaps explicitly open.\n'
+          para='\nF04 Corporate Development & M&A now extends strategy-to-performance into governed inorganic growth and portfolio change: opportunity origination, versioned valuation/business cases, cross-functional due diligence, transaction conditions and F02 approval gates, integration/divestiture execution references, and strategic-partnership governance. F04 reuses Finance, CRM, document, workforce and project truth and links expected benefits back to F03 rather than creating parallel ledgers. This materially strengthens the SEM/BPC enterprise-management benchmark around investment decisions and benefit traceability without claiming the remaining consolidation, treasury or analytics gaps are closed.\n'
+          if para.strip() not in s:
+              s=s.replace(anchor, anchor+para)
+          p.write_text(s)
+
+          p=Path('docs/sap-capability-coverage-register.csv')
+          rows=list(csv.reader(io.StringIO(p.read_text())))
+          for row in rows:
+              if row and row[0]=='49':
+                  row[10]='F01 strategy/KPI/scenario foundations plus F03 governed performance frameworks/reporting/variance/benefits and F04 governed corporate-development opportunity, valuation, diligence, transaction, integration/divestiture and strategic-partnership control now exist with F02 approval and F03 benefit traceability; broader analytics and remaining enterprise-finance depth continue'
+              if row and row[0]=='3':
+                  row[10]='Governed strategy-linked business planning, KPI targets/forecasts and scenarios now extend into F04 versioned corporate-development valuation/business cases with controlled assumptions and approval evidence; enterprise consolidation remains'
+          out=io.StringIO(newline='')
+          csv.writer(out, lineterminator='\n').writerows(rows)
+          p.write_text(out.getvalue())
+
+          p=Path('docs/world-class/f04-corporate-development-ma-delivery-plan.md')
+          s=p.read_text()
+          s=s.replace('- [ ] F04.01', '- [x] F04.01').replace('- [ ] F04.02', '- [x] F04.02').replace('- [ ] F04.03', '- [x] F04.03').replace('- [ ] F04.04', '- [x] F04.04').replace('- [ ] F04.05', '- [x] F04.05').replace('- [ ] F04.06', '- [x] F04.06').replace('- [ ] F04.07', '- [x] F04.07')
+          p.write_text(s)
+          PY
+      - name: Add implementation evidence document
+        run: |
+          cat > docs/world-class/f04-corporate-development-ma-implementation-evidence.md <<'EOF'
+          # F04 — Corporate Development & M&A implementation evidence
+
+          ## Scope
+
+          F04.01–F04.07 are implemented as one native Corporate Development control thread rather than isolated modules.
+
+          ## Native evidence
+
+          | Sub-function | Native implementation evidence |
+          | --- | --- |
+          | F04.01 — Opportunity identification | Organisation-scoped opportunity pipeline, target/partner provenance, strategic thesis/rationale, accountable owner, stage history and F01/F03 references. |
+          | F04.02 — Valuation | Versioned valuation cases with predecessor/supersession semantics, methods, value ranges, scenarios, assumptions, evidence and approval. |
+          | F04.03 — Due diligence | Domain workstreams, requests, findings/risks, owners, materiality and source-document/evidence references without duplicate file storage. |
+          | F04.04 — Transaction management | Transaction structure, consideration, terms, milestones, conditions and F02 governance/DoA references; close is blocked without a governed F02 decision or unresolved conditions. |
+          | F04.05 — Integration | Integration thesis, Day 1/Day 100/end-state outcomes, workstreams, D5 delivery references and F03 benefit linkage. |
+          | F04.06 — Divestiture | Carve-out perimeter, separation strategy, buyer provenance, TSA/separation obligations and completion evidence. |
+          | F04.07 — Strategic partnerships | Partnership objectives, commercial/governance model, commitments, review lifecycle and F02 decision gate for activation. |
+
+          ## Control thread
+
+          `F01 strategy / market signal → F04 opportunity → valuation → due diligence → finding/risk → F02 governed approval → transaction/conditions → close → integration or divestiture → F03 benefit/performance evidence → review/closure`
+
+          ## Automated proof
+
+          The real-MySQL F04 integration test exercises all seven sub-functions, including valuation revision supersession and negative governance tests proving that transaction close and partnership activation fail without required F02 approval evidence. Browser E2E proves authenticated access to the Corporate Development command centre and the opportunity-to-valuation operator path.
+
+          Final closure requires exact-head Complete System Validation and merged-main Complete System Validation to be green; those run identifiers are recorded in the issue closure evidence after merge.
+          EOF
+      - name: Remove temporary workflow and commit
+        run: |
+          git rm .github/workflows/f04-evidence.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs
+          git commit -m 'Document F04 corporate development coverage'
+          git push origin HEAD:feat/f04-corporate-development-ma
