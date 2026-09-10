@@ -103,7 +103,7 @@ PR #135 merge acceptance requires its exact head to pass Complete System Validat
 
 The real-MySQL integration proof covers framework approval, board/body appointments, business DoA, meeting quorum, governed decisions/actions, policy approval/attestation, conflict review and ethics-case resolution with tenant/permission boundaries and attributable evidence.
 
-The browser proof covers the same continuous thread and proves an approved financial decision is accepted only under the matching business authority rule, then carries the decision into an action, policy-linked governance evidence and ethics/conflict closure.
+The browser proof covers the same continuous thread and proves an approved financial decision is accepted only under the matching business authority rule, then carries the decision into an action, policy-linked governance evidence and ethics/conflict closure. Its form interactions use canonical field selectors where accessible-label option text would otherwise make strict browser matching ambiguous.
 
 The F02 release-candidate hardening also proves fail-closed handling for exact financial authority boundaries, appointment-effective membership eligibility, immutable conflict-review outcomes and anonymous ethics client-data redaction through the same typed service/repository/server route path exercised by Complete System Validation.
 
