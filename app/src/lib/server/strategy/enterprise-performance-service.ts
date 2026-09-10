@@ -334,7 +334,7 @@ export class EnterprisePerformanceService {
 		const flags = await this.permissionFlags(actor);
 		const repository = new EnterprisePerformanceRepository(this.db);
 		const frameworks = await repository.listFrameworks(actor.organisationId);
-		let selectedFramework = frameworks.find((row) => row.lifecycle_status === 'approved') ?? frameworks[0] ?? null;
+		let selectedFramework: PerformanceFrameworkRecord | null = frameworks.find((row) => row.lifecycle_status === 'approved') ?? frameworks[0] ?? null;
 		if (selectedFrameworkPublicId?.trim()) {
 			selectedFramework = frameworks.find((row) => row.public_id === selectedFrameworkPublicId.trim()) ?? null;
 			if (!selectedFramework) throw new RecordNotFoundError('Performance framework not found.');
