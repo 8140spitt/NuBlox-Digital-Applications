@@ -85,8 +85,8 @@ export type CorporateDevelopmentValuationInput = {
 	recommendation: string;
 };
 
-const CODE = /^[A-Z0-9][A-Z0-9_.-]{1,63}$/;
-const TOKEN = /^[a-z0-9][a-z0-9_.:-]{1,127}$/;
+const CODE = /^[A-Z0-9][A-Z0-9_.-]{1,49}$/;
+const TOKEN = /^[a-z0-9][a-z0-9_.:-]{1,49}$/;
 
 function requiredText(value: string, label: string, max: number) {
 	const normalized = value.trim();
@@ -368,13 +368,10 @@ export class CorporateDevelopmentService {
 				throw new RecordNotFoundError('Corporate development opportunity not found.');
 			const existing = await repository.listValuations(actor.organisationId, opportunity.id);
 			const valuationCode = code(input.valuationCode, 'Valuation code');
-			const version =
-				Math.max(
-					0,
-					...existing
-						.filter((row) => row.valuation_code === valuationCode)
-						.map((row) => row.version_number)
-				) + 1;
+			const priorVersions = existing.filter((row) => row.valuation_code === valuationCode);
+			const predecessor =
+				priorVersions.sort((left, right) => right.version_number - left.version_number)[0] ?? null;
+			const version = (predecessor?.version_number ?? 0) + 1;
 			const created = await repository.insertValuation({
 				public_id: this.publicIdFactory(),
 				organisation_id: actor.organisationId,
@@ -393,14 +390,38 @@ export class CorporateDevelopmentService {
 				equity_value_base: decimal(input.equityValueBase, 'Equity value base'),
 				equity_value_high: decimal(input.equityValueHigh, 'Equity value high'),
 				recommendation: requiredText(input.recommendation, 'Recommendation', 5000),
-				supersedes_valuation_id: null,
+				supersedes_valuation_id: predecessor?.id ?? null,
 				approved_by_member_id: null,
 				approved_at: null,
 				created_by_member_id: actor.memberId
 			});
-			await repository.updateOpportunity(actor.organisationId, opportunity.id, {
-				pipeline_stage: 'valuation'
-			});
+			if (opportunity.pipeline_stage !== 'valuation') {
+				await repository.updateOpportunity(actor.organisationId, opportunity.id, {
+					pipeline_stage: 'valuation'
+				});
+				await repository.insertStageHistory({
+					public_id: this.publicIdFactory(),
+					organisation_id: actor.organisationId,
+					opportunity_id: opportunity.id,
+					from_stage: opportunity.pipeline_stage,
+					to_stage: 'valuation',
+					transition_reason: `Valuation ${valuationCode} v${version} created.`,
+					transitioned_by_member_id: actor.memberId
+				});
+				await this.evidence(
+					trx,
+					actor,
+					'corporate_development.opportunity.stage_changed',
+					'corporate_development_opportunity',
+					opportunity.public_id,
+					{
+						fromStage: opportunity.pipeline_stage,
+						toStage: 'valuation',
+						reason: 'valuation_created'
+					},
+					['F04.01', 'F04.02']
+				);
+			}
 			await this.evidence(
 				trx,
 				actor,
@@ -430,6 +451,21 @@ export class CorporateDevelopmentService {
 			if (!valuation) throw new RecordNotFoundError('Corporate development valuation not found.');
 			if (valuation.lifecycle_status !== 'draft')
 				throw new CorporateDevelopmentValidationError('Only draft valuations can be approved.');
+			if (valuation.supersedes_valuation_id) {
+				const predecessor = await trx
+					.selectFrom('corporate_development_valuations')
+					.selectAll()
+					.where('organisation_id', '=', actor.organisationId)
+					.where('id', '=', valuation.supersedes_valuation_id)
+					.where('opportunity_id', '=', valuation.opportunity_id)
+					.executeTakeFirst();
+				if (!predecessor)
+					throw new CorporateDevelopmentValidationError('Valuation predecessor is invalid.');
+				if (predecessor.lifecycle_status === 'approved')
+					await repository.updateValuation(actor.organisationId, predecessor.id, {
+						lifecycle_status: 'superseded'
+					});
+			}
 			const updated = await repository.updateValuation(actor.organisationId, valuation.id, {
 				lifecycle_status: 'approved',
 				approved_by_member_id: actor.memberId,

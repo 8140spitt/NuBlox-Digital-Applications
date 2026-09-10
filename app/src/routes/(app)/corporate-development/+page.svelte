@@ -50,7 +50,7 @@
 			<section class="panel">
 				<h2>Create opportunity</h2>
 				<form method="POST" action="?/createOpportunity" class="form-grid">
-					<label>Code <input name="opportunityCode" required /></label><label
+					<label>Code <input name="opportunityCode" maxlength="50" required /></label><label
 						>Title <input name="title" required /></label
 					>
 					<label
@@ -85,11 +85,15 @@
 					><label class="wide"
 						>Strategic rationale <textarea name="strategicRationale" required></textarea></label
 					>
-					<label>Source domain <input name="targetSourceDomain" placeholder="crm" /></label><label
-						>Source record type <input name="targetSourceRecordType" /></label
-					><label>Source public ID <input name="targetSourcePublicId" /></label><label
-						>Source reference <input name="sourceReference" /></label
-					>
+					<label
+						>Source domain <input
+							name="targetSourceDomain"
+							maxlength="50"
+							placeholder="crm"
+						/></label
+					><label>Source record type <input name="targetSourceRecordType" /></label><label
+						>Source public ID <input name="targetSourcePublicId" /></label
+					><label>Source reference <input name="sourceReference" /></label>
 					<label>F01 objective public ID <input name="strategyObjectivePublicId" /></label><label
 						>F01 KPI public ID <input name="strategyKpiPublicId" /></label
 					><label>F03 evidence public ID <input name="performanceEvidencePublicId" /></label>
@@ -143,7 +147,7 @@
 					<h2>Create valuation</h2>
 					<form method="POST" action="?/createValuation" class="form-grid">
 						<input type="hidden" name="opportunityPublicId" value={selected.public_id} /><label
-							>Code <input name="valuationCode" required /></label
+							>Code <input name="valuationCode" maxlength="50" required /></label
 						><label>Title <input name="title" required /></label><label
 							>Valuation date <input type="date" name="valuationDate" required /></label
 						><label>Currency <input name="currencyCode" maxlength="3" value="GBP" required /></label

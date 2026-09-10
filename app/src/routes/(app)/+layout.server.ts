@@ -91,6 +91,13 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 					href: '/performance',
 					description:
 						'Performance frameworks, executive reporting, variance intervention, benchmarking and benefits realisation.'
+				},
+				{
+					id: 'corporate-development',
+					label: 'Corporate development',
+					href: '/corporate-development',
+					description:
+						'Opportunity pipeline, valuation, due diligence, transactions, integration, divestiture and strategic partnerships.'
 				}
 			]
 		});
