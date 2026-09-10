@@ -15,6 +15,10 @@ async function signIn(page: Page) {
 	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 
+function section(page: Page, label: string) {
+	return page.locator('summary').filter({ hasText: label });
+}
+
 test('F02 governs authority, board decisions, policy and ethics as one enterprise thread', async ({
 	page
 }) => {
@@ -38,7 +42,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await framework.getByRole('button', { name: 'Create governance draft' }).click();
 	await expect(page.getByText('F02-E2E · version 1')).toBeVisible();
 
-	await page.getByText('Add governance body', { exact: true }).click();
+	await section(page, 'Add governance body').click();
 	const body = page.locator('form[action="?/addBody"]');
 	await body.getByLabel('Body code').fill('BOARD-E2E');
 	await body.getByLabel('Body type').selectOption('board');
@@ -51,7 +55,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await body.getByRole('button', { name: 'Add governance body' }).click();
 	await expect(page.getByRole('heading', { name: 'Enterprise Board' })).toBeVisible();
 
-	await page.getByText('Appoint governance-body member', { exact: true }).click();
+	await section(page, 'Appoint governance-body member').click();
 	const appointment = page.locator('form[action="?/appointMember"]');
 	await appointment
 		.getByLabel('Governance body')
@@ -62,7 +66,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await appointment.getByRole('button', { name: 'Appoint member' }).click();
 	await expect(page.getByText(`${OWNER} · chair · voting`)).toBeVisible();
 
-	await page.getByText('Add delegation-of-authority rule', { exact: true }).click();
+	await section(page, 'Add delegation-of-authority rule').click();
 	const authority = page.locator('form[action="?/addAuthorityRule"]');
 	await authority.getByLabel('Authority code').fill('BOARD-PROGRAMME-APPROVAL');
 	await authority
@@ -82,7 +86,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await page.getByRole('button', { name: 'Approve governance framework version 1' }).click();
 	await expect(page.getByText('Approved governance constitution')).toBeVisible();
 
-	await page.getByText('Create governed policy', { exact: true }).click();
+	await section(page, 'Create governed policy').click();
 	const policy = page.locator('form[action="?/createPolicy"]');
 	await policy.getByLabel('Policy code').fill('ETHICS-E2E');
 	await policy.getByLabel('Policy title').fill('Ethics & Conflicts Policy');
@@ -111,7 +115,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await expect(page.getByText('ETHICS-E2E · v1').first()).toBeVisible();
 	await page.getByRole('button', { name: 'Acknowledge policy' }).click();
 
-	await page.getByText('Create governance meeting', { exact: true }).click();
+	await section(page, 'Create governance meeting').click();
 	const meeting = page.locator('form[action="?/createMeeting"]');
 	await meeting
 		.getByLabel('Governance body')
@@ -124,14 +128,14 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await meeting.getByRole('button', { name: 'Create meeting' }).click();
 	await expect(page.getByRole('heading', { name: 'September Enterprise Board' })).toBeVisible();
 
-	await page.getByText('Record attendance', { exact: true }).click();
+	await section(page, 'Record attendance').click();
 	const attendance = page.locator('form[action="?/setAttendance"]');
 	await attendance.getByLabel('Attendee').selectOption({ label: OWNER });
 	await attendance.getByLabel('Attendance').selectOption('present');
 	await attendance.getByRole('button', { name: 'Record attendance' }).click();
 	await expect(page.getByText(`${OWNER} · present · voting`)).toBeVisible();
 
-	await page.getByText('Add agenda item', { exact: true }).click();
+	await section(page, 'Add agenda item').click();
 	const agenda = page.locator('form[action="?/addAgendaItem"]');
 	await agenda.getByLabel('Agenda number').fill('1');
 	await agenda.getByLabel('Item type').selectOption('decision');
@@ -161,7 +165,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await expect(page.getByText('RES-E2E-001 · approved')).toBeVisible();
 	await expect(page.getByText(/Authority proven by rule/)).toBeVisible();
 
-	await page.getByText('Add decision action', { exact: true }).click();
+	await section(page, 'Add decision action').click();
 	const action = page.locator('form[action="?/createAction"]');
 	await action.getByLabel('Action code').fill('ACT-E2E-001');
 	await action.getByLabel('Action title').fill('Publish assurance operating procedure');
@@ -191,7 +195,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await closeMeeting.getByRole('button', { name: 'Close meeting with minutes' }).click();
 	await expect(page.getByText('Closed minutes')).toBeVisible();
 
-	await page.getByText('Declare conflict of interest', { exact: true }).click();
+	await section(page, 'Declare conflict of interest').click();
 	const conflict = page.locator('form[action="?/declareConflict"]');
 	await conflict
 		.getByLabel('Related policy')
@@ -218,7 +222,7 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 	await conflictArticle.getByRole('button', { name: 'Record conflict review' }).click();
 	await expect(page.getByText('closed', { exact: true }).first()).toBeVisible();
 
-	await page.getByText('Raise ethics case', { exact: true }).click();
+	await section(page, 'Raise ethics case').click();
 	const ethics = page.locator('form[action="?/createEthicsCase"]');
 	await ethics.getByLabel('Case code').fill('ETH-E2E-001');
 	await ethics
