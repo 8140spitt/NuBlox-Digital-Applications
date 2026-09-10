@@ -13,6 +13,7 @@ on:
       - 'app/.kysely-accounts-payable-codegenrc.json'
       - 'app/.kysely-project-controls-codegenrc.json'
       - 'app/.kysely-strategy-codegenrc.json'
+      - 'app/.kysely-governance-codegenrc.json'
       - 'app/.prettierignore'
       - 'app/eslint.config.js'
       - 'app/playwright.config.ts'
@@ -39,6 +40,7 @@ on:
       - 'app/.kysely-accounts-payable-codegenrc.json'
       - 'app/.kysely-project-controls-codegenrc.json'
       - 'app/.kysely-strategy-codegenrc.json'
+      - 'app/.kysely-governance-codegenrc.json'
       - 'app/.prettierignore'
       - 'app/eslint.config.js'
       - 'app/playwright.config.ts'
@@ -126,16 +128,16 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '463'
-          test "$fk_count" = '1135'
-          test "$check_count" = '701'
+          test "$table_count" = '476'
+          test "$fk_count" = '1196'
+          test "$check_count" = '740'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
         run: pnpm db:types
 
       - name: Verify generated types are committed
-        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/access-control.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts app/src/lib/server/db/generated/project-controls.d.ts app/src/lib/server/db/generated/strategy.d.ts
+        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/access-control.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts app/src/lib/server/db/generated/project-controls.d.ts app/src/lib/server/db/generated/strategy.d.ts app/src/lib/server/db/generated/governance.d.ts
 
       - name: Run real-MySQL integration suite
         working-directory: app

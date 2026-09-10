@@ -10,7 +10,7 @@ Domain order indicates primary native ownership first, followed by material supp
 **Outcome:** Set direction, translate strategy into funded plans and measure/correct performance.  
 **Value streams:** VS3, VS8  
 **Operating surface:** Strategy & performance workspace; objectives/KPIs; plans, scenarios, budgets, reviews and governed actions  
-**Current reality:** F01.01–F01.03 are delivered through PR #127; F01.04–F01.05 through PR #131; and F01.06–F01.08 through PR #132. The final closure tranche in PR #133 removes the remaining digital-thread gap by resolving canonical KPI actuals from authoritative journal-derived Finance P&L facts, preserving direct source drill-through, and proving one browser thread across strategic intent, business planning/resource envelope, target operating model, KPI/target, actual, variance/action, forecast, strategic review and scenario/foresight. F01 is treated as complete only after #133 and its merged `main` commit pass the full validation gate.
+**Current reality:** Complete. F01.01–F01.03 were delivered through PR #127, F01.04–F01.05 through PR #131, F01.06–F01.08 through PR #132, and PR #133 closed the remaining digital-thread gap by resolving canonical KPI actuals from authoritative journal-derived Finance P&L facts with direct source drill-through. The exact PR and merged `main` validations passed and issue #124 is closed.
 
 | Sub-function | Native NuBlox domain composition |
 | --- | --- |
@@ -28,7 +28,7 @@ Domain order indicates primary native ownership first, followed by material supp
 **Outcome:** Govern the enterprise through explicit authority, policy, decisions, ethics and accountable actions.  
 **Value streams:** VS3, VS9  
 **Operating surface:** Organisation governance; decision/approval Work Kernel; policies, committees, audit trail and assurance evidence  
-**Current reality:** Native foundations exist; material depth remains in D14. Domain maturity is not proof that every sub-function is complete.
+**Current reality:** PR #135 implements F02.01–F02.07 as one native governance thread: versioned governance framework, board/executive/committee bodies and appointments, business delegation of authority, quorum-controlled meetings, attributable decisions/actions, governed policy/attestation and conflict/ethics evidence. F02 remains merge-candidate until exact-head and merged-`main` validation pass and issue #134 closes.
 
 | Sub-function | Native NuBlox domain composition |
 | --- | --- |

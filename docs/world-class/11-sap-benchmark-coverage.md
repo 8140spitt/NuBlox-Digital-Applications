@@ -162,7 +162,7 @@ P5 is not permission to disappear into platform engineering. Platform work must 
 
 | SAP benchmark family | Representative references | Primary NuBlox domains | Primary value streams | World-Class interpretation |
 | --- | --- | --- | --- | --- |
-| Enterprise identity, master data and governance | MDG, MDG-M, MDG-S, GRC | **1**, 9, 10, 14, 19 | All; especially VS2, VS8, VS9 | Canonical masters, stewardship, duplicate/merge control, delegated authority, SoD, access review and assurance. |
+| Enterprise identity, master data and governance | MDG, MDG-M, MDG-S, GRC | **1**, 9, 10, 14, 19 | All; especially VS2, VS8, VS9 | Canonical masters and stewardship; business governance framework/bodies/DoA/decisions/policy/ethics; access delegation, SoD, access review and assurance. |
 | CRM, sales, pricing and customer service | CRM, SD, RTOM, CC, CS, ICM | **2, 3, 4, 17**, 7, 19 | **VS1 Customer-to-cash** | Customer → opportunity → offer/contract → service/revenue continuity. |
 | Finance, controlling, treasury and enterprise performance | FI, S/4HANA Finance, EFM, CO, CM, TRM, BPC, SEM, SEM-IP, FM | **7, 8, 19** | **VS8**, VS3, VS1, VS2 | Accounting, planning, cash/liquidity, profitability, close/consolidation and drill-through. |
 | Procurement and supplier management | SLC, SRM, MM, S/4HANA Supply Chain | **9, 10**, 7, 19 | **VS2**, VS6 | Supplier onboarding → sourcing → order → receipt → verification/AP → payment/ledger. |
@@ -192,7 +192,7 @@ A capability is not treated as delivered merely because a table, service or rout
 
 ## 7. Current programme reset
 
-As of 6 September 2026 the Source-to-Pay accounting seam has materially advanced through approved AP → accounting → supplier payment → bank settlement → project-financial drill-through. Recent RBAC and access-governance work has also materially strengthened the GRC benchmark.
+As of 8 September 2026 the Source-to-Pay accounting seam has materially advanced through approved AP → accounting → supplier payment → bank settlement → project-financial drill-through. Access governance already strengthened the GRC benchmark; F02 implementation in PR #135 now adds the distinct corporate-governance layer of approved governance frameworks, board/executive/committee authority, business DoA, quorum-controlled decisions/actions, governed policy and ethics/conflict evidence. F02 remains merge-candidate until its exact-head and merged-`main` validation gates pass.
 
 Those achievements do not close the broader benchmark. The next product work must return visibly to the delivery spine above.
 
