@@ -1,0 +1,73 @@
+name: F04 Review Fixes
+on:
+  push:
+    branches: [feat/f04-corporate-development-ma]
+    paths:
+      - '.github/workflows/f04-review-fixes.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f04-corporate-development-ma
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Apply review corrections
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('app/src/lib/server/corporate-development/corporate-development-service.ts')
+          s = p.read_text()
+          s = s.replace("const CODE = /^[A-Z0-9][A-Z0-9_.-]{1,63}$/;", "const CODE = /^[A-Z0-9][A-Z0-9_.-]{1,49}$/;")
+          s = s.replace("const TOKEN = /^[a-z0-9][a-z0-9_.:-]{1,127}$/;", "const TOKEN = /^[a-z0-9][a-z0-9_.:-]{1,49}$/;")
+          s = s.replace(
+          """\t\t\tconst version =\n\t\t\t\tMath.max(\n\t\t\t\t\t0,\n\t\t\t\t\t...existing\n\t\t\t\t\t\t.filter((row) => row.valuation_code === valuationCode)\n\t\t\t\t\t\t.map((row) => row.version_number)\n\t\t\t\t) + 1;""",
+          """\t\t\tconst priorVersions = existing.filter((row) => row.valuation_code === valuationCode);\n\t\t\tconst predecessor = priorVersions.sort((left, right) => right.version_number - left.version_number)[0] ?? null;\n\t\t\tconst version = (predecessor?.version_number ?? 0) + 1;""")
+          s = s.replace("\t\t\t\tsupersedes_valuation_id: null,", "\t\t\t\tsupersedes_valuation_id: predecessor?.id ?? null,")
+          old = """\t\t\tawait repository.updateOpportunity(actor.organisationId, opportunity.id, {\n\t\t\t\tpipeline_stage: 'valuation'\n\t\t\t});"""
+          new = """\t\t\tif (opportunity.pipeline_stage !== 'valuation') {\n\t\t\t\tawait repository.updateOpportunity(actor.organisationId, opportunity.id, {\n\t\t\t\t\tpipeline_stage: 'valuation'\n\t\t\t\t});\n\t\t\t\tawait repository.insertStageHistory({\n\t\t\t\t\tpublic_id: this.publicIdFactory(),\n\t\t\t\t\torganisation_id: actor.organisationId,\n\t\t\t\t\topportunity_id: opportunity.id,\n\t\t\t\t\tfrom_stage: opportunity.pipeline_stage,\n\t\t\t\t\tto_stage: 'valuation',\n\t\t\t\t\ttransition_reason: `Valuation ${valuationCode} v${version} created.`,\n\t\t\t\t\ttransitioned_by_member_id: actor.memberId\n\t\t\t\t});\n\t\t\t\tawait this.evidence(\n\t\t\t\t\ttrx, actor, 'corporate_development.opportunity.stage_changed',\n\t\t\t\t\t'corporate_development_opportunity', opportunity.public_id,\n\t\t\t\t\t{ fromStage: opportunity.pipeline_stage, toStage: 'valuation', reason: 'valuation_created' },\n\t\t\t\t\t['F04.01', 'F04.02']\n\t\t\t\t);\n\t\t\t}"""
+          if old not in s: raise SystemExit('valuation stage block not found')
+          s = s.replace(old, new)
+          needle = """\t\t\tif (valuation.lifecycle_status !== 'draft')\n\t\t\t\tthrow new CorporateDevelopmentValidationError('Only draft valuations can be approved.');\n\t\t\tconst updated = await repository.updateValuation(actor.organisationId, valuation.id, {"""
+          replacement = """\t\t\tif (valuation.lifecycle_status !== 'draft')\n\t\t\t\tthrow new CorporateDevelopmentValidationError('Only draft valuations can be approved.');\n\t\t\tif (valuation.supersedes_valuation_id) {\n\t\t\t\tconst predecessor = await trx\n\t\t\t\t\t.selectFrom('corporate_development_valuations')\n\t\t\t\t\t.selectAll()\n\t\t\t\t\t.where('organisation_id', '=', actor.organisationId)\n\t\t\t\t\t.where('id', '=', valuation.supersedes_valuation_id)\n\t\t\t\t\t.where('opportunity_id', '=', valuation.opportunity_id)\n\t\t\t\t\t.executeTakeFirst();\n\t\t\t\tif (!predecessor)\n\t\t\t\t\tthrow new CorporateDevelopmentValidationError('Valuation predecessor is invalid.');\n\t\t\t\tif (predecessor.lifecycle_status === 'approved')\n\t\t\t\t\tawait repository.updateValuation(actor.organisationId, predecessor.id, { lifecycle_status: 'superseded' });\n\t\t\t}\n\t\t\tconst updated = await repository.updateValuation(actor.organisationId, valuation.id, {"""
+          if needle not in s: raise SystemExit('approval block not found')
+          s = s.replace(needle, replacement)
+          p.write_text(s)
+
+          p = Path('app/src/routes/(app)/+layout.server.ts')
+          s = p.read_text()
+          needle = """\t\t\t\t{\n\t\t\t\t\tid: 'enterprise-performance',\n\t\t\t\t\tlabel: 'Enterprise performance',\n\t\t\t\t\thref: '/performance',\n\t\t\t\t\tdescription:\n\t\t\t\t\t\t'Performance frameworks, executive reporting, variance intervention, benchmarking and benefits realisation.'\n\t\t\t\t}"""
+          replacement = needle + ",\n" + """\t\t\t\t{\n\t\t\t\t\tid: 'corporate-development',\n\t\t\t\t\tlabel: 'Corporate development',\n\t\t\t\t\thref: '/corporate-development',\n\t\t\t\t\tdescription:\n\t\t\t\t\t\t'Opportunity pipeline, valuation, due diligence, transactions, integration, divestiture and strategic partnerships.'\n\t\t\t\t}"""
+          if needle not in s: raise SystemExit('navigation insertion point not found')
+          p.write_text(s.replace(needle, replacement))
+
+          p = Path('app/src/routes/(app)/corporate-development/+page.svelte')
+          s = p.read_text()
+          s = s.replace('name="opportunityCode" required', 'name="opportunityCode" maxlength="50" required')
+          s = s.replace('name="valuationCode" required', 'name="valuationCode" maxlength="50" required')
+          s = s.replace('name="targetSourceDomain" placeholder="crm"', 'name="targetSourceDomain" maxlength="50" placeholder="crm"')
+          p.write_text(s)
+          PY
+      - name: Format and verify
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write src/lib/server/corporate-development/corporate-development-service.ts 'src/routes/(app)/+layout.server.ts' 'src/routes/(app)/corporate-development/+page.svelte'
+      - name: Remove temporary workflow and commit
+        run: |
+          git rm .github/workflows/f04-review-fixes.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app
+          git commit -m 'Address F04 valuation and navigation review findings'
+          git push origin HEAD:feat/f04-corporate-development-ma
