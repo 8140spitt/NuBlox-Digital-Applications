@@ -84,6 +84,13 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 					href: '/strategy',
 					description:
 						'Purpose, environmental analysis, strategic choices and objectives with controlled versioning.'
+				},
+				{
+					id: 'enterprise-performance',
+					label: 'Enterprise performance',
+					href: '/performance',
+					description:
+						'Performance frameworks, executive reporting, variance intervention, benchmarking and benefits realisation.'
 				}
 			]
 		});

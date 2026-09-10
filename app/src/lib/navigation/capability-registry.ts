@@ -198,7 +198,7 @@ const nativeCapabilityDomains: readonly NativeCapabilityDomain[] = [
 			'Cost control, budgets, forecasts, cash flow, profitability and management reporting.',
 		maturity: 'partial',
 		maturityNote:
-			'Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native. F01 strategy, business planning, target operating model, KPI/review/scenario and canonical Finance-actual drill-through are native; treasury, broader management accounting and consolidation depth remain.',
+			'Project budgets/cost control, versioned EAC forecasts, forecast cash flow and financial reporting foundations are native. F01 strategy/planning and F03 enterprise performance frameworks, period-bound KPI reporting, governed variance/action, executive review, benchmarking and benefits realisation are native; treasury, broader management accounting and consolidation depth remain.',
 		permissionNamespaces: [
 			'commercial.cost_control.',
 			'commercial.budget.',
@@ -221,6 +221,11 @@ const nativeCapabilityDomains: readonly NativeCapabilityDomain[] = [
 			{
 				label: 'Strategy performance & foresight',
 				href: '/strategy/performance',
+				anyPermissionNamespaces: ['strategy.']
+			},
+			{
+				label: 'Enterprise performance management',
+				href: '/performance',
 				anyPermissionNamespaces: ['strategy.']
 			},
 			{

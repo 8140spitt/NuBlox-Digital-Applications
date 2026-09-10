@@ -277,6 +277,230 @@ export interface StrategyOptions {
   updated_at: Generated<Date>;
 }
 
+export interface StrategyPerformanceActions {
+  action_code: string;
+  action_text: string;
+  completed_at: Date | null;
+  completed_by_member_id: string | null;
+  completion_evidence: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  due_date: Date;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  owner_member_id: string;
+  performance_variance_id: string;
+  public_id: string;
+  source_domain: string | null;
+  source_public_id: string | null;
+  source_record_type: string | null;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyPerformanceBenchmarkResults {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  gap_percent: Decimal | null;
+  gap_value: Decimal;
+  id: Generated<string>;
+  interpretation: string;
+  organisation_id: string;
+  performance_benchmark_id: string;
+  public_id: string;
+  strategy_kpi_observation_id: string;
+}
+
+export interface StrategyPerformanceBenchmarks {
+  benchmark_code: string;
+  benchmark_type: string;
+  benchmark_value: Decimal;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  organisation_id: string;
+  period_end: Date;
+  period_start: Date;
+  provenance_text: string;
+  public_id: string;
+  scope_text: string;
+  source_reference: string | null;
+  strategy_kpi_id: string;
+  title: string;
+  unit_label: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyPerformanceBenefitMeasurements {
+  confidence_percent: Decimal;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  evidence_text: string;
+  id: Generated<string>;
+  measured_on: Date;
+  organisation_id: string;
+  performance_benefit_id: string;
+  public_id: string;
+  realised_value: Decimal;
+  source_domain: string | null;
+  source_public_id: string | null;
+  source_record_type: string | null;
+}
+
+export interface StrategyPerformanceBenefits {
+  baseline_value: Decimal;
+  benefit_code: string;
+  benefit_type: string;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  owner_member_id: string;
+  public_id: string;
+  review_cadence: string;
+  source_domain: string;
+  source_public_id: string;
+  source_record_type: string;
+  strategy_kpi_id: string;
+  target_date: Date;
+  target_value: Decimal;
+  title: string;
+  unit_label: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyPerformanceFrameworkKpis {
+  commentary_required: Generated<number>;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  display_order: Generated<number>;
+  id: Generated<string>;
+  materiality_threshold_percent: Decimal | null;
+  organisation_id: string;
+  performance_framework_id: string;
+  strategy_kpi_id: string;
+}
+
+export interface StrategyPerformanceFrameworks {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  effective_from: Date;
+  effective_to: Date | null;
+  framework_code: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  owner_member_id: string;
+  public_id: string;
+  purpose_text: string;
+  reporting_cadence: string;
+  scope_text: string;
+  supersedes_performance_framework_id: string | null;
+  title: string;
+  updated_at: Generated<Date>;
+  version_number: number;
+}
+
+export interface StrategyPerformancePackKpis {
+  actual_value_snapshot: Decimal;
+  assessment: string;
+  commentary: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  forecast_value_snapshot: Decimal | null;
+  id: Generated<string>;
+  organisation_id: string;
+  performance_pack_id: string;
+  source_domain: string | null;
+  source_public_id: string | null;
+  source_record_type: string | null;
+  strategy_kpi_id: string;
+  strategy_kpi_observation_id: string;
+  target_value_snapshot: Decimal;
+  variance_percent: Decimal | null;
+  variance_value: Decimal;
+}
+
+export interface StrategyPerformancePacks {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  executive_summary: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  pack_code: string;
+  performance_period_id: string;
+  public_id: string;
+  supersedes_performance_pack_id: string | null;
+  title: string;
+  updated_at: Generated<Date>;
+  version_number: Generated<number>;
+}
+
+export interface StrategyPerformancePeriods {
+  closed_at: Date | null;
+  closed_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  performance_framework_id: string;
+  period_code: string;
+  period_end: Date;
+  period_start: Date;
+  public_id: string;
+  reporting_date: Date;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyPerformanceReviews {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  decision_text: string | null;
+  governance_decision_public_id: string | null;
+  governance_meeting_public_id: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  organisation_id: string;
+  performance_pack_id: string;
+  public_id: string;
+  review_code: string;
+  review_date: Date;
+  summary: string;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface StrategyPerformanceVariances {
+  cause_category: string;
+  closed_at: Date | null;
+  closed_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  id: Generated<string>;
+  impact_text: string;
+  lifecycle_status: Generated<string>;
+  materiality: string;
+  organisation_id: string;
+  owner_member_id: string;
+  performance_pack_kpi_id: string;
+  public_id: string;
+  resolution_text: string | null;
+  root_cause_text: string;
+  updated_at: Generated<Date>;
+  variance_code: string;
+}
+
 export interface StrategyReviewKpis {
   actual_value_snapshot: Decimal;
   assessment: string;
@@ -377,6 +601,18 @@ export interface DB {
   strategy_operating_model_accountabilities: StrategyOperatingModelAccountabilities;
   strategy_operating_model_components: StrategyOperatingModelComponents;
   strategy_options: StrategyOptions;
+  strategy_performance_actions: StrategyPerformanceActions;
+  strategy_performance_benchmark_results: StrategyPerformanceBenchmarkResults;
+  strategy_performance_benchmarks: StrategyPerformanceBenchmarks;
+  strategy_performance_benefit_measurements: StrategyPerformanceBenefitMeasurements;
+  strategy_performance_benefits: StrategyPerformanceBenefits;
+  strategy_performance_framework_kpis: StrategyPerformanceFrameworkKpis;
+  strategy_performance_frameworks: StrategyPerformanceFrameworks;
+  strategy_performance_pack_kpis: StrategyPerformancePackKpis;
+  strategy_performance_packs: StrategyPerformancePacks;
+  strategy_performance_periods: StrategyPerformancePeriods;
+  strategy_performance_reviews: StrategyPerformanceReviews;
+  strategy_performance_variances: StrategyPerformanceVariances;
   strategy_review_kpis: StrategyReviewKpis;
   strategy_reviews: StrategyReviews;
   strategy_scenario_assumptions: StrategyScenarioAssumptions;
