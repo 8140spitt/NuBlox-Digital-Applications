@@ -83,7 +83,8 @@ export class CorporateDevelopmentRepository {
 			.selectAll()
 			.where('organisation_id', '=', organisationId)
 			.where('opportunity_id', '=', opportunityId)
-			.orderBy('transitioned_at', 'desc')
+			.orderBy('transitioned_at', 'asc')
+			.orderBy('id', 'asc')
 			.execute();
 	}
 
