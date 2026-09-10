@@ -1,6 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
 
-import { closeDatabase, getDatabase } from '$lib/server/db/database';
+import { getDatabase } from '$lib/server/db/database';
 import {
 	CorporateDevelopmentLifecycleService,
 	CorporateDevelopmentLifecycleValidationError
