@@ -1,0 +1,57 @@
+name: F04 Final Format
+on:
+  push:
+    branches: [feat/f04-corporate-development-ma]
+    paths:
+      - '.github/workflows/f04-final-format.yml'
+permissions:
+  contents: write
+jobs:
+  normalise:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f04-corporate-development-ma
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Remove unused import and strengthen browser proof
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('app/src/lib/server/corporate-development/corporate-development.integration.test.ts')
+          s=p.read_text().replace("import { closeDatabase, getDatabase } from '$lib/server/db/database';", "import { getDatabase } from '$lib/server/db/database';")
+          p.write_text(s)
+          p=Path('app/e2e/corporate-development.e2e.ts')
+          s=p.read_text()
+          needle="\tawait expect(page.getByText('F04 · Corporate Development & M&A')).toBeVisible();\n"
+          extra="""\tawait expect(page.getByText('F04.01 · Opportunity pipeline')).toBeVisible();
+\tawait expect(page.getByText('F04.02 · Valuation')).toBeVisible();
+"""
+          if needle in s and extra not in s:
+              s=s.replace(needle, needle+extra)
+          p.write_text(s)
+          PY
+      - name: Format all F04 touched source
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write \
+            e2e/corporate-development.e2e.ts \
+            src/lib/server/corporate-development \
+            'src/routes/(app)/corporate-development' \
+            'src/routes/(app)/+layout.server.ts'
+      - name: Remove temporary workflow and commit
+        run: |
+          git rm .github/workflows/f04-final-format.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app
+          git commit -m 'Normalise F04 validation candidate'
+          git push origin HEAD:feat/f04-corporate-development-ma
