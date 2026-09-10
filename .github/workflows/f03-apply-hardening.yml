@@ -30,12 +30,12 @@ jobs:
         run: pnpm install --frozen-lockfile
       - run: python scripts/f03-review-hardening.py
       - working-directory: app
-        run: pnpm exec prettier --write src/lib/server/strategy/enterprise-performance-service.ts && pnpm check && pnpm lint
+        run: pnpm exec prettier --write src/lib/server/strategy/enterprise-performance-service.ts 'src/routes/(app)/performance/+page.server.ts' 'src/routes/(app)/performance/+page.svelte' && pnpm check && pnpm lint
       - name: Commit hardened code
         run: |
           rm scripts/f03-review-hardening.py .github/workflows/f03-apply-hardening.yml
           git config user.name '8140spitt'
           git config user.email '56647740+8140spitt@users.noreply.github.com'
-          git add app/src/lib/server/strategy/enterprise-performance-service.ts scripts/f03-review-hardening.py .github/workflows/f03-apply-hardening.yml
+          git add app/src/lib/server/strategy/enterprise-performance-service.ts app/src/routes/'(app)'/performance/+page.server.ts app/src/routes/'(app)'/performance/+page.svelte scripts/f03-review-hardening.py .github/workflows/f03-apply-hardening.yml
           git commit -m 'F03: harden governed performance controls'
           git push origin HEAD:feat/f03-enterprise-performance-management
