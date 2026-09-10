@@ -1,0 +1,72 @@
+name: F03 Branch Validation
+
+on:
+  push:
+    branches:
+      - feat/f03-enterprise-performance-management
+    paths:
+      - '.github/workflows/f03-branch-validation.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_migration_validation
+      DB_POOL_MAX: '5'
+      BETTER_AUTH_SECRET: f03-validation-${{ github.run_id }}-${{ github.run_attempt }}-test-key
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+      EMAIL_DELIVERY_MODE: console
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f03-enterprise-performance-management
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Apply migrations
+        working-directory: app
+        run: pnpm db:migrate
+      - name: Verify generated database types
+        working-directory: app
+        run: pnpm db:types && git diff --exit-code -- src/lib/server/db/generated/database.d.ts src/lib/server/db/generated/strategy.d.ts
+      - name: Type check
+        working-directory: app
+        run: pnpm check
+      - name: Lint and format
+        working-directory: app
+        run: pnpm lint
+      - name: Real MySQL integration suite
+        working-directory: app
+        run: pnpm test:integration
+      - name: Remove validation workflow
+        run: |
+          rm .github/workflows/f03-branch-validation.yml
+          git config user.name '8140spitt'
+          git config user.email '56647740+8140spitt@users.noreply.github.com'
+          git add .github/workflows/f03-branch-validation.yml
+          git commit -m 'F03: remove temporary branch validation workflow'
+          git push origin HEAD:feat/f03-enterprise-performance-management
