@@ -64,9 +64,15 @@ A governed approve/reject/defer decision requires:
 
 The matching authority-rule identifier is retained on the decision as evidence.
 
+Financial authority limits are evaluated as exact `DECIMAL(19,4)` values using integer-scaled `bigint` comparison rather than IEEE-754 binary floating-point conversion. This preserves boundary correctness for large and fractional authority limits.
+
+Governance-body appointments are evaluated against their effective appointment and term dates at the relevant governance date. Future or expired appointments cannot satisfy framework approval quorum, policy approval membership or meeting attendance eligibility.
+
 ## Policy and ethics control
 
-Policy approval requires an active appointment to the policy approval body. Approved policy versions are attributable and attestable by members. Conflicts may reference an approved policy and retain reviewer outcome/management action. Ethics cases may retain policy linkage, severity, accountable owner and immutable resolution evidence.
+Policy approval requires an effective active appointment to the policy approval body. Approved policy versions are attributable and attestable by members. Conflicts may reference an approved policy and retain reviewer outcome/management action. A conflict review is a governed one-time transition from `open`; a finalized `managed` or `closed` review cannot be overwritten through the review action.
+
+Ethics cases may retain policy linkage, severity, accountable owner and immutable resolution evidence. Anonymous cases retain restricted server-side/audit attribution required for accountable evidence while the governance workspace payload suppresses `created_by_member_id`, preventing the anonymous reporter identity from leaking to client-visible data.
 
 ## Native-domain composition
 
@@ -98,6 +104,8 @@ PR #135 merge acceptance requires its exact head to pass Complete System Validat
 The real-MySQL integration proof covers framework approval, board/body appointments, business DoA, meeting quorum, governed decisions/actions, policy approval/attestation, conflict review and ethics-case resolution with tenant/permission boundaries and attributable evidence.
 
 The browser proof covers the same continuous thread and proves an approved financial decision is accepted only under the matching business authority rule, then carries the decision into an action, policy-linked governance evidence and ethics/conflict closure.
+
+The F02 release-candidate hardening also proves fail-closed handling for exact financial authority boundaries, appointment-effective membership eligibility, immutable conflict-review outcomes and anonymous ethics client-data redaction through the same typed service/repository/server route path exercised by Complete System Validation.
 
 ## Closure gate
 
