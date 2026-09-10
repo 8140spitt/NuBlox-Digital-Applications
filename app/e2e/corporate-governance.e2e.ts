@@ -251,6 +251,6 @@ test('F02 governs authority, board decisions, policy and ethics as one enterpris
 
 	await page.getByRole('button', { name: 'Create framework revision' }).click();
 	await expect(page.getByText('F02-E2E · version 2')).toBeVisible();
-	await expect(page.getByRole('heading', { name: 'Enterprise Board' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Enterprise Board' }).first()).toBeVisible();
 	await expect(page.getByText('BOARD-PROGRAMME-APPROVAL')).toBeVisible();
 });
