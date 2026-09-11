@@ -55,13 +55,7 @@ export type OfferingInput = {
 	portfolioPublicId: string;
 	offeringCode: string;
 	title: string;
-	offeringType:
-		| 'product'
-		| 'service'
-		| 'platform'
-		| 'solution'
-		| 'internal_capability'
-		| 'other';
+	offeringType: 'product' | 'service' | 'platform' | 'solution' | 'internal_capability' | 'other';
 	valueProposition: string;
 	ownerMemberId: string;
 };
@@ -140,9 +134,7 @@ const TOKEN = /^[a-z0-9][a-z0-9_.:-]{1,49}$/;
 const CURRENCY = /^[A-Z]{3}$/;
 
 type ProductServicePermission =
-	| 'product_service.view'
-	| 'product_service.manage'
-	| 'product_service.approve';
+	'product_service.view' | 'product_service.manage' | 'product_service.approve';
 
 function requiredText(value: string, label: string, max: number) {
 	const normalized = value.trim();
@@ -208,11 +200,16 @@ export class ProductServiceService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext) {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 	}
 
-	private async requirePermission(actor: TenantActorContext, permissionKey: ProductServicePermission) {
+	private async requirePermission(
+		actor: TenantActorContext,
+		permissionKey: ProductServicePermission
+	) {
 		await this.assertActiveActor(actor);
 		const decision = await new PermissionService(this.db).decide(actor, permissionKey);
 		if (!decision.allowed) {
@@ -477,7 +474,8 @@ export class ProductServiceService {
 			const feasibility = Number(score(input.feasibility, 'Feasibility score'));
 			const commercialValue = Number(score(input.commercialValue, 'Commercial value score'));
 			const risk = Number(score(input.risk, 'Risk score'));
-			const overall = (strategicFit + customerValue + feasibility + commercialValue + (100 - risk)) / 5;
+			const overall =
+				(strategicFit + customerValue + feasibility + commercialValue + (100 - risk)) / 5;
 			const updated = await repository.updateIdea(actor.organisationId, idea.id, {
 				strategic_fit_score: strategicFit.toFixed(4),
 				customer_value_score: customerValue.toFixed(4),
@@ -518,7 +516,11 @@ export class ProductServiceService {
 			if (input.offeringPublicId?.trim() && !offering) {
 				throw new RecordNotFoundError('Product/service offering not found.');
 			}
-			if (input.paybackMonths !== null && input.paybackMonths !== undefined && input.paybackMonths < 0) {
+			if (
+				input.paybackMonths !== null &&
+				input.paybackMonths !== undefined &&
+				input.paybackMonths < 0
+			) {
 				throw new ProductServiceValidationError('Payback months must not be negative.');
 			}
 			const businessCaseCode = code(input.businessCaseCode, 'Business case code');
@@ -584,15 +586,11 @@ export class ProductServiceService {
 					{ lifecycle_status: 'superseded' }
 				);
 			}
-			const approved = await repository.updateBusinessCase(
-				actor.organisationId,
-				businessCase.id,
-				{
-					lifecycle_status: 'approved',
-					approved_by_member_id: actor.memberId,
-					approved_at: new Date()
-				}
-			);
+			const approved = await repository.updateBusinessCase(actor.organisationId, businessCase.id, {
+				lifecycle_status: 'approved',
+				approved_by_member_id: actor.memberId,
+				approved_at: new Date()
+			});
 			await repository.updateIdea(actor.organisationId, businessCase.idea_id, {
 				stage: 'approved',
 				decided_by_member_id: actor.memberId,

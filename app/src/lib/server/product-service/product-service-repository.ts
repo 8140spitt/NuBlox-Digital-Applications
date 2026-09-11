@@ -195,10 +195,7 @@ export class ProductServiceRepository {
 			.selectAll()
 			.where('organisation_id', '=', organisationId);
 		if (ideaId) query = query.where('idea_id', '=', ideaId);
-		return query
-			.orderBy('business_case_code', 'asc')
-			.orderBy('version_number', 'desc')
-			.execute();
+		return query.orderBy('business_case_code', 'asc').orderBy('version_number', 'desc').execute();
 	}
 
 	findBusinessCaseByPublicId(organisationId: string, publicId: string) {

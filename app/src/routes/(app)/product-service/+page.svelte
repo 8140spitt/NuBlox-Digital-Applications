@@ -9,8 +9,8 @@
 		<p class="eyebrow">F05 · Product, Service &amp; Innovation Management</p>
 		<h1>Product, Service &amp; Innovation command centre</h1>
 		<p>
-			Turn evidence-backed needs into governed ideas, investment cases and lifecycle decisions without
-			duplicating strategy, CRM, finance, project or performance truth.
+			Turn evidence-backed needs into governed ideas, investment cases and lifecycle decisions
+			without duplicating strategy, CRM, finance, project or performance truth.
 		</p>
 	</header>
 
@@ -79,10 +79,13 @@
 					<label>
 						Owner
 						<select name="ownerMemberId" required>
-							{#each data.members as member}<option value={member.id}>{member.display_name}</option>{/each}
+							{#each data.members as member}<option value={member.id}>{member.display_name}</option
+								>{/each}
 						</select>
 					</label>
-					<label class="wide">Strategic thesis <textarea name="strategicThesis" required></textarea></label>
+					<label class="wide"
+						>Strategic thesis <textarea name="strategicThesis" required></textarea></label
+					>
 					<label>F01 objective ID <input name="strategyObjectivePublicId" /></label>
 					<label>F01 KPI ID <input name="strategyKpiPublicId" /></label>
 					<label>F03 evidence ID <input name="performanceEvidencePublicId" /></label>
@@ -96,7 +99,9 @@
 							Portfolio
 							<select name="portfolioPublicId" required>
 								{#each data.portfolios as portfolio}
-									<option value={portfolio.public_id}>{portfolio.portfolio_code} · {portfolio.title}</option>
+									<option value={portfolio.public_id}
+										>{portfolio.portfolio_code} · {portfolio.title}</option
+									>
 								{/each}
 							</select>
 						</label>
@@ -116,10 +121,14 @@
 						<label>
 							Owner
 							<select name="ownerMemberId" required>
-								{#each data.members as member}<option value={member.id}>{member.display_name}</option>{/each}
+								{#each data.members as member}<option value={member.id}
+										>{member.display_name}</option
+									>{/each}
 							</select>
 						</label>
-						<label class="wide">Value proposition <textarea name="valueProposition" required></textarea></label>
+						<label class="wide"
+							>Value proposition <textarea name="valueProposition" required></textarea></label
+						>
 						<button type="submit">Create offering</button>
 					</form>
 				{/if}
@@ -136,7 +145,11 @@
 						<strong>{need.need_code} · {need.title}</strong>
 						<p>{need.need_type} · {need.urgency} urgency · {need.evidence_strength} evidence</p>
 						<p>{need.need_statement}</p>
-						<small>{need.source_domain}{need.source_reference ? ` · ${need.source_reference}` : ''}</small>
+						<small
+							>{need.source_domain}{need.source_reference
+								? ` · ${need.source_reference}`
+								: ''}</small
+						>
 					</article>
 				{/each}
 			{:else}<p>No validated market/customer needs yet.</p>{/if}
@@ -150,7 +163,9 @@
 						Portfolio
 						<select name="portfolioPublicId">
 							<option value="">Unassigned</option>
-							{#each data.portfolios as portfolio}<option value={portfolio.public_id}>{portfolio.portfolio_code}</option>{/each}
+							{#each data.portfolios as portfolio}<option value={portfolio.public_id}
+									>{portfolio.portfolio_code}</option
+								>{/each}
 						</select>
 					</label>
 					<label>Code <input name="needCode" maxlength="50" required /></label>
@@ -168,7 +183,9 @@
 							<option value="other">Other</option>
 						</select>
 					</label>
-					<label>Source domain <input name="sourceDomain" maxlength="50" value="crm" required /></label>
+					<label
+						>Source domain <input name="sourceDomain" maxlength="50" value="crm" required /></label
+					>
 					<label>Source record type <input name="sourceRecordType" /></label>
 					<label>Source public ID <input name="sourcePublicId" /></label>
 					<label>Source reference <input name="sourceReference" /></label>
@@ -194,10 +211,13 @@
 					<label>
 						Owner
 						<select name="ownerMemberId" required>
-							{#each data.members as member}<option value={member.id}>{member.display_name}</option>{/each}
+							{#each data.members as member}<option value={member.id}>{member.display_name}</option
+								>{/each}
 						</select>
 					</label>
-					<label class="wide">Need statement <textarea name="needStatement" required></textarea></label>
+					<label class="wide"
+						>Need statement <textarea name="needStatement" required></textarea></label
+					>
 					<button type="submit">Capture need</button>
 				</form>
 			</section>
@@ -216,10 +236,42 @@
 						{#if data.canManage}
 							<form method="POST" action="?/scoreIdea" class="score-grid">
 								<input type="hidden" name="ideaPublicId" value={idea.public_id} />
-								<label>Strategic <input name="strategicFit" type="number" min="0" max="100" required /></label>
-								<label>Customer <input name="customerValue" type="number" min="0" max="100" required /></label>
-								<label>Feasibility <input name="feasibility" type="number" min="0" max="100" required /></label>
-								<label>Commercial <input name="commercialValue" type="number" min="0" max="100" required /></label>
+								<label
+									>Strategic <input
+										name="strategicFit"
+										type="number"
+										min="0"
+										max="100"
+										required
+									/></label
+								>
+								<label
+									>Customer <input
+										name="customerValue"
+										type="number"
+										min="0"
+										max="100"
+										required
+									/></label
+								>
+								<label
+									>Feasibility <input
+										name="feasibility"
+										type="number"
+										min="0"
+										max="100"
+										required
+									/></label
+								>
+								<label
+									>Commercial <input
+										name="commercialValue"
+										type="number"
+										min="0"
+										max="100"
+										required
+									/></label
+								>
 								<label>Risk <input name="risk" type="number" min="0" max="100" required /></label>
 								<button type="submit">Score idea</button>
 							</form>
@@ -237,14 +289,18 @@
 						Portfolio
 						<select name="portfolioPublicId">
 							<option value="">Unassigned</option>
-							{#each data.portfolios as portfolio}<option value={portfolio.public_id}>{portfolio.portfolio_code}</option>{/each}
+							{#each data.portfolios as portfolio}<option value={portfolio.public_id}
+									>{portfolio.portfolio_code}</option
+								>{/each}
 						</select>
 					</label>
 					<label>
 						Need
 						<select name="needPublicId">
 							<option value="">Unlinked</option>
-							{#each data.needs as need}<option value={need.public_id}>{need.need_code} · {need.title}</option>{/each}
+							{#each data.needs as need}<option value={need.public_id}
+									>{need.need_code} · {need.title}</option
+								>{/each}
 						</select>
 					</label>
 					<label>Code <input name="ideaCode" maxlength="50" required /></label>
@@ -261,16 +317,28 @@
 							<option value="other">Other</option>
 						</select>
 					</label>
-					<label>Provenance <input name="provenance" maxlength="50" value="customer_need" required /></label>
+					<label
+						>Provenance <input
+							name="provenance"
+							maxlength="50"
+							value="customer_need"
+							required
+						/></label
+					>
 					<label>Source reference <input name="sourceReference" /></label>
 					<label>
 						Owner
 						<select name="ownerMemberId" required>
-							{#each data.members as member}<option value={member.id}>{member.display_name}</option>{/each}
+							{#each data.members as member}<option value={member.id}>{member.display_name}</option
+								>{/each}
 						</select>
 					</label>
-					<label class="wide">Problem statement <textarea name="problemStatement" required></textarea></label>
-					<label class="wide">Proposed value <textarea name="proposedValue" required></textarea></label>
+					<label class="wide"
+						>Problem statement <textarea name="problemStatement" required></textarea></label
+					>
+					<label class="wide"
+						>Proposed value <textarea name="proposedValue" required></textarea></label
+					>
 					<button type="submit">Submit idea</button>
 				</form>
 			</section>
@@ -283,10 +351,13 @@
 			{#if data.businessCases.length}
 				{#each data.businessCases as businessCase}
 					<article class="card">
-						<strong>{businessCase.business_case_code} v{businessCase.version_number} · {businessCase.title}</strong>
+						<strong
+							>{businessCase.business_case_code} v{businessCase.version_number} · {businessCase.title}</strong
+						>
 						<p>{businessCase.currency_code} · {businessCase.lifecycle_status}</p>
 						<p>
-							Investment {businessCase.investment_cost ?? '—'} · annual value {businessCase.annual_revenue_or_value ?? '—'} · benefit {businessCase.expected_benefit_value ?? '—'}
+							Investment {businessCase.investment_cost ?? '—'} · annual value {businessCase.annual_revenue_or_value ??
+								'—'} · benefit {businessCase.expected_benefit_value ?? '—'}
 						</p>
 						<p>{businessCase.recommendation}</p>
 						{#if data.canApprove && businessCase.lifecycle_status === 'draft'}
@@ -307,28 +378,38 @@
 					<label>
 						Idea
 						<select name="ideaPublicId" required>
-							{#each data.ideas as idea}<option value={idea.public_id}>{idea.idea_code} · {idea.title}</option>{/each}
+							{#each data.ideas as idea}<option value={idea.public_id}
+									>{idea.idea_code} · {idea.title}</option
+								>{/each}
 						</select>
 					</label>
 					<label>
 						Offering
 						<select name="offeringPublicId">
 							<option value="">Not yet assigned</option>
-							{#each data.offerings as offering}<option value={offering.public_id}>{offering.offering_code} · {offering.title}</option>{/each}
+							{#each data.offerings as offering}<option value={offering.public_id}
+									>{offering.offering_code} · {offering.title}</option
+								>{/each}
 						</select>
 					</label>
 					<label>Code <input name="businessCaseCode" maxlength="50" required /></label>
 					<label>Title <input name="title" required /></label>
 					<label>Currency <input name="currencyCode" maxlength="3" value="GBP" required /></label>
 					<label>Investment cost <input name="investmentCost" inputmode="decimal" /></label>
-					<label>Annual operating cost <input name="annualOperatingCost" inputmode="decimal" /></label>
-					<label>Annual revenue/value <input name="annualRevenueOrValue" inputmode="decimal" /></label>
+					<label
+						>Annual operating cost <input name="annualOperatingCost" inputmode="decimal" /></label
+					>
+					<label
+						>Annual revenue/value <input name="annualRevenueOrValue" inputmode="decimal" /></label
+					>
 					<label>Expected benefit <input name="expectedBenefitValue" inputmode="decimal" /></label>
 					<label>Payback months <input name="paybackMonths" type="number" min="0" /></label>
 					<label>F01 objective ID <input name="strategyObjectivePublicId" /></label>
 					<label>F03 benefit ID <input name="performanceBenefitPublicId" /></label>
 					<label class="wide">Risk summary <textarea name="riskSummary" required></textarea></label>
-					<label class="wide">Recommendation <textarea name="recommendation" required></textarea></label>
+					<label class="wide"
+						>Recommendation <textarea name="recommendation" required></textarea></label
+					>
 					<button type="submit">Create business case</button>
 				</form>
 			</section>
@@ -338,12 +419,29 @@
 	<section class="panel roadmap">
 		<h2>Lifecycle control thread</h2>
 		<div class="roadmap-grid">
-			<div><strong>F05.05</strong><span>Product/service design</span><small>Next lifecycle tranche</small></div>
-			<div><strong>F05.06</strong><span>Development</span><small>Next lifecycle tranche</small></div>
-			<div><strong>F05.07</strong><span>Launch management</span><small>Next lifecycle tranche</small></div>
-			<div><strong>F05.08</strong><span>Lifecycle management</span><small>Next lifecycle tranche</small></div>
-			<div><strong>F05.09</strong><span>Product retirement</span><small>Next lifecycle tranche</small></div>
-			<div><strong>F05.10</strong><span>Innovation management</span><small>Next lifecycle tranche</small></div>
+			<div>
+				<strong>F05.05</strong><span>Product/service design</span><small
+					>Next lifecycle tranche</small
+				>
+			</div>
+			<div>
+				<strong>F05.06</strong><span>Development</span><small>Next lifecycle tranche</small>
+			</div>
+			<div>
+				<strong>F05.07</strong><span>Launch management</span><small>Next lifecycle tranche</small>
+			</div>
+			<div>
+				<strong>F05.08</strong><span>Lifecycle management</span><small>Next lifecycle tranche</small
+				>
+			</div>
+			<div>
+				<strong>F05.09</strong><span>Product retirement</span><small>Next lifecycle tranche</small>
+			</div>
+			<div>
+				<strong>F05.10</strong><span>Innovation management</span><small
+					>Next lifecycle tranche</small
+				>
+			</div>
 		</div>
 	</section>
 </section>
