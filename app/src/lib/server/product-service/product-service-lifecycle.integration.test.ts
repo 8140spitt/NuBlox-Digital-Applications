@@ -105,7 +105,8 @@ describe('F05 design through innovation lifecycle', () => {
 			portfolioCode: `LP${suffix}`,
 			title: 'Lifecycle assurance portfolio',
 			portfolioType: 'service',
-			strategicThesis: 'Operate a governed product/service lifecycle from approved investment to retirement.',
+			strategicThesis:
+				'Operate a governed product/service lifecycle from approved investment to retirement.',
 			ownerMemberId: actor.memberId,
 			priority: 'high'
 		});
@@ -151,7 +152,8 @@ describe('F05 design through innovation lifecycle', () => {
 			customerOutcomes: 'Faster, clearer lifecycle decisions with auditable evidence.',
 			functionalRequirements: 'Capture controlled lifecycle records and decision references.',
 			nonFunctionalRequirements: 'Tenant isolation, auditability and evidence provenance.',
-			acceptanceCriteria: 'All lifecycle gates operate with fail-closed permissions and audit evidence.',
+			acceptanceCriteria:
+				'All lifecycle gates operate with fail-closed permissions and audit evidence.',
 			evidencePublicId: 'DOC-DESIGN-001',
 			evidenceReference: 'Controlled design evidence pack',
 			ownerMemberId: actor.memberId
@@ -185,7 +187,10 @@ describe('F05 design through innovation lifecycle', () => {
 			evidencePublicId: 'DOC-DEV-001',
 			ownerMemberId: actor.memberId
 		});
-		const completedDevelopment = await lifecycle.completeDevelopmentPlan(actor, development.public_id);
+		const completedDevelopment = await lifecycle.completeDevelopmentPlan(
+			actor,
+			development.public_id
+		);
 		expect(completedDevelopment.lifecycle_status).toBe('completed');
 
 		const launchWithoutGovernance = await lifecycle.createLaunchPlan(actor, {
@@ -202,9 +207,9 @@ describe('F05 design through innovation lifecycle', () => {
 			readinessEvidencePublicId: 'DOC-READINESS-001',
 			ownerMemberId: actor.memberId
 		});
-		await expect(lifecycle.approveLaunch(actor, launchWithoutGovernance.public_id)).rejects.toBeInstanceOf(
-			ProductServiceValidationError
-		);
+		await expect(
+			lifecycle.approveLaunch(actor, launchWithoutGovernance.public_id)
+		).rejects.toBeInstanceOf(ProductServiceValidationError);
 
 		const launch = await lifecycle.createLaunchPlan(actor, {
 			offeringPublicId: offering.public_id,
@@ -290,21 +295,33 @@ describe('F05 design through innovation lifecycle', () => {
 			evidencePublicId: 'DOC-EXPERIMENT-001',
 			ownerMemberId: actor.memberId
 		});
-		const closedExperiment = await lifecycle.closeInnovationExperiment(actor, experiment.public_id, {
-			outcome: 'validated',
-			learningSummary: 'Automated readiness checks reduced preparation time by 38%.',
-			evidencePublicId: 'DOC-EXPERIMENT-RESULT-001'
-		});
+		const closedExperiment = await lifecycle.closeInnovationExperiment(
+			actor,
+			experiment.public_id,
+			{
+				outcome: 'validated',
+				learningSummary: 'Automated readiness checks reduced preparation time by 38%.',
+				evidencePublicId: 'DOC-EXPERIMENT-RESULT-001'
+			}
+		);
 		expect(closedExperiment.outcome).toBe('validated');
 		expect(closedExperiment.lifecycle_status).toBe('completed');
 
 		const workspace = await lifecycle.getWorkspace(actor);
 		expect(workspace.designs.some((row) => row.public_id === design.public_id)).toBe(true);
-		expect(workspace.developmentPlans.some((row) => row.public_id === development.public_id)).toBe(true);
+		expect(workspace.developmentPlans.some((row) => row.public_id === development.public_id)).toBe(
+			true
+		);
 		expect(workspace.launchPlans.some((row) => row.public_id === launch.public_id)).toBe(true);
-		expect(workspace.lifecycleReviews.some((row) => row.public_id === lifecycleReview.public_id)).toBe(true);
-		expect(workspace.retirementPlans.some((row) => row.public_id === retirement.public_id)).toBe(true);
-		expect(workspace.innovationExperiments.some((row) => row.public_id === experiment.public_id)).toBe(true);
+		expect(
+			workspace.lifecycleReviews.some((row) => row.public_id === lifecycleReview.public_id)
+		).toBe(true);
+		expect(workspace.retirementPlans.some((row) => row.public_id === retirement.public_id)).toBe(
+			true
+		);
+		expect(
+			workspace.innovationExperiments.some((row) => row.public_id === experiment.public_id)
+		).toBe(true);
 
 		const offeringAfterRetirement = await db
 			.selectFrom('product_service_offerings')

@@ -74,7 +74,10 @@ async function runAction(
 
 async function runLifecycleAction(
 	locals: App.Locals,
-	operation: (service: ProductServiceLifecycleService, actor: TenantActorContext) => Promise<unknown>
+	operation: (
+		service: ProductServiceLifecycleService,
+		actor: TenantActorContext
+	) => Promise<unknown>
 ) {
 	const actor = actorFromLocals(locals);
 	if (!actor) return fail(401, { error: 'Authentication and organisation context are required.' });

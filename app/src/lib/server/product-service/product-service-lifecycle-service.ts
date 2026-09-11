@@ -51,7 +51,14 @@ export type DesignInput = {
 export type DesignReviewInput = {
 	designPublicId: string;
 	reviewCode: string;
-	reviewType: 'customer' | 'technical' | 'commercial' | 'operational' | 'compliance' | 'sustainability' | 'gate';
+	reviewType:
+		| 'customer'
+		| 'technical'
+		| 'commercial'
+		| 'operational'
+		| 'compliance'
+		| 'sustainability'
+		| 'gate';
 	reviewDate: Date;
 	outcome: 'pass' | 'conditional' | 'fail';
 	findings: string;
@@ -138,9 +145,7 @@ export type InnovationExperimentInput = {
 const CODE = /^[A-Z0-9][A-Z0-9_.-]{1,49}$/;
 
 type ProductServicePermission =
-	| 'product_service.view'
-	| 'product_service.manage'
-	| 'product_service.approve';
+	'product_service.view' | 'product_service.manage' | 'product_service.approve';
 
 function requiredText(value: string, label: string, max: number) {
 	const normalized = value.trim();
@@ -167,9 +172,15 @@ function code(value: string, label: string) {
 	return normalized;
 }
 
-function assertDateOrder(start: Date | null | undefined, finish: Date | null | undefined, label: string) {
+function assertDateOrder(
+	start: Date | null | undefined,
+	finish: Date | null | undefined,
+	label: string
+) {
 	if (start && finish && finish < start) {
-		throw new ProductServiceValidationError(`${label} finish date must not precede the start date.`);
+		throw new ProductServiceValidationError(
+			`${label} finish date must not precede the start date.`
+		);
 	}
 }
 
@@ -180,11 +191,16 @@ export class ProductServiceLifecycleService {
 	) {}
 
 	private async assertActiveActor(actor: TenantActorContext) {
-		const membership = await new OrganisationMembershipRepository(this.db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(
+			this.db
+		).findActiveActorMembership(actor);
 		if (!membership) throw new TenantAccessError();
 	}
 
-	private async requirePermission(actor: TenantActorContext, permissionKey: ProductServicePermission) {
+	private async requirePermission(
+		actor: TenantActorContext,
+		permissionKey: ProductServicePermission
+	) {
 		await this.assertActiveActor(actor);
 		const decision = await new PermissionService(this.db).decide(actor, permissionKey);
 		if (!decision.allowed) {
@@ -210,7 +226,10 @@ export class ProductServiceLifecycleService {
 			.where('id', '=', memberId.trim())
 			.where('status', '=', 'active')
 			.executeTakeFirst();
-		if (!row) throw new ProductServiceValidationError('Owner/reviewer must be an active organisation member.');
+		if (!row)
+			throw new ProductServiceValidationError(
+				'Owner/reviewer must be an active organisation member.'
+			);
 		return row.id;
 	}
 
@@ -282,21 +301,31 @@ export class ProductServiceLifecycleService {
 		return this.db.transaction().execute(async (trx) => {
 			const productRepository = new ProductServiceRepository(trx);
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const offering = await productRepository.findOfferingByPublicId(actor.organisationId, input.offeringPublicId.trim());
+			const offering = await productRepository.findOfferingByPublicId(
+				actor.organisationId,
+				input.offeringPublicId.trim()
+			);
 			if (!offering) throw new RecordNotFoundError('Product/service offering not found.');
 			const businessCase = input.businessCasePublicId?.trim()
-				? await productRepository.findBusinessCaseByPublicId(actor.organisationId, input.businessCasePublicId.trim())
+				? await productRepository.findBusinessCaseByPublicId(
+						actor.organisationId,
+						input.businessCasePublicId.trim()
+					)
 				: null;
-			if (input.businessCasePublicId?.trim() && !businessCase) throw new RecordNotFoundError('Product/service business case not found.');
+			if (input.businessCasePublicId?.trim() && !businessCase)
+				throw new RecordNotFoundError('Product/service business case not found.');
 			if (businessCase && businessCase.lifecycle_status !== 'approved') {
-				throw new ProductServiceValidationError('Design may only reference an approved business case.');
+				throw new ProductServiceValidationError(
+					'Design may only reference an approved business case.'
+				);
 			}
 			const owner = await this.activeMember(trx, actor.organisationId, input.ownerMemberId);
 			const designCode = code(input.designCode, 'Design code');
 			const predecessors = (await repository.listDesigns(actor.organisationId)).filter(
 				(row) => row.offering_id === offering.id && row.design_code === designCode
 			);
-			const predecessor = predecessors.sort((a, b) => b.version_number - a.version_number)[0] ?? null;
+			const predecessor =
+				predecessors.sort((a, b) => b.version_number - a.version_number)[0] ?? null;
 			const created = await repository.insertDesign({
 				organisation_id: actor.organisationId,
 				offering_id: offering.id,
@@ -307,7 +336,11 @@ export class ProductServiceLifecycleService {
 				title: requiredText(input.title, 'Design title', 255),
 				design_brief: requiredText(input.designBrief, 'Design brief', 5000),
 				customer_outcomes: requiredText(input.customerOutcomes, 'Customer outcomes', 5000),
-				functional_requirements: requiredText(input.functionalRequirements, 'Functional requirements', 10000),
+				functional_requirements: requiredText(
+					input.functionalRequirements,
+					'Functional requirements',
+					10000
+				),
 				non_functional_requirements: optionalText(input.nonFunctionalRequirements, 10000),
 				acceptance_criteria: requiredText(input.acceptanceCriteria, 'Acceptance criteria', 10000),
 				evidence_public_id: optionalText(input.evidencePublicId, 100),
@@ -317,7 +350,19 @@ export class ProductServiceLifecycleService {
 				owner_member_id: owner,
 				created_by_member_id: actor.memberId
 			});
-			await this.evidence(trx, actor, 'product_service.design.created', 'product_service_design', created.public_id, { designCode: created.design_code, versionNumber: created.version_number, offeringPublicId: offering.public_id }, ['F05.05']);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.design.created',
+				'product_service_design',
+				created.public_id,
+				{
+					designCode: created.design_code,
+					versionNumber: created.version_number,
+					offeringPublicId: offering.public_id
+				},
+				['F05.05']
+			);
 			return created;
 		});
 	}
@@ -326,7 +371,10 @@ export class ProductServiceLifecycleService {
 		await this.requirePermission(actor, 'product_service.manage');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const design = await repository.findDesignByPublicId(actor.organisationId, input.designPublicId.trim());
+			const design = await repository.findDesignByPublicId(
+				actor.organisationId,
+				input.designPublicId.trim()
+			);
 			if (!design) throw new RecordNotFoundError('Product/service design not found.');
 			const reviewer = await this.activeMember(trx, actor.organisationId, input.reviewerMemberId);
 			const created = await repository.insertDesignReview({
@@ -343,7 +391,19 @@ export class ProductServiceLifecycleService {
 				reviewer_member_id: reviewer,
 				created_by_member_id: actor.memberId
 			});
-			await this.evidence(trx, actor, 'product_service.design_review.recorded', 'product_service_design_review', created.public_id, { designPublicId: design.public_id, outcome: created.outcome, reviewType: created.review_type }, ['F05.05']);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.design_review.recorded',
+				'product_service_design_review',
+				created.public_id,
+				{
+					designPublicId: design.public_id,
+					outcome: created.outcome,
+					reviewType: created.review_type
+				},
+				['F05.05']
+			);
 			return created;
 		});
 	}
@@ -352,17 +412,40 @@ export class ProductServiceLifecycleService {
 		await this.requirePermission(actor, 'product_service.approve');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const design = await repository.findDesignByPublicId(actor.organisationId, designPublicId.trim());
+			const design = await repository.findDesignByPublicId(
+				actor.organisationId,
+				designPublicId.trim()
+			);
 			if (!design) throw new RecordNotFoundError('Product/service design not found.');
 			if (design.lifecycle_status === 'approved') return design;
-			const reviews = (await repository.listDesignReviews(actor.organisationId)).filter((row) => row.design_id === design.id);
-			if (!reviews.length) throw new ProductServiceValidationError('Design approval requires at least one recorded review.');
-			if (reviews.some((row) => row.outcome === 'fail')) throw new ProductServiceValidationError('Design approval is blocked by a failed review.');
+			const reviews = (await repository.listDesignReviews(actor.organisationId)).filter(
+				(row) => row.design_id === design.id
+			);
+			if (!reviews.length)
+				throw new ProductServiceValidationError(
+					'Design approval requires at least one recorded review.'
+				);
+			if (reviews.some((row) => row.outcome === 'fail'))
+				throw new ProductServiceValidationError('Design approval is blocked by a failed review.');
 			if (design.supersedes_design_id) {
-				await repository.updateDesign(actor.organisationId, design.supersedes_design_id, { lifecycle_status: 'superseded' });
+				await repository.updateDesign(actor.organisationId, design.supersedes_design_id, {
+					lifecycle_status: 'superseded'
+				});
 			}
-			const approved = await repository.updateDesign(actor.organisationId, design.id, { lifecycle_status: 'approved', approved_by_member_id: actor.memberId, approved_at: new Date() });
-			await this.evidence(trx, actor, 'product_service.design.approved', 'product_service_design', approved.public_id, { designCode: approved.design_code, versionNumber: approved.version_number }, ['F05.05']);
+			const approved = await repository.updateDesign(actor.organisationId, design.id, {
+				lifecycle_status: 'approved',
+				approved_by_member_id: actor.memberId,
+				approved_at: new Date()
+			});
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.design.approved',
+				'product_service_design',
+				approved.public_id,
+				{ designCode: approved.design_code, versionNumber: approved.version_number },
+				['F05.05']
+			);
 			return approved;
 		});
 	}
@@ -372,9 +455,13 @@ export class ProductServiceLifecycleService {
 		assertDateOrder(input.plannedStart, input.plannedFinish, 'Development');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const design = await repository.findDesignByPublicId(actor.organisationId, input.designPublicId.trim());
+			const design = await repository.findDesignByPublicId(
+				actor.organisationId,
+				input.designPublicId.trim()
+			);
 			if (!design) throw new RecordNotFoundError('Product/service design not found.');
-			if (design.lifecycle_status !== 'approved') throw new ProductServiceValidationError('Development requires an approved design.');
+			if (design.lifecycle_status !== 'approved')
+				throw new ProductServiceValidationError('Development requires an approved design.');
 			const owner = await this.activeMember(trx, actor.organisationId, input.ownerMemberId);
 			const created = await repository.insertDevelopmentPlan({
 				organisation_id: actor.organisationId,
@@ -394,7 +481,19 @@ export class ProductServiceLifecycleService {
 				owner_member_id: owner,
 				created_by_member_id: actor.memberId
 			});
-			await this.evidence(trx, actor, 'product_service.development.created', 'product_service_development_plan', created.public_id, { developmentCode: created.development_code, designPublicId: design.public_id, projectPublicId: created.project_public_id }, ['F05.06']);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.development.created',
+				'product_service_development_plan',
+				created.public_id,
+				{
+					developmentCode: created.development_code,
+					designPublicId: design.public_id,
+					projectPublicId: created.project_public_id
+				},
+				['F05.06']
+			);
 			return created;
 		});
 	}
@@ -403,11 +502,26 @@ export class ProductServiceLifecycleService {
 		await this.requirePermission(actor, 'product_service.manage');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const plan = await repository.findDevelopmentPlanByPublicId(actor.organisationId, developmentPublicId.trim());
+			const plan = await repository.findDevelopmentPlanByPublicId(
+				actor.organisationId,
+				developmentPublicId.trim()
+			);
 			if (!plan) throw new RecordNotFoundError('Product/service development plan not found.');
 			if (plan.lifecycle_status === 'completed') return plan;
-			const completed = await repository.updateDevelopmentPlan(actor.organisationId, plan.id, { lifecycle_status: 'completed', completed_by_member_id: actor.memberId, completed_at: new Date() });
-			await this.evidence(trx, actor, 'product_service.development.completed', 'product_service_development_plan', completed.public_id, { developmentCode: completed.development_code }, ['F05.06']);
+			const completed = await repository.updateDevelopmentPlan(actor.organisationId, plan.id, {
+				lifecycle_status: 'completed',
+				completed_by_member_id: actor.memberId,
+				completed_at: new Date()
+			});
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.development.completed',
+				'product_service_development_plan',
+				completed.public_id,
+				{ developmentCode: completed.development_code },
+				['F05.06']
+			);
 			return completed;
 		});
 	}
@@ -417,13 +531,23 @@ export class ProductServiceLifecycleService {
 		return this.db.transaction().execute(async (trx) => {
 			const productRepository = new ProductServiceRepository(trx);
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const offering = await productRepository.findOfferingByPublicId(actor.organisationId, input.offeringPublicId.trim());
+			const offering = await productRepository.findOfferingByPublicId(
+				actor.organisationId,
+				input.offeringPublicId.trim()
+			);
 			if (!offering) throw new RecordNotFoundError('Product/service offering not found.');
 			const development = input.developmentPlanPublicId?.trim()
-				? await repository.findDevelopmentPlanByPublicId(actor.organisationId, input.developmentPlanPublicId.trim())
+				? await repository.findDevelopmentPlanByPublicId(
+						actor.organisationId,
+						input.developmentPlanPublicId.trim()
+					)
 				: null;
-			if (input.developmentPlanPublicId?.trim() && !development) throw new RecordNotFoundError('Product/service development plan not found.');
-			if (development && development.lifecycle_status !== 'completed') throw new ProductServiceValidationError('Launch planning requires completed development when a development plan is linked.');
+			if (input.developmentPlanPublicId?.trim() && !development)
+				throw new RecordNotFoundError('Product/service development plan not found.');
+			if (development && development.lifecycle_status !== 'completed')
+				throw new ProductServiceValidationError(
+					'Launch planning requires completed development when a development plan is linked.'
+				);
 			const owner = await this.activeMember(trx, actor.organisationId, input.ownerMemberId);
 			const created = await repository.insertLaunchPlan({
 				organisation_id: actor.organisationId,
@@ -435,7 +559,11 @@ export class ProductServiceLifecycleService {
 				target_launch_date: input.targetLaunchDate,
 				target_segments: requiredText(input.targetSegments, 'Target segments', 5000),
 				commercial_readiness: requiredText(input.commercialReadiness, 'Commercial readiness', 5000),
-				operational_readiness: requiredText(input.operationalReadiness, 'Operational readiness', 5000),
+				operational_readiness: requiredText(
+					input.operationalReadiness,
+					'Operational readiness',
+					5000
+				),
 				customer_readiness: requiredText(input.customerReadiness, 'Customer readiness', 5000),
 				support_readiness: requiredText(input.supportReadiness, 'Support readiness', 5000),
 				readiness_evidence_public_id: optionalText(input.readinessEvidencePublicId, 100),
@@ -444,7 +572,15 @@ export class ProductServiceLifecycleService {
 				owner_member_id: owner,
 				created_by_member_id: actor.memberId
 			});
-			await this.evidence(trx, actor, 'product_service.launch.created', 'product_service_launch_plan', created.public_id, { launchCode: created.launch_code, offeringPublicId: offering.public_id }, ['F05.07']);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.launch.created',
+				'product_service_launch_plan',
+				created.public_id,
+				{ launchCode: created.launch_code, offeringPublicId: offering.public_id },
+				['F05.07']
+			);
 			return created;
 		});
 	}
@@ -453,13 +589,35 @@ export class ProductServiceLifecycleService {
 		await this.requirePermission(actor, 'product_service.approve');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const plan = await repository.findLaunchPlanByPublicId(actor.organisationId, launchPublicId.trim());
+			const plan = await repository.findLaunchPlanByPublicId(
+				actor.organisationId,
+				launchPublicId.trim()
+			);
 			if (!plan) throw new RecordNotFoundError('Product/service launch plan not found.');
 			if (plan.lifecycle_status === 'approved' || plan.lifecycle_status === 'launched') return plan;
-			if (!plan.readiness_evidence_public_id) throw new ProductServiceValidationError('Launch approval requires readiness evidence.');
-			if (!plan.governance_decision_public_id) throw new ProductServiceValidationError('Launch approval requires an F02 governance decision reference.');
-			const approved = await repository.updateLaunchPlan(actor.organisationId, plan.id, { lifecycle_status: 'approved', approved_by_member_id: actor.memberId, approved_at: new Date() });
-			await this.evidence(trx, actor, 'product_service.launch.approved', 'product_service_launch_plan', approved.public_id, { launchCode: approved.launch_code, governanceDecisionPublicId: approved.governance_decision_public_id }, ['F05.07']);
+			if (!plan.readiness_evidence_public_id)
+				throw new ProductServiceValidationError('Launch approval requires readiness evidence.');
+			if (!plan.governance_decision_public_id)
+				throw new ProductServiceValidationError(
+					'Launch approval requires an F02 governance decision reference.'
+				);
+			const approved = await repository.updateLaunchPlan(actor.organisationId, plan.id, {
+				lifecycle_status: 'approved',
+				approved_by_member_id: actor.memberId,
+				approved_at: new Date()
+			});
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.launch.approved',
+				'product_service_launch_plan',
+				approved.public_id,
+				{
+					launchCode: approved.launch_code,
+					governanceDecisionPublicId: approved.governance_decision_public_id
+				},
+				['F05.07']
+			);
 			return approved;
 		});
 	}
@@ -469,14 +627,33 @@ export class ProductServiceLifecycleService {
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
 			const productRepository = new ProductServiceRepository(trx);
-			const plan = await repository.findLaunchPlanByPublicId(actor.organisationId, launchPublicId.trim());
+			const plan = await repository.findLaunchPlanByPublicId(
+				actor.organisationId,
+				launchPublicId.trim()
+			);
 			if (!plan) throw new RecordNotFoundError('Product/service launch plan not found.');
-			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'launched') throw new ProductServiceValidationError('Only an approved launch plan may be launched.');
+			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'launched')
+				throw new ProductServiceValidationError('Only an approved launch plan may be launched.');
 			if (plan.lifecycle_status === 'launched') return plan;
 			const launchedAt = new Date();
-			const launched = await repository.updateLaunchPlan(actor.organisationId, plan.id, { lifecycle_status: 'launched', launched_at: launchedAt });
-			await productRepository.updateOffering(actor.organisationId, plan.offering_id, { lifecycle_stage: 'launched', lifecycle_status: 'active', launched_on: launchedAt });
-			await this.evidence(trx, actor, 'product_service.launch.completed', 'product_service_launch_plan', launched.public_id, { launchCode: launched.launch_code }, ['F05.07']);
+			const launched = await repository.updateLaunchPlan(actor.organisationId, plan.id, {
+				lifecycle_status: 'launched',
+				launched_at: launchedAt
+			});
+			await productRepository.updateOffering(actor.organisationId, plan.offering_id, {
+				lifecycle_stage: 'launched',
+				lifecycle_status: 'active',
+				launched_on: launchedAt
+			});
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.launch.completed',
+				'product_service_launch_plan',
+				launched.public_id,
+				{ launchCode: launched.launch_code },
+				['F05.07']
+			);
 			return launched;
 		});
 	}
@@ -486,7 +663,10 @@ export class ProductServiceLifecycleService {
 		return this.db.transaction().execute(async (trx) => {
 			const productRepository = new ProductServiceRepository(trx);
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const offering = await productRepository.findOfferingByPublicId(actor.organisationId, input.offeringPublicId.trim());
+			const offering = await productRepository.findOfferingByPublicId(
+				actor.organisationId,
+				input.offeringPublicId.trim()
+			);
 			if (!offering) throw new RecordNotFoundError('Product/service offering not found.');
 			const owner = await this.activeMember(trx, actor.organisationId, input.ownerMemberId);
 			const created = await repository.insertLifecycleReview({
@@ -506,7 +686,19 @@ export class ProductServiceLifecycleService {
 				owner_member_id: owner,
 				created_by_member_id: actor.memberId
 			});
-			await this.evidence(trx, actor, 'product_service.lifecycle.reviewed', 'product_service_lifecycle_review', created.public_id, { offeringPublicId: offering.public_id, lifecyclePhase: created.lifecycle_phase, recommendation: created.recommendation }, ['F05.08']);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.lifecycle.reviewed',
+				'product_service_lifecycle_review',
+				created.public_id,
+				{
+					offeringPublicId: offering.public_id,
+					lifecyclePhase: created.lifecycle_phase,
+					recommendation: created.recommendation
+				},
+				['F05.08']
+			);
 			return created;
 		});
 	}
@@ -516,13 +708,23 @@ export class ProductServiceLifecycleService {
 		return this.db.transaction().execute(async (trx) => {
 			const productRepository = new ProductServiceRepository(trx);
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const offering = await productRepository.findOfferingByPublicId(actor.organisationId, input.offeringPublicId.trim());
+			const offering = await productRepository.findOfferingByPublicId(
+				actor.organisationId,
+				input.offeringPublicId.trim()
+			);
 			if (!offering) throw new RecordNotFoundError('Product/service offering not found.');
 			const review = input.lifecycleReviewPublicId?.trim()
-				? await repository.findLifecycleReviewByPublicId(actor.organisationId, input.lifecycleReviewPublicId.trim())
+				? await repository.findLifecycleReviewByPublicId(
+						actor.organisationId,
+						input.lifecycleReviewPublicId.trim()
+					)
 				: null;
-			if (input.lifecycleReviewPublicId?.trim() && !review) throw new RecordNotFoundError('Product/service lifecycle review not found.');
-			if (review && review.recommendation !== 'retire') throw new ProductServiceValidationError('Linked lifecycle review must recommend retirement.');
+			if (input.lifecycleReviewPublicId?.trim() && !review)
+				throw new RecordNotFoundError('Product/service lifecycle review not found.');
+			if (review && review.recommendation !== 'retire')
+				throw new ProductServiceValidationError(
+					'Linked lifecycle review must recommend retirement.'
+				);
 			const owner = await this.activeMember(trx, actor.organisationId, input.ownerMemberId);
 			const created = await repository.insertRetirementPlan({
 				organisation_id: actor.organisationId,
@@ -531,18 +733,46 @@ export class ProductServiceLifecycleService {
 				public_id: this.publicIdFactory(),
 				retirement_code: code(input.retirementCode, 'Retirement code'),
 				title: requiredText(input.title, 'Retirement title', 255),
-				retirement_rationale: requiredText(input.retirementRationale, 'Retirement rationale', 10000),
-				customer_transition_plan: requiredText(input.customerTransitionPlan, 'Customer transition plan', 10000),
-				operational_transition_plan: requiredText(input.operationalTransitionPlan, 'Operational transition plan', 10000),
-				financial_impact_summary: requiredText(input.financialImpactSummary, 'Financial impact summary', 10000),
-				data_record_retention_plan: requiredText(input.dataRecordRetentionPlan, 'Data/record retention plan', 10000),
+				retirement_rationale: requiredText(
+					input.retirementRationale,
+					'Retirement rationale',
+					10000
+				),
+				customer_transition_plan: requiredText(
+					input.customerTransitionPlan,
+					'Customer transition plan',
+					10000
+				),
+				operational_transition_plan: requiredText(
+					input.operationalTransitionPlan,
+					'Operational transition plan',
+					10000
+				),
+				financial_impact_summary: requiredText(
+					input.financialImpactSummary,
+					'Financial impact summary',
+					10000
+				),
+				data_record_retention_plan: requiredText(
+					input.dataRecordRetentionPlan,
+					'Data/record retention plan',
+					10000
+				),
 				target_end_date: input.targetEndDate,
 				governance_decision_public_id: optionalText(input.governanceDecisionPublicId, 100),
 				lifecycle_status: 'draft',
 				owner_member_id: owner,
 				created_by_member_id: actor.memberId
 			});
-			await this.evidence(trx, actor, 'product_service.retirement.created', 'product_service_retirement_plan', created.public_id, { retirementCode: created.retirement_code, offeringPublicId: offering.public_id }, ['F05.09']);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.retirement.created',
+				'product_service_retirement_plan',
+				created.public_id,
+				{ retirementCode: created.retirement_code, offeringPublicId: offering.public_id },
+				['F05.09']
+			);
 			return created;
 		});
 	}
@@ -551,12 +781,34 @@ export class ProductServiceLifecycleService {
 		await this.requirePermission(actor, 'product_service.approve');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const plan = await repository.findRetirementPlanByPublicId(actor.organisationId, retirementPublicId.trim());
+			const plan = await repository.findRetirementPlanByPublicId(
+				actor.organisationId,
+				retirementPublicId.trim()
+			);
 			if (!plan) throw new RecordNotFoundError('Product/service retirement plan not found.');
-			if (plan.lifecycle_status === 'approved' || plan.lifecycle_status === 'completed') return plan;
-			if (!plan.governance_decision_public_id) throw new ProductServiceValidationError('Retirement approval requires an F02 governance decision reference.');
-			const approved = await repository.updateRetirementPlan(actor.organisationId, plan.id, { lifecycle_status: 'approved', approved_by_member_id: actor.memberId, approved_at: new Date() });
-			await this.evidence(trx, actor, 'product_service.retirement.approved', 'product_service_retirement_plan', approved.public_id, { retirementCode: approved.retirement_code, governanceDecisionPublicId: approved.governance_decision_public_id }, ['F05.09']);
+			if (plan.lifecycle_status === 'approved' || plan.lifecycle_status === 'completed')
+				return plan;
+			if (!plan.governance_decision_public_id)
+				throw new ProductServiceValidationError(
+					'Retirement approval requires an F02 governance decision reference.'
+				);
+			const approved = await repository.updateRetirementPlan(actor.organisationId, plan.id, {
+				lifecycle_status: 'approved',
+				approved_by_member_id: actor.memberId,
+				approved_at: new Date()
+			});
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.retirement.approved',
+				'product_service_retirement_plan',
+				approved.public_id,
+				{
+					retirementCode: approved.retirement_code,
+					governanceDecisionPublicId: approved.governance_decision_public_id
+				},
+				['F05.09']
+			);
 			return approved;
 		});
 	}
@@ -566,13 +818,34 @@ export class ProductServiceLifecycleService {
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
 			const productRepository = new ProductServiceRepository(trx);
-			const plan = await repository.findRetirementPlanByPublicId(actor.organisationId, retirementPublicId.trim());
+			const plan = await repository.findRetirementPlanByPublicId(
+				actor.organisationId,
+				retirementPublicId.trim()
+			);
 			if (!plan) throw new RecordNotFoundError('Product/service retirement plan not found.');
-			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'completed') throw new ProductServiceValidationError('Only an approved retirement plan may be completed.');
+			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'completed')
+				throw new ProductServiceValidationError(
+					'Only an approved retirement plan may be completed.'
+				);
 			if (plan.lifecycle_status === 'completed') return plan;
-			const completed = await repository.updateRetirementPlan(actor.organisationId, plan.id, { lifecycle_status: 'completed', completed_at: new Date() });
-			await productRepository.updateOffering(actor.organisationId, plan.offering_id, { lifecycle_stage: 'retired', lifecycle_status: 'retired', target_retirement_on: plan.target_end_date });
-			await this.evidence(trx, actor, 'product_service.retirement.completed', 'product_service_retirement_plan', completed.public_id, { retirementCode: completed.retirement_code }, ['F05.09']);
+			const completed = await repository.updateRetirementPlan(actor.organisationId, plan.id, {
+				lifecycle_status: 'completed',
+				completed_at: new Date()
+			});
+			await productRepository.updateOffering(actor.organisationId, plan.offering_id, {
+				lifecycle_stage: 'retired',
+				lifecycle_status: 'retired',
+				target_retirement_on: plan.target_end_date
+			});
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.retirement.completed',
+				'product_service_retirement_plan',
+				completed.public_id,
+				{ retirementCode: completed.retirement_code },
+				['F05.09']
+			);
 			return completed;
 		});
 	}
@@ -583,13 +856,34 @@ export class ProductServiceLifecycleService {
 		return this.db.transaction().execute(async (trx) => {
 			const productRepository = new ProductServiceRepository(trx);
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const portfolio = input.portfolioPublicId?.trim() ? await productRepository.findPortfolioByPublicId(actor.organisationId, input.portfolioPublicId.trim()) : null;
-			if (input.portfolioPublicId?.trim() && !portfolio) throw new RecordNotFoundError('Product/service portfolio not found.');
-			const idea = input.ideaPublicId?.trim() ? await productRepository.findIdeaByPublicId(actor.organisationId, input.ideaPublicId.trim()) : null;
-			if (input.ideaPublicId?.trim() && !idea) throw new RecordNotFoundError('Product/service idea not found.');
-			const offering = input.offeringPublicId?.trim() ? await productRepository.findOfferingByPublicId(actor.organisationId, input.offeringPublicId.trim()) : null;
-			if (input.offeringPublicId?.trim() && !offering) throw new RecordNotFoundError('Product/service offering not found.');
-			if (!portfolio && !idea && !offering) throw new ProductServiceValidationError('Innovation experiment must link to a portfolio, idea or offering.');
+			const portfolio = input.portfolioPublicId?.trim()
+				? await productRepository.findPortfolioByPublicId(
+						actor.organisationId,
+						input.portfolioPublicId.trim()
+					)
+				: null;
+			if (input.portfolioPublicId?.trim() && !portfolio)
+				throw new RecordNotFoundError('Product/service portfolio not found.');
+			const idea = input.ideaPublicId?.trim()
+				? await productRepository.findIdeaByPublicId(
+						actor.organisationId,
+						input.ideaPublicId.trim()
+					)
+				: null;
+			if (input.ideaPublicId?.trim() && !idea)
+				throw new RecordNotFoundError('Product/service idea not found.');
+			const offering = input.offeringPublicId?.trim()
+				? await productRepository.findOfferingByPublicId(
+						actor.organisationId,
+						input.offeringPublicId.trim()
+					)
+				: null;
+			if (input.offeringPublicId?.trim() && !offering)
+				throw new RecordNotFoundError('Product/service offering not found.');
+			if (!portfolio && !idea && !offering)
+				throw new ProductServiceValidationError(
+					'Innovation experiment must link to a portfolio, idea or offering.'
+				);
 			const owner = await this.activeMember(trx, actor.organisationId, input.ownerMemberId);
 			const created = await repository.insertInnovationExperiment({
 				organisation_id: actor.organisationId,
@@ -609,7 +903,19 @@ export class ProductServiceLifecycleService {
 				owner_member_id: owner,
 				created_by_member_id: actor.memberId
 			});
-			await this.evidence(trx, actor, 'product_service.innovation_experiment.created', 'product_service_innovation_experiment', created.public_id, { experimentCode: created.experiment_code, ideaPublicId: idea?.public_id ?? null, offeringPublicId: offering?.public_id ?? null }, ['F05.10']);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.innovation_experiment.created',
+				'product_service_innovation_experiment',
+				created.public_id,
+				{
+					experimentCode: created.experiment_code,
+					ideaPublicId: idea?.public_id ?? null,
+					offeringPublicId: offering?.public_id ?? null
+				},
+				['F05.10']
+			);
 			return created;
 		});
 	}
@@ -617,23 +923,44 @@ export class ProductServiceLifecycleService {
 	async closeInnovationExperiment(
 		actor: TenantActorContext,
 		experimentPublicId: string,
-		input: { outcome: 'validated' | 'invalidated' | 'inconclusive'; learningSummary: string; evidencePublicId?: string | null }
+		input: {
+			outcome: 'validated' | 'invalidated' | 'inconclusive';
+			learningSummary: string;
+			evidencePublicId?: string | null;
+		}
 	) {
 		await this.requirePermission(actor, 'product_service.manage');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const experiment = await repository.findInnovationExperimentByPublicId(actor.organisationId, experimentPublicId.trim());
-			if (!experiment) throw new RecordNotFoundError('Product/service innovation experiment not found.');
+			const experiment = await repository.findInnovationExperimentByPublicId(
+				actor.organisationId,
+				experimentPublicId.trim()
+			);
+			if (!experiment)
+				throw new RecordNotFoundError('Product/service innovation experiment not found.');
 			if (experiment.lifecycle_status === 'completed') return experiment;
-			const closed = await repository.updateInnovationExperiment(actor.organisationId, experiment.id, {
-				lifecycle_status: 'completed',
-				outcome: input.outcome,
-				learning_summary: requiredText(input.learningSummary, 'Learning summary', 10000),
-				evidence_public_id: optionalText(input.evidencePublicId, 100) ?? experiment.evidence_public_id,
-				closed_by_member_id: actor.memberId,
-				closed_at: new Date()
-			});
-			await this.evidence(trx, actor, 'product_service.innovation_experiment.closed', 'product_service_innovation_experiment', closed.public_id, { experimentCode: closed.experiment_code, outcome: closed.outcome }, ['F05.10']);
+			const closed = await repository.updateInnovationExperiment(
+				actor.organisationId,
+				experiment.id,
+				{
+					lifecycle_status: 'completed',
+					outcome: input.outcome,
+					learning_summary: requiredText(input.learningSummary, 'Learning summary', 10000),
+					evidence_public_id:
+						optionalText(input.evidencePublicId, 100) ?? experiment.evidence_public_id,
+					closed_by_member_id: actor.memberId,
+					closed_at: new Date()
+				}
+			);
+			await this.evidence(
+				trx,
+				actor,
+				'product_service.innovation_experiment.closed',
+				'product_service_innovation_experiment',
+				closed.public_id,
+				{ experimentCode: closed.experiment_code, outcome: closed.outcome },
+				['F05.10']
+			);
 			return closed;
 		});
 	}
