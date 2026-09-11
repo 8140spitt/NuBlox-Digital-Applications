@@ -18,7 +18,8 @@ export type ProductServiceIdeaRecord = Selectable<ProductServiceIdeas>;
 export type ProductServiceBusinessCaseRecord = Selectable<ProductServiceBusinessCases>;
 export type ProductServiceBusinessCaseAssumptionRecord =
 	Selectable<ProductServiceBusinessCaseAssumptions>;
-export type ProductServiceBusinessCaseScenarioRecord = Selectable<ProductServiceBusinessCaseScenarios>;
+export type ProductServiceBusinessCaseScenarioRecord =
+	Selectable<ProductServiceBusinessCaseScenarios>;
 
 function insertedId(result: { insertId?: bigint }, label: string): string {
 	const id = result.insertId?.toString();
@@ -194,7 +195,10 @@ export class ProductServiceRepository {
 			.selectAll()
 			.where('organisation_id', '=', organisationId);
 		if (ideaId) query = query.where('idea_id', '=', ideaId);
-		return query.orderBy('business_case_code', 'asc').orderBy('version_number', 'desc').execute();
+		return query
+			.orderBy('business_case_code', 'asc')
+			.orderBy('version_number', 'desc')
+			.execute();
 	}
 
 	findBusinessCaseByPublicId(organisationId: string, publicId: string) {
@@ -239,7 +243,9 @@ export class ProductServiceRepository {
 	}
 
 	listBusinessCaseAssumptions(organisationId: string, businessCaseIds: string[]) {
-		if (!businessCaseIds.length) return Promise.resolve([] as ProductServiceBusinessCaseAssumptionRecord[]);
+		if (!businessCaseIds.length) {
+			return Promise.resolve([] as ProductServiceBusinessCaseAssumptionRecord[]);
+		}
 		return this.db
 			.selectFrom('product_service_business_case_assumptions')
 			.selectAll()
@@ -263,7 +269,9 @@ export class ProductServiceRepository {
 	}
 
 	listBusinessCaseScenarios(organisationId: string, businessCaseIds: string[]) {
-		if (!businessCaseIds.length) return Promise.resolve([] as ProductServiceBusinessCaseScenarioRecord[]);
+		if (!businessCaseIds.length) {
+			return Promise.resolve([] as ProductServiceBusinessCaseScenarioRecord[]);
+		}
 		return this.db
 			.selectFrom('product_service_business_case_scenarios')
 			.selectAll()
