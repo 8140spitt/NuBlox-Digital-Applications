@@ -79,6 +79,73 @@ export interface ProductServiceBusinessCases {
   version_number: Generated<number>;
 }
 
+export interface ProductServiceDesignReviews {
+  actions_required: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  design_id: string;
+  evidence_public_id: string | null;
+  findings: string;
+  id: Generated<string>;
+  organisation_id: string;
+  outcome: string;
+  public_id: string;
+  review_code: string;
+  review_date: Date;
+  review_type: string;
+  reviewer_member_id: string;
+}
+
+export interface ProductServiceDesigns {
+  acceptance_criteria: string;
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  business_case_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  customer_outcomes: string;
+  design_brief: string;
+  design_code: string;
+  evidence_public_id: string | null;
+  evidence_reference: string | null;
+  functional_requirements: string;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  non_functional_requirements: string | null;
+  offering_id: string;
+  organisation_id: string;
+  owner_member_id: string;
+  public_id: string;
+  supersedes_design_id: string | null;
+  title: string;
+  updated_at: Generated<Date>;
+  version_number: number;
+}
+
+export interface ProductServiceDevelopmentPlans {
+  completed_at: Date | null;
+  completed_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  definition_of_done: string;
+  delivery_approach: string;
+  design_id: string;
+  development_code: string;
+  evidence_public_id: string | null;
+  id: Generated<string>;
+  lifecycle_status: Generated<string>;
+  offering_id: string;
+  organisation_id: string;
+  owner_member_id: string;
+  planned_finish: Date | null;
+  planned_start: Date | null;
+  project_public_id: string | null;
+  public_id: string;
+  scope_text: string;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
 export interface ProductServiceIdeas {
   commercial_value_score: Decimal | null;
   created_at: Generated<Date>;
@@ -107,6 +174,78 @@ export interface ProductServiceIdeas {
   strategic_fit_score: Decimal | null;
   title: string;
   updated_at: Generated<Date>;
+}
+
+export interface ProductServiceInnovationExperiments {
+  closed_at: Date | null;
+  closed_by_member_id: string | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  evidence_public_id: string | null;
+  experiment_code: string;
+  experiment_method: string;
+  hypothesis: string;
+  id: Generated<string>;
+  idea_id: string | null;
+  learning_summary: string | null;
+  lifecycle_status: Generated<string>;
+  offering_id: string | null;
+  organisation_id: string;
+  outcome: string | null;
+  owner_member_id: string;
+  planned_finish: Date | null;
+  planned_start: Date | null;
+  portfolio_id: string | null;
+  public_id: string;
+  success_measure: string;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface ProductServiceLaunchPlans {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  commercial_readiness: string;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  customer_readiness: string;
+  development_plan_id: string | null;
+  governance_decision_public_id: string | null;
+  id: Generated<string>;
+  launched_at: Date | null;
+  launch_code: string;
+  lifecycle_status: Generated<string>;
+  offering_id: string;
+  operational_readiness: string;
+  organisation_id: string;
+  owner_member_id: string;
+  public_id: string;
+  readiness_evidence_public_id: string | null;
+  support_readiness: string;
+  target_launch_date: Date;
+  target_segments: string;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
+export interface ProductServiceLifecycleReviews {
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  customer_evidence_public_id: string | null;
+  customer_summary: string;
+  financial_summary: string;
+  id: Generated<string>;
+  lifecycle_phase: string;
+  offering_id: string;
+  organisation_id: string;
+  owner_member_id: string;
+  performance_evidence_public_id: string | null;
+  performance_summary: string;
+  public_id: string;
+  recommendation: string;
+  review_code: string;
+  review_date: Date;
+  risk_summary: string;
 }
 
 export interface ProductServiceNeeds {
@@ -171,12 +310,44 @@ export interface ProductServicePortfolios {
   updated_at: Generated<Date>;
 }
 
+export interface ProductServiceRetirementPlans {
+  approved_at: Date | null;
+  approved_by_member_id: string | null;
+  completed_at: Date | null;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  customer_transition_plan: string;
+  data_record_retention_plan: string;
+  financial_impact_summary: string;
+  governance_decision_public_id: string | null;
+  id: Generated<string>;
+  lifecycle_review_id: string | null;
+  lifecycle_status: Generated<string>;
+  offering_id: string;
+  operational_transition_plan: string;
+  organisation_id: string;
+  owner_member_id: string;
+  public_id: string;
+  retirement_code: string;
+  retirement_rationale: string;
+  target_end_date: Date;
+  title: string;
+  updated_at: Generated<Date>;
+}
+
 export interface DB {
   product_service_business_case_assumptions: ProductServiceBusinessCaseAssumptions;
   product_service_business_case_scenarios: ProductServiceBusinessCaseScenarios;
   product_service_business_cases: ProductServiceBusinessCases;
+  product_service_design_reviews: ProductServiceDesignReviews;
+  product_service_designs: ProductServiceDesigns;
+  product_service_development_plans: ProductServiceDevelopmentPlans;
   product_service_ideas: ProductServiceIdeas;
+  product_service_innovation_experiments: ProductServiceInnovationExperiments;
+  product_service_launch_plans: ProductServiceLaunchPlans;
+  product_service_lifecycle_reviews: ProductServiceLifecycleReviews;
   product_service_needs: ProductServiceNeeds;
   product_service_offerings: ProductServiceOfferings;
   product_service_portfolios: ProductServicePortfolios;
+  product_service_retirement_plans: ProductServiceRetirementPlans;
 }
