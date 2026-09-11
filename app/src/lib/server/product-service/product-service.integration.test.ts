@@ -151,7 +151,8 @@ describe('F05 product, service and innovation management', () => {
 			offeringCode: 'OFFER-001',
 			title: 'Connected handover service',
 			offeringType: 'service',
-			valueProposition: 'Reduce handover friction through a governed digital asset-information service.',
+			valueProposition:
+				'Reduce handover friction through a governed digital asset-information service.',
 			ownerMemberId: actor.memberId
 		});
 		expect(offering.lifecycle_stage).toBe('concept');
@@ -252,7 +253,9 @@ describe('F05 product, service and innovation management', () => {
 		expect(workspace.offerings.some((row) => row.public_id === offering.public_id)).toBe(true);
 		expect(workspace.needs.some((row) => row.public_id === need.public_id)).toBe(true);
 		expect(workspace.ideas.some((row) => row.public_id === idea.public_id)).toBe(true);
-		expect(workspace.businessCases.filter((row) => row.business_case_code === 'CASE-001')).toHaveLength(2);
+		expect(
+			workspace.businessCases.filter((row) => row.business_case_code === 'CASE-001')
+		).toHaveLength(2);
 
 		const auditCount = await db
 			.selectFrom('audit_events')
@@ -264,9 +267,9 @@ describe('F05 product, service and innovation management', () => {
 	});
 
 	it('fails closed without F05 permissions', async () => {
-		await expect(new ProductServiceService(getDatabase()).getWorkspace(unprivilegedActor)).rejects.toBeInstanceOf(
-			TenantAccessError
-		);
+		await expect(
+			new ProductServiceService(getDatabase()).getWorkspace(unprivilegedActor)
+		).rejects.toBeInstanceOf(TenantAccessError);
 	});
 
 	it('rejects a tenant context that does not match the active member', async () => {
