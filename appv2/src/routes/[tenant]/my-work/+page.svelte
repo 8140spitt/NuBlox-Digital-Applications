@@ -61,7 +61,9 @@
 							<span>{item.context}</span>
 						</div>
 						<h3>{item.title}</h3>
-						{#if item.description}<p>{item.description}</p>{/if}
+						{#if item.description}
+							<p>{item.description}</p>
+						{/if}
 						<a href={item.reference.href}>{item.reference.label}</a>
 					</article>
 				{/each}
