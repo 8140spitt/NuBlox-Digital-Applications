@@ -37,7 +37,9 @@ test('read-only member can navigate context-first workspaces without receiving m
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
 	}
 	for (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
-		await expect(primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })).toHaveCount(0);
+		await expect(
+			primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
+		).toHaveCount(0);
 	}
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
 

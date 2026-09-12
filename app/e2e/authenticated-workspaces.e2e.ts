@@ -38,7 +38,9 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	}
 
 	for (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
-		await expect(primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })).toHaveCount(0);
+		await expect(
+			primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
+		).toHaveCount(0);
 	}
 
 	const searchMenu = page.locator('details.search-menu');
