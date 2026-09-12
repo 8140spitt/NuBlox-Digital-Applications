@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import type { RequestEvent } from '@sveltejs/kit';
 
+import { parseCanonicalRoute } from '$lib/routing/route-contract';
 import { getDatabase } from '$lib/server/db/database';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import type { TenantContext } from '$lib/types/request-context';
@@ -14,35 +15,51 @@ export function resolveCorrelationId(event: RequestEvent): string {
 	return CORRELATION_ID_PATTERN.test(inbound) ? inbound : randomUUID();
 }
 
+function emptyTenant(): TenantContext {
+	return {
+		organisationId: null,
+		organisationPublicId: null,
+		routeSlug: null,
+		memberId: null,
+		membershipVerified: false
+	};
+}
+
 export async function resolveTenantContext(event: RequestEvent): Promise<TenantContext> {
 	const actor = event.locals.actor;
+	if (!actor) return emptyTenant();
+
+	const repository = new OrganisationMembershipRepository(getDatabase());
+	const canonical = parseCanonicalRoute(event.url.pathname);
+	if (canonical && canonical.kind !== 'portal') {
+		const membership = await repository.findActiveMembershipByOrganisationRouteSlug(
+			actor.userId,
+			canonical.tenantSlug
+		);
+		if (membership?.organisationPublicId && membership.organisationRouteSlug) {
+			return {
+				organisationId: membership.organisationId,
+				organisationPublicId: membership.organisationPublicId,
+				routeSlug: membership.organisationRouteSlug,
+				memberId: membership.id,
+				membershipVerified: true
+			};
+		}
+		return emptyTenant();
+	}
+
 	const requestedOrganisation = event.cookies.get(ORGANISATION_COOKIE)?.trim();
-
-	if (!actor || !requestedOrganisation) {
-		return {
-			organisationId: null,
-			organisationPublicId: null,
-			memberId: null,
-			membershipVerified: false
-		};
-	}
-
-	const membership = await new OrganisationMembershipRepository(
-		getDatabase()
-	).findActiveMembershipByOrganisationPublicId(actor.userId, requestedOrganisation);
-
-	if (!membership?.organisationPublicId) {
-		return {
-			organisationId: null,
-			organisationPublicId: null,
-			memberId: null,
-			membershipVerified: false
-		};
-	}
+	if (!requestedOrganisation) return emptyTenant();
+	const membership = await repository.findActiveMembershipByOrganisationPublicId(
+		actor.userId,
+		requestedOrganisation
+	);
+	if (!membership?.organisationPublicId) return emptyTenant();
 
 	return {
 		organisationId: membership.organisationId,
 		organisationPublicId: membership.organisationPublicId,
+		routeSlug: membership.organisationRouteSlug ?? null,
 		memberId: membership.id,
 		membershipVerified: true
 	};
