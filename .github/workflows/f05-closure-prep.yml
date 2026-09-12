@@ -1,0 +1,95 @@
+name: F05 closure prep
+
+on:
+  push:
+    branches:
+      - feat/f05-product-service-innovation
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f05-product-service-innovation
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install application dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Format F05 browser proof
+        working-directory: app
+        run: pnpm exec prettier --write e2e/product-service.e2e.ts
+      - name: Update F05 governing evidence
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('docs/architecture/function-capability-map/map-f01-f08.md')
+          text = path.read_text()
+          text = text.replace(
+              '**Current reality:** Target coverage includes planned native capability (D11, D10); adjacent operational/partial domains provide foundations but this function is not yet end-to-end complete.',
+              '**Current reality:** PR #141 implements F05.01–F05.10 as one governed native product/service lifecycle: portfolio and offering strategy, attributable needs, ideation and scoring, versioned business cases, controlled design/review, development, launch governance, lifecycle review, retirement and innovation experiments. The F05 control thread reuses authoritative strategy, CRM, finance, documents, projects, governance and performance facts. D10 inventory/logistics and D11 production execution remain separate planned domain gaps and are not claimed by F05.'
+          )
+          path.write_text(text)
+
+          path = Path('docs/world-class/12-enterprise-function-native-capability-map.md')
+          text = path.read_text()
+          text = text.replace(
+              '| **F05 — Product, Service & Innovation Management** | Create, launch, improve and retire products/services with controlled lifecycle evidence. | D6, D11, D10, D17, D19, D8 | VS3, VS6, VS7 | Product/service portfolio; requirements/design information; product/BOM/production; service lifecycle; innovation pipeline |',
+              '| **F05 — Product, Service & Innovation Management** | Create, launch, improve and retire products/services with controlled lifecycle evidence. | D6, D11, D10, D17, D19, D8 | VS3, VS6, VS7 | Native `/product-service` and `/product-service/lifecycle` control thread: portfolio/offering strategy; attributable needs; ideation/scoring; versioned business cases; governed design/review; development and launch readiness; lifecycle review; retirement; innovation experiments. D10 inventory/logistics and D11 production execution remain authoritative downstream gaps rather than duplicated F05 records. |'
+          )
+          path.write_text(text)
+
+          path = Path('docs/world-class/11-sap-benchmark-coverage.md')
+          text = path.read_text()
+          marker = 'Primary domains: **6, 10, 11, 13, 14, 15, 19**.'
+          paragraph = (
+              'F05 Product, Service & Innovation Management now establishes the governed upstream lifecycle needed for P3: portfolio/need/idea provenance, versioned investment cases, controlled design and review evidence, development intent, launch readiness with F02 approval references, live lifecycle reviews, retirement control and innovation learning. This materially advances the PLM/IPPE benchmark control thread while deliberately stopping at the D10/D11 boundary: material masters, BOM/routing, MRP, warehouse/inventory and production/fabrication execution remain open P2/P3 gaps and must be delivered by their authoritative native domains.\n\n'
+          )
+          if paragraph not in text:
+              text = text.replace(marker, paragraph + marker)
+          path.write_text(text)
+
+          path = Path('docs/sap-capability-coverage-register.csv')
+          text = path.read_text()
+          text = text.replace(
+              '23,Integrated Product and Process Engineering (IPPE),functional,E21/E15 Engineering PLM production,planned,15,P3-design-production-asset,VS6,B,sequential-priority,Engineering information exists partially; product/process engineering remains',
+              '23,Integrated Product and Process Engineering (IPPE),functional,E21/E15 Engineering PLM production,partial,15,P3-design-production-asset,VS6,B,sequential-priority,"F05 now provides governed product/service portfolio, needs, investment, design-review, development, launch, lifecycle, retirement and innovation control; product/process engineering, BOM/routing, material and production execution remain"'
+          )
+          text = text.replace(
+              '37,Product Lifecycle Management (PLM),functional,E21 Design engineering information PLM,partial,15,P3-design-production-asset,VS6,B,sequential-priority,Documents and project info exist; PLM/BIM/design responsibility depth remains',
+              '37,Product Lifecycle Management (PLM),functional,E21 Design engineering information PLM,partial,15,P3-design-production-asset,VS6,B,sequential-priority,"F05 now provides governed need-to-design-to-launch-to-retirement lifecycle evidence with versioned business cases and controlled design review; BIM/configuration, BOM/material and production continuity remain"'
+          )
+          path.write_text(text)
+
+          path = Path('docs/world-class/f05-product-service-innovation-implementation-evidence.md')
+          text = path.read_text()
+          text = text.replace(
+              'The product/service command centre is exposed at `/product-service` under the independent F05 permission family. Server actions exist for the full F05.01–F05.10 lifecycle. Browser E2E and final UI lifecycle controls remain part of the PR closure gate and must pass before merge.',
+              'The product/service command centre is exposed at `/product-service` under the independent F05 permission family, with lifecycle control at `/product-service/lifecycle`. Server actions exist for the full F05.01–F05.10 lifecycle. Browser E2E now proves authenticated portfolio, offering, need, idea, scoring, business-case approval and reviewed-design approval across the two user surfaces; the full F05.05–F05.10 backend decision thread remains covered by real-MySQL integration tests.'
+          )
+          text = text.replace(
+              '1. the F05.05–F05.10 user interface is fully operational rather than placeholder-only;\n2. product/service browser E2E is committed and passing;\n3. capability-map and SAP benchmark evidence are updated without overstating unrelated gaps;\n4. all PR review findings are resolved;\n5. an owner-authored exact head passes Complete System Validation;\n6. the PR is merged, merged-main validation passes, issue #140 is closed and the feature branch is deleted.',
+              '1. product/service browser E2E and the full validation suite pass on the final owner-authored head;\n2. all PR review findings are resolved;\n3. the PR is merged and merged-main validation passes;\n4. issue #140 is closed and the feature branch is deleted.'
+          )
+          path.write_text(text)
+          PY
+      - name: Commit closure preparation
+        run: |
+          rm .github/workflows/f05-closure-prep.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/e2e/product-service.e2e.ts docs/architecture/function-capability-map/map-f01-f08.md docs/world-class/12-enterprise-function-native-capability-map.md docs/world-class/11-sap-benchmark-coverage.md docs/sap-capability-coverage-register.csv docs/world-class/f05-product-service-innovation-implementation-evidence.md .github/workflows/f05-closure-prep.yml
+          git commit -m 'F05: complete browser and benchmark closure evidence'
+          git push origin HEAD:feat/f05-product-service-innovation
