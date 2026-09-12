@@ -26,6 +26,22 @@ export const TENANT_APP_ROOTS = new Set([
 	'time'
 ]);
 
+export const RESERVED_TENANT_ROUTE_SLUGS = new Set([
+	...TENANT_APP_ROOTS,
+	'_app',
+	'api',
+	'collaborate',
+	'forgot-password',
+	'invite',
+	'network',
+	'portal',
+	'reset-password',
+	'select-organisation',
+	'signin',
+	'start',
+	'web'
+]);
+
 const ROUTE_SLUG_PATTERN = /^[a-z0-9][a-z0-9-]{0,95}$/;
 
 export type CanonicalRouteContext =
@@ -41,6 +57,10 @@ export type CanonicalRouteContext =
 
 export function isRouteSlug(value: string): boolean {
 	return ROUTE_SLUG_PATTERN.test(value);
+}
+
+export function isTenantRouteSlug(value: string): boolean {
+	return isRouteSlug(value) && !RESERVED_TENANT_ROUTE_SLUGS.has(value.toLowerCase());
 }
 
 export function normaliseRouteSlug(value: string, fallback: string): string {
@@ -61,7 +81,7 @@ export function normaliseRouteSlug(value: string, fallback: string): string {
 }
 
 export function tenantPath(tenantSlug: string, href: string): string {
-	if (!isRouteSlug(tenantSlug)) throw new Error('Invalid tenant route slug.');
+	if (!isTenantRouteSlug(tenantSlug)) throw new Error('Invalid tenant route slug.');
 	if (!href) return `/${tenantSlug}/dashboard`;
 	if (/^[a-z][a-z0-9+.-]*:/i.test(href) || href.startsWith('//')) return href;
 	if (href.startsWith('#') || href.startsWith('?')) return `/${tenantSlug}/dashboard${href}`;
@@ -75,7 +95,7 @@ export function portalPath(
 	partySlug: string,
 	path: string = '/dashboard'
 ): string {
-	if (!isRouteSlug(tenantSlug) || !isRouteSlug(partySlug)) {
+	if (!isTenantRouteSlug(tenantSlug) || !isRouteSlug(partySlug)) {
 		throw new Error('Invalid portal route context.');
 	}
 	const suffix = path.startsWith('/') ? path : `/${path}`;
@@ -94,7 +114,7 @@ export function parseCanonicalRoute(pathname: string): CanonicalRouteContext | n
 	const segments = pathname.split('/').filter(Boolean).map(decodeURIComponent);
 	if (segments.length === 0) return null;
 	const tenantSlug = segments[0]?.toLowerCase() ?? '';
-	if (!isRouteSlug(tenantSlug)) return null;
+	if (!isTenantRouteSlug(tenantSlug)) return null;
 
 	if (segments.length === 1) {
 		return { kind: 'tenant', tenantSlug, appPath: '/dashboard' };
