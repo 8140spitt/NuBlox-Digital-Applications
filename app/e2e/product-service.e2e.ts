@@ -33,7 +33,12 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 		.getByLabel('Strategic thesis')
 		.fill('Turn validated built-environment needs into governed service innovation.');
 	await portfolio.getByRole('button', { name: 'Create portfolio' }).click();
-	await expect(page.getByText('F05-E2E · E2E Product & Service Portfolio')).toBeVisible();
+	await expect(
+		page
+			.locator('article')
+			.filter({ hasText: 'F05-E2E · E2E Product & Service Portfolio' })
+			.getByText('F05-E2E · E2E Product & Service Portfolio', { exact: true })
+	).toBeVisible();
 
 	const offering = page.locator('form[action="?/createOffering"]');
 	await offering
