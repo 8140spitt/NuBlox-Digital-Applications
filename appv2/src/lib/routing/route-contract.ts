@@ -44,11 +44,9 @@ export function portalPath(tenant: string, crmParty: string, path = ''): string 
 }
 
 export const routes = {
-	dashboard: (tenant: string): AppDashboardPath =>
-		appPath(tenant, 'dashboard') as AppDashboardPath,
+	dashboard: (tenant: string): AppDashboardPath => appPath(tenant, 'dashboard') as AppDashboardPath,
 	myWork: (tenant: string): AppMyWorkPath => appPath(tenant, 'my-work') as AppMyWorkPath,
-	functions: (tenant: string): AppFunctionsPath =>
-		appPath(tenant, 'functions') as AppFunctionsPath,
+	functions: (tenant: string): AppFunctionsPath => appPath(tenant, 'functions') as AppFunctionsPath,
 	projects: (tenant: string): AppProjectsPath => appPath(tenant, 'projects') as AppProjectsPath,
 	portalLogin: (tenant: string, crmParty: string): PortalLoginPath =>
 		portalPath(tenant, crmParty, 'login') as PortalLoginPath,

@@ -28,9 +28,21 @@
 				<strong>{data.crmParty.slug}</strong>
 			</div>
 			<nav aria-label="Portal navigation">
-				<a href={resolve(dashboardHref)} class:active={isActive(dashboardHref)} aria-current={isActive(dashboardHref) ? 'page' : undefined}>Home</a>
-				<a href={resolve(projectsHref)} class:active={isActive(projectsHref)} aria-current={isActive(projectsHref) ? 'page' : undefined}>Projects</a>
-				<a href={resolve(actionsHref)} class:active={isActive(actionsHref)} aria-current={isActive(actionsHref) ? 'page' : undefined}>Actions</a>
+				<a
+					href={resolve(dashboardHref)}
+					class:active={isActive(dashboardHref)}
+					aria-current={isActive(dashboardHref) ? 'page' : undefined}>Home</a
+				>
+				<a
+					href={resolve(projectsHref)}
+					class:active={isActive(projectsHref)}
+					aria-current={isActive(projectsHref) ? 'page' : undefined}>Projects</a
+				>
+				<a
+					href={resolve(actionsHref)}
+					class:active={isActive(actionsHref)}
+					aria-current={isActive(actionsHref) ? 'page' : undefined}>Actions</a
+				>
 			</nav>
 		</div>
 	</header>
@@ -38,20 +50,69 @@
 </div>
 
 <style>
-	.portal-shell { min-height: 100vh; background: #f7f8fb; }
-	.portal-header { background: #101828; color: white; }
-	.portal-header-inner { min-height: 68px; display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 24px; }
-	.portal-brand, .relationship-context, nav { display: flex; align-items: center; gap: 10px; }
-	.portal-brand a { font-weight: 800; text-decoration: none; }
-	.portal-brand span, .relationship-context span { color: #98a2b3; }
-	.relationship-context { font-size: 0.82rem; }
-	nav { gap: 4px; }
-	nav a { padding: 9px 11px; border-radius: 8px; color: #d0d5dd; font-size: 0.88rem; font-weight: 650; text-decoration: none; }
-	nav a:hover, nav a.active { background: #1d2939; color: white; }
-	.portal-main { padding: 52px 0 72px; }
+	.portal-shell {
+		min-height: 100vh;
+		background: #f7f8fb;
+	}
+	.portal-header {
+		background: #101828;
+		color: white;
+	}
+	.portal-header-inner {
+		min-height: 68px;
+		display: grid;
+		grid-template-columns: 1fr auto auto;
+		align-items: center;
+		gap: 24px;
+	}
+	.portal-brand,
+	.relationship-context,
+	nav {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+	}
+	.portal-brand a {
+		font-weight: 800;
+		text-decoration: none;
+	}
+	.portal-brand span,
+	.relationship-context span {
+		color: #98a2b3;
+	}
+	.relationship-context {
+		font-size: 0.82rem;
+	}
+	nav {
+		gap: 4px;
+	}
+	nav a {
+		padding: 9px 11px;
+		border-radius: 8px;
+		color: #d0d5dd;
+		font-size: 0.88rem;
+		font-weight: 650;
+		text-decoration: none;
+	}
+	nav a:hover,
+	nav a.active {
+		background: #1d2939;
+		color: white;
+	}
+	.portal-main {
+		padding: 52px 0 72px;
+	}
 	@media (max-width: 700px) {
-		.portal-header-inner { grid-template-columns: 1fr auto; gap: 12px; padding: 12px 0; }
-		.relationship-context { justify-self: end; }
-		nav { grid-column: 1 / -1; }
+		.portal-header-inner {
+			grid-template-columns: 1fr auto;
+			gap: 12px;
+			padding: 12px 0;
+		}
+		.relationship-context {
+			justify-self: end;
+		}
+		nav {
+			grid-column: 1 / -1;
+		}
 	}
 </style>

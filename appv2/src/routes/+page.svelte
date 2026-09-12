@@ -8,12 +8,15 @@
 	<h1>One platform. Two connected application surfaces.</h1>
 	<p class="nb-lede">
 		The internal NuBlox operating system lives under /app. CRM Parties participate in authorised
-		projects and business actions through the connected /portal surface over the same canonical data.
+		projects and business actions through the connected /portal surface over the same canonical
+		data.
 	</p>
 
 	<div class="entry-actions">
 		<a class="nb-action" href={resolve(routes.dashboard('nublox'))}>Open internal app</a>
-		<a href={resolve(routes.portalLogin('nublox', 'perspectivebc'))}>Open CRM Party portal example</a>
+		<a href={resolve(routes.portalLogin('nublox', 'perspectivebc'))}
+			>Open CRM Party portal example</a
+		>
 	</div>
 </section>
 
