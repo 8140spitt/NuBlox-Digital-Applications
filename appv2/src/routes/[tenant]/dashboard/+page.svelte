@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data } = $props();
@@ -30,7 +31,7 @@
 				every activated business function.
 			</p>
 		</div>
-		<a class="primary-action" href={routes.myWork(data.tenant.slug)}>Open My work</a>
+		<a class="primary-action" href={resolve(routes.myWork(data.tenant.slug))}>Open My work</a>
 	</section>
 
 	<div class="workspace-grid" aria-label="V2 foundations">
@@ -41,7 +42,7 @@
 				Browse the canonical F01–F29 operating model without exposing backend capability boundaries
 				as navigation.
 			</p>
-			<a href={routes.functions(data.tenant.slug)}>Explore all 29 functions</a>
+			<a href={resolve(routes.functions(data.tenant.slug))}>Explore all 29 functions</a>
 		</article>
 
 		<article>
