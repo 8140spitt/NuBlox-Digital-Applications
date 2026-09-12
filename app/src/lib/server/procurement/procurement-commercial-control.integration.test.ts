@@ -324,7 +324,7 @@ describe('V1 procurement and project commercial-control activation', () => {
 		rfqPublicId = await service.createRfq(actorOwner, {
 			packagePublicId,
 			title: 'Containment supply enquiry',
-			responseDeadlineAt: '2026-09-01T12:00'
+			responseDeadlineAt: '2099-09-01T12:00'
 		});
 		await service.issueRfq(actorOwner, rfqPublicId, supplierPublicId);
 

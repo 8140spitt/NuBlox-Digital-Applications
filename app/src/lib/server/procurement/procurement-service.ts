@@ -562,13 +562,25 @@ export class ProcurementService {
 					'The selected supplier needs a primary email address before an RFQ can be issued to the portal.'
 				);
 			const version = (await repository.listRfqVersions(actor.organisationId, rfq.id))[0];
-			if (!version || version.status !== 'draft')
-				throw new ProcurementValidationError('Only the current draft RFQ version can be issued.');
+			if (!version || !['draft', 'issued'].includes(version.status))
+				throw new ProcurementValidationError(
+					'Only the current draft or issued RFQ version can invite suppliers.'
+				);
 			if (version.responseDeadlineAt && version.responseDeadlineAt <= this.now())
 				throw new ProcurementValidationError(
 					'The RFQ response deadline must be in the future before issue.'
 				);
+			const duplicateInvitation = await trx
+				.selectFrom('rfq_invitations')
+				.select('id')
+				.where('organisation_id', '=', actor.organisationId)
+				.where('rfq_version_id', '=', version.id)
+				.where('supplier_party_id', '=', supplier.id)
+				.executeTakeFirst();
+			if (duplicateInvitation)
+				throw new ProcurementValidationError('This supplier has already been invited to this RFQ.');
 			if (
+				version.status === 'draft' &&
 				(await repository.issueRfqVersion({
 					organisationId: actor.organisationId,
 					versionId: version.id,
