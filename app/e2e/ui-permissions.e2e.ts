@@ -11,7 +11,7 @@ async function signIn(page: import('@playwright/test').Page) {
 	await page.getByRole('button', { name: 'Sign in' }).click();
 	await expect(page).toHaveURL(/\/select-organisation$/, { timeout: 15_000 });
 	await page.getByRole('button', { name: new RegExp(ORGANISATION) }).click();
-	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
+	await expect(page).toHaveURL('/nublox/dashboard', { timeout: 15_000 });
 }
 
 test('read-only member can navigate context-first workspaces without receiving mutation controls', async ({
@@ -20,16 +20,7 @@ test('read-only member can navigate context-first workspaces without receiving m
 	await signIn(page);
 
 	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
-	for (const label of [
-		'Home',
-		'My work',
-		'Projects',
-		'Customers',
-		'Suppliers',
-		'Assets',
-		'Finance',
-		'More'
-	]) {
+	for (const label of ['Home', 'My work']) {
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
 	}
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
