@@ -2160,6 +2160,14 @@ export interface PartyRoleTypes {
   name: string;
 }
 
+export interface PartyRouteContexts {
+  created_at: Generated<Date>;
+  organisation_id: string;
+  party_id: string;
+  route_slug: string;
+  updated_at: Generated<Date>;
+}
+
 export interface PartyTags {
   assigned_at: Generated<Date>;
   crm_tag_id: string;
@@ -4221,6 +4229,13 @@ export interface Teams {
   updated_at: Generated<Date>;
 }
 
+export interface TenantRouteContexts {
+  created_at: Generated<Date>;
+  organisation_id: string;
+  route_slug: string;
+  updated_at: Generated<Date>;
+}
+
 export interface TimeActivityTypes {
   code: string;
   created_at: Generated<Date>;
@@ -4882,6 +4897,7 @@ export interface DB {
   party_relationships: PartyRelationships;
   party_role_assignments: PartyRoleAssignments;
   party_role_types: PartyRoleTypes;
+  party_route_contexts: PartyRouteContexts;
   party_tags: PartyTags;
   payment_allocation_reversals: PaymentAllocationReversals;
   payment_allocations: PaymentAllocations;
@@ -5047,6 +5063,7 @@ export interface DB {
   taxonomy_sources: TaxonomySources;
   team_members: TeamMembers;
   teams: Teams;
+  tenant_route_contexts: TenantRouteContexts;
   time_activity_types: TimeActivityTypes;
   timesheet_cost_code_allocations: TimesheetCostCodeAllocations;
   timesheet_entries: TimesheetEntries;
