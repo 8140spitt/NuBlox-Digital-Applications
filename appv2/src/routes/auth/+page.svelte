@@ -11,7 +11,7 @@
 	let submitting = $state(false);
 	let errorMessage = $state('');
 
-	const destination = $derived(data.returnTo ?? '/');
+	const destination = $derived(data.returnTo ?? '/auth/continue');
 	const passwordReset = $derived(page.url.searchParams.get('reset') === '1');
 
 	async function signIn(event: SubmitEvent) {
