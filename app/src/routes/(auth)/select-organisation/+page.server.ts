@@ -15,7 +15,9 @@ export const load: PageServerLoad = async ({ locals }) => {
 	);
 	if (memberships.length === 0) {
 		const [externalProjects, hasSupplierQuotes] = await Promise.all([
-			new ProjectExternalCollaborationService(db).listExternalPortalProjects(locals.actor.authUserId),
+			new ProjectExternalCollaborationService(db).listExternalPortalProjects(
+				locals.actor.authUserId
+			),
 			new SupplierRfqPortalService(db).hasPortalQuotes(locals.actor.email)
 		]);
 		if (externalProjects.length > 0 || hasSupplierQuotes) throw redirect(303, '/portal');

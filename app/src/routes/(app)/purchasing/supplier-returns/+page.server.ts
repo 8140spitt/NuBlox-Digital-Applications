@@ -22,7 +22,10 @@ export const load: PageServerLoad = async ({ locals }) => {
 	const db = getDatabase();
 	const permission = await new PermissionService(db).decide(actor, 'procurement.view');
 	if (!permission.allowed) return { canView: false, returns: [] };
-	const projects = await new ProjectRepository(db).listForMember(actor.organisationId, actor.memberId);
+	const projects = await new ProjectRepository(db).listForMember(
+		actor.organisationId,
+		actor.memberId
+	);
 	const projectIds = projects.map((project) => project.id);
 	if (!projectIds.length) return { canView: true, returns: [] };
 
@@ -33,7 +36,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		.innerJoin('rfqs as rfq', 'rfq.id', 'version.rfq_id')
 		.innerJoin('procurement_packages as package', 'package.id', 'rfq.procurement_package_id')
 		.innerJoin('projects as project', 'project.id', 'package.project_id')
-		.innerJoin('party_organisations as supplier', 'supplier.party_id', 'invitation.supplier_party_id')
+		.innerJoin(
+			'party_organisations as supplier',
+			'supplier.party_id',
+			'invitation.supplier_party_id'
+		)
 		.select([
 			'supplierReturn.id as returnId',
 			'supplierReturn.public_id as publicId',

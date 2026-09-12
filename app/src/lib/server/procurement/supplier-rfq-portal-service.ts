@@ -136,14 +136,17 @@ function decodeToken(rawToken: string): SupplierRfqTokenPayload {
 function optionalText(value: string | null | undefined, max: number): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (text.length > max) throw new SupplierRfqPortalValidationError('A supplied value is too long.');
+	if (text.length > max)
+		throw new SupplierRfqPortalValidationError('A supplied value is too long.');
 	return text;
 }
 
 function positiveDecimal(value: string, label: string): string {
 	const text = value.trim();
 	if (!/^\d+(?:\.\d{1,4})?$/.test(text) || Number(text) <= 0) {
-		throw new SupplierRfqPortalValidationError(`${label} must be greater than zero with up to four decimal places.`);
+		throw new SupplierRfqPortalValidationError(
+			`${label} must be greater than zero with up to four decimal places.`
+		);
 	}
 	return text;
 }
@@ -151,7 +154,9 @@ function positiveDecimal(value: string, label: string): string {
 function nonNegativeDecimal(value: string, label: string): string {
 	const text = value.trim();
 	if (!/^\d+(?:\.\d{1,4})?$/.test(text) || Number(text) < 0) {
-		throw new SupplierRfqPortalValidationError(`${label} must be zero or greater with up to four decimal places.`);
+		throw new SupplierRfqPortalValidationError(
+			`${label} must be zero or greater with up to four decimal places.`
+		);
 	}
 	return text;
 }
@@ -159,9 +164,11 @@ function nonNegativeDecimal(value: string, label: string): string {
 function optionalDate(value: string | null | undefined, label: string): Date | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new SupplierRfqPortalValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new SupplierRfqPortalValidationError(`${label} is invalid.`);
 	const date = new Date(`${text}T00:00:00.000Z`);
-	if (Number.isNaN(date.getTime())) throw new SupplierRfqPortalValidationError(`${label} is invalid.`);
+	if (Number.isNaN(date.getTime()))
+		throw new SupplierRfqPortalValidationError(`${label} is invalid.`);
 	return date;
 }
 
@@ -190,7 +197,11 @@ export class SupplierRfqPortalService {
 			.innerJoin('rfqs as rfq', 'rfq.id', 'version.rfq_id')
 			.innerJoin('procurement_packages as package', 'package.id', 'rfq.procurement_package_id')
 			.innerJoin('organisations as issuer', 'issuer.id', 'invitation.organisation_id')
-			.innerJoin('party_organisations as supplier', 'supplier.party_id', 'invitation.supplier_party_id')
+			.innerJoin(
+				'party_organisations as supplier',
+				'supplier.party_id',
+				'invitation.supplier_party_id'
+			)
 			.select([
 				'invitation.id as invitationId',
 				'invitation.organisation_id as organisationId',
@@ -219,7 +230,11 @@ export class SupplierRfqPortalService {
 		return responseDeadlineAt ?? new Date(this.now().getTime() + DEFAULT_INVITATION_LIFETIME_MS);
 	}
 
-	private createQuoteRef(invitationId: string, email: string, responseDeadlineAt: Date | null): string {
+	private createQuoteRef(
+		invitationId: string,
+		email: string,
+		responseDeadlineAt: Date | null
+	): string {
 		return encodeToken({
 			v: TOKEN_VERSION,
 			invitationId,
@@ -236,13 +251,27 @@ export class SupplierRfqPortalService {
 
 	async sendInvitation(invitationId: string): Promise<void> {
 		const invitation = await this.invitationContext(invitationId);
-		if (!invitation?.recipientEmail || invitation.invitationStatus !== 'invited' || invitation.versionStatus !== 'issued') {
-			throw new SupplierRfqPortalAccessError('The supplier quotation invitation cannot be delivered.');
+		if (
+			!invitation?.recipientEmail ||
+			invitation.invitationStatus !== 'invited' ||
+			invitation.versionStatus !== 'issued'
+		) {
+			throw new SupplierRfqPortalAccessError(
+				'The supplier quotation invitation cannot be delivered.'
+			);
 		}
 		const expiresAt = this.expiryFor(invitation.responseDeadlineAt);
-		if (expiresAt <= this.now()) throw new SupplierRfqPortalValidationError('The RFQ response deadline has already passed.');
-		const token = this.createQuoteRef(invitation.invitationId, invitation.recipientEmail, invitation.responseDeadlineAt);
-		const invitationUrl = new URL(`/supplier-quote/${encodeURIComponent(token)}`, applicationBaseUrl()).toString();
+		if (expiresAt <= this.now())
+			throw new SupplierRfqPortalValidationError('The RFQ response deadline has already passed.');
+		const token = this.createQuoteRef(
+			invitation.invitationId,
+			invitation.recipientEmail,
+			invitation.responseDeadlineAt
+		);
+		const invitationUrl = new URL(
+			`/supplier-quote/${encodeURIComponent(token)}`,
+			applicationBaseUrl()
+		).toString();
 		const issuerName = invitation.issuerTradingName?.trim() || invitation.issuerLegalName;
 		await this.emailDelivery.send({
 			to: invitation.recipientEmail,
@@ -267,7 +296,8 @@ export class SupplierRfqPortalService {
 			!['invited', 'responded'].includes(invitation.invitationStatus) ||
 			invitation.versionStatus !== 'issued' ||
 			(invitation.responseDeadlineAt && invitation.responseDeadlineAt <= this.now())
-		) return null;
+		)
+			return null;
 		return this.buildPortalQuote(invitation, rawToken);
 	}
 
@@ -286,7 +316,12 @@ export class SupplierRfqPortalService {
 			.select(['invitation.recipient_email as recipientEmail'])
 			.where('invitation.invitation_status', 'in', ['invited', 'responded'])
 			.where('version.version_status', '=', 'issued')
-			.where((eb) => eb.or([eb('version.response_deadline_at', 'is', null), eb('version.response_deadline_at', '>', this.now())]))
+			.where((eb) =>
+				eb.or([
+					eb('version.response_deadline_at', 'is', null),
+					eb('version.response_deadline_at', '>', this.now())
+				])
+			)
 			.execute();
 		return rows.some((row) => row.recipientEmail && normaliseEmail(row.recipientEmail) === email);
 	}
@@ -301,12 +336,18 @@ export class SupplierRfqPortalService {
 			.where('version.version_status', '=', 'issued')
 			.orderBy('invitation.created_at', 'desc')
 			.execute();
-		const matching = invitationRows.filter((row) => row.recipientEmail && normaliseEmail(row.recipientEmail) === email);
+		const matching = invitationRows.filter(
+			(row) => row.recipientEmail && normaliseEmail(row.recipientEmail) === email
+		);
 		const quotes: SupplierRfqPortalQuote[] = [];
 		for (const row of matching) {
 			const context = await this.invitationContext(row.invitationId);
 			if (!context?.recipientEmail) continue;
-			const token = this.createQuoteRef(context.invitationId, context.recipientEmail, context.responseDeadlineAt);
+			const token = this.createQuoteRef(
+				context.invitationId,
+				context.recipientEmail,
+				context.responseDeadlineAt
+			);
 			const quote = await this.buildPortalQuote(context, token);
 			quotes.push(quote);
 		}
@@ -382,7 +423,9 @@ export class SupplierRfqPortalService {
 	async submitQuote(actor: Actor, input: SubmitSupplierQuoteInput): Promise<string> {
 		const payload = this.assertToken(input.quoteRef);
 		if (normaliseEmail(payload.email) !== normaliseEmail(actor.email)) {
-			throw new SupplierRfqPortalAccessError('This quotation invitation is addressed to a different verified email address.');
+			throw new SupplierRfqPortalAccessError(
+				'This quotation invitation is addressed to a different verified email address.'
+			);
 		}
 		const supplierReference = optionalText(input.supplierReference, 160);
 		const validUntil = optionalDate(input.validUntil, 'Valid-until date');
@@ -394,7 +437,8 @@ export class SupplierRfqPortalService {
 				invitation.invitationStatus !== 'invited' ||
 				invitation.versionStatus !== 'issued' ||
 				(invitation.responseDeadlineAt && invitation.responseDeadlineAt <= this.now())
-			) throw new SupplierRfqPortalAccessError();
+			)
+				throw new SupplierRfqPortalAccessError();
 
 			const rfqItems = await trx
 				.selectFrom('rfq_items')
@@ -402,13 +446,19 @@ export class SupplierRfqPortalService {
 				.where('rfq_version_id', '=', invitation.versionId)
 				.orderBy('line_number', 'asc')
 				.execute();
-			if (!rfqItems.length) throw new SupplierRfqPortalValidationError('This RFQ has no lines to price.');
+			if (!rfqItems.length)
+				throw new SupplierRfqPortalValidationError('This RFQ has no lines to price.');
 			if (input.lines.length !== rfqItems.length) {
 				throw new SupplierRfqPortalValidationError('Price every RFQ line before submitting.');
 			}
 			const submittedById = new Map(input.lines.map((line) => [line.itemId, line]));
-			if (submittedById.size !== rfqItems.length || rfqItems.some((item) => !submittedById.has(item.id))) {
-				throw new SupplierRfqPortalValidationError('The submitted RFQ lines do not match the issued enquiry.');
+			if (
+				submittedById.size !== rfqItems.length ||
+				rfqItems.some((item) => !submittedById.has(item.id))
+			) {
+				throw new SupplierRfqPortalValidationError(
+					'The submitted RFQ lines do not match the issued enquiry.'
+				);
 			}
 			const existing = await trx
 				.selectFrom('supplier_returns')
@@ -416,7 +466,10 @@ export class SupplierRfqPortalService {
 				.where('rfq_invitation_id', '=', invitation.invitationId)
 				.where('return_status', 'not in', ['withdrawn', 'superseded'])
 				.executeTakeFirst();
-			if (existing) throw new SupplierRfqPortalValidationError('A quotation has already been submitted for this invitation.');
+			if (existing)
+				throw new SupplierRfqPortalValidationError(
+					'A quotation has already been submitted for this invitation.'
+				);
 
 			const previous = await trx
 				.selectFrom('supplier_returns')
@@ -440,7 +493,8 @@ export class SupplierRfqPortalService {
 					recorded_by_member_id: null
 				})
 				.executeTakeFirstOrThrow();
-			if (inserted.insertId === undefined) throw new Error('Supplier return insert did not return an ID.');
+			if (inserted.insertId === undefined)
+				throw new Error('Supplier return insert did not return an ID.');
 			const supplierReturnId = inserted.insertId.toString();
 			for (const item of rfqItems) {
 				const line = submittedById.get(item.id)!;
@@ -452,7 +506,10 @@ export class SupplierRfqPortalService {
 						rfq_item_id: item.id,
 						line_number: item.lineNumber,
 						description: null,
-						offered_quantity: positiveDecimal(line.offeredQuantity, `Line ${item.lineNumber} quantity`),
+						offered_quantity: positiveDecimal(
+							line.offeredQuantity,
+							`Line ${item.lineNumber} quantity`
+						),
 						unit_rate: nonNegativeDecimal(line.unitRate, `Line ${item.lineNumber} unit rate`),
 						lead_time_days: optionalLeadTime(line.leadTimeDays),
 						qualification_note: optionalText(line.qualificationNote, 4000)

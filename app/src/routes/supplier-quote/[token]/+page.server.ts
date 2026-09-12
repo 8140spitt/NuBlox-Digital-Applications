@@ -12,9 +12,11 @@ function normaliseEmail(value: string): string {
 
 export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 	const invitation = await new SupplierRfqPortalService(getDatabase()).getInvitation(params.token);
-	if (!invitation) throw error(404, 'This supplier quotation invitation is invalid or has expired.');
+	if (!invitation)
+		throw error(404, 'This supplier quotation invitation is invalid or has expired.');
 
-	const expiresAt = invitation.responseDeadlineAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+	const expiresAt =
+		invitation.responseDeadlineAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
 	const remainingSeconds = Math.max(60, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
 	cookies.set(SUPPLIER_RFQ_SIGNUP_COOKIE, params.token, {
 		httpOnly: true,
@@ -36,9 +38,12 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 			lineCount: invitation.lines.length,
 			status: invitation.status
 		},
-		actor: locals.actor ? { displayName: locals.actor.displayName, email: locals.actor.email } : null,
+		actor: locals.actor
+			? { displayName: locals.actor.displayName, email: locals.actor.email }
+			: null,
 		emailMatchesActor:
-			Boolean(locals.actor) && normaliseEmail(locals.actor?.email ?? '') === normaliseEmail(invitation.recipientEmail),
+			Boolean(locals.actor) &&
+			normaliseEmail(locals.actor?.email ?? '') === normaliseEmail(invitation.recipientEmail),
 		returnTo: `/supplier-quote/${encodeURIComponent(params.token)}`
 	};
 };

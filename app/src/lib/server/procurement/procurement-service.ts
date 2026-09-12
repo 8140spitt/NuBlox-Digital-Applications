@@ -565,7 +565,9 @@ export class ProcurementService {
 			if (!version || version.status !== 'draft')
 				throw new ProcurementValidationError('Only the current draft RFQ version can be issued.');
 			if (version.responseDeadlineAt && version.responseDeadlineAt <= this.now())
-				throw new ProcurementValidationError('The RFQ response deadline must be in the future before issue.');
+				throw new ProcurementValidationError(
+					'The RFQ response deadline must be in the future before issue.'
+				);
 			if (
 				(await repository.issueRfqVersion({
 					organisationId: actor.organisationId,
@@ -651,7 +653,8 @@ export class ProcurementService {
 			const purchaseOrderType = await repository.findPurchaseOrderTypeByCode(
 				requiredText(input.purchaseOrderTypeCode, 'Purchase-order type', 80)
 			);
-			if (!purchaseOrderType) throw new ProcurementValidationError('Purchase-order type is invalid.');
+			if (!purchaseOrderType)
+				throw new ProcurementValidationError('Purchase-order type is invalid.');
 			if (!(await repository.listSalesItemTypes()).some((row) => row.id === salesItemTypeId))
 				throw new ProcurementValidationError('The selected item type is unavailable.');
 			if (
@@ -663,7 +666,9 @@ export class ProcurementService {
 			if (input.packagePublicId?.trim()) {
 				const procurementPackage = await this.requirePackage(actor, input.packagePublicId, trx);
 				if (procurementPackage.projectId !== currentProject.id)
-					throw new ProcurementValidationError('The procurement package belongs to another project.');
+					throw new ProcurementValidationError(
+						'The procurement package belongs to another project.'
+					);
 				procurementPackageId = procurementPackage.id;
 			}
 			const orderPublicId = this.publicIdFactory();
@@ -709,7 +714,10 @@ export class ProcurementService {
 				referenceIdentifier: supplier.publicId,
 				sortOrder: 10
 			});
-			const address = await repository.findPrimarySupplierAddress(actor.organisationId, supplier.id);
+			const address = await repository.findPrimarySupplierAddress(
+				actor.organisationId,
+				supplier.id
+			);
 			if (address) {
 				const snapshot = await trx
 					.selectFrom('purchase_order_party_snapshots')
@@ -761,11 +769,23 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.po.approve', trx);
 			const current = await this.requirePurchaseOrder(actor, order.publicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const version = (await repository.listPurchaseOrderVersions(actor.organisationId, current.id))[0];
+			const version = (
+				await repository.listPurchaseOrderVersions(actor.organisationId, current.id)
+			)[0];
 			if (!version || version.status !== 'draft')
-				throw new ProcurementValidationError('Only the current draft purchase order can be approved.');
-			if ((await repository.approvePurchaseOrderVersion({ organisationId: actor.organisationId, versionId: version.id, memberId: membership.id })) !== 1)
-				throw new ProcurementValidationError('The purchase order changed before it could be approved.');
+				throw new ProcurementValidationError(
+					'Only the current draft purchase order can be approved.'
+				);
+			if (
+				(await repository.approvePurchaseOrderVersion({
+					organisationId: actor.organisationId,
+					versionId: version.id,
+					memberId: membership.id
+				})) !== 1
+			)
+				throw new ProcurementValidationError(
+					'The purchase order changed before it could be approved.'
+				);
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
@@ -793,11 +813,23 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.po.issue', trx);
 			const current = await this.requirePurchaseOrder(actor, order.publicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const version = (await repository.listPurchaseOrderVersions(actor.organisationId, current.id))[0];
+			const version = (
+				await repository.listPurchaseOrderVersions(actor.organisationId, current.id)
+			)[0];
 			if (!version || version.status !== 'approved')
-				throw new ProcurementValidationError('Only the approved purchase-order version can be issued.');
-			if ((await repository.issuePurchaseOrderVersion({ organisationId: actor.organisationId, versionId: version.id, memberId: membership.id })) !== 1)
-				throw new ProcurementValidationError('The purchase order changed before it could be issued.');
+				throw new ProcurementValidationError(
+					'Only the approved purchase-order version can be issued.'
+				);
+			if (
+				(await repository.issuePurchaseOrderVersion({
+					organisationId: actor.organisationId,
+					versionId: version.id,
+					memberId: membership.id
+				})) !== 1
+			)
+				throw new ProcurementValidationError(
+					'The purchase order changed before it could be issued.'
+				);
 			const issueEventId = await repository.insertPurchaseOrderIssueEvent({
 				organisationId: actor.organisationId,
 				versionId: version.id,
@@ -811,7 +843,13 @@ export class ProcurementService {
 				versionId: version.id,
 				partyId: current.supplierPartyId,
 				recipientName: current.supplierName,
-				recipientEmail: (await repository.findEligibleSupplierByPublicId(actor.organisationId, current.supplierPublicId))?.primaryEmail ?? null
+				recipientEmail:
+					(
+						await repository.findEligibleSupplierByPublicId(
+							actor.organisationId,
+							current.supplierPublicId
+						)
+					)?.primaryEmail ?? null
 			});
 			await trx
 				.updateTable('purchase_orders')
@@ -840,7 +878,12 @@ export class ProcurementService {
 		const order = await this.requirePurchaseOrder(actor, input.purchaseOrderPublicId);
 		const receiptKind = receiptType(input.receiptType);
 		const quantityReceived = decimal(input.quantityReceived, 4, 'Quantity received');
-		const quantityRejected = decimal(input.quantityRejected?.trim() || '0', 4, 'Quantity rejected', true);
+		const quantityRejected = decimal(
+			input.quantityRejected?.trim() || '0',
+			4,
+			'Quantity rejected',
+			true
+		);
 		const deliveryReference = optionalText(input.supplierDeliveryReference, 160);
 		const notes = optionalText(input.notes, 4000);
 		return this.db.transaction().execute(async (trx) => {
@@ -848,14 +891,21 @@ export class ProcurementService {
 			await this.requirePermission(actor, 'procurement.receipt.manage', trx);
 			const current = await this.requirePurchaseOrder(actor, order.publicId, trx);
 			const repository = new ProcurementRepository(trx);
-			const version = (await repository.listPurchaseOrderVersions(actor.organisationId, current.id))[0];
+			const version = (
+				await repository.listPurchaseOrderVersions(actor.organisationId, current.id)
+			)[0];
 			if (!version || version.status !== 'issued')
-				throw new ProcurementValidationError('Receipts can only be recorded against an issued purchase order.');
+				throw new ProcurementValidationError(
+					'Receipts can only be recorded against an issued purchase order.'
+				);
 			const item = (await repository.listPurchaseOrderItems(actor.organisationId, version.id)).find(
 				(row) => row.lineNumber === positiveInteger(input.lineNumber, 'Purchase-order line')
 			);
 			if (!item) throw new ProcurementValidationError('Purchase-order line not found.');
-			if (parseScaledDecimal(quantityRejected, 4, 'Quantity rejected') > parseScaledDecimal(quantityReceived, 4, 'Quantity received'))
+			if (
+				parseScaledDecimal(quantityRejected, 4, 'Quantity rejected') >
+				parseScaledDecimal(quantityReceived, 4, 'Quantity received')
+			)
 				throw new ProcurementValidationError('Rejected quantity cannot exceed received quantity.');
 			const receiptPublicId = this.publicIdFactory();
 			const receiptId = await repository.insertReceipt({
@@ -875,7 +925,8 @@ export class ProcurementService {
 				purchaseOrderItemId: item.id,
 				quantityReceived,
 				quantityRejected,
-				rejectionReason: parseScaledDecimal(quantityRejected, 4, 'Quantity rejected') > 0n ? notes : null
+				rejectionReason:
+					parseScaledDecimal(quantityRejected, 4, 'Quantity rejected') > 0n ? notes : null
 			});
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
@@ -887,7 +938,12 @@ export class ProcurementService {
 				subjectType: 'purchase_order_receipt',
 				subjectPublicId: receiptPublicId,
 				correlationId: actor.correlationId,
-				changeSummary: { purchaseOrderPublicId: current.publicId, lineNumber: item.lineNumber, quantityReceived, quantityRejected }
+				changeSummary: {
+					purchaseOrderPublicId: current.publicId,
+					lineNumber: item.lineNumber,
+					quantityReceived,
+					quantityRejected
+				}
 			});
 			return receiptPublicId;
 		});

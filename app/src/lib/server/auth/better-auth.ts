@@ -66,7 +66,12 @@ function signupProvisioningIntentFromContext(ctx: {
 	const bootstrapToken = ctx.getCookie(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE)?.trim() ?? '';
 	const collaborationToken = ctx.getCookie(PROJECT_COLLABORATION_SIGNUP_COOKIE)?.trim() ?? '';
 	const supplierRfqToken = ctx.getCookie(SUPPLIER_RFQ_SIGNUP_COOKIE)?.trim() ?? '';
-	const intentCount = [invitationToken, bootstrapToken, collaborationToken, supplierRfqToken].filter(Boolean).length;
+	const intentCount = [
+		invitationToken,
+		bootstrapToken,
+		collaborationToken,
+		supplierRfqToken
+	].filter(Boolean).length;
 	if (intentCount > 1) {
 		throw new APIError('FORBIDDEN', {
 			message: 'The NuBlox account setup state is ambiguous. Start again.'

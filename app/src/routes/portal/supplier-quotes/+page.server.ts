@@ -59,10 +59,14 @@ export const actions: Actions = {
 				lines: quoteLines(data)
 			});
 		} catch (error) {
-			if (error instanceof SupplierRfqPortalAccessError) return fail(403, { message: error.message });
-			if (error instanceof SupplierRfqPortalValidationError) return fail(400, { message: error.message });
+			if (error instanceof SupplierRfqPortalAccessError)
+				return fail(403, { message: error.message });
+			if (error instanceof SupplierRfqPortalValidationError)
+				return fail(400, { message: error.message });
 			if (error instanceof ConcurrentUpdateError) {
-				return fail(409, { message: 'The quotation changed while it was being submitted. Refresh and try again.' });
+				return fail(409, {
+					message: 'The quotation changed while it was being submitted. Refresh and try again.'
+				});
 			}
 			throw error;
 		}

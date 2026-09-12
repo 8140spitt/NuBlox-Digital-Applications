@@ -71,7 +71,9 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 	if (!locals.actor) throw redirect(303, '/signin?returnTo=%2Fportal');
 	cookies.delete(SUPPLIER_RFQ_SIGNUP_COOKIE, { path: '/' });
 	const db = getDatabase();
-	const supplierQuotes = await new SupplierRfqPortalService(db).listPortalQuotes(locals.actor.email);
+	const supplierQuotes = await new SupplierRfqPortalService(db).listPortalQuotes(
+		locals.actor.email
+	);
 	const actor = actorFromLocals(locals);
 	if (!actor) {
 		const externalProjects = await new ProjectExternalCollaborationService(
@@ -115,7 +117,8 @@ export const load: PageServerLoad = async ({ locals, cookies }) => {
 
 export const actions: Actions = {
 	submitSupplierQuote: async ({ request, locals }) => {
-		if (!locals.actor) return actionFailure(401, 'supplierQuote', '', 'Authentication is required.');
+		if (!locals.actor)
+			return actionFailure(401, 'supplierQuote', '', 'Authentication is required.');
 		const data = await request.formData();
 		try {
 			await new SupplierRfqPortalService(getDatabase()).submitQuote(locals.actor, {
@@ -132,7 +135,12 @@ export const actions: Actions = {
 				return actionFailure(400, 'supplierQuote', '', error.message);
 			}
 			if (error instanceof ConcurrentUpdateError) {
-				return actionFailure(409, 'supplierQuote', '', 'The quotation changed while it was being submitted. Refresh and try again.');
+				return actionFailure(
+					409,
+					'supplierQuote',
+					'',
+					'The quotation changed while it was being submitted. Refresh and try again.'
+				);
 			}
 			throw error;
 		}
