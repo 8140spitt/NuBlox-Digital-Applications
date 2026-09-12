@@ -14,8 +14,9 @@ export const load: PageServerLoad = async ({ request }) => {
 	if (contexts.length === 0) {
 		redirect(303, routes.authNoAccess);
 	}
-	if (contexts.length === 1) {
-		redirect(303, routes.dashboard(contexts[0].organisationPublicId));
+	const [onlyContext] = contexts;
+	if (contexts.length === 1 && onlyContext) {
+		redirect(303, routes.dashboard(onlyContext.organisationPublicId));
 	}
 
 	return {
