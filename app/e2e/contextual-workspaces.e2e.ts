@@ -39,7 +39,7 @@ test('project context stays pinned while moving between business functions', asy
 	).toBeVisible();
 
 	await projectWorkspace.getByRole('link', { name: 'Documents', exact: true }).click();
-	await expect(page).toHaveURL(`/documents?project=${projectPublicId}`);
+	await expect(page).toHaveURL(`/nublox/documents?project=${projectPublicId}`);
 	await expect(page.getByRole('navigation', { name: 'Project workspace' })).toBeVisible();
 	await expect(page.getByText(new RegExp(PROJECT_NUMBER)).first()).toBeVisible();
 
@@ -47,14 +47,14 @@ test('project context stays pinned while moving between business functions', asy
 		.getByRole('navigation', { name: 'Project workspace' })
 		.getByRole('link', { name: 'Costs', exact: true })
 		.click();
-	await expect(page).toHaveURL(`/commercial/cost-control?project=${projectPublicId}`);
+	await expect(page).toHaveURL(`/nublox/commercial/cost-control?project=${projectPublicId}`);
 	await expect(page.getByRole('navigation', { name: 'Project workspace' })).toBeVisible();
 
 	await page
 		.getByRole('navigation', { name: 'Project workspace' })
 		.getByRole('link', { name: 'Site', exact: true })
 		.click();
-	await expect(page).toHaveURL(`/site?project=${projectPublicId}`);
+	await expect(page).toHaveURL(`/nublox/site?project=${projectPublicId}`);
 	await expect(page.getByRole('navigation', { name: 'Project workspace' })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'All projects' })).toBeVisible();
 });

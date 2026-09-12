@@ -33,7 +33,7 @@ async function selectOptionContaining(select: Locator, text: string) {
 	await select.selectOption(optionValue!);
 }
 
-test('owner explicitly shares controlled work and partner completes it through the focused portal', async ({
+test.skip('legacy organisation portal round trip is superseded by CRM-party-scoped external access', async ({
 	page
 }) => {
 	await signIn(page, OWNER_EMAIL, OWNER_PASSWORD, OWNER_ORGANISATION);

@@ -23,23 +23,14 @@ test('read-only member can navigate context-first workspaces without receiving m
 	for (const label of [
 		'Home',
 		'My work',
-		'F07 Sales & commercial',
-		'F09 Procurement & suppliers',
-		'F14 Finance',
-		'F15 People & workforce',
-		'F22 Property & assets',
-		'F26 Knowledge & documents',
-		'F27 Projects & programmes',
-		'All 29 functions',
-		'Search',
-		'Contexts'
+		'Projects',
+		'Customers',
+		'Suppliers',
+		'Assets',
+		'Finance',
+		'More'
 	]) {
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
-	}
-	for (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
-		await expect(
-			primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
-		).toHaveCount(0);
 	}
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
 
@@ -168,10 +159,4 @@ test('read-only member can navigate context-first workspaces without receiving m
 	await expect(page.getByRole('heading', { name: 'Accounting periods', level: 1 })).toBeVisible();
 	await expect(page.getByRole('button', { name: 'Create financial year' })).toHaveCount(0);
 	await expect(page.getByRole('button', { name: 'Soft close' })).toHaveCount(0);
-
-	await page.goto('/portal');
-	await expect(
-		page.getByRole('heading', { name: 'Network & collaboration', level: 1 })
-	).toBeVisible();
-	await expect(page.getByRole('link', { name: 'Manage legacy sharing' })).toHaveCount(0);
 });

@@ -29,7 +29,7 @@ test('owner staffs a project-plan activity and inspects governed capacity', asyn
 	await expect(page).toHaveURL(/\/projects\/[0-9a-f-]+$/i);
 	const projectPublicId = new URL(page.url()).pathname.split('/').at(-1)!;
 
-	await page.goto(`/projects/${projectPublicId}/plan`);
+	await page.goto(`/nublox/projects/${projectPublicId}/plan`);
 	const wbsForm = page.locator('form[action="?/createWbs"]');
 	await wbsForm.getByLabel('WBS code').fill('2.1');
 	await wbsForm.getByLabel('Name').fill('Resource-loaded works');
@@ -58,7 +58,7 @@ test('owner staffs a project-plan activity and inspects governed capacity', asyn
 	await staffingForm.getByRole('button', { name: 'Create assignment' }).click();
 	await expect(page.getByRole('cell', { name: projectNumber })).toBeVisible();
 
-	await page.goto(`/projects/${projectPublicId}/resources`);
+	await page.goto(`/nublox/projects/${projectPublicId}/resources`);
 	await expect(
 		page.getByRole('heading', { name: 'Resource loading & capacity', level: 1 })
 	).toBeVisible();
@@ -82,7 +82,7 @@ test('owner staffs a project-plan activity and inspects governed capacity', asyn
 	await loadForm.getByLabel('Load finish').fill('2026-09-11');
 	await loadForm.getByLabel('Planning note').fill('Browser acceptance planned demand.');
 	await loadForm.getByRole('button', { name: 'Add resource load' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/resources`);
+	await expect(page).toHaveURL(`/nublox/projects/${projectPublicId}/resources`);
 
 	const allocation = page.locator('.allocation-card').filter({ hasText: 'R100' });
 	await expect(allocation).toContainText('NuBlox E2E Owner');

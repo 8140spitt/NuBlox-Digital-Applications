@@ -7,7 +7,7 @@ const ORGANISATION = 'NuBlox E2E Organisation';
 function isProfileUpdateResponse(response: Response) {
 	const requestMethod = response.request().method();
 	const responsePathname = new URL(response.url()).pathname;
-	return requestMethod === 'POST' && responsePathname === '/organisation/profile';
+	return requestMethod === 'POST' && responsePathname.endsWith('/organisation/profile');
 }
 
 async function signIn(page: import('@playwright/test').Page) {

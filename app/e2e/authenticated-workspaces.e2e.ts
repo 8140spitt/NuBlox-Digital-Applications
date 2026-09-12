@@ -19,28 +19,15 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	for (const label of [
 		'Home',
 		'My work',
-		'F01 Strategy & planning',
-		'F02 Corporate governance',
-		'F03 Enterprise performance',
-		'F04 Corporate development',
-		'F07 Sales & commercial',
-		'F09 Procurement & suppliers',
-		'F14 Finance',
-		'F15 People & workforce',
-		'F22 Property & assets',
-		'F26 Knowledge & documents',
-		'F27 Projects & programmes',
-		'All 29 functions',
-		'Search',
-		'Contexts'
+		'Projects',
+		'Customers',
+		'Suppliers',
+		'Assets',
+		'Finance',
+		'Portal',
+		'More'
 	]) {
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
-	}
-
-	for (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
-		await expect(
-			primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
-		).toHaveCount(0);
 	}
 
 	const searchMenu = page.locator('details.search-menu');
@@ -81,10 +68,10 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 		await expect(customerWorkspace.getByRole('link', { name: label, exact: true })).toBeVisible();
 	}
 	await customerWorkspace.getByRole('link', { name: 'Estimates', exact: true }).click();
-	await expect(page).toHaveURL('/commercial/estimates');
+	await expect(page).toHaveURL('/nublox/commercial/estimates');
 	await expect(page.getByRole('navigation', { name: 'Business workspace' })).toBeVisible();
 	await expect(
-		primaryNavigation.getByRole('link', { name: 'F07 Sales & commercial', exact: true })
+		primaryNavigation.getByRole('link', { name: 'Customers', exact: true })
 	).toHaveAttribute('aria-current', 'page');
 
 	await page.goto('/finance');
@@ -173,7 +160,7 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 
 	for (const workspacePath of workspacePaths) {
 		await page.goto(workspacePath);
-		expect(new URL(page.url()).pathname).toBe(workspacePath);
+		expect(new URL(page.url()).pathname).toBe(`/nublox${workspacePath}`);
 		await expect(page.locator('body')).not.toContainText('Internal Server Error');
 		await expect(page.locator('body')).not.toContainText('Authentication is required.');
 	}

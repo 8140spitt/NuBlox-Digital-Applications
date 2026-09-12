@@ -33,7 +33,7 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	await expect(page).toHaveURL(/\/projects\/[0-9a-f-]+$/i);
 	const projectPublicId = new URL(page.url()).pathname.split('/').at(-1)!;
 
-	await page.goto(`/projects/${projectPublicId}/plan`);
+	await page.goto(`/nublox/projects/${projectPublicId}/plan`);
 	await expect(page.getByRole('heading', { name: 'Project plan', level: 1 })).toBeVisible();
 
 	const wbsForm = page.locator('form[action="?/createWbs"]');
@@ -41,7 +41,7 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	await wbsForm.getByLabel('Name').fill('Substructure');
 	await wbsForm.getByLabel('WBS description').fill('Controlled substructure scope.');
 	await wbsForm.getByRole('button', { name: 'Create WBS node' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/plan`);
+	await expect(page).toHaveURL(`/nublox/projects/${projectPublicId}/plan`);
 	await expect(page.getByText('1.1', { exact: true }).first()).toBeVisible();
 
 	let activityForm = page.locator('form[action="?/createActivity"]');
@@ -53,7 +53,7 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	await activityForm.getByLabel('Planned finish').fill('2026-09-05');
 	await activityForm.getByLabel('Duration (days)').fill('5');
 	await activityForm.getByRole('button', { name: 'Create activity / milestone' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/plan`);
+	await expect(page).toHaveURL(`/nublox/projects/${projectPublicId}/plan`);
 
 	activityForm = page.locator('form[action="?/createActivity"]');
 	await activityForm.getByLabel('WBS node').selectOption({ label: '1.1 · Substructure' });
@@ -64,7 +64,7 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	await activityForm.getByLabel('Planned finish').fill('2026-09-05');
 	await activityForm.getByLabel('Duration (days)').fill('0');
 	await activityForm.getByRole('button', { name: 'Create activity / milestone' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/plan`);
+	await expect(page).toHaveURL(`/nublox/projects/${projectPublicId}/plan`);
 	await expect(page.getByRole('cell', { name: 'A100' })).toBeVisible();
 	await expect(page.getByRole('cell', { name: 'M200' })).toBeVisible();
 
@@ -78,7 +78,7 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 	await dependencyForm.getByLabel('Relationship').selectOption('FS');
 	await dependencyForm.getByLabel('Lag (days)').fill('0');
 	await dependencyForm.getByRole('button', { name: 'Add dependency' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/plan`);
+	await expect(page).toHaveURL(`/nublox/projects/${projectPublicId}/plan`);
 	await expect(page.locator('.dependency-card').filter({ hasText: 'A100' })).toContainText('M200');
 
 	const baselineForm = page.locator('form[action="?/captureBaseline"]');
@@ -87,7 +87,7 @@ test('owner builds a governed WBS schedule network and captures an immutable bas
 		.getByLabel('Baseline description')
 		.fill('Approved schedule network captured through browser acceptance.');
 	await baselineForm.getByRole('button', { name: 'Capture baseline' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/plan`);
+	await expect(page).toHaveURL(`/nublox/projects/${projectPublicId}/plan`);
 	const baselineCard = page.locator('.baseline-card').filter({ hasText: 'Contract baseline' });
 	await expect(baselineCard).toBeVisible();
 	await expect(baselineCard).toContainText('2 activities/milestones · 1 dependencies');

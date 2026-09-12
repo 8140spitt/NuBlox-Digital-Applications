@@ -33,7 +33,7 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	const projectPublicId = new URL(page.url()).pathname.split('/').at(-1)!;
 
 	await page.goto(
-		`/commercial/cost-control?project=${encodeURIComponent(projectPublicId)}#create-cost-code`
+		`/nublox/commercial/cost-control?project=${encodeURIComponent(projectPublicId)}#create-cost-code`
 	);
 	const costCodePanel = page.locator('#create-cost-code');
 	await costCodePanel.getByLabel('Cost category').selectOption('material');
@@ -41,7 +41,7 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	await costCodePanel.getByLabel('Name').fill('Forecast materials');
 	await costCodePanel.getByRole('button', { name: 'Create cost code' }).click();
 	await expect(page).toHaveURL(
-		new RegExp(`/commercial/cost-control\\?project=${projectPublicId}$`)
+		new RegExp(`/nublox/commercial/cost-control\\?project=${projectPublicId}$`)
 	);
 
 	const budgetPanel = page.locator('#create-budget');
@@ -52,21 +52,21 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	await budgetPanel.getByLabel('Budget amount').fill('5000.00');
 	await budgetPanel.getByRole('button', { name: 'Create budget draft' }).click();
 	await expect(page).toHaveURL(
-		new RegExp(`/commercial/cost-control\\?project=${projectPublicId}$`)
+		new RegExp(`/nublox/commercial/cost-control\\?project=${projectPublicId}$`)
 	);
 	let budgetCard = page
 		.locator('#budget-register .budget-card')
 		.filter({ hasText: `Forecast baseline ${suffix}` });
 	await budgetCard.getByRole('button', { name: 'Approve baseline budget' }).click();
 	await expect(page).toHaveURL(
-		new RegExp(`/commercial/cost-control\\?project=${projectPublicId}$`)
+		new RegExp(`/nublox/commercial/cost-control\\?project=${projectPublicId}$`)
 	);
 	budgetCard = page
 		.locator('#budget-register .budget-card')
 		.filter({ hasText: `Forecast baseline ${suffix}` });
 	await expect(budgetCard.getByText('approved', { exact: true })).toBeVisible();
 
-	await page.goto(`/projects/${projectPublicId}/financials`);
+	await page.goto(`/nublox/projects/${projectPublicId}/financials`);
 	await expect(
 		page.getByRole('heading', { name: 'Project financial control', level: 1 })
 	).toBeVisible();
@@ -79,7 +79,7 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	await periodForm.getByLabel('Start').fill('2026-08-01');
 	await periodForm.getByLabel('End').fill('2026-08-31');
 	await periodForm.getByRole('button', { name: 'Create reporting period' }).click();
-	await expect(page).toHaveURL(`/projects/${projectPublicId}/financials`);
+	await expect(page).toHaveURL(`/nublox/projects/${projectPublicId}/financials`);
 	await expect(
 		page.locator('.period-list').getByText(`August ${suffix}`, { exact: true })
 	).toBeVisible();
@@ -111,7 +111,7 @@ test('owner snapshots project financial position and approves reconciled cash fl
 	await cashForm.getByLabel('Cash-flow commentary').fill('Completion materials forecast.');
 	await cashForm.getByRole('button', { name: 'Add cash-flow line' }).click();
 	await expect(page).toHaveURL(
-		`/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`
+		`/nublox/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`
 	);
 	await expect(
 		page.locator('.cash-metrics article').filter({ hasText: 'Outflow vs FTC' })
@@ -119,7 +119,7 @@ test('owner snapshots project financial position and approves reconciled cash fl
 
 	await page.getByRole('button', { name: 'Approve & lock forecast' }).click();
 	await expect(page).toHaveURL(
-		`/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`
+		`/nublox/projects/${projectPublicId}/financials?forecast=${forecastPublicId}`
 	);
 	await expect(page.getByText('approved', { exact: true }).first()).toBeVisible();
 	await expect(
