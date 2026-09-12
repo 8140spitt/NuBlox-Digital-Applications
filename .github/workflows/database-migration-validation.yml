@@ -4,27 +4,27 @@ on:
   pull_request:
     paths:
       - 'database/migrations/**'
-      - 'app/package.json'
-      - 'app/pnpm-lock.yaml'
-      - 'app/.kysely-codegenrc.json'
-      - 'app/.kysely-access-control-codegenrc.json'
-      - 'app/.kysely-collections-codegenrc.json'
-      - 'app/.kysely-accounting-codegenrc.json'
-      - 'app/.kysely-accounts-payable-codegenrc.json'
-      - 'app/.kysely-project-controls-codegenrc.json'
-      - 'app/.kysely-strategy-codegenrc.json'
-      - 'app/.kysely-governance-codegenrc.json'
-      - 'app/.kysely-corporate-development-codegenrc.json'
-      - 'app/.kysely-product-service-codegenrc.json'
-      - 'app/.kysely-external-access-codegenrc.json'
-      - 'app/.prettierignore'
-      - 'app/eslint.config.js'
-      - 'app/playwright.config.ts'
-      - 'app/prettier.config.js'
-      - 'app/vite.config.ts'
-      - 'app/vitest.integration.config.ts'
-      - 'app/e2e/**'
-      - 'app/src/**'
+      - 'appv1/package.json'
+      - 'appv1/pnpm-lock.yaml'
+      - 'appv1/.kysely-codegenrc.json'
+      - 'appv1/.kysely-access-control-codegenrc.json'
+      - 'appv1/.kysely-collections-codegenrc.json'
+      - 'appv1/.kysely-accounting-codegenrc.json'
+      - 'appv1/.kysely-accounts-payable-codegenrc.json'
+      - 'appv1/.kysely-project-controls-codegenrc.json'
+      - 'appv1/.kysely-strategy-codegenrc.json'
+      - 'appv1/.kysely-governance-codegenrc.json'
+      - 'appv1/.kysely-corporate-development-codegenrc.json'
+      - 'appv1/.kysely-product-service-codegenrc.json'
+      - 'appv1/.kysely-external-access-codegenrc.json'
+      - 'appv1/.prettierignore'
+      - 'appv1/eslint.config.js'
+      - 'appv1/playwright.config.ts'
+      - 'appv1/prettier.config.js'
+      - 'appv1/vite.config.ts'
+      - 'appv1/vitest.integration.config.ts'
+      - 'appv1/e2e/**'
+      - 'appv1/src/**'
       - 'scripts/generate-job-architecture.mjs'
       - 'docs/architecture/taxonomy/**'
       - 'docs/architecture/job-architecture/**'
@@ -34,27 +34,27 @@ on:
       - main
     paths:
       - 'database/migrations/**'
-      - 'app/package.json'
-      - 'app/pnpm-lock.yaml'
-      - 'app/.kysely-codegenrc.json'
-      - 'app/.kysely-access-control-codegenrc.json'
-      - 'app/.kysely-collections-codegenrc.json'
-      - 'app/.kysely-accounting-codegenrc.json'
-      - 'app/.kysely-accounts-payable-codegenrc.json'
-      - 'app/.kysely-project-controls-codegenrc.json'
-      - 'app/.kysely-strategy-codegenrc.json'
-      - 'app/.kysely-governance-codegenrc.json'
-      - 'app/.kysely-corporate-development-codegenrc.json'
-      - 'app/.kysely-product-service-codegenrc.json'
-      - 'app/.kysely-external-access-codegenrc.json'
-      - 'app/.prettierignore'
-      - 'app/eslint.config.js'
-      - 'app/playwright.config.ts'
-      - 'app/prettier.config.js'
-      - 'app/vite.config.ts'
-      - 'app/vitest.integration.config.ts'
-      - 'app/e2e/**'
-      - 'app/src/**'
+      - 'appv1/package.json'
+      - 'appv1/pnpm-lock.yaml'
+      - 'appv1/.kysely-codegenrc.json'
+      - 'appv1/.kysely-access-control-codegenrc.json'
+      - 'appv1/.kysely-collections-codegenrc.json'
+      - 'appv1/.kysely-accounting-codegenrc.json'
+      - 'appv1/.kysely-accounts-payable-codegenrc.json'
+      - 'appv1/.kysely-project-controls-codegenrc.json'
+      - 'appv1/.kysely-strategy-codegenrc.json'
+      - 'appv1/.kysely-governance-codegenrc.json'
+      - 'appv1/.kysely-corporate-development-codegenrc.json'
+      - 'appv1/.kysely-product-service-codegenrc.json'
+      - 'appv1/.kysely-external-access-codegenrc.json'
+      - 'appv1/.prettierignore'
+      - 'appv1/eslint.config.js'
+      - 'appv1/playwright.config.ts'
+      - 'appv1/prettier.config.js'
+      - 'appv1/vite.config.ts'
+      - 'appv1/vitest.integration.config.ts'
+      - 'appv1/e2e/**'
+      - 'appv1/src/**'
       - 'scripts/generate-job-architecture.mjs'
       - 'docs/architecture/taxonomy/**'
       - 'docs/architecture/job-architecture/**'
@@ -101,18 +101,18 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-          cache-dependency-path: app/pnpm-lock.yaml
+          cache-dependency-path: appv1/pnpm-lock.yaml
 
       - name: Install application dependencies
-        working-directory: app
+        working-directory: appv1
         run: pnpm install --frozen-lockfile
 
       - name: Audit production dependencies
-        working-directory: app
+        working-directory: appv1
         run: pnpm audit --prod --audit-level moderate
 
       - name: Run formatting and lint checks
-        working-directory: app
+        working-directory: appv1
         run: pnpm lint
 
       - name: Verify generated job architecture is current
@@ -121,7 +121,7 @@ jobs:
           git diff --exit-code -- docs/architecture/job-architecture/generated
 
       - name: Apply authoritative migration stream
-        working-directory: app
+        working-directory: appv1
         run: |
           pnpm db:migrate
           pnpm db:status
@@ -134,40 +134,40 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '529'
-          test "$fk_count" = '1476'
-          test "$check_count" = '843'
+          test "$table_count" = '530'
+          test "$fk_count" = '1477'
+          test "$check_count" = '844'
 
       - name: Regenerate database-derived Kysely types
-        working-directory: app
+        working-directory: appv1
         run: pnpm db:types
 
       - name: Verify generated types are committed
-        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/access-control.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts app/src/lib/server/db/generated/project-controls.d.ts app/src/lib/server/db/generated/strategy.d.ts app/src/lib/server/db/generated/governance.d.ts app/src/lib/server/db/generated/corporate-development.d.ts app/src/lib/server/db/generated/product-service.d.ts app/src/lib/server/db/generated/external-access.d.ts
+        run: git diff --exit-code -- appv1/src/lib/server/db/generated/database.d.ts appv1/src/lib/server/db/generated/access-control.d.ts appv1/src/lib/server/db/generated/collections.d.ts appv1/src/lib/server/db/generated/accounting.d.ts appv1/src/lib/server/db/generated/accounts-payable.d.ts appv1/src/lib/server/db/generated/project-controls.d.ts appv1/src/lib/server/db/generated/strategy.d.ts appv1/src/lib/server/db/generated/governance.d.ts appv1/src/lib/server/db/generated/corporate-development.d.ts appv1/src/lib/server/db/generated/product-service.d.ts appv1/src/lib/server/db/generated/external-access.d.ts
 
       - name: Run real-MySQL integration suite
-        working-directory: app
+        working-directory: appv1
         run: pnpm test:integration
 
       - name: Type-check SvelteKit application
-        working-directory: app
+        working-directory: appv1
         run: pnpm check
 
       - name: Install Chromium for component and browser validation
-        working-directory: app
+        working-directory: appv1
         run: pnpm exec playwright install chromium
 
       - name: Run unit and component tests
-        working-directory: app
+        working-directory: appv1
         run: pnpm test:unit
 
       - name: Verify validation leaves no tracked-file drift
         run: git diff --exit-code
 
       - name: Build production SvelteKit application
-        working-directory: app
+        working-directory: appv1
         run: pnpm build
 
       - name: Run Playwright browser E2E suite
-        working-directory: app
+        working-directory: appv1
         run: pnpm exec playwright test
