@@ -209,6 +209,71 @@
 						{#each collaborator.roles as role}<span>{role.name}</span>{/each}
 					</div>
 					{#if data.externalCollaboration.canManage}
+						{#if data.externalActionOptions.rfis.length || data.externalActionOptions.submittals.length || data.externalActionOptions.instructions.length}
+							<details class="external-work-controls">
+								<summary>Assign controlled Network work</summary>
+								<div class="external-work-grid">
+									{#if data.externalActionOptions.canAssignRfis && data.externalActionOptions.rfis.length}
+										<form method="POST" action="?/assignExternalRfi">
+											<input
+												type="hidden"
+												name="collaboratorPublicId"
+												value={collaborator.publicId}
+											/>
+											<label
+												><span>RFI response</span><select name="rfiPublicId" required
+													><option value="">Select RFI</option
+													>{#each data.externalActionOptions.rfis as rfi}<option
+															value={rfi.publicId}>{rfi.number} · {rfi.subject}</option
+														>{/each}</select
+												></label
+											>
+											<button class="secondary" type="submit">Assign RFI</button>
+										</form>
+									{/if}
+									{#if data.externalActionOptions.canAssignSubmittals && data.externalActionOptions.submittals.length}
+										<form method="POST" action="?/assignExternalSubmittal">
+											<input
+												type="hidden"
+												name="collaboratorPublicId"
+												value={collaborator.publicId}
+											/>
+											<label
+												><span>Submittal review</span><select name="submittalPublicId" required
+													><option value="">Select submittal</option
+													>{#each data.externalActionOptions.submittals as submittal}<option
+															value={submittal.publicId}
+															>{submittal.number} · {submittal.title}</option
+														>{/each}</select
+												></label
+											>
+											<button class="secondary" type="submit">Assign review</button>
+										</form>
+									{/if}
+									{#if data.externalActionOptions.canAssignInstructions && data.externalActionOptions.instructions.length}
+										<form method="POST" action="?/assignExternalInstruction">
+											<input
+												type="hidden"
+												name="collaboratorPublicId"
+												value={collaborator.publicId}
+											/>
+											<label
+												><span>Instruction acknowledgement</span><select
+													name="instructionPublicId"
+													required
+													><option value="">Select instruction</option
+													>{#each data.externalActionOptions.instructions as instruction}<option
+															value={instruction.publicId}
+															>{instruction.number} · {instruction.subject}</option
+														>{/each}</select
+												></label
+											>
+											<button class="secondary" type="submit">Assign instruction</button>
+										</form>
+									{/if}
+								</div>
+							</details>
+						{/if}
 						<form method="POST" action="?/removeExternalCollaborator">
 							<input type="hidden" name="collaboratorPublicId" value={collaborator.publicId} />
 							<button class="danger" type="submit">Remove external access</button>
@@ -679,6 +744,32 @@
 	.role-form label {
 		flex: 1;
 	}
+	.external-work-controls {
+		border-top: 1px solid #e1e1db;
+		padding-top: 0.75rem;
+	}
+	.external-work-controls summary {
+		cursor: pointer;
+		font-weight: 750;
+	}
+	.external-work-grid {
+		display: grid;
+		gap: 0.75rem;
+		margin-top: 0.75rem;
+	}
+	.external-work-grid form {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.65rem;
+		align-items: end;
+	}
+	.external-work-grid label {
+		display: grid;
+		gap: 0.35rem;
+		font-size: 0.82rem;
+		font-weight: 650;
+	}
+
 	.invite-form,
 	.add-member-form {
 		display: grid;

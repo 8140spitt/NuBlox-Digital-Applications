@@ -101,6 +101,25 @@ async function cleanup(): Promise<void> {
 		.execute();
 	const projectIds = projects.map((row) => row.id);
 	if (projectIds.length > 0) {
+		await db
+			.deleteFrom('external_instruction_acknowledgements')
+			.where('project_id', 'in', projectIds)
+			.execute();
+		await db
+			.deleteFrom('external_submittal_reviews')
+			.where('project_id', 'in', projectIds)
+			.execute();
+		await db.deleteFrom('external_rfi_responses').where('project_id', 'in', projectIds).execute();
+		if (organisationId) {
+			await db
+				.deleteFrom('external_work_items')
+				.where('owning_organisation_id', '=', organisationId)
+				.execute();
+			await db
+				.deleteFrom('external_access_grants')
+				.where('owning_organisation_id', '=', organisationId)
+				.execute();
+		}
 		await db.deleteFrom('audit_events').where('project_id', 'in', projectIds).execute();
 		await db
 			.deleteFrom('project_external_collaborator_roles')
@@ -398,6 +417,17 @@ describe('person-level external project collaboration', () => {
 			roles: ['Engineer']
 		});
 
+		const projectGrant = await db
+			.selectFrom('external_access_grants')
+			.select(['capability_key as capabilityKey', 'revoked_at as revokedAt'])
+			.where('auth_user_id', '=', externalAuthUserId)
+			.where('context_type', '=', 'project')
+			.where('context_public_id', '=', projectPublicId)
+			.where('resource_type', '=', 'project')
+			.where('resource_public_id', '=', projectPublicId)
+			.executeTakeFirstOrThrow();
+		expect(projectGrant).toEqual({ capabilityKey: 'project.view', revokedAt: null });
+
 		const audit = await db
 			.selectFrom('audit_events')
 			.select(['actor_member_id', 'external_auth_user_id', 'action_key'])
@@ -422,6 +452,16 @@ describe('person-level external project collaboration', () => {
 			.executeTakeFirstOrThrow();
 		await service.removeCollaborator(actor, projectPublicId, collaborator.public_id);
 		expect(await service.listExternalPortalProjects(externalAuthUserId)).toEqual([]);
+
+		const activeGrantCount = await db
+			.selectFrom('external_access_grants')
+			.select((eb) => eb.fn.countAll<number>().as('count'))
+			.where('auth_user_id', '=', externalAuthUserId)
+			.where('context_type', '=', 'project')
+			.where('context_public_id', '=', projectPublicId)
+			.where('revoked_at', 'is', null)
+			.executeTakeFirstOrThrow();
+		expect(Number(activeGrantCount.count)).toBe(0);
 
 		const membershipCount = await db
 			.selectFrom('organisation_members')

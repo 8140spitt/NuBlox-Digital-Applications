@@ -3,6 +3,7 @@ import type { LayoutServerLoad } from './$types';
 
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
+import { ExternalAccessService } from '$lib/server/external-access/external-access-service';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
 import { ProjectExternalCollaborationService } from '$lib/server/projects/project-external-collaboration-service';
 
@@ -14,6 +15,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	if (!locals.actor) throw redirect(303, returnTo(url.pathname));
 
 	const db = getDatabase();
+	const [hasNetworkAccess, externalProjects] = await Promise.all([
+		new ExternalAccessService(db).hasActiveAccess(locals.actor.authUserId),
+		new ProjectExternalCollaborationService(db).listExternalPortalProjects(locals.actor.authUserId)
+	]);
+	const hasExternalWorkspace = hasNetworkAccess || externalProjects.length > 0;
+
 	if (locals.tenant.membershipVerified && locals.tenant.organisationId && locals.tenant.memberId) {
 		const actor = {
 			organisationId: locals.tenant.organisationId,
@@ -26,28 +33,28 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 			new PermissionService(db).decideMany(actor, ['portal.view', 'portal.manage'])
 		]);
 		if (!organisation) throw redirect(303, '/select-organisation');
-		if (!(decisions.get('portal.view')?.allowed ?? false)) {
-			throw error(403, 'The collaboration portal is not available for this membership.');
+		const canViewMemberPortal = decisions.get('portal.view')?.allowed ?? false;
+		if (canViewMemberPortal) {
+			return {
+				mode: 'member' as const,
+				actor: {
+					displayName: locals.actor.displayName,
+					email: locals.actor.email
+				},
+				organisation: {
+					publicId: organisation.publicId,
+					name: organisation.tradingName ?? organisation.legalName
+				},
+				canManage: decisions.get('portal.manage')?.allowed ?? false,
+				hasNetworkAccess: hasExternalWorkspace
+			};
 		}
-
-		return {
-			mode: 'member' as const,
-			actor: {
-				displayName: locals.actor.displayName,
-				email: locals.actor.email
-			},
-			organisation: {
-				publicId: organisation.publicId,
-				name: organisation.tradingName ?? organisation.legalName
-			},
-			canManage: decisions.get('portal.manage')?.allowed ?? false
-		};
+		if (!hasExternalWorkspace) {
+			throw error(403, 'NuBlox Network is not available for this identity or membership.');
+		}
 	}
 
-	const externalProjects = await new ProjectExternalCollaborationService(
-		db
-	).listExternalPortalProjects(locals.actor.authUserId);
-	if (externalProjects.length === 0) throw redirect(303, '/select-organisation');
+	if (!hasExternalWorkspace) throw redirect(303, '/select-organisation');
 
 	return {
 		mode: 'external' as const,
@@ -56,6 +63,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 			email: locals.actor.email
 		},
 		organisation: null,
-		canManage: false
+		canManage: false,
+		hasNetworkAccess: true
 	};
 };

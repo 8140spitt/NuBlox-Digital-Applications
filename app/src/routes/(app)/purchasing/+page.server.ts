@@ -9,6 +9,7 @@ import {
 	ProcurementService,
 	ProcurementValidationError
 } from '$lib/server/procurement/procurement-service';
+import { SupplierRfqNetworkService } from '$lib/server/procurement/supplier-rfq-network-service';
 import { listLatestRfqVersionsForRfqs } from '$lib/server/procurement/procurement-workspace-query';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
@@ -38,6 +39,14 @@ function failure(error: string) {
 	return { error };
 }
 
+function procurementFailure(error: unknown) {
+	if (error instanceof ProcurementValidationError) return fail(400, failure(error.message));
+	if (error instanceof TenantAccessError) {
+		return fail(403, failure('You do not have access to this procurement action.'));
+	}
+	throw error;
+}
+
 async function runAction(
 	locals: App.Locals,
 	operation: (service: ProcurementService, actor: TenantActorContext) => Promise<unknown>
@@ -47,11 +56,22 @@ async function runAction(
 	try {
 		await operation(new ProcurementService(getDatabase()), actor);
 	} catch (error) {
-		if (error instanceof ProcurementValidationError) return fail(400, failure(error.message));
-		if (error instanceof TenantAccessError) {
-			return fail(403, failure('You do not have access to this procurement action.'));
-		}
-		throw error;
+		return procurementFailure(error);
+	}
+	throw redirect(303, '/purchasing');
+}
+
+async function issueNetworkRfq(locals: App.Locals, rfqPublicId: string, supplierPublicId: string) {
+	const actor = actorFromLocals(locals);
+	if (!actor) return fail(401, failure('Authentication and organisation context are required.'));
+	try {
+		await new SupplierRfqNetworkService(getDatabase()).issueRfq(
+			actor,
+			rfqPublicId,
+			supplierPublicId
+		);
+	} catch (error) {
+		return procurementFailure(error);
 	}
 	throw redirect(303, '/purchasing');
 }
@@ -143,9 +163,7 @@ export const actions: Actions = {
 	},
 	issueRfq: async ({ request, locals }) => {
 		const data = await request.formData();
-		return runAction(locals, (service, actor) =>
-			service.issueRfq(actor, text(data, 'rfqPublicId'), text(data, 'supplierPublicId'))
-		);
+		return issueNetworkRfq(locals, text(data, 'rfqPublicId'), text(data, 'supplierPublicId'));
 	},
 	createPurchaseOrder: async ({ request, locals }) => {
 		const data = await request.formData();

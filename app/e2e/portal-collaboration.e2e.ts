@@ -83,7 +83,9 @@ test('owner explicitly shares controlled work and partner completes it through t
 	await page.context().clearCookies();
 	await signIn(page, PARTNER_EMAIL, PARTNER_PASSWORD, PARTNER_ORGANISATION);
 	await page.goto('/portal');
-	await expect(page.getByRole('heading', { name: 'Shared work' })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Network & collaboration', level: 1 })
+	).toBeVisible();
 	await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toHaveCount(0);
 	await expect(
 		page.getByText(`${PROJECT_NUMBER} · ${PROJECT_NAME}`, { exact: false }).first()
@@ -91,19 +93,17 @@ test('owner explicitly shares controlled work and partner completes it through t
 
 	const partnerRfiCard = page.locator('.work-card').filter({ hasText: RFI_NUMBER });
 	await expect(partnerRfiCard).toContainText('Confirm external opening size');
-	await partnerRfiCard.getByText('Respond to RFI', { exact: true }).click();
 	await partnerRfiCard
-		.getByRole('textbox', { name: 'Response' })
+		.getByRole('textbox', { name: 'Response', exact: true })
 		.fill('Use a 650 × 450 mm coordinated opening.');
 	await partnerRfiCard.getByRole('button', { name: 'Send response' }).click();
 	await expect(page).toHaveURL(/\/portal$/);
 	await expect(page.locator('.work-card').filter({ hasText: RFI_NUMBER })).toHaveCount(0);
 
 	const partnerSubmittalCard = page.locator('.work-card').filter({ hasText: SUBMITTAL_NUMBER });
-	await partnerSubmittalCard.getByText('Review submittal', { exact: true }).click();
 	await partnerSubmittalCard.getByLabel('Outcome').selectOption('approved_with_comments');
 	await partnerSubmittalCard
-		.getByRole('textbox', { name: 'Comments optional' })
+		.getByLabel('Comments')
 		.fill('Coordinate sleeve position before construction release.');
 	await partnerSubmittalCard.getByRole('button', { name: 'Submit review' }).click();
 	await expect(page.locator('.work-card').filter({ hasText: SUBMITTAL_NUMBER })).toHaveCount(0);
@@ -112,7 +112,8 @@ test('owner explicitly shares controlled work and partner completes it through t
 	await partnerInstructionCard.getByRole('button', { name: 'Acknowledge instruction' }).click();
 	await expect(page.locator('.work-card').filter({ hasText: INSTRUCTION_NUMBER })).toHaveCount(0);
 
-	await expect(page.getByText('PORTAL-TR-001', { exact: true })).toBeVisible();
-	await expect(page.getByText(DOCUMENT_NUMBER, { exact: true })).toBeVisible();
-	await expect(page.getByText('Rev C01 · Issued', { exact: true })).toBeVisible();
+	const transmittal = page.locator('.work-card').filter({ hasText: 'PORTAL-TR-001' });
+	await expect(transmittal).toContainText('Portal collaboration issue');
+	await expect(transmittal).toContainText('1 item(s)');
+	await expect(transmittal).toContainText('Delivered');
 });

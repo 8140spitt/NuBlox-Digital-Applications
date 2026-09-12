@@ -77,7 +77,7 @@ test('owner procures, commits, values and controls project cost through the brow
 	const packagePublicId = await optionValueContaining(packageSelect, packageTitle);
 	await packageSelect.selectOption(packagePublicId);
 	await rfqPanel.getByLabel('RFQ title').fill(rfqTitle);
-	await rfqPanel.getByLabel('Response deadline').fill('2026-09-01T12:00');
+	await rfqPanel.getByLabel('Response deadline').fill('2099-09-01T12:00');
 	await rfqPanel.getByRole('button', { name: 'Create RFQ draft' }).click();
 	await expect(page).toHaveURL(/\/purchasing$/);
 	let rfqCard = page.locator('#rfq-register .rfq-card').filter({ hasText: rfqTitle });

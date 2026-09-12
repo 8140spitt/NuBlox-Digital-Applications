@@ -22,12 +22,16 @@
 		return value.replaceAll('_', ' ').replace(/\b\w/g, (letter) => letter.toUpperCase());
 	}
 
+	let openNetworkWork = $derived(data.externalWork.filter((item) => item.state === 'open'));
+	let completedNetworkWork = $derived(
+		data.externalWork.filter((item) => item.state === 'completed')
+	);
 	let openRfis = $derived(data.rfis.filter((row) => ['open', 'reopened'].includes(row.status)));
 	let pendingSubmittals = $derived(
 		data.submittals.filter((row) => ['submitted', 'under_review'].includes(row.status))
 	);
 	let pendingInstructions = $derived(data.instructions.filter((row) => !row.acknowledgedAt));
-	let actionCount = $derived(
+	let memberActionCount = $derived(
 		openRfis.length +
 			pendingSubmittals.length +
 			pendingInstructions.length +
@@ -35,119 +39,162 @@
 	);
 </script>
 
-{#if data.mode === 'external'}
-	<section class="hero">
+<section class="hero">
+	<div>
+		<p class="eyebrow">NuBlox Network</p>
+		<h1>{data.mode === 'external' ? 'Your shared work' : 'Network & collaboration'}</h1>
+		<p class="lede">
+			{#if data.mode === 'external'}
+				Only records and actions explicitly shared with your verified identity appear here.
+			{:else}
+				External work shared with you and controlled collaboration assigned to your organisation, in
+				one place.
+			{/if}
+		</p>
+	</div>
+	{#if data.mode === 'member' && data.canManage}
+		<a class="manage-link" href="/portal/manage">Manage legacy sharing</a>
+	{/if}
+</section>
+
+<section class="metrics" aria-label="Network summary">
+	<article>
+		<strong>{openNetworkWork.length}</strong>
+		<span>External actions</span>
+	</article>
+	<article>
+		<strong>{data.externalProjects.length}</strong>
+		<span>External projects</span>
+	</article>
+	{#if data.mode === 'member'}
+		<article>
+			<strong>{memberActionCount}</strong>
+			<span>Team actions</span>
+		</article>
+	{:else}
+		<article>
+			<strong>{completedNetworkWork.length}</strong>
+			<span>Completed</span>
+		</article>
+	{/if}
+</section>
+
+{#if form?.message}
+	<p class="form-message" role="alert">{form.message}</p>
+{/if}
+
+<section class="section-block" aria-labelledby="network-actions-heading">
+	<div class="section-heading">
 		<div>
-			<p class="eyebrow">External collaboration</p>
-			<h1>Your shared projects</h1>
-			<p class="lede">
-				Project access has been granted to you personally. You do not need a NuBlox organisation,
-				and your employer or CRM affiliation is not mapped to a platform organisation.
+			<p class="eyebrow">My actions</p>
+			<h2 id="network-actions-heading">External work assigned to you</h2>
+		</div>
+		<span class="count-badge">{openNetworkWork.length}</span>
+	</div>
+
+	{#if openNetworkWork.length === 0}
+		<div class="empty-state compact">
+			<strong>No external action is waiting for you.</strong>
+			<p>
+				New customer, supplier, project or service actions will appear here when explicitly shared.
 			</p>
 		</div>
-	</section>
-
-	<section class="metrics" aria-label="External project access summary">
-		<article>
-			<strong>{data.externalProjects.length}</strong>
-			<span>Shared projects</span>
-		</article>
-		<article>
-			<strong
-				>{data.externalProjects.reduce((total, project) => total + project.roles.length, 0)}</strong
-			>
-			<span>Project roles</span>
-		</article>
-		<article>
-			<strong>Person</strong>
-			<span>Access boundary</span>
-		</article>
-	</section>
-
-	<section class="section-block" aria-labelledby="external-projects-heading">
-		<div class="section-heading">
-			<div>
-				<p class="eyebrow">Project access</p>
-				<h2 id="external-projects-heading">Projects shared with you</h2>
-			</div>
-		</div>
-		<div class="project-grid">
-			{#each data.externalProjects as project (project.collaboratorPublicId)}
-				<article class="project-card">
-					<div>
-						<span class="project-number">{project.projectNumber}</span>
-						<span class="status-pill">{titleCase(project.projectStatus)}</span>
+	{:else}
+		<div class="network-list">
+			{#each openNetworkWork as item (item.publicId)}
+				<article class="network-card">
+					<div class="network-icon" aria-hidden="true">
+						{item.domainKey.slice(0, 1).toUpperCase()}
 					</div>
-					<h3>{project.projectName}</h3>
-					<p>Shared by {project.owningOrganisationName}</p>
-					{#if project.crmOrganisationName}
-						<p class="muted">CRM affiliation: {project.crmOrganisationName}</p>
-					{/if}
-					{#if project.roles.length}
-						<p class="muted">Project roles: {project.roles.join(', ')}</p>
+					<div class="network-copy">
+						<div class="meta-line">
+							<span>{titleCase(item.domainKey)}</span>
+							<span>From {item.owningOrganisationName}</span>
+							<span>{dateTime(item.dueAt)}</span>
+						</div>
+						<h3>{item.title}</h3>
+						{#if item.summary}<p>{item.summary}</p>{/if}
+					</div>
+					{#if item.href}
+						<a class="primary-link" href={item.href}>Open action</a>
+					{:else}
+						<span class="status-pill">Shared</span>
 					{/if}
 				</article>
 			{/each}
 		</div>
-	</section>
+	{/if}
+</section>
 
-	<section class="section-block">
-		<div class="empty-state">
-			<strong>External access is deliberately project-scoped.</strong>
-			<p>
-				NuBlox tenant administration, organisation membership and internal business data remain
-				outside your external collaboration scope. Controlled RFI, submittal and information sharing
-				can be added to this person-level boundary without creating an organisation identity.
-			</p>
+{#if completedNetworkWork.length}
+	<details class="completed-block">
+		<summary>Completed external work ({completedNetworkWork.length})</summary>
+		<div class="network-list">
+			{#each completedNetworkWork as item (item.publicId)}
+				<article class="network-card subdued">
+					<div class="network-icon" aria-hidden="true">✓</div>
+					<div class="network-copy">
+						<div class="meta-line">
+							<span>{titleCase(item.domainKey)}</span>
+							<span>{item.owningOrganisationName}</span>
+							<span>Completed {dateTime(item.completedAt)}</span>
+						</div>
+						<h3>{item.title}</h3>
+					</div>
+					{#if item.href}<a class="secondary-link" href={item.href}>View</a>{/if}
+				</article>
+			{/each}
 		</div>
+	</details>
+{/if}
+
+{#if data.externalProjects.length}
+	<section class="section-block" aria-labelledby="external-projects-heading">
+		<div class="section-heading">
+			<div>
+				<p class="eyebrow">Project participation</p>
+				<h2 id="external-projects-heading">Projects shared with you personally</h2>
+			</div>
+			<span class="count-badge">{data.externalProjects.length}</span>
+		</div>
+		<div class="project-grid">
+			{#each data.externalProjects as project (project.collaboratorPublicId)}
+				<article class="project-card">
+					<div class="meta-line">
+						<span>{project.projectNumber}</span>
+						<span>{titleCase(project.projectStatus)}</span>
+					</div>
+					<h3>{project.projectName}</h3>
+					<p>Shared by {project.owningOrganisationName}</p>
+					{#if project.roles.length}<p class="muted">Roles: {project.roles.join(', ')}</p>{/if}
+				</article>
+			{/each}
+		</div>
+	</section>
+{/if}
+
+{#if data.mode === 'external'}
+	<section class="boundary-panel">
+		<strong>External access is deny-by-default.</strong>
+		<p>
+			Your sign-in does not make you a member of the organisations that share work with you. NuBlox
+			Network evaluates each grant, context, record and permitted action independently.
+		</p>
 	</section>
 {:else}
-	<section class="hero">
-		<div>
-			<p class="eyebrow">Collaboration portal</p>
-			<h1>Shared work</h1>
-			<p class="lede">
-				Everything another project organisation has explicitly sent or assigned to your team, in one
-				place.
-			</p>
-		</div>
-		{#if data.canManage}
-			<a class="manage-link" href="/portal/manage">Manage sharing</a>
-		{/if}
-	</section>
-
-	<section class="metrics" aria-label="Shared work summary">
-		<article>
-			<strong>{actionCount}</strong>
-			<span>Need attention</span>
-		</article>
-		<article>
-			<strong>{data.projects.length}</strong>
-			<span>Shared projects</span>
-		</article>
-		<article>
-			<strong>{data.transmittals.length}</strong>
-			<span>Information issues</span>
-		</article>
-	</section>
-
-	{#if form?.message}
-		<p class="form-message" role="alert">{form.message}</p>
-	{/if}
-
 	{#if data.invitations.length}
 		<section class="section-block" aria-labelledby="invitations-heading">
 			<div class="section-heading">
 				<div>
-					<p class="eyebrow">Invitations</p>
-					<h2 id="invitations-heading">Join a shared project</h2>
+					<p class="eyebrow">Organisation invitations</p>
+					<h2 id="invitations-heading">Join shared projects</h2>
 				</div>
 				<span class="count-badge">{data.invitations.length}</span>
 			</div>
 			<div class="card-list">
 				{#each data.invitations as invitation (invitation.projectPublicId)}
-					<article class="work-card invitation-card">
-						<div class="card-copy">
+					<article class="work-card horizontal-card">
+						<div>
 							<div class="meta-line">
 								<span>{invitation.projectNumber}</span>
 								<span>From {invitation.owningOrganisationName}</span>
@@ -176,11 +223,11 @@
 		</section>
 	{/if}
 
-	<section class="section-block" aria-labelledby="actions-heading">
+	<section class="section-block" aria-labelledby="team-actions-heading">
 		<div class="section-heading">
 			<div>
-				<p class="eyebrow">Action inbox</p>
-				<h2 id="actions-heading">What needs your team</h2>
+				<p class="eyebrow">Organisation collaboration</p>
+				<h2 id="team-actions-heading">Actions assigned to your team</h2>
 			</div>
 			<span class="count-badge"
 				>{openRfis.length + pendingSubmittals.length + pendingInstructions.length}</span
@@ -188,9 +235,9 @@
 		</div>
 
 		{#if !openRfis.length && !pendingSubmittals.length && !pendingInstructions.length}
-			<div class="empty-state">
-				<strong>You’re clear.</strong>
-				<p>No shared RFI, submittal or instruction currently needs action.</p>
+			<div class="empty-state compact">
+				<strong>Your team is clear.</strong>
+				<p>No shared project action currently needs a response.</p>
 			</div>
 		{:else}
 			<div class="action-grid">
@@ -205,31 +252,31 @@
 							<span><strong>Due</strong>{dateTime(rfi.dueAt)}</span>
 							<span><strong>Priority</strong>{titleCase(rfi.priority)}</span>
 						</div>
-						{#if rfi.latestResponse}
-							<div class="previous-response">
-								<strong>Your latest response</strong>
-								<p>{rfi.latestResponse}</p>
-							</div>
-						{/if}
-						{#if form?.action === 'rfi' && form?.subjectPublicId === rfi.publicId}
-							<p class="inline-error" role="alert">{form.message}</p>
-						{/if}
+						{#if rfi.latestResponse}<p class="previous-response">
+								<strong>Latest response:</strong>
+								{rfi.latestResponse}
+							</p>{/if}
 						{#if data.canRespond}
-							<details>
-								<summary>Respond to RFI</summary>
-								<form class="response-form" method="POST" action="?/respondRfi">
-									<input type="hidden" name="rfiPublicId" value={rfi.publicId} />
-									<label>
-										<span>Response</span>
-										<textarea name="responseText" rows="5" required maxlength="20000"></textarea>
-									</label>
-									<label class="checkbox-row">
-										<input type="checkbox" name="final" checked />
-										<span>Mark this as the final response</span>
-									</label>
-									<button class="primary" type="submit">Send response</button>
-								</form>
-							</details>
+							<form class="stack-form" method="POST" action="?/respondRfi">
+								<input type="hidden" name="rfiPublicId" value={rfi.publicId} />
+								<label
+									><span>Response</span><textarea
+										name="responseText"
+										rows="4"
+										required
+										maxlength="5000"></textarea></label
+								>
+								<label class="checkbox"
+									><input type="checkbox" name="final" /><span>Mark as final response</span></label
+								>
+								{#if form?.action === 'rfi' && form?.subjectPublicId === rfi.publicId}<p
+										class="inline-error"
+										role="alert"
+									>
+										{form.message}
+									</p>{/if}
+								<button class="primary" type="submit">Send response</button>
+							</form>
 						{/if}
 					</article>
 				{/each}
@@ -244,36 +291,31 @@
 							>
 							<span><strong>From</strong>{submittal.owningOrganisationName}</span>
 							<span><strong>Type</strong>{submittal.typeName}</span>
-							<span
-								><strong>Review due</strong>{dateTime(
-									submittal.reviewerDueAt ?? submittal.dueAt
-								)}</span
+							<span><strong>Due</strong>{dateTime(submittal.reviewerDueAt ?? submittal.dueAt)}</span
 							>
 						</div>
-						{#if form?.action === 'submittal' && form?.subjectPublicId === submittal.publicId}
-							<p class="inline-error" role="alert">{form.message}</p>
-						{/if}
 						{#if data.canRespond}
-							<details>
-								<summary>Review submittal</summary>
-								<form class="response-form" method="POST" action="?/reviewSubmittal">
-									<input type="hidden" name="submittalPublicId" value={submittal.publicId} />
-									<label>
-										<span>Outcome</span>
-										<select name="outcome" required>
-											<option value="">Choose outcome</option>
-											{#each reviewOutcomes as outcome}
-												<option value={outcome[0]}>{outcome[1]}</option>
-											{/each}
-										</select>
-									</label>
-									<label>
-										<span>Comments <small>optional</small></span>
-										<textarea name="comments" rows="4" maxlength="20000"></textarea>
-									</label>
-									<button class="primary" type="submit">Submit review</button>
-								</form>
-							</details>
+							<form class="stack-form" method="POST" action="?/reviewSubmittal">
+								<input type="hidden" name="submittalPublicId" value={submittal.publicId} />
+								<label
+									><span>Outcome</span><select name="outcome" required
+										>{#each reviewOutcomes as outcome}<option value={outcome[0]}
+												>{outcome[1]}</option
+											>{/each}</select
+									></label
+								>
+								<label
+									><span>Comments</span><textarea name="comments" rows="3" maxlength="5000"
+									></textarea></label
+								>
+								{#if form?.action === 'submittal' && form?.subjectPublicId === submittal.publicId}<p
+										class="inline-error"
+										role="alert"
+									>
+										{form.message}
+									</p>{/if}
+								<button class="primary" type="submit">Submit review</button>
+							</form>
 						{/if}
 					</article>
 				{/each}
@@ -291,12 +333,15 @@
 							<span><strong>Type</strong>{instruction.typeName}</span>
 							<span><strong>Issued</strong>{dateTime(instruction.issuedAt)}</span>
 						</div>
-						{#if form?.action === 'instruction' && form?.subjectPublicId === instruction.publicId}
-							<p class="inline-error" role="alert">{form.message}</p>
-						{/if}
 						{#if data.canRespond}
 							<form method="POST" action="?/acknowledgeInstruction">
 								<input type="hidden" name="instructionPublicId" value={instruction.publicId} />
+								{#if form?.action === 'instruction' && form?.subjectPublicId === instruction.publicId}<p
+										class="inline-error"
+										role="alert"
+									>
+										{form.message}
+									</p>{/if}
 								<button class="primary" type="submit">Acknowledge instruction</button>
 							</form>
 						{/if}
@@ -306,484 +351,349 @@
 		{/if}
 	</section>
 
-	<section class="section-block" aria-labelledby="information-heading">
-		<div class="section-heading">
-			<div>
-				<p class="eyebrow">Shared information</p>
-				<h2 id="information-heading">Issued to your organisation</h2>
+	{#if data.transmittals.length}
+		<section class="section-block" aria-labelledby="transmittals-heading">
+			<div class="section-heading">
+				<div>
+					<p class="eyebrow">Information</p>
+					<h2 id="transmittals-heading">Recent transmittals</h2>
+				</div>
+				<span class="count-badge">{data.transmittals.length}</span>
 			</div>
-			<span class="count-badge">{data.transmittals.length}</span>
-		</div>
-		{#if data.transmittals.length}
 			<div class="card-list">
 				{#each data.transmittals as transmittal (transmittal.publicId)}
-					<article class="work-card compact-card">
-						<div class="card-copy">
+					<article class="work-card horizontal-card">
+						<div>
 							<div class="meta-line">
-								<span>{transmittal.transmittalNumber}</span>
-								<span>{dateTime(transmittal.issuedAt)}</span>
+								<span>{transmittal.transmittalNumber}</span><span
+									>{transmittal.projectNumber} · {transmittal.projectName}</span
+								>
 							</div>
 							<h3>{transmittal.subject}</h3>
 							<p class="muted">
-								{transmittal.projectNumber} · {transmittal.projectName} · From {transmittal.issuingOrganisationName}
+								From {transmittal.issuingOrganisationName} · {dateTime(transmittal.issuedAt)} · {transmittal
+									.items.length} item(s)
 							</p>
-							{#if transmittal.purpose}<p class="muted">Purpose: {transmittal.purpose}</p>{/if}
 						</div>
-						<ul class="revision-list" aria-label={`Revisions in ${transmittal.transmittalNumber}`}>
-							{#each transmittal.items as item (item.versionPublicId)}
-								<li>
-									<strong>{item.containerNumber}</strong>
-									<span>{item.title}</span>
-									<small>Rev {item.revisionCode} · {titleCase(item.versionStatus)}</small>
-								</li>
-							{/each}
-						</ul>
+						<span class="status-pill">{titleCase(transmittal.deliveryStatus)}</span>
 					</article>
 				{/each}
 			</div>
-		{:else}
-			<div class="empty-state">
-				<p>No controlled information has been issued to this organisation yet.</p>
-			</div>
-		{/if}
-	</section>
-
-	<section class="section-block" aria-labelledby="projects-heading">
-		<div class="section-heading">
-			<div>
-				<p class="eyebrow">Project access</p>
-				<h2 id="projects-heading">Your shared projects</h2>
-			</div>
-		</div>
-		{#if data.projects.length}
-			<div class="project-grid">
-				{#each data.projects as project (project.publicId)}
-					<article class="project-card">
-						<div>
-							<span class="project-number">{project.projectNumber}</span>
-							<span class="status-pill">{titleCase(project.status)}</span>
-						</div>
-						<h3>{project.name}</h3>
-						<p>
-							{project.isOwnedByCurrentOrganisation
-								? 'Owned by your organisation'
-								: `Owned by ${project.owningOrganisationName}`}
-						</p>
-					</article>
-				{/each}
-			</div>
-		{:else}
-			<div class="empty-state"><p>No active shared projects are assigned to this member.</p></div>
-		{/if}
-	</section>
+		</section>
+	{/if}
 {/if}
 
 <style>
-	.hero,
-	.section-heading,
-	.meta-line,
-	.inline-actions {
-		display: flex;
-		align-items: center;
-		justify-content: space-between;
-		gap: 1rem;
-	}
-
 	.hero {
-		align-items: flex-end;
-		margin-bottom: 1.4rem;
+		display: flex;
+		justify-content: space-between;
+		align-items: flex-start;
+		gap: 1rem;
+		margin-bottom: 1.2rem;
 	}
-
-	.eyebrow {
-		margin: 0 0 0.25rem;
-		color: var(--nb-blue);
+	.eyebrow,
+	.card-type {
+		margin: 0 0 0.3rem;
+		color: var(--nb-text-muted);
 		font-size: 0.72rem;
-		font-weight: 850;
-		letter-spacing: 0.11em;
+		font-weight: 800;
+		letter-spacing: 0.08em;
 		text-transform: uppercase;
 	}
-
-	h1,
-	h2,
-	h3,
-	p {
-		margin-top: 0;
-	}
-
 	h1 {
-		margin-bottom: 0.45rem;
-		font-size: clamp(2rem, 5vw, 3.3rem);
+		margin: 0;
+		font-size: clamp(2rem, 5vw, 3rem);
 		letter-spacing: -0.045em;
 	}
-
-	h2 {
-		margin-bottom: 0;
-		font-size: clamp(1.3rem, 3vw, 1.75rem);
-		letter-spacing: -0.025em;
-	}
-
+	h2,
 	h3 {
-		margin-bottom: 0.55rem;
-		font-size: 1.05rem;
+		margin: 0;
 	}
-
 	.lede {
-		max-width: 44rem;
-		margin-bottom: 0;
+		max-width: 50rem;
+		margin: 0.5rem 0 0;
 		color: var(--nb-text-muted);
-		font-size: 1.03rem;
 		line-height: 1.55;
 	}
-
 	.manage-link,
-	.primary,
-	.secondary {
-		min-height: 2.65rem;
-		border-radius: var(--nb-radius-sm);
+	.primary-link,
+	.secondary-link {
+		flex: none;
+		border-radius: 0.55rem;
+		padding: 0.65rem 0.85rem;
+		text-decoration: none;
 		font-weight: 800;
 	}
-
-	.manage-link {
-		display: inline-flex;
-		align-items: center;
-		padding: 0.65rem 0.9rem;
+	.manage-link,
+	.secondary-link {
+		border: 1px solid #cbd2dc;
+		color: var(--nb-text);
+		background: white;
+	}
+	.primary-link {
 		background: var(--nb-ink);
 		color: white;
-		text-decoration: none;
 	}
-
 	.metrics {
 		display: grid;
 		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0.75rem;
-		margin-bottom: 2rem;
+		gap: 0.7rem;
+		margin-bottom: 1.4rem;
 	}
-
 	.metrics article {
 		display: grid;
 		gap: 0.15rem;
-		padding: 1rem 1.1rem;
-		border: 1px solid var(--nb-border);
-		border-radius: var(--nb-radius-md);
-		background: rgb(255 255 255 / 0.84);
-		box-shadow: var(--nb-shadow-sm);
+		padding: 0.9rem 1rem;
+		border: 1px solid #dde2e9;
+		border-radius: 0.7rem;
+		background: white;
 	}
-
 	.metrics strong {
-		font-size: 1.7rem;
-		letter-spacing: -0.04em;
+		font-size: 1.45rem;
 	}
-
 	.metrics span,
-	.muted,
-	.project-card p {
+	.muted {
 		color: var(--nb-text-muted);
+		font-size: 0.82rem;
 	}
-
 	.section-block {
-		margin: 2.1rem 0;
+		margin-top: 1.5rem;
 	}
-
 	.section-heading {
-		margin-bottom: 0.9rem;
+		display: flex;
+		align-items: end;
+		justify-content: space-between;
+		gap: 1rem;
+		margin-bottom: 0.7rem;
 	}
-
 	.count-badge,
-	.status-pill,
-	.project-number,
-	.card-type {
-		font-size: 0.72rem;
-		font-weight: 800;
-		letter-spacing: 0.04em;
-	}
-
-	.count-badge {
-		display: inline-grid;
-		place-items: center;
-		min-width: 2rem;
-		height: 2rem;
-		padding: 0 0.45rem;
+	.status-pill {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 1.8rem;
+		min-height: 1.8rem;
+		padding: 0.2rem 0.55rem;
 		border-radius: 999px;
-		background: color-mix(in srgb, var(--nb-blue) 12%, white);
-		color: var(--nb-blue);
+		background: #edf1f6;
+		font-size: 0.75rem;
+		font-weight: 800;
 	}
-
+	.network-list,
 	.card-list,
 	.action-grid {
 		display: grid;
-		gap: 0.8rem;
+		gap: 0.7rem;
 	}
-
-	.action-grid {
-		grid-template-columns: repeat(2, minmax(0, 1fr));
-	}
-
-	.work-card,
-	.empty-state,
-	.project-card {
-		min-width: 0;
-		border: 1px solid var(--nb-border);
-		border-radius: var(--nb-radius-lg);
-		background: var(--nb-surface);
-		box-shadow: var(--nb-shadow-sm);
-	}
-
-	.work-card {
-		padding: 1.1rem;
-	}
-
-	.invitation-card,
-	.compact-card {
+	.network-card {
 		display: grid;
+		grid-template-columns: auto minmax(0, 1fr) auto;
+		align-items: center;
+		gap: 0.85rem;
+		padding: 0.9rem 1rem;
+		border: 1px solid #dce2ea;
+		border-radius: 0.75rem;
+		background: white;
+	}
+	.network-card.subdued {
+		opacity: 0.78;
+	}
+	.network-icon {
+		display: grid;
+		place-items: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		border-radius: 0.55rem;
+		background: #edf4ff;
+		font-weight: 850;
+	}
+	.network-copy {
+		min-width: 0;
+	}
+	.network-copy h3 {
+		margin-top: 0.2rem;
+		font-size: 1rem;
+	}
+	.network-copy p {
+		margin: 0.3rem 0 0;
+		color: var(--nb-text-muted);
+		font-size: 0.86rem;
+	}
+	.meta-line {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.45rem 0.85rem;
+		color: var(--nb-text-muted);
+		font-size: 0.74rem;
+	}
+	.completed-block {
+		margin-top: 1rem;
+		border: 1px solid #dce2ea;
+		border-radius: 0.7rem;
+		background: white;
+	}
+	.completed-block summary {
+		padding: 0.8rem 1rem;
+		cursor: pointer;
+		font-weight: 800;
+	}
+	.completed-block .network-list {
+		padding: 0 0.8rem 0.8rem;
+	}
+	.project-grid {
+		display: grid;
+		grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr));
+		gap: 0.7rem;
+	}
+	.project-card,
+	.work-card {
+		border: 1px solid #dce2ea;
+		border-radius: 0.75rem;
+		background: white;
+		padding: 1rem;
+	}
+	.project-card h3 {
+		margin-top: 0.45rem;
+	}
+	.project-card p {
+		margin: 0.35rem 0 0;
+	}
+	.boundary-panel,
+	.empty-state {
+		margin-top: 1.4rem;
+		padding: 1rem;
+		border: 1px solid #ced9e8;
+		border-radius: 0.75rem;
+		background: #f6f9fd;
+	}
+	.boundary-panel p,
+	.empty-state p {
+		margin: 0.35rem 0 0;
+		color: var(--nb-text-muted);
+		line-height: 1.5;
+	}
+	.empty-state.compact {
+		margin-top: 0;
+	}
+	.action-grid {
+		grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+	}
+	.work-card {
+		display: grid;
+		gap: 0.75rem;
+		align-content: start;
+	}
+	.horizontal-card {
 		grid-template-columns: minmax(0, 1fr) auto;
 		align-items: center;
-		gap: 1.2rem;
 	}
-
-	.compact-card {
-		grid-template-columns: minmax(0, 1fr) minmax(18rem, 0.8fr);
-		align-items: start;
+	.question,
+	.previous-response {
+		margin: 0;
+		color: #4d5869;
+		line-height: 1.5;
 	}
-
-	.card-type,
-	.project-number {
-		margin-bottom: 0.5rem;
-		color: var(--nb-blue);
-		text-transform: uppercase;
+	.previous-response {
+		padding: 0.7rem;
+		border-radius: 0.55rem;
+		background: #f5f7fa;
 	}
-
-	.meta-line {
-		justify-content: flex-start;
-		color: var(--nb-text-muted);
-		font-size: 0.78rem;
-	}
-
 	.meta-grid {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
-		gap: 0.55rem 1rem;
-		margin: 0.9rem 0;
-		padding: 0.8rem;
-		border-radius: var(--nb-radius-sm);
-		background: var(--nb-surface-muted);
-		font-size: 0.82rem;
-	}
-
-	.meta-grid span,
-	.meta-grid strong {
-		display: grid;
-		gap: 0.12rem;
-	}
-
-	.meta-grid strong {
+		gap: 0.55rem;
+		font-size: 0.78rem;
 		color: var(--nb-text-muted);
-		font-size: 0.68rem;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
 	}
-
-	.question {
-		max-height: 9rem;
-		overflow: auto;
-		white-space: pre-wrap;
-		line-height: 1.55;
-	}
-
-	.previous-response {
-		margin: 0.8rem 0;
-		padding-left: 0.8rem;
-		border-left: 3px solid var(--nb-cyan);
-		font-size: 0.86rem;
-	}
-
-	.previous-response p {
-		margin: 0.25rem 0 0;
-		white-space: pre-wrap;
-	}
-
-	details {
-		margin-top: 0.85rem;
-		border-top: 1px solid var(--nb-border);
-		padding-top: 0.75rem;
-	}
-
-	summary {
-		cursor: pointer;
-		font-weight: 800;
-		color: var(--nb-blue);
-	}
-
-	.response-form {
+	.meta-grid span {
 		display: grid;
-		gap: 0.75rem;
-		margin-top: 0.8rem;
+		gap: 0.1rem;
 	}
-
-	.response-form label {
+	.meta-grid strong {
+		color: var(--nb-text);
+	}
+	.stack-form {
 		display: grid;
-		gap: 0.35rem;
-		font-size: 0.82rem;
+		gap: 0.65rem;
+		padding-top: 0.7rem;
+		border-top: 1px solid #e2e6ec;
+	}
+	label {
+		display: grid;
+		gap: 0.3rem;
+		font-size: 0.78rem;
 		font-weight: 700;
 	}
-
 	textarea,
 	select {
 		width: 100%;
-		border: 1px solid var(--nb-border-strong);
-		border-radius: var(--nb-radius-sm);
-		background: white;
-		padding: 0.7rem;
-		color: var(--nb-text);
-	}
-
-	.checkbox-row {
-		display: flex !important;
-		align-items: center;
-		font-weight: 600 !important;
-	}
-
-	.checkbox-row input {
-		width: 1.1rem;
-		height: 1.1rem;
-	}
-
-	.primary,
-	.secondary {
-		border: 1px solid transparent;
-		padding: 0.55rem 0.8rem;
-		cursor: pointer;
-	}
-
-	.primary {
-		background: var(--nb-blue);
-		color: white;
-	}
-
-	.secondary {
-		border-color: var(--nb-border-strong);
-		background: white;
-		color: var(--nb-text);
-	}
-
-	.inline-actions {
-		justify-content: flex-end;
-	}
-
-	.inline-error,
-	.form-message {
-		padding: 0.65rem 0.8rem;
-		border-radius: var(--nb-radius-sm);
-		background: #fff3f2;
-		color: #9b1c1c;
-		font-size: 0.84rem;
-	}
-
-	.form-message {
-		margin-bottom: 1rem;
-	}
-
-	.empty-state {
-		padding: 1.3rem;
-		color: var(--nb-text-muted);
-	}
-
-	.empty-state p {
-		margin-bottom: 0;
-	}
-
-	.revision-list {
-		display: grid;
-		gap: 0.45rem;
-		margin: 0;
-		padding: 0;
-		list-style: none;
-	}
-
-	.revision-list li {
-		display: grid;
-		grid-template-columns: auto minmax(0, 1fr) auto;
-		gap: 0.6rem;
-		align-items: baseline;
+		box-sizing: border-box;
+		font: inherit;
+		border: 1px solid #c8d0da;
+		border-radius: 0.5rem;
 		padding: 0.6rem 0.7rem;
-		border-radius: var(--nb-radius-sm);
-		background: var(--nb-surface-muted);
-		font-size: 0.82rem;
+		background: white;
 	}
-
-	.revision-list small {
-		color: var(--nb-text-muted);
+	.checkbox {
+		display: flex;
+		grid-auto-flow: column;
+		grid-template-columns: auto 1fr;
+		align-items: center;
+		justify-content: start;
 	}
-
-	.project-grid {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: 0.75rem;
-	}
-
-	.project-card {
-		padding: 1rem;
-	}
-
-	.project-card > div {
+	.inline-actions {
 		display: flex;
 		align-items: center;
-		justify-content: space-between;
 		gap: 0.5rem;
 	}
-
-	.status-pill {
-		padding: 0.28rem 0.45rem;
-		border-radius: 999px;
-		background: var(--nb-surface-muted);
-		color: var(--nb-text-muted);
-		text-transform: none;
+	button {
+		font: inherit;
+		font-weight: 800;
+		border-radius: 0.5rem;
+		padding: 0.6rem 0.8rem;
+		cursor: pointer;
 	}
-
-	.project-card p {
-		margin-bottom: 0;
-		font-size: 0.82rem;
+	button.primary {
+		border: 1px solid var(--nb-ink);
+		background: var(--nb-ink);
+		color: white;
 	}
-
-	@media (max-width: 840px) {
-		.action-grid,
-		.project-grid {
-			grid-template-columns: 1fr;
-		}
-
-		.compact-card {
-			grid-template-columns: 1fr;
-		}
+	button.secondary {
+		border: 1px solid #c5ccd6;
+		background: white;
+		color: var(--nb-text);
 	}
-
-	@media (max-width: 580px) {
+	.form-message,
+	.inline-error {
+		color: #9b1c1c;
+	}
+	.form-message {
+		padding: 0.75rem;
+		border-radius: 0.55rem;
+		background: #fff1f1;
+	}
+	.inline-error {
+		margin: 0;
+		font-size: 0.8rem;
+	}
+	@media (max-width: 720px) {
 		.hero,
-		.invitation-card,
-		.meta-grid,
+		.horizontal-card {
+			grid-template-columns: 1fr;
+			flex-direction: column;
+		}
 		.metrics {
-			display: grid;
 			grid-template-columns: 1fr;
 		}
-
-		.hero {
-			align-items: start;
+		.network-card {
+			grid-template-columns: auto minmax(0, 1fr);
 		}
-
-		.manage-link {
+		.network-card > :last-child {
+			grid-column: 2;
 			justify-self: start;
 		}
-
-		.inline-actions {
-			justify-content: stretch;
-		}
-
-		.inline-actions form,
-		.inline-actions button {
-			width: 100%;
-		}
-
-		.revision-list li {
+		.meta-grid {
 			grid-template-columns: 1fr;
-			gap: 0.2rem;
 		}
 	}
 </style>

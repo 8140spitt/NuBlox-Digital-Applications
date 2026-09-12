@@ -1,6 +1,7 @@
 import type { RequestEvent } from '@sveltejs/kit';
 
 import { getDatabase } from '$lib/server/db/database';
+import { ExternalInvitationService } from '$lib/server/external-access/external-invitation-service';
 import { OrganisationBootstrapService } from '$lib/server/organisations/bootstrap-service';
 import { OrganisationInvitationService } from '$lib/server/organisations/invitation-service';
 import type { Actor } from '$lib/types/request-context';
@@ -64,7 +65,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 			// If the original provisioning transaction was interrupted or partially
 			// lost, recover only the platform identity from the verified email. We do
 			// not invent organisation data; users with no surviving memberships land
-			// on /select-organisation and can create one through the standard flow.
+			// on /select-organisation or NuBlox Network according to their grants.
 			if (!linkedUser) {
 				const recovery = await recoverVerifiedPlatformIdentity(db, {
 					authUserId: session.user.id,
@@ -103,6 +104,19 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 			}
 		);
 		return null;
+	}
+
+	// Network invitations intentionally never create organisation membership. Once
+	// the verified platform identity exists, materialise any invitation-bound grant
+	// and work item that survived email verification or an interrupted redirect.
+	try {
+		await new ExternalInvitationService(db).activateVerifiedAuthUser({
+			authUserId: session.user.id,
+			email: session.user.email,
+			correlationId: event.locals?.correlationId ?? `session-${session.user.id}`
+		});
+	} catch (cause) {
+		console.error('[NuBlox auth] Network invitation reconciliation failed.', cause);
 	}
 
 	console.info('[NuBlox auth] Session resolved to active NuBlox user.', {
