@@ -27,10 +27,9 @@
 			<nav aria-label="Primary navigation">
 				{#each items as item}
 					<a
-					href={item.href}
-					class:active={page.url.pathname === item.href}
-					aria-current={page.url.pathname === item.href ? 'page' : undefined}
-					>{item.label}</a
+						href={item.href}
+						class:active={page.url.pathname === item.href}
+						aria-current={page.url.pathname === item.href ? 'page' : undefined}>{item.label}</a
 					>
 				{/each}
 			</nav>

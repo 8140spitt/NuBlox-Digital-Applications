@@ -7,8 +7,8 @@
 	<h1>My work</h1>
 	<p class="nb-lede">
 		This will be the cross-functional inbox for governed work, approvals, decisions and exceptions.
-		V2 will add work types only when their source record, state, next action and downstream consequence
-		are explicit.
+		V2 will add work types only when their source record, state, next action and downstream
+		consequence are explicit.
 	</p>
 </section>
 

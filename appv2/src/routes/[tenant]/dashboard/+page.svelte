@@ -6,8 +6,8 @@
 	<p class="nb-eyebrow">Tenant workspace</p>
 	<h1>{data.tenant.slug}</h1>
 	<p class="nb-lede">
-		NuBlox V2 starts with a stable place and context model. This dashboard will become orientation and
-		prioritisation only; record management and governed actions will live in focused workspaces.
+		NuBlox V2 starts with a stable place and context model. This dashboard will become orientation
+		and prioritisation only; record management and governed actions will live in focused workspaces.
 	</p>
 
 	<div class="foundation-grid" aria-label="V2 foundation">
@@ -20,7 +20,9 @@
 		<article class="nb-card">
 			<span>02</span>
 			<h2>Functions</h2>
-			<p>The canonical F01–F29 business-function directory, independent of backend module boundaries.</p>
+			<p>
+				The canonical F01–F29 business-function directory, independent of backend module boundaries.
+			</p>
 			<a href={`/${data.tenant.slug}/functions`}>Open function directory</a>
 		</article>
 	</div>

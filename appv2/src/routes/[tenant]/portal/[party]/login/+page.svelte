@@ -7,8 +7,9 @@
 		<p class="nb-eyebrow">External access</p>
 		<h1>Sign in to {data.party.slug}</h1>
 		<p class="nb-lede">
-			This V2 route establishes the external authentication boundary for {data.tenant.slug}. Identity,
-			relationship and grant checks will be wired here without inheriting the V1 portal shell.
+			This V2 route establishes the external authentication boundary for {data.tenant.slug}.
+			Identity, relationship and grant checks will be wired here without inheriting the V1 portal
+			shell.
 		</p>
 	</div>
 </section>
