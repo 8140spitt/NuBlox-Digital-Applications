@@ -89,7 +89,11 @@ export class ProductServiceLifecycleService {
 			eventPayload: { subjectType, subjectPublicId, function: 'F05', subfunctions, ...metadata }
 		});
 	}
-	private async offeringId(repository: ProductServiceRepository, actor: TenantActorContext, publicId: string) {
+	private async offeringId(
+		repository: ProductServiceRepository,
+		actor: TenantActorContext,
+		publicId: string
+	) {
 		const row = await repository.findOfferingByPublicId(actor.organisationId, publicId.trim());
 		if (!row) throw new RecordNotFoundError('Product/service offering not found.');
 		return row;
@@ -102,13 +106,16 @@ export class ProductServiceLifecycleService {
 			.where('organisation_id', '=', actor.organisationId)
 			.where('status', '=', 'active')
 			.executeTakeFirst();
-		if (!row) throw new ProductServiceLifecycleValidationError('Owner/reviewer must be an active member.');
+		if (!row)
+			throw new ProductServiceLifecycleValidationError('Owner/reviewer must be an active member.');
 	}
 
 	async getWorkspace(actor: TenantActorContext) {
 		await this.requirePermission(actor, 'product_service.view');
 		const core = await new ProductServiceRepository(this.db).getWorkspace(actor.organisationId);
-		const lifecycle = await new ProductServiceLifecycleRepository(this.db).getWorkspace(actor.organisationId);
+		const lifecycle = await new ProductServiceLifecycleRepository(this.db).getWorkspace(
+			actor.organisationId
+		);
 		const permissions = new PermissionService(this.db);
 		return {
 			...core,
@@ -147,7 +154,8 @@ export class ProductServiceLifecycleService {
 					actor.organisationId,
 					input.businessCasePublicId.trim()
 				);
-				if (!businessCase) throw new RecordNotFoundError('Product/service business case not found.');
+				if (!businessCase)
+					throw new RecordNotFoundError('Product/service business case not found.');
 				if (businessCase.lifecycle_status !== 'approved')
 					throw new ProductServiceLifecycleValidationError(
 						'Design may only be based on an approved business case.'
@@ -263,7 +271,10 @@ export class ProductServiceLifecycleService {
 		await this.requirePermission(actor, 'product_service.approve');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
-			const design = await repository.findDesignByPublicId(actor.organisationId, designPublicId.trim());
+			const design = await repository.findDesignByPublicId(
+				actor.organisationId,
+				designPublicId.trim()
+			);
 			if (!design) throw new RecordNotFoundError('Product/service design not found.');
 			if (design.lifecycle_status === 'approved') return design;
 			if (design.lifecycle_status !== 'draft')
@@ -424,7 +435,8 @@ export class ProductServiceLifecycleService {
 					actor.organisationId,
 					input.developmentPlanPublicId.trim()
 				);
-				if (!development) throw new RecordNotFoundError('Product/service development plan not found.');
+				if (!development)
+					throw new RecordNotFoundError('Product/service development plan not found.');
 				if (development.offering_id !== offering.id)
 					throw new ProductServiceLifecycleValidationError(
 						'Development plan must belong to the selected offering.'
@@ -517,7 +529,9 @@ export class ProductServiceLifecycleService {
 			);
 			if (!plan) throw new RecordNotFoundError('Product/service launch plan not found.');
 			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'launched')
-				throw new ProductServiceLifecycleValidationError('Only an approved launch plan may be launched.');
+				throw new ProductServiceLifecycleValidationError(
+					'Only an approved launch plan may be launched.'
+				);
 			if (plan.lifecycle_status === 'launched') return plan;
 			const launchedAt = new Date();
 			const launched = await repository.updateLaunchPlan(actor.organisationId, plan.id, {
@@ -647,10 +661,22 @@ export class ProductServiceLifecycleService {
 				retirement_code: code(input.retirementCode, 'Retirement code'),
 				title: required(input.title, 'Title', 255),
 				retirement_rationale: required(input.retirementRationale, 'Retirement rationale'),
-				customer_transition_plan: required(input.customerTransitionPlan, 'Customer transition plan'),
-				operational_transition_plan: required(input.operationalTransitionPlan, 'Operational transition plan'),
-				financial_impact_summary: required(input.financialImpactSummary, 'Financial impact summary'),
-				data_record_retention_plan: required(input.dataRecordRetentionPlan, 'Data/record retention plan'),
+				customer_transition_plan: required(
+					input.customerTransitionPlan,
+					'Customer transition plan'
+				),
+				operational_transition_plan: required(
+					input.operationalTransitionPlan,
+					'Operational transition plan'
+				),
+				financial_impact_summary: required(
+					input.financialImpactSummary,
+					'Financial impact summary'
+				),
+				data_record_retention_plan: required(
+					input.dataRecordRetentionPlan,
+					'Data/record retention plan'
+				),
 				target_end_date: new Date(date(input.targetEndDate)!),
 				governance_decision_public_id: optional(input.governanceDecisionPublicId, 100),
 				lifecycle_status: 'draft',
@@ -682,7 +708,8 @@ export class ProductServiceLifecycleService {
 				retirementPublicId.trim()
 			);
 			if (!plan) throw new RecordNotFoundError('Product/service retirement plan not found.');
-			if (plan.lifecycle_status === 'approved' || plan.lifecycle_status === 'completed') return plan;
+			if (plan.lifecycle_status === 'approved' || plan.lifecycle_status === 'completed')
+				return plan;
 			if (!plan.governance_decision_public_id)
 				throw new ProductServiceLifecycleValidationError(
 					'Retirement approval requires an F02 governance decision reference.'
@@ -764,13 +791,22 @@ export class ProductServiceLifecycleService {
 			const productRepository = new ProductServiceRepository(trx);
 			const repository = new ProductServiceLifecycleRepository(trx);
 			const portfolio = input.portfolioPublicId?.trim()
-				? await productRepository.findPortfolioByPublicId(actor.organisationId, input.portfolioPublicId.trim())
+				? await productRepository.findPortfolioByPublicId(
+						actor.organisationId,
+						input.portfolioPublicId.trim()
+					)
 				: null;
 			const idea = input.ideaPublicId?.trim()
-				? await productRepository.findIdeaByPublicId(actor.organisationId, input.ideaPublicId.trim())
+				? await productRepository.findIdeaByPublicId(
+						actor.organisationId,
+						input.ideaPublicId.trim()
+					)
 				: null;
 			const offering = input.offeringPublicId?.trim()
-				? await productRepository.findOfferingByPublicId(actor.organisationId, input.offeringPublicId.trim())
+				? await productRepository.findOfferingByPublicId(
+						actor.organisationId,
+						input.offeringPublicId.trim()
+					)
 				: null;
 			if (input.portfolioPublicId?.trim() && !portfolio)
 				throw new RecordNotFoundError('Product/service portfolio not found.');
@@ -834,7 +870,8 @@ export class ProductServiceLifecycleService {
 					lifecycle_status: 'completed',
 					outcome: input.outcome,
 					learning_summary: required(input.learningSummary, 'Learning summary'),
-					evidence_public_id: optional(input.evidencePublicId, 100) ?? experiment.evidence_public_id,
+					evidence_public_id:
+						optional(input.evidencePublicId, 100) ?? experiment.evidence_public_id,
 					closed_by_member_id: actor.memberId,
 					closed_at: new Date()
 				}
