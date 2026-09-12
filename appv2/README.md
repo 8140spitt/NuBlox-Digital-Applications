@@ -11,7 +11,13 @@ NuBlox V2 is a clean application reset for the NuBlox construction and built-env
 
 ## Canonical route contract
 
-NuBlox has two explicit connected application surfaces over the same canonical platform.
+NuBlox has one authentication boundary and two connected application surfaces over the same canonical platform.
+
+All identities authenticate at:
+
+```text
+/auth
+```
 
 Internal users enter the tenant operating system beneath `/app`:
 
@@ -25,17 +31,24 @@ Internal users enter the tenant operating system beneath `/app`:
 External CRM Parties enter the connected portal beneath `/portal`:
 
 ```text
-/portal/[tenant]/[crmParty]/login
 /portal/[tenant]/[crmParty]/dashboard
 /portal/[tenant]/[crmParty]/projects
 /portal/[tenant]/[crmParty]/actions
 ```
 
+Anonymous access to protected `/app` or `/portal` routes is redirected to `/auth?returnTo=...`. The return destination is restricted to canonical `/app/...` and `/portal/...` paths so authentication cannot be used as an open redirect.
+
 The portal is **CRM Party project participation**, not a standalone external-work application. An authenticated external identity must resolve to an authorised CRM contact/user, then to a CRM Party, then to a valid tenant relationship and project association. The portal exposes only the canonical NuBlox records and business actions permitted by those relationships.
 
 Route parameters establish context only. They never grant authority. Server-side authentication and authorisation must enforce identity → CRM Party → tenant relationship → project association → record/action permission before protected data is exposed.
 
-There are no legacy aliases for the former tenant-first route tree. V2 uses `/app/[tenant]/...` and `/portal/[tenant]/[crmParty]/...` as the only canonical application boundaries.
+There are no legacy aliases for the former tenant-first route tree and no portal-specific login route. V2 uses `/auth`, `/app/[tenant]/...` and `/portal/[tenant]/[crmParty]/...` as the canonical application boundaries.
+
+## Authentication implementation
+
+V2 mounts Better Auth through the SvelteKit server handler at `/api/auth` and exposes the user-facing sign-in experience at `/auth`. As an explicit V2 architecture decision, authentication reuses the existing canonical `auth_users`, `auth_sessions`, `auth_accounts` and `auth_verifications` tables rather than creating a second identity store.
+
+Public self-registration is disabled. Accounts must already have been provisioned through governed NuBlox access processes. Existing unverified accounts are blocked from email/password sign-in. Runtime configuration is provided through `DATABASE_URL`, `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`; development placeholders are documented in `appv2/.env.example`.
 
 ## V2 product rules
 
