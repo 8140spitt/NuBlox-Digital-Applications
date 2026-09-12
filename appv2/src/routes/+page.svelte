@@ -1,3 +1,7 @@
+<script lang="ts">
+	import { resolve } from '$app/paths';
+</script>
+
 <section class="nb-page reset-entry">
 	<p class="nb-eyebrow">NuBlox V2</p>
 	<h1>A clean operating-system reset.</h1>
@@ -7,8 +11,8 @@
 	</p>
 
 	<div class="entry-actions">
-		<a class="nb-action" href="/nublox/dashboard">Open tenant shell</a>
-		<a href="/nublox/portal/perspectivebc/login">Open portal route example</a>
+		<a class="nb-action" href={resolve('/nublox/dashboard')}>Open tenant shell</a>
+		<a href={resolve('/nublox/portal/perspectivebc/login')}>Open portal route example</a>
 	</div>
 </section>
 
