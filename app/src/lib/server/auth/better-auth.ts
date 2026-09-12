@@ -21,9 +21,14 @@ import {
 	ProjectExternalCollaborationAccessError,
 	ProjectExternalCollaborationService
 } from '$lib/server/projects/project-external-collaboration-service';
+import {
+	SupplierRfqPortalAccessError,
+	SupplierRfqPortalService
+} from '$lib/server/procurement/supplier-rfq-portal-service';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from './bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
 import { PROJECT_COLLABORATION_SIGNUP_COOKIE } from './project-collaboration-cookie';
+import { SUPPLIER_RFQ_SIGNUP_COOKIE } from './supplier-rfq-cookie';
 import { assertVerifiedAuthUser } from './verified-auth-user';
 
 function requireEnv(name: 'DATABASE_URL' | 'BETTER_AUTH_SECRET' | 'BETTER_AUTH_URL'): string {
@@ -44,10 +49,15 @@ function collaborationService(): ProjectExternalCollaborationService {
 	return new ProjectExternalCollaborationService(getDatabase());
 }
 
+function supplierRfqService(): SupplierRfqPortalService {
+	return new SupplierRfqPortalService(getDatabase());
+}
+
 type SignupProvisioningIntent =
 	| { kind: 'invitation'; token: string }
 	| { kind: 'organisation-bootstrap'; token: string }
-	| { kind: 'project-collaboration'; token: string };
+	| { kind: 'project-collaboration'; token: string }
+	| { kind: 'supplier-rfq'; token: string };
 
 function signupProvisioningIntentFromContext(ctx: {
 	getCookie(name: string): string | null | undefined;
@@ -55,7 +65,8 @@ function signupProvisioningIntentFromContext(ctx: {
 	const invitationToken = ctx.getCookie(INVITATION_SIGNUP_COOKIE)?.trim() ?? '';
 	const bootstrapToken = ctx.getCookie(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE)?.trim() ?? '';
 	const collaborationToken = ctx.getCookie(PROJECT_COLLABORATION_SIGNUP_COOKIE)?.trim() ?? '';
-	const intentCount = [invitationToken, bootstrapToken, collaborationToken].filter(Boolean).length;
+	const supplierRfqToken = ctx.getCookie(SUPPLIER_RFQ_SIGNUP_COOKIE)?.trim() ?? '';
+	const intentCount = [invitationToken, bootstrapToken, collaborationToken, supplierRfqToken].filter(Boolean).length;
 	if (intentCount > 1) {
 		throw new APIError('FORBIDDEN', {
 			message: 'The NuBlox account setup state is ambiguous. Start again.'
@@ -64,9 +75,10 @@ function signupProvisioningIntentFromContext(ctx: {
 	if (invitationToken) return { kind: 'invitation', token: invitationToken };
 	if (bootstrapToken) return { kind: 'organisation-bootstrap', token: bootstrapToken };
 	if (collaborationToken) return { kind: 'project-collaboration', token: collaborationToken };
+	if (supplierRfqToken) return { kind: 'supplier-rfq', token: supplierRfqToken };
 	throw new APIError('FORBIDDEN', {
 		message:
-			'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
+			'A valid NuBlox invitation, project collaboration invitation, supplier quotation invitation or organisation setup request is required.'
 	});
 }
 
@@ -157,18 +169,21 @@ export const auth = betterAuth({
 					await invitationService().validateSignup(intent.token, email);
 				} else if (intent.kind === 'organisation-bootstrap') {
 					await bootstrapService().validateSignup(intent.token, email);
-				} else {
+				} else if (intent.kind === 'project-collaboration') {
 					await collaborationService().validateSignup(intent.token, email);
+				} else {
+					await supplierRfqService().validateSignup(intent.token, email);
 				}
 			} catch (cause) {
 				if (
 					cause instanceof InvitationAccessError ||
 					cause instanceof OrganisationBootstrapAccessError ||
-					cause instanceof ProjectExternalCollaborationAccessError
+					cause instanceof ProjectExternalCollaborationAccessError ||
+					cause instanceof SupplierRfqPortalAccessError
 				) {
 					throw new APIError('FORBIDDEN', {
 						message:
-							'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
+							'A valid NuBlox invitation, project collaboration invitation, supplier quotation invitation or organisation setup request is required.'
 					});
 				}
 				throw cause;
@@ -185,7 +200,7 @@ export const auth = betterAuth({
 						await invitationService().bindSignupAuthUser(intent.token, user.email, user.id);
 					} else if (intent.kind === 'project-collaboration') {
 						await collaborationService().bindSignupAuthUser(intent.token, user.email, user.id);
-					} else {
+					} else if (intent.kind === 'organisation-bootstrap') {
 						const db = getDatabase();
 						const created = await new OrganisationBootstrapService(db).provisionSignup({
 							rawToken: intent.token,
@@ -195,6 +210,8 @@ export const auth = betterAuth({
 						});
 						await ensureStandardRolePermissionDefaults(db, created.organisationId);
 					}
+					// Supplier RFQ access is deliberately bound to the verified email on the
+					// invitation. No supplier-side organisation or membership is fabricated.
 				}
 			}
 		}
