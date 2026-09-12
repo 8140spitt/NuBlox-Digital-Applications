@@ -1,0 +1,108 @@
+name: Patch supplier RFQ multi-supplier flow
+
+on:
+  push:
+    branches:
+      - fix/supplier-rfq-portal-roundtrip
+    paths:
+      - .github/workflows/patch-supplier-rfq-multisupplier.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/supplier-rfq-portal-roundtrip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Allow one issued RFQ to invite multiple suppliers
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/src/lib/server/procurement/procurement-service.ts')
+          text = path.read_text()
+          old = """\t\t\tconst version = (await repository.listRfqVersions(actor.organisationId, rfq.id))[0];
+          \t\t\tif (!version || version.status !== 'draft')
+          \t\t\t\tthrow new ProcurementValidationError('Only the current draft RFQ version can be issued.');
+          \t\t\tif (version.responseDeadlineAt && version.responseDeadlineAt <= this.now())
+          \t\t\t\tthrow new ProcurementValidationError(
+          \t\t\t\t\t'The RFQ response deadline must be in the future before issue.'
+          \t\t\t\t);
+          \t\t\tif (
+          \t\t\t\t(await repository.issueRfqVersion({
+          \t\t\t\t\torganisationId: actor.organisationId,
+          \t\t\t\t\tversionId: version.id,
+          \t\t\t\t\tmemberId: membership.id
+          \t\t\t\t})) !== 1
+          \t\t\t)
+          \t\t\t\tthrow new ProcurementValidationError('The RFQ version changed before it could be issued.');
+          """
+          new = """\t\t\tconst version = (await repository.listRfqVersions(actor.organisationId, rfq.id))[0];
+          \t\t\tif (!version || !['draft', 'issued'].includes(version.status))
+          \t\t\t\tthrow new ProcurementValidationError(
+          \t\t\t\t\t'Only the current draft or issued RFQ version can invite suppliers.'
+          \t\t\t\t);
+          \t\t\tif (version.responseDeadlineAt && version.responseDeadlineAt <= this.now())
+          \t\t\t\tthrow new ProcurementValidationError(
+          \t\t\t\t\t'The RFQ response deadline must be in the future before issue.'
+          \t\t\t\t);
+          \t\t\tconst duplicateInvitation = await trx
+          \t\t\t\t.selectFrom('rfq_invitations')
+          \t\t\t\t.select('id')
+          \t\t\t\t.where('organisation_id', '=', actor.organisationId)
+          \t\t\t\t.where('rfq_version_id', '=', version.id)
+          \t\t\t\t.where('supplier_party_id', '=', supplier.id)
+          \t\t\t\t.executeTakeFirst();
+          \t\t\tif (duplicateInvitation)
+          \t\t\t\tthrow new ProcurementValidationError('This supplier has already been invited to this RFQ.');
+          \t\t\tif (
+          \t\t\t\tversion.status === 'draft' &&
+          \t\t\t\t(await repository.issueRfqVersion({
+          \t\t\t\t\torganisationId: actor.organisationId,
+          \t\t\t\t\tversionId: version.id,
+          \t\t\t\t\tmemberId: membership.id
+          \t\t\t\t})) !== 1
+          \t\t\t)
+          \t\t\t\tthrow new ProcurementValidationError('The RFQ version changed before it could be issued.');
+          """
+          if old not in text:
+              raise SystemExit('Expected RFQ issue block was not found; refusing an unsafe patch.')
+          path.write_text(text.replace(old, new, 1))
+
+          test_path = Path('app/src/lib/server/procurement/procurement-commercial-control.integration.test.ts')
+          test_text = test_path.read_text()
+          old_deadline = "responseDeadlineAt: '2026-09-01T12:00'"
+          if old_deadline not in test_text:
+              raise SystemExit('Expected fixed RFQ test deadline was not found.')
+          test_path.write_text(test_text.replace(old_deadline, "responseDeadlineAt: '2099-09-01T12:00'", 1))
+          PY
+      - name: Format and lint patched files
+        working-directory: app
+        run: |
+          pnpm exec eslint --fix src/lib/server/procurement/procurement-service.ts src/lib/server/procurement/procurement-commercial-control.integration.test.ts
+          pnpm exec prettier --write src/lib/server/procurement/procurement-service.ts src/lib/server/procurement/procurement-commercial-control.integration.test.ts
+      - name: Remove patch workflow
+        run: rm .github/workflows/patch-supplier-rfq-multisupplier.yml
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/lib/server/procurement .github/workflows/patch-supplier-rfq-multisupplier.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Support multi-supplier RFQ portal issue"
+          git push origin HEAD:fix/supplier-rfq-portal-roundtrip
