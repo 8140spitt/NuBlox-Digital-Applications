@@ -2,7 +2,7 @@
 	"name": "appv2",
 	"private": true,
 	"version": "0.0.1",
-	"packageManager": "pnpm@11.5.0",
+	"packageManager": "pnpm@10.14.0",
 	"type": "module",
 	"scripts": {
 		"dev": "vite dev",
