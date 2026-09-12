@@ -1,5 +1,6 @@
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
+import { allocateOrganisationRouteSlug } from '$lib/server/routing/route-context-service';
 
 export type ActiveOrganisationMembership = {
 	id: string;
@@ -16,12 +17,38 @@ export type OrganisationMembershipChoice = {
 	memberPublicId: string;
 	organisationId: string;
 	organisationPublicId: string;
-	organisationRouteSlug: string | null;
+	organisationRouteSlug: string;
 	organisationName: string;
 };
 
 export class OrganisationMembershipRepository {
 	constructor(private readonly db: DatabaseExecutor) {}
+
+	private async ensureRouteSlug(input: {
+		organisationId: string;
+		current: string | null;
+		legalName: string;
+		tradingName: string | null;
+	}): Promise<string> {
+		if (input.current) return input.current;
+		const routeSlug = await allocateOrganisationRouteSlug(
+			this.db,
+			input.tradingName?.trim() || input.legalName
+		);
+		await this.db
+			.updateTable('organisations')
+			.set({ route_slug: routeSlug })
+			.where('id', '=', input.organisationId)
+			.where('route_slug', 'is', null)
+			.executeTakeFirst();
+		const current = await this.db
+			.selectFrom('organisations')
+			.select('route_slug as routeSlug')
+			.where('id', '=', input.organisationId)
+			.executeTakeFirstOrThrow();
+		if (!current.routeSlug) throw new Error('Organisation route slug could not be allocated.');
+		return current.routeSlug;
+	}
 
 	/**
 	 * Verify the full tenant/user/member tuple. Never resolve a membership by its
@@ -38,9 +65,7 @@ export class OrganisationMembershipRepository {
 			.where('user_id', '=', actor.userId)
 			.where('status', '=', 'active')
 			.executeTakeFirst();
-
 		if (!row) return null;
-
 		return {
 			id: row.id,
 			organisationId: row.organisation_id,
@@ -50,7 +75,6 @@ export class OrganisationMembershipRepository {
 		};
 	}
 
-	/** Resolve a browser-selected organisation only after proving active membership. */
 	async findActiveMembershipByOrganisationPublicId(
 		userId: string,
 		organisationPublicId: string
@@ -63,6 +87,8 @@ export class OrganisationMembershipRepository {
 				'member.organisation_id as organisationId',
 				'organisation.public_id as organisationPublicId',
 				'organisation.route_slug as organisationRouteSlug',
+				'organisation.legal_name as legalName',
+				'organisation.trading_name as tradingName',
 				'member.user_id as userId',
 				'member.public_id as publicId',
 				'member.status as status'
@@ -72,14 +98,18 @@ export class OrganisationMembershipRepository {
 			.where('organisation.public_id', '=', organisationPublicId)
 			.where('organisation.status', '=', 'active')
 			.executeTakeFirst();
-
 		if (!row || row.status !== 'active') return null;
-
+		const routeSlug = await this.ensureRouteSlug({
+			organisationId: row.organisationId,
+			current: row.organisationRouteSlug,
+			legalName: row.legalName,
+			tradingName: row.tradingName
+		});
 		return {
 			id: row.id,
 			organisationId: row.organisationId,
 			organisationPublicId: row.organisationPublicId,
-			organisationRouteSlug: row.organisationRouteSlug ?? undefined,
+			organisationRouteSlug: routeSlug,
 			userId: row.userId,
 			publicId: row.publicId,
 			status: 'active'
@@ -107,7 +137,6 @@ export class OrganisationMembershipRepository {
 			.where('organisation.route_slug', '=', organisationRouteSlug)
 			.where('organisation.status', '=', 'active')
 			.executeTakeFirst();
-
 		if (!row || row.status !== 'active' || !row.organisationRouteSlug) return null;
 		return {
 			id: row.id,
@@ -130,14 +159,31 @@ export class OrganisationMembershipRepository {
 				'member.organisation_id as organisationId',
 				'organisation.public_id as organisationPublicId',
 				'organisation.route_slug as organisationRouteSlug',
-				'organisation.legal_name as organisationName'
+				'organisation.legal_name as legalName',
+				'organisation.trading_name as tradingName'
 			])
 			.where('member.user_id', '=', userId)
 			.where('member.status', '=', 'active')
 			.where('organisation.status', '=', 'active')
 			.orderBy('organisation.legal_name', 'asc')
 			.execute();
-
-		return rows;
+		const choices: OrganisationMembershipChoice[] = [];
+		for (const row of rows) {
+			const routeSlug = await this.ensureRouteSlug({
+				organisationId: row.organisationId,
+				current: row.organisationRouteSlug,
+				legalName: row.legalName,
+				tradingName: row.tradingName
+			});
+			choices.push({
+				memberId: row.memberId,
+				memberPublicId: row.memberPublicId,
+				organisationId: row.organisationId,
+				organisationPublicId: row.organisationPublicId,
+				organisationRouteSlug: routeSlug,
+				organisationName: row.tradingName?.trim() || row.legalName
+			});
+		}
+		return choices;
 	}
 }
