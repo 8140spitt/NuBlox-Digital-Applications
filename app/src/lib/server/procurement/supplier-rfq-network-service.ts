@@ -423,7 +423,7 @@ export class SupplierRfqNetworkService {
 			title: context.title,
 			currencyCode: context.currencyCode,
 			responseDeadlineAt: context.responseDeadlineAt,
-			recipientName: context.recipientName,
+			recipientName: context.recipientName ?? context.recipientEmail,
 			recipientEmail: context.recipientEmail,
 			supplierReference: supplierReturn?.supplierReference ?? '',
 			validUntil: supplierReturn?.validUntil ?? null,

@@ -22,6 +22,12 @@ function workHref(row: { domainKey: string; actionType: string; publicId: string
 	if (row.domainKey === 'procurement' && row.actionType === 'submit_quote') {
 		return `/portal/supplier-quotes/${encodeURIComponent(row.publicId)}`;
 	}
+	if (
+		row.domainKey === 'information' &&
+		['respond_rfi', 'review_submittal', 'acknowledge_instruction'].includes(row.actionType)
+	) {
+		return `/portal/project-actions/${encodeURIComponent(row.publicId)}`;
+	}
 	return null;
 }
 

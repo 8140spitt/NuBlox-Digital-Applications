@@ -4,6 +4,11 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { getDatabase } from '$lib/server/db/database';
 import {
+	ExternalProjectActionService,
+	ExternalProjectActionValidationError,
+	type ExternalProjectAssignmentOptions
+} from '$lib/server/projects/project-external-action-service';
+import {
 	ConcurrentUpdateError,
 	InvalidLifecycleTransitionError,
 	RecordNotFoundError,
@@ -80,7 +85,8 @@ function teamFailure(error: unknown, teamAction: string) {
 	}
 	if (
 		error instanceof ProjectTeamValidationError ||
-		error instanceof ProjectExternalCollaborationValidationError
+		error instanceof ProjectExternalCollaborationValidationError ||
+		error instanceof ExternalProjectActionValidationError
 	) {
 		return fail(400, actionFailure({ teamError: error.message, teamAction }));
 	}
@@ -114,17 +120,35 @@ export const load: PageServerLoad = async ({ locals, params }) => {
 			collaborators: [],
 			pendingInvitations: []
 		};
+		let externalActionOptions: ExternalProjectAssignmentOptions = {
+			canAssignRfis: false,
+			canAssignSubmittals: false,
+			canAssignInstructions: false,
+			rfis: [],
+			submittals: [],
+			instructions: []
+		};
 		if (team.canManageParticipants) {
 			try {
 				externalCollaboration = await new ProjectExternalCollaborationService(db).getManagementView(
 					actor,
 					params.projectPublicId
 				);
+				if (externalCollaboration.canManage) {
+					externalActionOptions = await new ExternalProjectActionService(db).listAssignmentOptions(
+						actor,
+						params.projectPublicId
+					);
+				}
 			} catch (cause) {
-				if (!(cause instanceof ProjectExternalCollaborationValidationError)) throw cause;
+				if (
+					!(cause instanceof ProjectExternalCollaborationValidationError) &&
+					!(cause instanceof ExternalProjectActionValidationError)
+				)
+					throw cause;
 			}
 		}
-		return { ...workspace, team, externalCollaboration };
+		return { ...workspace, team, externalCollaboration, externalActionOptions };
 	} catch (cause) {
 		if (cause instanceof RecordNotFoundError || cause instanceof TenantAccessError) {
 			throw httpError(404, 'Project not found.');
@@ -220,6 +244,81 @@ export const actions: Actions = {
 			});
 		} catch (cause) {
 			return teamFailure(cause, 'external-invite');
+		}
+		throw redirect(
+			303,
+			`/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`
+		);
+	},
+
+	assignExternalRfi: async ({ request, locals, params }) => {
+		const actor = actorFromLocals(locals);
+		const data = await request.formData();
+		const collaboratorPublicId = String(data.get('collaboratorPublicId') ?? '');
+		const marker = `external-work-${collaboratorPublicId}`;
+		if (!actor)
+			return fail(
+				401,
+				actionFailure({ teamError: 'Authentication is required.', teamAction: marker })
+			);
+		try {
+			await new ExternalProjectActionService(getDatabase()).assignRfi(actor, {
+				projectPublicId: params.projectPublicId,
+				collaboratorPublicId,
+				rfiPublicId: String(data.get('rfiPublicId') ?? '')
+			});
+		} catch (cause) {
+			return teamFailure(cause, marker);
+		}
+		throw redirect(
+			303,
+			`/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`
+		);
+	},
+
+	assignExternalSubmittal: async ({ request, locals, params }) => {
+		const actor = actorFromLocals(locals);
+		const data = await request.formData();
+		const collaboratorPublicId = String(data.get('collaboratorPublicId') ?? '');
+		const marker = `external-work-${collaboratorPublicId}`;
+		if (!actor)
+			return fail(
+				401,
+				actionFailure({ teamError: 'Authentication is required.', teamAction: marker })
+			);
+		try {
+			await new ExternalProjectActionService(getDatabase()).assignSubmittal(actor, {
+				projectPublicId: params.projectPublicId,
+				collaboratorPublicId,
+				submittalPublicId: String(data.get('submittalPublicId') ?? '')
+			});
+		} catch (cause) {
+			return teamFailure(cause, marker);
+		}
+		throw redirect(
+			303,
+			`/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`
+		);
+	},
+
+	assignExternalInstruction: async ({ request, locals, params }) => {
+		const actor = actorFromLocals(locals);
+		const data = await request.formData();
+		const collaboratorPublicId = String(data.get('collaboratorPublicId') ?? '');
+		const marker = `external-work-${collaboratorPublicId}`;
+		if (!actor)
+			return fail(
+				401,
+				actionFailure({ teamError: 'Authentication is required.', teamAction: marker })
+			);
+		try {
+			await new ExternalProjectActionService(getDatabase()).assignInstruction(actor, {
+				projectPublicId: params.projectPublicId,
+				collaboratorPublicId,
+				instructionPublicId: String(data.get('instructionPublicId') ?? '')
+			});
+		} catch (cause) {
+			return teamFailure(cause, marker);
 		}
 		throw redirect(
 			303,

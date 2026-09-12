@@ -7,7 +7,11 @@ import { getDatabase, type Database } from '$lib/server/db/database';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 import { ExternalAccessDeniedError } from '$lib/server/external-access/external-access-service';
 import { ExternalWorkService } from '$lib/server/external-access/external-work-service';
-import { ConcurrentUpdateError, RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
+import {
+	ConcurrentUpdateError,
+	RecordNotFoundError,
+	TenantAccessError
+} from '$lib/server/kernel/errors';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectRepository } from '$lib/server/projects/project-repository';
 import type { Actor } from '$lib/types/request-context';
@@ -111,17 +115,13 @@ function requiredText(value: string, label: string, max = 20_000): string {
 function optionalText(value: string | null | undefined, max = 20_000): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (text.length > max) throw new ExternalProjectActionValidationError('A supplied value is too long.');
+	if (text.length > max)
+		throw new ExternalProjectActionValidationError('A supplied value is too long.');
 	return text;
 }
 
 function organisationName(row: { legalName: string; tradingName: string | null }): string {
 	return row.tradingName?.trim() || row.legalName;
-}
-
-function insertedId(result: { insertId?: bigint }, label: string): string {
-	if (result.insertId === undefined) throw new Error(`${label} insert did not return an ID.`);
-	return result.insertId.toString();
 }
 
 export class ExternalProjectActionService {
@@ -136,7 +136,9 @@ export class ExternalProjectActionService {
 		projectPublicIdInput: string,
 		db: DatabaseExecutor = this.db
 	) {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		const project = await new ProjectRepository(db).findForMemberByPublicId(
 			actor.organisationId,
@@ -147,7 +149,9 @@ export class ExternalProjectActionService {
 			throw new RecordNotFoundError('Owned project not found in your effective project scope.');
 		}
 		if (TERMINAL_PROJECT_STATUSES.has(project.status)) {
-			throw new ExternalProjectActionValidationError('This project is read-only for external work.');
+			throw new ExternalProjectActionValidationError(
+				'This project is read-only for external work.'
+			);
 		}
 		const decision = await new PermissionService(db).decideWithUmbrella(
 			actor,
@@ -155,7 +159,8 @@ export class ExternalProjectActionService {
 			'project.manage',
 			{ projectId: project.id }
 		);
-		if (!decision.allowed) throw new TenantAccessError('External project work assignment is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('External project work assignment is not permitted.');
 		return { membership, project };
 	}
 
@@ -165,7 +170,8 @@ export class ExternalProjectActionService {
 		db: DatabaseExecutor
 	): Promise<void> {
 		const decision = await new PermissionService(db).decide(actor, permissionKey);
-		if (!decision.allowed) throw new TenantAccessError('This controlled information action is not permitted.');
+		if (!decision.allowed)
+			throw new TenantAccessError('This controlled information action is not permitted.');
 	}
 
 	async listAssignmentOptions(
@@ -180,7 +186,8 @@ export class ExternalProjectActionService {
 		]);
 		const canAssignRfis = permissions.get('information.rfi.manage')?.allowed ?? false;
 		const canAssignSubmittals = permissions.get('information.submittal.manage')?.allowed ?? false;
-		const canAssignInstructions = permissions.get('information.instruction.manage')?.allowed ?? false;
+		const canAssignInstructions =
+			permissions.get('information.instruction.manage')?.allowed ?? false;
 		const [rfis, submittals, instructions] = await Promise.all([
 			canAssignRfis
 				? this.db
@@ -196,7 +203,12 @@ export class ExternalProjectActionService {
 			canAssignSubmittals
 				? this.db
 						.selectFrom('submittals')
-						.select(['public_id as publicId', 'submittal_number as number', 'title', 'due_at as dueAt'])
+						.select([
+							'public_id as publicId',
+							'submittal_number as number',
+							'title',
+							'due_at as dueAt'
+						])
 						.where('project_id', '=', project.id)
 						.where('owning_organisation_id', '=', actor.organisationId)
 						.where('status', 'in', ['submitted', 'under_review'])
@@ -220,7 +232,14 @@ export class ExternalProjectActionService {
 						.execute()
 				: Promise.resolve([])
 		]);
-		return { canAssignRfis, canAssignSubmittals, canAssignInstructions, rfis, submittals, instructions };
+		return {
+			canAssignRfis,
+			canAssignSubmittals,
+			canAssignInstructions,
+			rfis,
+			submittals,
+			instructions
+		};
 	}
 
 	private async requireCollaborator(
@@ -231,7 +250,12 @@ export class ExternalProjectActionService {
 	) {
 		const collaborator = await db
 			.selectFrom('project_external_collaborators')
-			.select(['id', 'public_id as publicId', 'auth_user_id as authUserId', 'invite_email as email'])
+			.select([
+				'id',
+				'public_id as publicId',
+				'auth_user_id as authUserId',
+				'invite_email as email'
+			])
 			.where('public_id', '=', requiredPublicId(collaboratorPublicIdInput, 'External collaborator'))
 			.where('project_id', '=', projectId)
 			.where('owning_organisation_id', '=', actor.organisationId)
@@ -239,7 +263,9 @@ export class ExternalProjectActionService {
 			.executeTakeFirst();
 		if (!collaborator) throw new RecordNotFoundError('Active external collaborator not found.');
 		if (!collaborator.authUserId) {
-			throw new ExternalProjectActionValidationError('The collaborator must accept their project invitation before work can be assigned.');
+			throw new ExternalProjectActionValidationError(
+				'The collaborator must accept their project invitation before work can be assigned.'
+			);
 		}
 		return collaborator;
 	}
@@ -373,9 +399,18 @@ export class ExternalProjectActionService {
 					: input.kind === 'submittal'
 						? 'information.submittal.manage'
 						: 'information.instruction.manage';
-			const { membership, project } = await this.requireProjectManager(actor, input.projectPublicId, trx);
+			const { membership, project } = await this.requireProjectManager(
+				actor,
+				input.projectPublicId,
+				trx
+			);
 			await this.requireDomainPermission(actor, domainPermission, trx);
-			const collaborator = await this.requireCollaborator(trx, actor, project.id, input.collaboratorPublicId);
+			const collaborator = await this.requireCollaborator(
+				trx,
+				actor,
+				project.id,
+				input.collaboratorPublicId
+			);
 			await this.ensureProjectViewGrant(trx, {
 				owningOrganisationId: actor.organisationId,
 				authUserId: collaborator.authUserId,
@@ -395,14 +430,23 @@ export class ExternalProjectActionService {
 			if (input.kind === 'rfi') {
 				const row = await trx
 					.selectFrom('rfis')
-					.select(['public_id as publicId', 'rfi_number as number', 'subject', 'question', 'due_at as dueAt'])
+					.select([
+						'public_id as publicId',
+						'rfi_number as number',
+						'subject',
+						'question',
+						'due_at as dueAt'
+					])
 					.where('public_id', '=', requestedPublicId)
 					.where('project_id', '=', project.id)
 					.where('owning_organisation_id', '=', actor.organisationId)
 					.where('status', 'in', ['open', 'reopened'])
 					.forUpdate()
 					.executeTakeFirst();
-				if (!row) throw new ExternalProjectActionValidationError('Select an open RFI owned by this project.');
+				if (!row)
+					throw new ExternalProjectActionValidationError(
+						'Select an open RFI owned by this project.'
+					);
 				resourceType = 'rfi';
 				capabilityKey = 'information.rfi.respond';
 				actionType = 'respond_rfi';
@@ -413,14 +457,22 @@ export class ExternalProjectActionService {
 			} else if (input.kind === 'submittal') {
 				const row = await trx
 					.selectFrom('submittals')
-					.select(['public_id as publicId', 'submittal_number as number', 'title', 'due_at as dueAt'])
+					.select([
+						'public_id as publicId',
+						'submittal_number as number',
+						'title',
+						'due_at as dueAt'
+					])
 					.where('public_id', '=', requestedPublicId)
 					.where('project_id', '=', project.id)
 					.where('owning_organisation_id', '=', actor.organisationId)
 					.where('status', 'in', ['submitted', 'under_review'])
 					.forUpdate()
 					.executeTakeFirst();
-				if (!row) throw new ExternalProjectActionValidationError('Select a submitted submittal owned by this project.');
+				if (!row)
+					throw new ExternalProjectActionValidationError(
+						'Select a submitted submittal owned by this project.'
+					);
 				resourceType = 'submittal';
 				capabilityKey = 'information.submittal.review';
 				actionType = 'review_submittal';
@@ -431,14 +483,22 @@ export class ExternalProjectActionService {
 			} else {
 				const row = await trx
 					.selectFrom('project_instructions')
-					.select(['public_id as publicId', 'instruction_number as number', 'subject', 'instruction_text as text'])
+					.select([
+						'public_id as publicId',
+						'instruction_number as number',
+						'subject',
+						'instruction_text as text'
+					])
 					.where('public_id', '=', requestedPublicId)
 					.where('project_id', '=', project.id)
 					.where('issuing_organisation_id', '=', actor.organisationId)
 					.where('status', '=', 'issued')
 					.forUpdate()
 					.executeTakeFirst();
-				if (!row) throw new ExternalProjectActionValidationError('Select an issued instruction owned by this project.');
+				if (!row)
+					throw new ExternalProjectActionValidationError(
+						'Select an issued instruction owned by this project.'
+					);
 				resourceType = 'project_instruction';
 				capabilityKey = 'information.instruction.acknowledge';
 				actionType = 'acknowledge_instruction';
@@ -483,16 +543,40 @@ export class ExternalProjectActionService {
 		});
 	}
 
-	async assignRfi(actor: TenantActorContext, input: { projectPublicId: string; collaboratorPublicId: string; rfiPublicId: string }) {
-		return this.assign(actor, { projectPublicId: input.projectPublicId, collaboratorPublicId: input.collaboratorPublicId, resourcePublicId: input.rfiPublicId, kind: 'rfi' });
+	async assignRfi(
+		actor: TenantActorContext,
+		input: { projectPublicId: string; collaboratorPublicId: string; rfiPublicId: string }
+	) {
+		return this.assign(actor, {
+			projectPublicId: input.projectPublicId,
+			collaboratorPublicId: input.collaboratorPublicId,
+			resourcePublicId: input.rfiPublicId,
+			kind: 'rfi'
+		});
 	}
 
-	async assignSubmittal(actor: TenantActorContext, input: { projectPublicId: string; collaboratorPublicId: string; submittalPublicId: string }) {
-		return this.assign(actor, { projectPublicId: input.projectPublicId, collaboratorPublicId: input.collaboratorPublicId, resourcePublicId: input.submittalPublicId, kind: 'submittal' });
+	async assignSubmittal(
+		actor: TenantActorContext,
+		input: { projectPublicId: string; collaboratorPublicId: string; submittalPublicId: string }
+	) {
+		return this.assign(actor, {
+			projectPublicId: input.projectPublicId,
+			collaboratorPublicId: input.collaboratorPublicId,
+			resourcePublicId: input.submittalPublicId,
+			kind: 'submittal'
+		});
 	}
 
-	async assignInstruction(actor: TenantActorContext, input: { projectPublicId: string; collaboratorPublicId: string; instructionPublicId: string }) {
-		return this.assign(actor, { projectPublicId: input.projectPublicId, collaboratorPublicId: input.collaboratorPublicId, resourcePublicId: input.instructionPublicId, kind: 'instruction' });
+	async assignInstruction(
+		actor: TenantActorContext,
+		input: { projectPublicId: string; collaboratorPublicId: string; instructionPublicId: string }
+	) {
+		return this.assign(actor, {
+			projectPublicId: input.projectPublicId,
+			collaboratorPublicId: input.collaboratorPublicId,
+			resourcePublicId: input.instructionPublicId,
+			kind: 'instruction'
+		});
 	}
 
 	private async workContext(
@@ -545,7 +629,9 @@ export class ExternalProjectActionService {
 			.where('grant.context_type', '=', 'project')
 			.where('grant.revoked_at', 'is', null)
 			.where('grant.valid_from', '<=', this.now())
-			.where((eb) => eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', this.now())]))
+			.where((eb) =>
+				eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', this.now())])
+			)
 			.where('collaborator.status', '=', 'active')
 			.where('project.status', 'not in', ['cancelled', 'archived']);
 		if (lock) query = query.forUpdate();
@@ -559,7 +645,10 @@ export class ExternalProjectActionService {
 		const common: TaskCommon = {
 			workItemPublicId: context.workItemPublicId,
 			state: context.state,
-			ownerName: organisationName({ legalName: context.ownerLegalName, tradingName: context.ownerTradingName }),
+			ownerName: organisationName({
+				legalName: context.ownerLegalName,
+				tradingName: context.ownerTradingName
+			}),
 			projectPublicId: context.projectPublicId,
 			projectNumber: context.projectNumber,
 			projectName: context.projectName,
@@ -567,10 +656,22 @@ export class ExternalProjectActionService {
 			dueAt: context.dueAt
 		};
 
-		if (context.actionType === 'respond_rfi' && context.sourceType === 'rfi' && context.capabilityKey === 'information.rfi.respond') {
+		if (
+			context.actionType === 'respond_rfi' &&
+			context.sourceType === 'rfi' &&
+			context.capabilityKey === 'information.rfi.respond'
+		) {
 			const rfi = await this.db
 				.selectFrom('rfis')
-				.select(['id', 'public_id as publicId', 'rfi_number as number', 'subject', 'question', 'priority', 'status'])
+				.select([
+					'id',
+					'public_id as publicId',
+					'rfi_number as number',
+					'subject',
+					'question',
+					'priority',
+					'status'
+				])
 				.where('public_id', '=', context.sourcePublicId)
 				.where('project_id', '=', context.projectId)
 				.where('owning_organisation_id', '=', context.owningOrganisationId)
@@ -578,18 +679,44 @@ export class ExternalProjectActionService {
 			if (!rfi) throw new ExternalAccessDeniedError();
 			const previousResponses = await this.db
 				.selectFrom('external_rfi_responses')
-				.select(['response_sequence as sequence', 'response_text as responseText', 'is_final_response as final', 'responded_at as respondedAt'])
+				.select([
+					'response_sequence as sequence',
+					'response_text as responseText',
+					'is_final_response as final',
+					'responded_at as respondedAt'
+				])
 				.where('rfi_id', '=', rfi.id)
 				.where('external_collaborator_id', '=', context.collaboratorId)
 				.orderBy('response_sequence', 'asc')
 				.execute();
-			return { ...common, kind: 'rfi', publicId: rfi.publicId, number: rfi.number, subject: rfi.subject, question: rfi.question, priority: rfi.priority, status: rfi.status, previousResponses: previousResponses.map((row) => ({ ...row, final: Boolean(row.final) })) };
+			return {
+				...common,
+				kind: 'rfi',
+				publicId: rfi.publicId,
+				number: rfi.number,
+				subject: rfi.subject,
+				question: rfi.question,
+				priority: rfi.priority,
+				status: rfi.status,
+				previousResponses: previousResponses.map((row) => ({ ...row, final: Boolean(row.final) }))
+			};
 		}
 
-		if (context.actionType === 'review_submittal' && context.sourceType === 'submittal' && context.capabilityKey === 'information.submittal.review') {
+		if (
+			context.actionType === 'review_submittal' &&
+			context.sourceType === 'submittal' &&
+			context.capabilityKey === 'information.submittal.review'
+		) {
 			const submittal = await this.db
 				.selectFrom('submittals')
-				.select(['id', 'public_id as publicId', 'submittal_number as number', 'title', 'status', 'submitted_at as submittedAt'])
+				.select([
+					'id',
+					'public_id as publicId',
+					'submittal_number as number',
+					'title',
+					'status',
+					'submitted_at as submittedAt'
+				])
 				.where('public_id', '=', context.sourcePublicId)
 				.where('project_id', '=', context.projectId)
 				.where('owning_organisation_id', '=', context.owningOrganisationId)
@@ -602,13 +729,34 @@ export class ExternalProjectActionService {
 				.where('external_collaborator_id', '=', context.collaboratorId)
 				.orderBy('review_sequence', 'asc')
 				.execute();
-			return { ...common, kind: 'submittal', publicId: submittal.publicId, number: submittal.number, title: submittal.title, status: submittal.status, submittedAt: submittal.submittedAt, previousReviews };
+			return {
+				...common,
+				kind: 'submittal',
+				publicId: submittal.publicId,
+				number: submittal.number,
+				title: submittal.title,
+				status: submittal.status,
+				submittedAt: submittal.submittedAt,
+				previousReviews
+			};
 		}
 
-		if (context.actionType === 'acknowledge_instruction' && context.sourceType === 'project_instruction' && context.capabilityKey === 'information.instruction.acknowledge') {
+		if (
+			context.actionType === 'acknowledge_instruction' &&
+			context.sourceType === 'project_instruction' &&
+			context.capabilityKey === 'information.instruction.acknowledge'
+		) {
 			const instruction = await this.db
 				.selectFrom('project_instructions')
-				.select(['id', 'public_id as publicId', 'instruction_number as number', 'subject', 'instruction_text as instructionText', 'status', 'issued_at as issuedAt'])
+				.select([
+					'id',
+					'public_id as publicId',
+					'instruction_number as number',
+					'subject',
+					'instruction_text as instructionText',
+					'status',
+					'issued_at as issuedAt'
+				])
 				.where('public_id', '=', context.sourcePublicId)
 				.where('project_id', '=', context.projectId)
 				.where('issuing_organisation_id', '=', context.owningOrganisationId)
@@ -620,18 +768,37 @@ export class ExternalProjectActionService {
 				.where('instruction_id', '=', instruction.id)
 				.where('external_collaborator_id', '=', context.collaboratorId)
 				.executeTakeFirst();
-			return { ...common, kind: 'instruction', publicId: instruction.publicId, number: instruction.number, subject: instruction.subject, instructionText: instruction.instructionText, status: instruction.status, issuedAt: instruction.issuedAt, acknowledgedAt: acknowledgement?.acknowledgedAt ?? null };
+			return {
+				...common,
+				kind: 'instruction',
+				publicId: instruction.publicId,
+				number: instruction.number,
+				subject: instruction.subject,
+				instructionText: instruction.instructionText,
+				status: instruction.status,
+				issuedAt: instruction.issuedAt,
+				acknowledgedAt: acknowledgement?.acknowledgedAt ?? null
+			};
 		}
 
 		throw new ExternalAccessDeniedError();
 	}
 
-	async respondRfi(actor: Actor, input: { workItemPublicId: string; responseText: string; final?: boolean }): Promise<void> {
+	async respondRfi(
+		actor: Actor,
+		input: { workItemPublicId: string; responseText: string; final?: boolean }
+	): Promise<void> {
 		const responseText = requiredText(input.responseText, 'RFI response');
 		const final = input.final ?? true;
 		await this.db.transaction().execute(async (trx) => {
-			const work = await new ExternalWorkService(this.db, this.now).findAuthorisedForUpdate(trx, actor.authUserId, requiredPublicId(input.workItemPublicId, 'Network work item'), { domainKey: 'information', actionType: 'respond_rfi' });
-			if (work.capabilityKey !== 'information.rfi.respond' || work.sourceType !== 'rfi') throw new ExternalAccessDeniedError();
+			const work = await new ExternalWorkService(this.db, this.now).findAuthorisedForUpdate(
+				trx,
+				actor.authUserId,
+				requiredPublicId(input.workItemPublicId, 'Network work item'),
+				{ domainKey: 'information', actionType: 'respond_rfi' }
+			);
+			if (work.capabilityKey !== 'information.rfi.respond' || work.sourceType !== 'rfi')
+				throw new ExternalAccessDeniedError();
 			const context = await this.workContext(trx, actor.authUserId, input.workItemPublicId, true);
 			const rfi = await trx
 				.selectFrom('rfis')
@@ -641,7 +808,8 @@ export class ExternalProjectActionService {
 				.where('owning_organisation_id', '=', context.owningOrganisationId)
 				.forUpdate()
 				.executeTakeFirst();
-			if (!rfi || !['open', 'reopened'].includes(rfi.status)) throw new ExternalProjectActionValidationError('This RFI is no longer open for response.');
+			if (!rfi || !['open', 'reopened'].includes(rfi.status))
+				throw new ExternalProjectActionValidationError('This RFI is no longer open for response.');
 			const last = await trx
 				.selectFrom('external_rfi_responses')
 				.select('response_sequence as sequence')
@@ -667,22 +835,47 @@ export class ExternalProjectActionService {
 				})
 				.executeTakeFirstOrThrow();
 			if (final) {
-				const update = await trx.updateTable('rfis').set({ status: 'answered' }).where('id', '=', rfi.id).where('status', 'in', ['open', 'reopened']).executeTakeFirst();
+				const update = await trx
+					.updateTable('rfis')
+					.set({ status: 'answered' })
+					.where('id', '=', rfi.id)
+					.where('status', 'in', ['open', 'reopened'])
+					.executeTakeFirst();
 				if (update.numUpdatedRows !== 1n) throw new ConcurrentUpdateError();
 				await new ExternalWorkService(this.db, this.now).markCompleted(trx, work.id, this.now());
 			}
 			await new AuditRepository(trx).append({
-				eventPublicId: this.publicIdFactory(), actingOrganisationId: context.owningOrganisationId, actorUserId: actor.userId, actorMemberId: null, externalAuthUserId: actor.authUserId, projectId: context.projectId, actionKey: 'network.rfi.responded', subjectType: 'rfi', subjectPublicId: rfi.publicId, correlationId: this.publicIdFactory(), changeSummary: { responseSequence: sequence, final }
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: context.owningOrganisationId,
+				actorUserId: actor.userId,
+				actorMemberId: null,
+				externalAuthUserId: actor.authUserId,
+				projectId: context.projectId,
+				actionKey: 'network.rfi.responded',
+				subjectType: 'rfi',
+				subjectPublicId: rfi.publicId,
+				correlationId: this.publicIdFactory(),
+				changeSummary: { responseSequence: sequence, final }
 			});
 		});
 	}
 
-	async reviewSubmittal(actor: Actor, input: { workItemPublicId: string; outcome: string; comments?: string | null }): Promise<void> {
-		if (!REVIEW_OUTCOMES.has(input.outcome)) throw new ExternalProjectActionValidationError('Submittal review outcome is invalid.');
+	async reviewSubmittal(
+		actor: Actor,
+		input: { workItemPublicId: string; outcome: string; comments?: string | null }
+	): Promise<void> {
+		if (!REVIEW_OUTCOMES.has(input.outcome))
+			throw new ExternalProjectActionValidationError('Submittal review outcome is invalid.');
 		const comments = optionalText(input.comments);
 		await this.db.transaction().execute(async (trx) => {
-			const work = await new ExternalWorkService(this.db, this.now).findAuthorisedForUpdate(trx, actor.authUserId, requiredPublicId(input.workItemPublicId, 'Network work item'), { domainKey: 'information', actionType: 'review_submittal' });
-			if (work.capabilityKey !== 'information.submittal.review' || work.sourceType !== 'submittal') throw new ExternalAccessDeniedError();
+			const work = await new ExternalWorkService(this.db, this.now).findAuthorisedForUpdate(
+				trx,
+				actor.authUserId,
+				requiredPublicId(input.workItemPublicId, 'Network work item'),
+				{ domainKey: 'information', actionType: 'review_submittal' }
+			);
+			if (work.capabilityKey !== 'information.submittal.review' || work.sourceType !== 'submittal')
+				throw new ExternalAccessDeniedError();
 			const context = await this.workContext(trx, actor.authUserId, input.workItemPublicId, true);
 			const submittal = await trx
 				.selectFrom('submittals')
@@ -692,34 +885,141 @@ export class ExternalProjectActionService {
 				.where('owning_organisation_id', '=', context.owningOrganisationId)
 				.forUpdate()
 				.executeTakeFirst();
-			if (!submittal || !['submitted', 'under_review'].includes(submittal.status)) throw new ExternalProjectActionValidationError('This submittal is no longer available for review.');
-			const last = await trx.selectFrom('external_submittal_reviews').select('review_sequence as sequence').where('submittal_id', '=', submittal.id).where('external_collaborator_id', '=', context.collaboratorId).orderBy('review_sequence', 'desc').limit(1).executeTakeFirst();
+			if (!submittal || !['submitted', 'under_review'].includes(submittal.status))
+				throw new ExternalProjectActionValidationError(
+					'This submittal is no longer available for review.'
+				);
+			const last = await trx
+				.selectFrom('external_submittal_reviews')
+				.select('review_sequence as sequence')
+				.where('submittal_id', '=', submittal.id)
+				.where('external_collaborator_id', '=', context.collaboratorId)
+				.orderBy('review_sequence', 'desc')
+				.limit(1)
+				.executeTakeFirst();
 			const sequence = Number(last?.sequence ?? 0) + 1;
-			await trx.insertInto('external_submittal_reviews').values({ public_id: this.publicIdFactory(), owning_organisation_id: context.owningOrganisationId, project_id: context.projectId, submittal_id: submittal.id, external_collaborator_id: context.collaboratorId, auth_user_id: actor.authUserId, review_sequence: sequence, outcome: input.outcome, comments, reviewed_at: this.now() }).executeTakeFirstOrThrow();
-			const update = await trx.updateTable('submittals').set({ status: 'reviewed' }).where('id', '=', submittal.id).where('status', 'in', ['submitted', 'under_review']).executeTakeFirst();
+			await trx
+				.insertInto('external_submittal_reviews')
+				.values({
+					public_id: this.publicIdFactory(),
+					owning_organisation_id: context.owningOrganisationId,
+					project_id: context.projectId,
+					submittal_id: submittal.id,
+					external_collaborator_id: context.collaboratorId,
+					auth_user_id: actor.authUserId,
+					review_sequence: sequence,
+					outcome: input.outcome,
+					comments,
+					reviewed_at: this.now()
+				})
+				.executeTakeFirstOrThrow();
+			const update = await trx
+				.updateTable('submittals')
+				.set({ status: 'reviewed' })
+				.where('id', '=', submittal.id)
+				.where('status', 'in', ['submitted', 'under_review'])
+				.executeTakeFirst();
 			if (update.numUpdatedRows !== 1n) throw new ConcurrentUpdateError();
 			await new ExternalWorkService(this.db, this.now).markCompleted(trx, work.id, this.now());
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: context.owningOrganisationId, actorUserId: actor.userId, actorMemberId: null, externalAuthUserId: actor.authUserId, projectId: context.projectId, actionKey: 'network.submittal.reviewed', subjectType: 'submittal', subjectPublicId: submittal.publicId, correlationId: this.publicIdFactory(), changeSummary: { reviewSequence: sequence, outcome: input.outcome } });
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: context.owningOrganisationId,
+				actorUserId: actor.userId,
+				actorMemberId: null,
+				externalAuthUserId: actor.authUserId,
+				projectId: context.projectId,
+				actionKey: 'network.submittal.reviewed',
+				subjectType: 'submittal',
+				subjectPublicId: submittal.publicId,
+				correlationId: this.publicIdFactory(),
+				changeSummary: { reviewSequence: sequence, outcome: input.outcome }
+			});
 		});
 	}
 
 	async acknowledgeInstruction(actor: Actor, workItemPublicIdInput: string): Promise<void> {
 		await this.db.transaction().execute(async (trx) => {
 			const workItemPublicId = requiredPublicId(workItemPublicIdInput, 'Network work item');
-			const work = await new ExternalWorkService(this.db, this.now).findAuthorisedForUpdate(trx, actor.authUserId, workItemPublicId, { domainKey: 'information', actionType: 'acknowledge_instruction' });
-			if (work.capabilityKey !== 'information.instruction.acknowledge' || work.sourceType !== 'project_instruction') throw new ExternalAccessDeniedError();
+			const work = await new ExternalWorkService(this.db, this.now).findAuthorisedForUpdate(
+				trx,
+				actor.authUserId,
+				workItemPublicId,
+				{ domainKey: 'information', actionType: 'acknowledge_instruction' }
+			);
+			if (
+				work.capabilityKey !== 'information.instruction.acknowledge' ||
+				work.sourceType !== 'project_instruction'
+			)
+				throw new ExternalAccessDeniedError();
 			const context = await this.workContext(trx, actor.authUserId, workItemPublicId, true);
-			const instruction = await trx.selectFrom('project_instructions').select(['id', 'public_id as publicId', 'status']).where('public_id', '=', context.sourcePublicId).where('project_id', '=', context.projectId).where('issuing_organisation_id', '=', context.owningOrganisationId).forUpdate().executeTakeFirst();
-			if (!instruction || instruction.status !== 'issued') throw new ExternalProjectActionValidationError('This instruction is no longer awaiting acknowledgement.');
+			const instruction = await trx
+				.selectFrom('project_instructions')
+				.select(['id', 'public_id as publicId', 'status'])
+				.where('public_id', '=', context.sourcePublicId)
+				.where('project_id', '=', context.projectId)
+				.where('issuing_organisation_id', '=', context.owningOrganisationId)
+				.forUpdate()
+				.executeTakeFirst();
+			if (!instruction || instruction.status !== 'issued')
+				throw new ExternalProjectActionValidationError(
+					'This instruction is no longer awaiting acknowledgement.'
+				);
 			const at = this.now();
-			await trx.insertInto('external_instruction_acknowledgements').values({ public_id: this.publicIdFactory(), owning_organisation_id: context.owningOrganisationId, project_id: context.projectId, instruction_id: instruction.id, external_collaborator_id: context.collaboratorId, auth_user_id: actor.authUserId, acknowledged_at: at }).executeTakeFirstOrThrow();
+			await trx
+				.insertInto('external_instruction_acknowledgements')
+				.values({
+					public_id: this.publicIdFactory(),
+					owning_organisation_id: context.owningOrganisationId,
+					project_id: context.projectId,
+					instruction_id: instruction.id,
+					external_collaborator_id: context.collaboratorId,
+					auth_user_id: actor.authUserId,
+					acknowledged_at: at
+				})
+				.executeTakeFirstOrThrow();
 			await new ExternalWorkService(this.db, this.now).markCompleted(trx, work.id, at);
-			const internalOutstanding = await trx.selectFrom('instruction_recipients').select('instruction_id').where('instruction_id', '=', instruction.id).where('acknowledged_at', 'is', null).limit(1).executeTakeFirst();
-			const externalOutstanding = await trx.selectFrom('external_work_items as pending').innerJoin('external_access_grants as grant', 'grant.id', 'pending.external_access_grant_id').select('pending.id').where('pending.source_type', '=', 'project_instruction').where('pending.source_public_id', '=', instruction.publicId).where('pending.action_type', '=', 'acknowledge_instruction').where('pending.state', '=', 'open').where('grant.revoked_at', 'is', null).limit(1).executeTakeFirst();
+			const internalOutstanding = await trx
+				.selectFrom('instruction_recipients')
+				.select('instruction_id')
+				.where('instruction_id', '=', instruction.id)
+				.where('acknowledged_at', 'is', null)
+				.limit(1)
+				.executeTakeFirst();
+			const externalOutstanding = await trx
+				.selectFrom('external_work_items as pending')
+				.innerJoin(
+					'external_access_grants as grant',
+					'grant.id',
+					'pending.external_access_grant_id'
+				)
+				.select('pending.id')
+				.where('pending.source_type', '=', 'project_instruction')
+				.where('pending.source_public_id', '=', instruction.publicId)
+				.where('pending.action_type', '=', 'acknowledge_instruction')
+				.where('pending.state', '=', 'open')
+				.where('grant.revoked_at', 'is', null)
+				.limit(1)
+				.executeTakeFirst();
 			if (!internalOutstanding && !externalOutstanding) {
-				await trx.updateTable('project_instructions').set({ status: 'acknowledged' }).where('id', '=', instruction.id).where('status', '=', 'issued').executeTakeFirst();
+				await trx
+					.updateTable('project_instructions')
+					.set({ status: 'acknowledged' })
+					.where('id', '=', instruction.id)
+					.where('status', '=', 'issued')
+					.executeTakeFirst();
 			}
-			await new AuditRepository(trx).append({ eventPublicId: this.publicIdFactory(), actingOrganisationId: context.owningOrganisationId, actorUserId: actor.userId, actorMemberId: null, externalAuthUserId: actor.authUserId, projectId: context.projectId, actionKey: 'network.instruction.acknowledged', subjectType: 'project_instruction', subjectPublicId: instruction.publicId, correlationId: this.publicIdFactory() });
+			await new AuditRepository(trx).append({
+				eventPublicId: this.publicIdFactory(),
+				actingOrganisationId: context.owningOrganisationId,
+				actorUserId: actor.userId,
+				actorMemberId: null,
+				externalAuthUserId: actor.authUserId,
+				projectId: context.projectId,
+				actionKey: 'network.instruction.acknowledged',
+				subjectType: 'project_instruction',
+				subjectPublicId: instruction.publicId,
+				correlationId: this.publicIdFactory()
+			});
 		});
 	}
 }

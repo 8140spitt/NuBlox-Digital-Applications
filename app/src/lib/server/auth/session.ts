@@ -113,7 +113,7 @@ export async function getSessionActor(event: RequestEvent): Promise<Actor | null
 		await new ExternalInvitationService(db).activateVerifiedAuthUser({
 			authUserId: session.user.id,
 			email: session.user.email,
-			correlationId: event.locals.correlationId
+			correlationId: event.locals?.correlationId ?? `session-${session.user.id}`
 		});
 	} catch (cause) {
 		console.error('[NuBlox auth] Network invitation reconciliation failed.', cause);

@@ -56,7 +56,10 @@
 				<p class="eyebrow">RFI · {data.task.number}</p>
 				<h2>{data.task.subject}</h2>
 			</div>
-			<div class="record-body"><strong>Question</strong><p>{data.task.question}</p></div>
+			<div class="record-body">
+				<strong>Question</strong>
+				<p>{data.task.question}</p>
+			</div>
 			<div class="meta-grid">
 				<div><span>Status</span><strong>{titleCase(data.task.status)}</strong></div>
 				<div><span>Priority</span><strong>{titleCase(data.task.priority)}</strong></div>
@@ -68,7 +71,11 @@
 					<h3>Your responses</h3>
 					{#each data.task.previousResponses as response}
 						<article>
-							<div><strong>Response {response.sequence}</strong><span>{dateTime(response.respondedAt)}</span></div>
+							<div>
+								<strong>Response {response.sequence}</strong><span
+									>{dateTime(response.respondedAt)}</span
+								>
+							</div>
 							<p>{response.responseText}</p>
 							{#if response.final}<span class="tag">Final response</span>{/if}
 						</article>
@@ -107,7 +114,11 @@
 					<h3>Your reviews</h3>
 					{#each data.task.previousReviews as review}
 						<article>
-							<div><strong>{titleCase(review.outcome)}</strong><span>{dateTime(review.reviewedAt)}</span></div>
+							<div>
+								<strong>{titleCase(review.outcome)}</strong><span
+									>{dateTime(review.reviewedAt)}</span
+								>
+							</div>
 							{#if review.comments}<p>{review.comments}</p>{/if}
 						</article>
 					{/each}
@@ -120,7 +131,8 @@
 						<span>Review outcome</span>
 						<select name="outcome" required>
 							<option value="">Select outcome</option>
-							{#each reviewOutcomes as outcome}<option value={outcome[0]}>{outcome[1]}</option>{/each}
+							{#each reviewOutcomes as outcome}<option value={outcome[0]}>{outcome[1]}</option
+								>{/each}
 						</select>
 					</label>
 					<label>
@@ -137,7 +149,10 @@
 				<p class="eyebrow">Instruction · {data.task.number}</p>
 				<h2>{data.task.subject}</h2>
 			</div>
-			<div class="record-body"><strong>Instruction</strong><p>{data.task.instructionText}</p></div>
+			<div class="record-body">
+				<strong>Instruction</strong>
+				<p>{data.task.instructionText}</p>
+			</div>
 			<div class="meta-grid">
 				<div><span>Status</span><strong>{titleCase(data.task.status)}</strong></div>
 				<div><span>Issued</span><strong>{dateTime(data.task.issuedAt)}</strong></div>
@@ -164,35 +179,185 @@
 </div>
 
 <style>
-	.task-shell { max-width: 58rem; margin: 0 auto; padding: 1.25rem; }
-	.breadcrumbs { display: flex; gap: .5rem; color: #686862; font-size: .9rem; margin-bottom: 1.5rem; }
-	.breadcrumbs a { color: inherit; font-weight: 700; }
-	.task-header { display: flex; justify-content: space-between; align-items: start; gap: 1rem; margin-bottom: 1.25rem; }
-	.eyebrow { margin: 0 0 .3rem; color: #666; font-size: .72rem; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-	h1 { margin: 0; font-size: clamp(2rem, 6vw, 3rem); letter-spacing: -.045em; }
-	.lede { color: #60605a; line-height: 1.5; }
-	.state-pill, .tag { display: inline-flex; border-radius: 999px; background: #fff1cd; padding: .35rem .55rem; font-size: .75rem; font-weight: 800; }
-	.state-pill.done, .tag { background: #e4f5e8; }
-	.task-card { background: white; border: 1px solid #d9d9d2; border-radius: .9rem; padding: 1.4rem; }
-	.record-heading h2 { margin: 0 0 1rem; font-size: 1.55rem; }
-	.record-body { padding: 1rem; border-radius: .65rem; background: #f7f7f3; line-height: 1.6; }
-	.record-body p { margin-bottom: 0; }
-	.meta-grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: .7rem; margin: 1rem 0; }
-	.meta-grid div { display: grid; gap: .25rem; border: 1px solid #e1e1da; border-radius: .55rem; padding: .75rem; }
-	.meta-grid span { color: #6a6a64; font-size: .75rem; }
-	.history { margin-top: 1.25rem; border-top: 1px solid #e1e1da; padding-top: 1rem; }
-	.history article { padding: .85rem 0; border-bottom: 1px solid #ecece6; }
-	.history article > div { display: flex; justify-content: space-between; gap: 1rem; }
-	.history article span { color: #686862; font-size: .8rem; }
-	.action-form { display: grid; gap: 1rem; margin-top: 1.4rem; padding-top: 1.25rem; border-top: 1px solid #d9d9d2; }
-	.action-form.compact { max-width: 34rem; }
-	label { display: grid; gap: .4rem; font-weight: 700; }
-	textarea, select { width: 100%; box-sizing: border-box; font: inherit; border: 1px solid #b9b9b1; border-radius: .55rem; padding: .75rem; background: white; }
-	.check-row { display: flex; align-items: center; gap: .55rem; font-weight: 600; }
-	button { justify-self: start; font: inherit; font-weight: 800; border: 1px solid #111; border-radius: .55rem; background: #111; color: white; padding: .72rem 1rem; cursor: pointer; }
-	.error { border-radius: .55rem; background: #fdeaea; color: #8f1717; padding: .8rem; }
-	.complete-note { margin-top: 1.2rem; padding: .9rem; border-radius: .55rem; background: #eef7ef; font-weight: 650; }
-	.boundary-note { margin-top: 1rem; border: 1px solid #d9d9d2; border-radius: .7rem; padding: 1rem; color: #555; }
-	.boundary-note p { margin-bottom: 0; line-height: 1.55; }
-	@media (max-width: 680px) { .task-header { display: grid; } .meta-grid { grid-template-columns: 1fr; } }
+	.task-shell {
+		max-width: 58rem;
+		margin: 0 auto;
+		padding: 1.25rem;
+	}
+	.breadcrumbs {
+		display: flex;
+		gap: 0.5rem;
+		color: #686862;
+		font-size: 0.9rem;
+		margin-bottom: 1.5rem;
+	}
+	.breadcrumbs a {
+		color: inherit;
+		font-weight: 700;
+	}
+	.task-header {
+		display: flex;
+		justify-content: space-between;
+		align-items: start;
+		gap: 1rem;
+		margin-bottom: 1.25rem;
+	}
+	.eyebrow {
+		margin: 0 0 0.3rem;
+		color: #666;
+		font-size: 0.72rem;
+		font-weight: 800;
+		letter-spacing: 0.1em;
+		text-transform: uppercase;
+	}
+	h1 {
+		margin: 0;
+		font-size: clamp(2rem, 6vw, 3rem);
+		letter-spacing: -0.045em;
+	}
+	.lede {
+		color: #60605a;
+		line-height: 1.5;
+	}
+	.state-pill,
+	.tag {
+		display: inline-flex;
+		border-radius: 999px;
+		background: #fff1cd;
+		padding: 0.35rem 0.55rem;
+		font-size: 0.75rem;
+		font-weight: 800;
+	}
+	.state-pill.done,
+	.tag {
+		background: #e4f5e8;
+	}
+	.task-card {
+		background: white;
+		border: 1px solid #d9d9d2;
+		border-radius: 0.9rem;
+		padding: 1.4rem;
+	}
+	.record-heading h2 {
+		margin: 0 0 1rem;
+		font-size: 1.55rem;
+	}
+	.record-body {
+		padding: 1rem;
+		border-radius: 0.65rem;
+		background: #f7f7f3;
+		line-height: 1.6;
+	}
+	.record-body p {
+		margin-bottom: 0;
+	}
+	.meta-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: 0.7rem;
+		margin: 1rem 0;
+	}
+	.meta-grid div {
+		display: grid;
+		gap: 0.25rem;
+		border: 1px solid #e1e1da;
+		border-radius: 0.55rem;
+		padding: 0.75rem;
+	}
+	.meta-grid span {
+		color: #6a6a64;
+		font-size: 0.75rem;
+	}
+	.history {
+		margin-top: 1.25rem;
+		border-top: 1px solid #e1e1da;
+		padding-top: 1rem;
+	}
+	.history article {
+		padding: 0.85rem 0;
+		border-bottom: 1px solid #ecece6;
+	}
+	.history article > div {
+		display: flex;
+		justify-content: space-between;
+		gap: 1rem;
+	}
+	.history article span {
+		color: #686862;
+		font-size: 0.8rem;
+	}
+	.action-form {
+		display: grid;
+		gap: 1rem;
+		margin-top: 1.4rem;
+		padding-top: 1.25rem;
+		border-top: 1px solid #d9d9d2;
+	}
+	.action-form.compact {
+		max-width: 34rem;
+	}
+	label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 700;
+	}
+	textarea,
+	select {
+		width: 100%;
+		box-sizing: border-box;
+		font: inherit;
+		border: 1px solid #b9b9b1;
+		border-radius: 0.55rem;
+		padding: 0.75rem;
+		background: white;
+	}
+	.check-row {
+		display: flex;
+		align-items: center;
+		gap: 0.55rem;
+		font-weight: 600;
+	}
+	button {
+		justify-self: start;
+		font: inherit;
+		font-weight: 800;
+		border: 1px solid #111;
+		border-radius: 0.55rem;
+		background: #111;
+		color: white;
+		padding: 0.72rem 1rem;
+		cursor: pointer;
+	}
+	.error {
+		border-radius: 0.55rem;
+		background: #fdeaea;
+		color: #8f1717;
+		padding: 0.8rem;
+	}
+	.complete-note {
+		margin-top: 1.2rem;
+		padding: 0.9rem;
+		border-radius: 0.55rem;
+		background: #eef7ef;
+		font-weight: 650;
+	}
+	.boundary-note {
+		margin-top: 1rem;
+		border: 1px solid #d9d9d2;
+		border-radius: 0.7rem;
+		padding: 1rem;
+		color: #555;
+	}
+	.boundary-note p {
+		margin-bottom: 0;
+		line-height: 1.55;
+	}
+	@media (max-width: 680px) {
+		.task-header {
+			display: grid;
+		}
+		.meta-grid {
+			grid-template-columns: 1fr;
+		}
+	}
 </style>

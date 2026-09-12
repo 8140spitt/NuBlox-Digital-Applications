@@ -73,6 +73,45 @@ export interface ExternalDeliveryMessages {
   updated_at: Generated<Date>;
 }
 
+export interface ExternalInstructionAcknowledgements {
+  acknowledged_at: Generated<Date>;
+  auth_user_id: string;
+  external_collaborator_id: string;
+  id: Generated<string>;
+  instruction_id: string;
+  owning_organisation_id: string;
+  project_id: string;
+  public_id: string;
+}
+
+export interface ExternalRfiResponses {
+  auth_user_id: string;
+  external_collaborator_id: string;
+  id: Generated<string>;
+  is_final_response: Generated<number>;
+  owning_organisation_id: string;
+  project_id: string;
+  public_id: string;
+  responded_at: Generated<Date>;
+  response_sequence: number;
+  response_text: string;
+  rfi_id: string;
+}
+
+export interface ExternalSubmittalReviews {
+  auth_user_id: string;
+  comments: string | null;
+  external_collaborator_id: string;
+  id: Generated<string>;
+  outcome: string;
+  owning_organisation_id: string;
+  project_id: string;
+  public_id: string;
+  review_sequence: number;
+  reviewed_at: Generated<Date>;
+  submittal_id: string;
+}
+
 export interface ExternalSupplierRfqLinks {
   created_at: Generated<Date>;
   external_access_invitation_id: string;
@@ -103,6 +142,9 @@ export interface DB {
   external_access_grants: ExternalAccessGrants;
   external_access_invitations: ExternalAccessInvitations;
   external_delivery_messages: ExternalDeliveryMessages;
+  external_instruction_acknowledgements: ExternalInstructionAcknowledgements;
+  external_rfi_responses: ExternalRfiResponses;
+  external_submittal_reviews: ExternalSubmittalReviews;
   external_supplier_rfq_links: ExternalSupplierRfqLinks;
   external_work_items: ExternalWorkItems;
 }

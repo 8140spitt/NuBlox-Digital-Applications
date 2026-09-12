@@ -915,6 +915,34 @@ export class ProjectExternalCollaborationService {
 				.where('status', '=', 'pending')
 				.executeTakeFirst();
 			if (marked.numUpdatedRows !== 1n) throw new ConcurrentUpdateError();
+
+			// Project collaboration now materialises the same explicit Network access
+			// boundary used by every other external workflow. It never creates tenant membership.
+			await trx
+				.insertInto('external_access_grants')
+				.values({
+					public_id: this.publicIdFactory(),
+					owning_organisation_id: invitation.ownerId,
+					auth_user_id: authUserId,
+					invitation_id: null,
+					context_type: 'project',
+					context_public_id: invitation.projectPublicId,
+					resource_type: 'project',
+					resource_public_id: invitation.projectPublicId,
+					capability_key: 'project.view',
+					valid_from: at,
+					valid_until: null,
+					revoked_at: null,
+					created_by_member_id: invitation.invitedByMemberId
+				})
+				.onDuplicateKeyUpdate({
+					valid_from: at,
+					valid_until: null,
+					revoked_at: null,
+					created_by_member_id: invitation.invitedByMemberId
+				})
+				.executeTakeFirst();
+
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: invitation.ownerId,
@@ -985,15 +1013,50 @@ export class ProjectExternalCollaborationService {
 				projectPublicId,
 				trx
 			);
-			const result = await trx
-				.updateTable('project_external_collaborators')
-				.set({ status: 'revoked', left_at: this.now() })
+			const collaborator = await trx
+				.selectFrom('project_external_collaborators')
+				.select(['id', 'auth_user_id as authUserId'])
 				.where('public_id', '=', collaboratorPublicId)
 				.where('project_id', '=', project.id)
 				.where('status', '=', 'active')
+				.forUpdate()
 				.executeTakeFirst();
-			if (result.numUpdatedRows !== 1n)
-				throw new RecordNotFoundError('Active external collaborator not found.');
+			if (!collaborator) throw new RecordNotFoundError('Active external collaborator not found.');
+
+			const at = this.now();
+			if (collaborator.authUserId) {
+				const grants = await trx
+					.selectFrom('external_access_grants')
+					.select('id')
+					.where('owning_organisation_id', '=', actor.organisationId)
+					.where('auth_user_id', '=', collaborator.authUserId)
+					.where('context_type', '=', 'project')
+					.where('context_public_id', '=', project.public_id)
+					.where('revoked_at', 'is', null)
+					.execute();
+				const grantIds = grants.map((grant) => grant.id);
+				if (grantIds.length) {
+					await trx
+						.updateTable('external_work_items')
+						.set({ state: 'cancelled', cancelled_at: at, completed_at: null })
+						.where('external_access_grant_id', 'in', grantIds)
+						.where('state', '=', 'open')
+						.execute();
+					await trx
+						.updateTable('external_access_grants')
+						.set({ revoked_at: at })
+						.where('id', 'in', grantIds)
+						.execute();
+				}
+			}
+
+			const result = await trx
+				.updateTable('project_external_collaborators')
+				.set({ status: 'revoked', left_at: at })
+				.where('id', '=', collaborator.id)
+				.where('status', '=', 'active')
+				.executeTakeFirst();
+			if (result.numUpdatedRows !== 1n) throw new ConcurrentUpdateError();
 			await new AuditRepository(trx).append({
 				eventPublicId: this.publicIdFactory(),
 				actingOrganisationId: actor.organisationId,
