@@ -1,0 +1,180 @@
+name: Fix routing review findings
+
+on:
+  push:
+    branches:
+      - refactor/tenant-first-routing
+    paths:
+      - '.github/workflows/fix-routing-review.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/tenant-first-routing
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Apply routing review fixes
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          service_path = Path('app/src/lib/server/routing/route-context-service.ts')
+          service = service_path.read_text()
+          service = service.replace(
+              "import { portalDashboardPath, portalPath } from '$lib/routing/route-contract';",
+              "import { isTenantRouteSlug, portalDashboardPath, portalPath } from '$lib/routing/route-contract';"
+          )
+          old_allocator = """export async function allocateOrganisationRouteSlug(
+          \tdb: DatabaseExecutor,
+          \tname: string
+          ): Promise<string> {
+          \tconst base = normaliseStoredRouteSlug(name, 'tenant');
+          \tif (await availableOrganisationSlug(db, base)) return base;
+          \tfor (let suffix = 2; suffix <= 9999; suffix += 1) {
+          \t\tconst candidate = `${base.slice(0, 90)}-${suffix}`;
+          \t\tif (await availableOrganisationSlug(db, candidate)) return candidate;
+          \t}
+          \tthrow new Error('Unable to allocate a unique tenant route slug.');
+          }
+          """
+          new_allocator = """export async function allocateOrganisationRouteSlug(
+          \tdb: DatabaseExecutor,
+          \tname: string
+          ): Promise<string> {
+          \tlet base = normaliseStoredRouteSlug(name, 'tenant');
+          \tif (!isTenantRouteSlug(base)) base = `tenant-${base}`.slice(0, 80);
+          \tif (await availableOrganisationSlug(db, base)) return base;
+          \tfor (let suffix = 2; suffix <= 9999; suffix += 1) {
+          \t\tconst candidate = `${base.slice(0, 90)}-${suffix}`;
+          \t\tif (await availableOrganisationSlug(db, candidate)) return candidate;
+          \t}
+          \tthrow new Error('Unable to allocate a unique tenant route slug.');
+          }
+          """
+          if old_allocator not in service:
+              raise SystemExit('allocator block not found')
+          service = service.replace(old_allocator, new_allocator)
+          marker = """\tasync defaultPortalDashboard(authUserId: string): Promise<string | null> {
+          """
+          method = """\tasync findPortalContextForWorkItem(
+          \t\tauthUserId: string,
+          \t\tworkItemPublicId: string,
+          \t\tnow: Date = new Date()
+          \t): Promise<PortalRouteContext | null> {
+          \t\tconst row = await this.portalContextQuery(now)
+          \t\t\t.innerJoin('external_work_items as work', 'work.external_access_grant_id', 'grant.id')
+          \t\t\t.where('portal_context.auth_user_id', '=', authUserId)
+          \t\t\t.where('work.auth_user_id', '=', authUserId)
+          \t\t\t.where('work.public_id', '=', workItemPublicId)
+          \t\t\t.executeTakeFirst();
+          \t\treturn row ? this.mapPortalContext(row) : null;
+          \t}
+
+          """
+          if method not in service:
+              if marker not in service:
+                  raise SystemExit('default portal marker not found')
+              service = service.replace(marker, method + marker)
+          service_path.write_text(service)
+
+          hooks_path = Path('app/src/hooks.server.ts')
+          hooks = hooks_path.read_text()
+          old_hooks = """\t\tif (pathname === '/portal' || pathname.startsWith('/portal/')) {
+          \t\t\tconst isExternalTask =
+          \t\t\t\tpathname.startsWith('/portal/project-actions/') ||
+          \t\t\t\tpathname.startsWith('/portal/supplier-quotes/');
+          \t\t\tif (isExternalTask || !event.locals.tenant.membershipVerified) {
+          \t\t\t\tconst context = await new RouteContextService(getDatabase()).findDefaultPortalContext(
+          \t\t\t\t\tevent.locals.actor.authUserId
+          \t\t\t\t);
+          \t\t\t\tif (context) {
+          """
+          new_hooks = """\t\tif (pathname === '/portal' || pathname.startsWith('/portal/')) {
+          \t\t\tconst legacyTaskMatch = pathname.match(
+          \t\t\t\t/^\\/portal\\/(?:project-actions|supplier-quotes)\\/([^/]+)$/
+          \t\t\t);
+          \t\t\tconst workItemPublicId = legacyTaskMatch?.[1] ?? null;
+          \t\t\tconst isExternalTask = workItemPublicId !== null;
+          \t\t\tif (isExternalTask || !event.locals.tenant.membershipVerified) {
+          \t\t\t\tconst routing = new RouteContextService(getDatabase());
+          \t\t\t\tconst context = workItemPublicId
+          \t\t\t\t\t? await routing.findPortalContextForWorkItem(
+          \t\t\t\t\t\tevent.locals.actor.authUserId,
+          \t\t\t\t\t\tworkItemPublicId
+          \t\t\t\t\t)
+          \t\t\t\t\t: await routing.findDefaultPortalContext(event.locals.actor.authUserId);
+          \t\t\t\tif (context) {
+          """
+          if old_hooks not in hooks:
+              raise SystemExit('hooks block not found')
+          hooks_path.write_text(hooks.replace(old_hooks, new_hooks))
+
+          migration_path = Path('database/migrations/20260912163000_tenant_party_route_context.sql')
+          migration = migration_path.read_text()
+          migration, tenant_count = re.subn(
+              r"\nINSERT INTO tenant_route_contexts \(organisation_id, route_slug\).*?\n\nCREATE TABLE party_route_contexts",
+              "\n\n-- Route slugs are allocated lazily by the application so they always obey the canonical route contract,\n-- including reserved roots, ASCII normalisation, length bounds and deterministic collision handling.\nCREATE TABLE party_route_contexts",
+              migration,
+              count=1,
+              flags=re.S,
+          )
+          migration, party_count = re.subn(
+              r"\nINSERT INTO party_route_contexts \(organisation_id, party_id, route_slug\).*?\n\n-- Current external adapters",
+              "\n\n-- CRM-party route slugs are also allocated lazily from the authoritative party record.\n-- Current external adapters",
+              migration,
+              count=1,
+              flags=re.S,
+          )
+          if tenant_count != 1 or party_count != 1:
+              raise SystemExit(f'migration backfill blocks not found: tenant={tenant_count} party={party_count}')
+          migration_path.write_text(migration)
+
+          seed_path = Path('app/e2e/seed-tenant-party-routing-fixture.mjs')
+          seed = seed_path.read_text()
+          old_seed = """\tawait db.execute(`UPDATE tenant_route_contexts SET route_slug = ? WHERE organisation_id = ?`, [
+          \t\tTENANT_SLUG,
+          \t\torganisationId
+          \t]);
+          """
+          new_seed = """\tawait db.execute(
+          \t\t`INSERT INTO tenant_route_contexts (organisation_id, route_slug)
+          \t\t VALUES (?, ?)
+          \t\t ON DUPLICATE KEY UPDATE route_slug = ?`,
+          \t\t[organisationId, TENANT_SLUG, TENANT_SLUG]
+          \t);
+          """
+          if old_seed not in seed:
+              raise SystemExit('tenant routing fixture block not found')
+          seed_path.write_text(seed.replace(old_seed, new_seed))
+          PY
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Format changed application files
+        working-directory: app
+        run: pnpm exec prettier --write src/hooks.server.ts src/lib/server/routing/route-context-service.ts e2e/seed-tenant-party-routing-fixture.mjs
+      - name: Type-check routing fixes
+        working-directory: app
+        run: pnpm check
+      - name: Commit fixes and remove helper
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/fix-routing-review.yml
+          git add app/src/hooks.server.ts app/src/lib/server/routing/route-context-service.ts app/e2e/seed-tenant-party-routing-fixture.mjs database/migrations/20260912163000_tenant_party_route_context.sql
+          git commit -m "fix: close tenant routing review gaps"
+          git push origin HEAD:refactor/tenant-first-routing
