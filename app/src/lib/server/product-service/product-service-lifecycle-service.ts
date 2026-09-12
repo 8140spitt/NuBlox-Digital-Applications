@@ -16,15 +16,13 @@ type PermissionKey = 'product_service.view' | 'product_service.manage' | 'produc
 function required(value: string, label: string, max = 5000): string {
 	const trimmed = value.trim();
 	if (!trimmed) throw new ProductServiceValidationError(`${label} is required.`);
-	if (trimmed.length > max)
-		throw new ProductServiceValidationError(`${label} is too long.`);
+	if (trimmed.length > max) throw new ProductServiceValidationError(`${label} is too long.`);
 	return trimmed;
 }
 function optional(value?: string | null, max = 500): string | null {
 	const trimmed = value?.trim() ?? '';
 	if (!trimmed) return null;
-	if (trimmed.length > max)
-		throw new ProductServiceValidationError('Reference value is too long.');
+	if (trimmed.length > max) throw new ProductServiceValidationError('Reference value is too long.');
 	return trimmed;
 }
 function code(value: string, label: string): string {
@@ -100,8 +98,7 @@ export class ProductServiceLifecycleService {
 			.where('organisation_id', '=', actor.organisationId)
 			.where('status', '=', 'active')
 			.executeTakeFirst();
-		if (!row)
-			throw new ProductServiceValidationError('Owner/reviewer must be an active member.');
+		if (!row) throw new ProductServiceValidationError('Owner/reviewer must be an active member.');
 	}
 
 	async getWorkspace(actor: TenantActorContext) {
@@ -495,9 +492,7 @@ export class ProductServiceLifecycleService {
 					'Launch approval requires an F02 governance decision reference.'
 				);
 			if (!plan.readiness_evidence_public_id)
-				throw new ProductServiceValidationError(
-					'Launch approval requires readiness evidence.'
-				);
+				throw new ProductServiceValidationError('Launch approval requires readiness evidence.');
 			const approved = await repository.updateLaunchPlan(actor.organisationId, plan.id, {
 				lifecycle_status: 'approved',
 				approved_by_member_id: actor.memberId,
@@ -527,9 +522,7 @@ export class ProductServiceLifecycleService {
 			);
 			if (!plan) throw new RecordNotFoundError('Product/service launch plan not found.');
 			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'launched')
-				throw new ProductServiceValidationError(
-					'Only an approved launch plan may be launched.'
-				);
+				throw new ProductServiceValidationError('Only an approved launch plan may be launched.');
 			if (plan.lifecycle_status === 'launched') return plan;
 			const launchedAt = new Date();
 			const launched = await repository.updateLaunchPlan(actor.organisationId, plan.id, {

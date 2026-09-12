@@ -304,7 +304,14 @@ export class ProductServiceRepository {
 			this.listBusinessCaseAssumptions(organisationId, businessCaseIds),
 			this.listBusinessCaseScenarios(organisationId, businessCaseIds)
 		]);
-		return { portfolios, offerings, needs, ideas, businessCases, businessCaseAssumptions, businessCaseScenarios };
+		return {
+			portfolios,
+			offerings,
+			needs,
+			ideas,
+			businessCases,
+			businessCaseAssumptions,
+			businessCaseScenarios
+		};
 	}
-
 }
