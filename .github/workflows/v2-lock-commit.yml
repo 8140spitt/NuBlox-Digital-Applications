@@ -1,0 +1,40 @@
+name: Commit V2 Identity Lockfile
+
+on:
+  push:
+    branches:
+      - v2/identity-tenant-context
+    paths:
+      - '.github/workflows/v2-lock-commit.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  lockfile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v2/identity-tenant-context
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Generate canonical lockfile
+        working-directory: appv2
+        run: pnpm install --lockfile-only --no-frozen-lockfile
+      - name: Commit lockfile only
+        run: |
+          test -z "$(git status --short --untracked-files=no | grep -v '^ M appv2/pnpm-lock.yaml$')"
+          if git diff --quiet -- appv2/pnpm-lock.yaml; then
+            exit 0
+          fi
+          git config user.name "NuBlox V2 automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add appv2/pnpm-lock.yaml
+          git commit -m "v2: refresh identity dependency lockfile"
+          git push origin HEAD:v2/identity-tenant-context
