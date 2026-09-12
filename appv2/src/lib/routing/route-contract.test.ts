@@ -34,9 +34,7 @@ describe('NuBlox V2 route contract', () => {
 
 	it('uses one central auth route and only preserves approved return destinations', () => {
 		expect(authPath()).toBe('/auth');
-		expect(authPath('/app/nublox/dashboard')).toBe(
-			'/auth?returnTo=%2Fapp%2Fnublox%2Fdashboard'
-		);
+		expect(authPath('/app/nublox/dashboard')).toBe('/auth?returnTo=%2Fapp%2Fnublox%2Fdashboard');
 		expect(safeReturnTo('/portal/nublox/perspectivebc/projects')).toBe(
 			'/portal/nublox/perspectivebc/projects'
 		);

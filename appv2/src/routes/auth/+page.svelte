@@ -99,13 +99,7 @@
 				<form onsubmit={signIn}>
 					<label>
 						<span>Email address</span>
-						<input
-							bind:value={email}
-							type="email"
-							name="email"
-							autocomplete="email"
-							required
-						/>
+						<input bind:value={email} type="email" name="email" autocomplete="email" required />
 					</label>
 
 					<label>
@@ -135,8 +129,8 @@
 				</form>
 
 				<p class="account-note">
-					Accounts are provisioned through NuBlox invitations and approved organisation access. Public
-					self-registration is not available.
+					Accounts are provisioned through NuBlox invitations and approved organisation access.
+					Public self-registration is not available.
 				</p>
 			{/if}
 		</div>
