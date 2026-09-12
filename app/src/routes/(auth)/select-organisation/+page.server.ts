@@ -20,7 +20,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			),
 			new SupplierRfqPortalService(db).hasPortalQuotes(locals.actor.email)
 		]);
-		if (externalProjects.length > 0 || hasSupplierQuotes) throw redirect(303, '/portal');
+		if (externalProjects.length > 0) throw redirect(303, '/portal');
+		if (hasSupplierQuotes) throw redirect(303, '/portal/supplier-quotes');
 	}
 
 	return {
