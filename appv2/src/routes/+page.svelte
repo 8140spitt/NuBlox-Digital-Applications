@@ -9,13 +9,15 @@
 	<p class="nb-lede">
 		The internal NuBlox operating system lives under /app. CRM Parties participate in authorised
 		projects and business actions through the connected /portal surface over the same canonical
-		data.
+		data. Every identity enters through the single /auth boundary.
 	</p>
 
 	<div class="entry-actions">
-		<a class="nb-action" href={resolve(routes.dashboard('nublox'))}>Open internal app</a>
-		<a href={resolve(routes.portalLogin('nublox', 'perspectivebc'))}
-			>Open CRM Party portal example</a
+		<a class="nb-action" href={resolve(routes.auth(routes.dashboard('nublox')))}
+			>Sign in to internal app</a
+		>
+		<a href={resolve(routes.auth(routes.portalDashboard('nublox', 'perspectivebc')))}
+			>Sign in to CRM Party portal</a
 		>
 	</div>
 </section>
