@@ -1,0 +1,78 @@
+name: Push Network project actions
+
+on:
+  push:
+    branches:
+      - feature/external-access-kernel
+
+permissions:
+  contents: write
+
+jobs:
+  push-project-actions:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_network_push
+      BETTER_AUTH_SECRET: network-push-${{ github.run_id }}-validation-key
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+      EMAIL_DELIVERY_MODE: console
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/external-access-kernel
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Reuse the proven integration patch
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          workflow = Path('.github/workflows/finish-network-project-actions.yml').read_text().splitlines()
+          start = next(i for i, line in enumerate(workflow) if line.strip() == "from pathlib import Path")
+          end = next(i for i in range(start + 1, len(workflow)) if workflow[i].strip() == 'PY')
+          block = workflow[start:end]
+          indent = min(len(line) - len(line.lstrip()) for line in block if line.strip())
+          script = '\n'.join(line[indent:] for line in block)
+          exec(compile(script, '<network-integration-patch>', 'exec'))
+          PY
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Apply migrations and regenerate database types
+        working-directory: app
+        run: |
+          pnpm db:migrate
+          pnpm db:types
+      - name: Format application
+        working-directory: app
+        run: pnpm format
+      - name: Commit application and database changes only
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app database
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "feat: complete Network project actions"
+          git push origin HEAD:feature/external-access-kernel
