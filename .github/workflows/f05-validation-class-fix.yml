@@ -20,63 +20,22 @@ jobs:
         run: |
           python - <<'PY'
           from pathlib import Path
-
           service = Path('app/src/lib/server/product-service/product-service-lifecycle-service.ts')
           text = service.read_text()
           old_import = "import { ProductServiceRepository } from './product-service-repository';\n"
           new_import = old_import + "import { ProductServiceValidationError } from './product-service-service';\n"
           if "from './product-service-service'" not in text:
               text = text.replace(old_import, new_import, 1)
-          text = text.replace(
-              "export class ProductServiceLifecycleValidationError extends Error {}\nexport const ProductServiceValidationError = ProductServiceLifecycleValidationError;\n",
-              "export { ProductServiceValidationError };\n",
-              1,
-          )
+          text = text.replace("export class ProductServiceLifecycleValidationError extends Error {}\nexport const ProductServiceValidationError = ProductServiceLifecycleValidationError;\n", "export { ProductServiceValidationError };\n", 1)
           text = text.replace('ProductServiceLifecycleValidationError', 'ProductServiceValidationError')
-          text = text.replace(
-              "function date(value?: string | null): string | null {\n\tconst trimmed = value?.trim() ?? '';",
-              "function date(value?: string | Date | null): string | null {\n\tif (value instanceof Date) return value.toISOString().slice(0, 10);\n\tconst trimmed = value?.trim() ?? '';",
-              1,
-          )
-          for old, new in [
-              ('reviewDate: string;', 'reviewDate: string | Date;'),
-              ('plannedStart?: string | null;', 'plannedStart?: string | Date | null;'),
-              ('plannedFinish?: string | null;', 'plannedFinish?: string | Date | null;'),
-              ('targetLaunchDate: string;', 'targetLaunchDate: string | Date;'),
-              ('targetEndDate: string;', 'targetEndDate: string | Date;'),
-          ]:
+          text = text.replace("function date(value?: string | null): string | null {\n\tconst trimmed = value?.trim() ?? '';", "function date(value?: string | Date | null): string | null {\n\tif (value instanceof Date) return value.toISOString().slice(0, 10);\n\tconst trimmed = value?.trim() ?? '';", 1)
+          for old, new in [('reviewDate: string;', 'reviewDate: string | Date;'), ('plannedStart?: string | null;', 'plannedStart?: string | Date | null;'), ('plannedFinish?: string | null;', 'plannedFinish?: string | Date | null;'), ('targetLaunchDate: string;', 'targetLaunchDate: string | Date;'), ('targetEndDate: string;', 'targetEndDate: string | Date;')]:
               text = text.replace(old, new)
           service.write_text(text)
-
           repo = Path('app/src/lib/server/product-service/product-service-repository.ts')
           rtext = repo.read_text()
           if '\n\tasync getWorkspace(organisationId: string)' not in rtext:
-              insertion = '''
-
-\tasync getWorkspace(organisationId: string) {
-\t\tconst [portfolios, offerings, needs, ideas, businessCases] = await Promise.all([
-\t\t\tthis.listPortfolios(organisationId),
-\t\t\tthis.listOfferings(organisationId),
-\t\t\tthis.listNeeds(organisationId),
-\t\t\tthis.listIdeas(organisationId),
-\t\t\tthis.listBusinessCases(organisationId)
-\t\t]);
-\t\tconst businessCaseIds = businessCases.map((row) => row.id);
-\t\tconst [businessCaseAssumptions, businessCaseScenarios] = await Promise.all([
-\t\t\tthis.listBusinessCaseAssumptions(organisationId, businessCaseIds),
-\t\t\tthis.listBusinessCaseScenarios(organisationId, businessCaseIds)
-\t\t]);
-\t\treturn {
-\t\t\tportfolios,
-\t\t\tofferings,
-\t\t\tneeds,
-\t\t\tideas,
-\t\t\tbusinessCases,
-\t\t\tbusinessCaseAssumptions,
-\t\t\tbusinessCaseScenarios
-\t\t};
-\t}
-'''
+              insertion = "\n\n\tasync getWorkspace(organisationId: string) {\n\t\tconst [portfolios, offerings, needs, ideas, businessCases] = await Promise.all([\n\t\t\tthis.listPortfolios(organisationId),\n\t\t\tthis.listOfferings(organisationId),\n\t\t\tthis.listNeeds(organisationId),\n\t\t\tthis.listIdeas(organisationId),\n\t\t\tthis.listBusinessCases(organisationId)\n\t\t]);\n\t\tconst businessCaseIds = businessCases.map((row) => row.id);\n\t\tconst [businessCaseAssumptions, businessCaseScenarios] = await Promise.all([\n\t\t\tthis.listBusinessCaseAssumptions(organisationId, businessCaseIds),\n\t\t\tthis.listBusinessCaseScenarios(organisationId, businessCaseIds)\n\t\t]);\n\t\treturn { portfolios, offerings, needs, ideas, businessCases, businessCaseAssumptions, businessCaseScenarios };\n\t}\n"
               pos = rtext.rfind('\n}')
               if pos < 0:
                   raise SystemExit('ProductServiceRepository closing brace not found')
