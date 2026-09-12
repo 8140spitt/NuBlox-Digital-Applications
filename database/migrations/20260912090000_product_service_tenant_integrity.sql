@@ -24,17 +24,19 @@ ALTER TABLE product_service_ideas
     ADD CONSTRAINT fk_ps_idea_portfolio_org FOREIGN KEY (portfolio_id, organisation_id) REFERENCES product_service_portfolios(id, organisation_id),
     ADD CONSTRAINT fk_ps_idea_need_org FOREIGN KEY (need_id, organisation_id) REFERENCES product_service_needs(id, organisation_id),
     ADD CONSTRAINT fk_ps_idea_owner_org FOREIGN KEY (owner_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id),
-    ADD CONSTRAINT fk_ps_idea_duplicate_org FOREIGN KEY (duplicate_of_idea_id, organisation_id) REFERENCES product_service_ideas(id, organisation_id),
     ADD CONSTRAINT fk_ps_idea_decider_org FOREIGN KEY (decided_by_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id),
     ADD CONSTRAINT fk_ps_idea_creator_org FOREIGN KEY (created_by_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id);
+ALTER TABLE product_service_ideas
+    ADD CONSTRAINT fk_ps_idea_duplicate_org FOREIGN KEY (duplicate_of_idea_id, organisation_id) REFERENCES product_service_ideas(id, organisation_id);
 
 ALTER TABLE product_service_business_cases
     ADD UNIQUE KEY uq_ps_business_case_id_org (id, organisation_id),
     ADD CONSTRAINT fk_ps_business_case_idea_org FOREIGN KEY (idea_id, organisation_id) REFERENCES product_service_ideas(id, organisation_id),
     ADD CONSTRAINT fk_ps_business_case_offering_org FOREIGN KEY (offering_id, organisation_id) REFERENCES product_service_offerings(id, organisation_id),
-    ADD CONSTRAINT fk_ps_business_case_previous_org FOREIGN KEY (supersedes_business_case_id, organisation_id) REFERENCES product_service_business_cases(id, organisation_id),
     ADD CONSTRAINT fk_ps_business_case_approver_org FOREIGN KEY (approved_by_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id),
     ADD CONSTRAINT fk_ps_business_case_creator_org FOREIGN KEY (created_by_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id);
+ALTER TABLE product_service_business_cases
+    ADD CONSTRAINT fk_ps_business_case_previous_org FOREIGN KEY (supersedes_business_case_id, organisation_id) REFERENCES product_service_business_cases(id, organisation_id);
 
 ALTER TABLE product_service_business_case_assumptions
     ADD UNIQUE KEY uq_ps_bc_assumption_id_org (id, organisation_id),
@@ -50,10 +52,11 @@ ALTER TABLE product_service_designs
     ADD UNIQUE KEY uq_ps_design_id_org (id, organisation_id),
     ADD CONSTRAINT fk_ps_design_offering_org FOREIGN KEY (offering_id, organisation_id) REFERENCES product_service_offerings(id, organisation_id),
     ADD CONSTRAINT fk_ps_design_business_case_org FOREIGN KEY (business_case_id, organisation_id) REFERENCES product_service_business_cases(id, organisation_id),
-    ADD CONSTRAINT fk_ps_design_previous_org FOREIGN KEY (supersedes_design_id, organisation_id) REFERENCES product_service_designs(id, organisation_id),
     ADD CONSTRAINT fk_ps_design_owner_org FOREIGN KEY (owner_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id),
     ADD CONSTRAINT fk_ps_design_creator_org FOREIGN KEY (created_by_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id),
     ADD CONSTRAINT fk_ps_design_approver_org FOREIGN KEY (approved_by_member_id, organisation_id) REFERENCES organisation_members(id, organisation_id);
+ALTER TABLE product_service_designs
+    ADD CONSTRAINT fk_ps_design_previous_org FOREIGN KEY (supersedes_design_id, organisation_id) REFERENCES product_service_designs(id, organisation_id);
 
 ALTER TABLE product_service_design_reviews
     ADD UNIQUE KEY uq_ps_design_review_id_org (id, organisation_id),
