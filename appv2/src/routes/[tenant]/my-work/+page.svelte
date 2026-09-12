@@ -73,9 +73,9 @@
 				<p class="empty-kicker">Queue ready</p>
 				<h3>No governed work is connected yet.</h3>
 				<p>
-					V2 will only place an item here when its source record, accountable actor, lifecycle state,
-					next action and downstream consequence are explicit. We will connect real work sources as each
-					business function is rebuilt.
+					V2 will only place an item here when its source record, accountable actor, lifecycle
+					state, next action and downstream consequence are explicit. We will connect real work
+					sources as each business function is rebuilt.
 				</p>
 			</div>
 		{/if}
