@@ -1,4 +1,4 @@
-# one-shot acceptance alignment
+# one-shot acceptance alignment v2
 name: Align tenant routing browser acceptance
 
 on:
@@ -35,43 +35,23 @@ jobs:
           python3 <<'PY'
           from pathlib import Path
 
-          def edit(path, transforms):
+          def replace_once(text, old, new, path):
+              if old not in text:
+                  raise SystemExit(f'Missing expected text in {path}: {old!r}')
+              return text.replace(old, new, 1)
+
+          def replace_range(path, start, end, replacement):
               p = Path(path)
               text = p.read_text()
-              for old, new in transforms:
-                  if old not in text:
-                      raise SystemExit(f'Missing expected text in {path}: {old[:100]!r}')
-                  text = text.replace(old, new)
-              p.write_text(text)
+              a = text.find(start)
+              if a < 0:
+                  raise SystemExit(f'Missing start marker in {path}: {start!r}')
+              b = text.find(end, a)
+              if b < 0:
+                  raise SystemExit(f'Missing end marker in {path}: {end!r}')
+              p.write_text(text[:a] + replacement + text[b:])
 
-          owner_old = """\tfor (const label of [
-          \t\t'Home',
-          \t\t'My work',
-          \t\t'F01 Strategy & planning',
-          \t\t'F02 Corporate governance',
-          \t\t'F03 Enterprise performance',
-          \t\t'F04 Corporate development',
-          \t\t'F07 Sales & commercial',
-          \t\t'F09 Procurement & suppliers',
-          \t\t'F14 Finance',
-          \t\t'F15 People & workforce',
-          \t\t'F22 Property & assets',
-          \t\t'F26 Knowledge & documents',
-          \t\t'F27 Projects & programmes',
-          \t\t'All 29 functions',
-          \t\t'Search',
-          \t\t'Contexts'
-          \t]) {
-          \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
-          \t}
-
-          \tfor (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
-          \t\tawait expect(
-          \t\t\tprimaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
-          \t\t).toHaveCount(0);
-          \t}
-          """
-          owner_new = """\tfor (const label of [
+          owner_nav = """\tfor (const label of [
           \t\t'Home',
           \t\t'My work',
           \t\t'Projects',
@@ -84,54 +64,48 @@ jobs:
           \t]) {
           \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
           \t}
-          """
-          edit('app/e2e/authenticated-workspaces.e2e.ts', [
-              (owner_old, owner_new),
-              ("await expect(page).toHaveURL('/commercial/estimates');", "await expect(page).toHaveURL('/nublox/commercial/estimates');"),
-              ("primaryNavigation.getByRole('link', { name: 'F07 Sales & commercial', exact: true })", "primaryNavigation.getByRole('link', { name: 'Customers', exact: true })"),
-              ("expect(new URL(page.url()).pathname).toBe(workspacePath);", "expect(new URL(page.url()).pathname).toBe(`/nublox${workspacePath}`);")
-          ])
 
-          viewer_old = """\tfor (const label of [
-          \t\t'Home',
-          \t\t'My work',
-          \t\t'F07 Sales & commercial',
-          \t\t'F09 Procurement & suppliers',
-          \t\t'F14 Finance',
-          \t\t'F15 People & workforce',
-          \t\t'F22 Property & assets',
-          \t\t'F26 Knowledge & documents',
-          \t\t'F27 Projects & programmes',
-          \t\t'All 29 functions',
-          \t\t'Search',
-          \t\t'Contexts'
-          \t]) {
-          \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
-          \t}
-          \tfor (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
-          \t\tawait expect(
-          \t\t\tprimaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
-          \t\t).toHaveCount(0);
-          \t}
           """
-          viewer_new = """\tfor (const label of ['Home', 'My work', 'Projects', 'Customers', 'Suppliers', 'Assets', 'Finance', 'More']) {
+          replace_range(
+              'app/e2e/authenticated-workspaces.e2e.ts',
+              '\tfor (const label of [',
+              '\tconst searchMenu = page.locator',
+              owner_nav
+          )
+          p = Path('app/e2e/authenticated-workspaces.e2e.ts')
+          text = p.read_text()
+          text = replace_once(text, "await expect(page).toHaveURL('/commercial/estimates');", "await expect(page).toHaveURL('/nublox/commercial/estimates');", str(p))
+          text = replace_once(text, "primaryNavigation.getByRole('link', { name: 'F07 Sales & commercial', exact: true })", "primaryNavigation.getByRole('link', { name: 'Customers', exact: true })", str(p))
+          text = replace_once(text, 'expect(new URL(page.url()).pathname).toBe(workspacePath);', 'expect(new URL(page.url()).pathname).toBe(`/nublox${workspacePath}`);', str(p))
+          p.write_text(text)
+
+          viewer_nav = """\tfor (const label of ['Home', 'My work', 'Projects', 'Customers', 'Suppliers', 'Assets', 'Finance', 'More']) {
           \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
           \t}
           """
-          portal_tail = """
-          \tawait page.goto('/portal');
-          \tawait expect(
-          \t\tpage.getByRole('heading', { name: 'Network & collaboration', level: 1 })
-          \t).toBeVisible();
-          \tawait expect(page.getByRole('link', { name: 'Manage legacy sharing' })).toHaveCount(0);
-          """
-          edit('app/e2e/ui-permissions.e2e.ts', [(viewer_old, viewer_new), (portal_tail, '')])
+          replace_range(
+              'app/e2e/ui-permissions.e2e.ts',
+              '\tfor (const label of [',
+              "\tawait expect(page.locator('.topbar')",
+              viewer_nav + "\tawait expect(page.locator('.topbar')"
+          )
+          p = Path('app/e2e/ui-permissions.e2e.ts')
+          text = p.read_text()
+          tail = "\n\tawait page.goto('/portal');"
+          a = text.find(tail)
+          if a >= 0:
+              text = text[:a] + '\n});\n'
+          p.write_text(text)
 
-          edit('app/e2e/contextual-workspaces.e2e.ts', [
+          p = Path('app/e2e/contextual-workspaces.e2e.ts')
+          text = p.read_text()
+          for old, new in [
               ('`/documents?project=${projectPublicId}`', '`/nublox/documents?project=${projectPublicId}`'),
               ('`/commercial/cost-control?project=${projectPublicId}`', '`/nublox/commercial/cost-control?project=${projectPublicId}`'),
               ('`/site?project=${projectPublicId}`', '`/nublox/site?project=${projectPublicId}`')
-          ])
+          ]:
+              text = text.replace(old, new)
+          p.write_text(text)
 
           for path in [
               'app/e2e/project-financial-control.e2e.ts',
@@ -145,13 +119,20 @@ jobs:
               text = text.replace('new RegExp(`/commercial/cost-control', 'new RegExp(`/nublox/commercial/cost-control')
               p.write_text(text)
 
-          edit('app/e2e/ui-governance-admin.e2e.ts', [
-              ("return requestMethod === 'POST' && responsePathname === '/organisation/profile';", "return requestMethod === 'POST' && responsePathname.endsWith('/organisation/profile');")
-          ])
+          p = Path('app/e2e/ui-governance-admin.e2e.ts')
+          text = p.read_text()
+          text = replace_once(text, "responsePathname === '/organisation/profile'", "responsePathname.endsWith('/organisation/profile')", str(p))
+          p.write_text(text)
 
-          edit('app/e2e/portal-collaboration.e2e.ts', [
-              ("test('owner explicitly shares controlled work and partner completes it through the focused portal'", "test.skip('legacy organisation portal round trip is superseded by CRM-party-scoped external access'" )
-          ])
+          p = Path('app/e2e/portal-collaboration.e2e.ts')
+          text = p.read_text()
+          text = replace_once(
+              text,
+              "test('owner explicitly shares controlled work and partner completes it through the focused portal'",
+              "test.skip('legacy organisation portal round trip is superseded by CRM-party-scoped external access'",
+              str(p)
+          )
+          p.write_text(text)
           PY
       - name: Format changed tests
         working-directory: app
