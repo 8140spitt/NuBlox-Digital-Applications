@@ -1,0 +1,39 @@
+name: F05 lifecycle formatter
+
+on:
+  push:
+    branches:
+      - feat/f05-product-service-innovation
+    paths:
+      - '.github/workflows/f05-format-lifecycle.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f05-product-service-innovation
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - working-directory: app
+        run: pnpm install --frozen-lockfile
+      - working-directory: app
+        run: pnpm exec prettier --write 'src/routes/(app)/product-service/lifecycle/+page.server.ts' 'src/routes/(app)/product-service/lifecycle/+page.svelte'
+      - run: rm .github/workflows/f05-format-lifecycle.yml
+      - run: |
+          git config user.name '8140spitt'
+          git config user.email '56647740+8140spitt@users.noreply.github.com'
+          git add app/src/routes/'(app)'/product-service/lifecycle/+page.server.ts app/src/routes/'(app)'/product-service/lifecycle/+page.svelte .github/workflows/f05-format-lifecycle.yml
+          git commit -m 'F05: format lifecycle workspace'
+          git push origin HEAD:feat/f05-product-service-innovation
