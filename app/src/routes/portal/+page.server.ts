@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 
+import { SUPPLIER_RFQ_SIGNUP_COOKIE } from '$lib/server/auth/supplier-rfq-cookie';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
@@ -18,6 +19,11 @@ import {
 	ProjectTeamService,
 	ProjectTeamValidationError
 } from '$lib/server/projects/project-team-service';
+import {
+	SupplierRfqPortalAccessError,
+	SupplierRfqPortalService,
+	SupplierRfqPortalValidationError
+} from '$lib/server/procurement/supplier-rfq-portal-service';
 
 function actorFromLocals(locals: App.Locals): TenantActorContext | null {
 	if (!locals.actor || !locals.tenant.organisationId || !locals.tenant.memberId) return null;
@@ -38,9 +44,34 @@ function actionFailure(status: number, action: string, subjectPublicId: string, 
 	return fail(status, { action, subjectPublicId, message });
 }
 
-export const load: PageServerLoad = async ({ locals }) => {
+function supplierQuoteLines(data: FormData) {
+	const lines: Array<{
+		itemId: string;
+		offeredQuantity: string;
+		unitRate: string;
+		leadTimeDays: string;
+		qualificationNote: string;
+	}> = [];
+	for (const [name, value] of data.entries()) {
+		if (!name.startsWith('offeredQuantity:') || typeof value !== 'string') continue;
+		const itemId = name.slice('offeredQuantity:'.length);
+		if (!itemId) continue;
+		lines.push({
+			itemId,
+			offeredQuantity: value,
+			unitRate: field(data, `unitRate:${itemId}`),
+			leadTimeDays: field(data, `leadTimeDays:${itemId}`),
+			qualificationNote: field(data, `qualificationNote:${itemId}`)
+		});
+	}
+	return lines;
+}
+
+export const load: PageServerLoad = async ({ locals, cookies }) => {
 	if (!locals.actor) throw redirect(303, '/signin?returnTo=%2Fportal');
+	cookies.delete(SUPPLIER_RFQ_SIGNUP_COOKIE, { path: '/' });
 	const db = getDatabase();
+	const supplierQuotes = await new SupplierRfqPortalService(db).listPortalQuotes(locals.actor.email);
 	const actor = actorFromLocals(locals);
 	if (!actor) {
 		const externalProjects = await new ProjectExternalCollaborationService(
@@ -57,7 +88,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			instructions: [],
 			transmittals: [],
 			invitations: [],
-			externalProjects
+			externalProjects,
+			supplierQuotes
 		};
 	}
 
@@ -72,10 +104,41 @@ export const load: PageServerLoad = async ({ locals }) => {
 			? new ProjectTeamService(db).listPendingInvitations(actor)
 			: Promise.resolve([])
 	]);
-	return { mode: 'member' as const, ...workspace, invitations, externalProjects: [] };
+	return {
+		mode: 'member' as const,
+		...workspace,
+		invitations,
+		externalProjects: [],
+		supplierQuotes
+	};
 };
 
 export const actions: Actions = {
+	submitSupplierQuote: async ({ request, locals }) => {
+		if (!locals.actor) return actionFailure(401, 'supplierQuote', '', 'Authentication is required.');
+		const data = await request.formData();
+		try {
+			await new SupplierRfqPortalService(getDatabase()).submitQuote(locals.actor, {
+				quoteRef: field(data, 'quoteRef'),
+				supplierReference: field(data, 'supplierReference'),
+				validUntil: field(data, 'validUntil'),
+				lines: supplierQuoteLines(data)
+			});
+		} catch (error) {
+			if (error instanceof SupplierRfqPortalAccessError) {
+				return actionFailure(403, 'supplierQuote', '', error.message);
+			}
+			if (error instanceof SupplierRfqPortalValidationError) {
+				return actionFailure(400, 'supplierQuote', '', error.message);
+			}
+			if (error instanceof ConcurrentUpdateError) {
+				return actionFailure(409, 'supplierQuote', '', 'The quotation changed while it was being submitted. Refresh and try again.');
+			}
+			throw error;
+		}
+		throw redirect(303, '/portal');
+	},
+
 	acceptInvitation: async ({ request, locals }) => {
 		const actor = actorFromLocals(locals);
 		if (!actor) return actionFailure(401, 'invitation', '', 'Authentication is required.');
