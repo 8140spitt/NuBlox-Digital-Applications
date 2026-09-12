@@ -7,6 +7,7 @@ export type AppProjectsPath = `/app/${string}/projects`;
 export type PortalDashboardPath = `/portal/${string}/${string}/dashboard`;
 export type PortalProjectsPath = `/portal/${string}/${string}/projects`;
 export type PortalActionsPath = `/portal/${string}/${string}/actions`;
+export type AuthInvitePath = `/auth/invite/${string}`;
 
 export function isRouteSlug(value: string): boolean {
 	return ROUTE_SLUG_PATTERN.test(value);
@@ -42,10 +43,18 @@ export function portalPath(tenant: string, crmParty: string, path = ''): string 
 	return suffix ? `${base}/${suffix}` : base;
 }
 
+export function authInvitePath(token: string): AuthInvitePath {
+	const cleanToken = token.trim();
+	if (!cleanToken) throw new Error('Invitation token is required.');
+	return `/auth/invite/${encodeURIComponent(cleanToken)}`;
+}
+
 export function safeReturnTo(value: string | null | undefined): string | null {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
 	if (value === '/auth' || value.startsWith('/auth?')) return null;
-	if (value.startsWith('/app/') || value.startsWith('/portal/')) return value;
+	if (value.startsWith('/app/') || value.startsWith('/portal/') || value.startsWith('/auth/invite/')) {
+		return value;
+	}
 	return null;
 }
 
@@ -56,6 +65,12 @@ export function authPath(returnTo?: string | null): string {
 
 export const routes = {
 	auth: authPath,
+	authStart: '/auth/start',
+	authRegister: '/auth/register',
+	authForgotPassword: '/auth/forgot-password',
+	authResetPassword: '/auth/reset-password',
+	authVerifyEmail: '/auth/verify-email',
+	authInvite: authInvitePath,
 	dashboard: (tenant: string): AppDashboardPath => appPath(tenant, 'dashboard') as AppDashboardPath,
 	myWork: (tenant: string): AppMyWorkPath => appPath(tenant, 'my-work') as AppMyWorkPath,
 	functions: (tenant: string): AppFunctionsPath => appPath(tenant, 'functions') as AppFunctionsPath,
