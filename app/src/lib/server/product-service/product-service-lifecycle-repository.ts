@@ -47,6 +47,27 @@ export class ProductServiceLifecycleRepository {
 			.executeTakeFirst();
 	}
 
+	findDesignById(organisationId: string, id: string) {
+		return this.db
+			.selectFrom('product_service_designs')
+			.selectAll()
+			.where('organisation_id', '=', organisationId)
+			.where('id', '=', id)
+			.executeTakeFirst();
+	}
+
+	findLatestDesignByCode(organisationId: string, offeringId: string, designCode: string) {
+		return this.db
+			.selectFrom('product_service_designs')
+			.selectAll()
+			.where('organisation_id', '=', organisationId)
+			.where('offering_id', '=', offeringId)
+			.where('design_code', '=', designCode)
+			.orderBy('version_number', 'desc')
+			.orderBy('id', 'desc')
+			.executeTakeFirst();
+	}
+
 	async insertDesign(values: Insertable<ProductServiceDesigns>) {
 		const result = await this.db
 			.insertInto('product_service_designs')
@@ -58,6 +79,10 @@ export class ProductServiceLifecycleRepository {
 			.selectAll()
 			.where('id', '=', id)
 			.executeTakeFirstOrThrow();
+	}
+
+	createDesign(values: Insertable<ProductServiceDesigns>) {
+		return this.insertDesign(values);
 	}
 
 	async updateDesign(
@@ -79,11 +104,12 @@ export class ProductServiceLifecycleRepository {
 			.executeTakeFirstOrThrow();
 	}
 
-	listDesignReviews(organisationId: string) {
-		return this.db
+	listDesignReviews(organisationId: string, designId?: string) {
+		const query = this.db
 			.selectFrom('product_service_design_reviews')
 			.selectAll()
-			.where('organisation_id', '=', organisationId)
+			.where('organisation_id', '=', organisationId);
+		return (designId ? query.where('design_id', '=', designId) : query)
 			.orderBy('review_date', 'desc')
 			.execute();
 	}
@@ -99,6 +125,10 @@ export class ProductServiceLifecycleRepository {
 			.selectAll()
 			.where('id', '=', id)
 			.executeTakeFirstOrThrow();
+	}
+
+	createDesignReview(values: Insertable<ProductServiceDesignReviews>) {
+		return this.insertDesignReview(values);
 	}
 
 	listDevelopmentPlans(organisationId: string) {
@@ -130,6 +160,10 @@ export class ProductServiceLifecycleRepository {
 			.selectAll()
 			.where('id', '=', id)
 			.executeTakeFirstOrThrow();
+	}
+
+	createDevelopmentPlan(values: Insertable<ProductServiceDevelopmentPlans>) {
+		return this.insertDevelopmentPlan(values);
 	}
 
 	async updateDevelopmentPlan(
@@ -182,6 +216,10 @@ export class ProductServiceLifecycleRepository {
 			.executeTakeFirstOrThrow();
 	}
 
+	createLaunchPlan(values: Insertable<ProductServiceLaunchPlans>) {
+		return this.insertLaunchPlan(values);
+	}
+
 	async updateLaunchPlan(
 		organisationId: string,
 		id: string,
@@ -232,6 +270,10 @@ export class ProductServiceLifecycleRepository {
 			.executeTakeFirstOrThrow();
 	}
 
+	createLifecycleReview(values: Insertable<ProductServiceLifecycleReviews>) {
+		return this.insertLifecycleReview(values);
+	}
+
 	listRetirementPlans(organisationId: string) {
 		return this.db
 			.selectFrom('product_service_retirement_plans')
@@ -261,6 +303,10 @@ export class ProductServiceLifecycleRepository {
 			.selectAll()
 			.where('id', '=', id)
 			.executeTakeFirstOrThrow();
+	}
+
+	createRetirementPlan(values: Insertable<ProductServiceRetirementPlans>) {
+		return this.insertRetirementPlan(values);
 	}
 
 	async updateRetirementPlan(
@@ -313,6 +359,10 @@ export class ProductServiceLifecycleRepository {
 			.executeTakeFirstOrThrow();
 	}
 
+	createInnovationExperiment(values: Insertable<ProductServiceInnovationExperiments>) {
+		return this.insertInnovationExperiment(values);
+	}
+
 	async updateInnovationExperiment(
 		organisationId: string,
 		id: string,
@@ -330,5 +380,34 @@ export class ProductServiceLifecycleRepository {
 			.where('organisation_id', '=', organisationId)
 			.where('id', '=', id)
 			.executeTakeFirstOrThrow();
+	}
+
+	async getWorkspace(organisationId: string) {
+		const [
+			designs,
+			designReviews,
+			developmentPlans,
+			launchPlans,
+			lifecycleReviews,
+			retirementPlans,
+			innovationExperiments
+		] = await Promise.all([
+			this.listDesigns(organisationId),
+			this.listDesignReviews(organisationId),
+			this.listDevelopmentPlans(organisationId),
+			this.listLaunchPlans(organisationId),
+			this.listLifecycleReviews(organisationId),
+			this.listRetirementPlans(organisationId),
+			this.listInnovationExperiments(organisationId)
+		]);
+		return {
+			designs,
+			designReviews,
+			developmentPlans,
+			launchPlans,
+			lifecycleReviews,
+			retirementPlans,
+			innovationExperiments
+		};
 	}
 }
