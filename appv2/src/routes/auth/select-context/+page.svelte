@@ -20,7 +20,7 @@
 		</p>
 
 		<div class="context-list">
-			{#each data.contexts as context}
+			{#each data.contexts as context (context.organisationPublicId)}
 				<a class="context-option" href={context.href}>
 					<strong>{context.organisationName}</strong>
 					<span>{context.organisationPublicId}</span>
