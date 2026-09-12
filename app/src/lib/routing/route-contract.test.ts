@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
 	isLegacyTenantAppPath,
+	isTenantRouteSlug,
 	parseCanonicalRoute,
 	portalDashboardPath,
 	portalLoginPath,
@@ -47,5 +48,31 @@ describe('tenant-first route contract', () => {
 		expect(isLegacyTenantAppPath('/finance/invoices')).toBe(true);
 		expect(isLegacyTenantAppPath('/portal/manage')).toBe(true);
 		expect(isLegacyTenantAppPath('/signin')).toBe(false);
+	});
+
+	it('never interprets system, public or legacy application roots as tenant slugs', () => {
+		const reservedPaths = [
+			'/signin',
+			'/forgot-password',
+			'/reset-password',
+			'/start',
+			'/select-organisation',
+			'/invite/token',
+			'/collaborate/token',
+			'/network/invite/token',
+			'/api/health',
+			'/portal',
+			'/web',
+			'/dashboard',
+			'/projects'
+		];
+
+		for (const path of reservedPaths) {
+			expect(parseCanonicalRoute(path)).toBeNull();
+			expect(reroutedPathname(path)).toBeUndefined();
+		}
+		expect(isTenantRouteSlug('signin')).toBe(false);
+		expect(isTenantRouteSlug('projects')).toBe(false);
+		expect(isTenantRouteSlug('nublox')).toBe(true);
 	});
 });
