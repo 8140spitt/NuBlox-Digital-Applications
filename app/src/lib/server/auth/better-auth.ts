@@ -9,6 +9,10 @@ import { createPool } from 'mysql2/promise';
 import { getDatabase } from '$lib/server/db/database';
 import { getEmailDelivery } from '$lib/server/email/email-delivery';
 import {
+	ExternalInvitationAccessError,
+	ExternalInvitationService
+} from '$lib/server/external-access/external-invitation-service';
+import {
 	OrganisationBootstrapAccessError,
 	OrganisationBootstrapService
 } from '$lib/server/organisations/bootstrap-service';
@@ -22,6 +26,7 @@ import {
 	ProjectExternalCollaborationService
 } from '$lib/server/projects/project-external-collaboration-service';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from './bootstrap-cookie';
+import { EXTERNAL_ACCESS_SIGNUP_COOKIE } from './external-access-cookie';
 import { INVITATION_SIGNUP_COOKIE } from './invitation-cookie';
 import { PROJECT_COLLABORATION_SIGNUP_COOKIE } from './project-collaboration-cookie';
 import { assertVerifiedAuthUser } from './verified-auth-user';
@@ -44,10 +49,15 @@ function collaborationService(): ProjectExternalCollaborationService {
 	return new ProjectExternalCollaborationService(getDatabase());
 }
 
+function externalInvitationService(): ExternalInvitationService {
+	return new ExternalInvitationService(getDatabase());
+}
+
 type SignupProvisioningIntent =
 	| { kind: 'invitation'; token: string }
 	| { kind: 'organisation-bootstrap'; token: string }
-	| { kind: 'project-collaboration'; token: string };
+	| { kind: 'project-collaboration'; token: string }
+	| { kind: 'external-access'; token: string };
 
 function signupProvisioningIntentFromContext(ctx: {
 	getCookie(name: string): string | null | undefined;
@@ -55,7 +65,13 @@ function signupProvisioningIntentFromContext(ctx: {
 	const invitationToken = ctx.getCookie(INVITATION_SIGNUP_COOKIE)?.trim() ?? '';
 	const bootstrapToken = ctx.getCookie(ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE)?.trim() ?? '';
 	const collaborationToken = ctx.getCookie(PROJECT_COLLABORATION_SIGNUP_COOKIE)?.trim() ?? '';
-	const intentCount = [invitationToken, bootstrapToken, collaborationToken].filter(Boolean).length;
+	const externalAccessToken = ctx.getCookie(EXTERNAL_ACCESS_SIGNUP_COOKIE)?.trim() ?? '';
+	const intentCount = [
+		invitationToken,
+		bootstrapToken,
+		collaborationToken,
+		externalAccessToken
+	].filter(Boolean).length;
 	if (intentCount > 1) {
 		throw new APIError('FORBIDDEN', {
 			message: 'The NuBlox account setup state is ambiguous. Start again.'
@@ -64,9 +80,10 @@ function signupProvisioningIntentFromContext(ctx: {
 	if (invitationToken) return { kind: 'invitation', token: invitationToken };
 	if (bootstrapToken) return { kind: 'organisation-bootstrap', token: bootstrapToken };
 	if (collaborationToken) return { kind: 'project-collaboration', token: collaborationToken };
+	if (externalAccessToken) return { kind: 'external-access', token: externalAccessToken };
 	throw new APIError('FORBIDDEN', {
 		message:
-			'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
+			'A valid NuBlox invitation, Network invitation, project collaboration invitation or organisation setup request is required.'
 	});
 }
 
@@ -157,18 +174,21 @@ export const auth = betterAuth({
 					await invitationService().validateSignup(intent.token, email);
 				} else if (intent.kind === 'organisation-bootstrap') {
 					await bootstrapService().validateSignup(intent.token, email);
-				} else {
+				} else if (intent.kind === 'project-collaboration') {
 					await collaborationService().validateSignup(intent.token, email);
+				} else {
+					await externalInvitationService().validateSignup(intent.token, email);
 				}
 			} catch (cause) {
 				if (
 					cause instanceof InvitationAccessError ||
 					cause instanceof OrganisationBootstrapAccessError ||
-					cause instanceof ProjectExternalCollaborationAccessError
+					cause instanceof ProjectExternalCollaborationAccessError ||
+					cause instanceof ExternalInvitationAccessError
 				) {
 					throw new APIError('FORBIDDEN', {
 						message:
-							'A valid NuBlox invitation, project collaboration invitation or organisation setup request is required.'
+							'A valid NuBlox invitation, Network invitation, project collaboration invitation or organisation setup request is required.'
 					});
 				}
 				throw cause;
@@ -185,6 +205,8 @@ export const auth = betterAuth({
 						await invitationService().bindSignupAuthUser(intent.token, user.email, user.id);
 					} else if (intent.kind === 'project-collaboration') {
 						await collaborationService().bindSignupAuthUser(intent.token, user.email, user.id);
+					} else if (intent.kind === 'external-access') {
+						await externalInvitationService().bindSignupAuthUser(intent.token, user.email, user.id);
 					} else {
 						const db = getDatabase();
 						const created = await new OrganisationBootstrapService(db).provisionSignup({
@@ -230,6 +252,11 @@ export const auth = betterAuth({
 				authUserId: user.id,
 				email: user.email,
 				displayName: user.name,
+				correlationId
+			});
+			await externalInvitationService().activateVerifiedAuthUser({
+				authUserId: user.id,
+				email: user.email,
 				correlationId
 			});
 		}
