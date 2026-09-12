@@ -64,7 +64,7 @@ function partyName(row: {
 	);
 }
 
-export function normaliseStoredRouteSlug(value: string, fallback: string): string {
+function normaliseStoredRouteSlug(value: string, fallback: string): string {
 	const normalised = value
 		.normalize('NFKD')
 		.replace(/[\u0300-\u036f]/g, '')
@@ -76,8 +76,8 @@ export function normaliseStoredRouteSlug(value: string, fallback: string): strin
 
 async function availableOrganisationSlug(db: DatabaseExecutor, candidate: string): Promise<boolean> {
 	const row = await db
-		.selectFrom('organisations')
-		.select('id')
+		.selectFrom('tenant_route_contexts')
+		.select('organisation_id')
 		.where('route_slug', '=', candidate)
 		.executeTakeFirst();
 	return !row;
@@ -89,8 +89,8 @@ async function availablePartySlug(
 	candidate: string
 ): Promise<boolean> {
 	const row = await db
-		.selectFrom('parties')
-		.select('id')
+		.selectFrom('party_route_contexts')
+		.select('party_id')
 		.where('organisation_id', '=', organisationId)
 		.where('route_slug', '=', candidate)
 		.executeTakeFirst();
@@ -139,17 +139,15 @@ export class RouteContextService {
 			row.tradingName?.trim() || row.legalName
 		);
 		await this.db
-			.updateTable('organisations')
-			.set({ route_slug: candidate })
-			.where('id', '=', row.organisationId)
-			.where('route_slug', 'is', null)
+			.insertInto('tenant_route_contexts')
+			.values({ organisation_id: row.organisationId, route_slug: candidate })
+			.onDuplicateKeyUpdate({ route_slug: candidate })
 			.executeTakeFirst();
 		const current = await this.db
-			.selectFrom('organisations')
+			.selectFrom('tenant_route_contexts')
 			.select('route_slug as routeSlug')
-			.where('id', '=', row.organisationId)
+			.where('organisation_id', '=', row.organisationId)
 			.executeTakeFirstOrThrow();
-		if (!current.routeSlug) throw new Error('Tenant route slug could not be allocated.');
 		return current.routeSlug;
 	}
 
@@ -167,31 +165,38 @@ export class RouteContextService {
 		if (row.partySlug) return row.partySlug;
 		const candidate = await allocatePartyRouteSlug(this.db, row.organisationId, partyName(row));
 		await this.db
-			.updateTable('parties')
-			.set({ route_slug: candidate })
-			.where('id', '=', row.partyId)
-			.where('organisation_id', '=', row.organisationId)
-			.where('route_slug', 'is', null)
+			.insertInto('party_route_contexts')
+			.values({
+				organisation_id: row.organisationId,
+				party_id: row.partyId,
+				route_slug: candidate
+			})
+			.onDuplicateKeyUpdate({ route_slug: candidate })
 			.executeTakeFirst();
 		const current = await this.db
-			.selectFrom('parties')
+			.selectFrom('party_route_contexts')
 			.select('route_slug as routeSlug')
-			.where('id', '=', row.partyId)
 			.where('organisation_id', '=', row.organisationId)
+			.where('party_id', '=', row.partyId)
 			.executeTakeFirstOrThrow();
-		if (!current.routeSlug) throw new Error('CRM party route slug could not be allocated.');
 		return current.routeSlug;
 	}
 
 	private portalContextQuery(now: Date) {
 		return this.db
-			.selectFrom('external_portal_access_contexts as portal_context')
+			.selectFrom('routing_external_portal_access_contexts as portal_context')
 			.innerJoin('external_access_grants as grant', 'grant.id', 'portal_context.external_access_grant_id')
 			.innerJoin('organisations as owner', 'owner.id', 'portal_context.owning_organisation_id')
+			.leftJoin('tenant_route_contexts as tenant_route', 'tenant_route.organisation_id', 'owner.id')
 			.innerJoin('parties as party', (join) =>
 				join
 					.onRef('party.id', '=', 'portal_context.party_id')
 					.onRef('party.organisation_id', '=', 'portal_context.owning_organisation_id')
+			)
+			.leftJoin('party_route_contexts as party_route', (join) =>
+				join
+					.onRef('party_route.party_id', '=', 'party.id')
+					.onRef('party_route.organisation_id', '=', 'party.organisation_id')
 			)
 			.leftJoin('party_organisations as company', (join) =>
 				join
@@ -206,12 +211,12 @@ export class RouteContextService {
 			.select([
 				'owner.id as organisationId',
 				'owner.public_id as organisationPublicId',
-				'owner.route_slug as tenantSlug',
+				'tenant_route.route_slug as tenantSlug',
 				'owner.legal_name as legalName',
 				'owner.trading_name as tradingName',
 				'party.id as partyId',
 				'party.public_id as partyPublicId',
-				'party.route_slug as partySlug',
+				'party_route.route_slug as partySlug',
 				'party.party_kind as kind',
 				'company.legal_name as companyLegalName',
 				'company.trading_name as companyTradingName',
@@ -258,18 +263,19 @@ export class RouteContextService {
 
 	async findTenantBySlug(tenantSlug: string): Promise<TenantRouteContext | null> {
 		const row = await this.db
-			.selectFrom('organisations')
+			.selectFrom('tenant_route_contexts as route')
+			.innerJoin('organisations as organisation', 'organisation.id', 'route.organisation_id')
 			.select([
-				'id as organisationId',
-				'public_id as organisationPublicId',
-				'route_slug as tenantSlug',
-				'legal_name as legalName',
-				'trading_name as tradingName'
+				'organisation.id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'route.route_slug as tenantSlug',
+				'organisation.legal_name as legalName',
+				'organisation.trading_name as tradingName'
 			])
-			.where('route_slug', '=', tenantSlug)
-			.where('status', '=', 'active')
+			.where('route.route_slug', '=', tenantSlug)
+			.where('organisation.status', '=', 'active')
 			.executeTakeFirst();
-		if (!row?.tenantSlug) return null;
+		if (!row) return null;
 		return {
 			organisationId: row.organisationId,
 			organisationPublicId: row.organisationPublicId,
@@ -280,16 +286,17 @@ export class RouteContextService {
 
 	async findTenantByOrganisationId(organisationId: string): Promise<TenantRouteContext | null> {
 		const row = await this.db
-			.selectFrom('organisations')
+			.selectFrom('organisations as organisation')
+			.leftJoin('tenant_route_contexts as route', 'route.organisation_id', 'organisation.id')
 			.select([
-				'id as organisationId',
-				'public_id as organisationPublicId',
-				'route_slug as tenantSlug',
-				'legal_name as legalName',
-				'trading_name as tradingName'
+				'organisation.id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'route.route_slug as tenantSlug',
+				'organisation.legal_name as legalName',
+				'organisation.trading_name as tradingName'
 			])
-			.where('id', '=', organisationId)
-			.where('status', '=', 'active')
+			.where('organisation.id', '=', organisationId)
+			.where('organisation.status', '=', 'active')
 			.executeTakeFirst();
 		if (!row) return null;
 		const tenantSlug = await this.ensureOrganisationSlug(row);
@@ -309,8 +316,8 @@ export class RouteContextService {
 	): Promise<PortalRouteContext | null> {
 		const row = await this.portalContextQuery(now)
 			.where('portal_context.auth_user_id', '=', authUserId)
-			.where('owner.route_slug', '=', tenantSlug)
-			.where('party.route_slug', '=', partySlug)
+			.where('tenant_route.route_slug', '=', tenantSlug)
+			.where('party_route.route_slug', '=', partySlug)
 			.executeTakeFirst();
 		return row ? this.mapPortalContext(row) : null;
 	}
@@ -341,7 +348,7 @@ export class RouteContextService {
 		let query = this.db
 			.selectFrom('external_work_items as work')
 			.innerJoin('external_access_grants as grant', 'grant.id', 'work.external_access_grant_id')
-			.innerJoin('external_portal_access_contexts as portal_context', (join) =>
+			.innerJoin('routing_external_portal_access_contexts as portal_context', (join) =>
 				join
 					.onRef('portal_context.external_access_grant_id', '=', 'grant.id')
 					.onRef('portal_context.auth_user_id', '=', 'grant.auth_user_id')
@@ -475,7 +482,7 @@ export class RouteContextService {
 		const row = await this.db
 			.selectFrom('external_work_items as work')
 			.innerJoin('external_access_grants as grant', 'grant.id', 'work.external_access_grant_id')
-			.innerJoin('external_portal_access_contexts as portal_context', (join) =>
+			.innerJoin('routing_external_portal_access_contexts as portal_context', (join) =>
 				join
 					.onRef('portal_context.external_access_grant_id', '=', 'grant.id')
 					.onRef('portal_context.auth_user_id', '=', 'grant.auth_user_id')
