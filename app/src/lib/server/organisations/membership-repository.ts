@@ -5,6 +5,7 @@ export type ActiveOrganisationMembership = {
 	id: string;
 	organisationId: string;
 	organisationPublicId?: string;
+	organisationRouteSlug?: string;
 	userId: string;
 	publicId: string;
 	status: 'active';
@@ -15,6 +16,7 @@ export type OrganisationMembershipChoice = {
 	memberPublicId: string;
 	organisationId: string;
 	organisationPublicId: string;
+	organisationRouteSlug: string | null;
 	organisationName: string;
 };
 
@@ -60,6 +62,7 @@ export class OrganisationMembershipRepository {
 				'member.id as id',
 				'member.organisation_id as organisationId',
 				'organisation.public_id as organisationPublicId',
+				'organisation.route_slug as organisationRouteSlug',
 				'member.user_id as userId',
 				'member.public_id as publicId',
 				'member.status as status'
@@ -76,6 +79,41 @@ export class OrganisationMembershipRepository {
 			id: row.id,
 			organisationId: row.organisationId,
 			organisationPublicId: row.organisationPublicId,
+			organisationRouteSlug: row.organisationRouteSlug ?? undefined,
+			userId: row.userId,
+			publicId: row.publicId,
+			status: 'active'
+		};
+	}
+
+	async findActiveMembershipByOrganisationRouteSlug(
+		userId: string,
+		organisationRouteSlug: string
+	): Promise<ActiveOrganisationMembership | null> {
+		const row = await this.db
+			.selectFrom('organisation_members as member')
+			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+			.select([
+				'member.id as id',
+				'member.organisation_id as organisationId',
+				'organisation.public_id as organisationPublicId',
+				'organisation.route_slug as organisationRouteSlug',
+				'member.user_id as userId',
+				'member.public_id as publicId',
+				'member.status as status'
+			])
+			.where('member.user_id', '=', userId)
+			.where('member.status', '=', 'active')
+			.where('organisation.route_slug', '=', organisationRouteSlug)
+			.where('organisation.status', '=', 'active')
+			.executeTakeFirst();
+
+		if (!row || row.status !== 'active' || !row.organisationRouteSlug) return null;
+		return {
+			id: row.id,
+			organisationId: row.organisationId,
+			organisationPublicId: row.organisationPublicId,
+			organisationRouteSlug: row.organisationRouteSlug,
 			userId: row.userId,
 			publicId: row.publicId,
 			status: 'active'
@@ -91,6 +129,7 @@ export class OrganisationMembershipRepository {
 				'member.public_id as memberPublicId',
 				'member.organisation_id as organisationId',
 				'organisation.public_id as organisationPublicId',
+				'organisation.route_slug as organisationRouteSlug',
 				'organisation.legal_name as organisationName'
 			])
 			.where('member.user_id', '=', userId)
