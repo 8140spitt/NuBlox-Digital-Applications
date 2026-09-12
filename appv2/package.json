@@ -16,6 +16,10 @@
 		"test": "npm run test:unit -- --run && npm run test:e2e",
 		"test:e2e": "playwright install && playwright test"
 	},
+	"dependencies": {
+		"better-auth": "1.6.25",
+		"mysql2": "3.23.2"
+	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
 		"@playwright/test": "^1.60.0",
