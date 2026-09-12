@@ -1,0 +1,56 @@
+name: V2 Temporary Autofmt
+
+on:
+  push:
+    branches:
+      - v2/reset-foundation
+    paths:
+      - 'appv2/**'
+      - '.github/workflows/v2-autofmt.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appv2
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: v2/reset-foundation
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Format V2
+        run: pnpm format
+
+      - name: Commit formatting
+        working-directory: .
+        run: |
+          git config user.name "NuBlox V2 automation"
+          git config user.email "actions@users.noreply.github.com"
+          git add appv2
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "v2: apply canonical formatting"
+          git push origin HEAD:v2/reset-foundation
