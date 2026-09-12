@@ -2,6 +2,7 @@ import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 
 import { getDatabase } from '$lib/server/db/database';
+import { ExternalAccessService } from '$lib/server/external-access/external-access-service';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectExternalCollaborationService } from '$lib/server/projects/project-external-collaboration-service';
 
@@ -13,10 +14,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 		locals.actor.userId
 	);
 	if (memberships.length === 0) {
-		const externalProjects = await new ProjectExternalCollaborationService(
-			db
-		).listExternalPortalProjects(locals.actor.authUserId);
-		if (externalProjects.length > 0) throw redirect(303, '/portal');
+		const [hasNetworkAccess, externalProjects] = await Promise.all([
+			new ExternalAccessService(db).hasActiveAccess(locals.actor.authUserId),
+			new ProjectExternalCollaborationService(db).listExternalPortalProjects(
+				locals.actor.authUserId
+			)
+		]);
+		if (hasNetworkAccess || externalProjects.length > 0) throw redirect(303, '/portal');
 	}
 
 	return {
