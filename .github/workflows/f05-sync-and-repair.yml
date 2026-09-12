@@ -18,6 +18,15 @@ jobs:
         with:
           ref: feat/f05-product-service-innovation
           fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
       - name: Sync current main
         run: |
           git config user.name "github-actions[bot]"
@@ -46,9 +55,11 @@ jobs:
           text = layout.read_text()
           old = """\tfunction isPrimaryActive(item: AppNavigationItem): boolean {\n\t\tif (item.id === 'projects' && data.projectContext) return true;\n\t\tif (item.id === 'customers' && businessContext?.id === 'relationships') return true;\n\t\tif (item.id === 'finance' && businessContext?.id === 'finance') return true;\n\t\treturn isActive(item.href);\n\t}\n"""
           new = """\tfunction isPrimaryActive(item: AppNavigationItem): boolean {\n\t\tif ((item.id === 'projects' || item.id === 'F27') && data.projectContext) return true;\n\t\tif ((item.id === 'customers' || item.id === 'F07') && businessContext?.id === 'relationships')\n\t\t\treturn true;\n\t\tif ((item.id === 'finance' || item.id === 'F14') && businessContext?.id === 'finance') return true;\n\t\treturn isActive(item.href);\n\t}\n"""
-          if old not in text:
+          if old in text:
+              text = text.replace(old, new)
+          elif "item.id === 'F07'" not in text:
               raise SystemExit('Expected primary navigation active-state block not found')
-          layout.write_text(text.replace(old, new))
+          layout.write_text(text)
           PY
       - name: Format and remove helper
         working-directory: app
