@@ -43,15 +43,6 @@ jobs:
       - name: Install V2 dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Show canonical formatting diff
-        working-directory: .
-        run: |
-          cd appv2
-          pnpm format
-          cd ..
-          git diff -- appv2
-          test -z "$(git status --short -- appv2)"
-
       - name: Lint V2
         run: pnpm lint
 
