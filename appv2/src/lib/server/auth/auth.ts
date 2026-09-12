@@ -6,6 +6,13 @@ import type { RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { getEmailDelivery } from '$lib/server/email/email-delivery';
 import {
+	activateVerifiedOrganisationInvitation,
+	bindOrganisationInvitationAuthUser,
+	ORGANISATION_INVITATION_COOKIE,
+	OrganisationInvitationAccessError,
+	validateOrganisationInvitationSignup
+} from './organisation-invitation';
+import {
 	activateVerifiedTenantBootstrap,
 	provisionTenantBootstrapSignup,
 	TENANT_BOOTSTRAP_COOKIE,
@@ -17,10 +24,31 @@ type AuthUserVerificationRow = RowDataPacket & {
 	email_verified: number | boolean;
 };
 
+type SignupIntent =
+	| { kind: 'tenant-bootstrap'; token: string }
+	| { kind: 'organisation-invitation'; token: string };
+
 function requireEnv(name: 'BETTER_AUTH_SECRET' | 'BETTER_AUTH_URL'): string {
 	const value = env[name]?.trim();
 	if (!value) throw new Error(`${name} is required.`);
 	return value;
+}
+
+function signupIntent(ctx: {
+	getCookie(name: string): string | null | undefined;
+}): SignupIntent {
+	const bootstrapToken = ctx.getCookie(TENANT_BOOTSTRAP_COOKIE)?.trim() ?? '';
+	const invitationToken = ctx.getCookie(ORGANISATION_INVITATION_COOKIE)?.trim() ?? '';
+	if (bootstrapToken && invitationToken) {
+		throw new APIError('FORBIDDEN', {
+			message: 'The NuBlox account setup state is ambiguous. Start again.'
+		});
+	}
+	if (bootstrapToken) return { kind: 'tenant-bootstrap', token: bootstrapToken };
+	if (invitationToken) return { kind: 'organisation-invitation', token: invitationToken };
+	throw new APIError('FORBIDDEN', {
+		message: 'A valid NuBlox tenant registration or organisation invitation is required.'
+	});
 }
 
 function createNuBloxAuth() {
@@ -87,19 +115,22 @@ function createNuBloxAuth() {
 		hooks: {
 			before: createAuthMiddleware(async (ctx) => {
 				if (ctx.path === '/sign-up/email') {
-					const bootstrapToken = ctx.getCookie(TENANT_BOOTSTRAP_COOKIE)?.trim() ?? '';
+					const intent = signupIntent(ctx);
 					const email = typeof ctx.body?.email === 'string' ? ctx.body.email : '';
-					if (!bootstrapToken) {
-						throw new APIError('FORBIDDEN', {
-							message: 'A valid NuBlox tenant registration request is required.'
-						});
-					}
 					try {
-						await validateTenantBootstrapSignup(bootstrapToken, email);
+						if (intent.kind === 'tenant-bootstrap') {
+							await validateTenantBootstrapSignup(intent.token, email);
+						} else {
+							await validateOrganisationInvitationSignup(intent.token, email);
+						}
 					} catch (cause) {
-						if (cause instanceof TenantBootstrapAccessError) {
+						if (
+							cause instanceof TenantBootstrapAccessError ||
+							cause instanceof OrganisationInvitationAccessError
+						) {
 							throw new APIError('FORBIDDEN', {
-								message: 'A valid NuBlox tenant registration request is required.'
+								message:
+									'A valid NuBlox tenant registration or organisation invitation is required.'
 							});
 						}
 						throw cause;
@@ -127,14 +158,21 @@ function createNuBloxAuth() {
 				create: {
 					after: async (user, ctx) => {
 						if (ctx?.path !== '/sign-up/email') return;
-						const bootstrapToken = ctx.getCookie(TENANT_BOOTSTRAP_COOKIE)?.trim() ?? '';
-						if (!bootstrapToken) throw new TenantBootstrapAccessError();
-						await provisionTenantBootstrapSignup({
-							rawToken: bootstrapToken,
-							authUserId: user.id,
-							email: user.email,
-							displayName: user.name
-						});
+						const intent = signupIntent(ctx);
+						if (intent.kind === 'tenant-bootstrap') {
+							await provisionTenantBootstrapSignup({
+								rawToken: intent.token,
+								authUserId: user.id,
+								email: user.email,
+								displayName: user.name
+							});
+						} else {
+							await bindOrganisationInvitationAuthUser({
+								rawToken: intent.token,
+								authUserId: user.id,
+								email: user.email
+							});
+						}
 					}
 				}
 			}
@@ -159,6 +197,11 @@ function createNuBloxAuth() {
 			},
 			afterEmailVerification: async (user) => {
 				await activateVerifiedTenantBootstrap({ authUserId: user.id, email: user.email });
+				await activateVerifiedOrganisationInvitation({
+					authUserId: user.id,
+					email: user.email,
+					displayName: user.name
+				});
 			}
 		},
 		emailAndPassword: {
