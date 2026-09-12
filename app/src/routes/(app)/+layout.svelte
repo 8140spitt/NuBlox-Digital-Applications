@@ -40,9 +40,11 @@
 	}
 
 	function isPrimaryActive(item: AppNavigationItem): boolean {
-		if (item.id === 'projects' && data.projectContext) return true;
-		if (item.id === 'customers' && businessContext?.id === 'relationships') return true;
-		if (item.id === 'finance' && businessContext?.id === 'finance') return true;
+		if ((item.id === 'projects' || item.id === 'F27') && data.projectContext) return true;
+		if ((item.id === 'customers' || item.id === 'F07') && businessContext?.id === 'relationships')
+			return true;
+		if ((item.id === 'finance' || item.id === 'F14') && businessContext?.id === 'finance')
+			return true;
 		return isActive(item.href);
 	}
 
