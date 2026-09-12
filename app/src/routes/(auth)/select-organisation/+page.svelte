@@ -19,7 +19,8 @@
 			message = 'That organisation could not be selected.';
 			return;
 		}
-		await goto('/dashboard', { invalidateAll: true });
+		const selected = await response.json();
+		await goto(`/${selected.organisationRouteSlug}/dashboard`, { invalidateAll: true });
 	}
 
 	async function signOut() {
