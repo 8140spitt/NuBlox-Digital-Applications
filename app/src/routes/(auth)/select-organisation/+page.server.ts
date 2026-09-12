@@ -4,6 +4,7 @@ import type { PageServerLoad } from './$types';
 import { getDatabase } from '$lib/server/db/database';
 import { OrganisationMembershipRepository } from '$lib/server/organisations/membership-repository';
 import { ProjectExternalCollaborationService } from '$lib/server/projects/project-external-collaboration-service';
+import { SupplierRfqPortalService } from '$lib/server/procurement/supplier-rfq-portal-service';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.actor) throw redirect(303, '/signin');
@@ -13,10 +14,11 @@ export const load: PageServerLoad = async ({ locals }) => {
 		locals.actor.userId
 	);
 	if (memberships.length === 0) {
-		const externalProjects = await new ProjectExternalCollaborationService(
-			db
-		).listExternalPortalProjects(locals.actor.authUserId);
-		if (externalProjects.length > 0) throw redirect(303, '/portal');
+		const [externalProjects, hasSupplierQuotes] = await Promise.all([
+			new ProjectExternalCollaborationService(db).listExternalPortalProjects(locals.actor.authUserId),
+			new SupplierRfqPortalService(db).hasPortalQuotes(locals.actor.email)
+		]);
+		if (externalProjects.length > 0 || hasSupplierQuotes) throw redirect(303, '/portal');
 	}
 
 	return {
