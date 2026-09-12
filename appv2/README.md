@@ -94,3 +94,5 @@ pnpm build
 `pnpm test:unit` provisions the Chromium binary required by Vitest browser-mode component tests and then runs the suite once. Use `pnpm test:unit:watch` for interactive watch mode.
 
 Playwright journeys are added as real V2 workflows become available.
+
+The auth route contract is covered by `src/lib/routing/route-contract.test.ts`.
