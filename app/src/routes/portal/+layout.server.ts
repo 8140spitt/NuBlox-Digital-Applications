@@ -79,6 +79,9 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		]);
 		if (!organisation) throw redirect(303, '/select-organisation');
 		const tenantSlug = locals.tenant.routeSlug;
+		if (canonical?.kind === 'portal-manage' && canonical.tenantSlug !== tenantSlug) {
+			throw redirect(303, `${tenantPath(tenantSlug, canonical.appPath)}${url.search}`);
+		}
 		if (decisions.get('portal.view')?.allowed) {
 			return {
 				mode: 'member' as const,
