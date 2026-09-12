@@ -38,8 +38,8 @@
 			<div class="card-index">01</div>
 			<h2>Enterprise functions</h2>
 			<p>
-				Browse the canonical F01–F29 operating model without exposing backend capability boundaries as
-				navigation.
+				Browse the canonical F01–F29 operating model without exposing backend capability boundaries
+				as navigation.
 			</p>
 			<a href={routes.functions(data.tenant.slug)}>Explore all 29 functions</a>
 		</article>
@@ -48,8 +48,8 @@
 			<div class="card-index">02</div>
 			<h2>Persistent context</h2>
 			<p>
-				Tenant context is explicit in every internal URL. External collaboration will remain separately
-				scoped by tenant and CRM party.
+				Tenant context is explicit in every internal URL. External collaboration will remain
+				separately scoped by tenant and CRM party.
 			</p>
 			<span class="foundation-state">Foundation active</span>
 		</article>
