@@ -38,6 +38,8 @@
 		"playwright": "^1.60.0",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",
+		"svelte": "^5.56.1",
+		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.1",
 		"vite": "^8.0.16",
@@ -48,11 +50,5 @@
 		"better-auth": "1.6.25",
 		"kysely": "0.29.5",
 		"mysql2": "3.23.2"
-	},
-	"pnpm": {
-		"overrides": {
-			"vitest": "4.1.11",
-			"@vitest/mocker": "4.1.11"
-		}
 	}
 }
