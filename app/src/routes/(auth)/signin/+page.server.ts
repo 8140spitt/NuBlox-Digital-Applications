@@ -2,6 +2,11 @@ import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { isAPIError } from 'better-auth/api';
 import type { PageServerLoad } from './$types';
 
+import {
+	parseCanonicalRoute,
+	portalDashboardPath,
+	tenantPath
+} from '$lib/routing/route-contract';
 import { auth } from '$lib/server/auth/better-auth';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';
@@ -17,8 +22,20 @@ function field(formData: FormData, name: string): string {
 	return typeof value === 'string' ? value : '';
 }
 
+function contextualDestination(pathname: string): string | null {
+	const route = parseCanonicalRoute(pathname);
+	if (route?.kind === 'portal') {
+		return portalDashboardPath(route.tenantSlug, route.partySlug);
+	}
+	if (route?.kind === 'tenant-login') {
+		return tenantPath(route.tenantSlug, '/dashboard');
+	}
+	return null;
+}
+
 export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 	const returnTo = safeReturnTo(url.searchParams.get('returnTo'));
+	const contextual = contextualDestination(url.pathname);
 	const verified = url.searchParams.get('verified') === '1';
 	const passwordReset = url.searchParams.get('reset') === '1';
 	if (verified) {
@@ -29,7 +46,11 @@ export const load: PageServerLoad = async ({ locals, url, cookies }) => {
 	if (locals.actor) {
 		throw redirect(
 			303,
-			returnTo ?? (locals.tenant.membershipVerified ? '/dashboard' : '/select-organisation')
+			returnTo ??
+				contextual ??
+				(locals.tenant.membershipVerified && locals.tenant.routeSlug
+					? tenantPath(locals.tenant.routeSlug, '/dashboard')
+					: '/select-organisation')
 		);
 	}
 
@@ -42,6 +63,7 @@ export const actions: Actions = {
 		const email = field(formData, 'email').trim();
 		const password = field(formData, 'password');
 		const returnTo = safeReturnTo(url.searchParams.get('returnTo'));
+		const contextual = contextualDestination(url.pathname);
 
 		if (!email || !password) {
 			return fail(400, {
@@ -86,6 +108,6 @@ export const actions: Actions = {
 		}
 
 		console.info('[NuBlox auth] Sign-in accepted; redirecting.', { email });
-		throw redirect(303, returnTo ?? '/select-organisation');
+		throw redirect(303, returnTo ?? contextual ?? '/select-organisation');
 	}
 };
