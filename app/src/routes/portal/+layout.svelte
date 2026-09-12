@@ -26,7 +26,9 @@
 		<nav aria-label="Portal navigation">
 			{#if data.mode === 'external'}
 				<a class:active={active(data.dashboardHref)} href={data.dashboardHref}>Dashboard</a>
-				<a class:active={active(`${data.portalBase}/actions`)} href={`${data.portalBase}/actions`}>Actions</a>
+				<a class:active={active(`${data.portalBase}/actions`)} href={`${data.portalBase}/actions`}
+					>Actions</a
+				>
 			{:else}
 				<a class:active={active(data.dashboardHref)} href={data.dashboardHref}>Sharing controls</a>
 			{/if}
@@ -35,7 +37,8 @@
 			<div>
 				<span>{data.party?.name ?? data.organisation?.name}</span>
 				<small>
-					{#if data.party}{data.organisation?.name} · {/if}{data.actor.displayName}
+					{#if data.party}{data.organisation?.name} ·
+					{/if}{data.actor.displayName}
 				</small>
 			</div>
 			{#if data.mode === 'member'}

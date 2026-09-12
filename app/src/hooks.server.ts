@@ -34,7 +34,8 @@ export const handle: Handle = async ({ event, resolve }) => {
 					event.locals.actor.authUserId
 				);
 				if (context) {
-					const externalPath = pathname === '/portal' ? '/dashboard' : pathname.slice('/portal'.length);
+					const externalPath =
+						pathname === '/portal' ? '/dashboard' : pathname.slice('/portal'.length);
 					return redirectResponse(
 						`${portalPath(context.tenantSlug, context.partySlug, externalPath)}${suffix}`
 					);

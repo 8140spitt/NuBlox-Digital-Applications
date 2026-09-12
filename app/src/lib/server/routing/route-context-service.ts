@@ -55,7 +55,9 @@ function partyName(row: {
 	familyName: string | null;
 }): string {
 	if (row.kind === 'organisation') {
-		return row.companyTradingName?.trim() || row.companyLegalName?.trim() || 'External organisation';
+		return (
+			row.companyTradingName?.trim() || row.companyLegalName?.trim() || 'External organisation'
+		);
 	}
 	return (
 		[row.preferredName?.trim() || row.givenNames?.trim(), row.familyName?.trim()]
@@ -71,10 +73,20 @@ function normaliseStoredRouteSlug(value: string, fallback: string): string {
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '')
 		.slice(0, 80);
-	return normalised || fallback.replace(/[^a-z0-9]+/gi, '').toLowerCase().slice(0, 80) || 'context';
+	return (
+		normalised ||
+		fallback
+			.replace(/[^a-z0-9]+/gi, '')
+			.toLowerCase()
+			.slice(0, 80) ||
+		'context'
+	);
 }
 
-async function availableOrganisationSlug(db: DatabaseExecutor, candidate: string): Promise<boolean> {
+async function availableOrganisationSlug(
+	db: DatabaseExecutor,
+	candidate: string
+): Promise<boolean> {
 	const row = await db
 		.selectFrom('tenant_route_contexts')
 		.select('organisation_id')
@@ -185,7 +197,11 @@ export class RouteContextService {
 	private portalContextQuery(now: Date) {
 		return this.db
 			.selectFrom('routing_external_portal_access_contexts as portal_context')
-			.innerJoin('external_access_grants as grant', 'grant.id', 'portal_context.external_access_grant_id')
+			.innerJoin(
+				'external_access_grants as grant',
+				'grant.id',
+				'portal_context.external_access_grant_id'
+			)
 			.innerJoin('organisations as owner', 'owner.id', 'portal_context.owning_organisation_id')
 			.leftJoin('tenant_route_contexts as tenant_route', 'tenant_route.organisation_id', 'owner.id')
 			.innerJoin('parties as party', (join) =>
@@ -226,7 +242,9 @@ export class RouteContextService {
 			])
 			.where('grant.revoked_at', 'is', null)
 			.where('grant.valid_from', '<=', now)
-			.where((eb) => eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', now)]))
+			.where((eb) =>
+				eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', now)])
+			)
 			.where('owner.status', '=', 'active')
 			.where('party.status', '=', 'active');
 	}
@@ -341,7 +359,10 @@ export class RouteContextService {
 
 	async listPortalWork(
 		authUserId: string,
-		context: Pick<PortalRouteContext, 'organisationId' | 'partyId' | 'tenantSlug' | 'partySlug' | 'organisationName'>,
+		context: Pick<
+			PortalRouteContext,
+			'organisationId' | 'partyId' | 'tenantSlug' | 'partySlug' | 'organisationName'
+		>,
 		options: { includeCompleted?: boolean } = {},
 		now: Date = new Date()
 	): Promise<PortalWorkSummary[]> {
@@ -373,7 +394,9 @@ export class RouteContextService {
 			.where('portal_context.party_id', '=', context.partyId)
 			.where('grant.revoked_at', 'is', null)
 			.where('grant.valid_from', '<=', now)
-			.where((eb) => eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', now)]));
+			.where((eb) =>
+				eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', now)])
+			);
 		query = options.includeCompleted
 			? query.where('work.state', 'in', ['open', 'completed'])
 			: query.where('work.state', '=', 'open');
@@ -385,12 +408,20 @@ export class RouteContextService {
 		return rows.map((row) => {
 			let href: string | null = null;
 			if (row.domainKey === 'procurement' && row.actionType === 'submit_quote') {
-				href = portalPath(context.tenantSlug, context.partySlug, `/supplier-quotes/${encodeURIComponent(row.publicId)}`);
+				href = portalPath(
+					context.tenantSlug,
+					context.partySlug,
+					`/supplier-quotes/${encodeURIComponent(row.publicId)}`
+				);
 			} else if (
 				row.domainKey === 'information' &&
 				['respond_rfi', 'review_submittal', 'acknowledge_instruction'].includes(row.actionType)
 			) {
-				href = portalPath(context.tenantSlug, context.partySlug, `/project-actions/${encodeURIComponent(row.publicId)}`);
+				href = portalPath(
+					context.tenantSlug,
+					context.partySlug,
+					`/project-actions/${encodeURIComponent(row.publicId)}`
+				);
 			}
 			return {
 				publicId: row.publicId,
@@ -452,7 +483,11 @@ export class RouteContextService {
 			.selectFrom('project_external_collaborator_roles as assigned')
 			.innerJoin('project_role_types as role', 'role.id', 'assigned.project_role_type_id')
 			.select(['assigned.project_external_collaborator_id as collaboratorId', 'role.name'])
-			.where('assigned.project_external_collaborator_id', 'in', rows.map((row) => row.collaboratorId))
+			.where(
+				'assigned.project_external_collaborator_id',
+				'in',
+				rows.map((row) => row.collaboratorId)
+			)
 			.orderBy('role.name', 'asc')
 			.execute();
 		const roles = new Map<string, string[]>();
@@ -468,7 +503,9 @@ export class RouteContextService {
 			projectName: row.projectName,
 			projectStatus: row.projectStatus,
 			owningOrganisationName: context.organisationName,
-			crmOrganisationName: row.companyLegalName ? row.companyTradingName?.trim() || row.companyLegalName : null,
+			crmOrganisationName: row.companyLegalName
+				? row.companyTradingName?.trim() || row.companyLegalName
+				: null,
 			roles: roles.get(row.collaboratorId) ?? []
 		}));
 	}
@@ -494,7 +531,9 @@ export class RouteContextService {
 			.where('portal_context.party_id', '=', context.partyId)
 			.where('grant.revoked_at', 'is', null)
 			.where('grant.valid_from', '<=', now)
-			.where((eb) => eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', now)]))
+			.where((eb) =>
+				eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', now)])
+			)
 			.executeTakeFirst();
 		return Boolean(row);
 	}

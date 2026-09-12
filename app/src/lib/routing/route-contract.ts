@@ -50,7 +50,14 @@ export function normaliseRouteSlug(value: string, fallback: string): string {
 		.toLowerCase()
 		.replace(/[^a-z0-9]+/g, '')
 		.slice(0, 80);
-	return normalised || fallback.replace(/[^a-z0-9]+/gi, '').toLowerCase().slice(0, 80) || 'context';
+	return (
+		normalised ||
+		fallback
+			.replace(/[^a-z0-9]+/gi, '')
+			.toLowerCase()
+			.slice(0, 80) ||
+		'context'
+	);
 }
 
 export function tenantPath(tenantSlug: string, href: string): string {

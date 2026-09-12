@@ -22,7 +22,9 @@ test('a verified external person signs into the CRM-party scoped portal without 
 	await expect(
 		page.getByRole('heading', { name: 'Projects shared with you personally' })
 	).toBeVisible();
-	await expect(page.getByText('External access is deny-by-default.', { exact: true })).toBeVisible();
+	await expect(
+		page.getByText('External access is deny-by-default.', { exact: true })
+	).toBeVisible();
 	await expect(page.getByText(PROJECT_NUMBER, { exact: true })).toBeVisible();
 	await expect(page.getByRole('heading', { name: PROJECT_NAME })).toBeVisible();
 	await expect(page.getByText('Roles: Engineer', { exact: true })).toBeVisible();

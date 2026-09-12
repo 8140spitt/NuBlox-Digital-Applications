@@ -67,7 +67,8 @@ export const actions: Actions = {
 			});
 		} catch (cause) {
 			if (cause instanceof ExternalAccessDeniedError) return fail(403, { message: cause.message });
-			if (cause instanceof ExternalProjectActionValidationError) return actionFailure(cause.message);
+			if (cause instanceof ExternalProjectActionValidationError)
+				return actionFailure(cause.message);
 			throw cause;
 		}
 		throw redirect(303, url.pathname);
@@ -84,7 +85,8 @@ export const actions: Actions = {
 			});
 		} catch (cause) {
 			if (cause instanceof ExternalAccessDeniedError) return fail(403, { message: cause.message });
-			if (cause instanceof ExternalProjectActionValidationError) return actionFailure(cause.message);
+			if (cause instanceof ExternalProjectActionValidationError)
+				return actionFailure(cause.message);
 			throw cause;
 		}
 		throw redirect(303, url.pathname);
@@ -99,7 +101,8 @@ export const actions: Actions = {
 			);
 		} catch (cause) {
 			if (cause instanceof ExternalAccessDeniedError) return fail(403, { message: cause.message });
-			if (cause instanceof ExternalProjectActionValidationError) return actionFailure(cause.message);
+			if (cause instanceof ExternalProjectActionValidationError)
+				return actionFailure(cause.message);
 			throw cause;
 		}
 		throw redirect(303, url.pathname);

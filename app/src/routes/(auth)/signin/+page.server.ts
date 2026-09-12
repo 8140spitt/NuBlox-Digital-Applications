@@ -2,11 +2,7 @@ import { fail, redirect, type Actions } from '@sveltejs/kit';
 import { isAPIError } from 'better-auth/api';
 import type { PageServerLoad } from './$types';
 
-import {
-	parseCanonicalRoute,
-	portalDashboardPath,
-	tenantPath
-} from '$lib/routing/route-contract';
+import { parseCanonicalRoute, portalDashboardPath, tenantPath } from '$lib/routing/route-contract';
 import { auth } from '$lib/server/auth/better-auth';
 import { ORGANISATION_BOOTSTRAP_SIGNUP_COOKIE } from '$lib/server/auth/bootstrap-cookie';
 import { INVITATION_SIGNUP_COOKIE } from '$lib/server/auth/invitation-cookie';

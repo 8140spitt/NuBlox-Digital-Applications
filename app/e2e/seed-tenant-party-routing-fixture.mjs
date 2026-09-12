@@ -26,10 +26,10 @@ try {
 	if (!owner) throw new Error('NuBlox E2E owner organisation is required.');
 	const organisationId = String(owner.id);
 
-	await db.execute(
-		`UPDATE tenant_route_contexts SET route_slug = ? WHERE organisation_id = ?`,
-		[TENANT_SLUG, organisationId]
-	);
+	await db.execute(`UPDATE tenant_route_contexts SET route_slug = ? WHERE organisation_id = ?`, [
+		TENANT_SLUG,
+		organisationId
+	]);
 
 	const [[ownerMember]] = await db.query(
 		`SELECT om.id
