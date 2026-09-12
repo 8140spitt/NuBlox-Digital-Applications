@@ -1,6 +1,9 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
 	import { routes } from '$lib/routing/route-contract';
+
+	const internalAuthHref = routes.auth(routes.dashboard('nublox'));
+	const portalAuthHref = routes.auth(routes.portalDashboard('nublox', 'perspectivebc'));
 </script>
 
 <section class="nb-page reset-entry">
@@ -13,15 +16,8 @@
 	</p>
 
 	<div class="entry-actions">
-		<a
-			class="nb-action"
-			href={`${resolve('/auth')}?returnTo=${encodeURIComponent(routes.dashboard('nublox'))}`}
-			>Sign in to internal app</a
-		>
-		<a
-			href={`${resolve('/auth')}?returnTo=${encodeURIComponent(routes.portalDashboard('nublox', 'perspectivebc'))}`}
-			>Sign in to CRM Party portal</a
-		>
+		<a class="nb-action" href={resolve(internalAuthHref as '/auth')}>Sign in to internal app</a>
+		<a href={resolve(portalAuthHref as '/auth')}>Sign in to CRM Party portal</a>
 	</div>
 </section>
 
