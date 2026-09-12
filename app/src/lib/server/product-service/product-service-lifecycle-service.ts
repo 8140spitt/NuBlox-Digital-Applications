@@ -7,7 +7,6 @@ import { ProductServiceRepository } from './product-service-repository';
 import { ProductServiceLifecycleRepository } from './product-service-lifecycle-repository';
 
 const CODE = /^[A-Z0-9][A-Z0-9_.-]{1,49}$/;
-const SOURCE_TOKEN = /^[A-Za-z0-9][A-Za-z0-9_.:-]{0,49}$/;
 
 export class ProductServiceLifecycleValidationError extends Error {}
 export const ProductServiceValidationError = ProductServiceLifecycleValidationError;
@@ -35,13 +34,6 @@ function code(value: string, label: string): string {
 			`${label} must be 2-50 characters using letters, numbers, dot, underscore or hyphen.`
 		);
 	return normalised;
-}
-function sourceToken(value?: string | null): string | null {
-	const trimmed = value?.trim() ?? '';
-	if (!trimmed) return null;
-	if (!SOURCE_TOKEN.test(trimmed))
-		throw new ProductServiceLifecycleValidationError('Source token must be 1-50 safe characters.');
-	return trimmed;
 }
 function date(value?: string | null): string | null {
 	const trimmed = value?.trim() ?? '';
