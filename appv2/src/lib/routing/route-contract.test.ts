@@ -10,9 +10,10 @@ import {
 } from './route-contract';
 
 describe('NuBlox V2 route contract', () => {
-	it('accepts stable lowercase route slugs', () => {
+	it('accepts stable lowercase route slugs and public ids', () => {
 		expect(isRouteSlug('nublox')).toBe(true);
 		expect(isRouteSlug('perspective-bc')).toBe(true);
+		expect(isRouteSlug('891aaaf5-aa43-4923-8197-a9753c000a87')).toBe(true);
 	});
 
 	it('rejects route slugs that are unsuitable for canonical URLs', () => {
@@ -40,13 +41,16 @@ describe('NuBlox V2 route contract', () => {
 		);
 	});
 
-	it('defines the complete central auth route suite', () => {
+	it('defines the complete central auth and context route suite', () => {
 		expect(routes.auth()).toBe('/auth');
 		expect(routes.authStart).toBe('/auth/start');
 		expect(routes.authRegister).toBe('/auth/register');
 		expect(routes.authForgotPassword).toBe('/auth/forgot-password');
 		expect(routes.authResetPassword).toBe('/auth/reset-password');
 		expect(routes.authVerifyEmail).toBe('/auth/verify-email');
+		expect(routes.authContinue).toBe('/auth/continue');
+		expect(routes.authSelectContext).toBe('/auth/select-context');
+		expect(routes.authNoAccess).toBe('/auth/no-access');
 		expect(authInvitePath('abc/123')).toBe('/auth/invite/abc%2F123');
 		expect(() => authInvitePath('')).toThrow(/Invitation token/);
 	});
@@ -61,6 +65,8 @@ describe('NuBlox V2 route contract', () => {
 		expect(safeReturnTo('//example.com')).toBeNull();
 		expect(safeReturnTo('/auth')).toBeNull();
 		expect(safeReturnTo('/auth/register')).toBeNull();
+		expect(safeReturnTo('/auth/continue')).toBeNull();
+		expect(safeReturnTo('/auth/select-context')).toBeNull();
 	});
 
 	it('does not silently normalise invalid tenant or CRM Party identity', () => {
