@@ -35,7 +35,7 @@ async function signIn(page: Page) {
 	await page.getByRole('button', { name: 'Sign in' }).click();
 	await expect(page).toHaveURL(/\/select-organisation$/);
 	await page.getByRole('button', { name: new RegExp(ORGANISATION) }).click();
-	await expect(page).toHaveURL(/\/dashboard$/);
+	await expect(page).toHaveURL('/nublox/dashboard');
 }
 
 function captureFatalBrowserDiagnostics(page: Page) {
@@ -55,7 +55,7 @@ function captureFatalBrowserDiagnostics(page: Page) {
 async function verifyWorkspaceSurface(page: Page, errors: string[]) {
 	for (const workspace of WORKSPACES) {
 		await page.goto(workspace);
-		expect(new URL(page.url()).pathname).toBe(workspace);
+		expect(new URL(page.url()).pathname).toBe(`/nublox${workspace}`);
 		await expect(page.locator('body')).not.toContainText('Internal Server Error');
 		const overflow = await page.evaluate(
 			() =>
