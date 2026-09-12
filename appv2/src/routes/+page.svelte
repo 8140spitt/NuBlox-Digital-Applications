@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { routes } from '$lib/routing/route-contract';
 </script>
 
@@ -12,8 +13,13 @@
 	</p>
 
 	<div class="entry-actions">
-		<a class="nb-action" href={routes.auth(routes.dashboard('nublox'))}>Sign in to internal app</a>
-		<a href={routes.auth(routes.portalDashboard('nublox', 'perspectivebc'))}
+		<a
+			class="nb-action"
+			href={`${resolve('/auth')}?returnTo=${encodeURIComponent(routes.dashboard('nublox'))}`}
+			>Sign in to internal app</a
+		>
+		<a
+			href={`${resolve('/auth')}?returnTo=${encodeURIComponent(routes.portalDashboard('nublox', 'perspectivebc'))}`}
 			>Sign in to CRM Party portal</a
 		>
 	</div>
