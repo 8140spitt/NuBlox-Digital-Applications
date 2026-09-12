@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const EMAIL = 'e2e-owner@example.test';
 const PASSWORD = 'NuBlox-E2E-Password-2026!';
@@ -18,6 +18,21 @@ async function signIn(page: Page) {
 async function expectArticleText(page: Page, text: string) {
 	const article = page.locator('article').filter({ hasText: text });
 	await expect(article.getByText(text, { exact: true })).toBeVisible();
+}
+
+async function selectOptionMatching(select: Locator, pattern: RegExp) {
+	const options = select.locator('option');
+	const count = await options.count();
+	for (let index = 0; index < count; index += 1) {
+		const option = options.nth(index);
+		const label = (await option.textContent())?.trim() ?? '';
+		if (!pattern.test(label)) continue;
+		const value = await option.getAttribute('value');
+		expect(value).toBeTruthy();
+		await select.selectOption(value!);
+		return;
+	}
+	throw new Error(`No option matched ${pattern}`);
 }
 
 test('F05 governs portfolio, need, idea, investment and lifecycle design', async ({ page }) => {
@@ -72,9 +87,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 
 	const idea = page.locator('form[action="?/createIdea"]');
 	await idea.locator('select[name="portfolioPublicId"]').selectOption({ label: 'F05-E2E' });
-	await idea
-		.locator('select[name="needPublicId"]')
-		.selectOption({ label: 'NEED-E2E · Governed lifecycle evidence' });
+	await selectOptionMatching(idea.locator('select[name="needPublicId"]'), /NEED-E2E/);
 	await idea.locator('input[name="ideaCode"]').fill('IDEA-E2E');
 	await idea.locator('input[name="title"]').fill('Lifecycle assurance concept');
 	await idea.locator('select[name="ideaType"]').selectOption('new_service');
@@ -101,12 +114,8 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 	await score.getByRole('button', { name: 'Score idea' }).click();
 
 	const businessCase = page.locator('form[action="?/createBusinessCase"]');
-	await businessCase
-		.locator('select[name="ideaPublicId"]')
-		.selectOption({ label: 'IDEA-E2E · Lifecycle assurance concept' });
-	await businessCase
-		.locator('select[name="offeringPublicId"]')
-		.selectOption({ label: 'OFFER-E2E · E2E Lifecycle Assurance Service' });
+	await selectOptionMatching(businessCase.locator('select[name="ideaPublicId"]'), /IDEA-E2E/);
+	await selectOptionMatching(businessCase.locator('select[name="offeringPublicId"]'), /OFFER-E2E/);
 	await businessCase.locator('input[name="businessCaseCode"]').fill('BC-E2E');
 	await businessCase.locator('input[name="title"]').fill('Lifecycle assurance investment case');
 	await businessCase.locator('input[name="currencyCode"]').fill('GBP');
@@ -143,12 +152,8 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 	}
 
 	const design = page.locator('form[action="?/createDesign"]');
-	await design
-		.locator('select[name="offeringPublicId"]')
-		.selectOption({ label: 'OFFER-E2E · E2E Lifecycle Assurance Service' });
-	await design
-		.locator('select[name="businessCasePublicId"]')
-		.selectOption({ label: 'BC-E2E v1 · Lifecycle assurance investment case' });
+	await selectOptionMatching(design.locator('select[name="offeringPublicId"]'), /OFFER-E2E/);
+	await selectOptionMatching(design.locator('select[name="businessCasePublicId"]'), /BC-E2E/);
 	await design.locator('input[name="designCode"]').fill('DES-E2E');
 	await design.locator('input[name="title"]').fill('E2E lifecycle service design');
 	await design.locator('select[name="ownerMemberId"]').selectOption({ label: OWNER });
@@ -164,9 +169,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 	await expect(page.locator('article').filter({ hasText: 'DES-E2E v1' }).first()).toBeVisible();
 
 	const review = page.locator('form[action="?/addDesignReview"]');
-	await review
-		.locator('select[name="designPublicId"]')
-		.selectOption({ label: 'DES-E2E v1 · E2E lifecycle service design' });
+	await selectOptionMatching(review.locator('select[name="designPublicId"]'), /DES-E2E/);
 	await review.locator('input[name="reviewCode"]').fill('REV-E2E');
 	await review.locator('select[name="reviewType"]').selectOption('gate');
 	await review.locator('select[name="outcome"]').selectOption('pass');
