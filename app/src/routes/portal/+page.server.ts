@@ -4,6 +4,7 @@ import type { Actions, PageServerLoad } from './$types';
 import type { TenantActorContext } from '$lib/server/auth/tenant-actor-context';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
+import { ExternalWorkService } from '$lib/server/external-access/external-work-service';
 import {
 	ConcurrentUpdateError,
 	RecordNotFoundError,
@@ -42,14 +43,24 @@ export const load: PageServerLoad = async ({ locals }) => {
 	if (!locals.actor) throw redirect(303, '/signin?returnTo=%2Fportal');
 	const db = getDatabase();
 	const actor = actorFromLocals(locals);
-	if (!actor) {
-		const externalProjects = await new ProjectExternalCollaborationService(
-			db
-		).listExternalPortalProjects(locals.actor.authUserId);
+	const [externalProjects, externalWork] = await Promise.all([
+		new ProjectExternalCollaborationService(db).listExternalPortalProjects(locals.actor.authUserId),
+		new ExternalWorkService(db).listForAuthUser(locals.actor.authUserId, { includeCompleted: true })
+	]);
+	const serialisedExternalWork = externalWork.map((item) => ({
+		...item,
+		dueAt: item.dueAt?.toISOString() ?? null,
+		completedAt: item.completedAt?.toISOString() ?? null
+	}));
+
+	const canUseMemberPortal = actor
+		? (await new PermissionService(db).decide(actor, 'portal.view')).allowed
+		: false;
+	if (!actor || !canUseMemberPortal) {
 		return {
 			mode: 'external' as const,
 			canView: true,
-			canRespond: false,
+			canRespond: serialisedExternalWork.some((item) => item.state === 'open'),
 			canManage: false,
 			projects: [],
 			rfis: [],
@@ -57,7 +68,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 			instructions: [],
 			transmittals: [],
 			invitations: [],
-			externalProjects
+			externalProjects,
+			externalWork: serialisedExternalWork
 		};
 	}
 
@@ -72,7 +84,13 @@ export const load: PageServerLoad = async ({ locals }) => {
 			? new ProjectTeamService(db).listPendingInvitations(actor)
 			: Promise.resolve([])
 	]);
-	return { mode: 'member' as const, ...workspace, invitations, externalProjects: [] };
+	return {
+		mode: 'member' as const,
+		...workspace,
+		invitations,
+		externalProjects,
+		externalWork: serialisedExternalWork
+	};
 };
 
 export const actions: Actions = {
