@@ -1,7 +1,12 @@
 name: Temporary V2 Formatter
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/temporary-v2-format.yml
+      - appv2/src/routes/auth/select-context/+page.svelte
 
 permissions:
   contents: write
