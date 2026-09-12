@@ -209,7 +209,11 @@ function routeIsAvailable(href: string, availableHrefs: ReadonlySet<string>): bo
 	const target = normaliseHref(href);
 	for (const availableHref of availableHrefs) {
 		const candidate = normaliseHref(availableHref);
-		if (candidate === target || candidate.startsWith(`${target}/`) || target.startsWith(`${candidate}/`)) {
+		if (
+			candidate === target ||
+			candidate.startsWith(`${target}/`) ||
+			target.startsWith(`${candidate}/`)
+		) {
 			return true;
 		}
 	}
