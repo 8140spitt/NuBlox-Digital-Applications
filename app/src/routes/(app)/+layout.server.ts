@@ -11,7 +11,7 @@ import {
 	resolveTenantQuickActions,
 	resolveTenantWorkspaceDirectory
 } from '$lib/navigation/tenant-navigation';
-import { tenantPath } from '$lib/routing/route-contract';
+import { parseCanonicalRoute, tenantPath } from '$lib/routing/route-contract';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
@@ -44,6 +44,11 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	}
 
 	const tenantSlug = locals.tenant.routeSlug;
+	const canonical = parseCanonicalRoute(url.pathname);
+	if (canonical?.kind === 'tenant' && canonical.tenantSlug !== tenantSlug) {
+		throw redirect(303, `${tenantPath(tenantSlug, canonical.appPath)}${url.search}`);
+	}
+
 	const db = getDatabase();
 	const actorContext = {
 		organisationId: locals.tenant.organisationId,
