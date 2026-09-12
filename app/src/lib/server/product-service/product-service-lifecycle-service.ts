@@ -58,7 +58,8 @@ export class ProductServiceLifecycleService {
 	}
 	private async requirePermission(actor: TenantActorContext, permission: PermissionKey) {
 		await this.requireActor(actor);
-		if (!(await new PermissionService(this.db).isAllowed(actor, permission))) {
+		const decision = await new PermissionService(this.db).decide(actor, permission);
+		if (!decision.allowed) {
 			throw new TenantAccessError(`Permission ${permission} is required.`);
 		}
 	}
@@ -109,11 +110,15 @@ export class ProductServiceLifecycleService {
 			actor.organisationId
 		);
 		const permissions = new PermissionService(this.db);
+		const [manage, approve] = await Promise.all([
+			permissions.decide(actor, 'product_service.manage'),
+			permissions.decide(actor, 'product_service.approve')
+		]);
 		return {
 			...core,
 			...lifecycle,
-			canManage: await permissions.isAllowed(actor, 'product_service.manage'),
-			canApprove: await permissions.isAllowed(actor, 'product_service.approve')
+			canManage: manage.allowed,
+			canApprove: approve.allowed
 		};
 	}
 
