@@ -13,6 +13,8 @@ import type { DB as CorporateDevelopmentDB } from './generated/corporate-develop
 import type { DB as ProductServiceDB } from './generated/product-service.js';
 import { getDatabaseRuntimeConfig } from './config.js';
 
+export type { DatabaseExecutor } from './executor.js';
+
 export type DatabaseSchema = CoreDB &
 	AccessControlDB &
 	CollectionsDB &
