@@ -32,7 +32,9 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
 		getDatabase()
 	).findActiveMembershipByOrganisationPublicId(locals.actor.userId, organisationPublicId);
 
-	if (!membership?.organisationPublicId) throw error(403, 'Organisation access denied.');
+	if (!membership?.organisationPublicId || !membership.organisationRouteSlug) {
+		throw error(403, 'Organisation access denied.');
+	}
 
 	cookies.set(ORGANISATION_COOKIE, membership.organisationPublicId, {
 		httpOnly: true,
@@ -42,7 +44,10 @@ export const POST: RequestHandler = async ({ request, locals, cookies }) => {
 		maxAge: 60 * 60 * 24 * 30
 	});
 
-	return json({ organisationPublicId: membership.organisationPublicId });
+	return json({
+		organisationPublicId: membership.organisationPublicId,
+		organisationRouteSlug: membership.organisationRouteSlug
+	});
 };
 
 export const DELETE: RequestHandler = async ({ cookies }) => {
