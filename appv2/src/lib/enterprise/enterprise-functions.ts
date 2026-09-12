@@ -194,8 +194,7 @@ export const enterpriseFunctions: readonly EnterpriseFunctionDefinition[] = [
 		id: 'F26',
 		name: 'Knowledge, Document & Records Management',
 		shortName: 'Knowledge & documents',
-		purpose:
-			'Create, control, retain, find and reuse trusted organisational knowledge and records.'
+		purpose: 'Create, control, retain, find and reuse trusted organisational knowledge and records.'
 	},
 	{
 		id: 'F27',
