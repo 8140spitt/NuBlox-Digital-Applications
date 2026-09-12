@@ -1,0 +1,58 @@
+name: Link supplier returns register
+
+on:
+  push:
+    branches:
+      - fix/supplier-rfq-portal-roundtrip
+    paths:
+      - .github/workflows/link-supplier-returns.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/supplier-rfq-portal-roundtrip
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Add supplier returns navigation
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/routes/(app)/purchasing/+page.svelte')
+          text = path.read_text()
+          old = '''\t<nav class="workspace-tabs" aria-label="Purchasing registers">\n\t\t<a href="#package-register">Packages</a>\n\t\t<a href="#rfq-register">Enquiries</a>\n\t\t<a href="#po-register">Purchase orders</a>\n\t</nav>'''
+          new = '''\t<nav class="workspace-tabs" aria-label="Purchasing registers">\n\t\t<a href="#package-register">Packages</a>\n\t\t<a href="#rfq-register">Enquiries</a>\n\t\t<a href="/purchasing/supplier-returns">Supplier returns</a>\n\t\t<a href="#po-register">Purchase orders</a>\n\t</nav>'''
+          if old not in text:
+              raise SystemExit('Expected purchasing register navigation was not found.')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Format and validate
+        working-directory: app
+        run: |
+          pnpm exec prettier --write 'src/routes/(app)/purchasing/+page.svelte'
+          pnpm lint
+      - name: Remove patch workflow
+        run: rm .github/workflows/link-supplier-returns.yml
+      - name: Commit navigation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'app/src/routes/(app)/purchasing/+page.svelte' .github/workflows/link-supplier-returns.yml
+          git diff --cached --quiet && exit 0
+          git commit -m "Link supplier return register from purchasing"
+          git push origin HEAD:fix/supplier-rfq-portal-roundtrip
