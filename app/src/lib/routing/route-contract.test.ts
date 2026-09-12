@@ -73,6 +73,7 @@ describe('tenant-first route contract', () => {
 		}
 		expect(isTenantRouteSlug('signin')).toBe(false);
 		expect(isTenantRouteSlug('projects')).toBe(false);
+		expect(isTenantRouteSlug('tenant-projects')).toBe(true);
 		expect(isTenantRouteSlug('nublox')).toBe(true);
 	});
 });
