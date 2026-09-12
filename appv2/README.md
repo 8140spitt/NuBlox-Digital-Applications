@@ -1,42 +1,55 @@
-# sv
+# NuBlox V2
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+NuBlox V2 is a clean application reset for the NuBlox construction and built-environment operating system.
 
-## Creating a project
+## Boundary
 
-If you're seeing this, you've probably already done this step. Congrats!
+- `appv2/` is the active V2 product surface.
+- `appv1/` is retained as implementation history and business-logic evidence. V1 UI, navigation and route structure are **not** copied into V2 by default.
+- Existing repository architecture, data models and domain services may be reused only through an explicit V2 design decision.
+- The governing UI/UX standard remains `docs/world-class/13-ui-ux-operating-model.md`.
 
-```sh
-# create a new project
-npx sv create my-app
+## Canonical route contract
+
+Internal application routes are tenant-first:
+
+```text
+/[tenant]/dashboard
+/[tenant]/my-work
+/[tenant]/functions
+/[tenant]/projects/[project]
 ```
 
-To recreate this project with the same configuration:
+External collaboration is party-scoped beneath the owning tenant:
 
-```sh
-# recreate this project
-pnpm dlx sv@0.17.0 create --template minimal --types ts --add prettier eslint vitest="usages:unit,component" playwright sveltekit-adapter="adapter:node" --install pnpm ./
+```text
+/[tenant]/portal/[party]/login
+/[tenant]/portal/[party]/dashboard
+/[tenant]/portal/[party]/actions
 ```
 
-## Developing
+The tenant and party slugs establish route context only. They never replace server-side identity, relationship, grant or resource authorisation.
 
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
+## V2 product rules
+
+1. One coherent operating system, not 29 unrelated mini-applications.
+2. The 29 enterprise functions govern user-facing information architecture; backend capability domains do not become navigation.
+3. Every surface has one primary purpose: orientation, list/comparison, one record, one transaction or one decision.
+4. Progressive disclosure is mandatory. Full lifecycle forms do not live permanently on landing pages.
+5. Context is persistent and explicit: tenant → function → context → record → action.
+6. External portal experiences are relationship-scoped views of canonical NuBlox records, not a separate duplicate application.
+7. A feature is not complete until its end-to-end user journey is proven in the browser.
+
+## Development gate
+
+From `appv2/`:
 
 ```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
+pnpm install
+pnpm lint
+pnpm check
+pnpm test:unit -- --run
+pnpm build
 ```
 
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+Playwright journeys are added as real V2 workflows become available.
