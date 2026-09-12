@@ -1,0 +1,156 @@
+name: Finish Network project actions
+
+on:
+  push:
+    branches:
+      - feature/external-access-kernel
+
+permissions:
+  contents: write
+
+jobs:
+  finish:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_network_finish
+      BETTER_AUTH_SECRET: network-finish-${{ github.run_id }}-validation-key
+      BETTER_AUTH_URL: http://127.0.0.1:4173
+      EMAIL_DELIVERY_MODE: console
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/external-access-kernel
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Patch Network integration points
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f"Expected patch target missing in {path}: {old[:100]!r}")
+              p.write_text(text.replace(old, new, 1))
+
+          replace_once(
+              'app/src/lib/server/auth/session.ts',
+              'correlationId: event.locals.correlationId',
+              'correlationId: event.locals?.correlationId ?? `session-${session.user.id}`'
+          )
+
+          replace_once(
+              'app/src/lib/server/procurement/supplier-rfq-network-service.ts',
+              'recipientName: context.recipientName,',
+              'recipientName: context.recipientName ?? context.recipientEmail,'
+          )
+
+          service_path = Path('app/src/lib/server/projects/project-external-action-service.ts')
+          service = service_path.read_text()
+          unused = """\nfunction insertedId(result: { insertId?: bigint }, label: string): string {\n\tif (result.insertId === undefined) throw new Error(`${label} insert did not return an ID.`);\n\treturn result.insertId.toString();\n}\n"""
+          if unused not in service:
+              raise SystemExit('Unused helper target missing')
+          service_path.write_text(service.replace(unused, '\n', 1))
+
+          replace_once(
+              'app/src/lib/server/external-access/external-work-service.ts',
+              """\tif (row.domainKey === 'procurement' && row.actionType === 'submit_quote') {\n\t\treturn `/portal/supplier-quotes/${encodeURIComponent(row.publicId)}`;\n\t}\n\treturn null;""",
+              """\tif (row.domainKey === 'procurement' && row.actionType === 'submit_quote') {\n\t\treturn `/portal/supplier-quotes/${encodeURIComponent(row.publicId)}`;\n\t}\n\tif (\n\t\trow.domainKey === 'information' &&\n\t\t['respond_rfi', 'review_submittal', 'acknowledge_instruction'].includes(row.actionType)\n\t) {\n\t\treturn `/portal/project-actions/${encodeURIComponent(row.publicId)}`;\n\t}\n\treturn null;"""
+          )
+
+          replace_once(
+              'app/src/lib/server/projects/project-external-collaboration-service.ts',
+              """\t\t\tif (marked.numUpdatedRows !== 1n) throw new ConcurrentUpdateError();\n\t\t\tawait new AuditRepository(trx).append({""",
+              """\t\t\tif (marked.numUpdatedRows !== 1n) throw new ConcurrentUpdateError();\n\n\t\t\t// Project collaboration now materialises the same explicit Network access\n\t\t\t// boundary used by every other external workflow. It never creates tenant membership.\n\t\t\tawait trx\n\t\t\t\t.insertInto('external_access_grants')\n\t\t\t\t.values({\n\t\t\t\t\tpublic_id: this.publicIdFactory(),\n\t\t\t\t\towning_organisation_id: invitation.ownerId,\n\t\t\t\t\tauth_user_id: authUserId,\n\t\t\t\t\tinvitation_id: null,\n\t\t\t\t\tcontext_type: 'project',\n\t\t\t\t\tcontext_public_id: invitation.projectPublicId,\n\t\t\t\t\tresource_type: 'project',\n\t\t\t\t\tresource_public_id: invitation.projectPublicId,\n\t\t\t\t\tcapability_key: 'project.view',\n\t\t\t\t\tvalid_from: at,\n\t\t\t\t\tvalid_until: null,\n\t\t\t\t\trevoked_at: null,\n\t\t\t\t\tcreated_by_member_id: invitation.invitedByMemberId\n\t\t\t\t})\n\t\t\t\t.onDuplicateKeyUpdate({\n\t\t\t\t\tvalid_from: at,\n\t\t\t\t\tvalid_until: null,\n\t\t\t\t\trevoked_at: null,\n\t\t\t\t\tcreated_by_member_id: invitation.invitedByMemberId\n\t\t\t\t})\n\t\t\t\t.executeTakeFirst();\n\n\t\t\tawait new AuditRepository(trx).append({"""
+          )
+
+          replace_once(
+              'app/src/lib/server/projects/project-external-collaboration-service.ts',
+              """\t\t\tconst result = await trx\n\t\t\t\t.updateTable('project_external_collaborators')\n\t\t\t\t.set({ status: 'revoked', left_at: this.now() })\n\t\t\t\t.where('public_id', '=', collaboratorPublicId)\n\t\t\t\t.where('project_id', '=', project.id)\n\t\t\t\t.where('status', '=', 'active')\n\t\t\t\t.executeTakeFirst();\n\t\t\tif (result.numUpdatedRows !== 1n)\n\t\t\t\tthrow new RecordNotFoundError('Active external collaborator not found.');""",
+              """\t\t\tconst collaborator = await trx\n\t\t\t\t.selectFrom('project_external_collaborators')\n\t\t\t\t.select(['id', 'auth_user_id as authUserId'])\n\t\t\t\t.where('public_id', '=', collaboratorPublicId)\n\t\t\t\t.where('project_id', '=', project.id)\n\t\t\t\t.where('status', '=', 'active')\n\t\t\t\t.forUpdate()\n\t\t\t\t.executeTakeFirst();\n\t\t\tif (!collaborator)\n\t\t\t\tthrow new RecordNotFoundError('Active external collaborator not found.');\n\n\t\t\tconst at = this.now();\n\t\t\tif (collaborator.authUserId) {\n\t\t\t\tconst grants = await trx\n\t\t\t\t\t.selectFrom('external_access_grants')\n\t\t\t\t\t.select('id')\n\t\t\t\t\t.where('owning_organisation_id', '=', actor.organisationId)\n\t\t\t\t\t.where('auth_user_id', '=', collaborator.authUserId)\n\t\t\t\t\t.where('context_type', '=', 'project')\n\t\t\t\t\t.where('context_public_id', '=', project.public_id)\n\t\t\t\t\t.where('revoked_at', 'is', null)\n\t\t\t\t\t.execute();\n\t\t\t\tconst grantIds = grants.map((grant) => grant.id);\n\t\t\t\tif (grantIds.length) {\n\t\t\t\t\tawait trx\n\t\t\t\t\t\t.updateTable('external_work_items')\n\t\t\t\t\t\t.set({ state: 'cancelled', cancelled_at: at, completed_at: null })\n\t\t\t\t\t\t.where('external_access_grant_id', 'in', grantIds)\n\t\t\t\t\t\t.where('state', '=', 'open')\n\t\t\t\t\t\t.execute();\n\t\t\t\t\tawait trx\n\t\t\t\t\t\t.updateTable('external_access_grants')\n\t\t\t\t\t\t.set({ revoked_at: at })\n\t\t\t\t\t\t.where('id', 'in', grantIds)\n\t\t\t\t\t\t.execute();\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tconst result = await trx\n\t\t\t\t.updateTable('project_external_collaborators')\n\t\t\t\t.set({ status: 'revoked', left_at: at })\n\t\t\t\t.where('id', '=', collaborator.id)\n\t\t\t\t.where('status', '=', 'active')\n\t\t\t\t.executeTakeFirst();\n\t\t\tif (result.numUpdatedRows !== 1n) throw new ConcurrentUpdateError();"""
+          )
+
+          server = Path('app/src/routes/(app)/projects/[projectPublicId]/+page.server.ts')
+          text = server.read_text()
+          import_anchor = "import { getDatabase } from '$lib/server/db/database';\n"
+          import_block = """import { getDatabase } from '$lib/server/db/database';\nimport {\n\tExternalProjectActionService,\n\tExternalProjectActionValidationError,\n\ttype ExternalProjectAssignmentOptions\n} from '$lib/server/projects/project-external-action-service';\n"""
+          if import_anchor not in text:
+              raise SystemExit('Project server import anchor missing')
+          text = text.replace(import_anchor, import_block, 1)
+          text = text.replace(
+              "error instanceof ProjectExternalCollaborationValidationError\n\t)",
+              "error instanceof ProjectExternalCollaborationValidationError ||\n\t\terror instanceof ExternalProjectActionValidationError\n\t)",
+              1
+          )
+          old_load = """\t\tlet externalCollaboration: ExternalCollaborationManagementView = {\n\t\t\tcanManage: false,\n\t\t\troleTypes: [],\n\t\t\tcandidates: [],\n\t\t\tcollaborators: [],\n\t\t\tpendingInvitations: []\n\t\t};\n\t\tif (team.canManageParticipants) {\n\t\t\ttry {\n\t\t\t\texternalCollaboration = await new ProjectExternalCollaborationService(db).getManagementView(\n\t\t\t\t\tactor,\n\t\t\t\t\tparams.projectPublicId\n\t\t\t\t);\n\t\t\t} catch (cause) {\n\t\t\t\tif (!(cause instanceof ProjectExternalCollaborationValidationError)) throw cause;\n\t\t\t}\n\t\t}\n\t\treturn { ...workspace, team, externalCollaboration };"""
+          new_load = """\t\tlet externalCollaboration: ExternalCollaborationManagementView = {\n\t\t\tcanManage: false,\n\t\t\troleTypes: [],\n\t\t\tcandidates: [],\n\t\t\tcollaborators: [],\n\t\t\tpendingInvitations: []\n\t\t};\n\t\tlet externalActionOptions: ExternalProjectAssignmentOptions = {\n\t\t\tcanAssignRfis: false,\n\t\t\tcanAssignSubmittals: false,\n\t\t\tcanAssignInstructions: false,\n\t\t\trfis: [],\n\t\t\tsubmittals: [],\n\t\t\tinstructions: []\n\t\t};\n\t\tif (team.canManageParticipants) {\n\t\t\ttry {\n\t\t\t\texternalCollaboration = await new ProjectExternalCollaborationService(db).getManagementView(\n\t\t\t\t\tactor,\n\t\t\t\t\tparams.projectPublicId\n\t\t\t\t);\n\t\t\t\tif (externalCollaboration.canManage) {\n\t\t\t\t\texternalActionOptions = await new ExternalProjectActionService(db).listAssignmentOptions(\n\t\t\t\t\t\tactor,\n\t\t\t\t\t\tparams.projectPublicId\n\t\t\t\t\t);\n\t\t\t\t}\n\t\t\t} catch (cause) {\n\t\t\t\tif (\n\t\t\t\t\t!(cause instanceof ProjectExternalCollaborationValidationError) &&\n\t\t\t\t\t!(cause instanceof ExternalProjectActionValidationError)\n\t\t\t\t)\n\t\t\t\t\tthrow cause;\n\t\t\t}\n\t\t}\n\t\treturn { ...workspace, team, externalCollaboration, externalActionOptions };"""
+          if old_load not in text:
+              raise SystemExit('Project server load target missing')
+          text = text.replace(old_load, new_load, 1)
+          action_anchor = """\trevokeExternalInvitation: async ({ request, locals, params }) => {"""
+          action_block = """\tassignExternalRfi: async ({ request, locals, params }) => {\n\t\tconst actor = actorFromLocals(locals);\n\t\tconst data = await request.formData();\n\t\tconst collaboratorPublicId = String(data.get('collaboratorPublicId') ?? '');\n\t\tconst marker = `external-work-${collaboratorPublicId}`;\n\t\tif (!actor) return fail(401, actionFailure({ teamError: 'Authentication is required.', teamAction: marker }));\n\t\ttry {\n\t\t\tawait new ExternalProjectActionService(getDatabase()).assignRfi(actor, {\n\t\t\t\tprojectPublicId: params.projectPublicId,\n\t\t\t\tcollaboratorPublicId,\n\t\t\t\trfiPublicId: String(data.get('rfiPublicId') ?? '')\n\t\t\t});\n\t\t} catch (cause) {\n\t\t\treturn teamFailure(cause, marker);\n\t\t}\n\t\tthrow redirect(303, `/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`);\n\t},\n\n\tassignExternalSubmittal: async ({ request, locals, params }) => {\n\t\tconst actor = actorFromLocals(locals);\n\t\tconst data = await request.formData();\n\t\tconst collaboratorPublicId = String(data.get('collaboratorPublicId') ?? '');\n\t\tconst marker = `external-work-${collaboratorPublicId}`;\n\t\tif (!actor) return fail(401, actionFailure({ teamError: 'Authentication is required.', teamAction: marker }));\n\t\ttry {\n\t\t\tawait new ExternalProjectActionService(getDatabase()).assignSubmittal(actor, {\n\t\t\t\tprojectPublicId: params.projectPublicId,\n\t\t\t\tcollaboratorPublicId,\n\t\t\t\tsubmittalPublicId: String(data.get('submittalPublicId') ?? '')\n\t\t\t});\n\t\t} catch (cause) {\n\t\t\treturn teamFailure(cause, marker);\n\t\t}\n\t\tthrow redirect(303, `/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`);\n\t},\n\n\tassignExternalInstruction: async ({ request, locals, params }) => {\n\t\tconst actor = actorFromLocals(locals);\n\t\tconst data = await request.formData();\n\t\tconst collaboratorPublicId = String(data.get('collaboratorPublicId') ?? '');\n\t\tconst marker = `external-work-${collaboratorPublicId}`;\n\t\tif (!actor) return fail(401, actionFailure({ teamError: 'Authentication is required.', teamAction: marker }));\n\t\ttry {\n\t\t\tawait new ExternalProjectActionService(getDatabase()).assignInstruction(actor, {\n\t\t\t\tprojectPublicId: params.projectPublicId,\n\t\t\t\tcollaboratorPublicId,\n\t\t\t\tinstructionPublicId: String(data.get('instructionPublicId') ?? '')\n\t\t\t});\n\t\t} catch (cause) {\n\t\t\treturn teamFailure(cause, marker);\n\t\t}\n\t\tthrow redirect(303, `/projects/${encodeURIComponent(params.projectPublicId)}#external-collaborators`);\n\t},\n\n\trevokeExternalInvitation: async ({ request, locals, params }) => {"""
+          if action_anchor not in text:
+              raise SystemExit('Project server action anchor missing')
+          text = text.replace(action_anchor, action_block, 1)
+          server.write_text(text)
+
+          page = Path('app/src/routes/(app)/projects/[projectPublicId]/+page.svelte')
+          text = page.read_text()
+          old_controls = """\t\t\t\t\t{#if data.externalCollaboration.canManage}\n\t\t\t\t\t\t<form method=\"POST\" action=\"?/removeExternalCollaborator\">\n\t\t\t\t\t\t\t<input type=\"hidden\" name=\"collaboratorPublicId\" value={collaborator.publicId} />\n\t\t\t\t\t\t\t<button class=\"danger\" type=\"submit\">Remove external access</button>\n\t\t\t\t\t\t</form>\n\t\t\t\t\t{/if}"""
+          new_controls = """\t\t\t\t\t{#if data.externalCollaboration.canManage}\n\t\t\t\t\t\t{#if data.externalActionOptions.rfis.length || data.externalActionOptions.submittals.length || data.externalActionOptions.instructions.length}\n\t\t\t\t\t\t\t<details class=\"external-work-controls\">\n\t\t\t\t\t\t\t\t<summary>Assign controlled Network work</summary>\n\t\t\t\t\t\t\t\t<div class=\"external-work-grid\">\n\t\t\t\t\t\t\t\t\t{#if data.externalActionOptions.canAssignRfis && data.externalActionOptions.rfis.length}\n\t\t\t\t\t\t\t\t\t\t<form method=\"POST\" action=\"?/assignExternalRfi\">\n\t\t\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"collaboratorPublicId\" value={collaborator.publicId} />\n\t\t\t\t\t\t\t\t\t\t\t<label><span>RFI response</span><select name=\"rfiPublicId\" required><option value=\"\">Select RFI</option>{#each data.externalActionOptions.rfis as rfi}<option value={rfi.publicId}>{rfi.number} · {rfi.subject}</option>{/each}</select></label>\n\t\t\t\t\t\t\t\t\t\t\t<button class=\"secondary\" type=\"submit\">Assign RFI</button>\n\t\t\t\t\t\t\t\t\t\t</form>\n\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t{#if data.externalActionOptions.canAssignSubmittals && data.externalActionOptions.submittals.length}\n\t\t\t\t\t\t\t\t\t\t<form method=\"POST\" action=\"?/assignExternalSubmittal\">\n\t\t\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"collaboratorPublicId\" value={collaborator.publicId} />\n\t\t\t\t\t\t\t\t\t\t\t<label><span>Submittal review</span><select name=\"submittalPublicId\" required><option value=\"\">Select submittal</option>{#each data.externalActionOptions.submittals as submittal}<option value={submittal.publicId}>{submittal.number} · {submittal.title}</option>{/each}</select></label>\n\t\t\t\t\t\t\t\t\t\t\t<button class=\"secondary\" type=\"submit\">Assign review</button>\n\t\t\t\t\t\t\t\t\t\t</form>\n\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t\t{#if data.externalActionOptions.canAssignInstructions && data.externalActionOptions.instructions.length}\n\t\t\t\t\t\t\t\t\t\t<form method=\"POST\" action=\"?/assignExternalInstruction\">\n\t\t\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"collaboratorPublicId\" value={collaborator.publicId} />\n\t\t\t\t\t\t\t\t\t\t\t<label><span>Instruction acknowledgement</span><select name=\"instructionPublicId\" required><option value=\"\">Select instruction</option>{#each data.externalActionOptions.instructions as instruction}<option value={instruction.publicId}>{instruction.number} · {instruction.subject}</option>{/each}</select></label>\n\t\t\t\t\t\t\t\t\t\t\t<button class=\"secondary\" type=\"submit\">Assign instruction</button>\n\t\t\t\t\t\t\t\t\t\t</form>\n\t\t\t\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t</details>\n\t\t\t\t\t\t{/if}\n\t\t\t\t\t\t<form method=\"POST\" action=\"?/removeExternalCollaborator\">\n\t\t\t\t\t\t\t<input type=\"hidden\" name=\"collaboratorPublicId\" value={collaborator.publicId} />\n\t\t\t\t\t\t\t<button class=\"danger\" type=\"submit\">Remove external access</button>\n\t\t\t\t\t\t</form>\n\t\t\t\t\t{/if}"""
+          if old_controls not in text:
+              raise SystemExit('Project external controls target missing')
+          text = text.replace(old_controls, new_controls, 1)
+          css_anchor = """\t.invite-form,\n\t.add-member-form {"""
+          css = """\t.external-work-controls {\n\t\tborder-top: 1px solid #e1e1db;\n\t\tpadding-top: 0.75rem;\n\t}\n\t.external-work-controls summary {\n\t\tcursor: pointer;\n\t\tfont-weight: 750;\n\t}\n\t.external-work-grid {\n\t\tdisplay: grid;\n\t\tgap: 0.75rem;\n\t\tmargin-top: 0.75rem;\n\t}\n\t.external-work-grid form {\n\t\tdisplay: grid;\n\t\tgrid-template-columns: minmax(0, 1fr) auto;\n\t\tgap: 0.65rem;\n\t\talign-items: end;\n\t}\n\t.external-work-grid label {\n\t\tdisplay: grid;\n\t\tgap: 0.35rem;\n\t\tfont-size: 0.82rem;\n\t\tfont-weight: 650;\n\t}\n\n\t.invite-form,\n\t.add-member-form {"""
+          if css_anchor not in text:
+              raise SystemExit('Project page CSS anchor missing')
+          page.write_text(text.replace(css_anchor, css, 1))
+
+          workflow = Path('.github/workflows/database-migration-validation.yml')
+          text = workflow.read_text()
+          for old, new in [("test \"$table_count\" = '526'", "test \"$table_count\" = '529'"), ("test \"$fk_count\" = '1461'", "test \"$fk_count\" = '1476'")]:
+              if old not in text:
+                  raise SystemExit(f'Validation count target missing: {old}')
+              text = text.replace(old, new, 1)
+          workflow.write_text(text)
+          PY
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Apply migrations and regenerate types
+        working-directory: app
+        run: |
+          pnpm db:migrate
+          pnpm db:types
+      - name: Format changed application files
+        working-directory: app
+        run: pnpm format
+      - name: Commit completed project actions
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app database .github/workflows/database-migration-validation.yml
+          git commit -m "feat: complete Network project actions"
+          git push origin HEAD:feature/external-access-kernel
