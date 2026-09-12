@@ -51,6 +51,7 @@
 	<nav class="workspace-tabs" aria-label="Purchasing registers">
 		<a href="#package-register">Packages</a>
 		<a href="#rfq-register">Enquiries</a>
+		<a href="/purchasing/supplier-returns">Supplier returns</a>
 		<a href="#po-register">Purchase orders</a>
 	</nav>
 
