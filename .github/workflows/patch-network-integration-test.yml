@@ -1,0 +1,233 @@
+name: Patch Network project-action integration test
+
+on:
+  push:
+    branches:
+      - feature/external-access-kernel
+
+permissions:
+  contents: write
+
+jobs:
+  patch-test:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/external-access-kernel
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Patch external collaboration integration coverage
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('app/src/lib/server/projects/project-external-collaboration.integration.test.ts')
+          text = path.read_text()
+
+          def replace_once(old, new):
+              global text
+              if old not in text:
+                  raise SystemExit(f'Missing test patch target: {old[:100]!r}')
+              text = text.replace(old, new, 1)
+
+          replace_once(
+              "import { CrmService } from '$lib/server/crm/crm-service';\n",
+              "import { CrmService } from '$lib/server/crm/crm-service';\nimport { InformationService } from '$lib/server/information/information-service';\nimport type { Actor } from '$lib/types/request-context';\n"
+          )
+          replace_once(
+              "import { ProjectWorkspaceService } from './project-workspace-service';\n",
+              "import { ExternalProjectActionService } from './project-external-action-service';\nimport { ProjectWorkspaceService } from './project-workspace-service';\n"
+          )
+          replace_once(
+              "\t\t'crm.view',\n\t\t'crm.manage'\n",
+              "\t\t'crm.view',\n\t\t'crm.manage',\n\t\t'information.view',\n\t\t'information.manage',\n\t\t'information.issue',\n\t\t'information.rfi.manage',\n\t\t'information.submittal.manage',\n\t\t'information.instruction.manage',\n\t\t'information.instruction.issue'\n"
+          )
+
+          cleanup_anchor = """\tif (projectIds.length > 0) {\n\t\tawait db.deleteFrom('audit_events').where('project_id', 'in', projectIds).execute();"""
+          cleanup_block = """\tif (projectIds.length > 0) {\n\t\tawait db\n\t\t\t.deleteFrom('external_instruction_acknowledgements')\n\t\t\t.where('project_id', 'in', projectIds)\n\t\t\t.execute();\n\t\tawait db\n\t\t\t.deleteFrom('external_submittal_reviews')\n\t\t\t.where('project_id', 'in', projectIds)\n\t\t\t.execute();\n\t\tawait db\n\t\t\t.deleteFrom('external_rfi_responses')\n\t\t\t.where('project_id', 'in', projectIds)\n\t\t\t.execute();\n\t\tif (organisationId) {\n\t\t\tawait db.deleteFrom('external_work_items').where('owning_organisation_id', '=', organisationId).execute();\n\t\t\tawait db.deleteFrom('external_access_grants').where('owning_organisation_id', '=', organisationId).execute();\n\t\t}\n\t\tawait db.deleteFrom('submittal_reviews').where('submittal_owner_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('submittal_reviewers').where('submittal_owner_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('submittal_items').where('submittal_owner_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('submittals').where('owning_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('rfi_responses').where('rfi_owner_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('rfi_addressees').where('rfi_owner_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('rfis').where('owning_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('instruction_recipients').where('instruction_owner_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('project_instructions').where('issuing_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('information_version_issue_events').where('issuing_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('information_version_supersessions').where('owning_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('information_files').where('owning_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('information_container_versions').where('owning_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('information_containers').where('owning_organisation_id', '=', organisationId).execute();\n\t\tawait db.deleteFrom('audit_events').where('project_id', 'in', projectIds).execute();"""
+          replace_once(cleanup_anchor, cleanup_block)
+
+          grant_anchor = """\t\texpect(portalProjects[0]).toMatchObject({\n\t\t\tprojectPublicId,\n\t\t\tprojectName: 'Person-level collaboration project',\n\t\t\tcrmOrganisationName: `${PREFIX}Customer Ltd`,\n\t\t\troles: ['Engineer']\n\t\t});\n\n\t\tconst audit = await db"""
+          grant_block = """\t\texpect(portalProjects[0]).toMatchObject({\n\t\t\tprojectPublicId,\n\t\t\tprojectName: 'Person-level collaboration project',\n\t\t\tcrmOrganisationName: `${PREFIX}Customer Ltd`,\n\t\t\troles: ['Engineer']\n\t\t});\n\n\t\tconst projectGrant = await db\n\t\t\t.selectFrom('external_access_grants')\n\t\t\t.select(['capability_key as capabilityKey', 'revoked_at as revokedAt'])\n\t\t\t.where('auth_user_id', '=', externalAuthUserId)\n\t\t\t.where('context_type', '=', 'project')\n\t\t\t.where('context_public_id', '=', projectPublicId)\n\t\t\t.where('resource_type', '=', 'project')\n\t\t\t.where('resource_public_id', '=', projectPublicId)\n\t\t\t.executeTakeFirstOrThrow();\n\t\texpect(projectGrant).toEqual({ capabilityKey: 'project.view', revokedAt: null });\n\n\t\tconst audit = await db"""
+          replace_once(grant_anchor, grant_block)
+
+          revoke_anchor = """\tit('revokes only the person-level project access and removes the project from their portal', async () => {"""
+          action_test = r'''\tit('routes RFI, submittal and instruction actions through the same standalone Network identity', async () => {
+\t\tconst collaboration = new ProjectExternalCollaborationService(db, emailDelivery);
+\t\tconst collaborator = await db
+\t\t\t.selectFrom('project_external_collaborators')
+\t\t\t.select('public_id as publicId')
+\t\t\t.where('project_id', '=', projectId)
+\t\t\t.where('auth_user_id', '=', externalAuthUserId)
+\t\t\t.where('status', '=', 'active')
+\t\t\t.executeTakeFirstOrThrow();
+\t\tconst externalActor: Actor = {
+\t\t\tauthUserId: externalAuthUserId,
+\t\t\tuserId: externalPlatformUserId,
+\t\t\temail: inviteEmail,
+\t\t\tdisplayName: `${PREFIX}External Collaborator`
+\t\t};
+\t\tconst information = new InformationService(db);
+\t\tconst actions = new ExternalProjectActionService(db);
+
+\t\tconst rfiPublicId = await information.createRfi(actor, {
+\t\t\tprojectPublicId,
+\t\t\trfiNumber: `RFI-${randomUUID().slice(0, 8)}`,
+\t\t\tsubject: 'Confirm external opening',
+\t\t\tquestion: 'Confirm the controlled opening size.',
+\t\t\tpriority: 'high',
+\t\t\tdueAt: '2099-09-30T12:00'
+\t\t});
+\t\tawait information.openRfi(actor, rfiPublicId);
+\t\tawait actions.assignRfi(actor, {
+\t\t\tprojectPublicId,
+\t\t\tcollaboratorPublicId: collaborator.publicId,
+\t\t\trfiPublicId
+\t\t});
+\t\tconst rfiWork = await db
+\t\t\t.selectFrom('external_work_items')
+\t\t\t.select('public_id as publicId')
+\t\t\t.where('auth_user_id', '=', externalAuthUserId)
+\t\t\t.where('source_type', '=', 'rfi')
+\t\t\t.where('source_public_id', '=', rfiPublicId)
+\t\t\t.where('action_type', '=', 'respond_rfi')
+\t\t\t.executeTakeFirstOrThrow();
+\t\texpect((await actions.getTask(externalActor, rfiWork.publicId)).kind).toBe('rfi');
+\t\tawait actions.respondRfi(externalActor, {
+\t\t\tworkItemPublicId: rfiWork.publicId,
+\t\t\tresponseText: 'Use the coordinated 650 × 450 mm opening.',
+\t\t\tfinal: true
+\t\t});
+\t\tconst externalRfiResponse = await db
+\t\t\t.selectFrom('external_rfi_responses as response')
+\t\t\t.innerJoin('rfis as rfi', 'rfi.id', 'response.rfi_id')
+\t\t\t.select(['response.auth_user_id as authUserId', 'response.is_final_response as final', 'rfi.status'])
+\t\t\t.where('rfi.public_id', '=', rfiPublicId)
+\t\t\t.executeTakeFirstOrThrow();
+\t\texpect(externalRfiResponse).toEqual({ authUserId: externalAuthUserId, final: 1, status: 'answered' });
+
+\t\tconst documentPublicId = await information.createDocument(actor, {
+\t\t\tprojectPublicId,
+\t\t\ttypeCode: 'drawing',
+\t\t\tcontainerNumber: `EXT-${randomUUID().slice(0, 8)}`,
+\t\t\ttitle: 'External review drawing',
+\t\t\trevisionCode: 'P01',
+\t\t\tpurposeCode: 'review'
+\t\t});
+\t\tconst ownerWorkspace = await information.getWorkspace(actor);
+\t\tconst versionPublicId = ownerWorkspace.documents.find(
+\t\t\t(document) => document.publicId === documentPublicId
+\t\t)!.versions[0]!.publicId;
+\t\tawait information.issueRevision(actor, { versionPublicId, channel: 'portal' });
+\t\tconst submittalPublicId = await information.createSubmittal(actor, {
+\t\t\tprojectPublicId,
+\t\t\tnumber: `SUB-${randomUUID().slice(0, 8)}`,
+\t\t\ttypeCode: 'technical',
+\t\t\ttitle: 'Standalone external review',
+\t\t\tversionPublicId
+\t\t});
+\t\tawait information.submitSubmittal(actor, submittalPublicId);
+\t\tawait actions.assignSubmittal(actor, {
+\t\t\tprojectPublicId,
+\t\t\tcollaboratorPublicId: collaborator.publicId,
+\t\t\tsubmittalPublicId
+\t\t});
+\t\tconst submittalWork = await db
+\t\t\t.selectFrom('external_work_items')
+\t\t\t.select('public_id as publicId')
+\t\t\t.where('auth_user_id', '=', externalAuthUserId)
+\t\t\t.where('source_type', '=', 'submittal')
+\t\t\t.where('source_public_id', '=', submittalPublicId)
+\t\t\t.where('action_type', '=', 'review_submittal')
+\t\t\t.executeTakeFirstOrThrow();
+\t\tawait actions.reviewSubmittal(externalActor, {
+\t\t\tworkItemPublicId: submittalWork.publicId,
+\t\t\toutcome: 'approved_with_comments',
+\t\t\tcomments: 'Coordinate the final sleeve position before release.'
+\t\t});
+\t\tconst externalReview = await db
+\t\t\t.selectFrom('external_submittal_reviews as review')
+\t\t\t.innerJoin('submittals as submittal', 'submittal.id', 'review.submittal_id')
+\t\t\t.select(['review.auth_user_id as authUserId', 'review.outcome', 'submittal.status'])
+\t\t\t.where('submittal.public_id', '=', submittalPublicId)
+\t\t\t.executeTakeFirstOrThrow();
+\t\texpect(externalReview).toEqual({
+\t\t\tauthUserId: externalAuthUserId,
+\t\t\toutcome: 'approved_with_comments',
+\t\t\tstatus: 'reviewed'
+\t\t});
+
+\t\tconst instructionPublicId = await information.createInstruction(actor, {
+\t\t\tprojectPublicId,
+\t\t\tnumber: `PI-${randomUUID().slice(0, 8)}`,
+\t\t\ttypeCode: 'project',
+\t\t\tsubject: 'Proceed with coordinated opening',
+\t\t\tinstructionText: 'Proceed using the reviewed coordination information.'
+\t\t});
+\t\tawait information.issueInstruction(actor, instructionPublicId);
+\t\tawait actions.assignInstruction(actor, {
+\t\t\tprojectPublicId,
+\t\t\tcollaboratorPublicId: collaborator.publicId,
+\t\t\tinstructionPublicId
+\t\t});
+\t\tconst instructionWork = await db
+\t\t\t.selectFrom('external_work_items')
+\t\t\t.select('public_id as publicId')
+\t\t\t.where('auth_user_id', '=', externalAuthUserId)
+\t\t\t.where('source_type', '=', 'project_instruction')
+\t\t\t.where('source_public_id', '=', instructionPublicId)
+\t\t\t.where('action_type', '=', 'acknowledge_instruction')
+\t\t\t.executeTakeFirstOrThrow();
+\t\tawait actions.acknowledgeInstruction(externalActor, instructionWork.publicId);
+\t\tconst acknowledgement = await db
+\t\t\t.selectFrom('external_instruction_acknowledgements as acknowledgement')
+\t\t\t.innerJoin('project_instructions as instruction', 'instruction.id', 'acknowledgement.instruction_id')
+\t\t\t.select(['acknowledgement.auth_user_id as authUserId', 'acknowledgement.acknowledged_at as acknowledgedAt', 'instruction.status'])
+\t\t\t.where('instruction.public_id', '=', instructionPublicId)
+\t\t\t.executeTakeFirstOrThrow();
+\t\texpect(acknowledgement.authUserId).toBe(externalAuthUserId);
+\t\texpect(acknowledgement.acknowledgedAt).toBeInstanceOf(Date);
+\t\texpect(acknowledgement.status).toBe('acknowledged');
+
+\t\tconst workStates = await db
+\t\t\t.selectFrom('external_work_items')
+\t\t\t.select(['action_type as actionType', 'state'])
+\t\t\t.where('auth_user_id', '=', externalAuthUserId)
+\t\t\t.where('action_type', 'in', ['respond_rfi', 'review_submittal', 'acknowledge_instruction'])
+\t\t\t.orderBy('action_type')
+\t\t\t.execute();
+\t\texpect(workStates.every((row) => row.state === 'completed')).toBe(true);
+\t\texpect(await collaboration.listExternalPortalProjects(externalAuthUserId)).toHaveLength(1);
+\t});
+
+'''
+          replace_once(revoke_anchor, action_test + revoke_anchor)
+
+          revoke_expect_anchor = """\t\tawait service.removeCollaborator(actor, projectPublicId, collaborator.public_id);\n\t\texpect(await service.listExternalPortalProjects(externalAuthUserId)).toEqual([]);\n\n\t\tconst membershipCount = await db"""
+          revoke_expect_block = """\t\tawait service.removeCollaborator(actor, projectPublicId, collaborator.public_id);\n\t\texpect(await service.listExternalPortalProjects(externalAuthUserId)).toEqual([]);\n\n\t\tconst activeGrants = await db\n\t\t\t.selectFrom('external_access_grants')\n\t\t\t.select('id')\n\t\t\t.where('auth_user_id', '=', externalAuthUserId)\n\t\t\t.where('context_type', '=', 'project')\n\t\t\t.where('context_public_id', '=', projectPublicId)\n\t\t\t.where('revoked_at', 'is', null)\n\t\t\t.execute();\n\t\texpect(activeGrants).toEqual([]);\n\t\tconst openWork = await db\n\t\t\t.selectFrom('external_work_items')\n\t\t\t.select('id')\n\t\t\t.where('auth_user_id', '=', externalAuthUserId)\n\t\t\t.where('state', '=', 'open')\n\t\t\t.execute();\n\t\texpect(openWork).toEqual([]);\n\n\t\tconst membershipCount = await db"""
+          replace_once(revoke_expect_anchor, revoke_expect_block)
+
+          path.write_text(text)
+          PY
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Format integration test
+        working-directory: app
+        run: pnpm exec prettier --write src/lib/server/projects/project-external-collaboration.integration.test.ts
+      - name: Commit integration coverage
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/src/lib/server/projects/project-external-collaboration.integration.test.ts
+          git commit -m "test: cover standalone Network project actions"
+          git push origin HEAD:feature/external-access-kernel
