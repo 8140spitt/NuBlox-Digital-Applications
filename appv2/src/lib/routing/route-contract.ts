@@ -1,11 +1,13 @@
 const ROUTE_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
-export type TenantDashboardPath = `/${string}/dashboard`;
-export type TenantMyWorkPath = `/${string}/my-work`;
-export type TenantFunctionsPath = `/${string}/functions`;
-export type PortalLoginPath = `/${string}/portal/${string}/login`;
-export type PortalDashboardPath = `/${string}/portal/${string}/dashboard`;
-export type PortalActionsPath = `/${string}/portal/${string}/actions`;
+export type AppDashboardPath = `/app/${string}/dashboard`;
+export type AppMyWorkPath = `/app/${string}/my-work`;
+export type AppFunctionsPath = `/app/${string}/functions`;
+export type AppProjectsPath = `/app/${string}/projects`;
+export type PortalLoginPath = `/portal/${string}/${string}/login`;
+export type PortalDashboardPath = `/portal/${string}/${string}/dashboard`;
+export type PortalProjectsPath = `/portal/${string}/${string}/projects`;
+export type PortalActionsPath = `/portal/${string}/${string}/actions`;
 
 export function isRouteSlug(value: string): boolean {
 	return ROUTE_SLUG_PATTERN.test(value);
@@ -26,30 +28,34 @@ function normalisePath(path: string): string {
 		.join('/');
 }
 
-export function tenantPath(tenant: string, path = ''): string {
+export function appPath(tenant: string, path = ''): string {
 	const tenantSlug = requireRouteSlug(tenant, 'Tenant');
 	const suffix = normalisePath(path);
-	return suffix ? `/${tenantSlug}/${suffix}` : `/${tenantSlug}`;
+	const base = `/app/${tenantSlug}`;
+	return suffix ? `${base}/${suffix}` : base;
 }
 
-export function portalPath(tenant: string, party: string, path = ''): string {
+export function portalPath(tenant: string, crmParty: string, path = ''): string {
 	const tenantSlug = requireRouteSlug(tenant, 'Tenant');
-	const partySlug = requireRouteSlug(party, 'Party');
+	const crmPartySlug = requireRouteSlug(crmParty, 'CRM Party');
 	const suffix = normalisePath(path);
-	const base = `/${tenantSlug}/portal/${partySlug}`;
+	const base = `/portal/${tenantSlug}/${crmPartySlug}`;
 	return suffix ? `${base}/${suffix}` : base;
 }
 
 export const routes = {
-	dashboard: (tenant: string): TenantDashboardPath =>
-		tenantPath(tenant, 'dashboard') as TenantDashboardPath,
-	myWork: (tenant: string): TenantMyWorkPath => tenantPath(tenant, 'my-work') as TenantMyWorkPath,
-	functions: (tenant: string): TenantFunctionsPath =>
-		tenantPath(tenant, 'functions') as TenantFunctionsPath,
-	portalLogin: (tenant: string, party: string): PortalLoginPath =>
-		portalPath(tenant, party, 'login') as PortalLoginPath,
-	portalDashboard: (tenant: string, party: string): PortalDashboardPath =>
-		portalPath(tenant, party, 'dashboard') as PortalDashboardPath,
-	portalActions: (tenant: string, party: string): PortalActionsPath =>
-		portalPath(tenant, party, 'actions') as PortalActionsPath
+	dashboard: (tenant: string): AppDashboardPath =>
+		appPath(tenant, 'dashboard') as AppDashboardPath,
+	myWork: (tenant: string): AppMyWorkPath => appPath(tenant, 'my-work') as AppMyWorkPath,
+	functions: (tenant: string): AppFunctionsPath =>
+		appPath(tenant, 'functions') as AppFunctionsPath,
+	projects: (tenant: string): AppProjectsPath => appPath(tenant, 'projects') as AppProjectsPath,
+	portalLogin: (tenant: string, crmParty: string): PortalLoginPath =>
+		portalPath(tenant, crmParty, 'login') as PortalLoginPath,
+	portalDashboard: (tenant: string, crmParty: string): PortalDashboardPath =>
+		portalPath(tenant, crmParty, 'dashboard') as PortalDashboardPath,
+	portalProjects: (tenant: string, crmParty: string): PortalProjectsPath =>
+		portalPath(tenant, crmParty, 'projects') as PortalProjectsPath,
+	portalActions: (tenant: string, crmParty: string): PortalActionsPath =>
+		portalPath(tenant, crmParty, 'actions') as PortalActionsPath
 } as const;

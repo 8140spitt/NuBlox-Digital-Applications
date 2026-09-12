@@ -1,18 +1,19 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import { routes } from '$lib/routing/route-contract';
 </script>
 
 <section class="nb-page reset-entry">
 	<p class="nb-eyebrow">NuBlox V2</p>
-	<h1>A clean operating-system reset.</h1>
+	<h1>One platform. Two connected application surfaces.</h1>
 	<p class="nb-lede">
-		V2 is being rebuilt around stable tenant context, the F01–F29 enterprise-function model and
-		focused end-to-end workflows. V1 remains available as reference, not as the interface blueprint.
+		The internal NuBlox operating system lives under /app. CRM Parties participate in authorised
+		projects and business actions through the connected /portal surface over the same canonical data.
 	</p>
 
 	<div class="entry-actions">
-		<a class="nb-action" href={resolve('/nublox/dashboard')}>Open tenant shell</a>
-		<a href={resolve('/nublox/portal/perspectivebc/login')}>Open portal route example</a>
+		<a class="nb-action" href={resolve(routes.dashboard('nublox'))}>Open internal app</a>
+		<a href={resolve(routes.portalLogin('nublox', 'perspectivebc'))}>Open CRM Party portal example</a>
 	</div>
 </section>
 
@@ -22,7 +23,7 @@
 	}
 
 	h1 {
-		max-width: 820px;
+		max-width: 900px;
 		margin: 0 0 22px;
 		font-size: clamp(3rem, 8vw, 6.8rem);
 		line-height: 0.94;
