@@ -146,33 +146,33 @@ INNER JOIN (
 -- New adapters can add their own explicit binding without changing the public URL model.
 CREATE OR REPLACE VIEW routing_external_portal_access_contexts AS
 SELECT
-    grant.id AS external_access_grant_id,
-    grant.auth_user_id,
-    grant.owning_organisation_id,
+    access_grant.id AS external_access_grant_id,
+    access_grant.auth_user_id,
+    access_grant.owning_organisation_id,
     rfq_invitation.supplier_party_id AS party_id
-FROM external_access_grants AS grant
+FROM external_access_grants AS access_grant
 INNER JOIN external_supplier_rfq_links AS link
-    ON link.external_access_invitation_id = grant.invitation_id
+    ON link.external_access_invitation_id = access_grant.invitation_id
 INNER JOIN rfq_invitations AS rfq_invitation
     ON rfq_invitation.id = link.rfq_invitation_id
-    AND rfq_invitation.organisation_id = grant.owning_organisation_id
+    AND rfq_invitation.organisation_id = access_grant.owning_organisation_id
 WHERE rfq_invitation.supplier_party_id IS NOT NULL
 UNION
 SELECT
-    grant.id AS external_access_grant_id,
-    grant.auth_user_id,
-    grant.owning_organisation_id,
+    access_grant.id AS external_access_grant_id,
+    access_grant.auth_user_id,
+    access_grant.owning_organisation_id,
     COALESCE(collaborator.crm_organisation_party_id, collaborator.crm_person_party_id) AS party_id
-FROM external_access_grants AS grant
+FROM external_access_grants AS access_grant
 INNER JOIN projects AS project
-    ON project.public_id = grant.context_public_id
-    AND project.owning_organisation_id = grant.owning_organisation_id
+    ON project.public_id = access_grant.context_public_id
+    AND project.owning_organisation_id = access_grant.owning_organisation_id
 INNER JOIN project_external_collaborators AS collaborator
     ON collaborator.project_id = project.id
-    AND collaborator.owning_organisation_id = grant.owning_organisation_id
-    AND collaborator.auth_user_id = grant.auth_user_id
+    AND collaborator.owning_organisation_id = access_grant.owning_organisation_id
+    AND collaborator.auth_user_id = access_grant.auth_user_id
     AND collaborator.status = 'active'
-WHERE grant.context_type = 'project'
+WHERE access_grant.context_type = 'project'
   AND COALESCE(collaborator.crm_organisation_party_id, collaborator.crm_person_party_id) IS NOT NULL;
 
 -- migrate:down transaction:false
