@@ -62,7 +62,8 @@
 				return;
 			}
 
-			const verificationPath = `/auth/verify-email?email=${encodeURIComponent(email.trim())}` as `/auth/verify-email?${string}`;
+			const verificationPath =
+				`/auth/verify-email?email=${encodeURIComponent(email.trim())}` as `/auth/verify-email?${string}`;
 			await goto(resolve(verificationPath), { replaceState: true, invalidateAll: true });
 		} finally {
 			submitting = false;
