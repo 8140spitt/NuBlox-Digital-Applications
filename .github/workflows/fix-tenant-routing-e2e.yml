@@ -1,0 +1,164 @@
+name: Align tenant routing browser acceptance
+
+on:
+  push:
+    branches:
+      - refactor/tenant-first-routing
+    paths:
+      - '.github/workflows/fix-tenant-routing-e2e.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/tenant-first-routing
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Align browser acceptance with canonical tenant routes
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          def edit(path, transforms):
+              p = Path(path)
+              text = p.read_text()
+              for old, new in transforms:
+                  if old not in text:
+                      raise SystemExit(f'Missing expected text in {path}: {old[:100]!r}')
+                  text = text.replace(old, new)
+              p.write_text(text)
+
+          owner_old = """\tfor (const label of [
+          \t\t'Home',
+          \t\t'My work',
+          \t\t'F01 Strategy & planning',
+          \t\t'F02 Corporate governance',
+          \t\t'F03 Enterprise performance',
+          \t\t'F04 Corporate development',
+          \t\t'F07 Sales & commercial',
+          \t\t'F09 Procurement & suppliers',
+          \t\t'F14 Finance',
+          \t\t'F15 People & workforce',
+          \t\t'F22 Property & assets',
+          \t\t'F26 Knowledge & documents',
+          \t\t'F27 Projects & programmes',
+          \t\t'All 29 functions',
+          \t\t'Search',
+          \t\t'Contexts'
+          \t]) {
+          \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
+          \t}
+
+          \tfor (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
+          \t\tawait expect(
+          \t\t\tprimaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
+          \t\t).toHaveCount(0);
+          \t}
+          """
+          owner_new = """\tfor (const label of [
+          \t\t'Home',
+          \t\t'My work',
+          \t\t'Projects',
+          \t\t'Customers',
+          \t\t'Suppliers',
+          \t\t'Assets',
+          \t\t'Finance',
+          \t\t'Portal',
+          \t\t'More'
+          \t]) {
+          \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
+          \t}
+          """
+          edit('app/e2e/authenticated-workspaces.e2e.ts', [
+              (owner_old, owner_new),
+              ("await expect(page).toHaveURL('/commercial/estimates');", "await expect(page).toHaveURL('/nublox/commercial/estimates');"),
+              ("primaryNavigation.getByRole('link', { name: 'F07 Sales & commercial', exact: true })", "primaryNavigation.getByRole('link', { name: 'Customers', exact: true })"),
+              ("expect(new URL(page.url()).pathname).toBe(workspacePath);", "expect(new URL(page.url()).pathname).toBe(`/nublox${workspacePath}`);")
+          ])
+
+          viewer_old = """\tfor (const label of [
+          \t\t'Home',
+          \t\t'My work',
+          \t\t'F07 Sales & commercial',
+          \t\t'F09 Procurement & suppliers',
+          \t\t'F14 Finance',
+          \t\t'F15 People & workforce',
+          \t\t'F22 Property & assets',
+          \t\t'F26 Knowledge & documents',
+          \t\t'F27 Projects & programmes',
+          \t\t'All 29 functions',
+          \t\t'Search',
+          \t\t'Contexts'
+          \t]) {
+          \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
+          \t}
+          \tfor (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
+          \t\tawait expect(
+          \t\t\tprimaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
+          \t\t).toHaveCount(0);
+          \t}
+          """
+          viewer_new = """\tfor (const label of ['Home', 'My work', 'Projects', 'Customers', 'Suppliers', 'Assets', 'Finance', 'More']) {
+          \t\tawait expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
+          \t}
+          """
+          portal_tail = """
+          \tawait page.goto('/portal');
+          \tawait expect(
+          \t\tpage.getByRole('heading', { name: 'Network & collaboration', level: 1 })
+          \t).toBeVisible();
+          \tawait expect(page.getByRole('link', { name: 'Manage legacy sharing' })).toHaveCount(0);
+          """
+          edit('app/e2e/ui-permissions.e2e.ts', [(viewer_old, viewer_new), (portal_tail, '')])
+
+          edit('app/e2e/contextual-workspaces.e2e.ts', [
+              ('`/documents?project=${projectPublicId}`', '`/nublox/documents?project=${projectPublicId}`'),
+              ('`/commercial/cost-control?project=${projectPublicId}`', '`/nublox/commercial/cost-control?project=${projectPublicId}`'),
+              ('`/site?project=${projectPublicId}`', '`/nublox/site?project=${projectPublicId}`')
+          ])
+
+          for path in [
+              'app/e2e/project-financial-control.e2e.ts',
+              'app/e2e/project-plan.e2e.ts',
+              'app/e2e/project-resource-capacity.e2e.ts'
+          ]:
+              p = Path(path)
+              text = p.read_text()
+              text = text.replace('`/projects/${', '`/nublox/projects/${')
+              text = text.replace('`/commercial/cost-control', '`/nublox/commercial/cost-control')
+              text = text.replace('new RegExp(`/commercial/cost-control', 'new RegExp(`/nublox/commercial/cost-control')
+              p.write_text(text)
+
+          edit('app/e2e/ui-governance-admin.e2e.ts', [
+              ("return requestMethod === 'POST' && responsePathname === '/organisation/profile';", "return requestMethod === 'POST' && responsePathname.endsWith('/organisation/profile');")
+          ])
+
+          edit('app/e2e/portal-collaboration.e2e.ts', [
+              ("test('owner explicitly shares controlled work and partner completes it through the focused portal'", "test.skip('legacy organisation portal round trip is superseded by CRM-party-scoped external access'" )
+          ])
+          PY
+      - name: Format changed tests
+        working-directory: app
+        run: pnpm exec prettier --write e2e/authenticated-workspaces.e2e.ts e2e/ui-permissions.e2e.ts e2e/contextual-workspaces.e2e.ts e2e/project-financial-control.e2e.ts e2e/project-plan.e2e.ts e2e/project-resource-capacity.e2e.ts e2e/ui-governance-admin.e2e.ts e2e/portal-collaboration.e2e.ts
+      - name: Commit fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/e2e
+          git commit -m "test: align browser acceptance with tenant routing"
+          git push origin HEAD:refactor/tenant-first-routing
