@@ -13,11 +13,19 @@ NuBlox V2 is a clean application reset for the NuBlox construction and built-env
 
 NuBlox has one authentication boundary and two connected application surfaces over the same canonical platform.
 
-All identities authenticate at:
+The central authentication suite is:
 
 ```text
+/auth/start
 /auth
+/auth/register
+/auth/verify-email
+/auth/forgot-password
+/auth/reset-password
+/auth/invite/[token]
 ```
+
+`/auth/start` is the access-orientation route. `/auth` is the canonical sign-in route. `/auth/register` is exclusively for creating a **new NuBlox tenant and its first Owner**. Joining an existing tenant is invitation-only through `/auth/invite/[token]`; it is not generic public account registration.
 
 Internal users enter the tenant operating system beneath `/app`:
 
@@ -36,7 +44,7 @@ External CRM Parties enter the connected portal beneath `/portal`:
 /portal/[tenant]/[crmParty]/actions
 ```
 
-Anonymous access to protected `/app` or `/portal` routes is redirected to `/auth?returnTo=...`. The return destination is restricted to canonical `/app/...` and `/portal/...` paths so authentication cannot be used as an open redirect.
+Anonymous access to protected `/app` or `/portal` routes is redirected to `/auth?returnTo=...`. Return destinations are restricted to canonical `/app/...`, `/portal/...` and active `/auth/invite/...` journeys so authentication cannot be used as an open redirect.
 
 The portal is **CRM Party project participation**, not a standalone external-work application. An authenticated external identity must resolve to an authorised CRM contact/user, then to a CRM Party, then to a valid tenant relationship and project association. The portal exposes only the canonical NuBlox records and business actions permitted by those relationships.
 
@@ -46,9 +54,20 @@ There are no legacy aliases for the former tenant-first route tree and no portal
 
 ## Authentication implementation
 
-V2 mounts Better Auth through the SvelteKit server handler at `/api/auth` and exposes the user-facing sign-in experience at `/auth`. As an explicit V2 architecture decision, authentication reuses the existing canonical `auth_users`, `auth_sessions`, `auth_accounts` and `auth_verifications` tables rather than creating a second identity store.
+V2 mounts Better Auth through the SvelteKit server handler at `/api/auth` and reuses the canonical `auth_users`, `auth_sessions`, `auth_accounts`, `auth_verifications` and `auth_user_links` identity model rather than creating a second identity store.
 
-Public self-registration is disabled. Accounts must already have been provisioned through governed NuBlox access processes. Existing unverified accounts are blocked from email/password sign-in. Runtime configuration is provided through `DATABASE_URL`, `BETTER_AUTH_SECRET` and `BETTER_AUTH_URL`; development placeholders are documented in `appv2/.env.example`.
+Email/password signup is enabled at the Better Auth protocol layer only so governed NuBlox onboarding journeys can create identities. The server rejects signup unless exactly one approved provisioning intent is present:
+
+- a signed, time-limited new-tenant bootstrap intent created by `/auth/register`; or
+- a valid, time-limited organisation invitation opened through `/auth/invite/[token]`.
+
+New-tenant registration creates a pending canonical organisation, domain user, Owner membership and Owner role. The registration becomes active only after email verification. The first Owner receives the active permission catalogue for the new tenant; additional roles and members are governed after tenant activation.
+
+Organisation invitations remain canonical `organisation_invitations` records. Existing NuBlox identities can accept an invitation directly after authentication when the verified email matches. New invitees create an identity against the invitation, verify the email, and then receive the membership and roles selected by the inviting tenant.
+
+Email verification is mandatory. Verification links expire after one hour. Password-reset links also expire after one hour, and successful password reset revokes existing account sessions. Forgot-password responses do not disclose whether an account exists.
+
+Runtime configuration is provided through `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and the transactional email boundary. `EMAIL_DELIVERY_MODE=console` is available for local development and exposes one-time links in the local server console. Production must use a real transactional-email adapter rather than console delivery.
 
 ## V2 product rules
 
