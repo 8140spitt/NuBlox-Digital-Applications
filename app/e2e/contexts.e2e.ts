@@ -19,8 +19,11 @@ test('personal contexts are discoverable, favouritable and record recent opens',
 }) => {
 	await signIn(page);
 	await page.goto('/more');
-	await expect(page.getByRole('link', { name: /Contexts/ })).toBeVisible();
-	await page.getByRole('link', { name: /Contexts/ }).click();
+	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
+	await expect(
+		primaryNavigation.getByRole('link', { name: 'Contexts', exact: true })
+	).toBeVisible();
+	await primaryNavigation.getByRole('link', { name: 'Contexts', exact: true }).click();
 	await expect(page).toHaveURL(/\/contexts$/);
 	await expect(page.getByRole('heading', { name: 'Contexts', level: 1 })).toBeVisible();
 

@@ -19,30 +19,32 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	for (const label of [
 		'Home',
 		'My work',
-		'Projects',
-		'Customers',
-		'Suppliers',
-		'Assets',
-		'Finance',
-		'Portal',
-		'More'
+		'F01 Strategy & planning',
+		'F02 Corporate governance',
+		'F03 Enterprise performance',
+		'F04 Corporate development',
+		'F07 Sales & commercial',
+		'F09 Procurement & suppliers',
+		'F14 Finance',
+		'F15 People & workforce',
+		'F22 Property & assets',
+		'F26 Knowledge & documents',
+		'F27 Projects & programmes',
+		'All 29 functions',
+		'Search',
+		'Contexts'
 	]) {
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
 	}
 
-	for (const specialistLabel of [
-		'Documents',
-		'Project cost control',
-		'Valuations',
-		'Site, quality & safety',
-		'People'
-	]) {
+	for (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
 		await expect(
-			primaryNavigation.getByRole('link', { name: specialistLabel, exact: true })
+			primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })
 		).toHaveCount(0);
 	}
 
-	await page.getByText('Search', { exact: true }).click();
+	const searchMenu = page.locator('details.search-menu');
+	await searchMenu.locator('summary').click();
 	await page.getByLabel('Find a workspace').fill('procurement');
 	await expect(
 		page.locator('.search-results').getByRole('link', { name: /Procurement/ })
@@ -65,7 +67,7 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	await expect(
 		page.locator('.search-results').getByRole('link', { name: /Year-end close/ })
 	).toBeVisible();
-	await page.getByText('Search', { exact: true }).click();
+	await searchMenu.locator('summary').click();
 
 	await page.goto('/crm');
 	const customerWorkspace = page.getByRole('navigation', { name: 'Business workspace' });
@@ -82,7 +84,7 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	await expect(page).toHaveURL('/commercial/estimates');
 	await expect(page.getByRole('navigation', { name: 'Business workspace' })).toBeVisible();
 	await expect(
-		primaryNavigation.getByRole('link', { name: 'Customers', exact: true })
+		primaryNavigation.getByRole('link', { name: 'F07 Sales & commercial', exact: true })
 	).toHaveAttribute('aria-current', 'page');
 
 	await page.goto('/finance');
