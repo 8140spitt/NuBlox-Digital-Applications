@@ -1,0 +1,81 @@
+name: F05 final browser repair
+
+on:
+  push:
+    branches:
+      - feat/f05-product-service-innovation
+    paths:
+      - .github/workflows/f05-final-browser-repair.yml
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f05-product-service-innovation
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Repair active navigation and dynamic F05 selectors
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          layout = Path('app/src/routes/(app)/+layout.svelte')
+          text = layout.read_text()
+          text = text.replace("item.id === 'F27'", "item.id === 'f27'")
+          text = text.replace("item.id === 'F07'", "item.id === 'f07'")
+          text = text.replace("item.id === 'F14'", "item.id === 'f14'")
+          layout.write_text(text)
+
+          product = Path('app/e2e/product-service.e2e.ts')
+          text = product.read_text()
+          text = text.replace(
+              "import { expect, test, type Page } from '@playwright/test';",
+              "import { expect, test, type Locator, type Page } from '@playwright/test';"
+          )
+          marker = "async function expectArticleText(page: Page, text: string) {\n\tconst article = page.locator('article').filter({ hasText: text });\n\tawait expect(article.getByText(text, { exact: true })).toBeVisible();\n}\n"
+          helper = marker + "\nasync function selectOptionMatching(select: Locator, pattern: RegExp) {\n\tconst options = select.locator('option');\n\tconst count = await options.count();\n\tfor (let index = 0; index < count; index += 1) {\n\t\tconst option = options.nth(index);\n\t\tconst label = (await option.textContent())?.trim() ?? '';\n\t\tif (!pattern.test(label)) continue;\n\t\tconst value = await option.getAttribute('value');\n\t\texpect(value).toBeTruthy();\n\t\tawait select.selectOption(value!);\n\t\treturn;\n\t}\n\tthrow new Error(`No option matched ${pattern}`);\n}\n"
+          if 'async function selectOptionMatching' not in text:
+              if marker not in text:
+                  raise SystemExit('Expected article helper not found')
+              text = text.replace(marker, helper)
+
+          replacements = {
+              "await idea\n\t\t.locator('select[name=\"needPublicId\"]')\n\t\t.selectOption({ label: 'NEED-E2E · Governed lifecycle evidence' });": "await selectOptionMatching(idea.locator('select[name=\"needPublicId\"]'), /NEED-E2E/);",
+              "await businessCase\n\t\t.locator('select[name=\"ideaPublicId\"]')\n\t\t.selectOption({ label: 'IDEA-E2E · Lifecycle assurance concept' });": "await selectOptionMatching(businessCase.locator('select[name=\"ideaPublicId\"]'), /IDEA-E2E/);",
+              "await businessCase\n\t\t.locator('select[name=\"offeringPublicId\"]')\n\t\t.selectOption({ label: 'OFFER-E2E · E2E Lifecycle Assurance Service' });": "await selectOptionMatching(businessCase.locator('select[name=\"offeringPublicId\"]'), /OFFER-E2E/);",
+              "await design\n\t\t.locator('select[name=\"offeringPublicId\"]')\n\t\t.selectOption({ label: 'OFFER-E2E · E2E Lifecycle Assurance Service' });": "await selectOptionMatching(design.locator('select[name=\"offeringPublicId\"]'), /OFFER-E2E/);",
+              "await design\n\t\t.locator('select[name=\"businessCasePublicId\"]')\n\t\t.selectOption({ label: 'BC-E2E v1 · Lifecycle assurance investment case' });": "await selectOptionMatching(design.locator('select[name=\"businessCasePublicId\"]'), /BC-E2E/);",
+              "await review\n\t\t.locator('select[name=\"designPublicId\"]')\n\t\t.selectOption({ label: 'DES-E2E v1 · E2E lifecycle service design' });": "await selectOptionMatching(review.locator('select[name=\"designPublicId\"]'), /DES-E2E/);",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Expected selector block not found: {old[:80]}')
+              text = text.replace(old, new)
+          product.write_text(text)
+          PY
+      - name: Format and remove helper
+        working-directory: app
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write 'src/routes/(app)/+layout.svelte' e2e/product-service.e2e.ts
+          cd ..
+          rm .github/workflows/f05-final-browser-repair.yml
+      - name: Commit repaired tree
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "F05: repair final browser contracts"
+          git push origin HEAD:feat/f05-product-service-innovation
