@@ -128,7 +128,10 @@ function decodeToken(rawToken: string): BootstrapTokenPayload {
 	} catch {
 		throw new TenantBootstrapAccessError();
 	}
-	if (supplied.length !== expectedSignature.length || !timingSafeEqual(supplied, expectedSignature)) {
+	if (
+		supplied.length !== expectedSignature.length ||
+		!timingSafeEqual(supplied, expectedSignature)
+	) {
 		throw new TenantBootstrapAccessError();
 	}
 
@@ -234,7 +237,10 @@ export async function createTenantBootstrapIntent(input: {
 	return { publicId, email, expiresAt, token };
 }
 
-export async function validateTenantBootstrapSignup(rawToken: string, rawEmail: string): Promise<void> {
+export async function validateTenantBootstrapSignup(
+	rawToken: string,
+	rawEmail: string
+): Promise<void> {
 	const payload = decodeToken(rawToken);
 	if (payload.email !== validateEmail(rawEmail)) throw new TenantBootstrapAccessError();
 
@@ -287,10 +293,10 @@ export async function provisionTenantBootstrapSignup(input: {
 			 VALUES (?, ?, 1, 0, NULL)`,
 			[userId, email]
 		);
-		await connection.execute(
-			'INSERT INTO auth_user_links (auth_user_id, user_id) VALUES (?, ?)',
-			[input.authUserId, userId]
-		);
+		await connection.execute('INSERT INTO auth_user_links (auth_user_id, user_id) VALUES (?, ?)', [
+			input.authUserId,
+			userId
+		]);
 
 		const organisationPublicId = randomUUID();
 		const [organisationInsert] = await connection.execute<ResultSetHeader>(
@@ -413,9 +419,10 @@ export async function activateVerifiedTenantBootstrap(input: {
 		const tenant = pending[0]!;
 		const now = new Date();
 
-		await connection.execute("UPDATE users SET status = 'active' WHERE id = ? AND status = 'pending'", [
-			userId
-		]);
+		await connection.execute(
+			"UPDATE users SET status = 'active' WHERE id = ? AND status = 'pending'",
+			[userId]
+		);
 		await connection.execute(
 			`UPDATE user_emails
 			 SET is_verified = 1, verified_at = ?

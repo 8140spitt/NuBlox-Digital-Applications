@@ -199,10 +199,10 @@ async function finaliseInvitation(input: {
 			 VALUES (?, ?, 1, 1, CURRENT_TIMESTAMP(6))`,
 			[userId, email]
 		);
-		await connection.execute(
-			'INSERT INTO auth_user_links (auth_user_id, user_id) VALUES (?, ?)',
-			[input.authUserId, userId]
-		);
+		await connection.execute('INSERT INTO auth_user_links (auth_user_id, user_id) VALUES (?, ?)', [
+			input.authUserId,
+			userId
+		]);
 	} else if (!emailOwnerId) {
 		const [primaryEmails] = await connection.execute<IdRow[]>(
 			'SELECT id FROM user_emails WHERE user_id = ? AND is_primary = 1 LIMIT 1',
@@ -250,7 +250,9 @@ async function finaliseInvitation(input: {
 				[memberId, invitation.organisation_id]
 			);
 		} else if (members[0].status !== 'active') {
-			throw new OrganisationInvitationAccessError('This membership cannot be reactivated by invitation.');
+			throw new OrganisationInvitationAccessError(
+				'This membership cannot be reactivated by invitation.'
+			);
 		}
 	}
 
@@ -348,7 +350,9 @@ export async function activateVerifiedOrganisationInvitation(input: {
 			return false;
 		}
 		if (rows.length !== 1) {
-			throw new OrganisationInvitationAccessError('Multiple pending organisation invitations were found.');
+			throw new OrganisationInvitationAccessError(
+				'Multiple pending organisation invitations were found.'
+			);
 		}
 		await finaliseInvitation({ ...input, invitation: rows[0]!, connection });
 		await connection.commit();

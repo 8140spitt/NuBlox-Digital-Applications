@@ -23,7 +23,11 @@ export const POST: RequestHandler = async ({ request, cookies }) => {
 	if (typeof body.email !== 'string' || typeof body.legalName !== 'string') {
 		throw error(400, 'Email and legal name are required.');
 	}
-	if (body.tradingName !== undefined && body.tradingName !== null && typeof body.tradingName !== 'string') {
+	if (
+		body.tradingName !== undefined &&
+		body.tradingName !== null &&
+		typeof body.tradingName !== 'string'
+	) {
 		throw error(400, 'Trading name must be text.');
 	}
 	if (body.defaultTimezone !== undefined && typeof body.defaultTimezone !== 'string') {

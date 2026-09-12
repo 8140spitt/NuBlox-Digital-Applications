@@ -40,7 +40,9 @@
 			});
 
 			if (!intentResponse.ok) {
-				const payload = (await intentResponse.json().catch(() => null)) as { message?: string } | null;
+				const payload = (await intentResponse.json().catch(() => null)) as {
+					message?: string;
+				} | null;
 				errorMessage = payload?.message || 'Tenant registration could not be started.';
 				return;
 			}
@@ -109,7 +111,13 @@
 					<legend>Organisation</legend>
 					<label>
 						<span>Legal organisation name</span>
-						<input bind:value={legalName} name="legalName" autocomplete="organization" maxlength="255" required />
+						<input
+							bind:value={legalName}
+							name="legalName"
+							autocomplete="organization"
+							maxlength="255"
+							required
+						/>
 					</label>
 					<label>
 						<span>Trading name <small>Optional</small></span>
@@ -121,11 +129,24 @@
 					<legend>First owner</legend>
 					<label>
 						<span>Full name</span>
-						<input bind:value={ownerName} name="ownerName" autocomplete="name" maxlength="255" required />
+						<input
+							bind:value={ownerName}
+							name="ownerName"
+							autocomplete="name"
+							maxlength="255"
+							required
+						/>
 					</label>
 					<label>
 						<span>Email address</span>
-						<input bind:value={email} type="email" name="email" autocomplete="email" maxlength="320" required />
+						<input
+							bind:value={email}
+							type="email"
+							name="email"
+							autocomplete="email"
+							maxlength="320"
+							required
+						/>
 					</label>
 					<label>
 						<span>Password</span>

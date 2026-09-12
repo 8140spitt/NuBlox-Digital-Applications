@@ -66,8 +66,8 @@
 			<p class="nb-eyebrow">Invitation accepted</p>
 			<h1>Your email is verified.</h1>
 			<p class="lede">
-				Your organisation invitation has been activated. Sign in to continue into the NuBlox
-				access available to you.
+				Your organisation invitation has been activated. Sign in to continue into the NuBlox access
+				available to you.
 			</p>
 			<a class="primary-action" href={resolve('/auth')}>Continue to sign in</a>
 		{:else if data.invitation}
@@ -100,7 +100,7 @@
 					<strong>Already use NuBlox?</strong>
 					<a
 						href={resolve(
-							(`/auth?returnTo=${encodeURIComponent(invitationPath)}` as `/auth?${string}`)
+							`/auth?returnTo=${encodeURIComponent(invitationPath)}` as `/auth?${string}`
 						)}>Sign in to accept</a
 					>
 				</div>

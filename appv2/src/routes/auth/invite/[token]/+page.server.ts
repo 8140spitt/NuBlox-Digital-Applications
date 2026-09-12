@@ -49,7 +49,8 @@ export const load: PageServerLoad = async ({ params, request, cookies, url }) =>
 			expiresAt: invitation.expiresAt.toISOString()
 		},
 		user,
-		canAccept: Boolean(user) && normaliseEmail(user?.email ?? '') === normaliseEmail(invitation.email)
+		canAccept:
+			Boolean(user) && normaliseEmail(user?.email ?? '') === normaliseEmail(invitation.email)
 	};
 };
 

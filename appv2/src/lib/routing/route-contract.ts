@@ -52,7 +52,11 @@ export function authInvitePath(token: string): AuthInvitePath {
 export function safeReturnTo(value: string | null | undefined): string | null {
 	if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
 	if (value === '/auth' || value.startsWith('/auth?')) return null;
-	if (value.startsWith('/app/') || value.startsWith('/portal/') || value.startsWith('/auth/invite/')) {
+	if (
+		value.startsWith('/app/') ||
+		value.startsWith('/portal/') ||
+		value.startsWith('/auth/invite/')
+	) {
 		return value;
 	}
 	return null;

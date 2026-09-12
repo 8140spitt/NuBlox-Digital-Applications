@@ -67,11 +67,16 @@
 		{:else}
 			<h1>Check your email</h1>
 			<p class="lede">
-				We sent a one-hour verification link{email ? ` to ${email}` : ''}. Open it to activate
-				your NuBlox identity.
+				We sent a one-hour verification link{email ? ` to ${email}` : ''}. Open it to activate your
+				NuBlox identity.
 			</p>
 			{#if email}
-				<button type="button" class="secondary-action" onclick={resendVerification} disabled={sending}>
+				<button
+					type="button"
+					class="secondary-action"
+					onclick={resendVerification}
+					disabled={sending}
+				>
 					{sending ? 'Sending…' : 'Resend verification email'}
 				</button>
 			{/if}

@@ -25,8 +25,7 @@ type AuthUserVerificationRow = RowDataPacket & {
 };
 
 type SignupIntent =
-	| { kind: 'tenant-bootstrap'; token: string }
-	| { kind: 'organisation-invitation'; token: string };
+	{ kind: 'tenant-bootstrap'; token: string } | { kind: 'organisation-invitation'; token: string };
 
 function requireEnv(name: 'BETTER_AUTH_SECRET' | 'BETTER_AUTH_URL'): string {
 	const value = env[name]?.trim();
@@ -34,9 +33,7 @@ function requireEnv(name: 'BETTER_AUTH_SECRET' | 'BETTER_AUTH_URL'): string {
 	return value;
 }
 
-function signupIntent(ctx: {
-	getCookie(name: string): string | null | undefined;
-}): SignupIntent {
+function signupIntent(ctx: { getCookie(name: string): string | null | undefined }): SignupIntent {
 	const bootstrapToken = ctx.getCookie(TENANT_BOOTSTRAP_COOKIE)?.trim() ?? '';
 	const invitationToken = ctx.getCookie(ORGANISATION_INVITATION_COOKIE)?.trim() ?? '';
 	if (bootstrapToken && invitationToken) {
