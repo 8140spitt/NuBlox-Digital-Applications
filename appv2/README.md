@@ -45,11 +45,13 @@ The tenant and party slugs establish route context only. They never replace serv
 From `appv2/`:
 
 ```sh
-pnpm install
+pnpm install --frozen-lockfile
 pnpm lint
 pnpm check
-pnpm test:unit -- --run
+pnpm test:unit
 pnpm build
 ```
+
+`pnpm test:unit` provisions the Chromium binary required by Vitest browser-mode component tests and then runs the suite once. Use `pnpm test:unit:watch` for interactive watch mode.
 
 Playwright journeys are added as real V2 workflows become available.
