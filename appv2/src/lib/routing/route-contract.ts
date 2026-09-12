@@ -4,7 +4,6 @@ export type AppDashboardPath = `/app/${string}/dashboard`;
 export type AppMyWorkPath = `/app/${string}/my-work`;
 export type AppFunctionsPath = `/app/${string}/functions`;
 export type AppProjectsPath = `/app/${string}/projects`;
-export type PortalLoginPath = `/portal/${string}/${string}/login`;
 export type PortalDashboardPath = `/portal/${string}/${string}/dashboard`;
 export type PortalProjectsPath = `/portal/${string}/${string}/projects`;
 export type PortalActionsPath = `/portal/${string}/${string}/actions`;
@@ -43,13 +42,24 @@ export function portalPath(tenant: string, crmParty: string, path = ''): string 
 	return suffix ? `${base}/${suffix}` : base;
 }
 
+export function safeReturnTo(value: string | null | undefined): string | null {
+	if (!value || !value.startsWith('/') || value.startsWith('//')) return null;
+	if (value === '/auth' || value.startsWith('/auth?')) return null;
+	if (value.startsWith('/app/') || value.startsWith('/portal/')) return value;
+	return null;
+}
+
+export function authPath(returnTo?: string | null): string {
+	const destination = safeReturnTo(returnTo);
+	return destination ? `/auth?returnTo=${encodeURIComponent(destination)}` : '/auth';
+}
+
 export const routes = {
+	auth: authPath,
 	dashboard: (tenant: string): AppDashboardPath => appPath(tenant, 'dashboard') as AppDashboardPath,
 	myWork: (tenant: string): AppMyWorkPath => appPath(tenant, 'my-work') as AppMyWorkPath,
 	functions: (tenant: string): AppFunctionsPath => appPath(tenant, 'functions') as AppFunctionsPath,
 	projects: (tenant: string): AppProjectsPath => appPath(tenant, 'projects') as AppProjectsPath,
-	portalLogin: (tenant: string, crmParty: string): PortalLoginPath =>
-		portalPath(tenant, crmParty, 'login') as PortalLoginPath,
 	portalDashboard: (tenant: string, crmParty: string): PortalDashboardPath =>
 		portalPath(tenant, crmParty, 'dashboard') as PortalDashboardPath,
 	portalProjects: (tenant: string, crmParty: string): PortalProjectsPath =>

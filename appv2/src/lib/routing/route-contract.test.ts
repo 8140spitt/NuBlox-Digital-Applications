@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { appPath, isRouteSlug, portalPath, routes } from './route-contract';
+import { appPath, authPath, isRouteSlug, portalPath, routes, safeReturnTo } from './route-contract';
 
 describe('NuBlox V2 route contract', () => {
 	it('accepts stable lowercase route slugs', () => {
@@ -24,15 +24,25 @@ describe('NuBlox V2 route contract', () => {
 		expect(portalPath('nublox', 'perspectivebc', 'rfqs/RFQ-001')).toBe(
 			'/portal/nublox/perspectivebc/rfqs/RFQ-001'
 		);
-		expect(routes.portalLogin('nublox', 'perspectivebc')).toBe(
-			'/portal/nublox/perspectivebc/login'
-		);
 		expect(routes.portalDashboard('nublox', 'perspectivebc')).toBe(
 			'/portal/nublox/perspectivebc/dashboard'
 		);
 		expect(routes.portalProjects('nublox', 'perspectivebc')).toBe(
 			'/portal/nublox/perspectivebc/projects'
 		);
+	});
+
+	it('uses one central auth route and only preserves approved return destinations', () => {
+		expect(authPath()).toBe('/auth');
+		expect(authPath('/app/nublox/dashboard')).toBe(
+			'/auth?returnTo=%2Fapp%2Fnublox%2Fdashboard'
+		);
+		expect(safeReturnTo('/portal/nublox/perspectivebc/projects')).toBe(
+			'/portal/nublox/perspectivebc/projects'
+		);
+		expect(safeReturnTo('https://example.com')).toBeNull();
+		expect(safeReturnTo('//example.com')).toBeNull();
+		expect(safeReturnTo('/auth')).toBeNull();
 	});
 
 	it('does not silently normalise invalid tenant or CRM Party identity', () => {
