@@ -6,31 +6,41 @@
 	let pathname = $derived(page.url.pathname);
 
 	function active(href: string): boolean {
-		return href === '/portal' ? pathname === href : pathname.startsWith(href);
+		return pathname === href || pathname.startsWith(`${href}/`);
 	}
 </script>
 
 <svelte:head>
-	<title>NuBlox Network</title>
+	<title>{data.party ? `${data.party.name} Portal` : 'Portal'} · NuBlox</title>
 </svelte:head>
 
 <div class="portal-shell">
 	<header class="portal-header">
-		<NuBloxLockup class="brand" href="/portal" theme="dark" size="sm" ariaLabel="NuBlox Network" />
-		<nav aria-label="Network navigation">
-			<a class:active={active('/portal')} href="/portal">Network</a>
-			{#if data.canManage}
-				<a class:active={active('/portal/manage')} href="/portal/manage">Sharing controls</a>
+		<NuBloxLockup
+			class="brand"
+			href={data.dashboardHref}
+			theme="dark"
+			size="sm"
+			ariaLabel="NuBlox Portal"
+		/>
+		<nav aria-label="Portal navigation">
+			{#if data.mode === 'external'}
+				<a class:active={active(data.dashboardHref)} href={data.dashboardHref}>Dashboard</a>
+				<a class:active={active(`${data.portalBase}/actions`)} href={`${data.portalBase}/actions`}>Actions</a>
+			{:else}
+				<a class:active={active(data.dashboardHref)} href={data.dashboardHref}>Sharing controls</a>
 			{/if}
 		</nav>
 		<div class="context">
 			<div>
-				<span>{data.mode === 'member' ? data.organisation?.name : 'External access'}</span>
-				<small>{data.actor.displayName}</small>
+				<span>{data.party?.name ?? data.organisation?.name}</span>
+				<small>
+					{#if data.party}{data.organisation?.name} · {/if}{data.actor.displayName}
+				</small>
 			</div>
 			{#if data.mode === 'member'}
 				<a href="/select-organisation">Switch</a>
-				<a href="/dashboard">Back to NuBlox</a>
+				{#if data.backToAppHref}<a href={data.backToAppHref}>Back to NuBlox</a>{/if}
 			{/if}
 		</div>
 	</header>
