@@ -36,24 +36,18 @@ export class OrganisationMembershipRepository {
 			input.tradingName?.trim() || input.legalName
 		);
 		await this.db
-			.updateTable('organisations')
-			.set({ route_slug: routeSlug })
-			.where('id', '=', input.organisationId)
-			.where('route_slug', 'is', null)
+			.insertInto('tenant_route_contexts')
+			.values({ organisation_id: input.organisationId, route_slug: routeSlug })
+			.onDuplicateKeyUpdate({ route_slug: routeSlug })
 			.executeTakeFirst();
 		const current = await this.db
-			.selectFrom('organisations')
+			.selectFrom('tenant_route_contexts')
 			.select('route_slug as routeSlug')
-			.where('id', '=', input.organisationId)
+			.where('organisation_id', '=', input.organisationId)
 			.executeTakeFirstOrThrow();
-		if (!current.routeSlug) throw new Error('Organisation route slug could not be allocated.');
 		return current.routeSlug;
 	}
 
-	/**
-	 * Verify the full tenant/user/member tuple. Never resolve a membership by its
-	 * surrogate ID alone when it is being used as an authorisation boundary.
-	 */
 	async findActiveActorMembership(
 		actor: Pick<TenantActorContext, 'organisationId' | 'userId' | 'memberId'>
 	): Promise<ActiveOrganisationMembership | null> {
@@ -82,11 +76,12 @@ export class OrganisationMembershipRepository {
 		const row = await this.db
 			.selectFrom('organisation_members as member')
 			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+			.leftJoin('tenant_route_contexts as route', 'route.organisation_id', 'organisation.id')
 			.select([
 				'member.id as id',
 				'member.organisation_id as organisationId',
 				'organisation.public_id as organisationPublicId',
-				'organisation.route_slug as organisationRouteSlug',
+				'route.route_slug as organisationRouteSlug',
 				'organisation.legal_name as legalName',
 				'organisation.trading_name as tradingName',
 				'member.user_id as userId',
@@ -123,21 +118,22 @@ export class OrganisationMembershipRepository {
 		const row = await this.db
 			.selectFrom('organisation_members as member')
 			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+			.innerJoin('tenant_route_contexts as route', 'route.organisation_id', 'organisation.id')
 			.select([
 				'member.id as id',
 				'member.organisation_id as organisationId',
 				'organisation.public_id as organisationPublicId',
-				'organisation.route_slug as organisationRouteSlug',
+				'route.route_slug as organisationRouteSlug',
 				'member.user_id as userId',
 				'member.public_id as publicId',
 				'member.status as status'
 			])
 			.where('member.user_id', '=', userId)
 			.where('member.status', '=', 'active')
-			.where('organisation.route_slug', '=', organisationRouteSlug)
+			.where('route.route_slug', '=', organisationRouteSlug)
 			.where('organisation.status', '=', 'active')
 			.executeTakeFirst();
-		if (!row || row.status !== 'active' || !row.organisationRouteSlug) return null;
+		if (!row || row.status !== 'active') return null;
 		return {
 			id: row.id,
 			organisationId: row.organisationId,
@@ -153,12 +149,13 @@ export class OrganisationMembershipRepository {
 		const rows = await this.db
 			.selectFrom('organisation_members as member')
 			.innerJoin('organisations as organisation', 'organisation.id', 'member.organisation_id')
+			.leftJoin('tenant_route_contexts as route', 'route.organisation_id', 'organisation.id')
 			.select([
 				'member.id as memberId',
 				'member.public_id as memberPublicId',
 				'member.organisation_id as organisationId',
 				'organisation.public_id as organisationPublicId',
-				'organisation.route_slug as organisationRouteSlug',
+				'route.route_slug as organisationRouteSlug',
 				'organisation.legal_name as legalName',
 				'organisation.trading_name as tradingName'
 			])
