@@ -170,6 +170,8 @@ test('read-only member can navigate context-first workspaces without receiving m
 	await expect(page.getByRole('button', { name: 'Soft close' })).toHaveCount(0);
 
 	await page.goto('/portal');
-	await expect(page.getByRole('heading', { name: 'Shared work' })).toBeVisible();
-	await expect(page.getByRole('link', { name: 'Manage sharing' })).toHaveCount(0);
+	await expect(
+		page.getByRole('heading', { name: 'Network & collaboration', level: 1 })
+	).toBeVisible();
+	await expect(page.getByRole('link', { name: 'Manage legacy sharing' })).toHaveCount(0);
 });
