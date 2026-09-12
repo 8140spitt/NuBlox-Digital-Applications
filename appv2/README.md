@@ -25,6 +25,14 @@ The central authentication suite is:
 /auth/invite/[token]
 ```
 
+Post-authentication internal context resolution uses:
+
+```text
+/auth/continue
+/auth/select-context
+/auth/no-access
+```
+
 `/auth/start` is the access-orientation route. `/auth` is the canonical sign-in route. `/auth/register` is exclusively for creating a **new NuBlox tenant and its first Owner**. Joining an existing tenant is invitation-only through `/auth/invite/[token]`; it is not generic public account registration.
 
 Internal users enter the tenant operating system beneath `/app`:
@@ -71,17 +79,32 @@ Email verification is mandatory. Verification links expire after one hour. Passw
 
 Runtime configuration is provided through `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and the transactional email boundary. `EMAIL_DELIVERY_MODE=console` is available for local development and exposes one-time links in the local server console. Production must use a real transactional-email adapter rather than console delivery.
 
+## Authoritative internal tenant resolution
+
+A successful Better Auth session does not itself grant access to an internal tenant. After normal sign-in, V2 resolves the authenticated identity through `auth_user_links` to an active canonical user, then to active `organisation_members` and active `organisations` records.
+
+The post-authentication decision is deterministic:
+
+- one active internal organisation context redirects directly to that organisation's `/app/[organisationPublicId]/dashboard`;
+- multiple active contexts redirect to `/auth/select-context`, which lists only server-resolved authorised organisations;
+- no active internal contexts redirect to `/auth/no-access`.
+
+Every `/app/[tenant]/...` request revalidates the route's organisation public ID against the authenticated identity's active membership. The route parameter establishes requested context only; changing it cannot grant access to another tenant.
+
+The connected portal still requires its separate CRM Party authorisation resolver: authenticated identity → CRM contact/person → CRM Party → tenant relationship → project association → record/action permission. Internal organisation membership must not be reused as a substitute for that external relationship chain.
+
 ## Local runtime bootstrap
 
-V2 uses the same canonical NuBlox MySQL schema as V1. The checked-in local-development database contract is:
+V2 uses the same canonical NuBlox MySQL schema as V1. Local database credentials are machine-specific and are deliberately **not** committed. `appv2/.env` must use the same working `DATABASE_URL` as the existing canonical NuBlox local environment.
+
+The non-secret local configuration is:
 
 ```text
-DATABASE_URL=mysql://nublox:nublox@127.0.0.1:3306/nublox
 BETTER_AUTH_URL=http://localhost:5173
 EMAIL_DELIVERY_MODE=console
 ```
 
-Create `appv2/.env` from `appv2/.env.example` and replace `BETTER_AUTH_SECRET` with a local secret of at least 32 characters.
+Create `appv2/.env` from `appv2/.env.example`, populate `DATABASE_URL` from the working local NuBlox environment and set `BETTER_AUTH_SECRET` to a local secret of at least 32 characters.
 
 Canonical database migrations currently remain owned by the repository-level `database/migrations` set and are executed through the V1 migration tooling. Before running V2 against an existing local database, apply and verify the schema from `appv1/`:
 
