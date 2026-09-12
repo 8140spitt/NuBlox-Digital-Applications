@@ -12,6 +12,7 @@ import type { DB as GovernanceDB } from './generated/governance.js';
 import type { DB as CorporateDevelopmentDB } from './generated/corporate-development.js';
 import type { DB as ProductServiceDB } from './generated/product-service.js';
 import type { DB as ExternalAccessDB } from './generated/external-access.js';
+import type { RoutingDB } from './routing-schema.js';
 import { getDatabaseRuntimeConfig } from './config.js';
 
 export type { DatabaseExecutor } from './executor.js';
@@ -26,7 +27,8 @@ export type DatabaseSchema = CoreDB &
 	GovernanceDB &
 	CorporateDevelopmentDB &
 	ProductServiceDB &
-	ExternalAccessDB;
+	ExternalAccessDB &
+	RoutingDB;
 export type Database = Kysely<DatabaseSchema>;
 
 type DatabaseGlobal = typeof globalThis & {
