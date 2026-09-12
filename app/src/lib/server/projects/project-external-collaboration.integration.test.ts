@@ -109,10 +109,7 @@ async function cleanup(): Promise<void> {
 			.deleteFrom('external_submittal_reviews')
 			.where('project_id', 'in', projectIds)
 			.execute();
-		await db
-			.deleteFrom('external_rfi_responses')
-			.where('project_id', 'in', projectIds)
-			.execute();
+		await db.deleteFrom('external_rfi_responses').where('project_id', 'in', projectIds).execute();
 		if (organisationId) {
 			await db
 				.deleteFrom('external_work_items')
