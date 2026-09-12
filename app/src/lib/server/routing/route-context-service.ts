@@ -1,4 +1,4 @@
-import { portalDashboardPath, portalPath } from '$lib/routing/route-contract';
+import { isTenantRouteSlug, portalDashboardPath, portalPath } from '$lib/routing/route-contract';
 import type { DatabaseExecutor } from '$lib/server/db/executor';
 
 export type TenantRouteContext = {
@@ -113,7 +113,8 @@ export async function allocateOrganisationRouteSlug(
 	db: DatabaseExecutor,
 	name: string
 ): Promise<string> {
-	const base = normaliseStoredRouteSlug(name, 'tenant');
+	let base = normaliseStoredRouteSlug(name, 'tenant');
+	if (!isTenantRouteSlug(base)) base = `tenant-${base}`.slice(0, 80);
 	if (await availableOrganisationSlug(db, base)) return base;
 	for (let suffix = 2; suffix <= 9999; suffix += 1) {
 		const candidate = `${base.slice(0, 90)}-${suffix}`;
@@ -348,6 +349,20 @@ export class RouteContextService {
 			.where('portal_context.auth_user_id', '=', authUserId)
 			.orderBy('owner.legal_name', 'asc')
 			.orderBy('party.public_id', 'asc')
+			.executeTakeFirst();
+		return row ? this.mapPortalContext(row) : null;
+	}
+
+	async findPortalContextForWorkItem(
+		authUserId: string,
+		workItemPublicId: string,
+		now: Date = new Date()
+	): Promise<PortalRouteContext | null> {
+		const row = await this.portalContextQuery(now)
+			.innerJoin('external_work_items as work', 'work.external_access_grant_id', 'grant.id')
+			.where('portal_context.auth_user_id', '=', authUserId)
+			.where('work.auth_user_id', '=', authUserId)
+			.where('work.public_id', '=', workItemPublicId)
 			.executeTakeFirst();
 		return row ? this.mapPortalContext(row) : null;
 	}

@@ -26,13 +26,19 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const suffix = event.url.search;
 	if (event.locals.actor) {
 		if (pathname === '/portal' || pathname.startsWith('/portal/')) {
-			const isExternalTask =
-				pathname.startsWith('/portal/project-actions/') ||
-				pathname.startsWith('/portal/supplier-quotes/');
+			const legacyTaskMatch = pathname.match(
+				/^\/portal\/(?:project-actions|supplier-quotes)\/([^/]+)$/
+			);
+			const workItemPublicId = legacyTaskMatch?.[1] ?? null;
+			const isExternalTask = workItemPublicId !== null;
 			if (isExternalTask || !event.locals.tenant.membershipVerified) {
-				const context = await new RouteContextService(getDatabase()).findDefaultPortalContext(
-					event.locals.actor.authUserId
-				);
+				const routing = new RouteContextService(getDatabase());
+				const context = workItemPublicId
+					? await routing.findPortalContextForWorkItem(
+							event.locals.actor.authUserId,
+							workItemPublicId
+						)
+					: await routing.findDefaultPortalContext(event.locals.actor.authUserId);
 				if (context) {
 					const externalPath =
 						pathname === '/portal' ? '/dashboard' : pathname.slice('/portal'.length);

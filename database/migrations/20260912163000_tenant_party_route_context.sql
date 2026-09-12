@@ -15,44 +15,9 @@ CREATE TABLE tenant_route_contexts (
         ON UPDATE RESTRICT ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-INSERT INTO tenant_route_contexts (organisation_id, route_slug)
-SELECT
-    organisation.id,
-    CASE
-        WHEN duplicate_slug.slug_count > 1 THEN CONCAT(
-            LOWER(REGEXP_REPLACE(
-                COALESCE(NULLIF(TRIM(organisation.trading_name), ''), NULLIF(TRIM(organisation.legal_name), ''), CONCAT('tenant', organisation.id)),
-                '[^A-Za-z0-9]+',
-                ''
-            )),
-            '-',
-            LEFT(REPLACE(organisation.public_id, '-', ''), 8)
-        )
-        ELSE LOWER(REGEXP_REPLACE(
-            COALESCE(NULLIF(TRIM(organisation.trading_name), ''), NULLIF(TRIM(organisation.legal_name), ''), CONCAT('tenant', organisation.id)),
-            '[^A-Za-z0-9]+',
-            ''
-        ))
-    END AS route_slug
-FROM organisations AS organisation
-INNER JOIN (
-    SELECT normalised_slug, COUNT(*) AS slug_count
-    FROM (
-        SELECT LOWER(REGEXP_REPLACE(
-            COALESCE(NULLIF(TRIM(trading_name), ''), NULLIF(TRIM(legal_name), ''), CONCAT('tenant', id)),
-            '[^A-Za-z0-9]+',
-            ''
-        )) AS normalised_slug
-        FROM organisations
-    ) AS source_slugs
-    GROUP BY normalised_slug
-) AS duplicate_slug
-    ON duplicate_slug.normalised_slug = LOWER(REGEXP_REPLACE(
-        COALESCE(NULLIF(TRIM(organisation.trading_name), ''), NULLIF(TRIM(organisation.legal_name), ''), CONCAT('tenant', organisation.id)),
-        '[^A-Za-z0-9]+',
-        ''
-    ));
 
+-- Route slugs are allocated lazily by the application so they always obey the canonical route contract,
+-- including reserved roots, ASCII normalisation, length bounds and deterministic collision handling.
 CREATE TABLE party_route_contexts (
     organisation_id BIGINT UNSIGNED NOT NULL,
     party_id BIGINT UNSIGNED NOT NULL,
@@ -67,81 +32,8 @@ CREATE TABLE party_route_contexts (
         ON UPDATE RESTRICT ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
-INSERT INTO party_route_contexts (organisation_id, party_id, route_slug)
-SELECT
-    source.organisation_id,
-    source.party_id,
-    CASE
-        WHEN duplicates.slug_count > 1 THEN CONCAT(
-            source.normalised_slug,
-            '-',
-            LEFT(REPLACE(source.public_id, '-', ''), 8)
-        )
-        ELSE source.normalised_slug
-    END AS route_slug
-FROM (
-    SELECT
-        party.organisation_id,
-        party.id AS party_id,
-        party.public_id,
-        LOWER(REGEXP_REPLACE(
-            CASE
-                WHEN party.party_kind = 'organisation' THEN COALESCE(
-                    NULLIF(TRIM(company.trading_name), ''),
-                    NULLIF(TRIM(company.legal_name), ''),
-                    CONCAT('party', party.id)
-                )
-                ELSE COALESCE(
-                    NULLIF(TRIM(CONCAT_WS('', person.preferred_name, person.family_name)), ''),
-                    NULLIF(TRIM(CONCAT_WS('', person.given_names, person.family_name)), ''),
-                    CONCAT('party', party.id)
-                )
-            END,
-            '[^A-Za-z0-9]+',
-            ''
-        )) AS normalised_slug
-    FROM parties AS party
-    LEFT JOIN party_organisations AS company
-        ON company.party_id = party.id
-        AND company.organisation_id = party.organisation_id
-    LEFT JOIN party_persons AS person
-        ON person.party_id = party.id
-        AND person.organisation_id = party.organisation_id
-) AS source
-INNER JOIN (
-    SELECT organisation_id, normalised_slug, COUNT(*) AS slug_count
-    FROM (
-        SELECT
-            party.organisation_id,
-            LOWER(REGEXP_REPLACE(
-                CASE
-                    WHEN party.party_kind = 'organisation' THEN COALESCE(
-                        NULLIF(TRIM(company.trading_name), ''),
-                        NULLIF(TRIM(company.legal_name), ''),
-                        CONCAT('party', party.id)
-                    )
-                    ELSE COALESCE(
-                        NULLIF(TRIM(CONCAT_WS('', person.preferred_name, person.family_name)), ''),
-                        NULLIF(TRIM(CONCAT_WS('', person.given_names, person.family_name)), ''),
-                        CONCAT('party', party.id)
-                    )
-                END,
-                '[^A-Za-z0-9]+',
-                ''
-            )) AS normalised_slug
-        FROM parties AS party
-        LEFT JOIN party_organisations AS company
-            ON company.party_id = party.id
-            AND company.organisation_id = party.organisation_id
-        LEFT JOIN party_persons AS person
-            ON person.party_id = party.id
-            AND person.organisation_id = party.organisation_id
-    ) AS route_candidates
-    GROUP BY organisation_id, normalised_slug
-) AS duplicates
-    ON duplicates.organisation_id = source.organisation_id
-    AND duplicates.normalised_slug = source.normalised_slug;
 
+-- CRM-party route slugs are also allocated lazily from the authoritative party record.
 -- Current external adapters resolve their CRM principal from canonical domain relationships.
 -- New adapters can add their own explicit binding without changing the public URL model.
 CREATE OR REPLACE VIEW routing_external_portal_access_contexts AS
