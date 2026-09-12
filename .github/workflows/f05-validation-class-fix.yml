@@ -33,14 +33,15 @@ jobs:
           from pathlib import Path
           path = Path('app/src/lib/server/product-service/product-service-lifecycle-service.ts')
           text = path.read_text()
-          text = text.replace(
-              "import { ProductServiceRepository } from './product-service-repository';\n",
-              "import { ProductServiceRepository } from './product-service-repository';\nimport { ProductServiceValidationError } from './product-service-service';\n"
-          )
-          text = text.replace(
-              "export class ProductServiceLifecycleValidationError extends Error {}\nexport const ProductServiceValidationError = ProductServiceLifecycleValidationError;\n",
-              "export { ProductServiceValidationError };\n"
-          )
+          old_import = "import { ProductServiceRepository } from './product-service-repository';\n"
+          new_import = old_import + "import { ProductServiceValidationError } from './product-service-service';\n"
+          if "from './product-service-service'" not in text:
+              if old_import not in text:
+                  raise SystemExit('product-service repository import not found')
+              text = text.replace(old_import, new_import, 1)
+          old_class = "export class ProductServiceLifecycleValidationError extends Error {}\nexport const ProductServiceValidationError = ProductServiceLifecycleValidationError;\n"
+          if old_class in text:
+              text = text.replace(old_class, "export { ProductServiceValidationError };\n", 1)
           text = text.replace('ProductServiceLifecycleValidationError', 'ProductServiceValidationError')
           path.write_text(text)
           PY
