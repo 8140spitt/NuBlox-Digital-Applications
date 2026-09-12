@@ -39,14 +39,16 @@ const enterpriseFunctions: readonly EnterpriseFunctionDefinition[] = [
 		id: 'F04',
 		name: 'Corporate Development & M&A',
 		shortName: 'Corporate development',
-		purpose: 'Identify, evaluate, execute and integrate acquisitions, divestitures and partnerships.',
+		purpose:
+			'Identify, evaluate, execute and integrate acquisitions, divestitures and partnerships.',
 		href: '/corporate-development'
 	},
 	{
 		id: 'F05',
 		name: 'Product, Service & Innovation Management',
 		shortName: 'Product & innovation',
-		purpose: 'Create, launch, improve and retire products and services through a controlled lifecycle.'
+		purpose:
+			'Create, launch, improve and retire products and services through a controlled lifecycle.'
 	},
 	{
 		id: 'F06',
@@ -84,7 +86,8 @@ const enterpriseFunctions: readonly EnterpriseFunctionDefinition[] = [
 		id: 'F11',
 		name: 'Manufacturing / Production Operations',
 		shortName: 'Production operations',
-		purpose: 'Plan, execute and control production with material, labour, quality and cost traceability.'
+		purpose:
+			'Plan, execute and control production with material, labour, quality and cost traceability.'
 	},
 	{
 		id: 'F12',
@@ -177,7 +180,8 @@ const enterpriseFunctions: readonly EnterpriseFunctionDefinition[] = [
 		id: 'F26',
 		name: 'Knowledge, Document & Records Management',
 		shortName: 'Knowledge & documents',
-		purpose: 'Create, control, retain, find and reuse trusted organisational knowledge and records.',
+		purpose:
+			'Create, control, retain, find and reuse trusted organisational knowledge and records.',
 		href: '/documents'
 	},
 	{
