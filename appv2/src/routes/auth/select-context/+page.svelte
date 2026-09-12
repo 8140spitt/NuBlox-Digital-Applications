@@ -6,10 +6,7 @@
 
 <svelte:head>
 	<title>Select organisation · NuBlox</title>
-	<meta
-		name="description"
-		content="Choose the NuBlox organisation you are authorised to access."
-	/>
+	<meta name="description" content="Choose the NuBlox organisation you are authorised to access." />
 </svelte:head>
 
 <main class="context-shell">
