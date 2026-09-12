@@ -64,7 +64,8 @@ describe('tenant-first route contract', () => {
 			'/portal',
 			'/web',
 			'/dashboard',
-			'/projects'
+			'/projects',
+			'/more'
 		];
 
 		for (const path of reservedPaths) {
@@ -73,6 +74,7 @@ describe('tenant-first route contract', () => {
 		}
 		expect(isTenantRouteSlug('signin')).toBe(false);
 		expect(isTenantRouteSlug('projects')).toBe(false);
+		expect(isTenantRouteSlug('more')).toBe(false);
 		expect(isTenantRouteSlug('tenant-projects')).toBe(true);
 		expect(isTenantRouteSlug('nublox')).toBe(true);
 	});
