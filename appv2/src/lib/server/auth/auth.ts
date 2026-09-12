@@ -95,7 +95,7 @@ function createNuBloxAuth() {
 					'SELECT email_verified FROM auth_users WHERE LOWER(email) = LOWER(?) LIMIT 1',
 					[email]
 				);
-				if (rows[0] && !Boolean(rows[0].email_verified)) {
+				if (rows[0] && !rows[0].email_verified) {
 					throw new APIError('FORBIDDEN', {
 						message: 'This account is not ready to sign in.'
 					});
