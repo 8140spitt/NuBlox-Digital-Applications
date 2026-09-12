@@ -1,38 +1,53 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, children } = $props();
 
 	const items = $derived([
-		{ label: 'Dashboard', href: routes.dashboard(data.tenant.slug) },
+		{ label: 'Home', href: routes.dashboard(data.tenant.slug) },
 		{ label: 'My work', href: routes.myWork(data.tenant.slug) },
 		{ label: 'Functions', href: routes.functions(data.tenant.slug) }
 	]);
+
+	function isActive(href: string): boolean {
+		return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
+	}
 </script>
 
 <div class="tenant-shell">
 	<header class="tenant-header">
 		<div class="nb-page header-inner">
-			<a class="brand" href={routes.dashboard(data.tenant.slug)} aria-label="NuBlox dashboard">
-				<span class="brand-mark" aria-hidden="true">N</span>
-				<span>NuBlox</span>
-			</a>
+			<div class="identity-group">
+				<a
+					class="brand"
+					href={resolve(routes.dashboard(data.tenant.slug))}
+					aria-label="NuBlox home"
+				>
+					<span class="brand-mark" aria-hidden="true">N</span>
+					<span>NuBlox</span>
+				</a>
 
-			<div class="tenant-context" aria-label="Current tenant">
-				<span>Tenant</span>
-				<strong>{data.tenant.slug}</strong>
+				<div class="tenant-context" aria-label="Current organisation context">
+					<span class="context-label">Organisation</span>
+					<strong>{data.tenant.displayName}</strong>
+				</div>
 			</div>
 
 			<nav aria-label="Primary navigation">
-				{#each items as item}
+				{#each items as item (item.href)}
 					<a
-						href={item.href}
-						class:active={page.url.pathname === item.href}
-						aria-current={page.url.pathname === item.href ? 'page' : undefined}>{item.label}</a
+						href={resolve(item.href)}
+						class:active={isActive(item.href)}
+						aria-current={isActive(item.href) ? 'page' : undefined}>{item.label}</a
 					>
 				{/each}
 			</nav>
+
+			<div class="shell-status" aria-label="Application version">
+				<span>V2</span>
+			</div>
 		</div>
 	</header>
 
@@ -56,11 +71,18 @@
 	}
 
 	.header-inner {
-		min-height: 64px;
+		min-height: 66px;
 		display: grid;
-		grid-template-columns: auto auto 1fr;
+		grid-template-columns: minmax(0, 1fr) auto auto;
 		align-items: center;
-		gap: 24px;
+		gap: 22px;
+	}
+
+	.identity-group {
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: 20px;
 	}
 
 	.brand {
@@ -70,6 +92,7 @@
 		font-weight: 800;
 		text-decoration: none;
 		letter-spacing: -0.02em;
+		white-space: nowrap;
 	}
 
 	.brand-mark {
@@ -84,37 +107,40 @@
 	}
 
 	.tenant-context {
-		display: flex;
-		align-items: baseline;
-		gap: 8px;
+		min-width: 0;
+		display: grid;
+		gap: 1px;
 		padding-left: 20px;
 		border-left: 1px solid var(--nb-border);
 	}
 
-	.tenant-context span {
-		font-size: 0.72rem;
-		font-weight: 700;
+	.context-label {
+		font-size: 0.66rem;
+		font-weight: 750;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
 		color: var(--nb-muted);
 	}
 
 	.tenant-context strong {
-		font-size: 0.9rem;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		font-size: 0.88rem;
+		white-space: nowrap;
 	}
 
 	nav {
 		display: flex;
-		justify-content: flex-end;
-		gap: 4px;
+		justify-content: center;
+		gap: 3px;
 	}
 
 	nav a {
-		padding: 9px 12px;
+		padding: 9px 11px;
 		border-radius: 8px;
 		text-decoration: none;
-		font-size: 0.9rem;
-		font-weight: 650;
+		font-size: 0.88rem;
+		font-weight: 680;
 		color: var(--nb-muted);
 	}
 
@@ -124,25 +150,49 @@
 		color: var(--nb-ink);
 	}
 
-	.tenant-main {
-		padding: 52px 0 72px;
+	.shell-status span {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		min-width: 34px;
+		padding: 5px 7px;
+		border: 1px solid var(--nb-border);
+		border-radius: 999px;
+		font-size: 0.68rem;
+		font-weight: 800;
+		letter-spacing: 0.06em;
+		color: var(--nb-muted);
 	}
 
-	@media (max-width: 700px) {
+	.tenant-main {
+		padding: 48px 0 72px;
+	}
+
+	@media (max-width: 760px) {
 		.header-inner {
-			grid-template-columns: auto 1fr;
-			gap: 14px;
-			padding: 10px 0;
+			grid-template-columns: 1fr auto;
+			gap: 12px;
+			padding-block: 10px;
+		}
+
+		.identity-group {
+			gap: 12px;
 		}
 
 		.tenant-context {
-			justify-self: end;
+			padding-left: 12px;
 		}
 
 		nav {
 			grid-column: 1 / -1;
+			grid-row: 2;
 			justify-content: flex-start;
 			overflow-x: auto;
+		}
+
+		.shell-status {
+			grid-column: 2;
+			grid-row: 1;
 		}
 	}
 </style>

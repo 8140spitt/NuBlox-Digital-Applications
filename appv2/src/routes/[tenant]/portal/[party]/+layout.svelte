@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { routes } from '$lib/routing/route-contract';
 
@@ -12,7 +13,7 @@
 	<header class="portal-header">
 		<div class="nb-page portal-header-inner">
 			<div class="portal-brand">
-				<a href={dashboardHref}>NuBlox Portal</a>
+				<a href={resolve(dashboardHref)}>NuBlox Portal</a>
 				<span aria-hidden="true">/</span>
 				<strong>{data.party.slug}</strong>
 			</div>
@@ -25,12 +26,12 @@
 
 			<nav aria-label="Portal navigation">
 				<a
-					href={dashboardHref}
+					href={resolve(dashboardHref)}
 					class:active={page.url.pathname === dashboardHref}
 					aria-current={page.url.pathname === dashboardHref ? 'page' : undefined}>Dashboard</a
 				>
 				<a
-					href={actionsHref}
+					href={resolve(actionsHref)}
 					class:active={page.url.pathname === actionsHref}
 					aria-current={page.url.pathname === actionsHref ? 'page' : undefined}>Actions</a
 				>
