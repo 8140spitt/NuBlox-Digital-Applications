@@ -1,0 +1,56 @@
+name: V2 Application Validation
+
+on:
+  pull_request:
+    paths:
+      - 'appv2/**'
+      - '.github/workflows/v2-validation.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'appv2/**'
+      - '.github/workflows/v2-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-appv2:
+    name: Lint, typecheck, test and build V2
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: appv2
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint V2
+        run: pnpm lint
+
+      - name: Type-check V2
+        run: pnpm check
+
+      - name: Run V2 unit tests
+        run: pnpm test:unit -- --run
+
+      - name: Build V2
+        run: pnpm build
