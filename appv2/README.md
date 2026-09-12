@@ -71,6 +71,27 @@ Email verification is mandatory. Verification links expire after one hour. Passw
 
 Runtime configuration is provided through `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and the transactional email boundary. `EMAIL_DELIVERY_MODE=console` is available for local development and exposes one-time links in the local server console. Production must use a real transactional-email adapter rather than console delivery.
 
+## Local runtime bootstrap
+
+V2 uses the same canonical NuBlox MySQL schema as V1. The checked-in local-development database contract is:
+
+```text
+DATABASE_URL=mysql://nublox:nublox@127.0.0.1:3306/nublox
+BETTER_AUTH_URL=http://localhost:5173
+EMAIL_DELIVERY_MODE=console
+```
+
+Create `appv2/.env` from `appv2/.env.example` and replace `BETTER_AUTH_SECRET` with a local secret of at least 32 characters.
+
+Canonical database migrations currently remain owned by the repository-level `database/migrations` set and are executed through the V1 migration tooling. Before running V2 against an existing local database, apply and verify the schema from `appv1/`:
+
+```sh
+pnpm db:migrate
+pnpm db:status
+```
+
+This does not make V1 the active product surface; it is temporary migration tooling over the shared canonical database until that tooling is centralised.
+
 ## V2 product rules
 
 1. One coherent operating system, not 29 unrelated mini-applications.
