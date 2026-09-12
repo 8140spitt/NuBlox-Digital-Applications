@@ -4,42 +4,43 @@ import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { AuditOutboxEvidenceWriter } from '$lib/server/kernel/audit-outbox-evidence';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
 import { ProductServiceRepository } from './product-service-repository';
+import { ProductServiceValidationError } from './product-service-service';
 import { ProductServiceLifecycleRepository } from './product-service-lifecycle-repository';
 
 const CODE = /^[A-Z0-9][A-Z0-9_.-]{1,49}$/;
 
-export class ProductServiceLifecycleValidationError extends Error {}
-export const ProductServiceValidationError = ProductServiceLifecycleValidationError;
+export { ProductServiceValidationError };
 
 type PermissionKey = 'product_service.view' | 'product_service.manage' | 'product_service.approve';
 
 function required(value: string, label: string, max = 5000): string {
 	const trimmed = value.trim();
-	if (!trimmed) throw new ProductServiceLifecycleValidationError(`${label} is required.`);
+	if (!trimmed) throw new ProductServiceValidationError(`${label} is required.`);
 	if (trimmed.length > max)
-		throw new ProductServiceLifecycleValidationError(`${label} is too long.`);
+		throw new ProductServiceValidationError(`${label} is too long.`);
 	return trimmed;
 }
 function optional(value?: string | null, max = 500): string | null {
 	const trimmed = value?.trim() ?? '';
 	if (!trimmed) return null;
 	if (trimmed.length > max)
-		throw new ProductServiceLifecycleValidationError('Reference value is too long.');
+		throw new ProductServiceValidationError('Reference value is too long.');
 	return trimmed;
 }
 function code(value: string, label: string): string {
 	const normalised = value.trim().toUpperCase();
 	if (!CODE.test(normalised))
-		throw new ProductServiceLifecycleValidationError(
+		throw new ProductServiceValidationError(
 			`${label} must be 2-50 characters using letters, numbers, dot, underscore or hyphen.`
 		);
 	return normalised;
 }
-function date(value?: string | null): string | null {
+function date(value?: string | Date | null): string | null {
+	if (value instanceof Date) return value.toISOString().slice(0, 10);
 	const trimmed = value?.trim() ?? '';
 	if (!trimmed) return null;
 	if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed))
-		throw new ProductServiceLifecycleValidationError('Date must use YYYY-MM-DD.');
+		throw new ProductServiceValidationError('Date must use YYYY-MM-DD.');
 	return trimmed;
 }
 
@@ -100,7 +101,7 @@ export class ProductServiceLifecycleService {
 			.where('status', '=', 'active')
 			.executeTakeFirst();
 		if (!row)
-			throw new ProductServiceLifecycleValidationError('Owner/reviewer must be an active member.');
+			throw new ProductServiceValidationError('Owner/reviewer must be an active member.');
 	}
 
 	async getWorkspace(actor: TenantActorContext) {
@@ -154,7 +155,7 @@ export class ProductServiceLifecycleService {
 				if (!businessCase)
 					throw new RecordNotFoundError('Product/service business case not found.');
 				if (businessCase.lifecycle_status !== 'approved')
-					throw new ProductServiceLifecycleValidationError(
+					throw new ProductServiceValidationError(
 						'Design may only be based on an approved business case.'
 					);
 				businessCaseId = businessCase.id;
@@ -207,7 +208,7 @@ export class ProductServiceLifecycleService {
 			designPublicId: string;
 			reviewCode: string;
 			reviewType: string;
-			reviewDate: string;
+			reviewDate: string | Date;
 			outcome: string;
 			findings: string;
 			actionsRequired?: string | null;
@@ -227,9 +228,9 @@ export class ProductServiceLifecycleService {
 			'gate'
 		];
 		if (!reviewTypes.includes(input.reviewType))
-			throw new ProductServiceLifecycleValidationError('Unsupported design review type.');
+			throw new ProductServiceValidationError('Unsupported design review type.');
 		if (!['pass', 'conditional', 'fail'].includes(input.outcome))
-			throw new ProductServiceLifecycleValidationError('Unsupported design review outcome.');
+			throw new ProductServiceValidationError('Unsupported design review outcome.');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
 			const design = await repository.findDesignByPublicId(
@@ -275,10 +276,10 @@ export class ProductServiceLifecycleService {
 			if (!design) throw new RecordNotFoundError('Product/service design not found.');
 			if (design.lifecycle_status === 'approved') return design;
 			if (design.lifecycle_status !== 'draft')
-				throw new ProductServiceLifecycleValidationError('Only a draft design may be approved.');
+				throw new ProductServiceValidationError('Only a draft design may be approved.');
 			const reviews = await repository.listDesignReviews(actor.organisationId, design.id);
 			if (!reviews.length || reviews.some((review) => review.outcome === 'fail'))
-				throw new ProductServiceLifecycleValidationError(
+				throw new ProductServiceValidationError(
 					'Design approval requires review evidence with no failed review.'
 				);
 			const approved = await repository.updateDesign(actor.organisationId, design.id, {
@@ -319,8 +320,8 @@ export class ProductServiceLifecycleService {
 			deliveryApproach: string;
 			scopeText: string;
 			definitionOfDone: string;
-			plannedStart?: string | null;
-			plannedFinish?: string | null;
+			plannedStart?: string | Date | null;
+			plannedFinish?: string | Date | null;
 			projectPublicId?: string | null;
 			evidencePublicId?: string | null;
 			ownerMemberId: string;
@@ -337,7 +338,7 @@ export class ProductServiceLifecycleService {
 			);
 			if (!design) throw new RecordNotFoundError('Product/service design not found.');
 			if (design.lifecycle_status !== 'approved')
-				throw new ProductServiceLifecycleValidationError(
+				throw new ProductServiceValidationError(
 					'Development requires an approved design baseline.'
 				);
 			const created = await repository.createDevelopmentPlan({
@@ -409,7 +410,7 @@ export class ProductServiceLifecycleService {
 			developmentPlanPublicId?: string | null;
 			launchCode: string;
 			title: string;
-			targetLaunchDate: string;
+			targetLaunchDate: string | Date;
 			targetSegments: string;
 			commercialReadiness: string;
 			operationalReadiness: string;
@@ -435,11 +436,11 @@ export class ProductServiceLifecycleService {
 				if (!development)
 					throw new RecordNotFoundError('Product/service development plan not found.');
 				if (development.offering_id !== offering.id)
-					throw new ProductServiceLifecycleValidationError(
+					throw new ProductServiceValidationError(
 						'Development plan must belong to the selected offering.'
 					);
 				if (development.lifecycle_status !== 'completed')
-					throw new ProductServiceLifecycleValidationError(
+					throw new ProductServiceValidationError(
 						'Launch readiness requires completed development evidence.'
 					);
 				developmentPlanId = development.id;
@@ -490,11 +491,11 @@ export class ProductServiceLifecycleService {
 			if (!plan) throw new RecordNotFoundError('Product/service launch plan not found.');
 			if (plan.lifecycle_status === 'approved' || plan.lifecycle_status === 'launched') return plan;
 			if (!plan.governance_decision_public_id)
-				throw new ProductServiceLifecycleValidationError(
+				throw new ProductServiceValidationError(
 					'Launch approval requires an F02 governance decision reference.'
 				);
 			if (!plan.readiness_evidence_public_id)
-				throw new ProductServiceLifecycleValidationError(
+				throw new ProductServiceValidationError(
 					'Launch approval requires readiness evidence.'
 				);
 			const approved = await repository.updateLaunchPlan(actor.organisationId, plan.id, {
@@ -526,7 +527,7 @@ export class ProductServiceLifecycleService {
 			);
 			if (!plan) throw new RecordNotFoundError('Product/service launch plan not found.');
 			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'launched')
-				throw new ProductServiceLifecycleValidationError(
+				throw new ProductServiceValidationError(
 					'Only an approved launch plan may be launched.'
 				);
 			if (plan.lifecycle_status === 'launched') return plan;
@@ -558,7 +559,7 @@ export class ProductServiceLifecycleService {
 		input: {
 			offeringPublicId: string;
 			reviewCode: string;
-			reviewDate: string;
+			reviewDate: string | Date;
 			lifecyclePhase: string;
 			performanceSummary: string;
 			customerSummary: string;
@@ -573,9 +574,9 @@ export class ProductServiceLifecycleService {
 		await this.requirePermission(actor, 'product_service.manage');
 		await this.member(actor, input.ownerMemberId);
 		if (!['launch', 'growth', 'maturity', 'decline', 'end_of_life'].includes(input.lifecyclePhase))
-			throw new ProductServiceLifecycleValidationError('Unsupported lifecycle phase.');
+			throw new ProductServiceValidationError('Unsupported lifecycle phase.');
 		if (!['continue', 'improve', 'reposition', 'invest', 'retire'].includes(input.recommendation))
-			throw new ProductServiceLifecycleValidationError('Unsupported lifecycle recommendation.');
+			throw new ProductServiceValidationError('Unsupported lifecycle recommendation.');
 		return this.db.transaction().execute(async (trx) => {
 			const productRepository = new ProductServiceRepository(trx);
 			const repository = new ProductServiceLifecycleRepository(trx);
@@ -626,7 +627,7 @@ export class ProductServiceLifecycleService {
 			operationalTransitionPlan: string;
 			financialImpactSummary: string;
 			dataRecordRetentionPlan: string;
-			targetEndDate: string;
+			targetEndDate: string | Date;
 			governanceDecisionPublicId?: string | null;
 			ownerMemberId: string;
 		}
@@ -645,7 +646,7 @@ export class ProductServiceLifecycleService {
 				);
 				if (!review) throw new RecordNotFoundError('Product/service lifecycle review not found.');
 				if (review.offering_id !== offering.id || review.recommendation !== 'retire')
-					throw new ProductServiceLifecycleValidationError(
+					throw new ProductServiceValidationError(
 						'Retirement requires a retire recommendation for the selected offering.'
 					);
 				lifecycleReviewId = review.id;
@@ -708,7 +709,7 @@ export class ProductServiceLifecycleService {
 			if (plan.lifecycle_status === 'approved' || plan.lifecycle_status === 'completed')
 				return plan;
 			if (!plan.governance_decision_public_id)
-				throw new ProductServiceLifecycleValidationError(
+				throw new ProductServiceValidationError(
 					'Retirement approval requires an F02 governance decision reference.'
 				);
 			const approved = await repository.updateRetirementPlan(actor.organisationId, plan.id, {
@@ -741,7 +742,7 @@ export class ProductServiceLifecycleService {
 			if (!plan) throw new RecordNotFoundError('Product/service retirement plan not found.');
 			if (plan.lifecycle_status === 'completed') return plan;
 			if (plan.lifecycle_status !== 'approved' && plan.lifecycle_status !== 'in_progress')
-				throw new ProductServiceLifecycleValidationError(
+				throw new ProductServiceValidationError(
 					'Only an approved retirement plan may be completed.'
 				);
 			const completed = await repository.updateRetirementPlan(actor.organisationId, plan.id, {
@@ -776,8 +777,8 @@ export class ProductServiceLifecycleService {
 			hypothesis: string;
 			experimentMethod: string;
 			successMeasure: string;
-			plannedStart?: string | null;
-			plannedFinish?: string | null;
+			plannedStart?: string | Date | null;
+			plannedFinish?: string | Date | null;
 			evidencePublicId?: string | null;
 			ownerMemberId: string;
 		}
@@ -851,7 +852,7 @@ export class ProductServiceLifecycleService {
 	) {
 		await this.requirePermission(actor, 'product_service.manage');
 		if (!['validated', 'invalidated', 'inconclusive'].includes(input.outcome))
-			throw new ProductServiceLifecycleValidationError('Unsupported experiment outcome.');
+			throw new ProductServiceValidationError('Unsupported experiment outcome.');
 		return this.db.transaction().execute(async (trx) => {
 			const repository = new ProductServiceLifecycleRepository(trx);
 			const experiment = await repository.findInnovationExperimentByPublicId(

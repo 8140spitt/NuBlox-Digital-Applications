@@ -290,4 +290,21 @@ export class ProductServiceRepository {
 			.where('id', '=', id)
 			.executeTakeFirstOrThrow();
 	}
+
+	async getWorkspace(organisationId: string) {
+		const [portfolios, offerings, needs, ideas, businessCases] = await Promise.all([
+			this.listPortfolios(organisationId),
+			this.listOfferings(organisationId),
+			this.listNeeds(organisationId),
+			this.listIdeas(organisationId),
+			this.listBusinessCases(organisationId)
+		]);
+		const businessCaseIds = businessCases.map((row) => row.id);
+		const [businessCaseAssumptions, businessCaseScenarios] = await Promise.all([
+			this.listBusinessCaseAssumptions(organisationId, businessCaseIds),
+			this.listBusinessCaseScenarios(organisationId, businessCaseIds)
+		]);
+		return { portfolios, offerings, needs, ideas, businessCases, businessCaseAssumptions, businessCaseScenarios };
+	}
+
 }
