@@ -1,0 +1,139 @@
+name: F05 lifecycle repository contract fix
+
+on:
+  push:
+    branches:
+      - feat/f05-product-service-innovation
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/f05-product-service-innovation
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Complete lifecycle repository contract
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('app/src/lib/server/product-service/product-service-lifecycle-repository.ts')
+          text = path.read_text()
+          old = """\tlistDesignReviews(organisationId: string) {\n\t\treturn this.db\n\t\t\t.selectFrom('product_service_design_reviews')\n\t\t\t.selectAll()\n\t\t\t.where('organisation_id', '=', organisationId)\n\t\t\t.orderBy('review_date', 'desc')\n\t\t\t.execute();\n\t}\n"""
+          new = """\tlistDesignReviews(organisationId: string, designId?: string) {\n\t\tconst query = this.db\n\t\t\t.selectFrom('product_service_design_reviews')\n\t\t\t.selectAll()\n\t\t\t.where('organisation_id', '=', organisationId);\n\t\treturn (designId ? query.where('design_id', '=', designId) : query)\n\t\t\t.orderBy('review_date', 'desc')\n\t\t\t.execute();\n\t}\n"""
+          if old not in text:
+              raise SystemExit('listDesignReviews pattern not found')
+          text = text.replace(old, new, 1)
+          marker = '\n}\n'
+          pos = text.rfind(marker)
+          if pos < 0:
+              raise SystemExit('class closing brace not found')
+          methods = r'''
+
+	findLatestDesignByCode(organisationId: string, offeringId: string, designCode: string) {
+		return this.db
+			.selectFrom('product_service_designs')
+			.selectAll()
+			.where('organisation_id', '=', organisationId)
+			.where('offering_id', '=', offeringId)
+			.where('design_code', '=', designCode)
+			.orderBy('version_number', 'desc')
+			.orderBy('id', 'desc')
+			.executeTakeFirst();
+	}
+
+	findDesignById(organisationId: string, id: string) {
+		return this.db
+			.selectFrom('product_service_designs')
+			.selectAll()
+			.where('organisation_id', '=', organisationId)
+			.where('id', '=', id)
+			.executeTakeFirst();
+	}
+
+	createDesign(values: Insertable<ProductServiceDesigns>) {
+		return this.insertDesign(values);
+	}
+
+	createDesignReview(values: Insertable<ProductServiceDesignReviews>) {
+		return this.insertDesignReview(values);
+	}
+
+	createDevelopmentPlan(values: Insertable<ProductServiceDevelopmentPlans>) {
+		return this.insertDevelopmentPlan(values);
+	}
+
+	createLaunchPlan(values: Insertable<ProductServiceLaunchPlans>) {
+		return this.insertLaunchPlan(values);
+	}
+
+	createLifecycleReview(values: Insertable<ProductServiceLifecycleReviews>) {
+		return this.insertLifecycleReview(values);
+	}
+
+	createRetirementPlan(values: Insertable<ProductServiceRetirementPlans>) {
+		return this.insertRetirementPlan(values);
+	}
+
+	createInnovationExperiment(values: Insertable<ProductServiceInnovationExperiments>) {
+		return this.insertInnovationExperiment(values);
+	}
+
+	async getWorkspace(organisationId: string) {
+		const [
+			designs,
+			designReviews,
+			developmentPlans,
+			launchPlans,
+			lifecycleReviews,
+			retirementPlans,
+			innovationExperiments
+		] = await Promise.all([
+			this.listDesigns(organisationId),
+			this.listDesignReviews(organisationId),
+			this.listDevelopmentPlans(organisationId),
+			this.listLaunchPlans(organisationId),
+			this.listLifecycleReviews(organisationId),
+			this.listRetirementPlans(organisationId),
+			this.listInnovationExperiments(organisationId)
+		]);
+		return {
+			designs,
+			designReviews,
+			developmentPlans,
+			launchPlans,
+			lifecycleReviews,
+			retirementPlans,
+			innovationExperiments
+		};
+	}
+'''
+          text = text[:pos] + methods + text[pos:]
+          path.write_text(text)
+          PY
+          cd app
+          pnpm exec prettier --write src/lib/server/product-service/product-service-lifecycle-repository.ts
+          pnpm exec eslint src/lib/server/product-service/product-service-lifecycle-repository.ts
+          pnpm check
+      - name: Commit correction and remove helper workflow
+        run: |
+          rm .github/workflows/f05-lifecycle-repository-contract-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src/lib/server/product-service/product-service-lifecycle-repository.ts .github/workflows/f05-lifecycle-repository-contract-fix.yml
+          git commit -m 'F05: complete lifecycle repository contract'
+          git push origin HEAD:feat/f05-product-service-innovation
