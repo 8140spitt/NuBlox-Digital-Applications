@@ -56,12 +56,15 @@ export const load: PageServerLoad = async ({ params, request, cookies, url }) =>
 
 export const actions: Actions = {
 	accept: async ({ params, request, cookies }) => {
+		const rawToken = params.token;
+		if (!rawToken) throw error(400, 'Invitation token is required.');
+
 		const session = await getAuth().api.getSession({ headers: request.headers });
 		if (!session) throw error(401, 'Sign in before accepting this invitation.');
 
 		try {
 			await acceptOrganisationInvitation({
-				rawToken: params.token,
+				rawToken,
 				authUserId: session.user.id,
 				email: session.user.email,
 				displayName: session.user.name
