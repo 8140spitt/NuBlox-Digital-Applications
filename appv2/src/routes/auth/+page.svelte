@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 
 	let { data } = $props();
@@ -11,6 +12,7 @@
 	let errorMessage = $state('');
 
 	const destination = $derived(data.returnTo ?? '/');
+	const passwordReset = $derived(page.url.searchParams.get('reset') === '1');
 
 	async function signIn(event: SubmitEvent) {
 		event.preventDefault();
@@ -53,7 +55,7 @@
 
 <section class="auth-shell">
 	<div class="auth-story">
-		<a class="brand" href={resolve('/')} aria-label="NuBlox home">
+		<a class="brand" href={resolve('/auth/start')} aria-label="NuBlox access start">
 			<span class="brand-mark" aria-hidden="true">N</span>
 			<span>NuBlox</span>
 		</a>
@@ -96,6 +98,12 @@
 					<p>Use your existing NuBlox account.</p>
 				</header>
 
+				{#if passwordReset}
+					<p class="success-message" role="status">
+						Your password has been updated. Sign in with the new password.
+					</p>
+				{/if}
+
 				<form onsubmit={signIn}>
 					<label>
 						<span>Email address</span>
@@ -103,7 +111,10 @@
 					</label>
 
 					<label>
-						<span>Password</span>
+						<span class="password-label">
+							Password
+							<a href={resolve('/auth/forgot-password')}>Forgot password?</a>
+						</span>
 						<input
 							bind:value={password}
 							type="password"
@@ -128,10 +139,11 @@
 					</button>
 				</form>
 
-				<p class="account-note">
-					Accounts are provisioned through NuBlox invitations and approved organisation access.
-					Public self-registration is not available.
-				</p>
+				<div class="account-options">
+					<p>Starting a new organisation?</p>
+					<a href={resolve('/auth/register')}>Register a new NuBlox tenant</a>
+					<a href={resolve('/auth/start')}>View all access options</a>
+				</div>
 			{/if}
 		</div>
 	</div>
@@ -229,8 +241,17 @@
 
 	header > p:last-child,
 	.signed-in-state > p:last-of-type,
-	.account-note {
+	.account-options {
 		color: var(--nb-muted);
+	}
+
+	.success-message {
+		margin: 22px 0 0;
+		border-left: 3px solid var(--nb-accent);
+		padding: 10px 12px;
+		background: var(--nb-surface-subtle);
+		font-size: 0.84rem;
+		line-height: 1.5;
 	}
 
 	form {
@@ -249,6 +270,18 @@
 		font-weight: 750;
 	}
 
+	.password-label {
+		display: flex;
+		justify-content: space-between;
+		gap: 16px;
+	}
+
+	.password-label a {
+		color: var(--nb-muted);
+		font-weight: 650;
+		text-decoration: none;
+	}
+
 	input[type='email'],
 	input[type='password'] {
 		width: 100%;
@@ -258,13 +291,6 @@
 		background: var(--nb-surface);
 		color: var(--nb-ink);
 		font: inherit;
-	}
-
-	input:focus-visible,
-	button:focus-visible,
-	a:focus-visible {
-		outline: 3px solid color-mix(in srgb, var(--nb-accent) 30%, transparent);
-		outline-offset: 2px;
 	}
 
 	.remember-row {
@@ -303,10 +329,23 @@
 		line-height: 1.5;
 	}
 
-	.account-note {
-		margin: 22px 0 0;
-		font-size: 0.78rem;
-		line-height: 1.55;
+	.account-options {
+		display: grid;
+		gap: 8px;
+		margin-top: 24px;
+		border-top: 1px solid var(--nb-border);
+		padding-top: 20px;
+		font-size: 0.8rem;
+		line-height: 1.5;
+	}
+
+	.account-options p {
+		margin: 0 0 2px;
+	}
+
+	.account-options a {
+		width: fit-content;
+		font-weight: 750;
 	}
 
 	.signed-in-actions {
