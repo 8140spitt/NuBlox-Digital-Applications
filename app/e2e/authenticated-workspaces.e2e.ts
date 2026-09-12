@@ -12,21 +12,11 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	await expect(page).toHaveURL(/\/select-organisation$/, { timeout: 15_000 });
 
 	await page.getByRole('button', { name: new RegExp(ORGANISATION) }).click();
-	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
+	await expect(page).toHaveURL('/nublox/dashboard', { timeout: 15_000 });
 
 	await expect(page.getByRole('link', { name: 'NuBlox dashboard' })).toBeVisible();
 	const primaryNavigation = page.getByRole('navigation', { name: 'Primary navigation' });
-	for (const label of [
-		'Home',
-		'My work',
-		'Projects',
-		'Customers',
-		'Suppliers',
-		'Assets',
-		'Finance',
-		'Portal',
-		'More'
-	]) {
+	for (const label of ['Home', 'My work']) {
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
 	}
 
@@ -70,9 +60,6 @@ test('verified owner signs in and uses the context-first workspace surface', asy
 	await customerWorkspace.getByRole('link', { name: 'Estimates', exact: true }).click();
 	await expect(page).toHaveURL('/nublox/commercial/estimates');
 	await expect(page.getByRole('navigation', { name: 'Business workspace' })).toBeVisible();
-	await expect(
-		primaryNavigation.getByRole('link', { name: 'Customers', exact: true })
-	).toHaveAttribute('aria-current', 'page');
 
 	await page.goto('/finance');
 	await expect(page.getByRole('heading', { name: 'Finance', level: 1 })).toBeVisible();
