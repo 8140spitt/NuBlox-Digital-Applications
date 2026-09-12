@@ -15,6 +15,11 @@ async function signIn(page: Page) {
 	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 
+async function expectArticleText(page: Page, text: string) {
+	const article = page.locator('article').filter({ hasText: text });
+	await expect(article.getByText(text, { exact: true })).toBeVisible();
+}
+
 test('F05 governs portfolio, need, idea, investment and lifecycle design', async ({ page }) => {
 	await signIn(page);
 	await page.goto('/product-service');
@@ -33,12 +38,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 		.getByLabel('Strategic thesis')
 		.fill('Turn validated built-environment needs into governed service innovation.');
 	await portfolio.getByRole('button', { name: 'Create portfolio' }).click();
-	await expect(
-		page
-			.locator('article')
-			.filter({ hasText: 'F05-E2E · E2E Product & Service Portfolio' })
-			.getByText('F05-E2E · E2E Product & Service Portfolio', { exact: true })
-	).toBeVisible();
+	await expectArticleText(page, 'F05-E2E · E2E Product & Service Portfolio');
 
 	const offering = page.locator('form[action="?/createOffering"]');
 	await offering
@@ -52,7 +52,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 		.getByLabel('Value proposition')
 		.fill('Provide a controlled evidence thread from need through launch and lifecycle review.');
 	await offering.getByRole('button', { name: 'Create offering' }).click();
-	await expect(page.getByText('OFFER-E2E · E2E Lifecycle Assurance Service')).toBeVisible();
+	await expectArticleText(page, 'OFFER-E2E · E2E Lifecycle Assurance Service');
 
 	const need = page.locator('form[action="?/createNeed"]');
 	await need.getByLabel('Portfolio').selectOption({ label: 'F05-E2E' });
@@ -68,7 +68,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 		.getByLabel('Need statement')
 		.fill('Customers need auditable lifecycle decisions linked to controlled evidence.');
 	await need.getByRole('button', { name: 'Capture need' }).click();
-	await expect(page.getByText('NEED-E2E · Governed lifecycle evidence')).toBeVisible();
+	await expectArticleText(page, 'NEED-E2E · Governed lifecycle evidence');
 
 	const idea = page.locator('form[action="?/createIdea"]');
 	await idea.locator('select[name="portfolioPublicId"]').selectOption({ label: 'F05-E2E' });
@@ -85,7 +85,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 	await idea.locator('input[name="provenance"]').fill('customer_discovery');
 	await idea.locator('select[name="ownerMemberId"]').selectOption({ label: OWNER });
 	await idea.getByRole('button', { name: 'Submit idea' }).click();
-	await expect(page.getByText('IDEA-E2E · Lifecycle assurance concept')).toBeVisible();
+	await expectArticleText(page, 'IDEA-E2E · Lifecycle assurance concept');
 
 	const score = page
 		.locator('form[action="?/scoreIdea"]')
@@ -115,7 +115,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 		.fill('Controlled implementation and adoption risk.');
 	await businessCase.locator('textarea[name="recommendation"]').fill('Proceed to governed design.');
 	await businessCase.getByRole('button', { name: 'Create business case' }).click();
-	await expect(page.getByText(/BC-E2E v1/)).toBeVisible();
+	await expect(page.locator('article').filter({ hasText: 'BC-E2E v1' }).first()).toBeVisible();
 
 	const approval = page
 		.locator('form[action="?/approveBusinessCase"]')
@@ -153,7 +153,7 @@ test('F05 governs portfolio, need, idea, investment and lifecycle design', async
 		.locator('textarea[name="acceptanceCriteria"]')
 		.fill('Design review passes and approval is attributable.');
 	await design.getByRole('button', { name: 'Create design' }).click();
-	await expect(page.getByText(/DES-E2E v1/)).toBeVisible();
+	await expect(page.locator('article').filter({ hasText: 'DES-E2E v1' }).first()).toBeVisible();
 
 	const review = page.locator('form[action="?/addDesignReview"]');
 	await review.locator('select[name="designPublicId"]').selectOption({ label: /DES-E2E/ });
