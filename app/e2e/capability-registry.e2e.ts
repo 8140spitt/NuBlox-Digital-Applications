@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
-const EMAIL = 'e2e-viewer@example.test';
-const PASSWORD = 'NuBlox-E2E-Viewer-2026!';
+const EMAIL = 'e2e-owner@example.test';
+const PASSWORD = 'NuBlox-E2E-Password-2026!';
 const ORGANISATION = 'NuBlox E2E Organisation';
 
 async function signIn(page: import('@playwright/test').Page) {
@@ -10,7 +10,7 @@ async function signIn(page: import('@playwright/test').Page) {
 	await page.getByLabel('Password', { exact: true }).fill(PASSWORD);
 	await page.getByRole('button', { name: 'Sign in' }).click();
 	await expect(page).toHaveURL(/\/select-organisation$/, { timeout: 15_000 });
-	await page.getByRole('button', { name: new RegExp(ORGANISATION) }).click();
+	await page.getByRole('button', { name: new RegExp(`^${ORGANISATION}`) }).click();
 	await expect(page).toHaveURL(/\/dashboard$/, { timeout: 15_000 });
 }
 

@@ -58,6 +58,21 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	const notifications = await new NotificationService(db).listForMember(actorContext, 12);
 	const capabilityRegistry = resolveNativeCapabilityRegistry(allowedPermissionKeys);
 	const workspaceDirectory = resolveWorkspaceDirectory(allowedPermissionKeys);
+	if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('product_service.'))) {
+		workspaceDirectory.unshift({
+			id: 'product-service-innovation',
+			label: 'Product, Service & Innovation',
+			items: [
+				{
+					id: 'product-service',
+					label: 'Product, Service & Innovation',
+					href: '/product-service',
+					description:
+						'Portfolio strategy, customer needs, ideation, investment cases and product/service lifecycle control.'
+				}
+			]
+		});
+	}
 	if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('governance.'))) {
 		workspaceDirectory.unshift({
 			id: 'corporate-governance',
@@ -151,8 +166,9 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				links
 			};
 		} catch (cause) {
-			if (!(cause instanceof RecordNotFoundError) && !(cause instanceof TenantAccessError))
+			if (!(cause instanceof RecordNotFoundError) && !(cause instanceof TenantAccessError)) {
 				throw cause;
+			}
 		}
 	}
 

@@ -78,7 +78,7 @@ Domain order indicates primary native ownership first, followed by material supp
 **Outcome:** Create, launch, improve and retire products/services with controlled lifecycle evidence.  
 **Value streams:** VS3, VS6, VS7  
 **Operating surface:** Product/service portfolio; requirements/design information; product/BOM/production; service lifecycle; innovation pipeline  
-**Current reality:** Target coverage includes planned native capability (D11, D10); adjacent operational/partial domains provide foundations but this function is not yet end-to-end complete.
+**Current reality:** PR #141 implements F05.01–F05.10 as one governed native product/service lifecycle: portfolio and offering strategy, attributable needs, ideation and scoring, versioned business cases, controlled design/review, development, launch governance, lifecycle review, retirement and innovation experiments. The F05 control thread reuses authoritative strategy, CRM, finance, documents, projects, governance and performance facts. D10 inventory/logistics and D11 production execution remain separate planned domain gaps and are not claimed by F05.
 
 | Sub-function | Native NuBlox domain composition |
 | --- | --- |

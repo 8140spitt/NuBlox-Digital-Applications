@@ -20,6 +20,10 @@ import {
 	SLICE4_STANDARD_ROLE_PERMISSIONS
 } from '$lib/server/procurement/procurement-commercial-bootstrap';
 import {
+	ensureProductServiceStandardRoleDefaults,
+	PRODUCT_SERVICE_STANDARD_ROLE_PERMISSIONS
+} from '$lib/server/product-service/product-service-bootstrap';
+import {
 	ensureProjectChangeStandardRoleDefaults,
 	PROJECT_CHANGE_STANDARD_ROLE_PERMISSIONS
 } from '$lib/server/projects/project-change-bootstrap';
@@ -54,7 +58,7 @@ import {
  * Increment this value whenever the composed standard-role permission templates
  * change in a way that must be re-applied to active organisations after deploy.
  */
-export const STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION = '2026-09-08.1';
+export const STANDARD_ROLE_PERMISSION_TEMPLATE_VERSION = '2026-09-11.1';
 
 const MAX_RECONCILED_ORGANISATIONS = 1_000;
 const reconciledOrganisations = new Set<string>();
@@ -71,7 +75,8 @@ const STANDARD_ROLE_PERMISSION_MAPS = [
 	PROJECT_RIDA_STANDARD_ROLE_PERMISSIONS,
 	PROJECT_CHANGE_STANDARD_ROLE_PERMISSIONS,
 	STRATEGY_STANDARD_ROLE_PERMISSIONS,
-	GOVERNANCE_STANDARD_ROLE_PERMISSIONS
+	GOVERNANCE_STANDARD_ROLE_PERMISSIONS,
+	PRODUCT_SERVICE_STANDARD_ROLE_PERMISSIONS
 ] as const;
 
 function reconciliationKey(organisationId: string): string {
@@ -176,7 +181,8 @@ export async function ensureStandardRolePermissionDefaults(
 			ensureProjectRidaStandardRoleDefaults(db, organisationId),
 			ensureProjectChangeStandardRoleDefaults(db, organisationId),
 			ensureStrategyStandardRoleDefaults(db, organisationId),
-			ensureGovernanceStandardRoleDefaults(db, organisationId)
+			ensureGovernanceStandardRoleDefaults(db, organisationId),
+			ensureProductServiceStandardRoleDefaults(db, organisationId)
 		]);
 		await ensureBoundStandardRolePermissionDefaults(db, organisationId);
 	})();
