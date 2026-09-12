@@ -33,7 +33,10 @@
 				return;
 			}
 
-			await goto(`${resolve('/auth')}?reset=1`, { replaceState: true, invalidateAll: true });
+			await goto(resolve('/auth?reset=1' as `/auth?${string}`), {
+				replaceState: true,
+				invalidateAll: true
+			});
 		} finally {
 			submitting = false;
 		}
