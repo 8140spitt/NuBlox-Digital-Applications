@@ -23,26 +23,21 @@ test('read-only member can navigate context-first workspaces without receiving m
 	for (const label of [
 		'Home',
 		'My work',
-		'Projects',
-		'Customers',
-		'Suppliers',
-		'Assets',
-		'Finance',
-		'Portal',
-		'More'
+		'F07 Sales & commercial',
+		'F09 Procurement & suppliers',
+		'F14 Finance',
+		'F15 People & workforce',
+		'F22 Property & assets',
+		'F26 Knowledge & documents',
+		'F27 Projects & programmes',
+		'All 29 functions',
+		'Search',
+		'Contexts'
 	]) {
 		await expect(primaryNavigation.getByRole('link', { name: label, exact: true })).toBeVisible();
 	}
-	for (const specialistLabel of [
-		'Documents',
-		'Project cost control',
-		'Valuations',
-		'People',
-		'Site, quality & safety'
-	]) {
-		await expect(
-			primaryNavigation.getByRole('link', { name: specialistLabel, exact: true })
-		).toHaveCount(0);
+	for (const legacyLabel of ['Projects', 'Customers', 'Suppliers', 'Assets', 'Portal', 'More']) {
+		await expect(primaryNavigation.getByRole('link', { name: legacyLabel, exact: true })).toHaveCount(0);
 	}
 	await expect(page.locator('.topbar').getByText('Create', { exact: true })).toHaveCount(0);
 
@@ -58,7 +53,7 @@ test('read-only member can navigate context-first workspaces without receiving m
 
 	await page.goto('/more');
 	await expect(page.getByRole('heading', { name: 'More workspaces', level: 1 })).toBeVisible();
-	await expect(page.getByRole('link', { name: /Documents/ })).toBeVisible();
+	await expect(page.getByRole('link', { name: /Documents/ }).first()).toBeVisible();
 	await expect(page.getByRole('link', { name: /Project cost control/ })).toHaveCount(0);
 	await expect(page.getByRole('link', { name: /Valuations/ })).toHaveCount(0);
 
