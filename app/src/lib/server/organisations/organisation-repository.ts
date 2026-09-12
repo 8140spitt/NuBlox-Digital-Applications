@@ -3,6 +3,7 @@ import type { DatabaseExecutor } from '$lib/server/db/executor';
 export type OrganisationSummary = {
 	id: string;
 	publicId: string;
+	routeSlug: string | null;
 	legalName: string;
 	tradingName: string | null;
 	defaultTimezone: string;
@@ -37,6 +38,7 @@ type OrganisationIdentifierRow = OrganisationIdentifierSummary & {
 function toSummary(row: {
 	id: string;
 	public_id: string;
+	route_slug: string | null;
 	legal_name: string;
 	trading_name: string | null;
 	default_timezone: string;
@@ -46,6 +48,7 @@ function toSummary(row: {
 	return {
 		id: row.id,
 		publicId: row.public_id,
+		routeSlug: row.route_slug,
 		legalName: row.legal_name,
 		tradingName: row.trading_name,
 		defaultTimezone: row.default_timezone,
@@ -77,6 +80,7 @@ export class OrganisationRepository {
 			.select([
 				'id',
 				'public_id',
+				'route_slug',
 				'legal_name',
 				'trading_name',
 				'default_timezone',
@@ -96,6 +100,7 @@ export class OrganisationRepository {
 			.select([
 				'id',
 				'public_id',
+				'route_slug',
 				'legal_name',
 				'trading_name',
 				'default_timezone',
