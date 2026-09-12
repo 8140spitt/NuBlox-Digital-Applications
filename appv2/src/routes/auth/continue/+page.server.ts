@@ -11,8 +11,9 @@ export const load: PageServerLoad = async ({ request }) => {
 	}
 
 	const contexts = await listActiveInternalAccessContexts(session.user.id);
-	if (contexts.length === 1) {
-		redirect(303, routes.dashboard(contexts[0].organisationPublicId));
+	const [onlyContext] = contexts;
+	if (contexts.length === 1 && onlyContext) {
+		redirect(303, routes.dashboard(onlyContext.organisationPublicId));
 	}
 	if (contexts.length > 1) {
 		redirect(303, routes.authSelectContext);
