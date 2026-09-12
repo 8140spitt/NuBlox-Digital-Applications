@@ -35,6 +35,8 @@ The portal is **CRM Party project participation**, not a standalone external-wor
 
 Route parameters establish context only. They never grant authority. Server-side authentication and authorisation must enforce identity → CRM Party → tenant relationship → project association → record/action permission before protected data is exposed.
 
+There are no legacy aliases for the former tenant-first route tree. V2 uses `/app/[tenant]/...` and `/portal/[tenant]/[crmParty]/...` as the only canonical application boundaries.
+
 ## V2 product rules
 
 1. One coherent operating system, not 29 unrelated mini-applications.
