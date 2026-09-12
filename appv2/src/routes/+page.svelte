@@ -1,9 +1,5 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { routes } from '$lib/routing/route-contract';
-
-	const internalAuthHref = routes.auth(routes.dashboard('nublox'));
-	const portalAuthHref = routes.auth(routes.portalDashboard('nublox', 'perspectivebc'));
 </script>
 
 <section class="nb-page reset-entry">
@@ -12,12 +8,13 @@
 	<p class="nb-lede">
 		The internal NuBlox operating system lives under /app. CRM Parties participate in authorised
 		projects and business actions through the connected /portal surface over the same canonical
-		data. Every identity enters through the single /auth boundary.
+		data. Every identity enters through the single /auth boundary, and its authorised context is
+		resolved after authentication.
 	</p>
 
 	<div class="entry-actions">
-		<a class="nb-action" href={resolve(internalAuthHref as '/auth')}>Sign in to internal app</a>
-		<a href={resolve(portalAuthHref as '/auth')}>Sign in to CRM Party portal</a>
+		<a class="nb-action" href={resolve('/auth/start')}>Access NuBlox</a>
+		<a href={resolve('/auth')}>Sign in</a>
 	</div>
 </section>
 
