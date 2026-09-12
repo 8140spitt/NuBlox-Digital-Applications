@@ -61,6 +61,8 @@ Email/password signup is enabled at the Better Auth protocol layer only so gover
 - a signed, time-limited new-tenant bootstrap intent created by `/auth/register`; or
 - a valid, time-limited organisation invitation opened through `/auth/invite/[token]`.
 
+The two provisioning intents are mutually exclusive: a signup request carrying both or neither is rejected rather than falling back to generic public registration.
+
 New-tenant registration creates a pending canonical organisation, domain user, Owner membership and Owner role. The registration becomes active only after email verification. The first Owner receives the active permission catalogue for the new tenant; additional roles and members are governed after tenant activation.
 
 Organisation invitations remain canonical `organisation_invitations` records. Existing NuBlox identities can accept an invitation directly after authentication when the verified email matches. New invitees create an identity against the invitation, verify the email, and then receive the membership and roles selected by the inviting tenant.
