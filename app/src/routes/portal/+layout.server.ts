@@ -77,8 +77,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 			new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
 			new PermissionService(db).decideMany(actor, ['portal.view', 'portal.manage'])
 		]);
-		if (!organisation?.routeSlug) throw redirect(303, '/select-organisation');
-		if (organisation.routeSlug !== locals.tenant.routeSlug) throw error(404, 'Tenant not found.');
+		if (!organisation) throw redirect(303, '/select-organisation');
+		const tenantSlug = locals.tenant.routeSlug;
 		if (decisions.get('portal.view')?.allowed) {
 			return {
 				mode: 'member' as const,
@@ -89,12 +89,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				organisation: {
 					publicId: organisation.publicId,
 					name: organisation.tradingName ?? organisation.legalName,
-					routeSlug: organisation.routeSlug
+					routeSlug: tenantSlug
 				},
 				party: null,
-				portalBase: tenantPath(organisation.routeSlug, '/portal/manage'),
-				dashboardHref: tenantPath(organisation.routeSlug, '/portal/manage'),
-				backToAppHref: tenantPath(organisation.routeSlug, '/dashboard'),
+				portalBase: tenantPath(tenantSlug, '/portal/manage'),
+				dashboardHref: tenantPath(tenantSlug, '/portal/manage'),
+				backToAppHref: tenantPath(tenantSlug, '/dashboard'),
 				canManage: decisions.get('portal.manage')?.allowed ?? false,
 				hasNetworkAccess: hasExternalWorkspace
 			};
