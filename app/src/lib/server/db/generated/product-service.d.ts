@@ -33,24 +33,6 @@ export interface ProductServiceBusinessCaseAssumptions {
   updated_at: Generated<Date>;
 }
 
-export interface ProductServiceBusinessCaseScenarios {
-  annual_revenue_or_value: Decimal | null;
-  business_case_id: string;
-  created_at: Generated<Date>;
-  created_by_member_id: string;
-  expected_benefit_value: Decimal | null;
-  id: Generated<string>;
-  investment_cost: Decimal | null;
-  narrative: string;
-  organisation_id: string;
-  probability_percent: Decimal | null;
-  public_id: string;
-  scenario_code: string;
-  scenario_type: string;
-  title: string;
-  updated_at: Generated<Date>;
-}
-
 export interface ProductServiceBusinessCases {
   annual_operating_cost: Decimal | null;
   annual_revenue_or_value: Decimal | null;
@@ -77,6 +59,24 @@ export interface ProductServiceBusinessCases {
   title: string;
   updated_at: Generated<Date>;
   version_number: Generated<number>;
+}
+
+export interface ProductServiceBusinessCaseScenarios {
+  annual_revenue_or_value: Decimal | null;
+  business_case_id: string;
+  created_at: Generated<Date>;
+  created_by_member_id: string;
+  expected_benefit_value: Decimal | null;
+  id: Generated<string>;
+  investment_cost: Decimal | null;
+  narrative: string;
+  organisation_id: string;
+  probability_percent: Decimal | null;
+  public_id: string;
+  scenario_code: string;
+  scenario_type: string;
+  title: string;
+  updated_at: Generated<Date>;
 }
 
 export interface ProductServiceDesignReviews {
@@ -212,8 +212,8 @@ export interface ProductServiceLaunchPlans {
   development_plan_id: string | null;
   governance_decision_public_id: string | null;
   id: Generated<string>;
-  launched_at: Date | null;
   launch_code: string;
+  launched_at: Date | null;
   lifecycle_status: Generated<string>;
   offering_id: string;
   operational_readiness: string;
