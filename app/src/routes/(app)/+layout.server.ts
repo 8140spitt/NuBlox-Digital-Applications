@@ -6,11 +6,12 @@ import {
 	summariseCapabilityRegistry
 } from '$lib/navigation/capability-registry';
 import {
-	resolveAppNavigation,
-	resolveProjectContextNavigation,
-	resolveQuickActions,
-	resolveWorkspaceDirectory
-} from '$lib/navigation/app-navigation';
+	resolveTenantAppNavigation,
+	resolveTenantProjectContextNavigation,
+	resolveTenantQuickActions,
+	resolveTenantWorkspaceDirectory
+} from '$lib/navigation/tenant-navigation';
+import { tenantPath } from '$lib/routing/route-contract';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
 import { RecordNotFoundError, TenantAccessError } from '$lib/server/kernel/errors';
@@ -26,7 +27,7 @@ function returnTo(pathname: string): string {
 function projectPublicIdFromUrl(url: URL): string | null {
 	const selected = url.searchParams.get('project')?.trim();
 	if (selected) return selected;
-	const match = /^\/projects\/([^/]+)(?:\/.*)?$/.exec(url.pathname);
+	const match = /\/projects\/([^/]+)(?:\/.*)?$/.exec(url.pathname);
 	return match?.[1] ? decodeURIComponent(match[1]) : null;
 }
 
@@ -36,11 +37,13 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		!locals.tenant.membershipVerified ||
 		!locals.tenant.organisationId ||
 		!locals.tenant.organisationPublicId ||
+		!locals.tenant.routeSlug ||
 		!locals.tenant.memberId
 	) {
 		throw redirect(303, '/select-organisation');
 	}
 
+	const tenantSlug = locals.tenant.routeSlug;
 	const db = getDatabase();
 	const actorContext = {
 		organisationId: locals.tenant.organisationId,
@@ -57,7 +60,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 
 	const notifications = await new NotificationService(db).listForMember(actorContext, 12);
 	const capabilityRegistry = resolveNativeCapabilityRegistry(allowedPermissionKeys);
-	const workspaceDirectory = resolveWorkspaceDirectory(allowedPermissionKeys);
+	const workspaceDirectory = resolveTenantWorkspaceDirectory(tenantSlug, allowedPermissionKeys);
 	if (allowedPermissionKeys.some((permissionKey) => permissionKey.startsWith('product_service.'))) {
 		workspaceDirectory.unshift({
 			id: 'product-service-innovation',
@@ -66,7 +69,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				{
 					id: 'product-service',
 					label: 'Product, Service & Innovation',
-					href: '/product-service',
+					href: tenantPath(tenantSlug, '/product-service'),
 					description:
 						'Portfolio strategy, customer needs, ideation, investment cases and product/service lifecycle control.'
 				}
@@ -81,7 +84,7 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				{
 					id: 'governance',
 					label: 'Corporate governance',
-					href: '/governance',
+					href: tenantPath(tenantSlug, '/governance'),
 					description:
 						'Boards, committees, business authority, meetings, decisions, policy and ethics with controlled evidence.'
 				}
@@ -96,34 +99,35 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				{
 					id: 'strategy',
 					label: 'Strategy & enterprise planning',
-					href: '/strategy',
+					href: tenantPath(tenantSlug, '/strategy'),
 					description:
 						'Purpose, environmental analysis, strategic choices and objectives with controlled versioning.'
 				},
 				{
 					id: 'enterprise-performance',
 					label: 'Enterprise performance',
-					href: '/performance',
+					href: tenantPath(tenantSlug, '/performance'),
 					description:
 						'Performance frameworks, executive reporting, variance intervention, benchmarking and benefits realisation.'
 				},
 				{
 					id: 'corporate-development',
 					label: 'Corporate development',
-					href: '/corporate-development',
+					href: tenantPath(tenantSlug, '/corporate-development'),
 					description:
 						'Opportunity pipeline, valuation, due diligence, transactions, integration, divestiture and strategic partnerships.'
 				}
 			]
 		});
 	}
+
 	const requestedProjectPublicId = projectPublicIdFromUrl(url);
 	let projectContext: {
 		publicId: string;
 		projectNumber: string;
 		name: string;
 		status: string;
-		links: ReturnType<typeof resolveProjectContextNavigation>;
+		links: ReturnType<typeof resolveTenantProjectContextNavigation>;
 	} | null = null;
 
 	if (requestedProjectPublicId) {
@@ -132,7 +136,8 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				actorContext,
 				requestedProjectPublicId
 			);
-			const links = resolveProjectContextNavigation(
+			const links = resolveTenantProjectContextNavigation(
+				tenantSlug,
 				allowedPermissionKeys,
 				workspace.project.publicId
 			);
@@ -142,7 +147,10 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				const ridaLink = {
 					id: 'rida',
 					label: 'RIDA',
-					href: `/projects/${encodeURIComponent(workspace.project.publicId)}/rida`
+					href: tenantPath(
+						tenantSlug,
+						`/projects/${encodeURIComponent(workspace.project.publicId)}/rida`
+					)
 				};
 				const progressIndex = links.findIndex((link) => link.id === 'progress');
 				links.splice(progressIndex >= 0 ? progressIndex + 1 : links.length, 0, ridaLink);
@@ -153,7 +161,10 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				const changeLink = {
 					id: 'change',
 					label: 'Change',
-					href: `/projects/${encodeURIComponent(workspace.project.publicId)}/changes`
+					href: tenantPath(
+						tenantSlug,
+						`/projects/${encodeURIComponent(workspace.project.publicId)}/changes`
+					)
 				};
 				const ridaIndex = links.findIndex((link) => link.id === 'rida');
 				links.splice(ridaIndex >= 0 ? ridaIndex + 1 : links.length, 0, changeLink);
@@ -179,11 +190,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 		},
 		organisation: {
 			publicId: organisation.publicId,
-			name: organisation.tradingName ?? organisation.legalName
+			name: organisation.tradingName ?? organisation.legalName,
+			routeSlug: tenantSlug
 		},
-		navigation: resolveAppNavigation(allowedPermissionKeys),
+		navigation: resolveTenantAppNavigation(tenantSlug, allowedPermissionKeys),
 		workspaceDirectory,
-		quickActions: resolveQuickActions(allowedPermissionKeys),
+		quickActions: resolveTenantQuickActions(tenantSlug, allowedPermissionKeys),
 		capabilityRegistry,
 		capabilitySummary: summariseCapabilityRegistry(capabilityRegistry),
 		notifications,
