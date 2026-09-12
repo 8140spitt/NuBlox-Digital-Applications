@@ -16,6 +16,7 @@ on:
       - 'app/.kysely-governance-codegenrc.json'
       - 'app/.kysely-corporate-development-codegenrc.json'
       - 'app/.kysely-product-service-codegenrc.json'
+      - 'app/.kysely-external-access-codegenrc.json'
       - 'app/.prettierignore'
       - 'app/eslint.config.js'
       - 'app/playwright.config.ts'
@@ -45,6 +46,7 @@ on:
       - 'app/.kysely-governance-codegenrc.json'
       - 'app/.kysely-corporate-development-codegenrc.json'
       - 'app/.kysely-product-service-codegenrc.json'
+      - 'app/.kysely-external-access-codegenrc.json'
       - 'app/.prettierignore'
       - 'app/eslint.config.js'
       - 'app/playwright.config.ts'
@@ -132,16 +134,16 @@ jobs:
           fk_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.referential_constraints WHERE constraint_schema='nublox_migration_validation';")
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           echo "Migrated application schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '521'
-          test "$fk_count" = '1447'
-          test "$check_count" = '836'
+          test "$table_count" = '526'
+          test "$fk_count" = '1461'
+          test "$check_count" = '843'
 
       - name: Regenerate database-derived Kysely types
         working-directory: app
         run: pnpm db:types
 
       - name: Verify generated types are committed
-        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/access-control.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts app/src/lib/server/db/generated/project-controls.d.ts app/src/lib/server/db/generated/strategy.d.ts app/src/lib/server/db/generated/governance.d.ts app/src/lib/server/db/generated/corporate-development.d.ts app/src/lib/server/db/generated/product-service.d.ts
+        run: git diff --exit-code -- app/src/lib/server/db/generated/database.d.ts app/src/lib/server/db/generated/access-control.d.ts app/src/lib/server/db/generated/collections.d.ts app/src/lib/server/db/generated/accounting.d.ts app/src/lib/server/db/generated/accounts-payable.d.ts app/src/lib/server/db/generated/project-controls.d.ts app/src/lib/server/db/generated/strategy.d.ts app/src/lib/server/db/generated/governance.d.ts app/src/lib/server/db/generated/corporate-development.d.ts app/src/lib/server/db/generated/product-service.d.ts app/src/lib/server/db/generated/external-access.d.ts
 
       - name: Run real-MySQL integration suite
         working-directory: app
