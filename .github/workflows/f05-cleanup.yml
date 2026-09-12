@@ -1,0 +1,33 @@
+name: F05 cleanup
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/f05-cleanup.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Delete merged F05 branch
+        run: |
+          git push origin --delete feat/f05-product-service-innovation || true
+
+      - name: Remove cleanup workflow from main
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/f05-cleanup.yml
+          git commit -m "chore: remove F05 cleanup workflow"
+          git push origin HEAD:main
