@@ -1,12 +1,11 @@
 import { error, redirect } from '@sveltejs/kit';
-import { tenantContextFromRoute } from '$lib/context/tenant-context';
-import { routes } from '$lib/routing/route-contract';
+import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
+import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ params, request, url }) => {
-	const tenant = tenantContextFromRoute(params.tenant);
-	if (!tenant) {
+	if (!isRouteSlug(params.tenant)) {
 		error(404, 'Tenant not found');
 	}
 
@@ -15,8 +14,20 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 		redirect(303, routes.auth(`${url.pathname}${url.search}`));
 	}
 
+	const access = await resolveActiveInternalTenant(session.user.id, params.tenant);
+	if (!access) {
+		redirect(303, routes.authContinue);
+	}
+
 	return {
-		tenant,
+		tenant: {
+			slug: access.organisationPublicId,
+			displayName: access.organisationName,
+			organisationId: access.organisationId,
+			organisationPublicId: access.organisationPublicId,
+			memberId: access.memberId,
+			memberPublicId: access.memberPublicId
+		},
 		user: {
 			id: session.user.id,
 			name: session.user.name,
