@@ -18,9 +18,7 @@ describe('tenant-first route contract', () => {
 	});
 
 	it('builds the CRM-party portal login and dashboard URLs', () => {
-		expect(portalLoginPath('nublox', 'perspectivebc')).toBe(
-			'/nublox/portal/perspectivebc/login'
-		);
+		expect(portalLoginPath('nublox', 'perspectivebc')).toBe('/nublox/portal/perspectivebc/login');
 		expect(portalDashboardPath('nublox', 'perspectivebc')).toBe(
 			'/nublox/portal/perspectivebc/dashboard'
 		);
