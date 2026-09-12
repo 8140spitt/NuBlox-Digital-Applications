@@ -8,6 +8,7 @@ export type Actor = {
 export type TenantContext = {
 	organisationId: string | null;
 	organisationPublicId: string | null;
+	routeSlug: string | null;
 	memberId: string | null;
 	membershipVerified: boolean;
 };
