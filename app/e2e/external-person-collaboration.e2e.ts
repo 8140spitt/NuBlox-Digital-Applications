@@ -14,15 +14,14 @@ test('a verified external person with no organisation membership signs straight 
 	await page.getByRole('button', { name: 'Sign in' }).click();
 
 	await expect(page).toHaveURL(/\/portal$/, { timeout: 15_000 });
-	await expect(page.getByRole('heading', { name: 'Your shared projects' })).toBeVisible();
+	await expect(page.getByRole('heading', { name: 'Your shared work', level: 1 })).toBeVisible();
 	await expect(
-		page.getByText(
-			'Project access has been granted to you personally. You do not need a NuBlox organisation, and your employer or CRM affiliation is not mapped to a platform organisation.'
-		)
+		page.getByRole('heading', { name: 'Projects shared with you personally' })
 	).toBeVisible();
+	await expect(page.getByText('External access is deny-by-default.', { exact: true })).toBeVisible();
 	await expect(page.getByText(PROJECT_NUMBER, { exact: true })).toBeVisible();
 	await expect(page.getByRole('heading', { name: PROJECT_NAME })).toBeVisible();
-	await expect(page.getByText('Project roles: Engineer', { exact: true })).toBeVisible();
+	await expect(page.getByText('Roles: Engineer', { exact: true })).toBeVisible();
 	await expect(page.getByRole('link', { name: 'Create organisation' })).toHaveCount(0);
 	await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toHaveCount(0);
 });
