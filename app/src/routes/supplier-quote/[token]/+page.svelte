@@ -14,7 +14,7 @@
 		if (data.actor) return;
 		submitting = true;
 		message = '';
-		const callbackURL = `${window.location.origin}/signin?verified=1&returnTo=${encodeURIComponent('/portal')}`;
+		const callbackURL = `${window.location.origin}/signin?verified=1&returnTo=${encodeURIComponent('/portal/supplier-quotes')}`;
 		const result = await authClient.signUp.email({
 			email: data.invitation.email,
 			name: displayName.trim(),
@@ -69,7 +69,7 @@
 				<h2>Open the supplier portal</h2>
 				<p>Signed in as {data.actor.displayName} · {data.actor.email}</p>
 				{#if data.emailMatchesActor}
-					<a class="primary" href="/portal">Review and submit quotation</a>
+					<a class="primary" href="/portal/supplier-quotes">Review and submit quotation</a>
 				{:else}
 					<p class="warning">
 						This invitation was sent to {data.invitation.email}. Sign in with that verified email
