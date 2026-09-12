@@ -30,7 +30,7 @@
 			}
 
 			await invalidateAll();
-			await goto(resolve(destination));
+			await goto(destination);
 		} finally {
 			submitting = false;
 		}
@@ -85,7 +85,7 @@
 					<h2>{data.user.name}</h2>
 					<p>{data.user.email}</p>
 					<div class="signed-in-actions">
-						<a class="primary-action" href={resolve(destination)}>Continue to NuBlox</a>
+						<a class="primary-action" href={destination}>Continue to NuBlox</a>
 						<button type="button" onclick={signOut}>Sign out</button>
 					</div>
 				</div>
