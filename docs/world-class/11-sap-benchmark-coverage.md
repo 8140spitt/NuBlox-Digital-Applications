@@ -124,6 +124,8 @@ Requirement
 
 This is NuBlox's strongest potential differentiator because it joins enterprise product/supply data directly to project delivery and the long-lived built asset.
 
+F05 Product, Service & Innovation Management now establishes the governed upstream lifecycle needed for P3: portfolio/need/idea provenance, versioned investment cases, controlled design and review evidence, development intent, launch readiness with F02 approval references, live lifecycle reviews, retirement control and innovation learning. This materially advances the PLM/IPPE benchmark control thread while deliberately stopping at the D10/D11 boundary: material masters, BOM/routing, MRP, warehouse/inventory and production/fabrication execution remain open P2/P3 gaps and must be delivered by their authoritative native domains.
+
 Primary domains: **6, 10, 11, 13, 14, 15, 19**.  
 Primary stream: **VS6 Design-to-asset**.  
 Primary proof: **Journey B**.

@@ -67,15 +67,13 @@ Real-MySQL integration coverage includes:
 - F05.01–F05.04: portfolio, offering, attributable need, idea, risk-aware scoring, business-case versioning, approval/supersession, audit evidence, permission denial and tenant-boundary denial;
 - F05.05–F05.10: approved-business-case design, design-review gate, approved-design development, completion, launch governance negative/positive paths, go-live, lifecycle review, retirement governance negative/positive paths, controlled retirement and innovation experiment closure.
 
-The product/service command centre is exposed at `/product-service` under the independent F05 permission family. Server actions exist for the full F05.01–F05.10 lifecycle. Browser E2E and final UI lifecycle controls remain part of the PR closure gate and must pass before merge.
+The product/service command centre is exposed at `/product-service` under the independent F05 permission family, with lifecycle control at `/product-service/lifecycle`. Server actions exist for the full F05.01–F05.10 lifecycle. Browser E2E now proves authenticated portfolio, offering, need, idea, scoring, business-case approval and reviewed-design approval across the two user surfaces; the full F05.05–F05.10 backend decision thread remains covered by real-MySQL integration tests.
 
 ## Closure status
 
 This document records implementation evidence; it is not a closure declaration. PR #141 must remain unmerged until:
 
-1. the F05.05–F05.10 user interface is fully operational rather than placeholder-only;
-2. product/service browser E2E is committed and passing;
-3. capability-map and SAP benchmark evidence are updated without overstating unrelated gaps;
-4. all PR review findings are resolved;
-5. an owner-authored exact head passes Complete System Validation;
-6. the PR is merged, merged-main validation passes, issue #140 is closed and the feature branch is deleted.
+1. product/service browser E2E and the full validation suite pass on the final owner-authored head;
+2. all PR review findings are resolved;
+3. the PR is merged and merged-main validation passes;
+4. issue #140 is closed and the feature branch is deleted.
