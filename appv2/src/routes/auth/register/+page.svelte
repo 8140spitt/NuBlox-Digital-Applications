@@ -62,9 +62,8 @@
 				return;
 			}
 
-			const next = new URL(resolve('/auth/verify-email'), window.location.origin);
-			next.searchParams.set('email', email.trim());
-			await goto(next, { replaceState: true, invalidateAll: true });
+			const verificationPath = `/auth/verify-email?email=${encodeURIComponent(email.trim())}` as `/auth/verify-email?${string}`;
+			await goto(resolve(verificationPath), { replaceState: true, invalidateAll: true });
 		} finally {
 			submitting = false;
 		}
