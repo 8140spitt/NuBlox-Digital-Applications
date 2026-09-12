@@ -19,7 +19,7 @@
 		"test:e2e": "playwright install && playwright test",
 		"db:migrate": "dbmate --migrations-dir ../database/migrations --no-dump-schema up",
 		"db:status": "dbmate --migrations-dir ../database/migrations --no-dump-schema status",
-		"db:types": "kysely-codegen --config-file .kysely-codegenrc.json && kysely-codegen --config-file .kysely-access-control-codegenrc.json && kysely-codegen --config-file .kysely-collections-codegenrc.json && kysely-codegen --config-file .kysely-accounting-codegenrc.json && kysely-codegen --config-file .kysely-accounts-payable-codegenrc.json && kysely-codegen --config-file .kysely-project-controls-codegenrc.json && kysely-codegen --config-file .kysely-strategy-codegenrc.json && kysely-codegen --config-file .kysely-governance-codegenrc.json && kysely-codegen --config-file .kysely-corporate-development-codegenrc.json && kysely-codegen --config-file .kysely-product-service-codegenrc.json"
+		"db:types": "kysely-codegen --config-file .kysely-codegenrc.json && kysely-codegen --config-file .kysely-access-control-codegenrc.json && kysely-codegen --config-file .kysely-collections-codegenrc.json && kysely-codegen --config-file .kysely-accounting-codegenrc.json && kysely-codegen --config-file .kysely-accounts-payable-codegenrc.json && kysely-codegen --config-file .kysely-project-controls-codegenrc.json && kysely-codegen --config-file .kysely-strategy-codegenrc.json && kysely-codegen --config-file .kysely-governance-codegenrc.json && kysely-codegen --config-file .kysely-corporate-development-codegenrc.json && kysely-codegen --config-file .kysely-product-service-codegenrc.json && kysely-codegen --config-file .kysely-external-access-codegenrc.json"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
@@ -38,8 +38,6 @@
 		"playwright": "^1.60.0",
 		"prettier": "^3.8.3",
 		"prettier-plugin-svelte": "^4.1.0",
-		"svelte": "^5.56.1",
-		"svelte-check": "^4.6.0",
 		"typescript": "^6.0.3",
 		"typescript-eslint": "^8.60.1",
 		"vite": "^8.0.16",
