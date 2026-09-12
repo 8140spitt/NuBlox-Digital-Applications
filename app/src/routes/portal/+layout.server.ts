@@ -1,19 +1,59 @@
 import { error, redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
+import {
+	parseCanonicalRoute,
+	portalDashboardPath,
+	portalLoginPath,
+	tenantPath
+} from '$lib/routing/route-contract';
 import { PermissionService } from '$lib/server/capabilities/permission-service';
 import { getDatabase } from '$lib/server/db/database';
 import { ExternalAccessService } from '$lib/server/external-access/external-access-service';
 import { OrganisationRepository } from '$lib/server/organisations/organisation-repository';
 import { ProjectExternalCollaborationService } from '$lib/server/projects/project-external-collaboration-service';
-
-function returnTo(pathname: string): string {
-	return `/signin?returnTo=${encodeURIComponent(pathname)}`;
-}
+import { RouteContextService } from '$lib/server/routing/route-context-service';
 
 export const load: LayoutServerLoad = async ({ locals, url }) => {
-	if (!locals.actor) throw redirect(303, returnTo(url.pathname));
+	const canonical = parseCanonicalRoute(url.pathname);
+	if (canonical?.kind === 'portal') {
+		if (!locals.actor) {
+			throw redirect(
+				303,
+				`${portalLoginPath(canonical.tenantSlug, canonical.partySlug)}?returnTo=${encodeURIComponent(url.pathname)}`
+			);
+		}
+		const context = await new RouteContextService(getDatabase()).findPortalContext(
+			locals.actor.authUserId,
+			canonical.tenantSlug,
+			canonical.partySlug
+		);
+		if (!context) throw error(404, 'Portal context not found.');
+		return {
+			mode: 'external' as const,
+			actor: {
+				displayName: locals.actor.displayName,
+				email: locals.actor.email
+			},
+			organisation: {
+				publicId: context.organisationPublicId,
+				name: context.organisationName,
+				routeSlug: context.tenantSlug
+			},
+			party: {
+				publicId: context.partyPublicId,
+				name: context.partyName,
+				routeSlug: context.partySlug
+			},
+			portalBase: `/${context.tenantSlug}/portal/${context.partySlug}`,
+			dashboardHref: portalDashboardPath(context.tenantSlug, context.partySlug),
+			backToAppHref: null,
+			canManage: false,
+			hasNetworkAccess: true
+		};
+	}
 
+	if (!locals.actor) throw redirect(303, `/signin?returnTo=${encodeURIComponent(url.pathname)}`);
 	const db = getDatabase();
 	const [hasNetworkAccess, externalProjects] = await Promise.all([
 		new ExternalAccessService(db).hasActiveAccess(locals.actor.authUserId),
@@ -21,7 +61,12 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 	]);
 	const hasExternalWorkspace = hasNetworkAccess || externalProjects.length > 0;
 
-	if (locals.tenant.membershipVerified && locals.tenant.organisationId && locals.tenant.memberId) {
+	if (
+		locals.tenant.membershipVerified &&
+		locals.tenant.organisationId &&
+		locals.tenant.memberId &&
+		locals.tenant.routeSlug
+	) {
 		const actor = {
 			organisationId: locals.tenant.organisationId,
 			userId: locals.actor.userId,
@@ -32,9 +77,9 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 			new OrganisationRepository(db).findActiveById(locals.tenant.organisationId),
 			new PermissionService(db).decideMany(actor, ['portal.view', 'portal.manage'])
 		]);
-		if (!organisation) throw redirect(303, '/select-organisation');
-		const canViewMemberPortal = decisions.get('portal.view')?.allowed ?? false;
-		if (canViewMemberPortal) {
+		if (!organisation?.routeSlug) throw redirect(303, '/select-organisation');
+		if (organisation.routeSlug !== locals.tenant.routeSlug) throw error(404, 'Tenant not found.');
+		if (decisions.get('portal.view')?.allowed) {
 			return {
 				mode: 'member' as const,
 				actor: {
@@ -43,27 +88,23 @@ export const load: LayoutServerLoad = async ({ locals, url }) => {
 				},
 				organisation: {
 					publicId: organisation.publicId,
-					name: organisation.tradingName ?? organisation.legalName
+					name: organisation.tradingName ?? organisation.legalName,
+					routeSlug: organisation.routeSlug
 				},
+				party: null,
+				portalBase: tenantPath(organisation.routeSlug, '/portal/manage'),
+				dashboardHref: tenantPath(organisation.routeSlug, '/portal/manage'),
+				backToAppHref: tenantPath(organisation.routeSlug, '/dashboard'),
 				canManage: decisions.get('portal.manage')?.allowed ?? false,
 				hasNetworkAccess: hasExternalWorkspace
 			};
 		}
-		if (!hasExternalWorkspace) {
-			throw error(403, 'NuBlox Network is not available for this identity or membership.');
-		}
+		if (!hasExternalWorkspace) throw error(403, 'Portal access is not available.');
 	}
 
-	if (!hasExternalWorkspace) throw redirect(303, '/select-organisation');
-
-	return {
-		mode: 'external' as const,
-		actor: {
-			displayName: locals.actor.displayName,
-			email: locals.actor.email
-		},
-		organisation: null,
-		canManage: false,
-		hasNetworkAccess: true
-	};
+	const externalDashboard = await new RouteContextService(db).defaultPortalDashboard(
+		locals.actor.authUserId
+	);
+	if (externalDashboard) throw redirect(303, externalDashboard);
+	throw redirect(303, '/select-organisation');
 };
