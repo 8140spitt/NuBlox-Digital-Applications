@@ -59,7 +59,9 @@
 	{#if openWork.length === 0}
 		<div class="empty-state">
 			<strong>No action is waiting for you.</strong>
-			<p>New work appears here only when the sharing organisation grants it to this portal context.</p>
+			<p>
+				New work appears here only when the sharing organisation grants it to this portal context.
+			</p>
 		</div>
 	{:else}
 		<div class="work-list">
@@ -138,9 +140,9 @@
 <section class="boundary-panel">
 	<strong>External access is deny-by-default.</strong>
 	<p>
-		This portal does not make you a member of {data.organisation?.name ?? 'the sharing organisation'}.
-		Every page and action is checked against the tenant, CRM party, active grant, record context and
-		permitted capability on the server.
+		This portal does not make you a member of {data.organisation?.name ??
+			'the sharing organisation'}. Every page and action is checked against the tenant, CRM party,
+		active grant, record context and permitted capability on the server.
 	</p>
 </section>
 
