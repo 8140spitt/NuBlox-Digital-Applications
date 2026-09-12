@@ -83,7 +83,9 @@ test('owner explicitly shares controlled work and partner completes it through t
 	await page.context().clearCookies();
 	await signIn(page, PARTNER_EMAIL, PARTNER_PASSWORD, PARTNER_ORGANISATION);
 	await page.goto('/portal');
-	await expect(page.getByRole('heading', { name: 'Shared work' })).toBeVisible();
+	await expect(
+		page.getByRole('heading', { name: 'Network & collaboration', level: 1 })
+	).toBeVisible();
 	await expect(page.getByRole('navigation', { name: 'Primary navigation' })).toHaveCount(0);
 	await expect(
 		page.getByText(`${PROJECT_NUMBER} · ${PROJECT_NAME}`, { exact: false }).first()
