@@ -30,7 +30,8 @@ export async function resolveTenantContext(event: RequestEvent): Promise<TenantC
 	if (!actor) return emptyTenant();
 
 	const repository = new OrganisationMembershipRepository(getDatabase());
-	const canonical = parseCanonicalRoute(event.url.pathname);
+	const pathname = event.url?.pathname;
+	const canonical = pathname ? parseCanonicalRoute(pathname) : null;
 	if (canonical && canonical.kind !== 'portal') {
 		const membership = await repository.findActiveMembershipByOrganisationRouteSlug(
 			actor.userId,
