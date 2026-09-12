@@ -1,0 +1,68 @@
+name: Format tenant routing refactor
+
+on:
+  push:
+    branches:
+      - refactor/tenant-first-routing
+    paths:
+      - '.tenant-routing-format-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: refactor/tenant-first-routing
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: app
+        run: pnpm install --frozen-lockfile
+      - name: Format refactor files
+        working-directory: app
+        run: >-
+          pnpm exec prettier --write
+          src/hooks.server.ts
+          src/hooks.ts
+          src/lib/navigation/tenant-navigation.ts
+          src/lib/routing/route-contract.ts
+          src/lib/server/db/routing-schema.ts
+          src/lib/server/organisations/membership-repository.ts
+          src/lib/server/request-context.ts
+          src/lib/server/routing/route-context-service.ts
+          src/lib/types/request-context.ts
+          'src/routes/(app)/+layout.server.ts'
+          'src/routes/(auth)/select-organisation/+page.server.ts'
+          'src/routes/(auth)/select-organisation/+page.svelte'
+          'src/routes/(auth)/signin/+page.server.ts'
+          src/routes/api/tenant/select/+server.ts
+          src/routes/portal/+layout.server.ts
+          src/routes/portal/+layout.svelte
+          src/routes/portal/+page.server.ts
+          'src/routes/portal/project-actions/[workItemPublicId]/+page.server.ts'
+          'src/routes/portal/supplier-quotes/[workItemPublicId]/+page.server.ts'
+          e2e/global-setup.mjs
+          e2e/seed-tenant-party-routing-fixture.mjs
+          e2e/external-person-collaboration.e2e.ts
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add app/src app/e2e
+          git commit -m 'Format tenant routing refactor'
+          git push origin HEAD:refactor/tenant-first-routing
