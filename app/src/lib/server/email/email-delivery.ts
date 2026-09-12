@@ -15,7 +15,7 @@ export type EmailDelivery = {
 function redactSensitiveEmailText(text: string): string {
 	return text
 		.replace(/([?&](?:token|code|key|secret|signature)=)[^&\s]+/gi, '$1[REDACTED]')
-		.replace(/(\/(?:invite|collaborate)\/)[^/?#\s]+/gi, '$1[REDACTED]');
+		.replace(/(\/(?:invite|collaborate|supplier-quote)\/)[^/?#\s]+/gi, '$1[REDACTED]');
 }
 
 function includeSensitiveConsoleEmailBody(): boolean {
