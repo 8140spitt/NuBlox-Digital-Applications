@@ -84,7 +84,8 @@ function requiredText(value: string, label: string, max: number): string {
 function optionalText(value: string | null | undefined, max: number): string | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (text.length > max) throw new ExternalInvitationValidationError('A supplied value is too long.');
+	if (text.length > max)
+		throw new ExternalInvitationValidationError('A supplied value is too long.');
 	return text;
 }
 
@@ -94,12 +95,14 @@ function hashToken(rawToken: string): string {
 
 function applicationBaseUrl(): string {
 	const value = env.BETTER_AUTH_URL?.trim();
-	if (!value) throw new Error('BETTER_AUTH_URL is required to build NuBlox Network invitation links.');
+	if (!value)
+		throw new Error('BETTER_AUTH_URL is required to build NuBlox Network invitation links.');
 	return value;
 }
 
 function insertedId(result: { insertId?: bigint }): string {
-	if (result.insertId === undefined) throw new Error('External access insert did not return an ID.');
+	if (result.insertId === undefined)
+		throw new Error('External access insert did not return an ID.');
 	return result.insertId.toString();
 }
 
@@ -256,7 +259,11 @@ export class ExternalInvitationService {
 		}
 	}
 
-	async bindSignupAuthUser(rawToken: string, emailInput: string, authUserId: string): Promise<void> {
+	async bindSignupAuthUser(
+		rawToken: string,
+		emailInput: string,
+		authUserId: string
+	): Promise<void> {
 		await this.validateSignup(rawToken, emailInput);
 		const result = await this.db
 			.updateTable('external_access_invitations')
@@ -456,15 +463,17 @@ export class ExternalInvitationService {
 					.executeTakeFirst();
 				continue;
 			}
-			await this.db.transaction().execute((trx) =>
-				this.activateInvitation(
-					trx,
-					row.id,
-					input.authUserId,
-					link.userId,
-					input.correlationId ?? randomUUID()
-				)
-			);
+			await this.db
+				.transaction()
+				.execute((trx) =>
+					this.activateInvitation(
+						trx,
+						row.id,
+						input.authUserId,
+						link.userId,
+						input.correlationId ?? randomUUID()
+					)
+				);
 		}
 	}
 

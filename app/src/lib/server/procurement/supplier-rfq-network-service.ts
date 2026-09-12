@@ -93,7 +93,8 @@ function decimal(value: string, scale: number, label: string, allowZero = false)
 function optionalDate(value: string | null | undefined, label: string): Date | null {
 	const text = value?.trim() ?? '';
 	if (!text) return null;
-	if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) throw new ProcurementValidationError(`${label} is invalid.`);
+	if (!/^\d{4}-\d{2}-\d{2}$/.test(text))
+		throw new ProcurementValidationError(`${label} is invalid.`);
 	const date = new Date(`${text}T00:00:00.000Z`);
 	if (Number.isNaN(date.getTime())) throw new ProcurementValidationError(`${label} is invalid.`);
 	return date;
@@ -125,7 +126,9 @@ export class SupplierRfqNetworkService {
 		actor: TenantActorContext,
 		db: DatabaseExecutor
 	): Promise<{ id: string }> {
-		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(actor);
+		const membership = await new OrganisationMembershipRepository(db).findActiveActorMembership(
+			actor
+		);
 		if (!membership) throw new TenantAccessError();
 		const decision = await new PermissionService(db).decide(actor, 'procurement.rfq.issue');
 		if (!decision.allowed) throw new TenantAccessError('This procurement action is not permitted.');
@@ -213,7 +216,9 @@ export class SupplierRfqNetworkService {
 					memberId: membership.id
 				});
 				if (updated !== 1) {
-					throw new ProcurementValidationError('The RFQ version changed before it could be issued.');
+					throw new ProcurementValidationError(
+						'The RFQ version changed before it could be issued.'
+					);
 				}
 			}
 			const issueEventId = await repository.insertRfqIssueEvent({
@@ -237,7 +242,11 @@ export class SupplierRfqNetworkService {
 				.where('id', '=', actor.organisationId)
 				.executeTakeFirstOrThrow();
 			const ownerName = owner.tradingName?.trim() || owner.legalName;
-			const invitationService = new ExternalInvitationService(this.db, this.now, this.publicIdFactory);
+			const invitationService = new ExternalInvitationService(
+				this.db,
+				this.now,
+				this.publicIdFactory
+			);
 			const externalInvitation = await invitationService.createPending(trx, {
 				owningOrganisationId: actor.organisationId,
 				inviteEmail: supplier.primaryEmail,
@@ -320,7 +329,11 @@ export class SupplierRfqNetworkService {
 			.innerJoin('rfq_invitations as invitation', 'invitation.id', 'link.rfq_invitation_id')
 			.innerJoin('rfq_versions as version', 'version.id', 'invitation.rfq_version_id')
 			.innerJoin('rfqs as rfq', 'rfq.id', 'version.rfq_id')
-			.innerJoin('procurement_packages as procurementPackage', 'procurementPackage.id', 'rfq.procurement_package_id')
+			.innerJoin(
+				'procurement_packages as procurementPackage',
+				'procurementPackage.id',
+				'rfq.procurement_package_id'
+			)
 			.innerJoin('projects as project', 'project.id', 'procurementPackage.project_id')
 			.innerJoin('organisations as owner', 'owner.id', 'work.owning_organisation_id')
 			.select([
@@ -354,7 +367,9 @@ export class SupplierRfqNetworkService {
 			.where('grant.capability_key', '=', 'procurement.rfq.respond')
 			.where('grant.revoked_at', 'is', null)
 			.where('grant.valid_from', '<=', this.now())
-			.where((eb) => eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', this.now())]))
+			.where((eb) =>
+				eb.or([eb('grant.valid_until', 'is', null), eb('grant.valid_until', '>', this.now())])
+			)
 			.executeTakeFirst();
 	}
 
@@ -430,7 +445,11 @@ export class SupplierRfqNetworkService {
 		};
 	}
 
-	async submitQuote(actor: Actor, input: SubmitSupplierQuoteInput, correlationId: string): Promise<string> {
+	async submitQuote(
+		actor: Actor,
+		input: SubmitSupplierQuoteInput,
+		correlationId: string
+	): Promise<string> {
 		const workItemPublicId = requiredPublicId(input.workItemPublicId, 'Network work item');
 		const supplierReference = optionalText(input.supplierReference, 160);
 		const validUntil = optionalDate(input.validUntil, 'Valid until');
@@ -444,15 +463,25 @@ export class SupplierRfqNetworkService {
 				workItemPublicId,
 				{ domainKey: 'procurement', actionType: 'submit_quote' }
 			);
-			if (work.state !== 'open' || work.capabilityKey !== 'procurement.rfq.respond' || !work.invitationId) {
-				throw new ProcurementValidationError('This supplier quotation request is no longer actionable.');
+			if (
+				work.state !== 'open' ||
+				work.capabilityKey !== 'procurement.rfq.respond' ||
+				!work.invitationId
+			) {
+				throw new ProcurementValidationError(
+					'This supplier quotation request is no longer actionable.'
+				);
 			}
 			const context = await trx
 				.selectFrom('external_supplier_rfq_links as link')
 				.innerJoin('rfq_invitations as invitation', 'invitation.id', 'link.rfq_invitation_id')
 				.innerJoin('rfq_versions as version', 'version.id', 'invitation.rfq_version_id')
 				.innerJoin('rfqs as rfq', 'rfq.id', 'version.rfq_id')
-				.innerJoin('procurement_packages as procurementPackage', 'procurementPackage.id', 'rfq.procurement_package_id')
+				.innerJoin(
+					'procurement_packages as procurementPackage',
+					'procurementPackage.id',
+					'rfq.procurement_package_id'
+				)
 				.select([
 					'invitation.id as rfqInvitationId',
 					'invitation.invitation_status as invitationStatus',
@@ -467,7 +496,11 @@ export class SupplierRfqNetworkService {
 				.where('invitation.organisation_id', '=', work.owningOrganisationId)
 				.forUpdate()
 				.executeTakeFirst();
-			if (!context || context.invitationStatus !== 'invited' || context.versionStatus !== 'issued') {
+			if (
+				!context ||
+				context.invitationStatus !== 'invited' ||
+				context.versionStatus !== 'issued'
+			) {
 				throw new ProcurementValidationError('This supplier quotation request is no longer open.');
 			}
 			if (context.responseDeadlineAt && context.responseDeadlineAt <= this.now()) {
@@ -489,14 +522,17 @@ export class SupplierRfqNetworkService {
 				.where('rfq_version_id', '=', context.versionId)
 				.orderBy('line_number', 'asc')
 				.execute();
-			if (requestedItems.length === 0) throw new ProcurementValidationError('The RFQ contains no quote lines.');
+			if (requestedItems.length === 0)
+				throw new ProcurementValidationError('The RFQ contains no quote lines.');
 			const suppliedById = new Map(input.lines.map((line) => [line.rfqItemId, line]));
 			if (
 				suppliedById.size !== input.lines.length ||
 				suppliedById.size !== requestedItems.length ||
 				requestedItems.some((item) => !suppliedById.has(item.id))
 			) {
-				throw new ProcurementValidationError('The quotation must price every RFQ line exactly once.');
+				throw new ProcurementValidationError(
+					'The quotation must price every RFQ line exactly once.'
+				);
 			}
 
 			const returnPublicId = this.publicIdFactory();
@@ -542,7 +578,9 @@ export class SupplierRfqNetworkService {
 				.where('invitation_status', '=', 'invited')
 				.executeTakeFirst();
 			if (updatedInvitation.numUpdatedRows !== 1n) {
-				throw new ProcurementValidationError('The RFQ invitation changed before submission completed.');
+				throw new ProcurementValidationError(
+					'The RFQ invitation changed before submission completed.'
+				);
 			}
 			await new ExternalWorkService(this.db, this.now).markCompleted(trx, work.id, this.now());
 			await new AuditRepository(trx).append({

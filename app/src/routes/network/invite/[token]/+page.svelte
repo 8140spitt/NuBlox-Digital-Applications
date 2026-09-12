@@ -49,15 +49,17 @@
 			<p class="eyebrow">External work invitation</p>
 			<h1>{data.invitation.title}</h1>
 			<p class="lede">
-				<strong>{data.invitation.owningOrganisationName}</strong> has shared a controlled action
-				with you through NuBlox.
+				<strong>{data.invitation.owningOrganisationName}</strong> has shared a controlled action with
+				you through NuBlox.
 			</p>
 		</header>
 
 		<div class="invitation-summary">
 			<div><span>Invited email</span><strong>{data.invitation.email}</strong></div>
 			<div><span>Area</span><strong>{data.invitation.domainKey}</strong></div>
-			<div><span>Action</span><strong>{data.invitation.actionType.replaceAll('_', ' ')}</strong></div>
+			<div>
+				<span>Action</span><strong>{data.invitation.actionType.replaceAll('_', ' ')}</strong>
+			</div>
 			<div><span>Due</span><strong>{dateTime(data.invitation.dueAt)}</strong></div>
 		</div>
 
@@ -68,9 +70,9 @@
 		<div class="boundary-note">
 			<strong>Only this explicitly shared work is available.</strong>
 			<span>
-				Accepting does not make you a member of {data.invitation.owningOrganisationName} and does
-				not expose unrelated NuBlox records. Access is attached to your verified identity and can be
-				revoked independently.
+				Accepting does not make you a member of {data.invitation.owningOrganisationName} and does not
+				expose unrelated NuBlox records. Access is attached to your verified identity and can be revoked
+				independently.
 			</span>
 		</div>
 
@@ -176,8 +178,17 @@
 		font-size: clamp(1.8rem, 6vw, 2.8rem);
 		letter-spacing: -0.04em;
 	}
-	h2 { margin: 0; }
-	.lede, .muted, .switch-copy, footer, .summary { color: #5c6678; line-height: 1.55; }
+	h2 {
+		margin: 0;
+	}
+	.lede,
+	.muted,
+	.switch-copy,
+	footer,
+	.summary {
+		color: #5c6678;
+		line-height: 1.55;
+	}
 	.invitation-summary {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -192,8 +203,13 @@
 		border-radius: 0.65rem;
 		background: #fafbfc;
 	}
-	.invitation-summary span { color: #667085; font-size: 0.75rem; }
-	.invitation-summary strong { text-transform: capitalize; }
+	.invitation-summary span {
+		color: #667085;
+		font-size: 0.75rem;
+	}
+	.invitation-summary strong {
+		text-transform: capitalize;
+	}
 	.boundary-note {
 		display: grid;
 		gap: 0.35rem;
@@ -208,8 +224,16 @@
 		margin-top: 1.5rem;
 		padding-top: 1.5rem;
 	}
-	.stack { display: grid; gap: 1rem; margin-top: 1.2rem; }
-	label { display: grid; gap: 0.4rem; font-weight: 650; }
+	.stack {
+		display: grid;
+		gap: 1rem;
+		margin-top: 1.2rem;
+	}
+	label {
+		display: grid;
+		gap: 0.4rem;
+		font-weight: 650;
+	}
 	input {
 		min-width: 0;
 		font: inherit;
@@ -217,7 +241,10 @@
 		border-radius: 0.55rem;
 		padding: 0.75rem 0.85rem;
 	}
-	input[readonly] { background: #f3f5f8; color: #555; }
+	input[readonly] {
+		background: #f3f5f8;
+		color: #555;
+	}
 	button {
 		font: inherit;
 		font-weight: 750;
@@ -225,13 +252,43 @@
 		padding: 0.75rem 0.95rem;
 		cursor: pointer;
 	}
-	.primary { border: 1px solid #172033; background: #172033; color: white; }
-	button:disabled { opacity: 0.55; cursor: wait; }
-	.notice { margin: 1.2rem 0; padding: 1rem; border-radius: 0.65rem; line-height: 1.5; }
-	.notice.success { background: #e8f6eb; }
-	.notice.warning { background: #fff5d9; }
-	.error { color: #9b1c1c; }
-	a { color: inherit; font-weight: 750; }
-	footer { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid #e1e5eb; font-size: 0.78rem; }
-	@media (max-width: 680px) { .invitation-summary { grid-template-columns: 1fr; } }
+	.primary {
+		border: 1px solid #172033;
+		background: #172033;
+		color: white;
+	}
+	button:disabled {
+		opacity: 0.55;
+		cursor: wait;
+	}
+	.notice {
+		margin: 1.2rem 0;
+		padding: 1rem;
+		border-radius: 0.65rem;
+		line-height: 1.5;
+	}
+	.notice.success {
+		background: #e8f6eb;
+	}
+	.notice.warning {
+		background: #fff5d9;
+	}
+	.error {
+		color: #9b1c1c;
+	}
+	a {
+		color: inherit;
+		font-weight: 750;
+	}
+	footer {
+		margin-top: 1.5rem;
+		padding-top: 1rem;
+		border-top: 1px solid #e1e5eb;
+		font-size: 0.78rem;
+	}
+	@media (max-width: 680px) {
+		.invitation-summary {
+			grid-template-columns: 1fr;
+		}
+	}
 </style>

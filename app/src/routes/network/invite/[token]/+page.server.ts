@@ -59,7 +59,8 @@ export const load: PageServerLoad = async ({ params, locals, cookies }) => {
 
 export const actions: Actions = {
 	accept: async ({ params, locals, cookies }) => {
-		if (!locals.actor) return fail(401, { message: 'Sign in with the invited email address first.' });
+		if (!locals.actor)
+			return fail(401, { message: 'Sign in with the invited email address first.' });
 		try {
 			await new ExternalInvitationService(getDatabase()).acceptExistingUser(
 				params.token,

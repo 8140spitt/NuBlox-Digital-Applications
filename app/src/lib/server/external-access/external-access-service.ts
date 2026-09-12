@@ -41,7 +41,9 @@ export class ExternalAccessService {
 	}
 
 	async hasActiveAccess(authUserId: string): Promise<boolean> {
-		const row = await this.activeGrantQuery(this.db, authUserId).select('grant.id').executeTakeFirst();
+		const row = await this.activeGrantQuery(this.db, authUserId)
+			.select('grant.id')
+			.executeTakeFirst();
 		return Boolean(row);
 	}
 

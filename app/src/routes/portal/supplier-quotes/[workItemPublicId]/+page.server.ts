@@ -3,9 +3,7 @@ import type { Actions, PageServerLoad } from './$types';
 
 import { getDatabase } from '$lib/server/db/database';
 import { ExternalAccessDeniedError } from '$lib/server/external-access/external-access-service';
-import {
-	ProcurementValidationError
-} from '$lib/server/procurement/procurement-service';
+import { ProcurementValidationError } from '$lib/server/procurement/procurement-service';
 import { SupplierRfqNetworkService } from '$lib/server/procurement/supplier-rfq-network-service';
 
 function text(data: FormData, name: string): string {
@@ -13,7 +11,11 @@ function text(data: FormData, name: string): string {
 }
 
 export const load: PageServerLoad = async ({ params, locals }) => {
-	if (!locals.actor) throw redirect(303, `/signin?returnTo=${encodeURIComponent(`/portal/supplier-quotes/${params.workItemPublicId}`)}`);
+	if (!locals.actor)
+		throw redirect(
+			303,
+			`/signin?returnTo=${encodeURIComponent(`/portal/supplier-quotes/${params.workItemPublicId}`)}`
+		);
 	const quote = await new SupplierRfqNetworkService(getDatabase()).getQuote(
 		locals.actor.authUserId,
 		params.workItemPublicId
@@ -35,7 +37,8 @@ export const actions: Actions = {
 		const service = new SupplierRfqNetworkService(getDatabase());
 		const current = await service.getQuote(locals.actor.authUserId, params.workItemPublicId);
 		if (!current) return fail(404, { message: 'This supplier quotation request is unavailable.' });
-		if (current.state !== 'open') return fail(409, { message: 'This quotation has already been submitted.' });
+		if (current.state !== 'open')
+			return fail(409, { message: 'This quotation has already been submitted.' });
 		const data = await request.formData();
 		try {
 			await service.submitQuote(
