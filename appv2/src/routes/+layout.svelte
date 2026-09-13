@@ -10,10 +10,7 @@
 <svelte:head>
 	<link rel="icon" href={favicon} />
 	<title>NuBlox</title>
-	<meta
-		name="description"
-		content="NuBlox — construction and built-environment operating system"
-	/>
+	<meta name="description" content="NuBlox — construction and built-environment operating system" />
 </svelte:head>
 
 {@render children()}

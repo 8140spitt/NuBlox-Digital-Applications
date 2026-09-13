@@ -57,7 +57,9 @@
 <main class="auth-shell">
 	<section class="auth-context">
 		<a class="brand" href={resolve(startHref)} aria-label="NuBlox start">
-			<span class="brand-lockup"><NuBloxLogo alt="NuBlox — Construction & Built Environment" /></span>
+			<span class="brand-lockup"
+				><NuBloxLogo alt="NuBlox — Construction & Built Environment" /></span
+			>
 		</a>
 
 		<div class="context-copy">
