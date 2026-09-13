@@ -53,18 +53,39 @@ replace_once(
     "\t\ttransitions: permissionFilteredTransitions(input.kind, status, permissions),",
     "\t\ttransitions: permissionFilteredTransitions(input.kind, status, permissions).filter(() => {\n\t\t\tif (framework.lifecycleStatus === 'superseded') return false;\n\t\t\tif (['evidence', 'factor', 'option', 'theme'].includes(input.kind)) {\n\t\t\t\treturn framework.lifecycleStatus === 'draft';\n\t\t\t}\n\t\t\tif (input.kind === 'objective') return framework.lifecycleStatus === 'approved';\n\t\t\tif (input.kind === 'framework') return framework.lifecycleStatus === 'draft';\n\t\t\tif (['plan', 'initiative', 'requirement', 'handoff', 'kpi', 'review', 'decision'].includes(input.kind)) {\n\t\t\t\treturn framework.lifecycleStatus === 'approved';\n\t\t\t}\n\t\t\treturn true;\n\t\t}),"
 )
-replace_once(
-    management,
-    "\tconst currentStatus = await statusFor({\n\t\torganisationId: input.actor.organisationId,\n\t\tframeworkPublicId: input.frameworkPublicId,\n\t\tkind: input.kind,\n\t\trecordPublicId: input.recordPublicId\n\t});\n\tconst transition = assertLifecycleTransition(input.kind, currentStatus, input.targetStatus);",
-    "\tconst currentStatus = await statusFor({\n\t\torganisationId: input.actor.organisationId,\n\t\tframeworkPublicId: input.frameworkPublicId,\n\t\tkind: input.kind,\n\t\trecordPublicId: input.recordPublicId\n\t});\n\tif (framework.lifecycleStatus === 'superseded') {\n\t\tthrow new StrategyValidationError('Superseded strategy history cannot be changed.');\n\t}\n\tif (['evidence', 'factor', 'option', 'theme'].includes(input.kind) && framework.lifecycleStatus !== 'draft') {\n\t\tthrow new StrategyValidationError('This strategic-intent record is immutable after strategy approval. Create a controlled strategy revision.');\n\t}\n\tif (input.kind === 'objective' && framework.lifecycleStatus !== 'approved') {\n\t\tthrow new StrategyValidationError('Objective outcome transitions apply only after strategy approval.');\n\t}\n\tif (['plan', 'initiative', 'requirement', 'handoff', 'kpi', 'review', 'decision'].includes(input.kind) && framework.lifecycleStatus !== 'approved') {\n\t\tthrow new StrategyValidationError('Execution and review lifecycle transitions require the current approved strategy.');\n\t}\n\tconst transition = assertLifecycleTransition(input.kind, currentStatus, input.targetStatus);"
-)
-# Remove now-redundant late superseded guard so all dispatch paths are protected by the early guard.
-text = Path(management).read_text()
-text = text.replace(
-    "\tif (framework.lifecycleStatus === 'superseded')\n\t\tthrow new StrategyValidationError('Superseded strategy history cannot be changed.');\n",
-    "",
-    1,
-)
-Path(management).write_text(text)
+p = Path(management)
+text = p.read_text()
+needle = "\tconst transition = assertLifecycleTransition(input.kind, currentStatus, input.targetStatus);"
+if needle not in text:
+    raise SystemExit('Lifecycle transition assertion not found')
+guard = """\tif (framework.lifecycleStatus === 'superseded') {
+\t\tthrow new StrategyValidationError('Superseded strategy history cannot be changed.');
+\t}
+\tif (
+\t\t['evidence', 'factor', 'option', 'theme'].includes(input.kind) &&
+\t\tframework.lifecycleStatus !== 'draft'
+\t) {
+\t\tthrow new StrategyValidationError(
+\t\t\t'This strategic-intent record is immutable after strategy approval. Create a controlled strategy revision.'
+\t\t);
+\t}
+\tif (input.kind === 'objective' && framework.lifecycleStatus !== 'approved') {
+\t\tthrow new StrategyValidationError(
+\t\t\t'Objective outcome transitions apply only after strategy approval.'
+\t\t);
+\t}
+\tif (
+\t\t['plan', 'initiative', 'requirement', 'handoff', 'kpi', 'review', 'decision'].includes(
+\t\t\tinput.kind
+\t\t) &&
+\t\tframework.lifecycleStatus !== 'approved'
+\t) {
+\t\tthrow new StrategyValidationError(
+\t\t\t'Execution and review lifecycle transitions require the current approved strategy.'
+\t\t);
+\t}
+"""
+text = text.replace(needle, guard + needle, 1)
+p.write_text(text)
 
 print('F01 revision/lifecycle follow-up patches applied')
