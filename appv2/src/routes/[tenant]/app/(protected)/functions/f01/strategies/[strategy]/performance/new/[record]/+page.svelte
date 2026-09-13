@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Alert, Breadcrumbs, Button, Field, LinkButton, PageHeader, Panel } from '$lib/components/ui';
+	import {
+		Alert,
+		Breadcrumbs,
+		Button,
+		Field,
+		LinkButton,
+		PageHeader,
+		Panel
+	} from '$lib/components/ui';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
@@ -42,7 +50,10 @@
 	{/if}
 
 	<form method="POST" action="?/create" use:enhance class="transaction-form">
-		<Panel title="Outcome measure" description="Define the outcome, unit, direction and strategic ownership context.">
+		<Panel
+			title="Outcome measure"
+			description="Define the outcome, unit, direction and strategic ownership context."
+		>
 			<div class="form-grid two">
 				<Field id="objectivePublicId" label="Strategic objective" required>
 					<select class="nb-control" id="objectivePublicId" name="objectivePublicId" required>
@@ -53,10 +64,29 @@
 					</select>
 				</Field>
 				<Field id="title" label="KPI title" required>
-					<input class="nb-control" id="title" name="title" value={fieldValue('title')} maxlength="255" required />
+					<input
+						class="nb-control"
+						id="title"
+						name="title"
+						value={fieldValue('title')}
+						maxlength="255"
+						required
+					/>
 				</Field>
-				<Field id="unitLabel" label="Unit" hint="Examples: %, GBP, days, incidents, tCO₂e." required>
-					<input class="nb-control" id="unitLabel" name="unitLabel" value={fieldValue('unitLabel')} maxlength="64" required />
+				<Field
+					id="unitLabel"
+					label="Unit"
+					hint="Examples: %, GBP, days, incidents, tCO₂e."
+					required
+				>
+					<input
+						class="nb-control"
+						id="unitLabel"
+						name="unitLabel"
+						value={fieldValue('unitLabel')}
+						maxlength="64"
+						required
+					/>
 				</Field>
 				<Field id="direction" label="Performance direction" required>
 					<select class="nb-control" id="direction" name="direction" required>
@@ -67,21 +97,51 @@
 					</select>
 				</Field>
 			</div>
-			<Field id="description" label="Measure definition" hint="State precisely what is measured, how it should be interpreted and what business outcome it represents." required>
-				<textarea class="nb-control" id="description" name="description" rows="6" required>{fieldValue('description')}</textarea>
+			<Field
+				id="description"
+				label="Measure definition"
+				hint="State precisely what is measured, how it should be interpreted and what business outcome it represents."
+				required
+			>
+				<textarea class="nb-control" id="description" name="description" rows="6" required
+					>{fieldValue('description')}</textarea
+				>
 			</Field>
 		</Panel>
 
-		<Panel title="Baseline and target" description="The target should represent the strategic outcome, not merely an activity count.">
+		<Panel
+			title="Baseline and target"
+			description="The target should represent the strategic outcome, not merely an activity count."
+		>
 			<div class="form-grid three">
 				<Field id="baselineValue" label="Baseline" required>
-					<input class="nb-control" id="baselineValue" name="baselineValue" inputmode="decimal" value={fieldValue('baselineValue')} required />
+					<input
+						class="nb-control"
+						id="baselineValue"
+						name="baselineValue"
+						inputmode="decimal"
+						value={fieldValue('baselineValue')}
+						required
+					/>
 				</Field>
 				<Field id="targetValue" label="Target" required>
-					<input class="nb-control" id="targetValue" name="targetValue" inputmode="decimal" value={fieldValue('targetValue')} required />
+					<input
+						class="nb-control"
+						id="targetValue"
+						name="targetValue"
+						inputmode="decimal"
+						value={fieldValue('targetValue')}
+						required
+					/>
 				</Field>
 				<Field id="targetDate" label="Target date">
-					<input class="nb-control" id="targetDate" name="targetDate" type="date" value={fieldValue('targetDate')} />
+					<input
+						class="nb-control"
+						id="targetDate"
+						name="targetDate"
+						type="date"
+						value={fieldValue('targetDate')}
+					/>
 				</Field>
 			</div>
 		</Panel>
@@ -106,13 +166,16 @@
 		</Panel>
 
 		<Alert tone="info" title="Definition and actuals are separate controls">
-			Creating this record does not approve it and does not create performance actuals. An authorised
-			approver governs the KPI definition first; observations are then recorded against that approved
-			definition.
+			Creating this record does not approve it and does not create performance actuals. An
+			authorised approver governs the KPI definition first; observations are then recorded against
+			that approved definition.
 		</Alert>
 
 		<div class="form-actions">
-			<LinkButton href={routes.strategyPerformance(data.tenant.slug, data.framework.publicId)} variant="quiet">Cancel</LinkButton>
+			<LinkButton
+				href={routes.strategyPerformance(data.tenant.slug, data.framework.publicId)}
+				variant="quiet">Cancel</LinkButton
+			>
 			<Button type="submit">Create KPI definition</Button>
 		</div>
 	</form>

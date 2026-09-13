@@ -68,8 +68,7 @@
 					data.tenant.slug,
 					data.framework.publicId,
 					'initiative'
-				)}
-				>Add initiative</LinkButton
+				)}>Add initiative</LinkButton
 			>
 		{/if}
 	{/if}
@@ -103,7 +102,8 @@
 		<Alert tone="warning" title="Business planning begins from an approved strategy">
 			This strategy is still {data.framework.lifecycleStatus}. Approval requires at least one active
 			objective with selected-option lineage and a primary strategic theme. Once approved, the
-			strategy becomes immutable enterprise evidence and F01.04 can commit planning records against it.
+			strategy becomes immutable enterprise evidence and F01.04 can commit planning records against
+			it.
 		</Alert>
 		{#if data.permissions.canApprove && data.framework.lifecycleStatus === 'draft'}
 			<Panel
@@ -118,7 +118,11 @@
 	{/if}
 
 	<section class="stat-grid" aria-label="Business planning summary">
-		<Stat label="Business plans" value={String(data.plans.length)} detail="Controlled planning versions" />
+		<Stat
+			label="Business plans"
+			value={String(data.plans.length)}
+			detail="Controlled planning versions"
+		/>
 		<Stat
 			label="Active initiatives"
 			value={String(activeInitiatives.length)}
@@ -134,7 +138,7 @@
 			label="Open handoffs"
 			value={String(openHandoffs.length)}
 			detail="Awaiting downstream ownership"
-			tone={openHandoffs.length > 0 ? 'warning' : 'default'}
+			tone={openHandoffs.length > 0 ? 'warning' : 'neutral'}
 		/>
 	</section>
 
@@ -166,7 +170,11 @@
 			</div>
 			{#if editable}
 				<LinkButton
-					href={routes.strategyBusinessPlanningNew(data.tenant.slug, data.framework.publicId, 'plan')}
+					href={routes.strategyBusinessPlanningNew(
+						data.tenant.slug,
+						data.framework.publicId,
+						'plan'
+					)}
 					variant="quiet">Add plan</LinkButton
 				>
 			{/if}
@@ -190,10 +198,33 @@
 							<span>{plan.initiativeCount} active initiatives</span>
 						</div>
 						<div class="financial-envelope">
-							<div><span>Revenue</span><strong>{money(plan.plannedRevenueAmount, plan.currencyCode)}</strong></div>
-							<div><span>Opex</span><strong>{money(plan.plannedOpexAmount, plan.currencyCode)}</strong></div>
-							<div><span>Capex</span><strong>{money(plan.plannedCapexAmount, plan.currencyCode)}</strong></div>
+							<div>
+								<span>Revenue</span><strong
+									>{money(plan.plannedRevenueAmount, plan.currencyCode)}</strong
+								>
+							</div>
+							<div>
+								<span>Opex</span><strong>{money(plan.plannedOpexAmount, plan.currencyCode)}</strong>
+							</div>
+							<div>
+								<span>Capex</span><strong
+									>{money(plan.plannedCapexAmount, plan.currencyCode)}</strong
+								>
+							</div>
 						</div>
+						{#if plan.lifecycleStatus === 'draft' && data.permissions.canApprove}
+							<form method="POST" action="?/approvePlan" use:enhance class="approval-row">
+								<input type="hidden" name="planPublicId" value={plan.publicId} />
+								<div>
+									<strong>Govern execution baseline</strong>
+									<p>
+										Approval requires objective scope, at least one initiative, and no resource
+										requirement left without a downstream handoff.
+									</p>
+								</div>
+								<Button type="submit" variant="secondary" size="sm">Approve business plan</Button>
+							</form>
+						{/if}
 					</article>
 				{/each}
 			</div>
@@ -204,8 +235,11 @@
 			>
 				{#if editable}
 					<LinkButton
-						href={routes.strategyBusinessPlanningNew(data.tenant.slug, data.framework.publicId, 'plan')}
-						>Create first business plan</LinkButton
+						href={routes.strategyBusinessPlanningNew(
+							data.tenant.slug,
+							data.framework.publicId,
+							'plan'
+						)}>Create first business plan</LinkButton
 					>
 				{/if}
 			</Panel>
@@ -216,7 +250,9 @@
 		<div class="section-heading">
 			<div>
 				<p class="section-kicker">Strategic initiatives</p>
-				<h2 id="initiatives-title">Every initiative must contribute to a planned strategic objective</h2>
+				<h2 id="initiatives-title">
+					Every initiative must contribute to a planned strategic objective
+				</h2>
 			</div>
 			{#if editable && data.plans.some((plan) => plan.lifecycleStatus === 'draft')}
 				<LinkButton
@@ -239,16 +275,28 @@
 								<span class="record-code">{initiative.code} · {initiative.planCode}</span>
 								<h3>{initiative.title}</h3>
 							</div>
-							<StatusBadge label={initiative.lifecycleStatus} tone={statusTone(initiative.lifecycleStatus)} />
+							<StatusBadge
+								label={initiative.lifecycleStatus}
+								tone={statusTone(initiative.lifecycleStatus)}
+							/>
 						</div>
 						<p>{initiative.outcomeText}</p>
 						<div class="initiative-meta">
 							<span>Objective <strong>{initiative.objectiveCode}</strong></span>
 							<span>Priority <strong>{initiative.priorityRank}</strong></span>
 							<span>Dates <strong>{initiative.startDate} → {initiative.endDate}</strong></span>
-							<span>Investment <strong>{money(initiative.plannedInvestmentAmount, initiative.currencyCode)}</strong></span>
+							<span
+								>Investment <strong
+									>{money(initiative.plannedInvestmentAmount, initiative.currencyCode)}</strong
+								></span
+							>
 							<span>Capacity <strong>{initiative.plannedFte} FTE</strong></span>
-							<span>Thread <strong>{initiative.resourceRequirementCount} needs · {initiative.handoffCount} handoffs · {initiative.kpiCount} KPIs</strong></span>
+							<span
+								>Thread <strong
+									>{initiative.resourceRequirementCount} needs · {initiative.handoffCount} handoffs ·
+									{initiative.kpiCount} KPIs</strong
+								></span
+							>
 						</div>
 					</article>
 				{/each}
@@ -288,8 +336,15 @@
 						</div>
 						<p>{requirement.description}</p>
 						<div class="record-footer">
-							<span>{requirement.amount ? money(requirement.amount, requirement.currencyCode ?? 'GBP') : `${requirement.quantity} ${requirement.unitLabel}`}</span>
-							<StatusBadge label={requirement.lifecycleStatus} tone={statusTone(requirement.lifecycleStatus)} />
+							<span
+								>{requirement.amount
+									? money(requirement.amount, requirement.currencyCode ?? 'GBP')
+									: `${requirement.quantity} ${requirement.unitLabel}`}</span
+							>
+							<StatusBadge
+								label={requirement.lifecycleStatus}
+								tone={statusTone(requirement.lifecycleStatus)}
+							/>
 						</div>
 					</article>
 				{:else}
@@ -324,8 +379,15 @@
 						</div>
 						<p>{handoff.requestSummary}</p>
 						<div class="record-footer">
-							<span>{handoff.targetRecordType && handoff.targetPublicId ? `${handoff.targetRecordType} · ${handoff.targetPublicId}` : 'Awaiting canonical downstream record'}</span>
-							<StatusBadge label={handoff.lifecycleStatus} tone={statusTone(handoff.lifecycleStatus)} />
+							<span
+								>{handoff.targetRecordType && handoff.targetPublicId
+									? `${handoff.targetRecordType} · ${handoff.targetPublicId}`
+									: 'Awaiting canonical downstream record'}</span
+							>
+							<StatusBadge
+								label={handoff.lifecycleStatus}
+								tone={statusTone(handoff.lifecycleStatus)}
+							/>
 						</div>
 					</article>
 				{:else}
@@ -340,10 +402,22 @@
 		description="F01 records the strategic request and preserves traceability. The receiving function becomes authoritative for the operational transaction."
 	>
 		<div class="ownership-grid">
-			<div><strong>F14 Finance</strong><span>Funding, budget, forecast and financial actuals</span></div>
-			<div><strong>F15 Human Capital</strong><span>Workforce, roles, capacity and people commitments</span></div>
-			<div><strong>F27 PPM</strong><span>Portfolio, programme and project delivery records</span></div>
-			<div><strong>F20 / F28 / F29</strong><span>Risk, transformation and improvement consequences</span></div>
+			<div>
+				<strong>F14 Finance</strong><span>Funding, budget, forecast and financial actuals</span>
+			</div>
+			<div>
+				<strong>F15 Human Capital</strong><span
+					>Workforce, roles, capacity and people commitments</span
+				>
+			</div>
+			<div>
+				<strong>F27 PPM</strong><span>Portfolio, programme and project delivery records</span>
+			</div>
+			<div>
+				<strong>F20 / F28 / F29</strong><span
+					>Risk, transformation and improvement consequences</span
+				>
+			</div>
 		</div>
 	</Panel>
 </div>

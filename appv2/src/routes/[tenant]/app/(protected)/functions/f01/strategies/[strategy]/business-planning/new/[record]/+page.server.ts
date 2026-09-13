@@ -1,8 +1,5 @@
 import { error, fail, redirect } from '@sveltejs/kit';
-import {
-	routes,
-	type StrategyBusinessPlanningRecordKind
-} from '$lib/routing/route-contract';
+import { routes, type StrategyBusinessPlanningRecordKind } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
 import {
@@ -144,10 +141,7 @@ export const actions = {
 					requestSummary: text(formData, 'requestSummary')
 				});
 			}
-			redirect(
-				303,
-				routes.strategyBusinessPlanning(access.organisationRouteSlug, params.strategy)
-			);
+			redirect(303, routes.strategyBusinessPlanning(access.organisationRouteSlug, params.strategy));
 		} catch (cause) {
 			if (cause instanceof StrategyValidationError) {
 				return fail(400, { values, errors, formError: cause.message });

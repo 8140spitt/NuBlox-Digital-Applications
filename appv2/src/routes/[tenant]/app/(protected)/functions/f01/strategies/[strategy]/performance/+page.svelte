@@ -39,7 +39,8 @@
 
 {#snippet headerActions()}
 	{#if canCreate}
-		<LinkButton href={routes.strategyPerformanceNew(data.tenant.slug, data.framework.publicId, 'kpi')}
+		<LinkButton
+			href={routes.strategyPerformanceNew(data.tenant.slug, data.framework.publicId, 'kpi')}
 			>Add KPI</LinkButton
 		>
 	{/if}
@@ -70,7 +71,12 @@
 
 	<section class="stat-grid" aria-label="Strategy performance summary">
 		<Stat label="KPIs" value={String(data.kpis.length)} detail="Current definitions" />
-		<Stat label="Approved" value={String(approvedKpis.length)} detail="Governed measures" tone="success" />
+		<Stat
+			label="Approved"
+			value={String(approvedKpis.length)}
+			detail="Governed measures"
+			tone="success"
+		/>
 		<Stat
 			label="Observed"
 			value={String(observedKpis.length)}
@@ -87,10 +93,13 @@
 	<section class="performance-thread" aria-labelledby="performance-thread-title">
 		<div>
 			<p class="section-kicker">Performance digital thread</p>
-			<h2 id="performance-thread-title">Objective → initiative contribution → KPI → target → actual</h2>
+			<h2 id="performance-thread-title">
+				Objective → initiative contribution → KPI → target → actual
+			</h2>
 			<p>
-				NuBlox keeps the definition, target and observation lineage explicit. Manual observations are
-				allowed as attributable evidence, while canonical source integration remains visibly distinct.
+				NuBlox keeps the definition, target and observation lineage explicit. Manual observations
+				are allowed as attributable evidence, while canonical source integration remains visibly
+				distinct.
 			</p>
 		</div>
 		<div class="thread-actions">
@@ -121,10 +130,16 @@
 						<div><span>Baseline</span><strong>{kpi.baselineValue} {kpi.unitLabel}</strong></div>
 						<div><span>Target</span><strong>{kpi.targetValue} {kpi.unitLabel}</strong></div>
 						<div><span>Target date</span><strong>{kpi.targetDate ?? 'Not set'}</strong></div>
-						<div><span>Initiatives</span><strong>{kpi.linkedInitiativeCount} contributing</strong></div>
+						<div>
+							<span>Initiatives</span><strong>{kpi.linkedInitiativeCount} contributing</strong>
+						</div>
 						<div class="actual">
 							<span>Latest actual</span>
-							<strong>{kpi.latestActualValue ?? 'No observation'}{kpi.latestActualValue !== null ? ` ${kpi.unitLabel}` : ''}</strong>
+							<strong
+								>{kpi.latestActualValue ?? 'No observation'}{kpi.latestActualValue !== null
+									? ` ${kpi.unitLabel}`
+									: ''}</strong
+							>
 							<small>{kpi.latestObservedOn ?? 'No evidence date'}</small>
 						</div>
 					</div>
@@ -146,25 +161,55 @@
 							<div class="observation-heading">
 								<div>
 									<strong>Record manual observation</strong>
-									<p>This is attributable F01 evidence, not a substitute for a canonical downstream actual.</p>
+									<p>
+										This is attributable F01 evidence, not a substitute for a canonical downstream
+										actual.
+									</p>
 								</div>
 								<StatusBadge label="Manual source" tone="neutral" />
 							</div>
 							<div class="form-grid three">
 								<Field id={`observedOn-${kpi.publicId}`} label="Observed on" required>
-									<input class="nb-control" id={`observedOn-${kpi.publicId}`} name="observedOn" type="date" required />
+									<input
+										class="nb-control"
+										id={`observedOn-${kpi.publicId}`}
+										name="observedOn"
+										type="date"
+										required
+									/>
 								</Field>
-								<Field id={`actualValue-${kpi.publicId}`} label={`Actual (${kpi.unitLabel})`} required>
-									<input class="nb-control" id={`actualValue-${kpi.publicId}`} name="actualValue" inputmode="decimal" required />
+								<Field
+									id={`actualValue-${kpi.publicId}`}
+									label={`Actual (${kpi.unitLabel})`}
+									required
+								>
+									<input
+										class="nb-control"
+										id={`actualValue-${kpi.publicId}`}
+										name="actualValue"
+										inputmode="decimal"
+										required
+									/>
 								</Field>
 								<Field id={`forecastValue-${kpi.publicId}`} label={`Forecast (${kpi.unitLabel})`}>
-									<input class="nb-control" id={`forecastValue-${kpi.publicId}`} name="forecastValue" inputmode="decimal" />
+									<input
+										class="nb-control"
+										id={`forecastValue-${kpi.publicId}`}
+										name="forecastValue"
+										inputmode="decimal"
+									/>
 								</Field>
 							</div>
 							<Field id={`commentary-${kpi.publicId}`} label="Commentary">
-								<textarea class="nb-control" id={`commentary-${kpi.publicId}`} name="commentary" rows="3"></textarea>
+								<textarea
+									class="nb-control"
+									id={`commentary-${kpi.publicId}`}
+									name="commentary"
+									rows="3"></textarea>
 							</Field>
-							<div class="observation-actions"><Button type="submit" size="sm">Record observation</Button></div>
+							<div class="observation-actions">
+								<Button type="submit" size="sm">Record observation</Button>
+							</div>
 						</form>
 					{/if}
 				</article>
@@ -176,7 +221,8 @@
 			description="Create a KPI only when an approved strategy has active objectives. Link delivery initiatives where their contribution to the outcome should be visible."
 		>
 			{#if canCreate}
-				<LinkButton href={routes.strategyPerformanceNew(data.tenant.slug, data.framework.publicId, 'kpi')}
+				<LinkButton
+					href={routes.strategyPerformanceNew(data.tenant.slug, data.framework.publicId, 'kpi')}
 					>Create first KPI</LinkButton
 				>
 			{/if}

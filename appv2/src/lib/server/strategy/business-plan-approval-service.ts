@@ -1,11 +1,7 @@
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
-import {
-	getStrategyWorkspace,
-	StrategyAccessError,
-	StrategyValidationError
-} from './f01-service';
+import { getStrategyWorkspace, StrategyAccessError, StrategyValidationError } from './f01-service';
 
 type PlanRow = RowDataPacket & {
 	id: string | number;
@@ -60,7 +56,9 @@ async function lockPlan(
 	);
 	const plan = rows[0];
 	if (!plan) {
-		throw new StrategyValidationError('Business plan is not available under the approved strategy version.');
+		throw new StrategyValidationError(
+			'Business plan is not available under the approved strategy version.'
+		);
 	}
 	return plan;
 }
@@ -74,17 +72,19 @@ export async function approveStrategyBusinessPlan(input: {
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId
 	});
-	const framework = workspace.frameworks.find(
-		(item) => item.publicId === input.frameworkPublicId
-	);
+	const framework = workspace.frameworks.find((item) => item.publicId === input.frameworkPublicId);
 	if (!framework) {
 		throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
 	}
 	if (!workspace.permissions.canApprove) {
-		throw new StrategyAccessError('You do not have authority to approve enterprise business plans.');
+		throw new StrategyAccessError(
+			'You do not have authority to approve enterprise business plans.'
+		);
 	}
 	if (framework.lifecycleStatus !== 'approved') {
-		throw new StrategyValidationError('Business-plan approval requires an approved governing strategy.');
+		throw new StrategyValidationError(
+			'Business-plan approval requires an approved governing strategy.'
+		);
 	}
 
 	const connection = await getPool().getConnection();
@@ -100,10 +100,14 @@ export async function approveStrategyBusinessPlan(input: {
 			throw new StrategyValidationError('Only a draft business plan can be approved.');
 		}
 		if (Number(plan.objectiveCount) < 1) {
-			throw new StrategyValidationError('Business-plan approval requires at least one linked strategic objective.');
+			throw new StrategyValidationError(
+				'Business-plan approval requires at least one linked strategic objective.'
+			);
 		}
 		if (Number(plan.initiativeCount) < 1) {
-			throw new StrategyValidationError('Business-plan approval requires at least one active strategic initiative.');
+			throw new StrategyValidationError(
+				'Business-plan approval requires at least one active strategic initiative.'
+			);
 		}
 		if (Number(plan.orphanRequirementCount) > 0) {
 			throw new StrategyValidationError(

@@ -1,0 +1,38 @@
+### pnpm lint
+
+> appv2@0.0.1 lint /home/runner/work/NuBlox-Digital-Applications/NuBlox-Digital-Applications/appv2
+> prettier --check . && eslint .
+
+Checking formatting...
+All matched files use Prettier code style!
+### pnpm check
+
+> appv2@0.0.1 check /home/runner/work/NuBlox-Digital-Applications/NuBlox-Digital-Applications/appv2
+> svelte-kit sync && svelte-check --tsconfig ./tsconfig.json
+
+Loading svelte-check in workspace: /home/runner/work/NuBlox-Digital-Applications/NuBlox-Digital-Applications/appv2
+Getting Svelte diagnostics...
+
+/home/runner/work/NuBlox-Digital-Applications/NuBlox-Digital-Applications/appv2/[32msrc/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.svelte[39m:305:5
+[31mError[39m: Property 'children' is missing in type '{ title: string; description: string; }' but required in type 'Props'. (ts)
+[36m		{:else}
+			<[35mPanel[36m
+				title="No initiatives yet"[39m
+
+/home/runner/work/NuBlox-Digital-Applications/NuBlox-Digital-Applications/appv2/[32msrc/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/new/[record]/+page.svelte[39m:528:2
+[33mWarn[39m: Unused CSS selector ".form-actions a"
+https://svelte.dev/e/css_unused_selector (svelte)
+[36m	}
+	[35m.form-actions a[36m {
+		color: var(--nb-color-text-secondary);[39m
+
+/home/runner/work/NuBlox-Digital-Applications/NuBlox-Digital-Applications/appv2/[32msrc/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/review/+page.svelte[39m:234:5
+[31mError[39m: Property 'children' is missing in type '{ title: string; description: string; }' but required in type 'Props'. (ts)
+[36m		{:else}
+			<[35mPanel[36m
+				title="No structured review decisions yet"[39m
+
+====================================
+[31msvelte-check found 2 errors and 1 warning in 3 files
+[39m ELIFECYCLE  Command failed with exit code 1.
+FAILED_COMMAND=pnpm check

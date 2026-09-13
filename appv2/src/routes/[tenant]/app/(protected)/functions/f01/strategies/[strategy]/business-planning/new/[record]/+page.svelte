@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Alert, Breadcrumbs, Button, Field, PageHeader, Panel } from '$lib/components/ui';
+	import {
+		Alert,
+		Breadcrumbs,
+		Button,
+		Field,
+		LinkButton,
+		PageHeader,
+		Panel
+	} from '$lib/components/ui';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
@@ -55,7 +63,11 @@
 		]}
 	/>
 
-	<PageHeader eyebrow="F01.04 · Business planning transaction" title={recordTitle} description={recordDescription} />
+	<PageHeader
+		eyebrow="F01.04 · Business planning transaction"
+		title={recordTitle}
+		description={recordDescription}
+	/>
 
 	{#if form?.formError}
 		<Alert tone="danger" title="Record not created">{form.formError}</Alert>
@@ -63,54 +75,131 @@
 
 	<form method="POST" action="?/create" use:enhance class="transaction-form">
 		{#if data.recordKind === 'plan'}
-			<Panel title="Planning period" description="The business plan must sit inside the approved strategy horizon.">
+			<Panel
+				title="Planning period"
+				description="The business plan must sit inside the approved strategy horizon."
+			>
 				<div class="form-grid two">
 					<Field id="title" label="Business plan title" required>
-						<input class="nb-control" id="title" name="title" value={fieldValue('title')} required maxlength="255" />
+						<input
+							class="nb-control"
+							id="title"
+							name="title"
+							value={fieldValue('title')}
+							required
+							maxlength="255"
+						/>
 					</Field>
-					<Field id="currencyCode" label="Planning currency" hint="Three-letter currency code, for example GBP." required>
-						<input class="nb-control" id="currencyCode" name="currencyCode" value={fieldValue('currencyCode', 'GBP')} required maxlength="3" />
+					<Field
+						id="currencyCode"
+						label="Planning currency"
+						hint="Three-letter currency code, for example GBP."
+						required
+					>
+						<input
+							class="nb-control"
+							id="currencyCode"
+							name="currencyCode"
+							value={fieldValue('currencyCode', 'GBP')}
+							required
+							maxlength="3"
+						/>
 					</Field>
 					<Field id="periodStart" label="Period start" required>
-						<input class="nb-control" id="periodStart" name="periodStart" type="date" value={fieldValue('periodStart', data.framework.horizonStart)} required />
+						<input
+							class="nb-control"
+							id="periodStart"
+							name="periodStart"
+							type="date"
+							value={fieldValue('periodStart', data.framework.horizonStart)}
+							required
+						/>
 					</Field>
 					<Field id="periodEnd" label="Period end" required>
-						<input class="nb-control" id="periodEnd" name="periodEnd" type="date" value={fieldValue('periodEnd', data.framework.horizonEnd)} required />
+						<input
+							class="nb-control"
+							id="periodEnd"
+							name="periodEnd"
+							type="date"
+							value={fieldValue('periodEnd', data.framework.horizonEnd)}
+							required
+						/>
 					</Field>
 				</div>
-				<Field id="narrative" label="Planning narrative" hint="Explain the planning basis, priorities and resource envelope." required>
-					<textarea class="nb-control" id="narrative" name="narrative" rows="6" required>{fieldValue('narrative')}</textarea>
+				<Field
+					id="narrative"
+					label="Planning narrative"
+					hint="Explain the planning basis, priorities and resource envelope."
+					required
+				>
+					<textarea class="nb-control" id="narrative" name="narrative" rows="6" required
+						>{fieldValue('narrative')}</textarea
+					>
 				</Field>
 			</Panel>
 
-			<Panel title="Financial planning envelope" description="These are F01 planning assumptions. Authoritative budgets and forecasts remain owned by F14 Finance.">
+			<Panel
+				title="Financial planning envelope"
+				description="These are F01 planning assumptions. Authoritative budgets and forecasts remain owned by F14 Finance."
+			>
 				<div class="form-grid three">
 					<Field id="plannedRevenueAmount" label="Planned revenue">
-						<input class="nb-control" id="plannedRevenueAmount" name="plannedRevenueAmount" inputmode="decimal" value={fieldValue('plannedRevenueAmount', '0')} />
+						<input
+							class="nb-control"
+							id="plannedRevenueAmount"
+							name="plannedRevenueAmount"
+							inputmode="decimal"
+							value={fieldValue('plannedRevenueAmount', '0')}
+						/>
 					</Field>
 					<Field id="plannedOpexAmount" label="Planned opex">
-						<input class="nb-control" id="plannedOpexAmount" name="plannedOpexAmount" inputmode="decimal" value={fieldValue('plannedOpexAmount', '0')} />
+						<input
+							class="nb-control"
+							id="plannedOpexAmount"
+							name="plannedOpexAmount"
+							inputmode="decimal"
+							value={fieldValue('plannedOpexAmount', '0')}
+						/>
 					</Field>
 					<Field id="plannedCapexAmount" label="Planned capex">
-						<input class="nb-control" id="plannedCapexAmount" name="plannedCapexAmount" inputmode="decimal" value={fieldValue('plannedCapexAmount', '0')} />
+						<input
+							class="nb-control"
+							id="plannedCapexAmount"
+							name="plannedCapexAmount"
+							inputmode="decimal"
+							value={fieldValue('plannedCapexAmount', '0')}
+						/>
 					</Field>
 				</div>
 			</Panel>
 
-			<Panel title="Strategic objective scope" description="Select at least one traceable active objective. The first selected objective becomes the primary plan contribution.">
+			<Panel
+				title="Strategic objective scope"
+				description="Select at least one traceable active objective. The first selected objective becomes the primary plan contribution."
+			>
 				<div class="selection-list">
 					{#each data.objectives as objective (objective.publicId)}
 						<label class="selection-row">
 							<input type="checkbox" name="objectivePublicIds" value={objective.publicId} />
-							<span><strong>{objective.code} · {objective.title}</strong><small>Priority {objective.priorityRank} · target {objective.targetDate ?? 'not set'}</small></span>
+							<span
+								><strong>{objective.code} · {objective.title}</strong><small
+									>Priority {objective.priorityRank} · target {objective.targetDate ??
+										'not set'}</small
+								></span
+							>
 						</label>
 					{:else}
-						<p>No active strategic objectives are available. Return to F01.03 before creating a plan.</p>
+						<p>
+							No active strategic objectives are available. Return to F01.03 before creating a plan.
+						</p>
 					{/each}
 				</div>
 			</Panel>
 		{:else if data.recordKind === 'initiative'}
-			<Panel title="Execution context" description="Choose a draft business plan and an objective within the approved strategy.">
+			<Panel
+				title="Execution context"
+				description="Choose a draft business plan and an objective within the approved strategy."
+			>
 				<div class="form-grid two">
 					<Field id="planPublicId" label="Business plan" required>
 						<select class="nb-control" id="planPublicId" name="planPublicId" required>
@@ -131,30 +220,98 @@
 				</div>
 				<div class="form-grid two">
 					<Field id="title" label="Initiative title" required>
-						<input class="nb-control" id="title" name="title" value={fieldValue('title')} required maxlength="255" />
+						<input
+							class="nb-control"
+							id="title"
+							name="title"
+							value={fieldValue('title')}
+							required
+							maxlength="255"
+						/>
 					</Field>
 					<Field id="priorityRank" label="Priority rank" required>
-						<input class="nb-control" id="priorityRank" name="priorityRank" type="number" min="1" value={fieldValue('priorityRank', '1')} required />
+						<input
+							class="nb-control"
+							id="priorityRank"
+							name="priorityRank"
+							type="number"
+							min="1"
+							value={fieldValue('priorityRank', '1')}
+							required
+						/>
 					</Field>
 				</div>
 				<Field id="outcomeText" label="Intended outcome" required>
-					<textarea class="nb-control" id="outcomeText" name="outcomeText" rows="5" required>{fieldValue('outcomeText')}</textarea>
+					<textarea class="nb-control" id="outcomeText" name="outcomeText" rows="5" required
+						>{fieldValue('outcomeText')}</textarea
+					>
 				</Field>
 				<Field id="benefitStatement" label="Benefit statement">
-					<textarea class="nb-control" id="benefitStatement" name="benefitStatement" rows="4">{fieldValue('benefitStatement')}</textarea>
+					<textarea class="nb-control" id="benefitStatement" name="benefitStatement" rows="4"
+						>{fieldValue('benefitStatement')}</textarea
+					>
 				</Field>
 			</Panel>
-			<Panel title="Timing and planning demand" description="Investment and FTE remain planning demand until accepted by the authoritative downstream function.">
+			<Panel
+				title="Timing and planning demand"
+				description="Investment and FTE remain planning demand until accepted by the authoritative downstream function."
+			>
 				<div class="form-grid two">
-					<Field id="startDate" label="Start date" required><input class="nb-control" id="startDate" name="startDate" type="date" value={fieldValue('startDate')} required /></Field>
-					<Field id="endDate" label="End date" required><input class="nb-control" id="endDate" name="endDate" type="date" value={fieldValue('endDate')} required /></Field>
-					<Field id="plannedInvestmentAmount" label="Planned investment"><input class="nb-control" id="plannedInvestmentAmount" name="plannedInvestmentAmount" inputmode="decimal" value={fieldValue('plannedInvestmentAmount', '0')} /></Field>
-					<Field id="plannedFte" label="Planned FTE"><input class="nb-control" id="plannedFte" name="plannedFte" inputmode="decimal" value={fieldValue('plannedFte', '0')} /></Field>
-					<Field id="currencyCode" label="Currency" required><input class="nb-control" id="currencyCode" name="currencyCode" value={fieldValue('currencyCode', 'GBP')} maxlength="3" required /></Field>
+					<Field id="startDate" label="Start date" required
+						><input
+							class="nb-control"
+							id="startDate"
+							name="startDate"
+							type="date"
+							value={fieldValue('startDate')}
+							required
+						/></Field
+					>
+					<Field id="endDate" label="End date" required
+						><input
+							class="nb-control"
+							id="endDate"
+							name="endDate"
+							type="date"
+							value={fieldValue('endDate')}
+							required
+						/></Field
+					>
+					<Field id="plannedInvestmentAmount" label="Planned investment"
+						><input
+							class="nb-control"
+							id="plannedInvestmentAmount"
+							name="plannedInvestmentAmount"
+							inputmode="decimal"
+							value={fieldValue('plannedInvestmentAmount', '0')}
+						/></Field
+					>
+					<Field id="plannedFte" label="Planned FTE"
+						><input
+							class="nb-control"
+							id="plannedFte"
+							name="plannedFte"
+							inputmode="decimal"
+							value={fieldValue('plannedFte', '0')}
+						/></Field
+					>
+					<Field id="currencyCode" label="Currency" required
+						><input
+							class="nb-control"
+							id="currencyCode"
+							name="currencyCode"
+							value={fieldValue('currencyCode', 'GBP')}
+							maxlength="3"
+							required
+						/></Field
+					>
 				</div>
 			</Panel>
 		{:else if data.recordKind === 'requirement'}
-			<Panel title="Execution requirement" description="A resource need must be quantified and routed to the function that will own the canonical commitment.">
+			<Panel
+				title="Execution requirement"
+				description="A resource need must be quantified and routed to the function that will own the canonical commitment."
+			>
 				<div class="form-grid two">
 					<Field id="initiativePublicId" label="Initiative" required>
 						<select class="nb-control" id="initiativePublicId" name="initiativePublicId" required>
@@ -166,23 +323,98 @@
 					</Field>
 					<Field id="requirementType" label="Requirement type" required>
 						<select class="nb-control" id="requirementType" name="requirementType" required>
-							<option value="funding">Funding</option><option value="workforce">Workforce</option><option value="capacity">Capacity</option><option value="technology">Technology</option><option value="asset">Asset</option><option value="supplier">Supplier</option><option value="other">Other</option>
+							<option value="funding">Funding</option><option value="workforce">Workforce</option
+							><option value="capacity">Capacity</option><option value="technology"
+								>Technology</option
+							><option value="asset">Asset</option><option value="supplier">Supplier</option><option
+								value="other">Other</option
+							>
 						</select>
 					</Field>
-					<Field id="title" label="Requirement title" required><input class="nb-control" id="title" name="title" value={fieldValue('title')} required maxlength="255" /></Field>
-					<Field id="targetFunctionCode" label="Target function" hint="Examples: F14 Finance, F15 HCM, F27 PPM." required><input class="nb-control" id="targetFunctionCode" name="targetFunctionCode" value={fieldValue('targetFunctionCode', 'F14')} required maxlength="3" /></Field>
+					<Field id="title" label="Requirement title" required
+						><input
+							class="nb-control"
+							id="title"
+							name="title"
+							value={fieldValue('title')}
+							required
+							maxlength="255"
+						/></Field
+					>
+					<Field
+						id="targetFunctionCode"
+						label="Target function"
+						hint="Examples: F14 Finance, F15 HCM, F27 PPM."
+						required
+						><input
+							class="nb-control"
+							id="targetFunctionCode"
+							name="targetFunctionCode"
+							value={fieldValue('targetFunctionCode', 'F14')}
+							required
+							maxlength="3"
+						/></Field
+					>
 				</div>
-				<Field id="description" label="Requirement description" required><textarea class="nb-control" id="description" name="description" rows="5" required>{fieldValue('description')}</textarea></Field>
+				<Field id="description" label="Requirement description" required
+					><textarea class="nb-control" id="description" name="description" rows="5" required
+						>{fieldValue('description')}</textarea
+					></Field
+				>
 				<div class="form-grid three">
-					<Field id="amount" label="Amount"><input class="nb-control" id="amount" name="amount" inputmode="decimal" value={fieldValue('amount')} /></Field>
-					<Field id="currencyCode" label="Currency"><input class="nb-control" id="currencyCode" name="currencyCode" value={fieldValue('currencyCode', 'GBP')} maxlength="3" /></Field>
-					<Field id="needBy" label="Need by"><input class="nb-control" id="needBy" name="needBy" type="date" value={fieldValue('needBy')} /></Field>
-					<Field id="quantity" label="Quantity"><input class="nb-control" id="quantity" name="quantity" inputmode="decimal" value={fieldValue('quantity')} /></Field>
-					<Field id="unitLabel" label="Unit"><input class="nb-control" id="unitLabel" name="unitLabel" value={fieldValue('unitLabel')} maxlength="64" placeholder="FTE, hours, units, seats…" /></Field>
+					<Field id="amount" label="Amount"
+						><input
+							class="nb-control"
+							id="amount"
+							name="amount"
+							inputmode="decimal"
+							value={fieldValue('amount')}
+						/></Field
+					>
+					<Field id="currencyCode" label="Currency"
+						><input
+							class="nb-control"
+							id="currencyCode"
+							name="currencyCode"
+							value={fieldValue('currencyCode', 'GBP')}
+							maxlength="3"
+						/></Field
+					>
+					<Field id="needBy" label="Need by"
+						><input
+							class="nb-control"
+							id="needBy"
+							name="needBy"
+							type="date"
+							value={fieldValue('needBy')}
+						/></Field
+					>
+					<Field id="quantity" label="Quantity"
+						><input
+							class="nb-control"
+							id="quantity"
+							name="quantity"
+							inputmode="decimal"
+							value={fieldValue('quantity')}
+						/></Field
+					>
+					<Field id="unitLabel" label="Unit"
+						><input
+							class="nb-control"
+							id="unitLabel"
+							name="unitLabel"
+							value={fieldValue('unitLabel')}
+							maxlength="64"
+							placeholder="FTE, hours, units, seats…"
+						/></Field
+					>
 				</div>
 			</Panel>
 		{:else}
-			<Panel title="Handoff request" description="The request remains F01 evidence until the receiving function accepts it and returns its canonical record reference.">
+			<Panel
+				title="Handoff request"
+				description="The request remains F01 evidence until the receiving function accepts it and returns its canonical record reference."
+			>
 				<div class="form-grid two">
 					<Field id="initiativePublicId" label="Initiative" required>
 						<select class="nb-control" id="initiativePublicId" name="initiativePublicId" required>
@@ -192,27 +424,56 @@
 							{/each}
 						</select>
 					</Field>
-					<Field id="resourceRequirementPublicId" label="Linked resource requirement" hint="Optional. If selected, the target function must match the requirement.">
-						<select class="nb-control" id="resourceRequirementPublicId" name="resourceRequirementPublicId">
+					<Field
+						id="resourceRequirementPublicId"
+						label="Linked resource requirement"
+						hint="Optional. If selected, the target function must match the requirement."
+					>
+						<select
+							class="nb-control"
+							id="resourceRequirementPublicId"
+							name="resourceRequirementPublicId"
+						>
 							<option value="">No linked requirement</option>
 							{#each data.resourceRequirements as requirement (requirement.publicId)}
-								<option value={requirement.publicId}>{requirement.initiativeCode} · {requirement.title} → {requirement.targetFunctionCode}</option>
+								<option value={requirement.publicId}
+									>{requirement.initiativeCode} · {requirement.title} → {requirement.targetFunctionCode}</option
+								>
 							{/each}
 						</select>
 					</Field>
 					<Field id="handoffType" label="Handoff type" required>
 						<select class="nb-control" id="handoffType" name="handoffType" required>
-							<option value="funding">Funding</option><option value="workforce">Workforce</option><option value="delivery">Delivery</option><option value="change">Change</option><option value="risk">Risk</option><option value="procurement">Procurement</option><option value="technology">Technology</option><option value="other">Other</option>
+							<option value="funding">Funding</option><option value="workforce">Workforce</option
+							><option value="delivery">Delivery</option><option value="change">Change</option
+							><option value="risk">Risk</option><option value="procurement">Procurement</option
+							><option value="technology">Technology</option><option value="other">Other</option>
 						</select>
 					</Field>
-					<Field id="targetFunctionCode" label="Target function" required><input class="nb-control" id="targetFunctionCode" name="targetFunctionCode" value={fieldValue('targetFunctionCode', 'F14')} maxlength="3" required /></Field>
+					<Field id="targetFunctionCode" label="Target function" required
+						><input
+							class="nb-control"
+							id="targetFunctionCode"
+							name="targetFunctionCode"
+							value={fieldValue('targetFunctionCode', 'F14')}
+							maxlength="3"
+							required
+						/></Field
+					>
 				</div>
-				<Field id="requestSummary" label="Request summary" required><textarea class="nb-control" id="requestSummary" name="requestSummary" rows="6" required>{fieldValue('requestSummary')}</textarea></Field>
+				<Field id="requestSummary" label="Request summary" required
+					><textarea class="nb-control" id="requestSummary" name="requestSummary" rows="6" required
+						>{fieldValue('requestSummary')}</textarea
+					></Field
+				>
 			</Panel>
 		{/if}
 
 		<div class="form-actions">
-			<a href={routes.strategyBusinessPlanning(data.tenant.slug, data.framework.publicId)}>Cancel</a>
+			<LinkButton
+				href={routes.strategyBusinessPlanning(data.tenant.slug, data.framework.publicId)}
+				variant="quiet">Cancel</LinkButton
+			>
 			<Button type="submit">{recordTitle}</Button>
 		</div>
 	</form>

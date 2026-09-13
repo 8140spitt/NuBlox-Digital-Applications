@@ -1,11 +1,21 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Alert, Breadcrumbs, Button, Field, LinkButton, PageHeader, Panel } from '$lib/components/ui';
+	import {
+		Alert,
+		Breadcrumbs,
+		Button,
+		Field,
+		LinkButton,
+		PageHeader,
+		Panel
+	} from '$lib/components/ui';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
 	const values = $derived((form?.values ?? {}) as Record<string, string>);
-	const draftReviews = $derived(data.reviews.filter((review) => review.lifecycleStatus === 'draft'));
+	const draftReviews = $derived(
+		data.reviews.filter((review) => review.lifecycleStatus === 'draft')
+	);
 	const recordTitle = $derived(
 		data.recordKind === 'review' ? 'Start strategic review' : 'Record review decision'
 	);
@@ -27,7 +37,10 @@
 				label: data.framework.title,
 				href: routes.strategyFramework(data.tenant.slug, data.framework.publicId)
 			},
-			{ label: 'Strategic review', href: routes.strategyReview(data.tenant.slug, data.framework.publicId) },
+			{
+				label: 'Strategic review',
+				href: routes.strategyReview(data.tenant.slug, data.framework.publicId)
+			},
 			{ label: recordTitle }
 		]}
 	/>
@@ -52,10 +65,24 @@
 			>
 				<div class="form-grid two">
 					<Field id="reviewDate" label="Review date" required>
-						<input class="nb-control" id="reviewDate" name="reviewDate" type="date" value={fieldValue('reviewDate')} required />
+						<input
+							class="nb-control"
+							id="reviewDate"
+							name="reviewDate"
+							type="date"
+							value={fieldValue('reviewDate')}
+							required
+						/>
 					</Field>
 					<Field id="title" label="Review title" required>
-						<input class="nb-control" id="title" name="title" value={fieldValue('title')} maxlength="255" required />
+						<input
+							class="nb-control"
+							id="title"
+							name="title"
+							value={fieldValue('title')}
+							maxlength="255"
+							required
+						/>
 					</Field>
 				</div>
 				<Field
@@ -64,7 +91,9 @@
 					hint="Summarise what the evidence says before individual decisions are recorded."
 					required
 				>
-					<textarea class="nb-control" id="summary" name="summary" rows="8" required>{fieldValue('summary')}</textarea>
+					<textarea class="nb-control" id="summary" name="summary" rows="8" required
+						>{fieldValue('summary')}</textarea
+					>
 				</Field>
 			</Panel>
 
@@ -76,7 +105,11 @@
 					{#each data.kpis.filter((kpi) => kpi.lifecycleStatus === 'approved') as kpi (kpi.publicId)}
 						<div>
 							<strong>{kpi.code} · {kpi.title}</strong>
-							<span>{kpi.latestActualValue === null ? 'No actual observation yet' : `Latest ${kpi.latestActualValue} ${kpi.unitLabel} on ${kpi.latestObservedOn}`}</span>
+							<span
+								>{kpi.latestActualValue === null
+									? 'No actual observation yet'
+									: `Latest ${kpi.latestActualValue} ${kpi.unitLabel} on ${kpi.latestObservedOn}`}</span
+							>
 						</div>
 					{:else}
 						<p>No approved KPIs are currently available. Return to F01.06 first.</p>
@@ -111,13 +144,23 @@
 					</Field>
 				</div>
 				<Field id="decisionText" label="Decision" required>
-					<textarea class="nb-control" id="decisionText" name="decisionText" rows="5" required>{fieldValue('decisionText')}</textarea>
+					<textarea class="nb-control" id="decisionText" name="decisionText" rows="5" required
+						>{fieldValue('decisionText')}</textarea
+					>
 				</Field>
 				<Field id="rationale" label="Decision rationale" required>
-					<textarea class="nb-control" id="rationale" name="rationale" rows="5" required>{fieldValue('rationale')}</textarea>
+					<textarea class="nb-control" id="rationale" name="rationale" rows="5" required
+						>{fieldValue('rationale')}</textarea
+					>
 				</Field>
 				<Field id="dueDate" label="Due date">
-					<input class="nb-control" id="dueDate" name="dueDate" type="date" value={fieldValue('dueDate')} />
+					<input
+						class="nb-control"
+						id="dueDate"
+						name="dueDate"
+						type="date"
+						value={fieldValue('dueDate')}
+					/>
 				</Field>
 			</Panel>
 
@@ -155,7 +198,10 @@
 		{/if}
 
 		<div class="form-actions">
-			<LinkButton href={routes.strategyReview(data.tenant.slug, data.framework.publicId)} variant="quiet">Cancel</LinkButton>
+			<LinkButton
+				href={routes.strategyReview(data.tenant.slug, data.framework.publicId)}
+				variant="quiet">Cancel</LinkButton
+			>
 			<Button type="submit">{recordTitle}</Button>
 		</div>
 	</form>

@@ -13,7 +13,9 @@
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
-	const approvedReviews = $derived(data.reviews.filter((review) => review.lifecycleStatus === 'approved'));
+	const approvedReviews = $derived(
+		data.reviews.filter((review) => review.lifecycleStatus === 'approved')
+	);
 	const openDecisions = $derived(
 		data.decisions.filter((decision) => ['open', 'in_progress'].includes(decision.lifecycleStatus))
 	);
@@ -78,8 +80,17 @@
 
 	<section class="stat-grid" aria-label="Strategic review summary">
 		<Stat label="Reviews" value={String(data.reviews.length)} detail="Recorded review cycles" />
-		<Stat label="Approved" value={String(approvedReviews.length)} detail="Frozen enterprise evidence" tone="success" />
-		<Stat label="Decisions" value={String(data.decisions.length)} detail="Structured review outcomes" />
+		<Stat
+			label="Approved"
+			value={String(approvedReviews.length)}
+			detail="Frozen enterprise evidence"
+			tone="success"
+		/>
+		<Stat
+			label="Decisions"
+			value={String(data.decisions.length)}
+			detail="Structured review outcomes"
+		/>
 		<Stat
 			label="Open actions"
 			value={String(openDecisions.length)}
@@ -91,7 +102,9 @@
 	<section class="review-thread" aria-labelledby="review-thread-title">
 		<div>
 			<p class="section-kicker">Management loop</p>
-			<h2 id="review-thread-title">Actual evidence → review snapshot → decision → corrective action</h2>
+			<h2 id="review-thread-title">
+				Actual evidence → review snapshot → decision → corrective action
+			</h2>
 			<p>
 				The review does not reinterpret history by editing KPI observations. It freezes the evidence
 				considered and records the decision that management made from that evidence.
@@ -132,7 +145,10 @@
 								<span class="record-code">{review.code} · {review.reviewDate}</span>
 								<h3>{review.title}</h3>
 							</div>
-							<StatusBadge label={review.lifecycleStatus} tone={statusTone(review.lifecycleStatus)} />
+							<StatusBadge
+								label={review.lifecycleStatus}
+								tone={statusTone(review.lifecycleStatus)}
+							/>
 						</div>
 						<p>{review.summary}</p>
 						<div class="review-meta">
@@ -145,7 +161,10 @@
 								<input type="hidden" name="reviewPublicId" value={review.publicId} />
 								<div>
 									<strong>Freeze this strategic review</strong>
-									<p>Approval preserves the KPI snapshot and review record as immutable enterprise evidence.</p>
+									<p>
+										Approval preserves the KPI snapshot and review record as immutable enterprise
+										evidence.
+									</p>
 								</div>
 								<Button type="submit" variant="secondary" size="sm">Approve review</Button>
 							</form>
@@ -159,7 +178,8 @@
 				description="A review requires at least one approved KPI with an actual observation on or before the review date."
 			>
 				{#if canCreate && data.kpis.some((kpi) => kpi.lifecycleStatus === 'approved' && kpi.latestActualValue !== null)}
-					<LinkButton href={routes.strategyReviewNew(data.tenant.slug, data.framework.publicId, 'review')}
+					<LinkButton
+						href={routes.strategyReviewNew(data.tenant.slug, data.framework.publicId, 'review')}
 						>Start first review</LinkButton
 					>
 				{/if}
@@ -190,14 +210,21 @@
 								<span class="record-code">{decision.reviewCode} · {decision.decisionCode}</span>
 								<h3>{decision.decisionText}</h3>
 							</div>
-							<StatusBadge label={decision.lifecycleStatus} tone={statusTone(decision.lifecycleStatus)} />
+							<StatusBadge
+								label={decision.lifecycleStatus}
+								tone={statusTone(decision.lifecycleStatus)}
+							/>
 						</div>
 						<p>{decision.rationale}</p>
 						<div class="decision-meta">
 							<span>Type <strong>{decision.decisionType.replaceAll('_', ' ')}</strong></span>
 							<span>Due <strong>{decision.dueDate ?? 'No due date'}</strong></span>
-							{#if decision.objectiveCode}<span>Objective <strong>{decision.objectiveCode}</strong></span>{/if}
-							{#if decision.initiativeCode}<span>Initiative <strong>{decision.initiativeCode}</strong></span>{/if}
+							{#if decision.objectiveCode}<span
+									>Objective <strong>{decision.objectiveCode}</strong></span
+								>{/if}
+							{#if decision.initiativeCode}<span
+									>Initiative <strong>{decision.initiativeCode}</strong></span
+								>{/if}
 							{#if decision.kpiCode}<span>KPI <strong>{decision.kpiCode}</strong></span>{/if}
 						</div>
 					</article>

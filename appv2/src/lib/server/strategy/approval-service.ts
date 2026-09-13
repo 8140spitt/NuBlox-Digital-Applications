@@ -35,7 +35,8 @@ async function lockFramework(
 		[organisationId, frameworkPublicId]
 	);
 	const framework = rows[0];
-	if (!framework) throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
+	if (!framework)
+		throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
 	return framework;
 }
 
