@@ -86,12 +86,10 @@ guard = """\tif (framework.lifecycleStatus === 'superseded') {
 \t}
 """
 text = text.replace(needle, guard + needle, 1)
-# The original service had a second late superseded check after the authoritative approval dispatches.
-# The early guard above owns this rule and avoids impossible narrowing after the dispatch branches.
-late_guard = "\tif (framework.lifecycleStatus === 'superseded')\n\t\tthrow new StrategyValidationError('Superseded strategy history cannot be changed.');\n"
-late_index = text.find(late_guard, text.find(guard) + len(guard))
-if late_index >= 0:
-    text = text[:late_index] + text[late_index + len(late_guard):]
+# The source service has a legacy one-line superseded check after authoritative approval dispatches.
+# The early guard above owns this rule and must run before every dispatch path.
+legacy_guard = "\tif (framework.lifecycleStatus === 'superseded') throw new StrategyValidationError('Superseded strategy history cannot be changed.');\n"
+text = text.replace(legacy_guard, '', 1)
 p.write_text(text)
 
 # Keep automatic carry-forward selections reactive without capturing derived data in $state initialisers.
@@ -133,7 +131,6 @@ if anchor in text:
         1,
     )
 else:
-    # Some versions use selectedReview only for date bounds later; auto-select immediately after state setup.
     state_line = "\tlet selectedReviewPublicId = $state(fieldValue('reviewPublicId'));"
     text = text.replace(
         state_line,
