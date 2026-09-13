@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { Pathname } from '$app/types';
 	import { page } from '$app/state';
@@ -20,10 +20,12 @@
 	async function signOut() {
 		if (signingOut) return;
 		signingOut = true;
+		const signInHref = resolve(
+			routes.portalSignIn(data.tenant.slug, data.crmParty.slug) as Pathname
+		);
 		try {
 			await authClient.signOut();
-			await invalidateAll();
-			await goto(resolve(routes.portalSignIn(data.tenant.slug, data.crmParty.slug) as Pathname));
+			await goto(signInHref, { invalidateAll: true });
 		} finally {
 			signingOut = false;
 		}
