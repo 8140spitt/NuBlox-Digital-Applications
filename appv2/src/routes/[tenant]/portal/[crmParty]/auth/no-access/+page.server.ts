@@ -1,24 +1,19 @@
-import { redirect } from '@sveltejs/kit';
-import { routes } from '$lib/routing/route-contract';
+import { error, redirect } from '@sveltejs/kit';
+import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
-import { listActiveInternalAccessContexts } from '$lib/server/auth/access-context';
 import type { PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ request }) => {
-	const session = await getAuth().api.getSession({ headers: request.headers });
-	if (!session) {
-		redirect(303, routes.auth());
-	}
+export const load: PageServerLoad = async ({ params, request }) => {
+	if (!isRouteSlug(params.tenant)) error(404, 'Tenant not found');
+	if (!isRouteSlug(params.crmParty)) error(404, 'CRM Party not found');
 
-	const contexts = await listActiveInternalAccessContexts(session.user.id);
-	if (contexts.length > 0) {
-		redirect(303, routes.authContinue);
-	}
+	const session = await getAuth().api.getSession({ headers: request.headers });
+	if (!session) redirect(303, routes.portalSignIn(params.tenant, params.crmParty));
 
 	return {
-		user: {
-			name: session.user.name,
-			email: session.user.email
-		}
+		contextName: `${params.tenant} / ${params.crmParty}`,
+		signInHref: routes.portalSignIn(params.tenant, params.crmParty),
+		startHref: routes.start,
+		user: { name: session.user.name, email: session.user.email }
 	};
 };
