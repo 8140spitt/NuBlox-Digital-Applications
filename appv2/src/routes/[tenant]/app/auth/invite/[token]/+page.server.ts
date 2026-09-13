@@ -83,8 +83,10 @@ export const load: PageServerLoad = async ({ params, request, cookies, url }) =>
 export const actions: Actions = {
 	accept: async ({ params, request, cookies }) => {
 		const rawToken = params.token;
+		const tenant = params.tenant;
 		if (!rawToken) throw error(400, 'Invitation token is required.');
-		await requireInvitationForTenant(rawToken, params.tenant);
+		if (!tenant) throw error(400, 'Tenant route context is required.');
+		await requireInvitationForTenant(rawToken, tenant);
 
 		const session = await getAuth().api.getSession({ headers: request.headers });
 		if (!session) throw error(401, 'Sign in before accepting this invitation.');
@@ -102,6 +104,6 @@ export const actions: Actions = {
 			throw cause;
 		}
 
-		throw redirect(303, routes.app(params.tenant));
+		throw redirect(303, routes.app(tenant));
 	}
 };

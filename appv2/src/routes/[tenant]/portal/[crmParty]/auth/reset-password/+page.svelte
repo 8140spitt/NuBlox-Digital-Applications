@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -9,8 +10,8 @@
 	let confirmPassword = $state('');
 	let submitting = $state(false);
 	let errorMessage = $state('');
-	const tenant = $derived(page.params.tenant);
-	const crmParty = $derived(page.params.crmParty);
+	const tenant = $derived(page.params.tenant ?? '');
+	const crmParty = $derived(page.params.crmParty ?? '');
 	const token = $derived(page.url.searchParams.get('token') ?? '');
 	const invalidToken = $derived(page.url.searchParams.get('error') === 'INVALID_TOKEN' || !token);
 	const forgotHref = $derived(routes.portalForgotPassword(tenant, crmParty));
@@ -33,7 +34,7 @@
 				errorMessage = 'This reset link is invalid or has expired.';
 				return;
 			}
-			await goto(resolve(routes.portalSignIn(tenant, crmParty)), {
+			await goto(resolve(routes.portalSignIn(tenant, crmParty) as Pathname), {
 				replaceState: true,
 				invalidateAll: true
 			});
@@ -50,7 +51,7 @@
 		<p class="nb-eyebrow">Account recovery</p>
 		<h1>Choose a new password</h1>
 		{#if invalidToken}<div class="notice" role="alert"><p>This reset link cannot be used.</p></div>
-			<p><a href={resolve(forgotHref)}>Request a new reset link</a></p>
+			<p><a href={resolve(forgotHref as Pathname)}>Request a new reset link</a></p>
 		{:else}<form onsubmit={resetPassword}>
 				<label
 					><span>New password</span><input

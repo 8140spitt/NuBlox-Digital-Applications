@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -7,8 +8,8 @@
 	let sending = $state(false);
 	let sent = $state(false);
 	let errorMessage = $state('');
-	const tenant = $derived(page.params.tenant);
-	const crmParty = $derived(page.params.crmParty);
+	const tenant = $derived(page.params.tenant ?? '');
+	const crmParty = $derived(page.params.crmParty ?? '');
 	const email = $derived(page.url.searchParams.get('email')?.trim() ?? '');
 	const verified = $derived(page.url.searchParams.get('verified') === '1');
 	const verificationError = $derived(page.url.searchParams.get('error') ?? '');
@@ -43,7 +44,7 @@
 		<p class="nb-eyebrow">Identity verification</p>
 		{#if verified}<h1>Email verified</h1>
 			<p class="lede">Your identity is verified for this connected portal journey.</p>
-			<a class="primary-action" href={resolve(signInHref)}>Continue to sign in</a>
+			<a class="primary-action" href={resolve(signInHref as Pathname)}>Continue to sign in</a>
 		{:else if verificationError}<h1>Verification link expired</h1>
 			<p class="lede">Request another verification link.</p>
 			{#if email}<button type="button" onclick={resendVerification} disabled={sending}

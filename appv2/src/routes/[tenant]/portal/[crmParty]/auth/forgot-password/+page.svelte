@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -8,8 +9,8 @@
 	let submitting = $state(false);
 	let submitted = $state(false);
 	let errorMessage = $state('');
-	const tenant = $derived(page.params.tenant);
-	const crmParty = $derived(page.params.crmParty);
+	const tenant = $derived(page.params.tenant ?? '');
+	const crmParty = $derived(page.params.crmParty ?? '');
 	const signInHref = $derived(routes.portalSignIn(tenant, crmParty));
 
 	async function requestReset(event: SubmitEvent) {
@@ -63,7 +64,7 @@
 					disabled={submitting}>{submitting ? 'Sending…' : 'Send reset link'}</button
 				>
 			</form>{/if}
-		<p class="footer-copy"><a href={resolve(signInHref)}>Back to sign in</a></p>
+		<p class="footer-copy"><a href={resolve(signInHref as Pathname)}>Back to sign in</a></p>
 	</section>
 </main>
 

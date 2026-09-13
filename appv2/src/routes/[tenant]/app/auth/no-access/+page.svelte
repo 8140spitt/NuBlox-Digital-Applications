@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { authClient } from '$lib/auth/auth-client';
 
 	let { data } = $props();
@@ -11,7 +12,7 @@
 		try {
 			await authClient.signOut();
 			await invalidateAll();
-			await goto(resolve(data.signInHref));
+			await goto(resolve(data.signInHref as Pathname));
 		} finally {
 			signingOut = false;
 		}
@@ -28,7 +29,7 @@
 
 <main class="access-shell">
 	<section class="access-card">
-		<a class="brand" href={resolve(data.startHref)}>NuBlox</a>
+		<a class="brand" href={resolve(data.startHref as Pathname)}>NuBlox</a>
 		<p class="nb-eyebrow">Tenant access</p>
 		<h1>No access to {data.tenant}</h1>
 		<p class="lede">

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -9,7 +10,7 @@
 	let submitted = $state(false);
 	let errorMessage = $state('');
 
-	const tenant = $derived(page.params.tenant);
+	const tenant = $derived(page.params.tenant ?? '');
 	const signInHref = $derived(routes.appSignIn(tenant));
 
 	async function requestReset(event: SubmitEvent) {
@@ -68,7 +69,7 @@
 			</form>
 		{/if}
 
-		<p class="footer-copy"><a href={resolve(signInHref)}>Back to sign in</a></p>
+		<p class="footer-copy"><a href={resolve(signInHref as Pathname)}>Back to sign in</a></p>
 	</section>
 </main>
 

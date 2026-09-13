@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { authClient } from '$lib/auth/auth-client';
 
 	let {
@@ -41,7 +42,7 @@
 			}
 
 			await invalidateAll();
-			await goto(resolve(destination));
+			await goto(resolve(destination as Pathname));
 		} finally {
 			submitting = false;
 		}
@@ -55,7 +56,7 @@
 
 <main class="auth-shell">
 	<section class="auth-context">
-		<a class="brand" href={resolve(startHref)} aria-label="NuBlox start">
+		<a class="brand" href={resolve(startHref as Pathname)} aria-label="NuBlox start">
 			<span class="brand-mark" aria-hidden="true">N</span>
 			<span>NuBlox</span>
 		</a>
@@ -89,7 +90,7 @@
 				<label>
 					<span class="password-label">
 						Password
-						<a href={resolve(forgotPasswordHref)}>Forgot password?</a>
+						<a href={resolve(forgotPasswordHref as Pathname)}>Forgot password?</a>
 					</span>
 					<input
 						bind:value={password}

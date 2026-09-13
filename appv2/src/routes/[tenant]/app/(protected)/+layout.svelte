@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import type { Pathname } from '$app/types';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -25,7 +26,7 @@
 		try {
 			await authClient.signOut();
 			await invalidateAll();
-			await goto(resolve(routes.appSignIn(data.tenant.slug)));
+			await goto(resolve(routes.appSignIn(data.tenant.slug) as Pathname));
 		} finally {
 			signingOut = false;
 		}
@@ -38,7 +39,7 @@
 			<div class="identity-group">
 				<a
 					class="brand"
-					href={resolve(routes.dashboard(data.tenant.slug))}
+					href={resolve(routes.dashboard(data.tenant.slug) as Pathname)}
 					aria-label="NuBlox home"
 				>
 					<span class="brand-mark" aria-hidden="true">N</span>
@@ -53,7 +54,7 @@
 			<nav aria-label="Primary navigation">
 				{#each items as item (item.href)}
 					<a
-						href={resolve(item.href)}
+						href={resolve(item.href as Pathname)}
 						class:active={isActive(item.href)}
 						aria-current={isActive(item.href) ? 'page' : undefined}
 					>
