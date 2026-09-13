@@ -57,7 +57,7 @@
 			title="Action hierarchy"
 			description="Primary intent is visually dominant. Routine, quiet and destructive actions are distinct without creating function-specific variants."
 			actions={panelAction}
-	>
+		>
 			<ActionBar>
 				<Button>Save changes</Button>
 				<Button variant="secondary">Save draft</Button>
@@ -66,12 +66,12 @@
 					<Button variant="danger" size="sm">Archive</Button>
 				{/snippet}
 			</ActionBar>
-	</Panel>
+		</Panel>
 
 		<Panel
 			title="Lifecycle and performance language"
 			description="Status and performance components use semantic meaning rather than arbitrary raw colours."
-	>
+		>
 			<div class="status-row">
 				<StatusBadge label="Draft" />
 				<StatusBadge label="Active" tone="success" />
@@ -161,7 +161,9 @@
 
 				<div class="full">
 					<Field id="notes" label="Notes" hint="Optional supporting context.">
-						<textarea class="nb-control" id="notes" name="notes">{form?.values?.notes ?? ''}</textarea>
+						<textarea class="nb-control" id="notes" name="notes"
+							>{form?.values?.notes ?? ''}</textarea
+						>
 					</Field>
 				</div>
 
@@ -173,16 +175,24 @@
 		</Panel>
 
 		<div class="two-column">
-			<Panel title="Empty state" description="Empty states explain what belongs here and offer the next meaningful action.">
+			<Panel
+				title="Empty state"
+				description="Empty states explain what belongs here and offer the next meaningful action."
+			>
 				<EmptyState
 					title="No strategic objectives yet"
 					description="Create the first objective when the approved strategy is ready to translate into measurable outcomes."
 					actions={emptyActions}
 				/>
 			</Panel>
-			<Panel title="System feedback" description="Feedback uses the same semantic tones across every function.">
+			<Panel
+				title="System feedback"
+				description="Feedback uses the same semantic tones across every function."
+			>
 				<div class="stack compact">
-					<Alert tone="info" title="Information">A contextual fact that helps the user decide.</Alert>
+					<Alert tone="info" title="Information"
+						>A contextual fact that helps the user decide.</Alert
+					>
 					<Alert tone="success" title="Success">The governed action completed successfully.</Alert>
 					<Alert tone="warning" title="Attention">A material condition needs review.</Alert>
 					<Alert tone="danger" title="Unable to continue">The transaction cannot proceed.</Alert>
