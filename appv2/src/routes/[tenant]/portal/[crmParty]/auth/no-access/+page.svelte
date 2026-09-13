@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { authClient } from '$lib/auth/auth-client';
 
 	let { data } = $props();
@@ -10,7 +11,7 @@
 		try {
 			await authClient.signOut();
 			await invalidateAll();
-			await goto(data.signInHref);
+			await goto(resolve(data.signInHref));
 		} finally {
 			signingOut = false;
 		}
@@ -20,7 +21,7 @@
 <svelte:head><title>No portal access · NuBlox</title></svelte:head>
 <main class="access-shell">
 	<section class="access-card">
-		<a class="brand" href={data.startHref}>NuBlox Portal</a>
+		<a class="brand" href={resolve(data.startHref)}>NuBlox Portal</a>
 		<p class="nb-eyebrow">Portal access</p>
 		<h1>No access to {data.contextName}</h1>
 		<p class="lede">

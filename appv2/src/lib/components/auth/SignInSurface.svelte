@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { authClient } from '$lib/auth/auth-client';
 
 	let {
@@ -40,7 +41,7 @@
 			}
 
 			await invalidateAll();
-			await goto(destination);
+			await goto(resolve(destination));
 		} finally {
 			submitting = false;
 		}
@@ -54,7 +55,7 @@
 
 <main class="auth-shell">
 	<section class="auth-context">
-		<a class="brand" href={startHref} aria-label="NuBlox start">
+		<a class="brand" href={resolve(startHref)} aria-label="NuBlox start">
 			<span class="brand-mark" aria-hidden="true">N</span>
 			<span>NuBlox</span>
 		</a>
@@ -88,7 +89,7 @@
 				<label>
 					<span class="password-label">
 						Password
-						<a href={forgotPasswordHref}>Forgot password?</a>
+						<a href={resolve(forgotPasswordHref)}>Forgot password?</a>
 					</span>
 					<input
 						bind:value={password}

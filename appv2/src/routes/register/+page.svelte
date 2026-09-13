@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
 
@@ -62,7 +63,7 @@
 				return;
 			}
 
-			await goto(`${routes.verifyEmail}?email=${encodeURIComponent(email.trim())}`, {
+			await goto(resolve(`${routes.verifyEmail}?email=${encodeURIComponent(email.trim())}`), {
 				replaceState: true,
 				invalidateAll: true
 			});
@@ -82,7 +83,7 @@
 
 <main class="registration-shell">
 	<section class="registration-story">
-		<a class="brand" href={routes.start}>
+		<a class="brand" href={resolve(routes.start)}>
 			<span class="brand-mark" aria-hidden="true">N</span>
 			<span>NuBlox</span>
 		</a>

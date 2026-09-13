@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -42,7 +43,7 @@
 
 <main class="verification-shell">
 	<section class="verification-card">
-		<a class="brand" href={routes.start}>NuBlox</a>
+		<a class="brand" href={resolve(routes.start)}>NuBlox</a>
 		<p class="nb-eyebrow">Identity verification</p>
 
 		{#if verified}
@@ -52,7 +53,8 @@
 				access.
 			</p>
 			{#if data.continueHref}
-				<a class="primary-action" href={data.continueHref}>Continue to your organisation</a>
+				<a class="primary-action" href={resolve(data.continueHref)}>Continue to your organisation</a
+				>
 			{:else}
 				<p class="guidance">
 					Open your organisation-specific NuBlox address to sign in. Tenant access is never selected

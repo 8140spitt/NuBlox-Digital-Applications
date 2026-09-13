@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -38,11 +39,11 @@
 <svelte:head><title>Verify your email · NuBlox Portal</title></svelte:head>
 <main class="verification-shell">
 	<section class="verification-card">
-		<a class="brand" href={routes.start}>NuBlox Portal</a>
+		<a class="brand" href={resolve(routes.start)}>NuBlox Portal</a>
 		<p class="nb-eyebrow">Identity verification</p>
 		{#if verified}<h1>Email verified</h1>
 			<p class="lede">Your identity is verified for this connected portal journey.</p>
-			<a class="primary-action" href={signInHref}>Continue to sign in</a>
+			<a class="primary-action" href={resolve(signInHref)}>Continue to sign in</a>
 		{:else if verificationError}<h1>Verification link expired</h1>
 			<p class="lede">Request another verification link.</p>
 			{#if email}<button type="button" onclick={resendVerification} disabled={sending}

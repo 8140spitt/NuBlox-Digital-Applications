@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -33,7 +34,7 @@
 				errorMessage = 'This reset link is invalid or has expired. Request a new one.';
 				return;
 			}
-			await goto(routes.appSignIn(tenant), { replaceState: true, invalidateAll: true });
+			await goto(resolve(routes.appSignIn(tenant)), { replaceState: true, invalidateAll: true });
 		} finally {
 			submitting = false;
 		}
@@ -44,7 +45,7 @@
 
 <main class="recovery-shell">
 	<section class="recovery-card">
-		<a class="brand" href={routes.start}>NuBlox</a>
+		<a class="brand" href={resolve(routes.start)}>NuBlox</a>
 		<p class="nb-eyebrow">Account recovery</p>
 		<h1>Choose a new password</h1>
 		{#if invalidToken}
@@ -52,7 +53,7 @@
 				<h2>This link cannot be used</h2>
 				<p>Password-reset links expire after one hour and can only be used once.</p>
 			</div>
-			<p class="footer-copy"><a href={forgotPasswordHref}>Request a new reset link</a></p>
+			<p class="footer-copy"><a href={resolve(forgotPasswordHref)}>Request a new reset link</a></p>
 		{:else}
 			<p class="lede">
 				Use at least 12 characters. Completing this reset revokes existing sessions.

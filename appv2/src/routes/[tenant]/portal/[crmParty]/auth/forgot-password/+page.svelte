@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -38,7 +39,7 @@
 <svelte:head><title>Forgot password · NuBlox Portal</title></svelte:head>
 <main class="recovery-shell">
 	<section class="recovery-card">
-		<a class="brand" href={routes.start}>NuBlox Portal</a>
+		<a class="brand" href={resolve(routes.start)}>NuBlox Portal</a>
 		<p class="nb-eyebrow">Account recovery</p>
 		<h1>Reset your password</h1>
 		{#if submitted}<div class="notice" role="status">
@@ -62,7 +63,7 @@
 					disabled={submitting}>{submitting ? 'Sending…' : 'Send reset link'}</button
 				>
 			</form>{/if}
-		<p class="footer-copy"><a href={signInHref}>Back to sign in</a></p>
+		<p class="footer-copy"><a href={resolve(signInHref)}>Back to sign in</a></p>
 	</section>
 </main>
 

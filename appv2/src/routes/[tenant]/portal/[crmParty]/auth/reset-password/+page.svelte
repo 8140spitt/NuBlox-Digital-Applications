@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -32,7 +33,7 @@
 				errorMessage = 'This reset link is invalid or has expired.';
 				return;
 			}
-			await goto(routes.portalSignIn(tenant, crmParty), {
+			await goto(resolve(routes.portalSignIn(tenant, crmParty)), {
 				replaceState: true,
 				invalidateAll: true
 			});
@@ -45,11 +46,11 @@
 <svelte:head><title>Choose a new password · NuBlox Portal</title></svelte:head>
 <main class="recovery-shell">
 	<section class="recovery-card">
-		<a class="brand" href={routes.start}>NuBlox Portal</a>
+		<a class="brand" href={resolve(routes.start)}>NuBlox Portal</a>
 		<p class="nb-eyebrow">Account recovery</p>
 		<h1>Choose a new password</h1>
 		{#if invalidToken}<div class="notice" role="alert"><p>This reset link cannot be used.</p></div>
-			<p><a href={forgotHref}>Request a new reset link</a></p>
+			<p><a href={resolve(forgotHref)}>Request a new reset link</a></p>
 		{:else}<form onsubmit={resetPassword}>
 				<label
 					><span>New password</span><input

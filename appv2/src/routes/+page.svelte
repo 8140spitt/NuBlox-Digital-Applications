@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { routes } from '$lib/routing/route-contract';
 </script>
 
@@ -12,7 +13,7 @@
 	</p>
 
 	<div class="entry-actions">
-		<a class="nb-action" href={routes.start}>Start NuBlox</a>
+		<a class="nb-action" href={resolve(routes.start)}>Start NuBlox</a>
 		<span>Existing user? Open /your-tenant/app.</span>
 	</div>
 </section>

@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { routes } from '$lib/routing/route-contract';
 </script>
 
@@ -11,7 +12,7 @@
 </svelte:head>
 
 <main class="start-shell">
-	<a class="brand" href="/" aria-label="NuBlox home">
+	<a class="brand" href={resolve('/')} aria-label="NuBlox home">
 		<span class="brand-mark" aria-hidden="true">N</span>
 		<span>NuBlox</span>
 	</a>
@@ -26,7 +27,7 @@
 	</section>
 
 	<section class="journeys" aria-label="NuBlox start journeys">
-		<a class="journey primary" href={routes.register}>
+		<a class="journey primary" href={resolve(routes.register)}>
 			<span class="journey-number">01</span>
 			<strong>Register a new organisation</strong>
 			<span>Create the tenancy and its first Owner account.</span>

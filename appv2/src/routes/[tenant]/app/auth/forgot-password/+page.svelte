@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -41,7 +42,7 @@
 
 <main class="recovery-shell">
 	<section class="recovery-card">
-		<a class="brand" href={routes.start}>NuBlox</a>
+		<a class="brand" href={resolve(routes.start)}>NuBlox</a>
 		<p class="nb-eyebrow">Account recovery</p>
 		<h1>Reset your password</h1>
 
@@ -67,7 +68,7 @@
 			</form>
 		{/if}
 
-		<p class="footer-copy"><a href={signInHref}>Back to sign in</a></p>
+		<p class="footer-copy"><a href={resolve(signInHref)}>Back to sign in</a></p>
 	</section>
 </main>
 
