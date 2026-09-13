@@ -28,16 +28,16 @@ The historical V1 F01 implementation is evidence and a source of reusable domain
 
 ## 1. Canonical sub-functions
 
-| Ref | Sub-function | V2 outcome |
-| --- | --- | --- |
-| F01.01 | Vision & purpose | Define the enduring purpose, desired future state and strategic horizon. |
-| F01.02 | Environmental analysis | Maintain evidence-led internal and external factors, assumptions and implications. |
-| F01.03 | Strategic planning | Evaluate choices and establish accountable strategic themes and objectives. |
-| F01.04 | Business planning | Translate strategy into plans, investment, resources and initiatives. |
-| F01.05 | Operating model | Define current-to-target capabilities, organisation, process, information, technology and ecosystem changes. |
-| F01.06 | Goal & KPI management | Define measures, targets, authoritative actuals and corrective actions. |
-| F01.07 | Strategic review | Review evidence and performance, record decisions and govern corrective action. |
-| F01.08 | Scenario & foresight planning | Test assumptions and strategic resilience against alternative futures. |
+| Ref    | Sub-function                  | V2 outcome                                                                                                   |
+| ------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| F01.01 | Vision & purpose              | Define the enduring purpose, desired future state and strategic horizon.                                     |
+| F01.02 | Environmental analysis        | Maintain evidence-led internal and external factors, assumptions and implications.                           |
+| F01.03 | Strategic planning            | Evaluate choices and establish accountable strategic themes and objectives.                                  |
+| F01.04 | Business planning             | Translate strategy into plans, investment, resources and initiatives.                                        |
+| F01.05 | Operating model               | Define current-to-target capabilities, organisation, process, information, technology and ecosystem changes. |
+| F01.06 | Goal & KPI management         | Define measures, targets, authoritative actuals and corrective actions.                                      |
+| F01.07 | Strategic review              | Review evidence and performance, record decisions and govern corrective action.                              |
+| F01.08 | Scenario & foresight planning | Test assumptions and strategic resilience against alternative futures.                                       |
 
 ## 2. Workspace architecture
 
@@ -95,7 +95,7 @@ The canonical strategy-version lifecycle is:
 Draft → Approved → Superseded
 ```
 
-Draft strategy may be developed by authorised strategy managers. Strategy approval is an explicit governed transition and requires at least one active objective retaining selected-option lineage and a primary theme. Approved strategy is immutable enterprise evidence. Material change requires a controlled revision or new strategy cycle.
+Draft strategy may be developed by authorised strategy managers. Strategy approval is an explicit governed transition and requires at least one active objective retaining selected-option lineage and a primary theme. Objectives created while a strategy is draft remain draft working records. Strategy approval validates their decision lineage and activates draft objectives in the same governed transaction. Approved strategy is immutable enterprise evidence. Material change requires a controlled revision or new strategy cycle.
 
 F01.04 planning begins from an approved strategy. Business plans use:
 

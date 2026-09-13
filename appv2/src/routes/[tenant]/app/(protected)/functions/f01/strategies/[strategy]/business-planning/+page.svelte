@@ -59,25 +59,27 @@
 		},
 		{
 			key: 'traceable-objective',
-			label: 'Traceable active objective ready',
-			ready: data.approvalReadiness.traceableObjectiveCount > 0,
+			label: 'Traceable objective ready for approval',
+			ready: data.approvalReadiness.traceableCandidateObjectiveCount > 0,
 			detail:
-				data.approvalReadiness.traceableObjectiveCount > 0
-					? `${data.approvalReadiness.traceableObjectiveCount} active objective${data.approvalReadiness.traceableObjectiveCount === 1 ? '' : 's'} retain both selected-option lineage and a primary theme.`
-					: data.approvalReadiness.activeObjectiveCount === 0
-						? 'No active objective exists. Create an objective derived from a selected option and assign its primary strategic theme.'
-						: data.approvalReadiness.optionLinkedObjectiveCount === 0 &&
-							  data.approvalReadiness.primaryThemeObjectiveCount === 0
-							? 'Active objectives exist, but none carries selected-option lineage or a primary strategic theme.'
-							: data.approvalReadiness.optionLinkedObjectiveCount === 0
-								? 'Active objectives exist, but none is linked to a selected strategic option.'
-								: data.approvalReadiness.primaryThemeObjectiveCount === 0
-									? 'Active objectives exist, but none has a primary strategic theme.'
-									: 'Objective links exist, but no single active objective currently carries both the selected-option lineage and primary theme required for approval.',
+				data.approvalReadiness.traceableCandidateObjectiveCount > 0
+					? `${data.approvalReadiness.traceableCandidateObjectiveCount} objective${data.approvalReadiness.traceableCandidateObjectiveCount === 1 ? '' : 's'} are approval-ready with selected-option lineage and an active primary theme. Draft objectives become active in the approval transaction.`
+					: data.approvalReadiness.approvalCandidateObjectiveCount === 0
+						? 'No draft or active objective exists. Create an objective derived from a selected option and assign its primary strategic theme.'
+						: data.approvalReadiness.optionLinkedCandidateObjectiveCount === 0 &&
+							  data.approvalReadiness.primaryThemeCandidateObjectiveCount === 0
+							? 'Objectives exist, but none carries selected-option lineage or a primary strategic theme.'
+							: data.approvalReadiness.optionLinkedCandidateObjectiveCount === 0
+								? 'Objectives exist, but none is linked to a selected strategic option.'
+								: data.approvalReadiness.primaryThemeCandidateObjectiveCount === 0
+									? 'Objectives exist, but none has an active primary strategic theme.'
+									: 'Objective links exist, but no single draft or active objective currently carries both the selected-option lineage and primary theme required for approval.',
 			actionLabel:
-				data.approvalReadiness.activeObjectiveCount > 0 ? 'Review objectives' : 'Create objective',
+				data.approvalReadiness.approvalCandidateObjectiveCount > 0
+					? 'Review objectives'
+					: 'Create objective',
 			actionHref:
-				data.approvalReadiness.activeObjectiveCount > 0
+				data.approvalReadiness.approvalCandidateObjectiveCount > 0
 					? routes.strategyPlanning(data.tenant.slug, data.framework.publicId)
 					: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'objective')
 		},

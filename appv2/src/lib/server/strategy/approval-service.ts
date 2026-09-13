@@ -1,4 +1,4 @@
-import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
+import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
 import {
@@ -40,7 +40,7 @@ async function lockFramework(
 	return framework;
 }
 
-async function countTraceableObjectives(
+async function countApprovalCandidateObjectives(
 	connection: PoolConnection,
 	organisationId: string,
 	frameworkId: string
@@ -58,7 +58,7 @@ async function countTraceableObjectives(
 		  AND theme_link.relationship_type = 'primary'
 		 WHERE objective.organisation_id = ?
 		   AND objective.strategy_framework_id = ?
-		   AND objective.lifecycle_status = 'active'`,
+		   AND objective.lifecycle_status IN ('draft', 'active')`,
 		[organisationId, frameworkId]
 	);
 	return Number(rows[0]?.objectiveCount ?? 0);
@@ -150,14 +150,14 @@ export async function approveStrategyFramework(input: {
 			throw new StrategyValidationError('Only a draft strategy version can be approved.');
 		}
 
-		const objectiveCount = await countTraceableObjectives(
+		const approvalCandidateObjectiveCount = await countApprovalCandidateObjectives(
 			connection,
 			input.actor.organisationId,
 			framework.id.toString()
 		);
-		if (objectiveCount < 1) {
+		if (approvalCandidateObjectiveCount < 1) {
 			throw new StrategyValidationError(
-				'Strategy approval requires at least one active objective with a selected-option lineage and a primary strategic theme.'
+				'Strategy approval requires at least one objective with selected-option lineage and a primary strategic theme. Draft objectives become active when the strategy is approved.'
 			);
 		}
 
@@ -171,6 +171,15 @@ export async function approveStrategyFramework(input: {
 				`An approved strategy (${existingApproved.code}) already exists. Create a controlled revision rather than approving a parallel current strategy.`
 			);
 		}
+
+		const [activationResult] = await connection.execute<ResultSetHeader>(
+			`UPDATE strategy_objectives
+			 SET lifecycle_status = 'active'
+			 WHERE organisation_id = ?
+			   AND strategy_framework_id = ?
+			   AND lifecycle_status = 'draft'`,
+			[input.actor.organisationId, framework.id]
+		);
 
 		await connection.execute(
 			`UPDATE strategy_frameworks
@@ -191,7 +200,8 @@ export async function approveStrategyFramework(input: {
 			changeSummary: {
 				frameworkCode: framework.code,
 				lifecycleStatus: 'approved',
-				traceableObjectiveCount: objectiveCount
+				traceableObjectiveCount: approvalCandidateObjectiveCount,
+				activatedDraftObjectiveCount: activationResult.affectedRows
 			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.03', 'F01.04'] }
 		});

@@ -9,10 +9,10 @@ export type StrategyApprovalReadiness = {
 	totalOptionCount: number;
 	selectedOptionCount: number;
 	activeThemeCount: number;
-	activeObjectiveCount: number;
-	optionLinkedObjectiveCount: number;
-	primaryThemeObjectiveCount: number;
-	traceableObjectiveCount: number;
+	approvalCandidateObjectiveCount: number;
+	optionLinkedCandidateObjectiveCount: number;
+	primaryThemeCandidateObjectiveCount: number;
+	traceableCandidateObjectiveCount: number;
 	conflictingApprovedStrategy: { publicId: string; code: string; title: string } | null;
 };
 
@@ -25,10 +25,10 @@ type ReadinessRow = RowDataPacket & {
 	totalOptionCount: number | string;
 	selectedOptionCount: number | string;
 	activeThemeCount: number | string;
-	activeObjectiveCount: number | string;
-	optionLinkedObjectiveCount: number | string;
-	primaryThemeObjectiveCount: number | string;
-	traceableObjectiveCount: number | string;
+	approvalCandidateObjectiveCount: number | string;
+	optionLinkedCandidateObjectiveCount: number | string;
+	primaryThemeCandidateObjectiveCount: number | string;
+	traceableCandidateObjectiveCount: number | string;
 };
 
 type ApprovedFrameworkRow = RowDataPacket & {
@@ -87,7 +87,7 @@ export async function getStrategyApprovalReadiness(input: {
 		      FROM strategy_objectives objective
 		     WHERE objective.organisation_id = ?
 		       AND objective.strategy_framework_id = ?
-		       AND objective.lifecycle_status = 'active') AS activeObjectiveCount,
+		       AND objective.lifecycle_status IN ('draft', 'active')) AS approvalCandidateObjectiveCount,
 		   (SELECT COUNT(DISTINCT objective.id)
 		      FROM strategy_objectives objective
 		      JOIN strategy_objective_option_links option_link
@@ -97,7 +97,7 @@ export async function getStrategyApprovalReadiness(input: {
 		       AND option_record.decision_status = 'selected'
 		     WHERE objective.organisation_id = ?
 		       AND objective.strategy_framework_id = ?
-		       AND objective.lifecycle_status = 'active') AS optionLinkedObjectiveCount,
+		       AND objective.lifecycle_status IN ('draft', 'active')) AS optionLinkedCandidateObjectiveCount,
 		   (SELECT COUNT(DISTINCT objective.id)
 		      FROM strategy_objectives objective
 		      JOIN strategy_objective_theme_links theme_link
@@ -108,7 +108,7 @@ export async function getStrategyApprovalReadiness(input: {
 		       AND theme.lifecycle_status = 'active'
 		     WHERE objective.organisation_id = ?
 		       AND objective.strategy_framework_id = ?
-		       AND objective.lifecycle_status = 'active') AS primaryThemeObjectiveCount,
+		       AND objective.lifecycle_status IN ('draft', 'active')) AS primaryThemeCandidateObjectiveCount,
 		   (SELECT COUNT(DISTINCT objective.id)
 		      FROM strategy_objectives objective
 		      JOIN strategy_objective_option_links option_link
@@ -124,7 +124,7 @@ export async function getStrategyApprovalReadiness(input: {
 		       AND theme.lifecycle_status = 'active'
 		     WHERE objective.organisation_id = ?
 		       AND objective.strategy_framework_id = ?
-		       AND objective.lifecycle_status = 'active') AS traceableObjectiveCount`,
+		       AND objective.lifecycle_status IN ('draft', 'active')) AS traceableCandidateObjectiveCount`,
 		[
 			input.organisationId,
 			frameworkId,
@@ -161,10 +161,14 @@ export async function getStrategyApprovalReadiness(input: {
 	const totalOptionCount = Number(counts?.totalOptionCount ?? 0);
 	const selectedOptionCount = Number(counts?.selectedOptionCount ?? 0);
 	const activeThemeCount = Number(counts?.activeThemeCount ?? 0);
-	const activeObjectiveCount = Number(counts?.activeObjectiveCount ?? 0);
-	const optionLinkedObjectiveCount = Number(counts?.optionLinkedObjectiveCount ?? 0);
-	const primaryThemeObjectiveCount = Number(counts?.primaryThemeObjectiveCount ?? 0);
-	const traceableObjectiveCount = Number(counts?.traceableObjectiveCount ?? 0);
+	const approvalCandidateObjectiveCount = Number(counts?.approvalCandidateObjectiveCount ?? 0);
+	const optionLinkedCandidateObjectiveCount = Number(
+		counts?.optionLinkedCandidateObjectiveCount ?? 0
+	);
+	const primaryThemeCandidateObjectiveCount = Number(
+		counts?.primaryThemeCandidateObjectiveCount ?? 0
+	);
+	const traceableCandidateObjectiveCount = Number(counts?.traceableCandidateObjectiveCount ?? 0);
 	const isDraft = framework.lifecycleStatus === 'draft';
 	const canApprove = workspace.permissions.canApprove;
 
@@ -176,15 +180,15 @@ export async function getStrategyApprovalReadiness(input: {
 			canApprove &&
 			selectedOptionCount > 0 &&
 			activeThemeCount > 0 &&
-			traceableObjectiveCount > 0 &&
+			traceableCandidateObjectiveCount > 0 &&
 			conflictingApprovedStrategy === null,
 		totalOptionCount,
 		selectedOptionCount,
 		activeThemeCount,
-		activeObjectiveCount,
-		optionLinkedObjectiveCount,
-		primaryThemeObjectiveCount,
-		traceableObjectiveCount,
+		approvalCandidateObjectiveCount,
+		optionLinkedCandidateObjectiveCount,
+		primaryThemeCandidateObjectiveCount,
+		traceableCandidateObjectiveCount,
 		conflictingApprovedStrategy
 	};
 }

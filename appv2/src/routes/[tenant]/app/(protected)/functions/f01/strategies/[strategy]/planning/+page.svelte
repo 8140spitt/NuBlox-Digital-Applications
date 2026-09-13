@@ -99,7 +99,7 @@
 		<Stat
 			label="Objectives"
 			value={String(data.objectives.length)}
-			detail={`${traceableObjectives.length} fully traceable`}
+			detail={`${traceableObjectives.length} lineage complete`}
 		/>
 	</section>
 
@@ -266,6 +266,7 @@
 							</div>
 						</div>
 						<div class="objective-meta">
+							<span>Lifecycle <strong>{objective.lifecycleStatus}</strong></span>
 							<span>Priority <strong>{objective.priorityRank}</strong></span>
 							<span>Target <strong>{objective.targetDate ?? 'Not set'}</strong></span>
 							<span>Parent <strong>{objective.parentCode ?? 'Enterprise'}</strong></span>
