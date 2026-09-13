@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -35,7 +34,7 @@
 				errorMessage = 'This reset link is invalid or has expired. Request a new one.';
 				return;
 			}
-			await goto(resolve(routes.appSignIn(tenant) as Pathname), {
+			await goto(resolve(routes.appSignIn(tenant)), {
 				replaceState: true,
 				invalidateAll: true
 			});
@@ -58,7 +57,7 @@
 				<p>Password-reset links expire after one hour and can only be used once.</p>
 			</div>
 			<p class="footer-copy">
-				<a href={resolve(forgotPasswordHref as Pathname)}>Request a new reset link</a>
+				<a href={resolve(forgotPasswordHref)}>Request a new reset link</a>
 			</p>
 		{:else}
 			<p class="lede">

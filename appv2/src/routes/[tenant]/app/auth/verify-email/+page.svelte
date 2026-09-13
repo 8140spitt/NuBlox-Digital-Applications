@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -46,7 +45,7 @@
 		{#if verified}
 			<h1>Email verified</h1>
 			<p class="lede">Your NuBlox identity is verified for this tenant journey.</p>
-			<a class="primary-action" href={resolve(signInHref as Pathname)}>Continue to sign in</a>
+			<a class="primary-action" href={resolve(signInHref)}>Continue to sign in</a>
 		{:else if verificationError}
 			<h1>Verification link expired</h1>
 			<p class="lede">This link is invalid or has expired. Request another verification link.</p>

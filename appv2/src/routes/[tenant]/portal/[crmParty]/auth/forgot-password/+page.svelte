@@ -1,6 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -64,7 +63,7 @@
 					disabled={submitting}>{submitting ? 'Sending…' : 'Send reset link'}</button
 				>
 			</form>{/if}
-		<p class="footer-copy"><a href={resolve(signInHref as Pathname)}>Back to sign in</a></p>
+		<p class="footer-copy"><a href={resolve(signInHref)}>Back to sign in</a></p>
 	</section>
 </main>
 

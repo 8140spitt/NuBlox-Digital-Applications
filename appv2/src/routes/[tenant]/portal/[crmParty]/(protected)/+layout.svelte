@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -20,9 +19,7 @@
 	async function signOut() {
 		if (signingOut) return;
 		signingOut = true;
-		const signInHref = resolve(
-			routes.portalSignIn(data.tenant.slug, data.crmParty.slug) as Pathname
-		);
+		const signInHref = resolve(routes.portalSignIn(data.tenant.slug, data.crmParty.slug));
 		try {
 			await authClient.signOut();
 			await goto(signInHref, { invalidateAll: true });
@@ -36,7 +33,7 @@
 	<header class="portal-header">
 		<div class="nb-page portal-header-inner">
 			<div class="portal-brand">
-				<a href={resolve(dashboardHref as Pathname)}>NuBlox Portal</a>
+				<a href={resolve(dashboardHref)}>NuBlox Portal</a>
 				<span aria-hidden="true">/</span>
 				<strong>{data.crmParty.slug}</strong>
 			</div>
@@ -48,11 +45,9 @@
 			</div>
 
 			<nav aria-label="Portal navigation">
-				<a href={resolve(dashboardHref as Pathname)} class:active={isActive(dashboardHref)}>Home</a>
-				<a href={resolve(projectsHref as Pathname)} class:active={isActive(projectsHref)}
-					>Projects</a
-				>
-				<a href={resolve(actionsHref as Pathname)} class:active={isActive(actionsHref)}>Actions</a>
+				<a href={resolve(dashboardHref)} class:active={isActive(dashboardHref)}>Home</a>
+				<a href={resolve(projectsHref)} class:active={isActive(projectsHref)}>Projects</a>
+				<a href={resolve(actionsHref)} class:active={isActive(actionsHref)}>Actions</a>
 			</nav>
 
 			<div class="account-control" aria-label="Signed-in account">

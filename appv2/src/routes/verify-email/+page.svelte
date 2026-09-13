@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';

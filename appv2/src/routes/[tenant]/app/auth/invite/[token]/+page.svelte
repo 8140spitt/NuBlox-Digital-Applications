@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
 
@@ -48,9 +47,7 @@
 			}
 
 			await goto(
-				resolve(
-					`${data.verifyEmailHref}?email=${encodeURIComponent(data.invitation.email)}` as Pathname
-				),
+				resolve(`${data.verifyEmailHref}?email=${encodeURIComponent(data.invitation.email)}`),
 				{
 					replaceState: true,
 					invalidateAll: true
@@ -75,7 +72,7 @@
 			<p class="nb-eyebrow">Invitation verified</p>
 			<h1>Your email is verified.</h1>
 			<p class="lede">Continue through the tenant-specific sign-in boundary to complete access.</p>
-			<a class="primary-action" href={resolve(data.signInHref as Pathname)}>Continue to sign in</a>
+			<a class="primary-action" href={resolve(data.signInHref)}>Continue to sign in</a>
 		{:else if data.invitation}
 			<p class="nb-eyebrow">Organisation invitation</p>
 			<h1>Join {data.invitation.organisationName}</h1>
@@ -99,14 +96,12 @@
 						This invitation belongs to {data.invitation.email}, but you are signed in as
 						{data.user.email}.
 					</div>
-					<a class="secondary-link" href={resolve(data.signInHref as Pathname)}
-						>Use the invited account</a
-					>
+					<a class="secondary-link" href={resolve(data.signInHref)}>Use the invited account</a>
 				{/if}
 			{:else}
 				<div class="existing-account">
 					<strong>Already use NuBlox?</strong>
-					<a href={resolve(invitationSignIn as Pathname)}>Sign in to accept</a>
+					<a href={resolve(invitationSignIn)}>Sign in to accept</a>
 				</div>
 
 				<div class="divider"><span>or create your NuBlox identity</span></div>

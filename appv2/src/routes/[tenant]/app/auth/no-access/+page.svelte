@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { authClient } from '$lib/auth/auth-client';
 
 	let { data } = $props();
@@ -10,7 +9,7 @@
 	async function signOut() {
 		if (signingOut) return;
 		signingOut = true;
-		const destination = resolve(data.signInHref as Pathname);
+		const destination = resolve(data.signInHref);
 		try {
 			await authClient.signOut();
 			await goto(destination, { invalidateAll: true });
@@ -30,7 +29,7 @@
 
 <main class="access-shell">
 	<section class="access-card">
-		<a class="brand" href={resolve(data.startHref as Pathname)}>NuBlox</a>
+		<a class="brand" href={resolve(data.startHref)}>NuBlox</a>
 		<p class="nb-eyebrow">Tenant access</p>
 		<h1>No access to {data.tenant.displayName}</h1>
 		<p class="lede">

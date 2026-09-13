@@ -1,7 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
-	import type { Pathname } from '$app/types';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -23,7 +22,7 @@
 	async function signOut() {
 		if (signingOut) return;
 		signingOut = true;
-		const signInHref = resolve(routes.appSignIn(data.tenant.slug) as Pathname);
+		const signInHref = resolve(routes.appSignIn(data.tenant.slug));
 		try {
 			await authClient.signOut();
 			await goto(signInHref, { invalidateAll: true });
@@ -39,7 +38,7 @@
 			<div class="identity-group">
 				<a
 					class="brand"
-					href={resolve(routes.dashboard(data.tenant.slug) as Pathname)}
+					href={resolve(routes.dashboard(data.tenant.slug))}
 					aria-label="NuBlox home"
 				>
 					<span class="brand-mark" aria-hidden="true">N</span>
@@ -54,7 +53,7 @@
 			<nav aria-label="Primary navigation">
 				{#each items as item (item.href)}
 					<a
-						href={resolve(item.href as Pathname)}
+						href={resolve(item.href)}
 						class:active={isActive(item.href)}
 						aria-current={isActive(item.href) ? 'page' : undefined}
 					>

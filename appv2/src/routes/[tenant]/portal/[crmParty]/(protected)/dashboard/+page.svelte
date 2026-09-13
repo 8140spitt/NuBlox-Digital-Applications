@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { routes } from '$lib/routing/route-contract';
 	let { data } = $props();
 </script>
