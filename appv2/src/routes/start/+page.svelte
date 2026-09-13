@@ -1,4 +1,5 @@
 <script lang="ts">
+	import NuBloxLogo from '$lib/components/brand/NuBloxLogo.svelte';
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { routes } from '$lib/routing/route-contract';
 </script>
@@ -13,8 +14,7 @@
 
 <main class="start-shell">
 	<a class="brand" href={resolve('/')} aria-label="NuBlox home">
-		<span class="brand-mark" aria-hidden="true">N</span>
-		<span>NuBlox</span>
+		<span class="brand-lockup"><NuBloxLogo /></span>
 	</a>
 
 	<section class="intro">
@@ -61,22 +61,12 @@
 		padding: clamp(34px, 6vw, 72px) 0 60px;
 	}
 	.brand {
-		display: inline-flex;
-		align-items: center;
-		gap: 10px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
+		display: inline-block;
 		text-decoration: none;
 	}
-	.brand-mark {
-		display: grid;
-		width: 34px;
-		height: 34px;
-		place-items: center;
-		border-radius: 9px;
-		background: var(--nb-accent);
-		color: white;
-		font-size: 0.9rem;
+	.brand-lockup {
+		display: block;
+		width: clamp(172px, 18vw, 220px);
 	}
 	.intro {
 		max-width: 800px;
