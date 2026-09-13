@@ -8,7 +8,7 @@
     }
   },
   "terminal.integrated.defaultProfile.osx": "NuBlox Logged Terminal",
-  "terminal.integrated.cwd": "${workspaceFolder}/app",
+  "terminal.integrated.cwd": "${workspaceFolder}",
   "terminal.integrated.automationProfile.osx": {
     "path": "/bin/zsh",
     "args": ["-l"]
