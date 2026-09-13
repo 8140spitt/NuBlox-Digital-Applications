@@ -3,6 +3,7 @@
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
+	import NuBloxLogo from '$lib/components/brand/NuBloxLogo.svelte';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, children } = $props();
@@ -33,9 +34,11 @@
 	<header class="portal-header">
 		<div class="nb-page portal-header-inner">
 			<div class="portal-brand">
-				<a href={resolve(dashboardHref)}>NuBlox Portal</a>
-				<span aria-hidden="true">/</span>
-				<strong>{data.crmParty.slug}</strong>
+				<a href={resolve(dashboardHref)} aria-label="NuBlox Portal home">
+					<span class="brand-mark"><NuBloxLogo variant="mark" alt="" /></span>
+					<span class="brand-wordmark">NuBlox</span>
+				</a>
+				<span class="portal-label">Portal</span>
 			</div>
 
 			<div class="relationship-context" aria-label="CRM Party portal context">
@@ -64,11 +67,11 @@
 <style>
 	.portal-shell {
 		min-height: 100vh;
-		background: #f7f8fb;
+		background: var(--nb-color-bg-canvas);
 	}
 	.portal-header {
-		background: #101828;
-		color: white;
+		background: var(--nb-blue-10);
+		color: var(--nb-blue-100);
 	}
 	.portal-header-inner {
 		min-height: 68px;
@@ -78,6 +81,7 @@
 		gap: 24px;
 	}
 	.portal-brand,
+	.portal-brand a,
 	.relationship-context,
 	nav,
 	.account-control {
@@ -86,14 +90,30 @@
 		gap: 10px;
 	}
 	.portal-brand a {
-		color: white;
-		font-weight: 800;
+		color: var(--nb-blue-100);
 		text-decoration: none;
 	}
-	.portal-brand span,
+	.brand-mark {
+		display: block;
+		width: 34px;
+	}
+	.brand-wordmark {
+		font-size: 0.98rem;
+		font-weight: 800;
+		letter-spacing: -0.035em;
+	}
+	.portal-label {
+		border-left: 1px solid var(--nb-blue-30);
+		padding-left: 10px;
+		color: var(--nb-blue-80);
+		font-size: 0.78rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+	}
 	.relationship-context span,
 	.account-control span {
-		color: #98a2b3;
+		color: var(--nb-blue-70);
 	}
 	.relationship-context,
 	.account-control {
@@ -105,22 +125,22 @@
 	nav a {
 		border-radius: 8px;
 		padding: 9px 11px;
-		color: #d0d5dd;
+		color: var(--nb-blue-80);
 		font-size: 0.88rem;
 		font-weight: 650;
 		text-decoration: none;
 	}
 	nav a:hover,
 	nav a.active {
-		background: #1d2939;
-		color: white;
+		background: var(--nb-blue-20);
+		color: var(--nb-blue-100);
 	}
 	.account-control button {
-		border: 1px solid #475467;
+		border: 1px solid var(--nb-blue-40);
 		border-radius: 8px;
 		padding: 8px 10px;
 		background: transparent;
-		color: white;
+		color: var(--nb-blue-100);
 		font: inherit;
 		font-size: 0.78rem;
 		font-weight: 700;
