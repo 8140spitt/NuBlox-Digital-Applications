@@ -7,6 +7,7 @@
 		LinkButton,
 		PageHeader,
 		Panel,
+		ReadinessChecklist,
 		Stat,
 		StatusBadge
 	} from '$lib/components/ui';
@@ -28,6 +29,81 @@
 			['proposed', 'approved', 'in_progress'].includes(initiative.lifecycleStatus)
 		)
 	);
+	const approvalReadinessItems = $derived([
+		{
+			key: 'selected-option',
+			label: 'Strategic option selected',
+			ready: data.approvalReadiness.selectedOptionCount > 0,
+			detail:
+				data.approvalReadiness.selectedOptionCount > 0
+					? `${data.approvalReadiness.selectedOptionCount} strategic option${data.approvalReadiness.selectedOptionCount === 1 ? '' : 's'} selected as an enterprise choice.`
+					: data.approvalReadiness.totalOptionCount > 0
+						? 'Strategic options exist, but none has been selected. Record the decision and rationale before approval.'
+						: 'No strategic option exists yet. Create and evaluate an option before the strategy can become an approved direction.',
+			actionLabel: data.approvalReadiness.totalOptionCount > 0 ? 'Review options' : 'Create option',
+			actionHref:
+				data.approvalReadiness.totalOptionCount > 0
+					? routes.strategyPlanning(data.tenant.slug, data.framework.publicId)
+					: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'option')
+		},
+		{
+			key: 'primary-theme',
+			label: 'Primary strategic theme defined',
+			ready: data.approvalReadiness.activeThemeCount > 0,
+			detail:
+				data.approvalReadiness.activeThemeCount > 0
+					? `${data.approvalReadiness.activeThemeCount} active strategic theme${data.approvalReadiness.activeThemeCount === 1 ? '' : 's'} available for objective alignment.`
+					: 'No active strategic theme exists. Define the outcome themes that organise and communicate the strategic direction.',
+			actionLabel: 'Create theme',
+			actionHref: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'theme')
+		},
+		{
+			key: 'traceable-objective',
+			label: 'Traceable active objective ready',
+			ready: data.approvalReadiness.traceableObjectiveCount > 0,
+			detail:
+				data.approvalReadiness.traceableObjectiveCount > 0
+					? `${data.approvalReadiness.traceableObjectiveCount} active objective${data.approvalReadiness.traceableObjectiveCount === 1 ? '' : 's'} retain both selected-option lineage and a primary theme.`
+					: data.approvalReadiness.activeObjectiveCount === 0
+						? 'No active objective exists. Create an objective derived from a selected option and assign its primary strategic theme.'
+						: data.approvalReadiness.optionLinkedObjectiveCount === 0 &&
+							data.approvalReadiness.primaryThemeObjectiveCount === 0
+							? 'Active objectives exist, but none carries selected-option lineage or a primary strategic theme.'
+							: data.approvalReadiness.optionLinkedObjectiveCount === 0
+								? 'Active objectives exist, but none is linked to a selected strategic option.'
+								: data.approvalReadiness.primaryThemeObjectiveCount === 0
+									? 'Active objectives exist, but none has a primary strategic theme.'
+									: 'Objective links exist, but no single active objective currently carries both the selected-option lineage and primary theme required for approval.',
+			actionLabel:
+				data.approvalReadiness.activeObjectiveCount > 0 ? 'Review objectives' : 'Create objective',
+			actionHref:
+				data.approvalReadiness.activeObjectiveCount > 0
+					? routes.strategyPlanning(data.tenant.slug, data.framework.publicId)
+					: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'objective')
+		},
+		{
+			key: 'approval-authority',
+			label: 'Approval authority available',
+			ready: data.approvalReadiness.canApprove,
+			detail: data.approvalReadiness.canApprove
+				? 'Your effective permissions include strategy approval authority.'
+				: 'Your effective permissions do not include strategy approval. An authorised approver must complete the governed transition.'
+		},
+		{
+			key: 'current-strategy-slot',
+			label: 'Current strategy slot available',
+			ready: data.approvalReadiness.conflictingApprovedStrategy === null,
+			detail: data.approvalReadiness.conflictingApprovedStrategy
+				? `Approved strategy ${data.approvalReadiness.conflictingApprovedStrategy.code} already occupies the current enterprise-strategy slot. Use controlled revision rather than creating parallel approved directions.`
+				: 'There is no competing approved strategy version blocking this transition.',
+			actionLabel: data.approvalReadiness.conflictingApprovedStrategy
+				? 'Review strategy cycles'
+				: undefined,
+			actionHref: data.approvalReadiness.conflictingApprovedStrategy
+				? routes.strategy(data.tenant.slug)
+				: undefined
+		}
+	]);
 
 	function money(value: string, currency: string): string {
 		const number = Number(value);
@@ -95,23 +171,33 @@
 	/>
 
 	{#if form?.formError}
-		<Alert tone="danger" title="Action not completed">{form.formError}</Alert>
+		<Alert tone="danger" title="Governed action could not be completed">{form.formError}</Alert>
 	{/if}
 
 	{#if !strategyApproved}
-		<Alert tone="warning" title="Business planning begins from an approved strategy">
-			This strategy is still {data.framework.lifecycleStatus}. Approval requires at least one active
-			objective with selected-option lineage and a primary strategic theme. Once approved, the
-			strategy becomes immutable enterprise evidence and F01.04 can commit planning records against
-			it.
+		<Alert tone="info" title="Business planning is locked until strategy approval">
+			This strategy is still {data.framework.lifecycleStatus}. Complete the governed prerequisites below.
+			NuBlox will only unlock F01.04 when the strategic choice, theme and objective lineage are explicit
+			and an authorised approver can complete the transition.
 		</Alert>
+
+		<ReadinessChecklist
+			title="Strategy approval readiness"
+			description="Approval is a controlled enterprise transition. The checklist explains each prerequisite and takes you directly to the upstream record that needs attention."
+			items={approvalReadinessItems}
+		/>
+
 		{#if data.permissions.canApprove && data.framework.lifecycleStatus === 'draft'}
 			<Panel
 				title="Approve the strategic direction"
-				description="Approval is a governed transition, not a generic status edit. NuBlox re-checks the decision lineage inside the database transaction."
+				description={data.approvalReadiness.ready
+					? 'All approval prerequisites are satisfied. NuBlox will re-check them inside the approval transaction before committing the strategy.'
+					: 'Complete every approval prerequisite above before committing this strategy as the current enterprise direction.'}
 			>
 				<form method="POST" action="?/approveStrategy" use:enhance>
-					<Button type="submit">Approve strategy for business planning</Button>
+					<Button type="submit" disabled={!data.approvalReadiness.ready}>
+						Approve strategy for business planning
+					</Button>
 				</form>
 			</Panel>
 		{/if}
