@@ -344,7 +344,8 @@ describe('F01 V2 governed golden thread', () => {
 			actor,
 			frameworkPublicId: frameworkId,
 			title: 'Create a measurable enterprise digital thread',
-			description: 'Connect strategic intent, execution and outcome evidence across the enterprise.',
+			description:
+				'Connect strategic intent, execution and outcome evidence across the enterprise.',
 			priorityRank: 1,
 			targetDate: '2029-12-31',
 			parentObjectivePublicId: '',
@@ -428,9 +429,9 @@ describe('F01 V2 governed golden thread', () => {
 		workspace = await getStrategyWorkspace({ organisationId, memberId: actor.memberId });
 		expect(workspace.activeFramework?.publicId).toBe(revision.publicId);
 		expect(workspace.activeFramework?.versionLabel).toBe('2.0');
-		expect(workspace.frameworks.find((item) => item.publicId === frameworkId)?.lifecycleStatus).toBe(
-			'superseded'
-		);
+		expect(
+			workspace.frameworks.find((item) => item.publicId === frameworkId)?.lifecycleStatus
+		).toBe('superseded');
 
 		planning = await getStrategyAnalysisPlanningWorkspace({
 			organisationId,
@@ -470,7 +471,8 @@ describe('F01 V2 governed golden thread', () => {
 				title: 'Enterprise execution plan',
 				periodStart: '2027-01-01',
 				periodEnd: '2030-12-31',
-				narrative: 'Fund, resource and govern the initiatives required to realise the approved strategy.',
+				narrative:
+					'Fund, resource and govern the initiatives required to realise the approved strategy.',
 				currencyCode: 'GBP',
 				plannedRevenueAmount: '1000000',
 				plannedOpexAmount: '400000',
@@ -506,7 +508,9 @@ describe('F01 V2 governed golden thread', () => {
 			memberId: actor.memberId,
 			frameworkPublicId: revision.publicId
 		});
-		const initiative = execution.initiatives.find((item) => item.title === 'Mobilise integrated delivery')!;
+		const initiative = execution.initiatives.find(
+			(item) => item.title === 'Mobilise integrated delivery'
+		)!;
 		await createStrategyResourceRequirement({
 			actor,
 			frameworkPublicId: revision.publicId,
@@ -550,10 +554,12 @@ describe('F01 V2 governed golden thread', () => {
 			memberId: actor.memberId,
 			frameworkPublicId: revision.publicId
 		});
-		expect(execution.plans.find((item) => item.publicId === plan.publicId)?.versionLabel).toBe('1.0');
-		expect(execution.initiatives.find((item) => item.publicId === initiative.publicId)?.lifecycleStatus).toBe(
-			'approved'
+		expect(execution.plans.find((item) => item.publicId === plan.publicId)?.versionLabel).toBe(
+			'1.0'
 		);
+		expect(
+			execution.initiatives.find((item) => item.publicId === initiative.publicId)?.lifecycleStatus
+		).toBe('approved');
 		await transitionF01Record({
 			actor,
 			frameworkPublicId: revision.publicId,
@@ -569,7 +575,8 @@ describe('F01 V2 governed golden thread', () => {
 			objectivePublicId: activeObjective.publicId,
 			initiativePublicIds: [initiative.publicId],
 			title: 'Strategic digital adoption',
-			description: 'Percentage of governed enterprise workflows operating on the target digital thread.',
+			description:
+				'Percentage of governed enterprise workflows operating on the target digital thread.',
 			unitLabel: '%',
 			direction: 'higher_is_better',
 			baselineValue: '10',
@@ -589,7 +596,8 @@ describe('F01 V2 governed golden thread', () => {
 			recordPublicId: kpi.publicId,
 			values: {
 				title: 'Strategic digital adoption',
-				description: 'Percentage of governed enterprise workflows operating on the target digital thread.',
+				description:
+					'Percentage of governed enterprise workflows operating on the target digital thread.',
 				unitLabel: '%',
 				direction: 'higher_is_better',
 				baselineValue: '10',
