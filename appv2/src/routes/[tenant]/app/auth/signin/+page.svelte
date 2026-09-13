@@ -6,7 +6,7 @@
 
 <SignInSurface
 	contextLabel="Tenant application"
-	contextName={data.tenant}
+	contextName={data.tenant.displayName}
 	destination={data.destination}
 	forgotPasswordHref={data.forgotPasswordHref}
 	startHref={data.startHref}
