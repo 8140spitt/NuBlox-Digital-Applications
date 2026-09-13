@@ -2,6 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { authClient } from '$lib/auth/auth-client';
+	import NuBloxLogo from '$lib/components/brand/NuBloxLogo.svelte';
 
 	let {
 		contextLabel,
@@ -56,8 +57,7 @@
 <main class="auth-shell">
 	<section class="auth-context">
 		<a class="brand" href={resolve(startHref)} aria-label="NuBlox start">
-			<span class="brand-mark" aria-hidden="true">N</span>
-			<span>NuBlox</span>
+			<span class="brand-lockup"><NuBloxLogo alt="NuBlox — Construction & Built Environment" /></span>
 		</a>
 
 		<div class="context-copy">
@@ -133,23 +133,13 @@
 		color: white;
 	}
 	.brand {
-		display: inline-flex;
-		align-items: center;
+		display: inline-block;
 		align-self: flex-start;
-		gap: 10px;
-		color: white;
-		font-weight: 850;
-		letter-spacing: -0.03em;
 		text-decoration: none;
 	}
-	.brand-mark {
-		display: grid;
-		place-items: center;
-		width: 34px;
-		height: 34px;
-		border-radius: 9px;
-		background: var(--nb-accent);
-		font-size: 0.9rem;
+	.brand-lockup {
+		display: block;
+		width: clamp(172px, 18vw, 220px);
 	}
 	.context-copy {
 		max-width: 620px;
