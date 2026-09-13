@@ -18,7 +18,7 @@
 <section class="nb-page function-page">
 	<header class="page-heading">
 		<div>
-			<p class="nb-eyebrow">{data.tenant.slug} · Enterprise functions</p>
+			<p class="nb-eyebrow">{data.tenant.displayName} · Enterprise functions</p>
 			<h1>How the business operates</h1>
 			<p class="nb-lede">
 				The 29 enterprise functions are NuBlox's stable business taxonomy. They define outcomes and
