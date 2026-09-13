@@ -34,7 +34,9 @@ jobs:
           cache-dependency-path: appv2/pnpm-lock.yaml
 
       - name: Apply F01 lifecycle patches
-        run: python scripts/temporary-f01-crud-lifecycle-repair.py
+        run: |
+          python scripts/temporary-f01-crud-lifecycle-repair.py
+          python scripts/temporary-f01-crud-lifecycle-type-fix.py
 
       - name: Install dependencies
         working-directory: appv2
@@ -63,6 +65,7 @@ jobs:
       - name: Commit validated repair and remove temporary helpers
         run: |
           rm scripts/temporary-f01-crud-lifecycle-repair.py
+          rm scripts/temporary-f01-crud-lifecycle-type-fix.py
           rm .github/workflows/temporary-f01-crud-lifecycle-repair.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
