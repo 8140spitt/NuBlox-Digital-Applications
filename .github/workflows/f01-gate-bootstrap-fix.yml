@@ -1,0 +1,43 @@
+name: Repair F01 Golden Thread Bootstrap
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/f01-gate-bootstrap-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Repair generated integration-test SQL value typing
+        shell: bash
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path('.github/workflows/f01-golden-thread-gate.yml')
+          text = path.read_text()
+          old = "async function insertId(sql: string, values: unknown[]): Promise<string> {"
+          new = "async function insertId(\n            sql: string,\n            values: Array<string | number | boolean | Date | null>\n          ): Promise<string> {"
+          if old not in text:
+              raise SystemExit('Expected SQL seed helper signature not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Commit repair and self-remove
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/f01-gate-bootstrap-fix.yml
+          git add .github/workflows/f01-golden-thread-gate.yml
+          git commit -m "fix: type F01 golden-thread SQL seed values"
+          git push origin main
