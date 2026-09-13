@@ -7,6 +7,7 @@ export { default as DataTable } from './DataTable.svelte';
 export { default as EmptyState } from './EmptyState.svelte';
 export { default as Field } from './Field.svelte';
 export { default as LifecycleStrip } from './LifecycleStrip.svelte';
+export { default as LinkButton } from './LinkButton.svelte';
 export { default as PageHeader } from './PageHeader.svelte';
 export { default as Panel } from './Panel.svelte';
 export { default as RecordHeader } from './RecordHeader.svelte';
