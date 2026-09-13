@@ -1,9 +1,17 @@
 export { default as ActionBar } from './ActionBar.svelte';
+export { default as ActivityTimeline } from './ActivityTimeline.svelte';
 export { default as Alert } from './Alert.svelte';
+export { default as Breadcrumbs } from './Breadcrumbs.svelte';
 export { default as Button } from './Button.svelte';
+export { default as DataTable } from './DataTable.svelte';
 export { default as EmptyState } from './EmptyState.svelte';
 export { default as Field } from './Field.svelte';
+export { default as LifecycleStrip } from './LifecycleStrip.svelte';
 export { default as PageHeader } from './PageHeader.svelte';
 export { default as Panel } from './Panel.svelte';
+export { default as RecordHeader } from './RecordHeader.svelte';
+export { default as Skeleton } from './Skeleton.svelte';
 export { default as Stat } from './Stat.svelte';
 export { default as StatusBadge } from './StatusBadge.svelte';
+export { default as Tabs } from './Tabs.svelte';
+export type { TableColumn } from './DataTable.svelte';
