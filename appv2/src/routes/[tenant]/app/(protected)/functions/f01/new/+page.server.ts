@@ -56,7 +56,7 @@ export const actions = {
 		if (!values.vision) errors.vision = 'Describe the future state this strategy is intended to achieve.';
 
 		if (Object.keys(errors).length > 0) {
-			return fail(400, { values, errors });
+			return fail(400, { values, errors, formError: '' });
 		}
 
 		const session = await getAuth().api.getSession({ headers: request.headers });
