@@ -5,6 +5,7 @@ export type AppDashboardPath = `/${string}/app/dashboard`;
 export type AppMyWorkPath = `/${string}/app/my-work`;
 export type AppFunctionsPath = `/${string}/app/functions`;
 export type AppProjectsPath = `/${string}/app/projects`;
+export type AppDesignSystemPath = `/${string}/app/design-system`;
 export type AppSignInPath = `/${string}/app/auth/signin${string}`;
 export type AppInvitePath = `/${string}/app/auth/invite/${string}`;
 export type PortalPath = `/${string}/portal/${string}`;
@@ -126,6 +127,8 @@ export const routes = {
 	myWork: (tenant: string): AppMyWorkPath => appPath(tenant, 'my-work') as AppMyWorkPath,
 	functions: (tenant: string): AppFunctionsPath => appPath(tenant, 'functions') as AppFunctionsPath,
 	projects: (tenant: string): AppProjectsPath => appPath(tenant, 'projects') as AppProjectsPath,
+	designSystem: (tenant: string): AppDesignSystemPath =>
+		appPath(tenant, 'design-system') as AppDesignSystemPath,
 	portal: (tenant: string, crmParty: string): PortalPath =>
 		portalPath(tenant, crmParty) as PortalPath,
 	portalSignIn: portalSignInPath,
