@@ -106,4 +106,4 @@ jobs:
         working-directory: appv2
         run: pnpm test:integration
 
-# Permanent V2 quality gate for the governed F01 golden thread.
+# Permanent V2 quality gate for governed F01 lifecycle and transaction integrity.
