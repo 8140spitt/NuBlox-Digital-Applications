@@ -1,0 +1,39 @@
+name: Repair F01 Revision SQL
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/f01-revision-sql-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - name: Repair strategy revision insert
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path('appv2/src/lib/server/strategy/f01-record-management-service.ts')
+          text = path.read_text()
+          old = "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`"
+          new = "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`"
+          if old not in text:
+              raise SystemExit('Broken strategy revision INSERT not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+      - name: Commit repair and self-remove
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/f01-revision-sql-fix.yml
+          git add appv2/src/lib/server/strategy/f01-record-management-service.ts
+          git commit -m "fix(v2): repair controlled strategy revision insert"
+          git push origin main
