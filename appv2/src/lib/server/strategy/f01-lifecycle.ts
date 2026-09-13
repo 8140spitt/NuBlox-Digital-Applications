@@ -163,9 +163,7 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 		editable: ['requested'],
 		deletable: [],
 		transitions: {
-			requested: [
-				{ to: 'cancelled', label: 'Cancel handoff', requiresNote: true, tone: 'danger' }
-			],
+			requested: [{ to: 'cancelled', label: 'Cancel handoff', requiresNote: true, tone: 'danger' }],
 			accepted: [],
 			rejected: [],
 			fulfilled: [],
