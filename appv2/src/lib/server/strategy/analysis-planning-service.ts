@@ -20,16 +20,11 @@ export type EvidenceType =
 	| 'other';
 export type EnvironmentScope = 'internal' | 'external';
 export type EnvironmentDimension =
-	| 'economic'
-	| 'competitive'
-	| 'market'
-	| 'technology'
-	| 'regulatory'
-	| 'operational'
-	| 'other';
+	'economic' | 'competitive' | 'market' | 'technology' | 'regulatory' | 'operational' | 'other';
 export type EnvironmentDirection = 'strength' | 'weakness' | 'opportunity' | 'threat' | 'neutral';
 export type OptionDecisionStatus = 'proposed' | 'selected' | 'rejected';
-export type AssumptionStatus = 'unvalidated' | 'validated' | 'challenged' | 'invalidated' | 'retired';
+export type AssumptionStatus =
+	'unvalidated' | 'validated' | 'challenged' | 'invalidated' | 'retired';
 export type ObjectiveStatus = 'draft' | 'active' | 'achieved' | 'retired';
 
 export type StrategyEvidenceItem = {
@@ -220,7 +215,11 @@ function optionalText(value: string | null | undefined, maximum: number): string
 	return normalized;
 }
 
-function dateOnly(value: string | null | undefined, label: string, required = false): string | null {
+function dateOnly(
+	value: string | null | undefined,
+	label: string,
+	required = false
+): string | null {
 	const normalized = value?.trim() ?? '';
 	if (!normalized) {
 		if (required) throw new StrategyValidationError(`${label} is required.`);
@@ -247,7 +246,11 @@ function score(value: number | null | undefined, label: string, required = false
 	return value;
 }
 
-function positiveInteger(value: number | null | undefined, label: string, required = false): number | null {
+function positiveInteger(
+	value: number | null | undefined,
+	label: string,
+	required = false
+): number | null {
 	if (value == null || Number.isNaN(value)) {
 		if (required) throw new StrategyValidationError(`${label} is required.`);
 		return null;
@@ -282,7 +285,8 @@ async function requireWorkspace(input: {
 		memberId: input.memberId
 	});
 	const framework = workspace.frameworks.find((item) => item.publicId === input.frameworkPublicId);
-	if (!framework) throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
+	if (!framework)
+		throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
 	return { framework, permissions: workspace.permissions };
 }
 
@@ -321,7 +325,8 @@ async function lockFramework(
 		[organisationId, frameworkPublicId]
 	);
 	const framework = rows[0];
-	if (!framework) throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
+	if (!framework)
+		throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
 	if (framework.lifecycleStatus !== 'draft') {
 		throw new StrategyValidationError(
 			'Approved or superseded strategy is immutable. Create a controlled revision before changing it.'
@@ -333,7 +338,13 @@ async function lockFramework(
 async function internalIdsByPublicId(
 	connection: PoolConnection,
 	input: {
-		table: 'strategy_evidence_items' | 'strategy_environment_factors' | 'strategy_assumptions' | 'strategy_options' | 'strategy_themes' | 'strategy_objectives';
+		table:
+			| 'strategy_evidence_items'
+			| 'strategy_environment_factors'
+			| 'strategy_assumptions'
+			| 'strategy_options'
+			| 'strategy_themes'
+			| 'strategy_objectives';
 		organisationId: string;
 		frameworkId: string;
 		publicIds: readonly string[];
@@ -342,7 +353,9 @@ async function internalIdsByPublicId(
 	const publicIds = uniquePublicIds(input.publicIds);
 	if (publicIds.length === 0) return new Map();
 	const placeholders = publicIds.map(() => '?').join(', ');
-	const [rows] = await connection.execute<(RowDataPacket & { id: string | number; publicId: string })[]>(
+	const [rows] = await connection.execute<
+		(RowDataPacket & { id: string | number; publicId: string })[]
+	>(
 		`SELECT id, public_id AS publicId
 		 FROM ${input.table}
 		 WHERE organisation_id = ?
@@ -351,9 +364,21 @@ async function internalIdsByPublicId(
 		[input.organisationId, input.frameworkId, ...publicIds]
 	);
 	if (rows.length !== publicIds.length) {
-		throw new StrategyValidationError('One or more linked strategy records are not available in this strategy cycle.');
+		throw new StrategyValidationError(
+			'One or more linked strategy records are not available in this strategy cycle.'
+		);
 	}
 	return new Map(rows.map((row) => [row.publicId, row.id.toString()]));
+}
+
+function requireMappedId(ids: Map<string, string>, publicId: string): string {
+	const id = ids.get(publicId);
+	if (!id) {
+		throw new StrategyValidationError(
+			'Linked strategy record is no longer available in this strategy cycle.'
+		);
+	}
+	return id;
 }
 
 async function listEvidence(frameworkId: string): Promise<StrategyEvidenceItem[]> {
@@ -634,7 +659,8 @@ export async function createStrategyEvidenceItem(input: {
 		'stakeholder',
 		'other'
 	];
-	if (!allowedTypes.includes(input.evidenceType)) throw new StrategyValidationError('Evidence type is invalid.');
+	if (!allowedTypes.includes(input.evidenceType))
+		throw new StrategyValidationError('Evidence type is invalid.');
 	const title = requiredText(input.title, 'Evidence title', 255);
 	const sourceReference = optionalText(input.sourceReference, 512);
 	const sourceUri = optionalText(input.sourceUri, 2048);
@@ -650,7 +676,11 @@ export async function createStrategyEvidenceItem(input: {
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
-		const framework = await lockFramework(connection, input.actor.organisationId, input.frameworkPublicId);
+		const framework = await lockFramework(
+			connection,
+			input.actor.organisationId,
+			input.frameworkPublicId
+		);
 		await connection.execute(
 			`INSERT INTO strategy_evidence_items
 				(organisation_id, strategy_framework_id, public_id, evidence_type, title,
@@ -712,8 +742,19 @@ export async function createStrategyEnvironmentFactor(input: {
 		memberId: input.actor.memberId,
 		frameworkPublicId: input.frameworkPublicId
 	});
-	if (!['internal', 'external'].includes(input.contextScope)) throw new StrategyValidationError('Context scope is invalid.');
-	if (!['economic', 'competitive', 'market', 'technology', 'regulatory', 'operational', 'other'].includes(input.dimension)) {
+	if (!['internal', 'external'].includes(input.contextScope))
+		throw new StrategyValidationError('Context scope is invalid.');
+	if (
+		![
+			'economic',
+			'competitive',
+			'market',
+			'technology',
+			'regulatory',
+			'operational',
+			'other'
+		].includes(input.dimension)
+	) {
 		throw new StrategyValidationError('Environmental dimension is invalid.');
 	}
 	if (!['strength', 'weakness', 'opportunity', 'threat', 'neutral'].includes(input.direction)) {
@@ -728,13 +769,19 @@ export async function createStrategyEnvironmentFactor(input: {
 	const confidenceScore = score(input.confidenceScore, 'Confidence', true);
 	const evidencePublicIds = uniquePublicIds(input.evidencePublicIds);
 	if (evidencePublicIds.length === 0) {
-		throw new StrategyValidationError('Link at least one structured evidence item to the environmental factor.');
+		throw new StrategyValidationError(
+			'Link at least one structured evidence item to the environmental factor.'
+		);
 	}
 	const publicId = randomUUID();
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
-		const framework = await lockFramework(connection, input.actor.organisationId, input.frameworkPublicId);
+		const framework = await lockFramework(
+			connection,
+			input.actor.organisationId,
+			input.frameworkPublicId
+		);
 		const evidenceIds = await internalIdsByPublicId(connection, {
 			table: 'strategy_evidence_items',
 			organisationId: input.actor.organisationId,
@@ -775,7 +822,7 @@ export async function createStrategyEnvironmentFactor(input: {
 				[
 					input.actor.organisationId,
 					result.insertId,
-					evidenceIds.get(evidencePublicId),
+					requireMappedId(evidenceIds, evidencePublicId),
 					input.actor.memberId
 				]
 			);
@@ -827,7 +874,11 @@ export async function createStrategyAssumption(input: {
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
-		const framework = await lockFramework(connection, input.actor.organisationId, input.frameworkPublicId);
+		const framework = await lockFramework(
+			connection,
+			input.actor.organisationId,
+			input.frameworkPublicId
+		);
 		await connection.execute(
 			`INSERT INTO strategy_assumptions
 				(organisation_id, strategy_framework_id, public_id, statement_text, rationale_text,
@@ -885,13 +936,19 @@ export async function createStrategyOption(input: {
 	const factorPublicIds = uniquePublicIds(input.factorPublicIds);
 	const assumptionPublicIds = uniquePublicIds(input.assumptionPublicIds);
 	if (factorPublicIds.length === 0 && assumptionPublicIds.length === 0) {
-		throw new StrategyValidationError('A strategic option must trace to at least one environmental factor or assumption.');
+		throw new StrategyValidationError(
+			'A strategic option must trace to at least one environmental factor or assumption.'
+		);
 	}
 	const publicId = randomUUID();
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
-		const framework = await lockFramework(connection, input.actor.organisationId, input.frameworkPublicId);
+		const framework = await lockFramework(
+			connection,
+			input.actor.organisationId,
+			input.frameworkPublicId
+		);
 		const factorIds = await internalIdsByPublicId(connection, {
 			table: 'strategy_environment_factors',
 			organisationId: input.actor.organisationId,
@@ -930,7 +987,7 @@ export async function createStrategyOption(input: {
 				[
 					input.actor.organisationId,
 					result.insertId,
-					factorIds.get(factorPublicId),
+					requireMappedId(factorIds, factorPublicId),
 					input.actor.memberId
 				]
 			);
@@ -944,7 +1001,7 @@ export async function createStrategyOption(input: {
 				[
 					input.actor.organisationId,
 					result.insertId,
-					assumptionIds.get(assumptionPublicId),
+					requireMappedId(assumptionIds, assumptionPublicId),
 					input.actor.memberId
 				]
 			);
@@ -991,7 +1048,11 @@ export async function decideStrategyOption(input: {
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
-		const framework = await lockFramework(connection, input.actor.organisationId, input.frameworkPublicId);
+		const framework = await lockFramework(
+			connection,
+			input.actor.organisationId,
+			input.frameworkPublicId
+		);
 		const optionIds = await internalIdsByPublicId(connection, {
 			table: 'strategy_options',
 			organisationId: input.actor.organisationId,
@@ -1006,7 +1067,7 @@ export async function decideStrategyOption(input: {
 				input.decisionStatus,
 				decisionRationale,
 				input.actor.memberId,
-				optionIds.get(input.optionPublicId)
+				requireMappedId(optionIds, input.optionPublicId)
 			]
 		);
 		await appendDomainEvidence(connection, {
@@ -1045,8 +1106,18 @@ export async function createStrategyTheme(input: {
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
-		const framework = await lockFramework(connection, input.actor.organisationId, input.frameworkPublicId);
-		const code = await nextCode(connection, framework.id.toString(), 'strategy_themes', 'theme_code', 'THEME');
+		const framework = await lockFramework(
+			connection,
+			input.actor.organisationId,
+			input.frameworkPublicId
+		);
+		const code = await nextCode(
+			connection,
+			framework.id.toString(),
+			'strategy_themes',
+			'theme_code',
+			'THEME'
+		);
 		await connection.execute(
 			`INSERT INTO strategy_themes
 				(organisation_id, strategy_framework_id, public_id, theme_code, title, description,
@@ -1104,7 +1175,9 @@ export async function createStrategyObjective(input: {
 	const targetDate = dateOnly(input.targetDate, 'Target date', true)!;
 	const optionPublicIds = uniquePublicIds(input.optionPublicIds);
 	if (optionPublicIds.length === 0) {
-		throw new StrategyValidationError('An objective must trace to at least one selected strategic option.');
+		throw new StrategyValidationError(
+			'An objective must trace to at least one selected strategic option.'
+		);
 	}
 	const themePublicId = requiredText(input.themePublicId, 'Strategic theme', 36);
 	const parentObjectivePublicId = optionalText(input.parentObjectivePublicId, 36);
@@ -1112,11 +1185,17 @@ export async function createStrategyObjective(input: {
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
-		const framework = await lockFramework(connection, input.actor.organisationId, input.frameworkPublicId);
+		const framework = await lockFramework(
+			connection,
+			input.actor.organisationId,
+			input.frameworkPublicId
+		);
 		const horizonStart = dateValue(framework.horizonStart)!;
 		const horizonEnd = dateValue(framework.horizonEnd)!;
 		if (targetDate < horizonStart || targetDate > horizonEnd) {
-			throw new StrategyValidationError('Objective target date must fall within the strategy horizon.');
+			throw new StrategyValidationError(
+				'Objective target date must fall within the strategy horizon.'
+			);
 		}
 		const optionIds = await internalIdsByPublicId(connection, {
 			table: 'strategy_options',
@@ -1135,7 +1214,9 @@ export async function createStrategyObjective(input: {
 			[input.actor.organisationId, framework.id, ...optionPublicIds]
 		);
 		if (selectedRows.length !== optionPublicIds.length) {
-			throw new StrategyValidationError('Objectives can only derive from selected strategic options.');
+			throw new StrategyValidationError(
+				'Objectives can only derive from selected strategic options.'
+			);
 		}
 		const themeIds = await internalIdsByPublicId(connection, {
 			table: 'strategy_themes',
@@ -1145,7 +1226,8 @@ export async function createStrategyObjective(input: {
 		});
 		let parentObjectiveId: string | null = null;
 		if (parentObjectivePublicId) {
-			if (parentObjectivePublicId === publicId) throw new StrategyValidationError('An objective cannot be its own parent.');
+			if (parentObjectivePublicId === publicId)
+				throw new StrategyValidationError('An objective cannot be its own parent.');
 			const parentIds = await internalIdsByPublicId(connection, {
 				table: 'strategy_objectives',
 				organisationId: input.actor.organisationId,
@@ -1154,7 +1236,13 @@ export async function createStrategyObjective(input: {
 			});
 			parentObjectiveId = parentIds.get(parentObjectivePublicId) ?? null;
 		}
-		const code = await nextCode(connection, framework.id.toString(), 'strategy_objectives', 'objective_code', 'OBJ');
+		const code = await nextCode(
+			connection,
+			framework.id.toString(),
+			'strategy_objectives',
+			'objective_code',
+			'OBJ'
+		);
 		const [result] = await connection.execute<ResultSetHeader>(
 			`INSERT INTO strategy_objectives
 				(organisation_id, strategy_framework_id, public_id, objective_code, title, description,
@@ -1184,7 +1272,7 @@ export async function createStrategyObjective(input: {
 				[
 					input.actor.organisationId,
 					result.insertId,
-					optionIds.get(optionPublicId),
+					requireMappedId(optionIds, optionPublicId),
 					input.actor.memberId
 				]
 			);
@@ -1197,7 +1285,7 @@ export async function createStrategyObjective(input: {
 			[
 				input.actor.organisationId,
 				result.insertId,
-				themeIds.get(themePublicId),
+				requireMappedId(themeIds, themePublicId),
 				input.actor.memberId
 			]
 		);

@@ -39,7 +39,9 @@ export const actions = {
 	decide: async ({ request, params, url }) => {
 		const formData = await request.formData();
 		const optionPublicId = String(formData.get('optionPublicId') ?? '').trim();
-		const decisionStatus = String(formData.get('decisionStatus') ?? '').trim() as OptionDecisionStatus;
+		const decisionStatus = String(
+			formData.get('decisionStatus') ?? ''
+		).trim() as OptionDecisionStatus;
 		const decisionRationale = String(formData.get('decisionRationale') ?? '').trim();
 		const session = await getAuth().api.getSession({ headers: request.headers });
 		if (!session) redirect(303, routes.appSignIn(params.tenant, `${url.pathname}${url.search}`));

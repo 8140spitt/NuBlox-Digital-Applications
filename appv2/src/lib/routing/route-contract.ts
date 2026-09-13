@@ -10,9 +10,11 @@ export type AppStrategyPath = `/${string}/app/functions/f01`;
 export type AppStrategyNewPath = `/${string}/app/functions/f01/new`;
 export type AppStrategyFrameworkPath = `/${string}/app/functions/f01/strategies/${string}`;
 export type AppStrategyAnalysisPath = `/${string}/app/functions/f01/strategies/${string}/analysis`;
-export type AppStrategyAnalysisNewPath = `/${string}/app/functions/f01/strategies/${string}/analysis/new/${string}`;
+export type AppStrategyAnalysisNewPath =
+	`/${string}/app/functions/f01/strategies/${string}/analysis/new/${string}`;
 export type AppStrategyPlanningPath = `/${string}/app/functions/f01/strategies/${string}/planning`;
-export type AppStrategyPlanningNewPath = `/${string}/app/functions/f01/strategies/${string}/planning/new/${string}`;
+export type AppStrategyPlanningNewPath =
+	`/${string}/app/functions/f01/strategies/${string}/planning/new/${string}`;
 export type StrategyAnalysisRecordKind = 'evidence' | 'factor' | 'assumption';
 export type StrategyPlanningRecordKind = 'option' | 'theme' | 'objective';
 export type AppSignInPath = `/${string}/app/auth/signin${string}`;

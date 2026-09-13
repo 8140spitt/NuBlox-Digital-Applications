@@ -14,7 +14,8 @@ import type { Actions, PageServerLoad } from './$types';
 const recordKinds: StrategyPlanningRecordKind[] = ['option', 'theme', 'objective'];
 
 function recordKind(value: string): StrategyPlanningRecordKind {
-	if (!recordKinds.includes(value as StrategyPlanningRecordKind)) error(404, 'Planning record type not found.');
+	if (!recordKinds.includes(value as StrategyPlanningRecordKind))
+		error(404, 'Planning record type not found.');
 	return value as StrategyPlanningRecordKind;
 }
 

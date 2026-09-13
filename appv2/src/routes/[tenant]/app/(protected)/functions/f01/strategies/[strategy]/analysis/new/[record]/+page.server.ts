@@ -18,7 +18,8 @@ import type { Actions, PageServerLoad } from './$types';
 const recordKinds: StrategyAnalysisRecordKind[] = ['evidence', 'factor', 'assumption'];
 
 function recordKind(value: string): StrategyAnalysisRecordKind {
-	if (!recordKinds.includes(value as StrategyAnalysisRecordKind)) error(404, 'Analysis record type not found.');
+	if (!recordKinds.includes(value as StrategyAnalysisRecordKind))
+		error(404, 'Analysis record type not found.');
 	return value as StrategyAnalysisRecordKind;
 }
 

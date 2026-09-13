@@ -183,14 +183,23 @@
 	<section class="active-workspaces" aria-labelledby="active-workspaces-title">
 		<div>
 			<p class="section-kicker">Active strategy workflow</p>
-			<h2 id="active-workspaces-title">Move from evidence to strategic choice without losing the thread.</h2>
+			<h2 id="active-workspaces-title">
+				Move from evidence to strategic choice without losing the thread.
+			</h2>
 			<p>
-				F01.02 now governs structured evidence, environmental factors, implications and assumptions. F01.03 consumes those records as drivers for options, decisions, themes and traceable objectives.
+				F01.02 now governs structured evidence, environmental factors, implications and assumptions.
+				F01.03 consumes those records as drivers for options, decisions, themes and traceable
+				objectives.
 			</p>
 		</div>
 		<div class="workspace-actions">
-			<LinkButton href={routes.strategyAnalysis(data.tenant.slug, framework.publicId)} variant="secondary">F01.02 Environmental analysis</LinkButton>
-			<LinkButton href={routes.strategyPlanning(data.tenant.slug, framework.publicId)}>F01.03 Strategic planning</LinkButton>
+			<LinkButton
+				href={routes.strategyAnalysis(data.tenant.slug, framework.publicId)}
+				variant="secondary">F01.02 Environmental analysis</LinkButton
+			>
+			<LinkButton href={routes.strategyPlanning(data.tenant.slug, framework.publicId)}
+				>F01.03 Strategic planning</LinkButton
+			>
 		</div>
 	</section>
 
@@ -201,7 +210,9 @@
 				<h2 id="management-system-title">One strategy record, eight connected management areas</h2>
 			</div>
 			<p>
-				This workspace remains the stable strategic context. F01.02 and F01.03 now have focused record workspaces and governed transactions; later sub-functions will attach to the same strategy cycle rather than creating parallel applications.
+				This workspace remains the stable strategic context. F01.02 and F01.03 now have focused
+				record workspaces and governed transactions; later sub-functions will attach to the same
+				strategy cycle rather than creating parallel applications.
 			</p>
 		</div>
 

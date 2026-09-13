@@ -49,17 +49,13 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		expect(routes.strategyAnalysis('perspective-bc', 'framework-public-id')).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/analysis'
 		);
-		expect(
-			routes.strategyAnalysisNew('perspective-bc', 'framework-public-id', 'evidence')
-		).toBe(
+		expect(routes.strategyAnalysisNew('perspective-bc', 'framework-public-id', 'evidence')).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/analysis/new/evidence'
 		);
 		expect(routes.strategyPlanning('perspective-bc', 'framework-public-id')).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/planning'
 		);
-		expect(
-			routes.strategyPlanningNew('perspective-bc', 'framework-public-id', 'objective')
-		).toBe(
+		expect(routes.strategyPlanningNew('perspective-bc', 'framework-public-id', 'objective')).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/planning/new/objective'
 		);
 		expect(() => routes.strategyFramework('perspective-bc', '')).toThrow(/Strategy/);
