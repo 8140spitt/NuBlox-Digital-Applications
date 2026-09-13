@@ -143,4 +143,6 @@ pnpm test:unit
 pnpm build
 ```
 
+The permanent V2 validation workflow runs this gate against every V2 change on `main` before the resulting head is treated as a local-development baseline.
+
 The route contract is covered by `src/lib/routing/route-contract.test.ts`. Playwright journeys should be added as tenant-first workflows are completed.
