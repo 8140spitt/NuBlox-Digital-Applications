@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import type { Pathname } from '$app/types';
 	import { authClient } from '$lib/auth/auth-client';
@@ -8,11 +8,12 @@
 	let signingOut = $state(false);
 
 	async function signOut() {
+		if (signingOut) return;
 		signingOut = true;
+		const destination = resolve(data.signInHref as Pathname);
 		try {
 			await authClient.signOut();
-			await invalidateAll();
-			await goto(resolve(data.signInHref as Pathname));
+			await goto(destination, { invalidateAll: true });
 		} finally {
 			signingOut = false;
 		}
@@ -31,7 +32,7 @@
 	<section class="access-card">
 		<a class="brand" href={resolve(data.startHref as Pathname)}>NuBlox</a>
 		<p class="nb-eyebrow">Tenant access</p>
-		<h1>No access to {data.tenant}</h1>
+		<h1>No access to {data.tenant.displayName}</h1>
 		<p class="lede">
 			{data.user.name}, your identity is authenticated but it does not have an active membership in
 			this organisation. Use a tenant-specific invitation if one was sent to you, or contact the
