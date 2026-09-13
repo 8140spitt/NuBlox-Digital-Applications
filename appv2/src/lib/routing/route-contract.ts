@@ -9,6 +9,12 @@ export type AppDesignSystemPath = `/${string}/app/design-system`;
 export type AppStrategyPath = `/${string}/app/functions/f01`;
 export type AppStrategyNewPath = `/${string}/app/functions/f01/new`;
 export type AppStrategyFrameworkPath = `/${string}/app/functions/f01/strategies/${string}`;
+export type AppStrategyAnalysisPath = `/${string}/app/functions/f01/strategies/${string}/analysis`;
+export type AppStrategyAnalysisNewPath = `/${string}/app/functions/f01/strategies/${string}/analysis/new/${string}`;
+export type AppStrategyPlanningPath = `/${string}/app/functions/f01/strategies/${string}/planning`;
+export type AppStrategyPlanningNewPath = `/${string}/app/functions/f01/strategies/${string}/planning/new/${string}`;
+export type StrategyAnalysisRecordKind = 'evidence' | 'factor' | 'assumption';
+export type StrategyPlanningRecordKind = 'option' | 'theme' | 'objective';
 export type AppSignInPath = `/${string}/app/auth/signin${string}`;
 export type AppInvitePath = `/${string}/app/auth/invite/${string}`;
 export type PortalPath = `/${string}/portal/${string}`;
@@ -144,6 +150,22 @@ export const routes = {
 		appPath(tenant, 'functions/f01/new') as AppStrategyNewPath,
 	strategyFramework: (tenant: string, strategyPublicId: string): AppStrategyFrameworkPath =>
 		`${appPath(tenant, 'functions/f01/strategies')}/${requiredSegment(strategyPublicId, 'Strategy')}` as AppStrategyFrameworkPath,
+	strategyAnalysis: (tenant: string, strategyPublicId: string): AppStrategyAnalysisPath =>
+		`${appPath(tenant, 'functions/f01/strategies')}/${requiredSegment(strategyPublicId, 'Strategy')}/analysis` as AppStrategyAnalysisPath,
+	strategyAnalysisNew: (
+		tenant: string,
+		strategyPublicId: string,
+		recordKind: StrategyAnalysisRecordKind
+	): AppStrategyAnalysisNewPath =>
+		`${appPath(tenant, 'functions/f01/strategies')}/${requiredSegment(strategyPublicId, 'Strategy')}/analysis/new/${recordKind}` as AppStrategyAnalysisNewPath,
+	strategyPlanning: (tenant: string, strategyPublicId: string): AppStrategyPlanningPath =>
+		`${appPath(tenant, 'functions/f01/strategies')}/${requiredSegment(strategyPublicId, 'Strategy')}/planning` as AppStrategyPlanningPath,
+	strategyPlanningNew: (
+		tenant: string,
+		strategyPublicId: string,
+		recordKind: StrategyPlanningRecordKind
+	): AppStrategyPlanningNewPath =>
+		`${appPath(tenant, 'functions/f01/strategies')}/${requiredSegment(strategyPublicId, 'Strategy')}/planning/new/${recordKind}` as AppStrategyPlanningNewPath,
 	portal: (tenant: string, crmParty: string): PortalPath =>
 		portalPath(tenant, crmParty) as PortalPath,
 	portalSignIn: portalSignInPath,
