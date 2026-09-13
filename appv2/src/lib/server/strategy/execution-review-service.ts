@@ -54,6 +54,7 @@ export type StrategyBusinessPlan = {
 	plannedOpexAmount: string;
 	plannedCapexAmount: string;
 	lifecycleStatus: BusinessPlanStatus;
+	objectivePublicIds: string[];
 	objectiveCount: number;
 	initiativeCount: number;
 };
@@ -212,6 +213,11 @@ type PlanRow = RowDataPacket & {
 	lifecycleStatus: BusinessPlanStatus;
 	objectiveCount: number | string;
 	initiativeCount: number | string;
+};
+
+type PlanObjectiveLinkRow = RowDataPacket & {
+	planPublicId: string;
+	objectivePublicId: string;
 };
 
 type InitiativeRow = RowDataPacket & {
@@ -669,6 +675,24 @@ async function listPlans(frameworkId: string): Promise<StrategyBusinessPlan[]> {
 		          plan.version_number DESC`,
 		[frameworkId]
 	);
+	const [objectiveLinkRows] = await getPool().execute<PlanObjectiveLinkRow[]>(
+		`SELECT plan.public_id AS planPublicId,
+		        objective.public_id AS objectivePublicId
+		 FROM strategy_business_plan_objective_links objective_link
+		 JOIN strategy_business_plans plan
+		   ON plan.id = objective_link.strategy_business_plan_id
+		 JOIN strategy_objectives objective
+		   ON objective.id = objective_link.strategy_objective_id
+		 WHERE plan.strategy_framework_id = ?
+		 ORDER BY plan.id, objective.priority_rank, objective.objective_code`,
+		[frameworkId]
+	);
+	const objectivePublicIdsByPlan = new Map<string, string[]>();
+	for (const link of objectiveLinkRows) {
+		const objectivePublicIds = objectivePublicIdsByPlan.get(link.planPublicId) ?? [];
+		objectivePublicIds.push(link.objectivePublicId);
+		objectivePublicIdsByPlan.set(link.planPublicId, objectivePublicIds);
+	}
 	return rows.map((row) => ({
 		publicId: row.publicId,
 		code: row.code,
@@ -682,6 +706,7 @@ async function listPlans(frameworkId: string): Promise<StrategyBusinessPlan[]> {
 		plannedOpexAmount: String(row.plannedOpexAmount),
 		plannedCapexAmount: String(row.plannedCapexAmount),
 		lifecycleStatus: row.lifecycleStatus,
+		objectivePublicIds: objectivePublicIdsByPlan.get(row.publicId) ?? [],
 		objectiveCount: Number(row.objectiveCount),
 		initiativeCount: Number(row.initiativeCount)
 	}));

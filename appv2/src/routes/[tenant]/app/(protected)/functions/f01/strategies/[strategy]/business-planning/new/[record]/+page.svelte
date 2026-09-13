@@ -41,6 +41,32 @@
 	function fieldValue(key: string, fallback = ''): string {
 		return values[key] ?? fallback;
 	}
+
+	let selectedPlanPublicId = $state(
+		fieldValue('planPublicId', draftPlans.length === 1 ? (draftPlans[0]?.publicId ?? '') : '')
+	);
+	let selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));
+	const selectedPlan = $derived(
+		draftPlans.find((plan) => plan.publicId === selectedPlanPublicId) ?? null
+	);
+	const planObjectives = $derived(
+		selectedPlan
+			? data.objectives.filter((objective) =>
+					selectedPlan.objectivePublicIds.includes(objective.publicId)
+				)
+			: []
+	);
+
+	$effect(() => {
+		if (!selectedPlan) {
+			selectedObjectivePublicId = '';
+			return;
+		}
+		if (!planObjectives.some((objective) => objective.publicId === selectedObjectivePublicId)) {
+			selectedObjectivePublicId =
+				planObjectives.length === 1 ? (planObjectives[0]?.publicId ?? '') : '';
+		}
+	});
 </script>
 
 <svelte:head>
@@ -201,18 +227,45 @@
 				description="Choose a draft business plan and an objective within the approved strategy."
 			>
 				<div class="form-grid two">
-					<Field id="planPublicId" label="Business plan" required>
-						<select class="nb-control" id="planPublicId" name="planPublicId" required>
+					<Field
+						id="planPublicId"
+						label="Business plan"
+						hint="The selected plan governs the initiative period, currency and objective scope."
+						required
+					>
+						<select
+							class="nb-control"
+							id="planPublicId"
+							name="planPublicId"
+							bind:value={selectedPlanPublicId}
+							required
+						>
 							<option value="">Choose plan</option>
 							{#each draftPlans as plan (plan.publicId)}
-								<option value={plan.publicId}>{plan.code} · {plan.title}</option>
+								<option value={plan.publicId}
+									>{plan.code} · {plan.title} · {plan.periodStart} → {plan.periodEnd}</option
+								>
 							{/each}
 						</select>
 					</Field>
-					<Field id="objectivePublicId" label="Strategic objective" required>
-						<select class="nb-control" id="objectivePublicId" name="objectivePublicId" required>
-							<option value="">Choose objective</option>
-							{#each data.objectives as objective (objective.publicId)}
+					<Field
+						id="objectivePublicId"
+						label="Strategic objective"
+						hint="Only objectives already scoped into the selected business plan are available."
+						required
+					>
+						<select
+							class="nb-control"
+							id="objectivePublicId"
+							name="objectivePublicId"
+							bind:value={selectedObjectivePublicId}
+							disabled={!selectedPlan}
+							required
+						>
+							<option value=""
+								>{selectedPlan ? 'Choose objective' : 'Choose a business plan first'}</option
+							>
+							{#each planObjectives as objective (objective.publicId)}
 								<option value={objective.publicId}>{objective.code} · {objective.title}</option>
 							{/each}
 						</select>
@@ -254,29 +307,49 @@
 			</Panel>
 			<Panel
 				title="Timing and planning demand"
-				description="Investment and FTE remain planning demand until accepted by the authoritative downstream function."
+				description={selectedPlan
+					? `${selectedPlan.code} supplies the default initiative window and planning currency. You can narrow the dates, but not move outside the plan period.`
+					: 'Select a business plan to inherit its planning window and currency.'}
 			>
 				<div class="form-grid two">
-					<Field id="startDate" label="Start date" required
-						><input
+					<Field
+						id="startDate"
+						label="Start date"
+						hint={selectedPlan
+							? `Defaults to ${selectedPlan.periodStart} from ${selectedPlan.code}.`
+							: undefined}
+						required
+					>
+						<input
 							class="nb-control"
 							id="startDate"
 							name="startDate"
 							type="date"
-							value={fieldValue('startDate')}
+							value={fieldValue('startDate', selectedPlan?.periodStart ?? '')}
+							min={selectedPlan?.periodStart}
+							max={selectedPlan?.periodEnd}
 							required
-						/></Field
+						/>
+					</Field>
+					<Field
+						id="endDate"
+						label="End date"
+						hint={selectedPlan
+							? `Defaults to ${selectedPlan.periodEnd} from ${selectedPlan.code}.`
+							: undefined}
+						required
 					>
-					<Field id="endDate" label="End date" required
-						><input
+						<input
 							class="nb-control"
 							id="endDate"
 							name="endDate"
 							type="date"
-							value={fieldValue('endDate')}
+							value={fieldValue('endDate', selectedPlan?.periodEnd ?? '')}
+							min={selectedPlan?.periodStart}
+							max={selectedPlan?.periodEnd}
 							required
-						/></Field
-					>
+						/>
+					</Field>
 					<Field id="plannedInvestmentAmount" label="Planned investment"
 						><input
 							class="nb-control"
@@ -295,16 +368,21 @@
 							value={fieldValue('plannedFte', '0')}
 						/></Field
 					>
-					<Field id="currencyCode" label="Currency" required
-						><input
+					<Field
+						id="currencyCode"
+						label="Currency"
+						hint={selectedPlan ? `Inherited from ${selectedPlan.code}.` : undefined}
+						required
+					>
+						<input
 							class="nb-control"
 							id="currencyCode"
 							name="currencyCode"
-							value={fieldValue('currencyCode', 'GBP')}
+							value={fieldValue('currencyCode', selectedPlan?.currencyCode ?? 'GBP')}
 							maxlength="3"
 							required
-						/></Field
-					>
+						/>
+					</Field>
 				</div>
 			</Panel>
 		{:else if data.recordKind === 'requirement'}
