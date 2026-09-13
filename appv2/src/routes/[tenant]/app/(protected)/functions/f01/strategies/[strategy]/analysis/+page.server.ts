@@ -1,8 +1,6 @@
 import { error } from '@sveltejs/kit';
-import {
-	getStrategyAnalysisPlanningWorkspace,
-	StrategyAccessError
-} from '$lib/server/strategy/analysis-planning-service';
+import { getStrategyAnalysisPlanningWorkspace } from '$lib/server/strategy/analysis-planning-service';
+import { StrategyAccessError } from '$lib/server/strategy/f01-service';
 import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ parent, params }) => {
