@@ -22,13 +22,15 @@ describe('F01 lifecycle policies', () => {
 		expect(canReviseF01Record('plan', 'approved')).toBe(true);
 	});
 
-	it('never hard deletes governed handoff requests', () => {
+	it('never hard deletes governed handoff requests and keeps receiving outcomes outside F01', () => {
 		expect(canDeleteF01Record('handoff', 'requested')).toBe(false);
 		expect(lifecycleTransitions('handoff', 'requested').map((item) => item.to)).toEqual([
-			'accepted',
-			'rejected',
 			'cancelled'
 		]);
+		expect(lifecycleTransitions('handoff', 'accepted')).toEqual([]);
+		expect(() => assertLifecycleTransition('handoff', 'requested', 'accepted')).toThrow(
+			'Invalid handoff lifecycle transition'
+		);
 	});
 
 	it('moves initiatives through delivery rather than generic approval states', () => {
@@ -40,12 +42,6 @@ describe('F01 lifecycle policies', () => {
 			'completed',
 			'cancelled'
 		]);
-	});
-
-	it('requires canonical references when a handoff is fulfilled', () => {
-		const transition = assertLifecycleTransition('handoff', 'accepted', 'fulfilled');
-		expect(transition.requiresTargetReference).toBe(true);
-		expect(transition.requiresNote).toBe(true);
 	});
 
 	it('allows review decisions to close with explicit lifecycle outcomes', () => {
