@@ -10,6 +10,7 @@ export { default as LifecycleStrip } from './LifecycleStrip.svelte';
 export { default as LinkButton } from './LinkButton.svelte';
 export { default as PageHeader } from './PageHeader.svelte';
 export { default as Panel } from './Panel.svelte';
+export { default as ReadinessChecklist } from './ReadinessChecklist.svelte';
 export { default as RecordHeader } from './RecordHeader.svelte';
 export { default as Skeleton } from './Skeleton.svelte';
 export { default as Stat } from './Stat.svelte';
