@@ -1,5 +1,6 @@
 import { dev } from '$app/environment';
 import { error, redirect, type Actions } from '@sveltejs/kit';
+import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import {
 	acceptOrganisationInvitation,
@@ -8,20 +9,42 @@ import {
 	OrganisationInvitationAccessError
 } from '$lib/server/auth/organisation-invitation';
 import { TENANT_BOOTSTRAP_COOKIE } from '$lib/server/auth/tenant-bootstrap';
+import { getTenantRouteContextByOrganisationPublicId } from '$lib/server/tenancy/tenant-route-context';
 import type { PageServerLoad } from './$types';
 
 function normaliseEmail(value: string): string {
 	return value.trim().toLowerCase();
 }
 
-export const load: PageServerLoad = async ({ params, request, cookies, url }) => {
-	if (url.searchParams.get('verified') === '1') {
-		cookies.delete(ORGANISATION_INVITATION_COOKIE, { path: '/' });
-		return { verified: true, invitation: null, user: null, canAccept: false };
+async function requireInvitationForTenant(token: string, tenant: string) {
+	if (!isRouteSlug(tenant)) throw error(404, 'Tenant not found.');
+	const invitation = await getOrganisationInvitation(token);
+	if (!invitation) throw error(404, 'This invitation is invalid or has expired.');
+
+	const routeContext = await getTenantRouteContextByOrganisationPublicId(
+		invitation.organisationPublicId
+	);
+	if (!routeContext || routeContext.routeSlug !== tenant) {
+		throw error(404, 'This invitation does not belong to the requested tenant.');
 	}
 
-	const invitation = await getOrganisationInvitation(params.token);
-	if (!invitation) throw error(404, 'This invitation is invalid or has expired.');
+	return invitation;
+}
+
+export const load: PageServerLoad = async ({ params, request, cookies, url }) => {
+	const invitation = await requireInvitationForTenant(params.token, params.tenant);
+
+	if (url.searchParams.get('verified') === '1') {
+		cookies.delete(ORGANISATION_INVITATION_COOKIE, { path: '/' });
+		return {
+			verified: true,
+			invitation: null,
+			user: null,
+			canAccept: false,
+			tenant: params.tenant,
+			signInHref: routes.appSignIn(params.tenant)
+		};
+	}
 
 	const remainingSeconds = Math.max(
 		60,
@@ -43,6 +66,9 @@ export const load: PageServerLoad = async ({ params, request, cookies, url }) =>
 
 	return {
 		verified: false,
+		tenant: params.tenant,
+		signInHref: routes.appSignIn(params.tenant),
+		verifyEmailHref: routes.appVerifyEmail(params.tenant),
 		invitation: {
 			organisationName: invitation.organisationName,
 			email: invitation.email,
@@ -58,6 +84,7 @@ export const actions: Actions = {
 	accept: async ({ params, request, cookies }) => {
 		const rawToken = params.token;
 		if (!rawToken) throw error(400, 'Invitation token is required.');
+		await requireInvitationForTenant(rawToken, params.tenant);
 
 		const session = await getAuth().api.getSession({ headers: request.headers });
 		if (!session) throw error(401, 'Sign in before accepting this invitation.');
@@ -75,6 +102,6 @@ export const actions: Actions = {
 			throw cause;
 		}
 
-		throw redirect(303, '/auth?joined=1');
+		throw redirect(303, routes.app(params.tenant));
 	}
 };
