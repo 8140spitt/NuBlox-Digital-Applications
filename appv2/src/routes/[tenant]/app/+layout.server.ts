@@ -2,7 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
-import type { LayoutServerLoad } from './$types';
+import type { LayoutServerLoad } from './[tenant]/$types';
 
 export const load: LayoutServerLoad = async ({ params, request, url }) => {
 	if (!isRouteSlug(params.tenant)) {

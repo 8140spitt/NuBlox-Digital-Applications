@@ -2,7 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { tenantContextFromRoute } from '$lib/context/tenant-context';
 import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
-import type { LayoutServerLoad } from './$types';
+import type { LayoutServerLoad } from '../[tenant]/[crmParty]/$types';
 
 export const load: LayoutServerLoad = async ({ params, request, url }) => {
 	const tenant = tenantContextFromRoute(params.tenant);
