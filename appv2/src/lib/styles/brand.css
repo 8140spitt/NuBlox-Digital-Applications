@@ -1,4 +1,6 @@
 :root {
+	--nb-brand-primary: var(--nb-blue-10, #09263b);
+	--nb-brand-secondary: var(--nb-blue-90, #d3e9f8);
 	--nb-font-sans:
 		'Noto Sans Variable', 'Noto Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
 		'Segoe UI', sans-serif;
