@@ -37,6 +37,7 @@ jobs:
         run: |
           python scripts/temporary-f01-crud-lifecycle-repair.py
           python scripts/temporary-f01-crud-lifecycle-type-fix.py
+          python scripts/temporary-f01-crud-lifecycle-followup.py
 
       - name: Install dependencies
         working-directory: appv2
@@ -44,7 +45,7 @@ jobs:
 
       - name: Format changed files
         working-directory: appv2
-        run: pnpm exec prettier --write "src/lib/routing/route-contract.ts" "src/lib/server/strategy/f01-lifecycle.ts" "src/lib/server/strategy/f01-lifecycle.test.ts" "src/lib/server/strategy/f01-record-management-service.ts" "src/lib/server/strategy/approval-service.ts" "src/lib/server/strategy/business-plan-approval-service.ts" "src/lib/server/strategy/execution-review-service.ts" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/analysis/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/planning/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/performance/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/review/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.server.ts" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.svelte"
+        run: pnpm exec prettier --write "src/lib/routing/route-contract.ts" "src/lib/server/strategy/f01-lifecycle.ts" "src/lib/server/strategy/f01-lifecycle.test.ts" "src/lib/server/strategy/f01-record-management-service.ts" "src/lib/server/strategy/approval-readiness-service.ts" "src/lib/server/strategy/approval-service.ts" "src/lib/server/strategy/business-plan-approval-service.ts" "src/lib/server/strategy/execution-review-service.ts" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/analysis/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/planning/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/performance/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/review/+page.svelte" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.server.ts" "src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.svelte"
 
       - name: Lint
         working-directory: appv2
@@ -66,6 +67,7 @@ jobs:
         run: |
           rm scripts/temporary-f01-crud-lifecycle-repair.py
           rm scripts/temporary-f01-crud-lifecycle-type-fix.py
+          rm scripts/temporary-f01-crud-lifecycle-followup.py
           rm .github/workflows/temporary-f01-crud-lifecycle-repair.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
