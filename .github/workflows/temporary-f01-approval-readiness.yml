@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   refine-and-validate:
-    if: github.event.head_commit.message != 'fix(v2): refine F01 approval readiness UX'
+    if: ${{ !contains(github.event.head_commit.message, 'refine F01 approval readiness UX') }}
     runs-on: ubuntu-latest
 
     steps:
