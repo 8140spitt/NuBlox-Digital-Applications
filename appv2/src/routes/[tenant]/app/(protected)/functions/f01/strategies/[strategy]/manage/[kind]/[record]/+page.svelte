@@ -14,6 +14,7 @@
 
 	let { data, form } = $props();
 	const record = $derived(data.managedRecord);
+	const relationshipEditor = $derived(data.relationshipEditor);
 	const postedValues = $derived((form?.values ?? {}) as Record<string, string>);
 
 	function recordLabel(kind: string): string {
@@ -223,6 +224,51 @@
 				? 'Use controlled revision below. The currently approved record stays intact until the revision is approved.'
 				: 'This lifecycle state is immutable. Use an available lifecycle action rather than overwriting governed history.'}
 		</Alert>
+	{/if}
+
+	{#if relationshipEditor}
+		<Panel
+			title="Associations & strategic lineage"
+			description="Maintain the governed relationships that carry context downstream. NuBlox validates scope, lifecycle and orphaning rules before committing changes."
+		>
+			<form method="POST" action="?/relationships" use:enhance class="relationship-form">
+				{#each relationshipEditor.groups as group (group.key)}
+					<fieldset class="relationship-group">
+						<legend>{group.label}{group.required ? ' *' : ''}</legend>
+						<p>{group.description}</p>
+						{#if group.mode === 'single'}
+							<select class="nb-control" name={group.key} required={group.required}>
+								{#if !group.required}<option value="">No association</option>{/if}
+								{#each group.options as option (option.value)}
+									<option value={option.value} selected={option.selected}>{option.label}</option>
+								{/each}
+							</select>
+						{:else if group.options.length > 0}
+							<div class="relationship-options">
+								{#each group.options as option (option.value)}
+									<label class="relationship-option">
+										<input
+											type="checkbox"
+											name={group.key}
+											value={option.value}
+											checked={option.selected}
+										/>
+										<span>{option.label}</span>
+									</label>
+								{/each}
+							</div>
+						{:else}
+							<p class="relationship-empty">
+								No eligible records are available in the governing context.
+							</p>
+						{/if}
+					</fieldset>
+				{/each}
+				<div class="form-actions">
+					<Button type="submit">Save associations</Button>
+				</div>
+			</form>
+		</Panel>
 	{/if}
 
 	{#if record.transitions.length > 0}
@@ -440,5 +486,45 @@
 			align-items: stretch;
 			flex-direction: column;
 		}
+	}
+
+	.relationship-form {
+		display: grid;
+		gap: var(--nb-space-6);
+	}
+
+	.relationship-group {
+		display: grid;
+		gap: var(--nb-space-3);
+		margin: 0;
+		padding: 0 0 var(--nb-space-5);
+		border: 0;
+		border-bottom: 1px solid var(--nb-color-border-subtle);
+	}
+
+	.relationship-group legend {
+		font-weight: 750;
+	}
+
+	.relationship-group p,
+	.relationship-empty {
+		margin: 0;
+		color: var(--nb-color-text-muted);
+		font-size: var(--nb-font-size-sm);
+	}
+
+	.relationship-options {
+		display: grid;
+		gap: var(--nb-space-2);
+	}
+
+	.relationship-option {
+		display: grid;
+		grid-template-columns: auto minmax(0, 1fr);
+		align-items: start;
+		gap: var(--nb-space-3);
+		padding: var(--nb-space-3);
+		border: 1px solid var(--nb-color-border-subtle);
+		border-radius: var(--nb-radius-md);
 	}
 </style>

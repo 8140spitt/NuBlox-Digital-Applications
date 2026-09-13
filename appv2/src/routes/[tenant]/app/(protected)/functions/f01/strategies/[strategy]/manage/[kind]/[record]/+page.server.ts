@@ -10,6 +10,10 @@ import {
 	updateF01Record
 } from '$lib/server/strategy/f01-record-management-service';
 import type { F01ManagedRecordKind } from '$lib/server/strategy/f01-lifecycle';
+import {
+	getF01RelationshipEditor,
+	updateF01Relationships
+} from '$lib/server/strategy/f01-relationship-service';
 import { StrategyAccessError, StrategyValidationError } from '$lib/server/strategy/f01-service';
 import type { Actions, PageServerLoad } from './$types';
 
@@ -84,7 +88,16 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 			kind,
 			recordPublicId: params.record
 		});
-		return { managedRecord };
+		const relationshipEditor = managedRecord.canEdit
+			? await getF01RelationshipEditor({
+					organisationId: tenant.organisationId,
+					memberId: tenant.memberId,
+					frameworkPublicId: params.strategy,
+					kind,
+					recordPublicId: params.record
+				})
+			: null;
+		return { managedRecord, relationshipEditor };
 	} catch (cause) {
 		if (cause instanceof StrategyAccessError) {
 			error(404, 'F01 record is not available in this scope.');
@@ -117,6 +130,33 @@ export const actions = {
 				return fail(400, { values, formError: cause.message });
 			if (cause instanceof StrategyAccessError)
 				return fail(403, { values, formError: cause.message });
+			throw cause;
+		}
+	},
+	relationships: async ({ request, params, url }) => {
+		const kind = recordKind(params.kind);
+		const formData = await request.formData();
+		const selections: Record<string, string[]> = {};
+		for (const [key, value] of formData.entries()) {
+			if (typeof value !== 'string') continue;
+			(selections[key] ??= []).push(value);
+		}
+		const { access, actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
+		try {
+			await updateF01Relationships({
+				actor,
+				frameworkPublicId: params.strategy,
+				kind,
+				recordPublicId: params.record,
+				selections
+			});
+			redirect(
+				303,
+				routes.strategyManage(access.organisationRouteSlug, params.strategy, kind, params.record)
+			);
+		} catch (cause) {
+			if (cause instanceof StrategyValidationError) return fail(400, { formError: cause.message });
+			if (cause instanceof StrategyAccessError) return fail(403, { formError: cause.message });
 			throw cause;
 		}
 	},

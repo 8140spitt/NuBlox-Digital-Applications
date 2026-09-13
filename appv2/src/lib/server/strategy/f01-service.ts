@@ -200,10 +200,12 @@ async function listFrameworks(input: {
 		        (SELECT COUNT(*) FROM strategy_initiatives initiative
 		          JOIN strategy_business_plans plan ON plan.id = initiative.strategy_business_plan_id
 		          WHERE plan.strategy_framework_id = framework.id
+		            AND plan.lifecycle_status <> 'superseded'
 		            AND initiative.lifecycle_status NOT IN ('completed', 'cancelled')) AS initiativeCount,
 		        (SELECT COUNT(*) FROM strategy_operating_model_components component
 		          JOIN strategy_business_plans plan ON plan.id = component.strategy_business_plan_id
 		          WHERE plan.strategy_framework_id = framework.id
+		            AND plan.lifecycle_status <> 'superseded'
 		            AND component.lifecycle_status <> 'retired') AS operatingModelComponentCount,
 		        (SELECT COUNT(*) FROM strategy_kpis kpi
 		          WHERE kpi.strategy_framework_id = framework.id

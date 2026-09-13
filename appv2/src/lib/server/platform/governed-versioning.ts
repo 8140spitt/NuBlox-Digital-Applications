@@ -113,6 +113,27 @@ export async function markPublishedVersionHistorical(
 	);
 }
 
+export async function markWorkingVersionDiscarded(
+	connection: PoolConnection,
+	input: {
+		organisationId: string;
+		domainCode: string;
+		recordType: string;
+		recordPublicId: string;
+	}
+): Promise<void> {
+	await connection.execute(
+		`UPDATE governed_record_versions
+		 SET version_status = 'discarded'
+		 WHERE organisation_id = ?
+		   AND domain_code = ?
+		   AND record_type = ?
+		   AND record_public_id = ?
+		   AND version_status = 'draft'`,
+		[input.organisationId, input.domainCode, input.recordType, input.recordPublicId]
+	);
+}
+
 export type GovernedVersionHistoryItem = {
 	major: number;
 	minor: number;

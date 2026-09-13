@@ -1,6 +1,6 @@
 # F01 — Strategy & Enterprise Planning closure evidence
 
-**Status:** Complete. F01.01–F01.08 are merged to `main`, the exact PR head and merged `main` commit both passed Complete System Validation, issue #124 is closed as completed, there are zero open pull requests, and `main` is the only remote branch.
+**Status:** Historical V1 closure evidence. This document records the earlier V1 closure and does **not** assert that the active `appv2` F01.01–F01.08 implementation is complete. V2 status is governed by `15-f01-strategy-enterprise-planning-v2.md` and the active `appv2` route tree.
 
 ## Scope
 

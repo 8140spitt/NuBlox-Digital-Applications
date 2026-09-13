@@ -74,7 +74,7 @@
 						detail:
 							'Capabilities, organisation, process, information and technology move to target state.',
 						metric: `${focusFramework.operatingModelComponentCount} components`,
-						state: focusFramework.operatingModelComponentCount > 0 ? 'active' : 'ready'
+						state: 'not-implemented'
 					},
 					{
 						id: 'F01.06',
@@ -97,7 +97,7 @@
 						name: 'Scenario & foresight',
 						detail: 'Alternative futures test assumptions, resilience and strategic choices.',
 						metric: `${focusFramework.scenarioCount} scenarios`,
-						state: focusFramework.scenarioCount > 0 ? 'active' : 'ready'
+						state: 'not-implemented'
 					}
 				]
 			: []
@@ -155,7 +155,7 @@
 						label={lifecycleLabel(focusFramework.lifecycleStatus)}
 						tone={lifecycleTone(focusFramework.lifecycleStatus)}
 					/>
-					<span>{focusFramework.code} · v{focusFramework.versionNumber}</span>
+					<span>{focusFramework.code} · v{focusFramework.versionLabel}</span>
 				</div>
 				<h2 id="strategy-focus-title">{focusFramework.title}</h2>
 				<p class="vision">{focusFramework.vision}</p>
@@ -208,7 +208,11 @@
 						<div class="workstream-heading">
 							<span>{workstream.id}</span>
 							<span class="workstream-state">
-								{workstream.state === 'active' ? 'In use' : 'Ready'}
+								{workstream.state === 'active'
+									? 'In use'
+									: workstream.state === 'not-implemented'
+										? 'Not yet activated'
+										: 'Ready'}
 							</span>
 						</div>
 						<h3>{workstream.name}</h3>
@@ -227,7 +231,7 @@
 				{#each workspace.frameworks as framework (framework.publicId)}
 					<a href={resolve(routes.strategyFramework(data.tenant.slug, framework.publicId))}>
 						<div class="cycle-primary">
-							<span class="cycle-code">{framework.code} · v{framework.versionNumber}</span>
+							<span class="cycle-code">{framework.code} · v{framework.versionLabel}</span>
 							<strong>{framework.title}</strong>
 							<span>{horizon(framework.horizonStart, framework.horizonEnd)}</span>
 						</div>

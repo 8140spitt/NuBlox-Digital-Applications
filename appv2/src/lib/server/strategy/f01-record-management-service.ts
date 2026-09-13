@@ -6,6 +6,7 @@ import {
 	appendGovernedVersion,
 	governedVersionCoordinates,
 	listGovernedVersionHistory,
+	markWorkingVersionDiscarded,
 	type GovernedVersionHistoryItem
 } from '$lib/server/platform/governed-versioning';
 import { approveStrategyFramework } from './approval-service';
@@ -1733,6 +1734,19 @@ export async function deleteF01Record(input: {
 		await connection.beginTransaction();
 		const org = input.actor.organisationId;
 		const id = input.recordPublicId;
+		if (['framework', 'plan', 'kpi'].includes(input.kind)) {
+			await markWorkingVersionDiscarded(connection, {
+				organisationId: org,
+				domainCode: 'F01',
+				recordType:
+					input.kind === 'framework'
+						? 'strategy_framework'
+						: input.kind === 'plan'
+							? 'strategy_business_plan'
+							: 'strategy_kpi',
+				recordPublicId: id
+			});
+		}
 		switch (input.kind) {
 			case 'framework': {
 				if (input.frameworkPublicId !== id)

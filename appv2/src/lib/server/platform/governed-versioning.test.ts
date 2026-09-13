@@ -46,4 +46,14 @@ describe('governed versioning', () => {
 		expect(nextMinorVersion(1)).toBe(2);
 		expect(nextMinorVersion(4)).toBe(5);
 	});
+
+	it('keeps draft, published and historical coordinates distinct from discarded history', () => {
+		expect(
+			governedVersionCoordinates({
+				versionNumber: 3,
+				minorVersionNumber: 2,
+				lifecycleStatus: 'draft'
+			})
+		).toMatchObject({ label: '2.2', status: 'draft' });
+	});
 });
