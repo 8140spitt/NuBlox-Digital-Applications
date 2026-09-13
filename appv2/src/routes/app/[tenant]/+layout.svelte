@@ -1,9 +1,12 @@
 <script lang="ts">
+	import { goto, invalidateAll } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
+	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, children } = $props();
+	let signingOut = $state(false);
 
 	const items = $derived([
 		{ label: 'Home', href: routes.dashboard(data.tenant.slug) },
@@ -14,6 +17,19 @@
 
 	function isActive(href: string): boolean {
 		return page.url.pathname === href || page.url.pathname.startsWith(`${href}/`);
+	}
+
+	async function signOut() {
+		if (signingOut) return;
+		signingOut = true;
+
+		try {
+			await authClient.signOut();
+			await invalidateAll();
+			await goto(resolve('/auth'));
+		} finally {
+			signingOut = false;
+		}
 	}
 </script>
 
@@ -45,7 +61,12 @@
 				{/each}
 			</nav>
 
-			<div class="shell-status" aria-label="Application surface"><span>APP</span></div>
+			<div class="account-control" aria-label="Signed-in account">
+				<span class="account-name">{data.user.name}</span>
+				<button type="button" onclick={signOut} disabled={signingOut}>
+					{signingOut ? 'Signing out…' : 'Sign out'}
+				</button>
+			</div>
 		</div>
 	</header>
 	<main class="tenant-main">{@render children()}</main>
@@ -133,18 +154,41 @@
 		background: var(--nb-surface-subtle);
 		color: var(--nb-ink);
 	}
-	.shell-status span {
-		display: inline-flex;
+	.account-control {
+		display: flex;
 		align-items: center;
-		justify-content: center;
-		min-width: 42px;
-		padding: 5px 7px;
-		border: 1px solid var(--nb-border);
-		border-radius: 999px;
-		font-size: 0.68rem;
-		font-weight: 800;
-		letter-spacing: 0.06em;
+		gap: 10px;
+		padding-left: 18px;
+		border-left: 1px solid var(--nb-border);
+	}
+	.account-name {
+		max-width: 140px;
+		overflow: hidden;
+		text-overflow: ellipsis;
 		color: var(--nb-muted);
+		font-size: 0.78rem;
+		font-weight: 700;
+		white-space: nowrap;
+	}
+	.account-control button {
+		min-height: 34px;
+		border: 1px solid var(--nb-border);
+		border-radius: 8px;
+		padding: 7px 10px;
+		background: var(--nb-surface);
+		color: var(--nb-ink);
+		font: inherit;
+		font-size: 0.78rem;
+		font-weight: 750;
+		cursor: pointer;
+	}
+	.account-control button:hover:not(:disabled),
+	.account-control button:focus-visible {
+		border-color: var(--nb-ink);
+	}
+	.account-control button:disabled {
+		cursor: progress;
+		opacity: 0.6;
 	}
 	.tenant-main {
 		padding: 48px 0 72px;
@@ -167,9 +211,14 @@
 			justify-content: flex-start;
 			overflow-x: auto;
 		}
-		.shell-status {
+		.account-control {
 			grid-column: 2;
 			grid-row: 1;
+			padding-left: 0;
+			border-left: 0;
+		}
+		.account-name {
+			display: none;
 		}
 	}
 </style>
