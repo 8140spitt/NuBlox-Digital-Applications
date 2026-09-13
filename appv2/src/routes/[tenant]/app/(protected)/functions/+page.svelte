@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { enterpriseFunctions } from '$lib/enterprise/enterprise-functions';
+	import { routes } from '$lib/routing/route-contract';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 
 	let { data } = $props();
 	let query = $state('');
@@ -38,13 +40,25 @@
 
 	<div class="function-directory">
 		{#each filteredFunctions as entry (entry.id)}
-			<article>
+			<article class:active-function={entry.id === 'F01'}>
 				<div class="function-id">{entry.id}</div>
 				<div class="function-copy">
-					<h2>{entry.name}</h2>
+					<h2>
+						{#if entry.id === 'F01'}
+							<a href={resolve(routes.strategy(data.tenant.slug))}>{entry.name}</a>
+						{:else}
+							{entry.name}
+						{/if}
+					</h2>
 					<p>{entry.purpose}</p>
 				</div>
-				<div class="function-state">Not yet activated in V2</div>
+				{#if entry.id === 'F01'}
+					<a class="function-state active-state" href={resolve(routes.strategy(data.tenant.slug))}
+						>Open workspace</a
+					>
+				{:else}
+					<div class="function-state">Not yet activated in V2</div>
+				{/if}
 			</article>
 		{:else}
 			<div class="no-results">
@@ -123,6 +137,12 @@
 		border-bottom: 1px solid var(--nb-border);
 	}
 
+	.function-directory article.active-function {
+		margin-inline: -16px;
+		padding-inline: 16px;
+		background: color-mix(in srgb, var(--nb-blue-95) 52%, transparent);
+	}
+
 	.function-id {
 		font-size: 0.78rem;
 		font-weight: 850;
@@ -136,6 +156,15 @@
 		letter-spacing: -0.015em;
 	}
 
+	.function-copy h2 a {
+		text-decoration: none;
+	}
+
+	.function-copy h2 a:hover {
+		text-decoration: underline;
+		text-underline-offset: 3px;
+	}
+
 	.function-copy p {
 		margin: 0;
 		line-height: 1.55;
@@ -147,6 +176,16 @@
 		font-size: 0.76rem;
 		font-weight: 700;
 		color: var(--nb-muted);
+	}
+
+	.active-state {
+		color: var(--nb-color-action-primary);
+		text-decoration: none;
+	}
+
+	.active-state:hover {
+		text-decoration: underline;
+		text-underline-offset: 3px;
 	}
 
 	.no-results {
