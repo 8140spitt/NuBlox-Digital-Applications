@@ -2,6 +2,7 @@ import type { RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 
 export type InternalAccessContext = {
+	userId: string;
 	organisationId: string;
 	organisationPublicId: string;
 	organisationRouteSlug: string;
@@ -11,6 +12,7 @@ export type InternalAccessContext = {
 };
 
 type InternalAccessRow = RowDataPacket & {
+	userId: string | number;
 	organisationId: string | number;
 	organisationPublicId: string;
 	organisationRouteSlug: string;
@@ -21,6 +23,7 @@ type InternalAccessRow = RowDataPacket & {
 
 function mapInternalAccessRow(row: InternalAccessRow): InternalAccessContext {
 	return {
+		userId: row.userId.toString(),
 		organisationId: row.organisationId.toString(),
 		organisationPublicId: row.organisationPublicId,
 		organisationRouteSlug: row.organisationRouteSlug,
@@ -30,7 +33,8 @@ function mapInternalAccessRow(row: InternalAccessRow): InternalAccessContext {
 	};
 }
 
-const ACTIVE_INTERNAL_CONTEXT_SELECT = `SELECT organisation.id AS organisationId,
+const ACTIVE_INTERNAL_CONTEXT_SELECT = `SELECT user.id AS userId,
+		organisation.id AS organisationId,
 		organisation.public_id AS organisationPublicId,
 		route_context.route_slug AS organisationRouteSlug,
 		COALESCE(NULLIF(organisation.trading_name, ''), organisation.legal_name) AS organisationName,
