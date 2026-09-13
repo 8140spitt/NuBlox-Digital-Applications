@@ -1,0 +1,82 @@
+name: Temporary V2 Resolved Path Migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/temporary-v2-resolved-path-migration.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-and-validate:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+      - name: Install dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+      - name: Migrate internal navigation to resolved-path boundary
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          root = Path('appv2/src')
+          old_import = "import { resolve } from '$app/paths';"
+          new_import = "import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';"
+          type_import = "import type { Pathname } from '$app/types';"
+
+          changed = []
+          for path in root.rglob('*.svelte'):
+              source = path.read_text()
+              if old_import not in source:
+                  continue
+              updated = source.replace(old_import, new_import)
+              updated = updated.replace(f"\n\t{type_import}", '')
+              updated = updated.replace(f"\n{type_import}", '')
+              updated = updated.replace(' as Pathname', '')
+              if updated != source:
+                  path.write_text(updated)
+                  changed.append(str(path))
+
+          print(f'Updated {len(changed)} Svelte files')
+          for item in changed:
+              print(item)
+          PY
+      - name: Format
+        working-directory: appv2
+        run: pnpm exec prettier --write src
+      - name: Lint
+        working-directory: appv2
+        run: pnpm lint
+      - name: Type-check
+        working-directory: appv2
+        run: pnpm check
+      - name: Unit tests
+        working-directory: appv2
+        run: pnpm test:unit
+      - name: Build
+        working-directory: appv2
+        run: pnpm build
+      - name: Commit validated migration
+        run: |
+          if git diff --quiet; then
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appv2/src
+          git commit -m "fix(v2): harden internal navigation resolution"
+          git push origin main
