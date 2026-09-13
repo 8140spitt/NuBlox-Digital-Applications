@@ -2,7 +2,10 @@ from pathlib import Path
 
 path = Path('appv2/src/lib/server/strategy/f01-record-management-service.ts')
 text = path.read_text()
-text = text.replace('params: readonly unknown[]', 'params: unknown[]')
+text = text.replace(
+    'params: readonly unknown[]',
+    'params: Array<string | number | boolean | Date | null>',
+)
 text = text.replace('input.targetRecordType?.trim()', 'input.targetRecordType?.trim() ?? null')
 text = text.replace('input.targetPublicId?.trim()', 'input.targetPublicId?.trim() ?? null')
 # The validation predicate must remain boolean; only SQL-bound optional values need null coercion.
