@@ -67,6 +67,13 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		);
 	});
 
+	it('binds the public portal sign-in route helper to the canonical implementation', () => {
+		expect(routes.portalSignIn).toBe(portalSignInPath);
+		expect(routes.portalSignIn('nublox', 'perspectivebc')).toBe(
+			'/nublox/portal/perspectivebc/auth/signin'
+		);
+	});
+
 	it('builds portal sign-in inside the exact tenant and CRM Party context', () => {
 		expect(routes.portalSignIn('nublox', 'perspectivebc')).toBe(
 			'/nublox/portal/perspectivebc/auth/signin'
