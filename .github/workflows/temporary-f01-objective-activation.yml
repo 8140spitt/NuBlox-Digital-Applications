@@ -1,0 +1,158 @@
+name: Temporary F01 Objective Approval Lifecycle Repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-f01-objective-activation.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-validate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Repair objective approval lifecycle
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          readiness = Path('appv2/src/lib/server/strategy/approval-readiness-service.ts')
+          text = readiness.read_text()
+          replacements = {
+              'activeObjectiveCount': 'approvalCandidateObjectiveCount',
+              'optionLinkedObjectiveCount': 'optionLinkedCandidateObjectiveCount',
+              'primaryThemeObjectiveCount': 'primaryThemeCandidateObjectiveCount',
+              'traceableObjectiveCount': 'traceableCandidateObjectiveCount',
+              "objective.lifecycle_status = 'active'": "objective.lifecycle_status IN ('draft', 'active')",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Expected readiness token not found: {old}')
+              text = text.replace(old, new)
+          readiness.write_text(text)
+
+          approval = Path('appv2/src/lib/server/strategy/approval-service.ts')
+          text = approval.read_text()
+          old_import = "import type { PoolConnection, RowDataPacket } from 'mysql2/promise';"
+          new_import = "import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';"
+          if old_import not in text:
+              raise SystemExit('Expected approval import not found.')
+          text = text.replace(old_import, new_import, 1)
+          text = text.replace('countTraceableObjectives', 'countApprovalCandidateObjectives')
+          if "objective.lifecycle_status = 'active'" not in text:
+              raise SystemExit('Expected active-objective approval filter not found.')
+          text = text.replace(
+              "objective.lifecycle_status = 'active'",
+              "objective.lifecycle_status IN ('draft', 'active')",
+              1,
+          )
+          text = text.replace(
+              'const objectiveCount = await countApprovalCandidateObjectives(',
+              'const approvalCandidateObjectiveCount = await countApprovalCandidateObjectives(',
+              1,
+          )
+          text = text.replace('if (objectiveCount < 1) {', 'if (approvalCandidateObjectiveCount < 1) {', 1)
+          old_error = "'Strategy approval requires at least one active objective with a selected-option lineage and a primary strategic theme.'"
+          new_error = "'Strategy approval requires at least one objective with selected-option lineage and a primary strategic theme. Draft objectives become active when the strategy is approved.'"
+          if old_error not in text:
+              raise SystemExit('Expected strategy approval error message not found.')
+          text = text.replace(old_error, new_error, 1)
+          update_anchor = """\t\tawait connection.execute(\n\t\t\t`UPDATE strategy_frameworks\n"""
+          activation = """\t\tconst [activationResult] = await connection.execute<ResultSetHeader>(\n\t\t\t`UPDATE strategy_objectives\n\t\t\t SET lifecycle_status = 'active'\n\t\t\t WHERE organisation_id = ?\n\t\t\t   AND strategy_framework_id = ?\n\t\t\t   AND lifecycle_status = 'draft'`,\n\t\t\t[input.actor.organisationId, framework.id]\n\t\t);\n\n"""
+          if update_anchor not in text:
+              raise SystemExit('Expected framework update anchor not found.')
+          text = text.replace(update_anchor, activation + update_anchor, 1)
+          old_summary = "\t\t\t\ttraceableObjectiveCount: objectiveCount\n"
+          new_summary = "\t\t\t\ttraceableObjectiveCount: approvalCandidateObjectiveCount,\n\t\t\t\tactivatedDraftObjectiveCount: activationResult.affectedRows\n"
+          if old_summary not in text:
+              raise SystemExit('Expected approval evidence summary not found.')
+          text = text.replace(old_summary, new_summary, 1)
+          approval.write_text(text)
+
+          page = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.svelte')
+          text = page.read_text()
+          old_block = """\t\t{\n\t\t\tkey: 'traceable-objective',\n\t\t\tlabel: 'Traceable active objective ready',\n\t\t\tready: data.approvalReadiness.traceableObjectiveCount > 0,\n\t\t\tdetail:\n\t\t\t\tdata.approvalReadiness.traceableObjectiveCount > 0\n\t\t\t\t\t? `${data.approvalReadiness.traceableObjectiveCount} active objective${data.approvalReadiness.traceableObjectiveCount === 1 ? '' : 's'} retain both selected-option lineage and a primary theme.`\n\t\t\t\t\t: data.approvalReadiness.activeObjectiveCount === 0\n\t\t\t\t\t\t? 'No active objective exists. Create an objective derived from a selected option and assign its primary strategic theme.'\n\t\t\t\t\t\t: data.approvalReadiness.optionLinkedObjectiveCount === 0 &&\n\t\t\t\t\t\t\t  data.approvalReadiness.primaryThemeObjectiveCount === 0\n\t\t\t\t\t\t\t? 'Active objectives exist, but none carries selected-option lineage or a primary strategic theme.'\n\t\t\t\t\t\t\t: data.approvalReadiness.optionLinkedObjectiveCount === 0\n\t\t\t\t\t\t\t\t? 'Active objectives exist, but none is linked to a selected strategic option.'\n\t\t\t\t\t\t\t\t: data.approvalReadiness.primaryThemeObjectiveCount === 0\n\t\t\t\t\t\t\t\t\t? 'Active objectives exist, but none has a primary strategic theme.'\n\t\t\t\t\t\t\t\t\t: 'Objective links exist, but no single active objective currently carries both the selected-option lineage and primary theme required for approval.',\n\t\t\tactionLabel:\n\t\t\t\tdata.approvalReadiness.activeObjectiveCount > 0 ? 'Review objectives' : 'Create objective',\n\t\t\tactionHref:\n\t\t\t\tdata.approvalReadiness.activeObjectiveCount > 0\n\t\t\t\t\t? routes.strategyPlanning(data.tenant.slug, data.framework.publicId)\n\t\t\t\t\t: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'objective')\n\t\t},\n"""
+          new_block = """\t\t{\n\t\t\tkey: 'traceable-objective',\n\t\t\tlabel: 'Traceable objective ready for approval',\n\t\t\tready: data.approvalReadiness.traceableCandidateObjectiveCount > 0,\n\t\t\tdetail:\n\t\t\t\tdata.approvalReadiness.traceableCandidateObjectiveCount > 0\n\t\t\t\t\t? `${data.approvalReadiness.traceableCandidateObjectiveCount} objective${data.approvalReadiness.traceableCandidateObjectiveCount === 1 ? '' : 's'} are approval-ready with selected-option lineage and an active primary theme. Draft objectives become active in the approval transaction.`\n\t\t\t\t\t: data.approvalReadiness.approvalCandidateObjectiveCount === 0\n\t\t\t\t\t\t? 'No draft or active objective exists. Create an objective derived from a selected option and assign its primary strategic theme.'\n\t\t\t\t\t\t: data.approvalReadiness.optionLinkedCandidateObjectiveCount === 0 &&\n\t\t\t\t\t\t\t  data.approvalReadiness.primaryThemeCandidateObjectiveCount === 0\n\t\t\t\t\t\t\t? 'Objectives exist, but none carries selected-option lineage or a primary strategic theme.'\n\t\t\t\t\t\t\t: data.approvalReadiness.optionLinkedCandidateObjectiveCount === 0\n\t\t\t\t\t\t\t\t? 'Objectives exist, but none is linked to a selected strategic option.'\n\t\t\t\t\t\t\t\t: data.approvalReadiness.primaryThemeCandidateObjectiveCount === 0\n\t\t\t\t\t\t\t\t\t? 'Objectives exist, but none has an active primary strategic theme.'\n\t\t\t\t\t\t\t\t\t: 'Objective links exist, but no single draft or active objective currently carries both the selected-option lineage and primary theme required for approval.',\n\t\t\tactionLabel:\n\t\t\t\tdata.approvalReadiness.approvalCandidateObjectiveCount > 0\n\t\t\t\t\t? 'Review objectives'\n\t\t\t\t\t: 'Create objective',\n\t\t\tactionHref:\n\t\t\t\tdata.approvalReadiness.approvalCandidateObjectiveCount > 0\n\t\t\t\t\t? routes.strategyPlanning(data.tenant.slug, data.framework.publicId)\n\t\t\t\t\t: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'objective')\n\t\t},\n"""
+          if old_block not in text:
+              raise SystemExit('Expected business-planning objective readiness block not found.')
+          text = text.replace(old_block, new_block, 1)
+          page.write_text(text)
+
+          planning = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/planning/+page.svelte')
+          text = planning.read_text()
+          old_detail = 'detail={`${traceableObjectives.length} fully traceable`}'
+          new_detail = 'detail={`${traceableObjectives.length} lineage complete`}'
+          if old_detail not in text:
+              raise SystemExit('Expected planning traceability summary not found.')
+          text = text.replace(old_detail, new_detail, 1)
+          meta_anchor = '\t\t\t\t\t\t<div class="objective-meta">\n'
+          meta_replacement = meta_anchor + '\t\t\t\t\t\t\t<span>Lifecycle <strong>{objective.lifecycleStatus}</strong></span>\n'
+          if meta_anchor not in text:
+              raise SystemExit('Expected objective metadata block not found.')
+          text = text.replace(meta_anchor, meta_replacement, 1)
+          planning.write_text(text)
+
+          docs = Path('docs/world-class/15-f01-strategy-enterprise-planning-v2.md')
+          text = docs.read_text()
+          old = "Approved strategy is immutable enterprise evidence. Material change requires a controlled revision or new strategy cycle."
+          new = "Objectives created while a strategy is draft remain draft working records. Strategy approval validates their decision lineage and activates draft objectives in the same governed transaction. Approved strategy is immutable enterprise evidence. Material change requires a controlled revision or new strategy cycle."
+          if old not in text:
+              raise SystemExit('Expected F01 lifecycle architecture sentence not found.')
+          text = text.replace(old, new, 1)
+          docs.write_text(text)
+          PY
+
+      - name: Install dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Format changed files
+        working-directory: appv2
+        run: pnpm exec prettier --write src/lib/server/strategy/approval-readiness-service.ts src/lib/server/strategy/approval-service.ts 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.svelte' 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/planning/+page.svelte' ../docs/world-class/15-f01-strategy-enterprise-planning-v2.md
+
+      - name: Lint
+        working-directory: appv2
+        run: pnpm lint
+
+      - name: Type-check
+        working-directory: appv2
+        run: pnpm check
+
+      - name: Unit tests
+        working-directory: appv2
+        run: pnpm test:unit
+
+      - name: Production build
+        working-directory: appv2
+        run: pnpm build
+
+      - name: Commit validated repair
+        run: |
+          rm .github/workflows/temporary-f01-objective-activation.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(v2): activate draft objectives on strategy approval'
+          git push origin main
