@@ -32,7 +32,12 @@
 		<thead>
 			<tr>
 				{#each columns as column (column.key)}
-					<th scope="col" style:width={column.width} class:align-center={column.align === 'center'} class:align-end={column.align === 'end'}>
+					<th
+						scope="col"
+						style:width={column.width}
+						class:align-center={column.align === 'center'}
+						class:align-end={column.align === 'end'}
+					>
 						{column.label}
 					</th>
 				{/each}
@@ -47,7 +52,10 @@
 				{#each rows as row, index (index)}
 					<tr>
 						{#each columns as column (column.key)}
-							<td class:align-center={column.align === 'center'} class:align-end={column.align === 'end'}>
+							<td
+								class:align-center={column.align === 'center'}
+								class:align-end={column.align === 'end'}
+							>
 								{#if cell}
 									{@render cell(row, column)}
 								{:else}

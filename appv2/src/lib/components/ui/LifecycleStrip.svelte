@@ -14,7 +14,10 @@
 
 <ol class="lifecycle" aria-label={label}>
 	{#each steps as step, index (`${step.label}-${index}`)}
-		<li class={`step step--${step.state}`} aria-current={step.state === 'current' ? 'step' : undefined}>
+		<li
+			class={`step step--${step.state}`}
+			aria-current={step.state === 'current' ? 'step' : undefined}
+		>
 			<span class="marker" aria-hidden="true">{index + 1}</span>
 			<span class="label">{step.label}</span>
 		</li>

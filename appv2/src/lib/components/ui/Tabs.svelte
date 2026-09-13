@@ -18,7 +18,11 @@
 
 <nav class="tabs" aria-label={label}>
 	{#each items as item (item.href)}
-		<a href={resolveInternalPath(item.href)} class:active={item.active} aria-current={item.active ? 'page' : undefined}>
+		<a
+			href={resolveInternalPath(item.href)}
+			class:active={item.active}
+			aria-current={item.active ? 'page' : undefined}
+		>
 			<span>{item.label}</span>
 			{#if item.badge}<span class="badge">{item.badge}</span>{/if}
 		</a>

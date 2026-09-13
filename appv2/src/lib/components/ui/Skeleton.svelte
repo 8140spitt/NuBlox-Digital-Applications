@@ -8,12 +8,7 @@
 	let { width = '100%', height = '1rem', radius = 'md' }: Props = $props();
 </script>
 
-<span
-	class={`skeleton skeleton--${radius}`}
-	style:width
-	style:height
-	aria-hidden="true"
-></span>
+<span class={`skeleton skeleton--${radius}`} style:width style:height aria-hidden="true"></span>
 
 <style>
 	.skeleton {

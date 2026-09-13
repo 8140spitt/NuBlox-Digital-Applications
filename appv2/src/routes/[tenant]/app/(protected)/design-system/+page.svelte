@@ -285,15 +285,21 @@
 						aria-invalid={form?.errors?.priority ? 'true' : undefined}
 						aria-describedby={form?.errors?.priority ? 'priority-error' : 'priority-hint'}
 					>
-						<option value="normal" selected={(form?.values?.priority ?? 'normal') === 'normal'}>Normal</option>
+						<option value="normal" selected={(form?.values?.priority ?? 'normal') === 'normal'}
+							>Normal</option
+						>
 						<option value="high" selected={form?.values?.priority === 'high'}>High</option>
-						<option value="critical" selected={form?.values?.priority === 'critical'}>Critical</option>
+						<option value="critical" selected={form?.values?.priority === 'critical'}
+							>Critical</option
+						>
 					</select>
 				</Field>
 
 				<div class="full">
 					<Field id="notes" label="Notes" hint="Optional supporting context.">
-						<textarea class="nb-control" id="notes" name="notes">{form?.values?.notes ?? ''}</textarea>
+						<textarea class="nb-control" id="notes" name="notes"
+							>{form?.values?.notes ?? ''}</textarea
+						>
 					</Field>
 				</div>
 
@@ -305,11 +311,17 @@
 		</Panel>
 
 		<div class="two-column">
-			<Panel title="Activity and audit thread" description="Attributable events read consistently across strategy, projects, finance and operational work.">
+			<Panel
+				title="Activity and audit thread"
+				description="Attributable events read consistently across strategy, projects, finance and operational work."
+			>
 				<ActivityTimeline items={activity} />
 			</Panel>
 
-			<Panel title="Loading state" description="Skeletons preserve layout while asynchronous supporting information is loading.">
+			<Panel
+				title="Loading state"
+				description="Skeletons preserve layout while asynchronous supporting information is loading."
+			>
 				<div class="skeleton-stack" aria-label="Example loading state">
 					<Skeleton width="42%" height="0.75rem" radius="pill" />
 					<Skeleton width="78%" height="1.6rem" />
@@ -339,7 +351,9 @@
 				description="Feedback uses the same semantic tones across every function."
 			>
 				<div class="stack compact">
-					<Alert tone="info" title="Information">A contextual fact that helps the user decide.</Alert>
+					<Alert tone="info" title="Information"
+						>A contextual fact that helps the user decide.</Alert
+					>
 					<Alert tone="success" title="Success">The governed action completed successfully.</Alert>
 					<Alert tone="warning" title="Attention">A material condition needs review.</Alert>
 					<Alert tone="danger" title="Unable to continue">The transaction cannot proceed.</Alert>
