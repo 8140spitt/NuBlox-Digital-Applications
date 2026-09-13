@@ -128,7 +128,7 @@ export const routes = {
 	projects: (tenant: string): AppProjectsPath => appPath(tenant, 'projects') as AppProjectsPath,
 	portal: (tenant: string, crmParty: string): PortalPath =>
 		portalPath(tenant, crmParty) as PortalPath,
-	portalSignIn,
+	portalSignIn: portalSignInPath,
 	portalForgotPassword: (tenant: string, crmParty: string): string =>
 		portalPath(tenant, crmParty, 'auth/forgot-password'),
 	portalResetPassword: (tenant: string, crmParty: string): string =>
