@@ -78,10 +78,10 @@ export const actions = {
 			redirect(303, routes.strategyFramework(access.organisationRouteSlug, created.publicId));
 		} catch (cause) {
 			if (cause instanceof StrategyValidationError) {
-				return fail(400, { values, errors: {}, formError: cause.message });
+				return fail(400, { values, errors, formError: cause.message });
 			}
 			if (cause instanceof StrategyAccessError) {
-				return fail(403, { values, errors: {}, formError: cause.message });
+				return fail(403, { values, errors, formError: cause.message });
 			}
 			throw cause;
 		}
