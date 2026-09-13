@@ -4,12 +4,14 @@ on:
   pull_request:
     paths:
       - 'appv2/**'
+      - 'database/migrations/**'
       - '.github/workflows/v2-validation.yml'
   push:
     branches:
       - main
     paths:
       - 'appv2/**'
+      - 'database/migrations/**'
       - '.github/workflows/v2-validation.yml'
 
 permissions:
@@ -57,3 +59,49 @@ jobs:
 
       - name: Build V2
         run: pnpm build
+
+  f01-integration:
+    name: F01 real-MySQL golden thread
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_f01_validation
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Apply authoritative platform migrations
+        run: pnpm dlx dbmate@2.34.1 --migrations-dir database/migrations --no-dump-schema up
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Run F01 real-MySQL regression
+        working-directory: appv2
+        run: pnpm test:integration
