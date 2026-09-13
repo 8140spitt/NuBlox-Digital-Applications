@@ -37,6 +37,7 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		expect(routes.myWork('nublox')).toBe('/nublox/app/my-work');
 		expect(routes.projects('nublox')).toBe('/nublox/app/projects');
 		expect(routes.functions('nublox')).toBe('/nublox/app/functions');
+		expect(routes.designSystem('nublox')).toBe('/nublox/app/design-system');
 	});
 
 	it('builds explicit tenant-scoped authentication URLs', () => {
