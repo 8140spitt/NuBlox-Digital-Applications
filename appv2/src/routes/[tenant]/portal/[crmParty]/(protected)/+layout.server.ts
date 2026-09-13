@@ -2,7 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { tenantContextFromRoute } from '$lib/context/tenant-context';
 import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
-import type { LayoutServerLoad } from '../[tenant]/[crmParty]/$types';
+import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ params, request, url }) => {
 	const tenant = tenantContextFromRoute(params.tenant);
@@ -15,7 +15,10 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 
 	const session = await getAuth().api.getSession({ headers: request.headers });
 	if (!session) {
-		redirect(303, routes.auth(`${url.pathname}${url.search}`));
+		redirect(
+			303,
+			routes.portalSignIn(params.tenant, params.crmParty, `${url.pathname}${url.search}`)
+		);
 	}
 
 	return {
