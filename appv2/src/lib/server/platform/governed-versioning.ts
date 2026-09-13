@@ -109,13 +109,7 @@ export async function markPublishedVersionHistorical(
 		   AND major_version = ?
 		   AND minor_version = 0
 		   AND version_status = 'published'`,
-		[
-			input.organisationId,
-			input.domainCode,
-			input.recordType,
-			input.lineageKey,
-			input.majorVersion
-		]
+		[input.organisationId, input.domainCode, input.recordType, input.lineageKey, input.majorVersion]
 	);
 }
 

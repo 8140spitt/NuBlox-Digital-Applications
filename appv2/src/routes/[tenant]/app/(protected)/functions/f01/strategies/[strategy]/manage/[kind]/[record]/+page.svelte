@@ -111,6 +111,54 @@
 		<Alert tone="danger" title="Action not completed">{form.formError}</Alert>
 	{/if}
 
+	{#if record.versionLabel}
+		<section class="version-card" aria-labelledby="version-title">
+			<div>
+				<p class="section-kicker">Version control</p>
+				<h2 id="version-title">Version {record.versionLabel}</h2>
+				<p>
+					{record.versionStage === 'draft'
+						? 'Working minor version. Each meaningful save creates the next minor version; approval publishes the next major version.'
+						: record.versionStage === 'published'
+							? 'Current published major version. It is immutable; create a controlled revision to change it.'
+							: 'Historical published major version retained as immutable enterprise evidence.'}
+				</p>
+			</div>
+			<StatusBadge
+				label={record.versionStage === 'draft'
+					? 'Working draft'
+					: record.versionStage === 'published'
+						? 'Published'
+						: 'Historical'}
+				tone={record.versionStage === 'published'
+					? 'success'
+					: record.versionStage === 'draft'
+						? 'warning'
+						: 'neutral'}
+			/>
+		</section>
+
+		{#if record.versionHistory.length > 0}
+			<Panel
+				title="Version history"
+				description="Published majors remain immutable; working minors record meaningful saved revisions."
+			>
+				<div class="version-history">
+					{#each record.versionHistory as version (`${version.major}.${version.minor}-${version.createdAt}`)}
+						<div class="version-row">
+							<strong>v{version.label}</strong>
+							<span>{recordLabel(version.status)}</span>
+							<time datetime={version.createdAt}
+								>{new Date(version.createdAt).toLocaleString()}</time
+							>
+							<small>{version.changeNote ?? 'Governed version snapshot'}</small>
+						</div>
+					{/each}
+				</div>
+			</Panel>
+		{/if}
+	{/if}
+
 	<section class="state-card" aria-labelledby="lifecycle-title">
 		<div>
 			<p class="section-kicker">Current lifecycle position</p>
@@ -287,7 +335,8 @@
 		gap: var(--nb-space-6);
 		padding-bottom: var(--nb-space-16);
 	}
-	.state-card {
+	.state-card,
+	.version-card {
 		display: flex;
 		align-items: flex-start;
 		justify-content: space-between;
@@ -316,6 +365,27 @@
 		color: var(--nb-color-text-secondary);
 		line-height: var(--nb-line-relaxed);
 	}
+	.version-history {
+		display: grid;
+		gap: var(--nb-space-3);
+	}
+	.version-row {
+		display: grid;
+		grid-template-columns: 80px 110px minmax(160px, auto) 1fr;
+		gap: var(--nb-space-3);
+		align-items: baseline;
+		padding-block: var(--nb-space-3);
+		border-bottom: 1px solid var(--nb-color-border-subtle);
+	}
+	.version-row:last-child {
+		border-bottom: 0;
+	}
+	.version-row span,
+	.version-row time,
+	.version-row small {
+		color: var(--nb-color-text-secondary);
+	}
+
 	.record-form {
 		grid-template-columns: repeat(2, minmax(0, 1fr));
 		padding-bottom: 0;

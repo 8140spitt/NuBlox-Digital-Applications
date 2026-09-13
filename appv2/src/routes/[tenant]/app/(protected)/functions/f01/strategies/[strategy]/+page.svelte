@@ -106,7 +106,7 @@
 
 {#snippet recordMeta()}
 	<div class="record-meta">
-		<span>{framework.code} · v{framework.versionNumber}</span>
+		<span>{framework.code} · v{framework.versionLabel}</span>
 		<span aria-hidden="true">•</span>
 		<span>{framework.horizonStart} → {framework.horizonEnd}</span>
 		{#if framework.isOwnedByCurrentMember}
@@ -136,8 +136,10 @@
 
 	<section class="lifecycle-panel" aria-labelledby="version-lifecycle-title">
 		<div>
-			<p class="section-kicker">Controlled version lifecycle</p>
-			<h2 id="version-lifecycle-title">Strategy history is preserved, not overwritten.</h2>
+			<p class="section-kicker">Governed version · v{framework.versionLabel}</p>
+			<h2 id="version-lifecycle-title">
+				Version history and business lifecycle are separate controls.
+			</h2>
 		</div>
 		<div class="lifecycle-controls">
 			<LifecycleStrip steps={lifecycle} label="Strategy version lifecycle" />

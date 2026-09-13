@@ -3,6 +3,10 @@ import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { decidePermissions } from '$lib/server/auth/permission-service';
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
+import {
+	appendGovernedVersion,
+	governedVersionCoordinates
+} from '$lib/server/platform/governed-versioning';
 
 const STRATEGY_PERMISSIONS = ['strategy.view', 'strategy.manage', 'strategy.approve'] as const;
 
@@ -12,6 +16,9 @@ export type StrategyFrameworkSummary = {
 	publicId: string;
 	code: string;
 	versionNumber: number;
+	minorVersionNumber: number;
+	versionLabel: string;
+	versionStage: 'draft' | 'published' | 'historical';
 	title: string;
 	horizonStart: string;
 	horizonEnd: string;
@@ -47,6 +54,7 @@ type FrameworkRow = RowDataPacket & {
 	publicId: string;
 	code: string;
 	versionNumber: number | string;
+	minorVersionNumber: number | string;
 	title: string;
 	horizonStart: Date | string;
 	horizonEnd: Date | string;
@@ -116,10 +124,18 @@ function dateValue(value: Date | string): string {
 }
 
 function mapFramework(row: FrameworkRow, memberId: string): StrategyFrameworkSummary {
+	const version = governedVersionCoordinates({
+		versionNumber: Number(row.versionNumber),
+		minorVersionNumber: Number(row.minorVersionNumber),
+		lifecycleStatus: row.lifecycleStatus
+	});
 	return {
 		publicId: row.publicId,
 		code: row.code,
 		versionNumber: Number(row.versionNumber),
+		minorVersionNumber: Number(row.minorVersionNumber),
+		versionLabel: version.label,
+		versionStage: version.status,
 		title: row.title,
 		horizonStart: dateValue(row.horizonStart),
 		horizonEnd: dateValue(row.horizonEnd),
@@ -163,6 +179,7 @@ async function listFrameworks(input: {
 		`SELECT framework.public_id AS publicId,
 		        framework.framework_code AS code,
 		        framework.version_number AS versionNumber,
+		        framework.minor_version_number AS minorVersionNumber,
 		        framework.title AS title,
 		        framework.horizon_start AS horizonStart,
 		        framework.horizon_end AS horizonEnd,
@@ -291,11 +308,11 @@ export async function createStrategyFramework(input: {
 		const publicId = randomUUID();
 		await connection.execute(
 			`INSERT INTO strategy_frameworks
-				(organisation_id, public_id, framework_code, version_number, title,
+				(organisation_id, public_id, framework_code, version_number, minor_version_number, title,
 				 horizon_start, horizon_end, purpose_text, vision_text, mission_text,
 				 lifecycle_status, supersedes_strategy_framework_id, owner_member_id,
 				 created_by_member_id, approved_by_member_id, approved_at)
-			 VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,
+			 VALUES (?, ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,
 			[
 				input.actor.organisationId,
 				publicId,
@@ -310,6 +327,26 @@ export async function createStrategyFramework(input: {
 				input.actor.memberId
 			]
 		);
+		await appendGovernedVersion(connection, {
+			actor: input.actor,
+			domainCode: 'F01',
+			recordType: 'strategy_framework',
+			lineageKey: code,
+			recordPublicId: publicId,
+			versionNumber: 1,
+			minorVersionNumber: 1,
+			lifecycleStatus: 'draft',
+			snapshot: {
+				title,
+				horizonStart,
+				horizonEnd,
+				purpose,
+				vision,
+				mission,
+				lifecycleStatus: 'draft'
+			},
+			changeNote: 'Initial working draft'
+		});
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'strategy.framework.create',
@@ -318,6 +355,7 @@ export async function createStrategyFramework(input: {
 			changeSummary: {
 				frameworkCode: code,
 				versionNumber: 1,
+				versionLabel: '0.1',
 				lifecycleStatus: 'draft',
 				horizonStart,
 				horizonEnd

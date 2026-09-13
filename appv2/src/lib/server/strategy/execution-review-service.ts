@@ -3,6 +3,11 @@ import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/prom
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
 import {
+	appendGovernedVersion,
+	governedVersionCoordinates,
+	markPublishedVersionHistorical
+} from '$lib/server/platform/governed-versioning';
+import {
 	getStrategyWorkspace,
 	StrategyAccessError,
 	StrategyValidationError,
@@ -45,6 +50,9 @@ export type StrategyBusinessPlan = {
 	publicId: string;
 	code: string;
 	versionNumber: number;
+	minorVersionNumber: number;
+	versionLabel: string;
+	versionStage: 'draft' | 'published' | 'historical';
 	title: string;
 	periodStart: string;
 	periodEnd: string;
@@ -118,6 +126,10 @@ export type StrategyInitiativeHandoff = {
 export type StrategyKpi = {
 	publicId: string;
 	code: string;
+	versionNumber: number;
+	minorVersionNumber: number;
+	versionLabel: string;
+	versionStage: 'draft' | 'published' | 'historical';
 	title: string;
 	objectivePublicId: string;
 	objectiveCode: string;
@@ -202,6 +214,7 @@ type PlanRow = RowDataPacket & {
 	publicId: string;
 	code: string;
 	versionNumber: number | string;
+	minorVersionNumber: number | string;
 	title: string;
 	periodStart: Date | string;
 	periodEnd: Date | string;
@@ -279,6 +292,8 @@ type HandoffRow = RowDataPacket & {
 type KpiRow = RowDataPacket & {
 	publicId: string;
 	code: string;
+	versionNumber: number | string;
+	minorVersionNumber: number | string;
 	title: string;
 	objectivePublicId: string;
 	objectiveCode: string;
@@ -600,7 +615,7 @@ async function objectiveIds(
 	if (ids.length === 0) return new Map();
 	const placeholders = ids.map(() => '?').join(', ');
 	const [rows] = await connection.execute<
-		(RowDataPacket & { id: string | number; publicId: string })[]
+		(RowDataPacket & { id: string | number; publicId: string; versionNumber: number | string })[]
 	>(
 		`SELECT DISTINCT objective.id, objective.public_id AS publicId
 		 FROM strategy_objectives objective
@@ -662,6 +677,7 @@ async function listPlans(frameworkId: string): Promise<StrategyBusinessPlan[]> {
 		`SELECT plan.public_id AS publicId,
 		        plan.plan_code AS code,
 		        plan.version_number AS versionNumber,
+		        plan.minor_version_number AS minorVersionNumber,
 		        plan.title,
 		        plan.period_start AS periodStart,
 		        plan.period_end AS periodEnd,
@@ -701,23 +717,33 @@ async function listPlans(frameworkId: string): Promise<StrategyBusinessPlan[]> {
 		objectivePublicIds.push(link.objectivePublicId);
 		objectivePublicIdsByPlan.set(link.planPublicId, objectivePublicIds);
 	}
-	return rows.map((row) => ({
-		publicId: row.publicId,
-		code: row.code,
-		versionNumber: Number(row.versionNumber),
-		title: row.title,
-		periodStart: dateValue(row.periodStart) ?? '',
-		periodEnd: dateValue(row.periodEnd) ?? '',
-		narrative: row.narrative,
-		currencyCode: row.currencyCode,
-		plannedRevenueAmount: String(row.plannedRevenueAmount),
-		plannedOpexAmount: String(row.plannedOpexAmount),
-		plannedCapexAmount: String(row.plannedCapexAmount),
-		lifecycleStatus: row.lifecycleStatus,
-		objectivePublicIds: objectivePublicIdsByPlan.get(row.publicId) ?? [],
-		objectiveCount: Number(row.objectiveCount),
-		initiativeCount: Number(row.initiativeCount)
-	}));
+	return rows.map((row) => {
+		const version = governedVersionCoordinates({
+			versionNumber: Number(row.versionNumber),
+			minorVersionNumber: Number(row.minorVersionNumber),
+			lifecycleStatus: row.lifecycleStatus
+		});
+		return {
+			publicId: row.publicId,
+			code: row.code,
+			versionNumber: Number(row.versionNumber),
+			minorVersionNumber: Number(row.minorVersionNumber),
+			versionLabel: version.label,
+			versionStage: version.status,
+			title: row.title,
+			periodStart: dateValue(row.periodStart) ?? '',
+			periodEnd: dateValue(row.periodEnd) ?? '',
+			narrative: row.narrative,
+			currencyCode: row.currencyCode,
+			plannedRevenueAmount: String(row.plannedRevenueAmount),
+			plannedOpexAmount: String(row.plannedOpexAmount),
+			plannedCapexAmount: String(row.plannedCapexAmount),
+			lifecycleStatus: row.lifecycleStatus,
+			objectivePublicIds: objectivePublicIdsByPlan.get(row.publicId) ?? [],
+			objectiveCount: Number(row.objectiveCount),
+			initiativeCount: Number(row.initiativeCount)
+		};
+	});
 }
 
 async function listInitiatives(frameworkId: string): Promise<StrategyInitiative[]> {
@@ -867,6 +893,8 @@ async function listKpis(frameworkId: string): Promise<StrategyKpi[]> {
 	const [rows] = await getPool().execute<KpiRow[]>(
 		`SELECT kpi.public_id AS publicId,
 		        kpi.kpi_code AS code,
+		        kpi.version_number AS versionNumber,
+		        kpi.minor_version_number AS minorVersionNumber,
 		        kpi.title,
 		        objective.public_id AS objectivePublicId,
 		        objective.objective_code AS objectiveCode,
@@ -896,23 +924,34 @@ async function listKpis(frameworkId: string): Promise<StrategyKpi[]> {
 		 ORDER BY objective.priority_rank, kpi.kpi_code`,
 		[frameworkId]
 	);
-	return rows.map((row) => ({
-		publicId: row.publicId,
-		code: row.code,
-		title: row.title,
-		objectivePublicId: row.objectivePublicId,
-		objectiveCode: row.objectiveCode,
-		objectiveTitle: row.objectiveTitle,
-		unitLabel: row.unitLabel,
-		direction: row.direction,
-		baselineValue: String(row.baselineValue),
-		targetValue: String(row.targetValue),
-		targetDate: dateValue(row.targetDate),
-		lifecycleStatus: row.lifecycleStatus,
-		linkedInitiativeCount: Number(row.linkedInitiativeCount),
-		latestActualValue: decimalString(row.latestActualValue),
-		latestObservedOn: dateValue(row.latestObservedOn)
-	}));
+	return rows.map((row) => {
+		const version = governedVersionCoordinates({
+			versionNumber: Number(row.versionNumber),
+			minorVersionNumber: Number(row.minorVersionNumber),
+			lifecycleStatus: row.lifecycleStatus
+		});
+		return {
+			publicId: row.publicId,
+			code: row.code,
+			versionNumber: Number(row.versionNumber),
+			minorVersionNumber: Number(row.minorVersionNumber),
+			versionLabel: version.label,
+			versionStage: version.status,
+			title: row.title,
+			objectivePublicId: row.objectivePublicId,
+			objectiveCode: row.objectiveCode,
+			objectiveTitle: row.objectiveTitle,
+			unitLabel: row.unitLabel,
+			direction: row.direction,
+			baselineValue: String(row.baselineValue),
+			targetValue: String(row.targetValue),
+			targetDate: dateValue(row.targetDate),
+			lifecycleStatus: row.lifecycleStatus,
+			linkedInitiativeCount: Number(row.linkedInitiativeCount),
+			latestActualValue: decimalString(row.latestActualValue),
+			latestObservedOn: dateValue(row.latestObservedOn)
+		};
+	});
 }
 
 async function listReviews(frameworkId: string): Promise<StrategyReview[]> {
@@ -1099,12 +1138,12 @@ export async function createStrategyBusinessPlan(input: {
 		const publicId = randomUUID();
 		const [result] = await connection.execute<ResultSetHeader>(
 			`INSERT INTO strategy_business_plans
-				(organisation_id, strategy_framework_id, public_id, plan_code, version_number,
+				(organisation_id, strategy_framework_id, public_id, plan_code, version_number, minor_version_number,
 				 title, period_start, period_end, narrative, currency_code,
 				 planned_revenue_amount, planned_opex_amount, planned_capex_amount,
 				 lifecycle_status, supersedes_business_plan_id, owner_member_id,
 				 created_by_member_id, approved_by_member_id, approved_at)
-			 VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,
+			 VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,
 			[
 				input.actor.organisationId,
 				framework.id,
@@ -1138,6 +1177,29 @@ export async function createStrategyBusinessPlan(input: {
 				]
 			);
 		}
+		await appendGovernedVersion(connection, {
+			actor: input.actor,
+			domainCode: 'F01',
+			recordType: 'strategy_business_plan',
+			lineageKey: code,
+			recordPublicId: publicId,
+			versionNumber: 1,
+			minorVersionNumber: 1,
+			lifecycleStatus: 'draft',
+			snapshot: {
+				title,
+				periodStart,
+				periodEnd,
+				narrative,
+				currencyCode,
+				plannedRevenueAmount,
+				plannedOpexAmount,
+				plannedCapexAmount,
+				objectivePublicIds,
+				lifecycleStatus: 'draft'
+			},
+			changeNote: 'Initial business-plan working draft'
+		});
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'strategy.business-plan.create',
@@ -1687,12 +1749,12 @@ export async function createStrategyKpi(input: {
 		const [result] = await connection.execute<ResultSetHeader>(
 			`INSERT INTO strategy_kpis
 				(organisation_id, strategy_framework_id, strategy_objective_id, public_id,
-				 kpi_code, version_number, title, description, unit_label, direction,
+				 kpi_code, version_number, minor_version_number, title, description, unit_label, direction,
 				 aggregation_method, baseline_value, target_value, warning_threshold,
 				 critical_threshold, target_date, source_mode, source_domain,
 				 source_record_type, source_measure_key, owner_member_id, lifecycle_status,
 				 supersedes_strategy_kpi_id, created_by_member_id, approved_by_member_id, approved_at)
-			 VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, 'latest', ?, ?, NULL, NULL, ?,
+			 VALUES (?, ?, ?, ?, ?, 1, 1, ?, ?, ?, ?, 'latest', ?, ?, NULL, NULL, ?,
 			         'manual', NULL, NULL, NULL, ?, 'draft', NULL, ?, NULL, NULL)`,
 			[
 				input.actor.organisationId,
@@ -1725,6 +1787,29 @@ export async function createStrategyKpi(input: {
 				]
 			);
 		}
+		await appendGovernedVersion(connection, {
+			actor: input.actor,
+			domainCode: 'F01',
+			recordType: 'strategy_kpi',
+			lineageKey: code,
+			recordPublicId: publicId,
+			versionNumber: 1,
+			minorVersionNumber: 1,
+			lifecycleStatus: 'draft',
+			snapshot: {
+				title,
+				description,
+				unitLabel,
+				direction: input.direction,
+				baselineValue,
+				targetValue,
+				targetDate,
+				objectivePublicId: input.objectivePublicId,
+				initiativePublicIds,
+				lifecycleStatus: 'draft'
+			},
+			changeNote: 'Initial KPI working draft'
+		});
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'strategy.kpi.create',
@@ -1773,11 +1858,20 @@ export async function approveStrategyKpi(input: {
 			(RowDataPacket & {
 				id: string | number;
 				code: string;
+				versionNumber: number | string;
+				minorVersionNumber: number | string;
+				title: string;
+				description: string;
+				unitLabel: string;
+				direction: string;
+				baselineValue: string | number;
+				targetValue: string | number;
+				targetDate: Date | string | null;
 				lifecycleStatus: KpiStatus;
 				supersedesKpiId: string | number | null;
 			})[]
 		>(
-			`SELECT id, kpi_code AS code, lifecycle_status AS lifecycleStatus,
+			`SELECT id, kpi_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, title, description, unit_label AS unitLabel, direction, baseline_value AS baselineValue, target_value AS targetValue, target_date AS targetDate, lifecycle_status AS lifecycleStatus,
 			        supersedes_strategy_kpi_id AS supersedesKpiId
 			 FROM strategy_kpis
 			 WHERE organisation_id = ? AND strategy_framework_id = ? AND public_id = ?
@@ -1791,7 +1885,7 @@ export async function approveStrategyKpi(input: {
 		const [approvedRows] = await connection.execute<
 			(RowDataPacket & { id: string | number; publicId: string })[]
 		>(
-			`SELECT id, public_id AS publicId FROM strategy_kpis
+			`SELECT id, public_id AS publicId, version_number AS versionNumber FROM strategy_kpis
 			 WHERE organisation_id = ? AND strategy_framework_id = ? AND kpi_code = ?
 			   AND lifecycle_status = 'approved' AND id <> ?
 			 LIMIT 1 FOR UPDATE`,
@@ -1808,6 +1902,13 @@ export async function approveStrategyKpi(input: {
 				`UPDATE strategy_kpis SET lifecycle_status = 'superseded' WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,
 				[input.actor.organisationId, previousApproved.id]
 			);
+			await markPublishedVersionHistorical(connection, {
+				organisationId: input.actor.organisationId,
+				domainCode: 'F01',
+				recordType: 'strategy_kpi',
+				lineageKey: kpi.code,
+				majorVersion: Number(previousApproved.versionNumber)
+			});
 		} else if (kpi.supersedesKpiId) {
 			throw new StrategyValidationError(
 				'The KPI revision is stale because its predecessor is no longer the current approved definition.'
@@ -1815,10 +1916,32 @@ export async function approveStrategyKpi(input: {
 		}
 		await connection.execute(
 			`UPDATE strategy_kpis
-			 SET lifecycle_status = 'approved', approved_by_member_id = ?, approved_at = CURRENT_TIMESTAMP(6)
+			 SET lifecycle_status = 'approved', minor_version_number = 0, approved_by_member_id = ?, approved_at = CURRENT_TIMESTAMP(6)
 			 WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'draft'`,
 			[input.actor.memberId, input.actor.organisationId, kpi.id]
 		);
+		await appendGovernedVersion(connection, {
+			actor: input.actor,
+			domainCode: 'F01',
+			recordType: 'strategy_kpi',
+			lineageKey: kpi.code,
+			recordPublicId: input.kpiPublicId,
+			versionNumber: Number(kpi.versionNumber),
+			minorVersionNumber: 0,
+			lifecycleStatus: 'approved',
+			snapshot: {
+				title: kpi.title,
+				description: kpi.description,
+				unitLabel: kpi.unitLabel,
+				direction: kpi.direction,
+				baselineValue: kpi.baselineValue,
+				targetValue: kpi.targetValue,
+				targetDate: kpi.targetDate,
+				lifecycleStatus: 'approved'
+			},
+			changeNote: 'Approved KPI definition',
+			published: true
+		});
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'strategy.kpi.approve',
@@ -1827,6 +1950,7 @@ export async function approveStrategyKpi(input: {
 			changeSummary: {
 				kpiCode: kpi.code,
 				lifecycleStatus: 'approved',
+				versionLabel: `${Number(kpi.versionNumber)}.0`,
 				supersededKpiPublicId: previousApproved?.publicId ?? null
 			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.06'] }

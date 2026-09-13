@@ -1,13 +1,24 @@
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
+import {
+	appendGovernedVersion,
+	markPublishedVersionHistorical
+} from '$lib/server/platform/governed-versioning';
 import { getStrategyWorkspace, StrategyAccessError, StrategyValidationError } from './f01-service';
 
 type FrameworkRow = RowDataPacket & {
 	id: string | number;
 	publicId: string;
 	code: string;
+	versionNumber: number | string;
+	minorVersionNumber: number | string;
 	title: string;
+	horizonStart: Date | string;
+	horizonEnd: Date | string;
+	purpose: string;
+	vision: string;
+	mission: string;
 	lifecycleStatus: 'draft' | 'approved' | 'superseded';
 	supersedesFrameworkId: string | number | null;
 };
@@ -21,7 +32,14 @@ async function lockFramework(
 		`SELECT id,
 		        public_id AS publicId,
 		        framework_code AS code,
+		        version_number AS versionNumber,
+		        minor_version_number AS minorVersionNumber,
 		        title,
+		        horizon_start AS horizonStart,
+		        horizon_end AS horizonEnd,
+		        purpose_text AS purpose,
+		        vision_text AS vision,
+		        mission_text AS mission,
 		        lifecycle_status AS lifecycleStatus,
 		        supersedes_strategy_framework_id AS supersedesFrameworkId
 		 FROM strategy_frameworks
@@ -65,11 +83,16 @@ async function findOtherApprovedFramework(
 	connection: PoolConnection,
 	organisationId: string,
 	frameworkId: string
-): Promise<{ id: string; publicId: string; code: string } | null> {
+): Promise<{ id: string; publicId: string; code: string; versionNumber: number } | null> {
 	const [rows] = await connection.execute<
-		(RowDataPacket & { id: string | number; publicId: string; code: string })[]
+		(RowDataPacket & {
+			id: string | number;
+			publicId: string;
+			code: string;
+			versionNumber: number | string;
+		})[]
 	>(
-		`SELECT id, public_id AS publicId, framework_code AS code
+		`SELECT id, public_id AS publicId, framework_code AS code, version_number AS versionNumber
 		 FROM strategy_frameworks
 		 WHERE organisation_id = ?
 		   AND lifecycle_status = 'approved'
@@ -80,7 +103,14 @@ async function findOtherApprovedFramework(
 		[organisationId, frameworkId]
 	);
 	const row = rows[0];
-	return row ? { id: row.id.toString(), publicId: row.publicId, code: row.code } : null;
+	return row
+		? {
+				id: row.id.toString(),
+				publicId: row.publicId,
+				code: row.code,
+				versionNumber: Number(row.versionNumber)
+			}
+		: null;
 }
 
 export async function approveStrategyFramework(input: {
@@ -144,6 +174,13 @@ export async function approveStrategyFramework(input: {
 				 WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,
 				[input.actor.organisationId, existingApproved.id]
 			);
+			await markPublishedVersionHistorical(connection, {
+				organisationId: input.actor.organisationId,
+				domainCode: 'F01',
+				recordType: 'strategy_framework',
+				lineageKey: framework.code,
+				majorVersion: existingApproved.versionNumber
+			});
 		} else if (framework.supersedesFrameworkId) {
 			throw new StrategyValidationError(
 				'The strategy revision is stale because its predecessor is no longer the current approved strategy.'
@@ -162,6 +199,7 @@ export async function approveStrategyFramework(input: {
 		await connection.execute(
 			`UPDATE strategy_frameworks
 			 SET lifecycle_status = 'approved',
+			     minor_version_number = 0,
 			     approved_by_member_id = ?,
 			     approved_at = CURRENT_TIMESTAMP(6)
 			 WHERE organisation_id = ?
@@ -170,6 +208,27 @@ export async function approveStrategyFramework(input: {
 			[input.actor.memberId, input.actor.organisationId, framework.id]
 		);
 
+		await appendGovernedVersion(connection, {
+			actor: input.actor,
+			domainCode: 'F01',
+			recordType: 'strategy_framework',
+			lineageKey: framework.code,
+			recordPublicId: framework.publicId,
+			versionNumber: Number(framework.versionNumber),
+			minorVersionNumber: 0,
+			lifecycleStatus: 'approved',
+			snapshot: {
+				title: framework.title,
+				horizonStart: framework.horizonStart,
+				horizonEnd: framework.horizonEnd,
+				purpose: framework.purpose,
+				vision: framework.vision,
+				mission: framework.mission,
+				lifecycleStatus: 'approved'
+			},
+			changeNote: 'Approved strategic direction',
+			published: true
+		});
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'strategy.framework.approve',
@@ -178,6 +237,7 @@ export async function approveStrategyFramework(input: {
 			changeSummary: {
 				frameworkCode: framework.code,
 				lifecycleStatus: 'approved',
+				versionLabel: `${Number(framework.versionNumber)}.0`,
 				traceableObjectiveCount: approvalCandidateObjectiveCount,
 				activatedDraftObjectiveCount: activationResult.affectedRows,
 				supersededFrameworkPublicId: existingApproved?.publicId ?? null

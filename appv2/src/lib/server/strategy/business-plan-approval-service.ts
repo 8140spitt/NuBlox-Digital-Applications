@@ -1,12 +1,26 @@
 import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
+import {
+	appendGovernedVersion,
+	markPublishedVersionHistorical
+} from '$lib/server/platform/governed-versioning';
 import { getStrategyWorkspace, StrategyAccessError, StrategyValidationError } from './f01-service';
 
 type PlanRow = RowDataPacket & {
 	id: string | number;
 	publicId: string;
 	code: string;
+	versionNumber: number | string;
+	minorVersionNumber: number | string;
+	title: string;
+	periodStart: Date | string;
+	periodEnd: Date | string;
+	narrative: string;
+	currencyCode: string;
+	plannedRevenueAmount: string | number;
+	plannedOpexAmount: string | number;
+	plannedCapexAmount: string | number;
 	lifecycleStatus: 'draft' | 'approved' | 'superseded';
 	supersedesBusinessPlanId: string | number | null;
 	objectiveCount: number | string;
@@ -24,6 +38,16 @@ async function lockPlan(
 		`SELECT plan.id,
 		        plan.public_id AS publicId,
 		        plan.plan_code AS code,
+		        plan.version_number AS versionNumber,
+		        plan.minor_version_number AS minorVersionNumber,
+		        plan.title,
+		        plan.period_start AS periodStart,
+		        plan.period_end AS periodEnd,
+		        plan.narrative,
+		        plan.currency_code AS currencyCode,
+		        plan.planned_revenue_amount AS plannedRevenueAmount,
+		        plan.planned_opex_amount AS plannedOpexAmount,
+		        plan.planned_capex_amount AS plannedCapexAmount,
 		        plan.lifecycle_status AS lifecycleStatus,
 		        plan.supersedes_business_plan_id AS supersedesBusinessPlanId,
 		        (SELECT COUNT(*)
@@ -118,9 +142,9 @@ export async function approveStrategyBusinessPlan(input: {
 		}
 
 		const [approvedRows] = await connection.execute<
-			(RowDataPacket & { id: string | number; publicId: string })[]
+			(RowDataPacket & { id: string | number; publicId: string; versionNumber: number | string })[]
 		>(
-			`SELECT id, public_id AS publicId
+			`SELECT id, public_id AS publicId, version_number AS versionNumber
 			 FROM strategy_business_plans
 			 WHERE organisation_id = ?
 			   AND strategy_framework_id = (SELECT strategy_framework_id FROM strategy_business_plans WHERE id = ?)
@@ -141,6 +165,13 @@ export async function approveStrategyBusinessPlan(input: {
 				`UPDATE strategy_business_plans SET lifecycle_status = 'superseded' WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,
 				[input.actor.organisationId, previousApproved.id]
 			);
+			await markPublishedVersionHistorical(connection, {
+				organisationId: input.actor.organisationId,
+				domainCode: 'F01',
+				recordType: 'strategy_business_plan',
+				lineageKey: plan.code,
+				majorVersion: Number(previousApproved.versionNumber)
+			});
 		} else if (plan.supersedesBusinessPlanId) {
 			throw new StrategyValidationError(
 				'The business-plan revision is stale because its predecessor is no longer the current approved version.'
@@ -150,6 +181,7 @@ export async function approveStrategyBusinessPlan(input: {
 		await connection.execute(
 			`UPDATE strategy_business_plans
 			 SET lifecycle_status = 'approved',
+			     minor_version_number = 0,
 			     approved_by_member_id = ?,
 			     approved_at = CURRENT_TIMESTAMP(6)
 			 WHERE organisation_id = ?
@@ -166,6 +198,29 @@ export async function approveStrategyBusinessPlan(input: {
 			[input.actor.organisationId, plan.id]
 		);
 
+		await appendGovernedVersion(connection, {
+			actor: input.actor,
+			domainCode: 'F01',
+			recordType: 'strategy_business_plan',
+			lineageKey: plan.code,
+			recordPublicId: plan.publicId,
+			versionNumber: Number(plan.versionNumber),
+			minorVersionNumber: 0,
+			lifecycleStatus: 'approved',
+			snapshot: {
+				title: plan.title,
+				periodStart: plan.periodStart,
+				periodEnd: plan.periodEnd,
+				narrative: plan.narrative,
+				currencyCode: plan.currencyCode,
+				plannedRevenueAmount: plan.plannedRevenueAmount,
+				plannedOpexAmount: plan.plannedOpexAmount,
+				plannedCapexAmount: plan.plannedCapexAmount,
+				lifecycleStatus: 'approved'
+			},
+			changeNote: 'Approved business plan',
+			published: true
+		});
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'strategy.business-plan.approve',
@@ -174,6 +229,7 @@ export async function approveStrategyBusinessPlan(input: {
 			changeSummary: {
 				planCode: plan.code,
 				lifecycleStatus: 'approved',
+				versionLabel: `${Number(plan.versionNumber)}.0`,
 				objectiveCount: Number(plan.objectiveCount),
 				initiativeCount: Number(plan.initiativeCount),
 				orphanRequirementCount: 0,

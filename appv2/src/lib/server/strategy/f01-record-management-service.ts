@@ -2,6 +2,12 @@ import { randomUUID } from 'node:crypto';
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
+import {
+	appendGovernedVersion,
+	governedVersionCoordinates,
+	listGovernedVersionHistory,
+	type GovernedVersionHistoryItem
+} from '$lib/server/platform/governed-versioning';
 import { approveStrategyFramework } from './approval-service';
 import { approveStrategyBusinessPlan } from './business-plan-approval-service';
 import { decideStrategyOption, type OptionDecisionStatus } from './analysis-planning-service';
@@ -42,6 +48,9 @@ export type F01ManagedRecord = {
 	code: string | null;
 	title: string;
 	status: string;
+	versionLabel: string | null;
+	versionStage: 'draft' | 'published' | 'historical' | null;
+	versionHistory: GovernedVersionHistoryItem[];
 	section: 'framework' | 'analysis' | 'planning' | 'business-planning' | 'performance' | 'review';
 	fields: F01ManagedField[];
 	canEdit: boolean;
@@ -322,6 +331,8 @@ export async function getF01ManagedRecord(input: {
 	let code: string | null = null;
 	let title = '';
 	let status = '';
+	let versionNumber: number | null = null;
+	let minorVersionNumber: number | null = null;
 	let fields: F01ManagedField[] = [];
 
 	switch (input.kind) {
@@ -330,6 +341,8 @@ export async function getF01ManagedRecord(input: {
 				RowDataPacket & {
 					publicId: string;
 					code: string;
+					versionNumber: number | string;
+					minorVersionNumber: number | string;
 					title: string;
 					horizonStart: Date | string;
 					horizonEnd: Date | string;
@@ -339,10 +352,12 @@ export async function getF01ManagedRecord(input: {
 					status: string;
 				}
 			>(
-				`SELECT public_id AS publicId, framework_code AS code, title, horizon_start AS horizonStart, horizon_end AS horizonEnd, purpose_text AS purpose, vision_text AS vision, mission_text AS mission, lifecycle_status AS status FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? AND public_id = ? LIMIT 1`,
+				`SELECT public_id AS publicId, framework_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, title, horizon_start AS horizonStart, horizon_end AS horizonEnd, purpose_text AS purpose, vision_text AS vision, mission_text AS mission, lifecycle_status AS status FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? AND public_id = ? LIMIT 1`,
 				[organisationId, frameworkPublicId, publicId]
 			);
 			code = row.code;
+			versionNumber = Number(row.versionNumber);
+			minorVersionNumber = Number(row.minorVersionNumber);
 			title = row.title;
 			status = row.status;
 			fields = [
@@ -719,6 +734,8 @@ export async function getF01ManagedRecord(input: {
 			const row = await singleRow<
 				RowDataPacket & {
 					code: string;
+					versionNumber: number | string;
+					minorVersionNumber: number | string;
 					title: string;
 					periodStart: Date | string;
 					periodEnd: Date | string;
@@ -730,10 +747,12 @@ export async function getF01ManagedRecord(input: {
 					status: string;
 				}
 			>(
-				`SELECT plan.plan_code AS code, plan.title, plan.period_start AS periodStart, plan.period_end AS periodEnd, plan.narrative, plan.currency_code AS currencyCode, plan.planned_revenue_amount AS plannedRevenueAmount, plan.planned_opex_amount AS plannedOpexAmount, plan.planned_capex_amount AS plannedCapexAmount, plan.lifecycle_status AS status FROM strategy_business_plans plan JOIN strategy_frameworks framework ON framework.id = plan.strategy_framework_id WHERE plan.organisation_id = ? AND framework.public_id = ? AND plan.public_id = ? LIMIT 1`,
+				`SELECT plan.plan_code AS code, plan.version_number AS versionNumber, plan.minor_version_number AS minorVersionNumber, plan.title, plan.period_start AS periodStart, plan.period_end AS periodEnd, plan.narrative, plan.currency_code AS currencyCode, plan.planned_revenue_amount AS plannedRevenueAmount, plan.planned_opex_amount AS plannedOpexAmount, plan.planned_capex_amount AS plannedCapexAmount, plan.lifecycle_status AS status FROM strategy_business_plans plan JOIN strategy_frameworks framework ON framework.id = plan.strategy_framework_id WHERE plan.organisation_id = ? AND framework.public_id = ? AND plan.public_id = ? LIMIT 1`,
 				[organisationId, frameworkPublicId, publicId]
 			);
 			code = row.code;
+			versionNumber = Number(row.versionNumber);
+			minorVersionNumber = Number(row.minorVersionNumber);
 			title = row.title;
 			status = row.status;
 			fields = [
@@ -1020,6 +1039,8 @@ export async function getF01ManagedRecord(input: {
 			const row = await singleRow<
 				RowDataPacket & {
 					code: string;
+					versionNumber: number | string;
+					minorVersionNumber: number | string;
 					title: string;
 					description: string;
 					unitLabel: string;
@@ -1030,10 +1051,12 @@ export async function getF01ManagedRecord(input: {
 					status: string;
 				}
 			>(
-				`SELECT kpi.kpi_code AS code, kpi.title, kpi.description, kpi.unit_label AS unitLabel, kpi.direction, kpi.baseline_value AS baselineValue, kpi.target_value AS targetValue, kpi.target_date AS targetDate, kpi.lifecycle_status AS status FROM strategy_kpis kpi JOIN strategy_frameworks framework ON framework.id = kpi.strategy_framework_id WHERE kpi.organisation_id = ? AND framework.public_id = ? AND kpi.public_id = ? LIMIT 1`,
+				`SELECT kpi.kpi_code AS code, kpi.version_number AS versionNumber, kpi.minor_version_number AS minorVersionNumber, kpi.title, kpi.description, kpi.unit_label AS unitLabel, kpi.direction, kpi.baseline_value AS baselineValue, kpi.target_value AS targetValue, kpi.target_date AS targetDate, kpi.lifecycle_status AS status FROM strategy_kpis kpi JOIN strategy_frameworks framework ON framework.id = kpi.strategy_framework_id WHERE kpi.organisation_id = ? AND framework.public_id = ? AND kpi.public_id = ? LIMIT 1`,
 				[organisationId, frameworkPublicId, publicId]
 			);
 			code = row.code;
+			versionNumber = Number(row.versionNumber);
+			minorVersionNumber = Number(row.minorVersionNumber);
 			title = row.title;
 			status = row.status;
 			fields = [
@@ -1170,6 +1193,36 @@ export async function getF01ManagedRecord(input: {
 		}
 	}
 
+	let versionLabel: string | null = null;
+	let versionStage: 'draft' | 'published' | 'historical' | null = null;
+	let versionHistory: GovernedVersionHistoryItem[] = [];
+	if (versionNumber !== null && minorVersionNumber !== null && code) {
+		const version = governedVersionCoordinates({
+			versionNumber,
+			minorVersionNumber,
+			lifecycleStatus: status
+		});
+		versionLabel = version.label;
+		versionStage = version.status;
+		const recordType =
+			input.kind === 'framework'
+				? 'strategy_framework'
+				: input.kind === 'plan'
+					? 'strategy_business_plan'
+					: 'strategy_kpi';
+		const historyConnection = await getPool().getConnection();
+		try {
+			versionHistory = await listGovernedVersionHistory(historyConnection, {
+				organisationId,
+				domainCode: 'F01',
+				recordType,
+				lineageKey: code
+			});
+		} finally {
+			historyConnection.release();
+		}
+	}
+
 	const strategyAllowsEditing = [
 		'evidence',
 		'factor',
@@ -1188,6 +1241,9 @@ export async function getF01ManagedRecord(input: {
 		code,
 		title,
 		status,
+		versionLabel,
+		versionStage,
+		versionHistory,
 		section: sectionFor(input.kind),
 		fields,
 		canEdit: permissions.canManage && strategyAllowsEditing && canEditF01Record(input.kind, status),
@@ -1278,7 +1334,7 @@ export async function updateF01Record(input: {
 						'The revised horizon would place an existing objective target outside the strategy period. Adjust the objectives first.'
 					);
 				await connection.execute(
-					`UPDATE strategy_frameworks SET title = ?, horizon_start = ?, horizon_end = ?, purpose_text = ?, vision_text = ?, mission_text = ? WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft'`,
+					`UPDATE strategy_frameworks SET title = ?, horizon_start = ?, horizon_end = ?, purpose_text = ?, vision_text = ?, mission_text = ?, minor_version_number = minor_version_number + 1 WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft'`,
 					[
 						requiredText(input.values.title, 'Strategy title', 255),
 						horizonStart,
@@ -1408,7 +1464,7 @@ export async function updateF01Record(input: {
 						'The revised plan period would place an existing initiative outside the plan window. Adjust the initiatives first.'
 					);
 				await connection.execute(
-					`UPDATE strategy_business_plans SET title = ?, period_start = ?, period_end = ?, narrative = ?, currency_code = ?, planned_revenue_amount = ?, planned_opex_amount = ?, planned_capex_amount = ? WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft'`,
+					`UPDATE strategy_business_plans SET title = ?, period_start = ?, period_end = ?, narrative = ?, currency_code = ?, planned_revenue_amount = ?, planned_opex_amount = ?, planned_capex_amount = ?, minor_version_number = minor_version_number + 1 WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft'`,
 					[
 						requiredText(input.values.title, 'Plan title', 255),
 						start,
@@ -1513,7 +1569,7 @@ export async function updateF01Record(input: {
 						'KPI target date must sit inside the strategy horizon.'
 					);
 				await connection.execute(
-					`UPDATE strategy_kpis SET title = ?, description = ?, unit_label = ?, direction = ?, baseline_value = ?, target_value = ?, target_date = ? WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft'`,
+					`UPDATE strategy_kpis SET title = ?, description = ?, unit_label = ?, direction = ?, baseline_value = ?, target_value = ?, target_date = ?, minor_version_number = minor_version_number + 1 WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft'`,
 					[
 						requiredText(input.values.title, 'KPI title', 255),
 						requiredText(input.values.description, 'KPI definition', 20_000),
@@ -1570,6 +1626,64 @@ export async function updateF01Record(input: {
 				break;
 			}
 		}
+		if (['framework', 'plan', 'kpi'].includes(input.kind)) {
+			const metadata =
+				input.kind === 'framework'
+					? await singleRow<
+							RowDataPacket & {
+								code: string;
+								versionNumber: number | string;
+								minorVersionNumber: number | string;
+								snapshot: string | Record<string, unknown>;
+							}
+						>(
+							`SELECT framework_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'horizonStart', horizon_start, 'horizonEnd', horizon_end, 'purpose', purpose_text, 'vision', vision_text, 'mission', mission_text, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
+							[input.actor.organisationId, input.recordPublicId]
+						)
+					: input.kind === 'plan'
+						? await singleRow<
+								RowDataPacket & {
+									code: string;
+									versionNumber: number | string;
+									minorVersionNumber: number | string;
+									snapshot: string | Record<string, unknown>;
+								}
+							>(
+								`SELECT plan_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'periodStart', period_start, 'periodEnd', period_end, 'narrative', narrative, 'currencyCode', currency_code, 'plannedRevenueAmount', planned_revenue_amount, 'plannedOpexAmount', planned_opex_amount, 'plannedCapexAmount', planned_capex_amount, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_business_plans WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
+								[input.actor.organisationId, input.recordPublicId]
+							)
+						: await singleRow<
+								RowDataPacket & {
+									code: string;
+									versionNumber: number | string;
+									minorVersionNumber: number | string;
+									snapshot: string | Record<string, unknown>;
+								}
+							>(
+								`SELECT kpi_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'description', description, 'unitLabel', unit_label, 'direction', direction, 'baselineValue', baseline_value, 'targetValue', target_value, 'targetDate', target_date, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_kpis WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
+								[input.actor.organisationId, input.recordPublicId]
+							);
+			const snapshot =
+				typeof metadata.snapshot === 'string' ? JSON.parse(metadata.snapshot) : metadata.snapshot;
+			await appendGovernedVersion(connection, {
+				actor: input.actor,
+				domainCode: 'F01',
+				recordType:
+					input.kind === 'framework'
+						? 'strategy_framework'
+						: input.kind === 'plan'
+							? 'strategy_business_plan'
+							: 'strategy_kpi',
+				lineageKey: metadata.code,
+				recordPublicId: input.recordPublicId,
+				versionNumber: Number(metadata.versionNumber),
+				minorVersionNumber: Number(metadata.minorVersionNumber),
+				lifecycleStatus: 'draft',
+				snapshot,
+				changeNote: 'Saved working revision'
+			});
+		}
+
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: `strategy.${input.kind}.update`,
@@ -2280,12 +2394,13 @@ export async function reviseF01Record(input: {
 			const revisionPublicId = randomUUID();
 			const revisionId = await insertAndId(
 				connection,
-				`INSERT INTO strategy_frameworks (organisation_id, public_id, framework_code, version_number, title, horizon_start, horizon_end, purpose_text, vision_text, mission_text, lifecycle_status, supersedes_strategy_framework_id, owner_member_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`,
+				`INSERT INTO strategy_frameworks (organisation_id, public_id, framework_code, version_number, minor_version_number, title, horizon_start, horizon_end, purpose_text, vision_text, mission_text, lifecycle_status, supersedes_strategy_framework_id, owner_member_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`,
 				[
 					input.actor.organisationId,
 					revisionPublicId,
 					source.code,
 					Number(source.versionNumber) + 1,
+					1,
 					source.title,
 					str(source.horizonStart),
 					str(source.horizonEnd),
@@ -2663,6 +2778,31 @@ export async function reviseF01Record(input: {
 						]
 					);
 			}
+			const versionRow = await singleRow<
+				RowDataPacket & {
+					versionNumber: number | string;
+					minorVersionNumber: number | string;
+					snapshot: string | Record<string, unknown>;
+				}
+			>(
+				`SELECT version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'horizonStart', horizon_start, 'horizonEnd', horizon_end, 'purpose', purpose_text, 'vision', vision_text, 'mission', mission_text, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
+				[input.actor.organisationId, revisionPublicId]
+			);
+			await appendGovernedVersion(connection, {
+				actor: input.actor,
+				domainCode: 'F01',
+				recordType: 'strategy_framework',
+				lineageKey: source.code,
+				recordPublicId: revisionPublicId,
+				versionNumber: Number(versionRow.versionNumber),
+				minorVersionNumber: Number(versionRow.minorVersionNumber),
+				lifecycleStatus: 'draft',
+				snapshot:
+					typeof versionRow.snapshot === 'string'
+						? JSON.parse(versionRow.snapshot)
+						: versionRow.snapshot,
+				changeNote: 'Controlled revision created from published version'
+			});
 			await appendDomainEvidence(connection, {
 				actor: input.actor,
 				actionKey: 'strategy.framework.revise',
@@ -2713,13 +2853,14 @@ export async function reviseF01Record(input: {
 			const revisionPublicId = randomUUID();
 			const revisionId = await insertAndId(
 				connection,
-				`INSERT INTO strategy_business_plans (organisation_id, strategy_framework_id, public_id, plan_code, version_number, title, period_start, period_end, narrative, currency_code, planned_revenue_amount, planned_opex_amount, planned_capex_amount, lifecycle_status, supersedes_business_plan_id, owner_member_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`,
+				`INSERT INTO strategy_business_plans (organisation_id, strategy_framework_id, public_id, plan_code, version_number, minor_version_number, title, period_start, period_end, narrative, currency_code, planned_revenue_amount, planned_opex_amount, planned_capex_amount, lifecycle_status, supersedes_business_plan_id, owner_member_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`,
 				[
 					input.actor.organisationId,
 					source.frameworkId,
 					revisionPublicId,
 					source.code,
 					Number(source.versionNumber) + 1,
+					1,
 					source.title,
 					source.periodStart,
 					source.periodEnd,
@@ -2852,6 +2993,31 @@ export async function reviseF01Record(input: {
 						]
 					);
 			}
+			const versionRow = await singleRow<
+				RowDataPacket & {
+					versionNumber: number | string;
+					minorVersionNumber: number | string;
+					snapshot: string | Record<string, unknown>;
+				}
+			>(
+				`SELECT version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'periodStart', period_start, 'periodEnd', period_end, 'narrative', narrative, 'currencyCode', currency_code, 'plannedRevenueAmount', planned_revenue_amount, 'plannedOpexAmount', planned_opex_amount, 'plannedCapexAmount', planned_capex_amount, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_business_plans WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
+				[input.actor.organisationId, revisionPublicId]
+			);
+			await appendGovernedVersion(connection, {
+				actor: input.actor,
+				domainCode: 'F01',
+				recordType: 'strategy_business_plan',
+				lineageKey: source.code,
+				recordPublicId: revisionPublicId,
+				versionNumber: Number(versionRow.versionNumber),
+				minorVersionNumber: Number(versionRow.minorVersionNumber),
+				lifecycleStatus: 'draft',
+				snapshot:
+					typeof versionRow.snapshot === 'string'
+						? JSON.parse(versionRow.snapshot)
+						: versionRow.snapshot,
+				changeNote: 'Controlled revision created from published version'
+			});
 			await appendDomainEvidence(connection, {
 				actor: input.actor,
 				actionKey: 'strategy.business-plan.revise',
@@ -2907,7 +3073,7 @@ export async function reviseF01Record(input: {
 		const revisionPublicId = randomUUID();
 		const revisionId = await insertAndId(
 			connection,
-			`INSERT INTO strategy_kpis (organisation_id, strategy_framework_id, strategy_objective_id, public_id, kpi_code, version_number, title, description, unit_label, direction, aggregation_method, baseline_value, target_value, warning_threshold, critical_threshold, target_date, source_mode, source_domain, source_record_type, source_measure_key, owner_member_id, lifecycle_status, supersedes_strategy_kpi_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, NULL, NULL)`,
+			`INSERT INTO strategy_kpis (organisation_id, strategy_framework_id, strategy_objective_id, public_id, kpi_code, version_number, minor_version_number, title, description, unit_label, direction, aggregation_method, baseline_value, target_value, warning_threshold, critical_threshold, target_date, source_mode, source_domain, source_record_type, source_measure_key, owner_member_id, lifecycle_status, supersedes_strategy_kpi_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, NULL, NULL)`,
 			[
 				input.actor.organisationId,
 				source.frameworkId,
@@ -2915,6 +3081,7 @@ export async function reviseF01Record(input: {
 				revisionPublicId,
 				source.code,
 				Number(source.versionNumber) + 1,
+				1,
 				source.title,
 				source.description,
 				source.unitLabel,
@@ -2938,6 +3105,31 @@ export async function reviseF01Record(input: {
 			`INSERT INTO strategy_initiative_kpi_links (organisation_id, strategy_initiative_id, strategy_kpi_id, contribution_type, created_by_member_id) SELECT organisation_id, strategy_initiative_id, ?, contribution_type, ? FROM strategy_initiative_kpi_links WHERE strategy_kpi_id = ?`,
 			[revisionId, input.actor.memberId, source.id]
 		);
+		const versionRow = await singleRow<
+			RowDataPacket & {
+				versionNumber: number | string;
+				minorVersionNumber: number | string;
+				snapshot: string | Record<string, unknown>;
+			}
+		>(
+			`SELECT version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'description', description, 'unitLabel', unit_label, 'direction', direction, 'baselineValue', baseline_value, 'targetValue', target_value, 'targetDate', target_date, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_kpis WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
+			[input.actor.organisationId, revisionPublicId]
+		);
+		await appendGovernedVersion(connection, {
+			actor: input.actor,
+			domainCode: 'F01',
+			recordType: 'strategy_kpi',
+			lineageKey: source.code,
+			recordPublicId: revisionPublicId,
+			versionNumber: Number(versionRow.versionNumber),
+			minorVersionNumber: Number(versionRow.minorVersionNumber),
+			lifecycleStatus: 'draft',
+			snapshot:
+				typeof versionRow.snapshot === 'string'
+					? JSON.parse(versionRow.snapshot)
+					: versionRow.snapshot,
+			changeNote: 'Controlled revision created from published version'
+		});
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'strategy.kpi.revise',

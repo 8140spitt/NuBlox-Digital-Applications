@@ -87,27 +87,40 @@ V2 F01.04/F01.06/F01.07 adds execution and management-loop traceability:
 
 The legacy free-text `strategy_environment_factors.evidence_reference` remains physically present for migration compatibility but is not the V2 source-of-truth relationship for newly created environmental factors.
 
-## 4. Lifecycle and governance
+## 4. Version control, lifecycle and governance
 
-The canonical strategy-version lifecycle is:
+NuBlox separates **record version** from **business lifecycle**. Superseded is not a workflow step that a current record progresses into; it is the historical condition of a previously published major version after its controlled successor is published.
 
-```text
-Draft → Approved → Superseded
-```
-
-Draft strategy may be developed by authorised strategy managers. Strategy approval is an explicit governed transition and requires at least one active objective retaining selected-option lineage and a primary theme. Objectives created while a strategy is draft remain draft working records. Strategy approval validates their decision lineage and activates draft objectives in the same governed transaction. Approved strategy is immutable enterprise evidence. Material change requires a controlled revision or new strategy cycle.
-
-F01.04 planning begins from an approved strategy. Business plans use:
+Versioned governed aggregate roots use SharePoint-style major/minor semantics adapted for enterprise transactions:
 
 ```text
-Draft → Approved → Superseded
+0.1 Working draft
+0.2, 0.3 ... meaningful saved minor revisions
+1.0 Published / approved major
+1.1, 1.2 ... controlled working revision of 1.0
+2.0 Next published / approved major
 ```
 
-Business-plan approval requires strategic-objective scope, at least one active initiative, and no identified resource demand left orphaned without an execution handoff. Proposed initiatives are governed as approved execution commitments when their business plan is approved.
+Rules:
 
-KPI definitions use `Draft → Approved → Superseded/Retired`. Actual observations can only be recorded against an approved KPI definition. Strategic reviews use `Draft → Approved`; approval freezes the review as enterprise evidence rather than turning meeting notes into mutable history.
+1. A minor version (`x.1`, `x.2`, ...) is a mutable working copy and is visible as draft governance state.
+2. A meaningful explicit save creates the next minor; autosave/keystrokes do not create versions.
+3. Approval publishes the next major (`x.0`) atomically with the governed approval transaction.
+4. Published majors are immutable enterprise evidence.
+5. Editing a published record creates a controlled minor revision; it never overwrites the published major.
+6. When the successor is published, the predecessor major becomes historical automatically.
+7. Version history records actor, timestamp, snapshot and change note and is queryable independently from audit/outbox evidence.
+8. Transactional/event records that are not revision-controlled continue to use their domain lifecycle rather than artificial document versions.
 
-Server-side mutations re-check lifecycle inside the database transaction. A client-visible button or an earlier permission check is never sufficient authority.
+For strategy, a first working cycle is `0.1`; first approval publishes `1.0`. A controlled revision of `1.0` starts at `1.1`; its approval publishes `2.0`. Strategy business lifecycle remains draft/current/historical governance, while objectives and downstream execution records retain their own lifecycle semantics.
+
+Draft strategy may be developed by authorised strategy managers. Strategy approval is an explicit governed transition and requires at least one objective retaining selected-option lineage and a primary theme. Objectives created while a strategy is draft remain draft working records. Strategy approval validates their decision lineage and activates draft objectives in the same governed transaction.
+
+F01.04 planning begins from an approved strategy. Business plans use the same major/minor publishing discipline. Business-plan approval requires strategic-objective scope, at least one active initiative, and no identified resource demand left orphaned without an execution handoff. Proposed initiatives become approved execution commitments when their governing plan major is published.
+
+KPI definitions use the same major/minor publishing discipline and may later be retired as a business lifecycle outcome. Actual observations can only be recorded against a published/approved KPI definition. Strategic reviews use a frozen approval lifecycle; their evidence snapshot is immutable and is not rewritten by later observations.
+
+Server-side mutations re-check lifecycle and version authority inside the database transaction. A client-visible button or an earlier permission check is never sufficient authority.
 
 ## 5. Authority model
 
@@ -238,7 +251,6 @@ The major remaining checkpoints are:
 - controlled completion/cancellation of structured review decisions and propagation to downstream change records;
 - F01.05 operating-model workspace in V2 with initiative-to-target-state traceability;
 - F01.08 scenario comparison, sensitivity analysis and assumption stress testing;
-- controlled strategy revision and approved-version carry-forward semantics for all new V2 traceability records;
 - explicit assumption validation/challenge transactions and evidence retirement/replacement workflows;
 - richer option evaluation where organisations need weighted criteria, investment appraisal or scenario-specific scoring;
 - benefit-realisation linkage between strategic objectives, initiatives, performance and F28 transformation records.
