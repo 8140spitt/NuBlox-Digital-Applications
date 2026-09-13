@@ -2,7 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
-import type { LayoutServerLoad } from './[tenant]/$types';
+import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ params, request, url }) => {
 	if (!isRouteSlug(params.tenant)) {
@@ -11,12 +11,12 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 
 	const session = await getAuth().api.getSession({ headers: request.headers });
 	if (!session) {
-		redirect(303, routes.auth(`${url.pathname}${url.search}`));
+		redirect(303, routes.appSignIn(params.tenant, `${url.pathname}${url.search}`));
 	}
 
 	const access = await resolveActiveInternalTenant(session.user.id, params.tenant);
 	if (!access) {
-		redirect(303, routes.authContinue);
+		redirect(303, routes.appNoAccess(params.tenant));
 	}
 
 	return {
