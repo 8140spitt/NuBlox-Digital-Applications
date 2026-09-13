@@ -1,0 +1,57 @@
+name: Temporary F01 Final Validation
+
+on:
+  push:
+    branches: [fix/f01-crud-lifecycle]
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/f01-crud-lifecycle
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+      - name: Install
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+      - name: Format check
+        working-directory: appv2
+        run: pnpm exec prettier --check src/lib/server/strategy src/lib/routing 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]'
+      - name: Lint
+        working-directory: appv2
+        run: pnpm lint
+      - name: Type-check
+        working-directory: appv2
+        run: pnpm check
+      - name: Unit tests
+        working-directory: appv2
+        run: pnpm test:unit
+      - name: Build
+        working-directory: appv2
+        run: pnpm build
+      - name: Remove temporary workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/temporary-f01-final-validation.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "chore(ci): remove temporary F01 final validator"
+          git push origin HEAD:fix/f01-crud-lifecycle
