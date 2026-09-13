@@ -16,9 +16,9 @@
 			</p>
 		</div>
 		<div class="context-card">
-			<span>Current context</span>
+			<span>Current organisation</span>
 			<strong>{data.tenant.displayName}</strong>
-			<small>/{data.tenant.slug}</small>
+			<small>Internal workspace</small>
 		</div>
 	</header>
 
@@ -49,8 +49,8 @@
 			<div class="card-index">02</div>
 			<h2>Persistent context</h2>
 			<p>
-				Tenant context is explicit in every internal URL. External collaboration will remain
-				separately scoped by tenant and CRM party.
+				Organisation context remains explicit throughout the application while technical routing
+				identifiers stay out of presentation copy.
 			</p>
 			<span class="foundation-state">Foundation active</span>
 		</article>
