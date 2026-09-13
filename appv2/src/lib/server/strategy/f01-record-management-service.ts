@@ -2408,7 +2408,7 @@ export async function reviseF01Record(input: {
 			const revisionPublicId = randomUUID();
 			const revisionId = await insertAndId(
 				connection,
-				`INSERT INTO strategy_frameworks (organisation_id, public_id, framework_code, version_number, minor_version_number, title, horizon_start, horizon_end, purpose_text, vision_text, mission_text, lifecycle_status, supersedes_strategy_framework_id, owner_member_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`,
+				`INSERT INTO strategy_frameworks (organisation_id, public_id, framework_code, version_number, minor_version_number, title, horizon_start, horizon_end, purpose_text, vision_text, mission_text, lifecycle_status, supersedes_strategy_framework_id, owner_member_id, created_by_member_id, approved_by_member_id, approved_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?, NULL, NULL)`,
 				[
 					input.actor.organisationId,
 					revisionPublicId,
