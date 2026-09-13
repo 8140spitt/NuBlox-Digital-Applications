@@ -525,9 +525,6 @@
 		justify-content: flex-end;
 		gap: var(--nb-space-4);
 	}
-	.form-actions a {
-		color: var(--nb-color-text-secondary);
-	}
 	@media (max-width: 720px) {
 		.form-grid.two,
 		.form-grid.three {

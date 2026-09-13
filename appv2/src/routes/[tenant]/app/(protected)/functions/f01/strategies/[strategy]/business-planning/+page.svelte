@@ -67,7 +67,7 @@
 					: data.approvalReadiness.activeObjectiveCount === 0
 						? 'No active objective exists. Create an objective derived from a selected option and assign its primary strategic theme.'
 						: data.approvalReadiness.optionLinkedObjectiveCount === 0 &&
-							data.approvalReadiness.primaryThemeObjectiveCount === 0
+							  data.approvalReadiness.primaryThemeObjectiveCount === 0
 							? 'Active objectives exist, but none carries selected-option lineage or a primary strategic theme.'
 							: data.approvalReadiness.optionLinkedObjectiveCount === 0
 								? 'Active objectives exist, but none is linked to a selected strategic option.'
@@ -176,9 +176,9 @@
 
 	{#if !strategyApproved}
 		<Alert tone="info" title="Business planning is locked until strategy approval">
-			This strategy is still {data.framework.lifecycleStatus}. Complete the governed prerequisites below.
-			NuBlox will only unlock F01.04 when the strategic choice, theme and objective lineage are explicit
-			and an authorised approver can complete the transition.
+			This strategy is still {data.framework.lifecycleStatus}. Complete the governed prerequisites
+			below. NuBlox will only unlock F01.04 when the strategic choice, theme and objective lineage
+			are explicit and an authorised approver can complete the transition.
 		</Alert>
 
 		<ReadinessChecklist
