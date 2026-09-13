@@ -21,7 +21,7 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 
 	return {
 		tenant: {
-			slug: access.organisationPublicId,
+			slug: access.organisationRouteSlug,
 			displayName: access.organisationName,
 			organisationId: access.organisationId,
 			organisationPublicId: access.organisationPublicId,
