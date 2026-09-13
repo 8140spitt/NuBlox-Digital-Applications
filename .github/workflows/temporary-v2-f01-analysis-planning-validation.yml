@@ -29,6 +29,19 @@ jobs:
       - name: Install dependencies
         working-directory: appv2
         run: pnpm install --frozen-lockfile
+      - name: Repair keyed score controls
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          root = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01')
+          pattern = re.compile(r'\{#each \[1,\s*2,\s*3,\s*4,\s*5\] as score\}')
+          for path in root.rglob('*.svelte'):
+              source = path.read_text()
+              updated = pattern.sub('{#each [1, 2, 3, 4, 5] as score (score)}', source)
+              if updated != source:
+                  path.write_text(updated)
+          PY
       - name: Format V2 source
         working-directory: appv2
         run: pnpm exec prettier --write src
@@ -44,7 +57,7 @@ jobs:
       - name: Build
         working-directory: appv2
         run: pnpm build
-      - name: Commit validated formatting
+      - name: Commit validated source
         run: |
           if git diff --quiet; then
             exit 0
@@ -52,5 +65,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add appv2/src
-          git commit -m "style(v2): format F01 analysis planning slice"
+          git commit -m "fix(v2): validate F01 analysis planning slice"
           git push origin main
