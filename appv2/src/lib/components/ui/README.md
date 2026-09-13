@@ -13,5 +13,6 @@ Business-function routes should compose these components and semantic tokens bef
 - Use SvelteKit form actions for normal mutations and progressively enhance them with `use:enhance` where useful.
 - Add a shared component when the same interaction pattern is likely to recur across functions.
 - Do not add function-specific wrappers merely to restyle an existing shared primitive.
+- Use `ReadinessChecklist` for governed transitions with prerequisites. It must explain what is ready, what remains blocked, and provide direct actions where the user can resolve a missing prerequisite. The server remains authoritative and must re-check the transition inside the transaction.
 
 The protected `/{tenant}/app/design-system` route is the component laboratory and interaction reference.
