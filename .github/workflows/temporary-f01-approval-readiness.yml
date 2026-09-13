@@ -1,0 +1,224 @@
+name: Temporary F01 Approval Readiness Refinement
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-f01-approval-readiness.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  refine-and-validate:
+    if: github.event.head_commit.message != 'fix(v2): refine F01 approval readiness UX'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Apply approval-readiness UX refinement
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          page = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.svelte')
+          text = page.read_text()
+
+          old_import = "\t\tPageHeader,\n\t\tPanel,\n\t\tStat,"
+          new_import = "\t\tPageHeader,\n\t\tPanel,\n\t\tReadinessChecklist,\n\t\tStat,"
+          if old_import not in text:
+              raise SystemExit('Expected business-planning component import block was not found.')
+          text = text.replace(old_import, new_import, 1)
+
+          anchor = """\tconst activeInitiatives = $derived(\n\t\tdata.initiatives.filter((initiative) =>\n\t\t\t['proposed', 'approved', 'in_progress'].includes(initiative.lifecycleStatus)\n\t\t)\n\t);\n"""
+          if anchor not in text:
+              raise SystemExit('Expected activeInitiatives derived block was not found.')
+
+          readiness = """
+\tconst approvalReadinessItems = $derived([
+\t\t{
+\t\t\tkey: 'selected-option',
+\t\t\tlabel: 'Strategic option selected',
+\t\t\tready: data.approvalReadiness.selectedOptionCount > 0,
+\t\t\tdetail:
+\t\t\t\tdata.approvalReadiness.selectedOptionCount > 0
+\t\t\t\t\t? `${data.approvalReadiness.selectedOptionCount} strategic option${data.approvalReadiness.selectedOptionCount === 1 ? '' : 's'} selected as an enterprise choice.`
+\t\t\t\t\t: data.approvalReadiness.totalOptionCount > 0
+\t\t\t\t\t\t? 'Strategic options exist, but none has been selected. Record the decision and rationale before approval.'
+\t\t\t\t\t\t: 'No strategic option exists yet. Create and evaluate an option before the strategy can become an approved direction.',
+\t\t\tactionLabel: data.approvalReadiness.totalOptionCount > 0 ? 'Review options' : 'Create option',
+\t\t\tactionHref:
+\t\t\t\tdata.approvalReadiness.totalOptionCount > 0
+\t\t\t\t\t? routes.strategyPlanning(data.tenant.slug, data.framework.publicId)
+\t\t\t\t\t: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'option')
+\t\t},
+\t\t{
+\t\t\tkey: 'primary-theme',
+\t\t\tlabel: 'Primary strategic theme defined',
+\t\t\tready: data.approvalReadiness.activeThemeCount > 0,
+\t\t\tdetail:
+\t\t\t\tdata.approvalReadiness.activeThemeCount > 0
+\t\t\t\t\t? `${data.approvalReadiness.activeThemeCount} active strategic theme${data.approvalReadiness.activeThemeCount === 1 ? '' : 's'} available for objective alignment.`
+\t\t\t\t\t: 'No active strategic theme exists. Define the outcome themes that organise and communicate the strategic direction.',
+\t\t\tactionLabel: 'Create theme',
+\t\t\tactionHref: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'theme')
+\t\t},
+\t\t{
+\t\t\tkey: 'traceable-objective',
+\t\t\tlabel: 'Traceable active objective ready',
+\t\t\tready: data.approvalReadiness.traceableObjectiveCount > 0,
+\t\t\tdetail:
+\t\t\t\tdata.approvalReadiness.traceableObjectiveCount > 0
+\t\t\t\t\t? `${data.approvalReadiness.traceableObjectiveCount} active objective${data.approvalReadiness.traceableObjectiveCount === 1 ? '' : 's'} retain both selected-option lineage and a primary theme.`
+\t\t\t\t\t: data.approvalReadiness.activeObjectiveCount === 0
+\t\t\t\t\t\t? 'No active objective exists. Create an objective derived from a selected option and assign its primary strategic theme.'
+\t\t\t\t\t\t: data.approvalReadiness.optionLinkedObjectiveCount === 0 &&
+\t\t\t\t\t\t\tdata.approvalReadiness.primaryThemeObjectiveCount === 0
+\t\t\t\t\t\t\t? 'Active objectives exist, but none carries selected-option lineage or a primary strategic theme.'
+\t\t\t\t\t\t\t: data.approvalReadiness.optionLinkedObjectiveCount === 0
+\t\t\t\t\t\t\t\t? 'Active objectives exist, but none is linked to a selected strategic option.'
+\t\t\t\t\t\t\t\t: data.approvalReadiness.primaryThemeObjectiveCount === 0
+\t\t\t\t\t\t\t\t\t? 'Active objectives exist, but none has a primary strategic theme.'
+\t\t\t\t\t\t\t\t\t: 'Objective links exist, but no single active objective currently carries both the selected-option lineage and primary theme required for approval.',
+\t\t\tactionLabel: data.approvalReadiness.activeObjectiveCount > 0 ? 'Review objectives' : 'Create objective',
+\t\t\tactionHref:
+\t\t\t\tdata.approvalReadiness.activeObjectiveCount > 0
+\t\t\t\t\t? routes.strategyPlanning(data.tenant.slug, data.framework.publicId)
+\t\t\t\t\t: routes.strategyPlanningNew(data.tenant.slug, data.framework.publicId, 'objective')
+\t\t},
+\t\t{
+\t\t\tkey: 'approval-authority',
+\t\t\tlabel: 'Approval authority available',
+\t\t\tready: data.approvalReadiness.canApprove,
+\t\t\tdetail: data.approvalReadiness.canApprove
+\t\t\t\t? 'Your effective permissions include strategy approval authority.'
+\t\t\t\t: 'Your effective permissions do not include strategy approval. An authorised approver must complete the governed transition.'
+\t\t},
+\t\t{
+\t\t\tkey: 'current-strategy-slot',
+\t\t\tlabel: 'Current strategy slot available',
+\t\t\tready: data.approvalReadiness.conflictingApprovedStrategy === null,
+\t\t\tdetail: data.approvalReadiness.conflictingApprovedStrategy
+\t\t\t\t? `Approved strategy ${data.approvalReadiness.conflictingApprovedStrategy.code} already occupies the current enterprise-strategy slot. Use controlled revision rather than creating parallel approved directions.`
+\t\t\t\t: 'There is no competing approved strategy version blocking this transition.',
+\t\t\tactionLabel: data.approvalReadiness.conflictingApprovedStrategy ? 'Review strategy cycles' : undefined,
+\t\t\tactionHref: data.approvalReadiness.conflictingApprovedStrategy
+\t\t\t\t? routes.strategy(data.tenant.slug)
+\t\t\t\t: undefined
+\t\t}
+\t]);
+"""
+          text = text.replace(anchor, anchor + readiness, 1)
+
+          pattern = re.compile(r"\t\{#if form\?\.formError\}.*?\n\t<section class=\"stat-grid\"", re.S)
+          replacement = """\t{#if form?.formError}
+\t\t<Alert tone=\"danger\" title=\"Governed action could not be completed\">{form.formError}</Alert>
+\t{/if}
+
+\t{#if !strategyApproved}
+\t\t<Alert tone=\"info\" title=\"Business planning is locked until strategy approval\">
+\t\t\tThis strategy is still {data.framework.lifecycleStatus}. Complete the governed prerequisites below.
+\t\t\tNuBlox will only unlock F01.04 when the strategic choice, theme and objective lineage are explicit
+\t\t\tand an authorised approver can complete the transition.
+\t\t</Alert>
+
+\t\t<ReadinessChecklist
+\t\t\ttitle=\"Strategy approval readiness\"
+\t\t\tdescription=\"Approval is a controlled enterprise transition. The checklist explains each prerequisite and takes you directly to the upstream record that needs attention.\"
+\t\t\titems={approvalReadinessItems}
+\t\t/>
+
+\t\t{#if data.permissions.canApprove && data.framework.lifecycleStatus === 'draft'}
+\t\t\t<Panel
+\t\t\t\ttitle=\"Approve the strategic direction\"
+\t\t\t\tdescription={data.approvalReadiness.ready
+\t\t\t\t\t? 'All approval prerequisites are satisfied. NuBlox will re-check them inside the approval transaction before committing the strategy.'
+\t\t\t\t\t: 'Complete every approval prerequisite above before committing this strategy as the current enterprise direction.'}
+\t\t\t>
+\t\t\t\t<form method=\"POST\" action=\"?/approveStrategy\" use:enhance>
+\t\t\t\t\t<Button type=\"submit\" disabled={!data.approvalReadiness.ready}>
+\t\t\t\t\t\tApprove strategy for business planning
+\t\t\t\t\t</Button>
+\t\t\t\t</form>
+\t\t\t</Panel>
+\t\t{/if}
+\t{/if}
+
+\t<section class=\"stat-grid\""""
+          text, count = pattern.subn(replacement, text, count=1)
+          if count != 1:
+              raise SystemExit(f'Expected one approval block replacement, found {count}.')
+
+          page.write_text(text)
+
+          form_page = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/new/[record]/+page.svelte')
+          form_text = form_page.read_text()
+          stale_css = """\t.form-actions a {\n\t\tcolor: var(--nb-color-text-secondary);\n\t}\n"""
+          if stale_css not in form_text:
+              raise SystemExit('Expected stale .form-actions a selector was not found.')
+          form_page.write_text(form_text.replace(stale_css, '', 1))
+          PY
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Format changed V2 files
+        working-directory: appv2
+        run: |
+          pnpm exec prettier --write \
+            src/lib/components/ui/ReadinessChecklist.svelte \
+            src/lib/components/ui/index.ts \
+            src/lib/components/ui/README.md \
+            src/lib/server/strategy/approval-readiness-service.ts \
+            'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.server.ts' \
+            'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/+page.svelte' \
+            'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/new/[record]/+page.svelte'
+
+      - name: Install Playwright Chromium
+        working-directory: appv2
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Lint V2
+        working-directory: appv2
+        run: pnpm lint
+
+      - name: Type-check V2
+        working-directory: appv2
+        run: pnpm check
+
+      - name: Run V2 unit tests
+        working-directory: appv2
+        run: pnpm test:unit
+
+      - name: Build V2
+        working-directory: appv2
+        run: pnpm build
+
+      - name: Commit validated refinement and remove temporary workflow
+        run: |
+          rm .github/workflows/temporary-f01-approval-readiness.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'fix(v2): refine F01 approval readiness UX'
+          git push origin main
