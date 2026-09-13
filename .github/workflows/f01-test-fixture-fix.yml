@@ -1,0 +1,53 @@
+name: Repair F01 Integration Fixture
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/f01-test-fixture-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+      - name: Install
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+      - name: Add required source reference and format
+        run: |
+          python <<'PY'
+          from pathlib import Path
+          path = Path('appv2/src/lib/server/strategy/f01-golden-thread.integration.test.ts')
+          text = path.read_text()
+          old = "\t\t\tevidenceType: 'other',\n\t\t\ttitle: 'Disposable evidence',\n\t\t\tobservedOn: '2026-12-06',"
+          new = "\t\t\tevidenceType: 'other',\n\t\t\ttitle: 'Disposable evidence',\n\t\t\tsourceReference: 'TMP-DELETE',\n\t\t\tobservedOn: '2026-12-06',"
+          if old not in text:
+              raise SystemExit('Disposable evidence fixture not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+          cd appv2
+          pnpm exec prettier --write src/lib/server/strategy/f01-golden-thread.integration.test.ts
+      - name: Commit fixture repair and self-remove
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/f01-test-fixture-fix.yml
+          git add appv2/src/lib/server/strategy/f01-golden-thread.integration.test.ts
+          git commit -m "test(v2): complete F01 evidence fixture"
+          git push origin main
