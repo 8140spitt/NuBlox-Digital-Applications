@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { goto, invalidateAll } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
 	import { routes } from '$lib/routing/route-contract';
@@ -22,11 +21,10 @@
 	async function signOut() {
 		if (signingOut) return;
 		signingOut = true;
-
 		try {
 			await authClient.signOut();
 			await invalidateAll();
-			await goto(resolve('/auth'));
+			await goto(routes.appSignIn(data.tenant.slug));
 		} finally {
 			signingOut = false;
 		}
@@ -37,11 +35,7 @@
 	<header class="tenant-header">
 		<div class="nb-page header-inner">
 			<div class="identity-group">
-				<a
-					class="brand"
-					href={resolve(routes.dashboard(data.tenant.slug))}
-					aria-label="NuBlox home"
-				>
+				<a class="brand" href={routes.dashboard(data.tenant.slug)} aria-label="NuBlox home">
 					<span class="brand-mark" aria-hidden="true">N</span>
 					<span>NuBlox</span>
 				</a>
@@ -54,15 +48,17 @@
 			<nav aria-label="Primary navigation">
 				{#each items as item (item.href)}
 					<a
-						href={resolve(item.href)}
+						href={item.href}
 						class:active={isActive(item.href)}
-						aria-current={isActive(item.href) ? 'page' : undefined}>{item.label}</a
+						aria-current={isActive(item.href) ? 'page' : undefined}
 					>
+						{item.label}
+					</a>
 				{/each}
 			</nav>
 
 			<div class="account-control" aria-label="Signed-in account">
-				<span class="account-name">{data.user.name}</span>
+				<span>{data.user.name}</span>
 				<button type="button" onclick={signOut} disabled={signingOut}>
 					{signingOut ? 'Signing out…' : 'Sign out'}
 				</button>
@@ -80,8 +76,8 @@
 		position: sticky;
 		top: 0;
 		z-index: 20;
-		background: color-mix(in srgb, var(--nb-surface) 96%, transparent);
 		border-bottom: 1px solid var(--nb-border);
+		background: color-mix(in srgb, var(--nb-surface) 96%, transparent);
 		backdrop-filter: blur(12px);
 	}
 	.header-inner {
@@ -91,19 +87,22 @@
 		align-items: center;
 		gap: 22px;
 	}
-	.identity-group {
-		min-width: 0;
+	.identity-group,
+	.brand,
+	nav,
+	.account-control {
 		display: flex;
 		align-items: center;
+	}
+	.identity-group {
+		min-width: 0;
 		gap: 20px;
 	}
 	.brand {
-		display: inline-flex;
-		align-items: center;
 		gap: 10px;
 		font-weight: 800;
-		text-decoration: none;
 		letter-spacing: -0.02em;
+		text-decoration: none;
 		white-space: nowrap;
 	}
 	.brand-mark {
@@ -124,11 +123,11 @@
 		border-left: 1px solid var(--nb-border);
 	}
 	.context-label {
+		color: var(--nb-muted);
 		font-size: 0.66rem;
 		font-weight: 750;
-		text-transform: uppercase;
 		letter-spacing: 0.08em;
-		color: var(--nb-muted);
+		text-transform: uppercase;
 	}
 	.tenant-context strong {
 		overflow: hidden;
@@ -137,17 +136,16 @@
 		white-space: nowrap;
 	}
 	nav {
-		display: flex;
 		justify-content: center;
 		gap: 3px;
 	}
 	nav a {
-		padding: 9px 11px;
 		border-radius: 8px;
-		text-decoration: none;
+		padding: 9px 11px;
+		color: var(--nb-muted);
 		font-size: 0.88rem;
 		font-weight: 680;
-		color: var(--nb-muted);
+		text-decoration: none;
 	}
 	nav a:hover,
 	nav a.active {
@@ -155,55 +153,36 @@
 		color: var(--nb-ink);
 	}
 	.account-control {
-		display: flex;
-		align-items: center;
+		justify-content: flex-end;
 		gap: 10px;
-		padding-left: 18px;
-		border-left: 1px solid var(--nb-border);
 	}
-	.account-name {
-		max-width: 140px;
+	.account-control span {
+		max-width: 170px;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		color: var(--nb-muted);
 		font-size: 0.78rem;
-		font-weight: 700;
 		white-space: nowrap;
 	}
 	.account-control button {
-		min-height: 34px;
 		border: 1px solid var(--nb-border);
 		border-radius: 8px;
-		padding: 7px 10px;
-		background: var(--nb-surface);
+		padding: 8px 10px;
+		background: transparent;
 		color: var(--nb-ink);
 		font: inherit;
 		font-size: 0.78rem;
-		font-weight: 750;
+		font-weight: 700;
 		cursor: pointer;
-	}
-	.account-control button:hover:not(:disabled),
-	.account-control button:focus-visible {
-		border-color: var(--nb-ink);
-	}
-	.account-control button:disabled {
-		cursor: progress;
-		opacity: 0.6;
 	}
 	.tenant-main {
 		padding: 48px 0 72px;
 	}
-	@media (max-width: 760px) {
+	@media (max-width: 820px) {
 		.header-inner {
 			grid-template-columns: 1fr auto;
 			gap: 12px;
 			padding-block: 10px;
-		}
-		.identity-group {
-			gap: 12px;
-		}
-		.tenant-context {
-			padding-left: 12px;
 		}
 		nav {
 			grid-column: 1 / -1;
@@ -214,10 +193,8 @@
 		.account-control {
 			grid-column: 2;
 			grid-row: 1;
-			padding-left: 0;
-			border-left: 0;
 		}
-		.account-name {
+		.account-control span {
 			display: none;
 		}
 	}
