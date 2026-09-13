@@ -1,129 +1,135 @@
 # NuBlox V2
 
-NuBlox V2 is a clean application reset for the NuBlox construction and built-environment operating system.
+NuBlox V2 is the active product surface for the NuBlox construction and built-environment operating system. `appv1/` remains implementation history and business-logic evidence; its UI and route structure are not canonical for V2.
 
-## Boundary
+The governing UI/UX standard remains `docs/world-class/13-ui-ux-operating-model.md`.
 
-- `appv2/` is the active V2 product surface.
-- `appv1/` is retained as implementation history and business-logic evidence. V1 UI, navigation and route structure are **not** copied into V2 by default.
-- Existing repository architecture, data models and domain services may be reused only through an explicit V2 design decision.
-- The governing UI/UX standard remains `docs/world-class/13-ui-ux-operating-model.md`.
+## Canonical route architecture
 
-## Canonical route contract
+NuBlox is tenant-first. Public onboarding creates a tenancy; existing users enter through the URL of the tenancy or CRM Party relationship they are trying to access.
 
-NuBlox has one authentication boundary and two connected application surfaces over the same canonical platform.
-
-The central authentication suite is:
+### Public onboarding
 
 ```text
-/auth/start
-/auth
-/auth/register
-/auth/verify-email
-/auth/forgot-password
-/auth/reset-password
-/auth/invite/[token]
+/start
+/register
+/verify-email
 ```
 
-Post-authentication internal context resolution uses:
+`/start` is the public entry for a new organisation. `/register` creates a new canonical organisation and its first Owner identity. Joining an existing organisation is invitation-only and does not use public registration.
+
+### Internal tenant application
 
 ```text
-/auth/continue
-/auth/select-context
-/auth/no-access
+/[tenant]/app
+/[tenant]/app/auth/signin
+/[tenant]/app/auth/forgot-password
+/[tenant]/app/auth/reset-password
+/[tenant]/app/auth/verify-email
+/[tenant]/app/auth/invite/[token]
+/[tenant]/app/auth/no-access
+
+/[tenant]/app/dashboard
+/[tenant]/app/my-work
+/[tenant]/app/projects
+/[tenant]/app/functions
 ```
 
-`/auth/start` is the access-orientation route. `/auth` is the canonical sign-in route. `/auth/register` is exclusively for creating a **new NuBlox tenant and its first Owner**. Joining an existing tenant is invitation-only through `/auth/invite/[token]`; it is not generic public account registration.
+`[tenant]` is the stable `tenant_route_contexts.route_slug`. It is URL context, not authority. Every protected request proves the authenticated identity is linked to an active domain user with an active membership in the organisation that owns that exact route slug.
 
-Internal users enter the tenant operating system beneath `/app`:
+`/[tenant]/app` is an authoritative entry resolver: anonymous users go to that tenant's sign-in route, authorised members go to that tenant's dashboard, and authenticated identities without membership go to the tenant-scoped no-access state.
+
+### Connected CRM Party portal
 
 ```text
-/app/[tenant]/dashboard
-/app/[tenant]/my-work
-/app/[tenant]/projects
-/app/[tenant]/functions
+/[tenant]/portal/[crmParty]
+/[tenant]/portal/[crmParty]/auth/signin
+/[tenant]/portal/[crmParty]/auth/forgot-password
+/[tenant]/portal/[crmParty]/auth/reset-password
+/[tenant]/portal/[crmParty]/auth/verify-email
+/[tenant]/portal/[crmParty]/auth/no-access
+
+/[tenant]/portal/[crmParty]/dashboard
+/[tenant]/portal/[crmParty]/projects
+/[tenant]/portal/[crmParty]/actions
 ```
 
-External CRM Parties enter the connected portal beneath `/portal`:
+The portal is CRM Party project participation, not a separate external-work application. The full external authorisation chain remains: authenticated identity → CRM contact/person → CRM Party → Party↔tenant relationship → Party↔project association → permitted record/action. A tenant or CRM Party slug never grants authority by itself.
+
+### Technical identity endpoint
+
+Better Auth remains mounted at `/api/auth`. This is a protocol/API boundary, not a user-facing global sign-in route.
+
+There is deliberately no global `/auth`, `/app/[tenant]` or `/portal/[tenant]` compatibility surface in V2.
+
+## Authentication and tenancy rules
+
+Email/password signup exists only for governed provisioning journeys:
+
+- public `/register` creates a new organisation and first Owner;
+- `/{tenant}/app/auth/invite/[token]` joins an existing organisation after the invitation is proven to belong to that tenant.
+
+Email verification is mandatory. Verification and password-reset links expire after one hour. Successful password reset revokes existing account sessions. Forgot-password responses do not disclose whether an account exists.
+
+Post-authentication return destinations are context-bound. Internal sign-in accepts only return paths inside the same `/{tenant}/app` boundary, with tenant invitations as the only permitted auth-subtree return. Portal sign-in accepts only paths inside the exact `/{tenant}/portal/{crmParty}` boundary. Cross-tenant, cross-Party and external return URLs are rejected.
+
+## Stable tenant route identity
+
+`tenant_route_contexts` owns the URL slug for an organisation. `organisations.public_id` remains a record identity and must not be substituted for the tenant route slug.
+
+The route-slug lifecycle migration backfills missing contexts, reserves public application prefixes such as `start`, `register`, `verify-email` and `api`, and allocates a stable route context whenever a new organisation is created.
+
+The internal access resolver joins:
 
 ```text
-/portal/[tenant]/[crmParty]/dashboard
-/portal/[tenant]/[crmParty]/projects
-/portal/[tenant]/[crmParty]/actions
+authenticated auth user
+→ auth_user_links
+→ active user
+→ active organisation_members
+→ active organisation
+→ tenant_route_contexts.route_slug
 ```
 
-Anonymous access to protected `/app` or `/portal` routes is redirected to `/auth?returnTo=...`. Return destinations are restricted to canonical `/app/...`, `/portal/...` and active `/auth/invite/...` journeys so authentication cannot be used as an open redirect.
+Only after that chain succeeds may the protected tenant application render.
 
-The portal is **CRM Party project participation**, not a standalone external-work application. An authenticated external identity must resolve to an authorised CRM contact/user, then to a CRM Party, then to a valid tenant relationship and project association. The portal exposes only the canonical NuBlox records and business actions permitted by those relationships.
+## Route implementation structure
 
-Route parameters establish context only. They never grant authority. Server-side authentication and authorisation must enforce identity → CRM Party → tenant relationship → project association → record/action permission before protected data is exposed.
+SvelteKit route groups separate authentication pages from protected application layouts without changing browser URLs:
 
-There are no legacy aliases for the former tenant-first route tree and no portal-specific login route. V2 uses `/auth`, `/app/[tenant]/...` and `/portal/[tenant]/[crmParty]/...` as the canonical application boundaries.
+```text
+/[tenant]/app/(protected)/...
+/[tenant]/portal/[crmParty]/(protected)/...
+```
 
-## Authentication implementation
+This prevents tenant sign-in routes from inheriting the protected app shell and creating an authentication redirect loop.
 
-V2 mounts Better Auth through the SvelteKit server handler at `/api/auth` and reuses the canonical `auth_users`, `auth_sessions`, `auth_accounts`, `auth_verifications` and `auth_user_links` identity model rather than creating a second identity store.
+## Runtime configuration
 
-Email/password signup is enabled at the Better Auth protocol layer only so governed NuBlox onboarding journeys can create identities. The server rejects signup unless exactly one approved provisioning intent is present:
+V2 shares the canonical NuBlox MySQL schema. Local database credentials are machine-specific and are not committed. `appv2/.env` must use the same working `DATABASE_URL` as the canonical local environment.
 
-- a signed, time-limited new-tenant bootstrap intent created by `/auth/register`; or
-- a valid, time-limited organisation invitation opened through `/auth/invite/[token]`.
-
-The two provisioning intents are mutually exclusive: a signup request carrying both or neither is rejected rather than falling back to generic public registration.
-
-New-tenant registration creates a pending canonical organisation, domain user, Owner membership and Owner role. The registration becomes active only after email verification. The first Owner receives the active permission catalogue for the new tenant; additional roles and members are governed after tenant activation.
-
-Organisation invitations remain canonical `organisation_invitations` records. Existing NuBlox identities can accept an invitation directly after authentication when the verified email matches. New invitees create an identity against the invitation, verify the email, and then receive the membership and roles selected by the inviting tenant.
-
-Email verification is mandatory. Verification links expire after one hour. Password-reset links also expire after one hour, and successful password reset revokes existing account sessions. Forgot-password responses do not disclose whether an account exists.
-
-Runtime configuration is provided through `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and the transactional email boundary. `EMAIL_DELIVERY_MODE=console` is available for local development and exposes one-time links in the local server console. Production must use a real transactional-email adapter rather than console delivery.
-
-## Authoritative internal tenant resolution
-
-A successful Better Auth session does not itself grant access to an internal tenant. After normal sign-in, V2 resolves the authenticated identity through `auth_user_links` to an active canonical user, then to active `organisation_members` and active `organisations` records.
-
-The post-authentication decision is deterministic:
-
-- one active internal organisation context redirects directly to that organisation's `/app/[organisationPublicId]/dashboard`;
-- multiple active contexts redirect to `/auth/select-context`, which lists only server-resolved authorised organisations;
-- no active internal contexts redirect to `/auth/no-access`.
-
-Every `/app/[tenant]/...` request revalidates the route's organisation public ID against the authenticated identity's active membership. The route parameter establishes requested context only; changing it cannot grant access to another tenant.
-
-The connected portal still requires its separate CRM Party authorisation resolver: authenticated identity → CRM contact/person → CRM Party → tenant relationship → project association → record/action permission. Internal organisation membership must not be reused as a substitute for that external relationship chain.
-
-## Local runtime bootstrap
-
-V2 uses the same canonical NuBlox MySQL schema as V1. Local database credentials are machine-specific and are deliberately **not** committed. `appv2/.env` must use the same working `DATABASE_URL` as the existing canonical NuBlox local environment.
-
-The non-secret local configuration is:
+Non-secret local configuration:
 
 ```text
 BETTER_AUTH_URL=http://localhost:5173
 EMAIL_DELIVERY_MODE=console
 ```
 
-Create `appv2/.env` from `appv2/.env.example`, populate `DATABASE_URL` from the working local NuBlox environment and set `BETTER_AUTH_SECRET` to a local secret of at least 32 characters.
-
-Canonical database migrations currently remain owned by the repository-level `database/migrations` set and are executed through the V1 migration tooling. Before running V2 against an existing local database, apply and verify the schema from `appv1/`:
+Set `BETTER_AUTH_SECRET` to a local secret of at least 32 characters. Repository migrations remain under `database/migrations` and are currently executed through the V1 migration tooling:
 
 ```sh
 pnpm db:migrate
 pnpm db:status
 ```
 
-This does not make V1 the active product surface; it is temporary migration tooling over the shared canonical database until that tooling is centralised.
+## Product rules
 
-## V2 product rules
-
-1. One coherent operating system, not 29 unrelated mini-applications.
-2. The 29 enterprise functions govern user-facing information architecture; backend capability domains do not become navigation.
-3. Every surface has one primary purpose: orientation, list/comparison, one record, one transaction or one decision.
-4. Progressive disclosure is mandatory. Full lifecycle forms do not live permanently on landing pages.
-5. Internal context is explicit beneath `/app`: tenant → function/project → record → action.
-6. `/portal` is a connected CRM Party view into canonical NuBlox projects and business processes, never a duplicate application or generic external-work engine.
-7. A feature is not complete until its end-to-end user journey is proven in the browser.
+1. One coherent operating system, not 29 disconnected mini-applications.
+2. The tenant slug is the top-level application context for internal and connected portal access.
+3. URL context never grants authority; server-side relationships and permissions do.
+4. Public registration creates a new tenancy only. Existing organisations are joined by governed invitation.
+5. Internal and CRM Party surfaces operate over canonical NuBlox records rather than duplicate application data.
+6. Progressive disclosure is mandatory; screens have one primary purpose.
+7. A journey is not complete until its route, authorisation boundary and browser behavior are proven together.
 
 ## Development gate
 
@@ -137,8 +143,4 @@ pnpm test:unit
 pnpm build
 ```
 
-`pnpm test:unit` provisions the Chromium binary required by Vitest browser-mode component tests and then runs the suite once. Use `pnpm test:unit:watch` for interactive watch mode.
-
-Playwright journeys are added as real V2 workflows become available.
-
-The auth route contract is covered by `src/lib/routing/route-contract.test.ts`.
+The route contract is covered by `src/lib/routing/route-contract.test.ts`. Playwright journeys should be added as tenant-first workflows are completed.
