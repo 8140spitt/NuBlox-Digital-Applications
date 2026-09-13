@@ -2,8 +2,13 @@
 set -euo pipefail
 
 REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-APP_DIR="$REPO_ROOT/app"
+APP_DIR="$REPO_ROOT/appv2"
 LOG_DIR="$REPO_ROOT/.logs"
+
+if [[ ! -d "$APP_DIR" ]]; then
+  printf 'NuBlox V2 application directory not found: %s\n' "$APP_DIR" >&2
+  exit 1
+fi
 
 mkdir -p "$LOG_DIR"
 
