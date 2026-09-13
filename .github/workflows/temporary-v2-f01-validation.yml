@@ -44,7 +44,7 @@ jobs:
           )
           path.write_text(source)
           PY
-      - name: Format V2 F01 source
+      - name: Format and validate V2 F01 source
         working-directory: appv2
         run: pnpm exec prettier --write src
       - name: Lint
