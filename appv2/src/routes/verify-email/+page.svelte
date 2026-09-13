@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
+	import { routes } from '$lib/routing/route-contract';
 
+	let { data } = $props();
 	let sending = $state(false);
 	let sent = $state(false);
 	let errorMessage = $state('');
@@ -17,7 +18,7 @@
 		sending = true;
 
 		try {
-			const callback = new URL(resolve('/auth/verify-email'), window.location.origin);
+			const callback = new URL(routes.verifyEmail, window.location.origin);
 			callback.searchParams.set('verified', '1');
 			const result = await authClient.sendVerificationEmail({
 				email,
@@ -41,16 +42,23 @@
 
 <main class="verification-shell">
 	<section class="verification-card">
-		<a class="brand" href={resolve('/auth/start')}>NuBlox</a>
+		<a class="brand" href={routes.start}>NuBlox</a>
 		<p class="nb-eyebrow">Identity verification</p>
 
 		{#if verified}
 			<h1>Email verified</h1>
 			<p class="lede">
-				Your NuBlox identity is verified. If this was a new-tenant registration, the tenant and
-				Owner membership have now been activated.
+				Your identity is verified and the new organisation can now be activated for tenant-scoped
+				access.
 			</p>
-			<a class="primary-action" href={resolve('/auth')}>Continue to sign in</a>
+			{#if data.continueHref}
+				<a class="primary-action" href={data.continueHref}>Continue to your organisation</a>
+			{:else}
+				<p class="guidance">
+					Open your organisation-specific NuBlox address to sign in. Tenant access is never selected
+					from a global sign-in page.
+				</p>
+			{/if}
 		{:else if verificationError}
 			<h1>Verification link expired</h1>
 			<p class="lede">
@@ -61,22 +69,15 @@
 				<button type="button" onclick={resendVerification} disabled={sending}>
 					{sending ? 'Sending…' : 'Send a new verification link'}
 				</button>
-			{:else}
-				<a class="primary-action" href={resolve('/auth')}>Return to sign in</a>
 			{/if}
 		{:else}
 			<h1>Check your email</h1>
 			<p class="lede">
 				We sent a one-hour verification link{email ? ` to ${email}` : ''}. Open it to activate your
-				NuBlox identity.
+				NuBlox identity and organisation.
 			</p>
 			{#if email}
-				<button
-					type="button"
-					class="secondary-action"
-					onclick={resendVerification}
-					disabled={sending}
-				>
+				<button type="button" onclick={resendVerification} disabled={sending}>
 					{sending ? 'Sending…' : 'Resend verification email'}
 				</button>
 			{/if}
@@ -99,14 +100,12 @@
 		padding: 28px;
 		background: var(--nb-ink);
 	}
-
 	.verification-card {
-		width: min(100%, 560px);
+		width: min(100%, 600px);
 		border-radius: 16px;
 		padding: clamp(30px, 6vw, 52px);
 		background: var(--nb-surface);
 	}
-
 	.brand {
 		display: inline-block;
 		margin-bottom: 64px;
@@ -114,54 +113,37 @@
 		letter-spacing: -0.03em;
 		text-decoration: none;
 	}
-
 	h1 {
 		margin: 0;
 		font-size: clamp(2.5rem, 7vw, 4rem);
-		line-height: 0.98;
-		letter-spacing: -0.06em;
+		letter-spacing: -0.055em;
 	}
-
-	.lede {
-		margin: 22px 0 0;
+	.lede,
+	.guidance {
+		margin: 18px 0 0;
 		color: var(--nb-muted);
 		line-height: 1.7;
 	}
-
 	.primary-action,
 	button {
 		display: inline-flex;
-		min-height: 44px;
-		align-items: center;
-		justify-content: center;
-		margin-top: 30px;
+		margin-top: 28px;
 		border: 0;
 		border-radius: 10px;
-		padding: 11px 15px;
+		padding: 12px 15px;
 		background: var(--nb-ink);
 		color: white;
-		font-weight: 780;
+		font: inherit;
+		font-weight: 750;
 		text-decoration: none;
+		cursor: pointer;
 	}
-
-	.secondary-action {
-		border: 1px solid var(--nb-border);
-		background: transparent;
-		color: var(--nb-ink);
-	}
-
-	button:disabled {
-		cursor: progress;
-		opacity: 0.6;
-	}
-
 	.status,
 	.form-error {
-		margin: 20px 0 0;
-		border-left: 3px solid var(--nb-accent);
-		padding: 9px 12px;
-		background: var(--nb-surface-subtle);
-		font-size: 0.84rem;
-		line-height: 1.5;
+		margin: 22px 0 0;
+		font-size: 0.82rem;
+	}
+	.form-error {
+		color: #b42318;
 	}
 </style>
