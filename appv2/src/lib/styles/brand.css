@@ -1,0 +1,14 @@
+:root {
+	--nb-font-sans:
+		'Noto Sans Variable', 'Noto Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+		'Segoe UI', sans-serif;
+	font-family: var(--nb-font-sans);
+}
+
+body,
+button,
+input,
+select,
+textarea {
+	font-family: var(--nb-font-sans);
+}
