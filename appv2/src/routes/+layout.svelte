@@ -2,6 +2,7 @@
 	import '@fontsource-variable/noto-sans';
 	import favicon from '$lib/assets/brand/nublox-logo.svg';
 	import '../app.css';
+	import '$lib/styles/brand.css';
 
 	let { children } = $props();
 </script>
