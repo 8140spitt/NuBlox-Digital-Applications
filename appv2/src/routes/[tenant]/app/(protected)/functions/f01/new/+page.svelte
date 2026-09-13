@@ -1,6 +1,14 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Alert, Breadcrumbs, Button, Field, LinkButton, PageHeader, Panel } from '$lib/components/ui';
+	import {
+		Alert,
+		Breadcrumbs,
+		Button,
+		Field,
+		LinkButton,
+		PageHeader,
+		Panel
+	} from '$lib/components/ui';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
@@ -84,7 +92,9 @@
 						required
 						value={form?.values?.horizonStart ?? ''}
 						aria-invalid={form?.errors?.horizonStart ? 'true' : undefined}
-						aria-describedby={form?.errors?.horizonStart ? 'horizonStart-error' : 'horizonStart-hint'}
+						aria-describedby={form?.errors?.horizonStart
+							? 'horizonStart-error'
+							: 'horizonStart-hint'}
 					/>
 				</Field>
 
@@ -123,7 +133,8 @@
 							required
 							aria-invalid={form?.errors?.purpose ? 'true' : undefined}
 							aria-describedby={form?.errors?.purpose ? 'purpose-error' : 'purpose-hint'}
-						>{form?.values?.purpose ?? ''}</textarea>
+							>{form?.values?.purpose ?? ''}</textarea
+						>
 					</Field>
 				</div>
 
@@ -143,7 +154,8 @@
 							required
 							aria-invalid={form?.errors?.vision ? 'true' : undefined}
 							aria-describedby={form?.errors?.vision ? 'vision-error' : 'vision-hint'}
-						>{form?.values?.vision ?? ''}</textarea>
+							>{form?.values?.vision ?? ''}</textarea
+						>
 					</Field>
 				</div>
 
@@ -161,7 +173,9 @@
 
 				<div class="form-actions full">
 					<Button type="submit">Create strategy cycle</Button>
-					<LinkButton href={routes.strategy(data.tenant.slug)} variant="secondary">Cancel</LinkButton>
+					<LinkButton href={routes.strategy(data.tenant.slug)} variant="secondary"
+						>Cancel</LinkButton
+					>
 				</div>
 			</form>
 		</Panel>
@@ -170,30 +184,49 @@
 			<p class="guidance-kicker">What this creates</p>
 			<h2>One governed strategic context.</h2>
 			<p>
-				This action creates a draft strategy cycle owned by you. It does not approve strategy or invent
-				objectives on your behalf.
+				This action creates a draft strategy cycle owned by you. It does not approve strategy or
+				invent objectives on your behalf.
 			</p>
 			<ol>
 				<li>
 					<span>01</span>
-					<div><strong>Direction</strong><small>Purpose, vision and horizon become the stable strategic frame.</small></div>
+					<div>
+						<strong>Direction</strong><small
+							>Purpose, vision and horizon become the stable strategic frame.</small
+						>
+					</div>
 				</li>
 				<li>
 					<span>02</span>
-					<div><strong>Evidence and choice</strong><small>Environmental analysis supports options and objectives.</small></div>
+					<div>
+						<strong>Evidence and choice</strong><small
+							>Environmental analysis supports options and objectives.</small
+						>
+					</div>
 				</li>
 				<li>
 					<span>03</span>
-					<div><strong>Plan and execute</strong><small>Business plans, resources and initiatives connect to delivery.</small></div>
+					<div>
+						<strong>Plan and execute</strong><small
+							>Business plans, resources and initiatives connect to delivery.</small
+						>
+					</div>
 				</li>
 				<li>
 					<span>04</span>
-					<div><strong>Measure and learn</strong><small>KPIs, reviews and scenarios close the strategy loop.</small></div>
+					<div>
+						<strong>Measure and learn</strong><small
+							>KPIs, reviews and scenarios close the strategy loop.</small
+						>
+					</div>
 				</li>
 			</ol>
 			<div class="authority-note">
 				<strong>Governance rule</strong>
-				<p>Draft work can be amended. Approved strategy becomes immutable enterprise evidence and is changed through a controlled revision.</p>
+				<p>
+					Draft work can be amended. Approved strategy becomes immutable enterprise evidence and is
+					changed through a controlled revision.
+				</p>
 			</div>
 		</aside>
 	</div>

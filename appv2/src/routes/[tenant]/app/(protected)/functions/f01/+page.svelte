@@ -8,11 +8,14 @@
 		StatusBadge
 	} from '$lib/components/ui';
 	import { routes } from '$lib/routing/route-contract';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 
 	let { data } = $props();
 
 	const workspace = $derived(data.workspace);
-	const focusFramework = $derived(workspace.activeFramework ?? workspace.draftFrameworks[0] ?? null);
+	const focusFramework = $derived(
+		workspace.activeFramework ?? workspace.draftFrameworks[0] ?? null
+	);
 
 	function horizon(start: string, end: string): string {
 		return `${start.slice(0, 4)}–${end.slice(0, 4)}`;
@@ -24,7 +27,9 @@
 		return 'Draft';
 	}
 
-	function lifecycleTone(status: 'draft' | 'approved' | 'superseded'): 'warning' | 'success' | 'neutral' {
+	function lifecycleTone(
+		status: 'draft' | 'approved' | 'superseded'
+	): 'warning' | 'success' | 'neutral' {
 		if (status === 'approved') return 'success';
 		if (status === 'superseded') return 'neutral';
 		return 'warning';
@@ -50,35 +55,40 @@
 					{
 						id: 'F01.03',
 						name: 'Strategic planning',
-						detail: 'Options, choices and accountable objectives translate direction into outcomes.',
+						detail:
+							'Options, choices and accountable objectives translate direction into outcomes.',
 						metric: `${focusFramework.objectiveCount} objectives`,
 						state: focusFramework.objectiveCount > 0 ? 'active' : 'ready'
 					},
 					{
 						id: 'F01.04',
 						name: 'Business planning',
-						detail: 'Plans, initiatives, investment and resource envelopes connect strategy to delivery.',
+						detail:
+							'Plans, initiatives, investment and resource envelopes connect strategy to delivery.',
 						metric: `${focusFramework.businessPlanCount} plans · ${focusFramework.initiativeCount} initiatives`,
 						state: focusFramework.businessPlanCount > 0 ? 'active' : 'ready'
 					},
 					{
 						id: 'F01.05',
 						name: 'Operating model',
-						detail: 'Capabilities, organisation, process, information and technology move to target state.',
+						detail:
+							'Capabilities, organisation, process, information and technology move to target state.',
 						metric: `${focusFramework.operatingModelComponentCount} components`,
 						state: focusFramework.operatingModelComponentCount > 0 ? 'active' : 'ready'
 					},
 					{
 						id: 'F01.06',
 						name: 'Goal & KPI management',
-						detail: 'Targets and authoritative actuals show whether strategic outcomes are being realised.',
+						detail:
+							'Targets and authoritative actuals show whether strategic outcomes are being realised.',
 						metric: `${focusFramework.kpiCount} KPIs`,
 						state: focusFramework.kpiCount > 0 ? 'active' : 'ready'
 					},
 					{
 						id: 'F01.07',
 						name: 'Strategic review',
-						detail: 'Evidence, variance, decisions and corrective action close the management loop.',
+						detail:
+							'Evidence, variance, decisions and corrective action close the management loop.',
 						metric: `${focusFramework.reviewCount} reviews`,
 						state: focusFramework.reviewCount > 0 ? 'active' : 'ready'
 					},
@@ -172,11 +182,7 @@
 				value={String(focusFramework.initiativeCount)}
 				detail="Open delivery commitments"
 			/>
-			<Stat
-				label="KPIs"
-				value={String(focusFramework.kpiCount)}
-				detail="Outcome measures"
-			/>
+			<Stat label="KPIs" value={String(focusFramework.kpiCount)} detail="Outcome measures" />
 			<Stat
 				label="Scenarios"
 				value={String(focusFramework.scenarioCount)}
@@ -219,7 +225,7 @@
 		>
 			<div class="cycle-list">
 				{#each workspace.frameworks as framework (framework.publicId)}
-					<a href={routes.strategyFramework(data.tenant.slug, framework.publicId)}>
+					<a href={resolve(routes.strategyFramework(data.tenant.slug, framework.publicId))}>
 						<div class="cycle-primary">
 							<span class="cycle-code">{framework.code} · v{framework.versionNumber}</span>
 							<strong>{framework.title}</strong>
@@ -242,20 +248,27 @@
 				<p class="section-kicker">No strategy cycle yet</p>
 				<h2 id="start-strategy-title">Build the strategic thread from a clear direction.</h2>
 				<p>
-					Start with purpose, vision and planning horizon. NuBlox will use that strategy cycle as the
-					governed context for environmental evidence, strategic choices, objectives, plans, operating
-					model changes, KPIs, reviews and scenarios.
+					Start with purpose, vision and planning horizon. NuBlox will use that strategy cycle as
+					the governed context for environmental evidence, strategic choices, objectives, plans,
+					operating model changes, KPIs, reviews and scenarios.
 				</p>
 				{#if workspace.permissions.canManage}
 					<LinkButton href={routes.strategyNew(data.tenant.slug)}>Create first strategy</LinkButton>
 				{:else}
-					<p class="read-only-note">You have view access. A strategy manager must create the first cycle.</p>
+					<p class="read-only-note">
+						You have view access. A strategy manager must create the first cycle.
+					</p>
 				{/if}
 			</div>
 			<ol class="strategic-thread" aria-label="Strategy operating thread">
 				<li><span>01</span><strong>Direction</strong><small>Purpose · vision · horizon</small></li>
-				<li><span>02</span><strong>Choice</strong><small>Evidence · options · objectives</small></li>
-				<li><span>03</span><strong>Execution</strong><small>Plan · investment · operating model</small></li>
+				<li>
+					<span>02</span><strong>Choice</strong><small>Evidence · options · objectives</small>
+				</li>
+				<li>
+					<span>03</span><strong>Execution</strong><small>Plan · investment · operating model</small
+					>
+				</li>
 				<li><span>04</span><strong>Learning</strong><small>KPI · review · scenario</small></li>
 			</ol>
 		</section>

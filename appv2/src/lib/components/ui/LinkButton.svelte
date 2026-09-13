@@ -15,7 +15,10 @@
 	let { href, children, variant = 'primary', size = 'md' }: Props = $props();
 </script>
 
-<a href={resolveInternalPath(href)} class={`nb-link-button nb-link-button--${variant} nb-link-button--${size}`}>
+<a
+	href={resolveInternalPath(href)}
+	class={`nb-link-button nb-link-button--${variant} nb-link-button--${size}`}
+>
 	{@render children()}
 </a>
 

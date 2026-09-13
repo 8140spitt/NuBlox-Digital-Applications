@@ -18,7 +18,9 @@
 		return 'Draft';
 	}
 
-	function statusTone(status: 'draft' | 'approved' | 'superseded'): 'warning' | 'success' | 'neutral' {
+	function statusTone(
+		status: 'draft' | 'approved' | 'superseded'
+	): 'warning' | 'success' | 'neutral' {
 		if (status === 'approved') return 'success';
 		if (status === 'superseded') return 'neutral';
 		return 'warning';
@@ -97,7 +99,10 @@
 </svelte:head>
 
 {#snippet recordStatus()}
-	<StatusBadge label={statusLabel(framework.lifecycleStatus)} tone={statusTone(framework.lifecycleStatus)} />
+	<StatusBadge
+		label={statusLabel(framework.lifecycleStatus)}
+		tone={statusTone(framework.lifecycleStatus)}
+	/>
 {/snippet}
 
 {#snippet recordMeta()}
@@ -139,21 +144,38 @@
 	</section>
 
 	<section class="direction-grid" aria-label="Strategic direction">
-		<Panel title="Purpose" description="Why the organisation exists and the enduring value it creates.">
+		<Panel
+			title="Purpose"
+			description="Why the organisation exists and the enduring value it creates."
+		>
 			<p class="direction-copy">{framework.purpose}</p>
 		</Panel>
 		<Panel title="Vision" description="The future state this strategy is intended to achieve.">
 			<p class="direction-copy">{framework.vision}</p>
 		</Panel>
-		<Panel title="Mission" description="How the organisation expresses its enduring remit within this strategic frame.">
-			<p class="direction-copy">{framework.mission ?? 'No separate mission statement has been defined.'}</p>
+		<Panel
+			title="Mission"
+			description="How the organisation expresses its enduring remit within this strategic frame."
+		>
+			<p class="direction-copy">
+				{framework.mission ?? 'No separate mission statement has been defined.'}
+			</p>
 		</Panel>
 	</section>
 
 	<section class="stat-grid" aria-label="Strategy system summary">
-		<Stat label="Environmental evidence" value={String(framework.environmentFactorCount)} detail="Active factors" tone="info" />
+		<Stat
+			label="Environmental evidence"
+			value={String(framework.environmentFactorCount)}
+			detail="Active factors"
+			tone="info"
+		/>
 		<Stat label="Objectives" value={String(framework.objectiveCount)} detail="Strategic outcomes" />
-		<Stat label="Initiatives" value={String(framework.initiativeCount)} detail="Open delivery commitments" />
+		<Stat
+			label="Initiatives"
+			value={String(framework.initiativeCount)}
+			detail="Open delivery commitments"
+		/>
 		<Stat label="KPIs" value={String(framework.kpiCount)} detail="Outcome measures" />
 	</section>
 
@@ -164,8 +186,9 @@
 				<h2 id="management-system-title">One strategy record, eight connected management areas</h2>
 			</div>
 			<p>
-				This workspace is the stable strategic context. Each subsequent slice will add focused record
-				workspaces and governed actions without turning this page into an everything-at-once command centre.
+				This workspace is the stable strategic context. Each subsequent slice will add focused
+				record workspaces and governed actions without turning this page into an everything-at-once
+				command centre.
 			</p>
 		</div>
 
@@ -190,11 +213,14 @@
 				<strong>{statusLabel(framework.lifecycleStatus)}</strong>
 				<p>
 					{#if framework.lifecycleStatus === 'draft'}
-						This version can be developed by authorised strategy managers. Approval will remain gated by evidence, strategic choices and objectives rather than a generic status edit.
+						This version can be developed by authorised strategy managers. Approval will remain
+						gated by evidence, strategic choices and objectives rather than a generic status edit.
 					{:else if framework.lifecycleStatus === 'approved'}
-						This version is approved enterprise evidence. Material change must be introduced through a controlled revision rather than editing approved history.
+						This version is approved enterprise evidence. Material change must be introduced through
+						a controlled revision rather than editing approved history.
 					{:else}
-						This version remains preserved as enterprise history and is no longer the current approved strategic direction.
+						This version remains preserved as enterprise history and is no longer the current
+						approved strategic direction.
 					{/if}
 				</p>
 			</div>

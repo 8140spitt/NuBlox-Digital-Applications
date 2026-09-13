@@ -52,8 +52,10 @@ export const actions = {
 		if (values.horizonStart && values.horizonEnd && values.horizonEnd < values.horizonStart) {
 			errors.horizonEnd = 'The horizon must end on or after its start date.';
 		}
-		if (!values.purpose) errors.purpose = 'State why the organisation exists and the value it creates.';
-		if (!values.vision) errors.vision = 'Describe the future state this strategy is intended to achieve.';
+		if (!values.purpose)
+			errors.purpose = 'State why the organisation exists and the value it creates.';
+		if (!values.vision)
+			errors.vision = 'Describe the future state this strategy is intended to achieve.';
 
 		if (Object.keys(errors).length > 0) {
 			return fail(400, { values, errors, formError: '' });

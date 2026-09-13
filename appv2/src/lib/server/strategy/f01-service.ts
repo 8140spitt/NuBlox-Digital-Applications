@@ -214,7 +214,9 @@ async function nextFrameworkCode(
 	horizonStart: string,
 	horizonEnd: string
 ): Promise<string> {
-	await connection.execute('SELECT id FROM organisations WHERE id = ? FOR UPDATE', [organisationId]);
+	await connection.execute('SELECT id FROM organisations WHERE id = ? FOR UPDATE', [
+		organisationId
+	]);
 	const startYear = horizonStart.slice(0, 4);
 	const endYear = horizonEnd.slice(0, 4);
 	const base = `STR-${startYear}-${endYear}`;
@@ -242,7 +244,8 @@ export async function getStrategyWorkspace(input: {
 	return {
 		permissions,
 		frameworks,
-		activeFramework: frameworks.find((framework) => framework.lifecycleStatus === 'approved') ?? null,
+		activeFramework:
+			frameworks.find((framework) => framework.lifecycleStatus === 'approved') ?? null,
 		draftFrameworks: frameworks.filter((framework) => framework.lifecycleStatus === 'draft')
 	};
 }
@@ -261,7 +264,9 @@ export async function createStrategyFramework(input: {
 		memberId: input.actor.memberId
 	});
 	if (!permissions.canManage) {
-		throw new StrategyAccessError('You do not have authority to create or amend enterprise strategy.');
+		throw new StrategyAccessError(
+			'You do not have authority to create or amend enterprise strategy.'
+		);
 	}
 
 	const title = requiredText(input.title, 'Strategy title', 255);
