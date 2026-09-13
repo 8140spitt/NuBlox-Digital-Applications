@@ -2,6 +2,7 @@
 	import {
 		Breadcrumbs,
 		LifecycleStrip,
+		LinkButton,
 		Panel,
 		RecordHeader,
 		Stat,
@@ -179,6 +180,20 @@
 		<Stat label="KPIs" value={String(framework.kpiCount)} detail="Outcome measures" />
 	</section>
 
+	<section class="active-workspaces" aria-labelledby="active-workspaces-title">
+		<div>
+			<p class="section-kicker">Active strategy workflow</p>
+			<h2 id="active-workspaces-title">Move from evidence to strategic choice without losing the thread.</h2>
+			<p>
+				F01.02 now governs structured evidence, environmental factors, implications and assumptions. F01.03 consumes those records as drivers for options, decisions, themes and traceable objectives.
+			</p>
+		</div>
+		<div class="workspace-actions">
+			<LinkButton href={routes.strategyAnalysis(data.tenant.slug, framework.publicId)} variant="secondary">F01.02 Environmental analysis</LinkButton>
+			<LinkButton href={routes.strategyPlanning(data.tenant.slug, framework.publicId)}>F01.03 Strategic planning</LinkButton>
+		</div>
+	</section>
+
 	<section class="management-system" aria-labelledby="management-system-title">
 		<div class="section-heading">
 			<div>
@@ -186,9 +201,7 @@
 				<h2 id="management-system-title">One strategy record, eight connected management areas</h2>
 			</div>
 			<p>
-				This workspace is the stable strategic context. Each subsequent slice will add focused
-				record workspaces and governed actions without turning this page into an everything-at-once
-				command centre.
+				This workspace remains the stable strategic context. F01.02 and F01.03 now have focused record workspaces and governed transactions; later sub-functions will attach to the same strategy cycle rather than creating parallel applications.
 			</p>
 		</div>
 
@@ -247,9 +260,10 @@
 		gap: var(--nb-space-2);
 	}
 
-	.lifecycle-panel {
+	.lifecycle-panel,
+	.active-workspaces {
 		display: grid;
-		grid-template-columns: minmax(260px, 0.7fr) minmax(0, 1.3fr);
+		grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
 		gap: var(--nb-space-10);
 		align-items: center;
 		padding: var(--nb-space-6);
@@ -268,10 +282,24 @@
 	}
 
 	.lifecycle-panel h2,
+	.active-workspaces h2,
 	.section-heading h2 {
 		margin: var(--nb-space-2) 0 0;
 		font-size: var(--nb-font-size-xl);
 		letter-spacing: -0.025em;
+	}
+
+	.active-workspaces p {
+		margin: var(--nb-space-3) 0 0;
+		color: var(--nb-color-text-secondary);
+		line-height: var(--nb-line-relaxed);
+	}
+
+	.workspace-actions {
+		display: flex;
+		justify-content: flex-end;
+		flex-wrap: wrap;
+		gap: var(--nb-space-3);
 	}
 
 	.direction-grid {
@@ -401,9 +429,13 @@
 
 	@media (max-width: 820px) {
 		.lifecycle-panel,
+		.active-workspaces,
 		.section-heading,
 		.control-position {
 			grid-template-columns: 1fr;
+		}
+		.workspace-actions {
+			justify-content: flex-start;
 		}
 		.stat-grid {
 			grid-template-columns: repeat(2, minmax(0, 1fr));
