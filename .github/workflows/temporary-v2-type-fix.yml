@@ -33,62 +33,62 @@ jobs:
 
           replacements = {
               'appv2/src/lib/components/auth/SignInSurface.svelte': [
-                  ('resolve(destination)', 'resolve(destination as never)'),
-                  ('resolve(startHref)', 'resolve(startHref as never)'),
-                  ('resolve(forgotPasswordHref)', 'resolve(forgotPasswordHref as never)'),
+                  ('resolve(destination)', 'resolve(destination as Pathname)'),
+                  ('resolve(startHref)', 'resolve(startHref as Pathname)'),
+                  ('resolve(forgotPasswordHref)', 'resolve(forgotPasswordHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/app/(protected)/+layout.svelte': [
-                  ('resolve(routes.appSignIn(data.tenant.slug))', 'resolve(routes.appSignIn(data.tenant.slug) as never)'),
-                  ('resolve(routes.dashboard(data.tenant.slug))', 'resolve(routes.dashboard(data.tenant.slug) as never)'),
-                  ('resolve(item.href)', 'resolve(item.href as never)'),
+                  ('resolve(routes.appSignIn(data.tenant.slug))', 'resolve(routes.appSignIn(data.tenant.slug) as Pathname)'),
+                  ('resolve(routes.dashboard(data.tenant.slug))', 'resolve(routes.dashboard(data.tenant.slug) as Pathname)'),
+                  ('resolve(item.href)', 'resolve(item.href as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/app/auth/forgot-password/+page.svelte': [
                   ('const tenant = $derived(page.params.tenant);', "const tenant = $derived(page.params.tenant ?? '');"),
-                  ('resolve(signInHref)', 'resolve(signInHref as never)'),
+                  ('resolve(signInHref)', 'resolve(signInHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/app/auth/invite/[token]/+page.svelte': [
-                  ('resolve(`${data.verifyEmailHref}?email=${encodeURIComponent(data.invitation.email)}`)', 'resolve(`${data.verifyEmailHref}?email=${encodeURIComponent(data.invitation.email)}` as never)'),
-                  ('resolve(data.signInHref)', 'resolve(data.signInHref as never)'),
-                  ('resolve(invitationSignIn)', 'resolve(invitationSignIn as never)'),
+                  ('resolve(`${data.verifyEmailHref}?email=${encodeURIComponent(data.invitation.email)}`)', 'resolve(`${data.verifyEmailHref}?email=${encodeURIComponent(data.invitation.email)}` as Pathname)'),
+                  ('resolve(data.signInHref)', 'resolve(data.signInHref as Pathname)'),
+                  ('resolve(invitationSignIn)', 'resolve(invitationSignIn as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/app/auth/no-access/+page.svelte': [
-                  ('resolve(data.signInHref)', 'resolve(data.signInHref as never)'),
-                  ('resolve(data.startHref)', 'resolve(data.startHref as never)'),
+                  ('resolve(data.signInHref)', 'resolve(data.signInHref as Pathname)'),
+                  ('resolve(data.startHref)', 'resolve(data.startHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/app/auth/reset-password/+page.svelte': [
                   ('const tenant = $derived(page.params.tenant);', "const tenant = $derived(page.params.tenant ?? '');"),
-                  ('resolve(routes.appSignIn(tenant))', 'resolve(routes.appSignIn(tenant) as never)'),
-                  ('resolve(forgotPasswordHref)', 'resolve(forgotPasswordHref as never)'),
+                  ('resolve(routes.appSignIn(tenant))', 'resolve(routes.appSignIn(tenant) as Pathname)'),
+                  ('resolve(forgotPasswordHref)', 'resolve(forgotPasswordHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/app/auth/verify-email/+page.svelte': [
                   ('const tenant = $derived(page.params.tenant);', "const tenant = $derived(page.params.tenant ?? '');"),
-                  ('resolve(signInHref)', 'resolve(signInHref as never)'),
+                  ('resolve(signInHref)', 'resolve(signInHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/portal/[crmParty]/(protected)/+layout.svelte': [
-                  ('resolve(routes.portalSignIn(data.tenant.slug, data.crmParty.slug))', 'resolve(routes.portalSignIn(data.tenant.slug, data.crmParty.slug) as never)'),
-                  ('resolve(dashboardHref)', 'resolve(dashboardHref as never)'),
-                  ('resolve(projectsHref)', 'resolve(projectsHref as never)'),
-                  ('resolve(actionsHref)', 'resolve(actionsHref as never)'),
+                  ('resolve(routes.portalSignIn(data.tenant.slug, data.crmParty.slug))', 'resolve(routes.portalSignIn(data.tenant.slug, data.crmParty.slug) as Pathname)'),
+                  ('resolve(dashboardHref)', 'resolve(dashboardHref as Pathname)'),
+                  ('resolve(projectsHref)', 'resolve(projectsHref as Pathname)'),
+                  ('resolve(actionsHref)', 'resolve(actionsHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/portal/[crmParty]/auth/forgot-password/+page.svelte': [
                   ('const tenant = $derived(page.params.tenant);', "const tenant = $derived(page.params.tenant ?? '');"),
                   ('const crmParty = $derived(page.params.crmParty);', "const crmParty = $derived(page.params.crmParty ?? '');"),
-                  ('resolve(signInHref)', 'resolve(signInHref as never)'),
+                  ('resolve(signInHref)', 'resolve(signInHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/portal/[crmParty]/auth/no-access/+page.svelte': [
-                  ('resolve(data.signInHref)', 'resolve(data.signInHref as never)'),
-                  ('resolve(data.startHref)', 'resolve(data.startHref as never)'),
+                  ('resolve(data.signInHref)', 'resolve(data.signInHref as Pathname)'),
+                  ('resolve(data.startHref)', 'resolve(data.startHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/portal/[crmParty]/auth/reset-password/+page.svelte': [
                   ('const tenant = $derived(page.params.tenant);', "const tenant = $derived(page.params.tenant ?? '');"),
                   ('const crmParty = $derived(page.params.crmParty);', "const crmParty = $derived(page.params.crmParty ?? '');"),
-                  ('resolve(routes.portalSignIn(tenant, crmParty))', 'resolve(routes.portalSignIn(tenant, crmParty) as never)'),
-                  ('resolve(forgotHref)', 'resolve(forgotHref as never)'),
+                  ('resolve(routes.portalSignIn(tenant, crmParty))', 'resolve(routes.portalSignIn(tenant, crmParty) as Pathname)'),
+                  ('resolve(forgotHref)', 'resolve(forgotHref as Pathname)'),
               ],
               'appv2/src/routes/[tenant]/portal/[crmParty]/auth/verify-email/+page.svelte': [
                   ('const tenant = $derived(page.params.tenant);', "const tenant = $derived(page.params.tenant ?? '');"),
                   ('const crmParty = $derived(page.params.crmParty);', "const crmParty = $derived(page.params.crmParty ?? '');"),
-                  ('resolve(signInHref)', 'resolve(signInHref as never)'),
+                  ('resolve(signInHref)', 'resolve(signInHref as Pathname)'),
               ],
           }
 
@@ -99,6 +99,11 @@ jobs:
                   if old not in text:
                       raise SystemExit(f'Missing expected text in {filename}: {old}')
                   text = text.replace(old, new)
+              if "import { resolve } from '$app/paths';" in text and "import type { Pathname } from '$app/types';" not in text:
+                  text = text.replace(
+                      "import { resolve } from '$app/paths';",
+                      "import { resolve } from '$app/paths';\n\timport type { Pathname } from '$app/types';"
+                  )
               path.write_text(text)
 
           path = Path('appv2/src/routes/[tenant]/app/auth/invite/[token]/+page.server.ts')
