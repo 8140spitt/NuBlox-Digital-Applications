@@ -6,6 +6,9 @@ export type AppMyWorkPath = `/${string}/app/my-work`;
 export type AppFunctionsPath = `/${string}/app/functions`;
 export type AppProjectsPath = `/${string}/app/projects`;
 export type AppDesignSystemPath = `/${string}/app/design-system`;
+export type AppStrategyPath = `/${string}/app/functions/f01`;
+export type AppStrategyNewPath = `/${string}/app/functions/f01/new`;
+export type AppStrategyFrameworkPath = `/${string}/app/functions/f01/strategies/${string}`;
 export type AppSignInPath = `/${string}/app/auth/signin${string}`;
 export type AppInvitePath = `/${string}/app/auth/invite/${string}`;
 export type PortalPath = `/${string}/portal/${string}`;
@@ -31,6 +34,12 @@ function normalisePath(path: string): string {
 		.filter(Boolean)
 		.map((segment) => encodeURIComponent(segment))
 		.join('/');
+}
+
+function requiredSegment(value: string, label: string): string {
+	const normalized = value.trim();
+	if (!normalized) throw new Error(`${label} is required.`);
+	return encodeURIComponent(normalized);
 }
 
 function safeLocalPath(value: string | null | undefined): string | null {
@@ -129,6 +138,12 @@ export const routes = {
 	projects: (tenant: string): AppProjectsPath => appPath(tenant, 'projects') as AppProjectsPath,
 	designSystem: (tenant: string): AppDesignSystemPath =>
 		appPath(tenant, 'design-system') as AppDesignSystemPath,
+	strategy: (tenant: string): AppStrategyPath =>
+		appPath(tenant, 'functions/f01') as AppStrategyPath,
+	strategyNew: (tenant: string): AppStrategyNewPath =>
+		appPath(tenant, 'functions/f01/new') as AppStrategyNewPath,
+	strategyFramework: (tenant: string, strategyPublicId: string): AppStrategyFrameworkPath =>
+		`${appPath(tenant, 'functions/f01/strategies')}/${requiredSegment(strategyPublicId, 'Strategy')}` as AppStrategyFrameworkPath,
 	portal: (tenant: string, crmParty: string): PortalPath =>
 		portalPath(tenant, crmParty) as PortalPath,
 	portalSignIn: portalSignInPath,
