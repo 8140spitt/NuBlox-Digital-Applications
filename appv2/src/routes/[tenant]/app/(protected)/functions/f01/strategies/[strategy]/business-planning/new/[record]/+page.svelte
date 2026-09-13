@@ -46,6 +46,12 @@
 		fieldValue('planPublicId', draftPlans.length === 1 ? (draftPlans[0]?.publicId ?? '') : '')
 	);
 	let selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));
+	let selectedInitiativePublicId = $state(
+		fieldValue(
+			'initiativePublicId',
+			openInitiatives.length === 1 ? (openInitiatives[0]?.publicId ?? '') : ''
+		)
+	);
 	const selectedPlan = $derived(
 		draftPlans.find((plan) => plan.publicId === selectedPlanPublicId) ?? null
 	);
@@ -55,6 +61,9 @@
 					selectedPlan.objectivePublicIds.includes(objective.publicId)
 				)
 			: []
+	);
+	const selectedInitiative = $derived(
+		openInitiatives.find((initiative) => initiative.publicId === selectedInitiativePublicId) ?? null
 	);
 
 	$effect(() => {
@@ -138,6 +147,8 @@
 							name="periodStart"
 							type="date"
 							value={fieldValue('periodStart', data.framework.horizonStart)}
+							min={data.framework.horizonStart}
+							max={data.framework.horizonEnd}
 							required
 						/>
 					</Field>
@@ -148,6 +159,8 @@
 							name="periodEnd"
 							type="date"
 							value={fieldValue('periodEnd', data.framework.horizonEnd)}
+							min={data.framework.horizonStart}
+							max={data.framework.horizonEnd}
 							required
 						/>
 					</Field>
@@ -391,11 +404,24 @@
 				description="A resource need must be quantified and routed to the function that will own the canonical commitment."
 			>
 				<div class="form-grid two">
-					<Field id="initiativePublicId" label="Initiative" required>
-						<select class="nb-control" id="initiativePublicId" name="initiativePublicId" required>
+					<Field
+						id="initiativePublicId"
+						label="Initiative"
+						hint="The initiative supplies the valid need-by window and planning currency."
+						required
+					>
+						<select
+							class="nb-control"
+							id="initiativePublicId"
+							name="initiativePublicId"
+							bind:value={selectedInitiativePublicId}
+							required
+						>
 							<option value="">Choose initiative</option>
 							{#each openInitiatives as initiative (initiative.publicId)}
-								<option value={initiative.publicId}>{initiative.code} · {initiative.title}</option>
+								<option value={initiative.publicId}
+									>{initiative.code} · {initiative.title} · {initiative.startDate} → {initiative.endDate}</option
+								>
 							{/each}
 						</select>
 					</Field>
@@ -449,24 +475,36 @@
 							value={fieldValue('amount')}
 						/></Field
 					>
-					<Field id="currencyCode" label="Currency"
-						><input
+					<Field
+						id="currencyCode"
+						label="Currency"
+						hint={selectedInitiative ? `Inherited from ${selectedInitiative.code}.` : undefined}
+					>
+						<input
 							class="nb-control"
 							id="currencyCode"
 							name="currencyCode"
-							value={fieldValue('currencyCode', 'GBP')}
+							value={fieldValue('currencyCode', selectedInitiative?.currencyCode ?? 'GBP')}
 							maxlength="3"
-						/></Field
+						/>
+					</Field>
+					<Field
+						id="needBy"
+						label="Need by"
+						hint={selectedInitiative
+							? `Must fall within ${selectedInitiative.startDate} to ${selectedInitiative.endDate}; defaults to initiative start.`
+							: 'Select an initiative to inherit its valid delivery window.'}
 					>
-					<Field id="needBy" label="Need by"
-						><input
+						<input
 							class="nb-control"
 							id="needBy"
 							name="needBy"
 							type="date"
-							value={fieldValue('needBy')}
-						/></Field
-					>
+							value={fieldValue('needBy', selectedInitiative?.startDate ?? '')}
+							min={selectedInitiative?.startDate}
+							max={selectedInitiative?.endDate}
+						/>
+					</Field>
 					<Field id="quantity" label="Quantity"
 						><input
 							class="nb-control"

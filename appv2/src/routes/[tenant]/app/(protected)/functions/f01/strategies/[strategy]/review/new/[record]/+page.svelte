@@ -23,6 +23,13 @@
 	function fieldValue(key: string, fallback = ''): string {
 		return values[key] ?? fallback;
 	}
+
+	let selectedReviewPublicId = $state(
+		fieldValue('reviewPublicId', draftReviews.length === 1 ? (draftReviews[0]?.publicId ?? '') : '')
+	);
+	const selectedReview = $derived(
+		draftReviews.find((review) => review.publicId === selectedReviewPublicId) ?? null
+	);
 </script>
 
 <svelte:head>
@@ -64,13 +71,20 @@
 				description="NuBlox uses the latest observation on or before the review date for every approved KPI that has evidence."
 			>
 				<div class="form-grid two">
-					<Field id="reviewDate" label="Review date" required>
+					<Field
+						id="reviewDate"
+						label="Review date"
+						hint={`Must fall within the strategy horizon ${data.framework.horizonStart} to ${data.framework.horizonEnd}.`}
+						required
+					>
 						<input
 							class="nb-control"
 							id="reviewDate"
 							name="reviewDate"
 							type="date"
 							value={fieldValue('reviewDate')}
+							min={data.framework.horizonStart}
+							max={data.framework.horizonEnd}
 							required
 						/>
 					</Field>
@@ -123,7 +137,13 @@
 			>
 				<div class="form-grid two">
 					<Field id="reviewPublicId" label="Draft strategic review" required>
-						<select class="nb-control" id="reviewPublicId" name="reviewPublicId" required>
+						<select
+							class="nb-control"
+							id="reviewPublicId"
+							name="reviewPublicId"
+							bind:value={selectedReviewPublicId}
+							required
+						>
 							<option value="">Choose review</option>
 							{#each draftReviews as review (review.publicId)}
 								<option value={review.publicId}>{review.code} · {review.title}</option>
@@ -153,13 +173,20 @@
 						>{fieldValue('rationale')}</textarea
 					>
 				</Field>
-				<Field id="dueDate" label="Due date">
+				<Field
+					id="dueDate"
+					label="Due date"
+					hint={selectedReview
+						? `Cannot be before the selected review date ${selectedReview.reviewDate}.`
+						: 'Select the draft review to establish the earliest valid due date.'}
+				>
 					<input
 						class="nb-control"
 						id="dueDate"
 						name="dueDate"
 						type="date"
 						value={fieldValue('dueDate')}
+						min={selectedReview?.reviewDate}
 					/>
 				</Field>
 			</Panel>

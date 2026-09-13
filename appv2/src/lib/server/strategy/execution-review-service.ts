@@ -428,9 +428,17 @@ function unique(values: readonly string[] | undefined): string[] {
 	return [...new Set((values ?? []).map((value) => value.trim()).filter(Boolean))];
 }
 
-function assertWithin(value: string, start: string, end: string, label: string): void {
+function assertWithin(
+	value: string,
+	start: string,
+	end: string,
+	label: string,
+	contextLabel = 'governing planning horizon'
+): void {
 	if (value < start || value > end) {
-		throw new StrategyValidationError(`${label} must sit within the governing planning horizon.`);
+		throw new StrategyValidationError(
+			`${label} must fall between ${start} and ${end} within the ${contextLabel}.`
+		);
 	}
 }
 
@@ -1062,9 +1070,16 @@ export async function createStrategyBusinessPlan(input: {
 			periodStart,
 			framework.horizonStart,
 			framework.horizonEnd,
-			'Planning period start'
+			'Planning period start',
+			'strategy horizon'
 		);
-		assertWithin(periodEnd, framework.horizonStart, framework.horizonEnd, 'Planning period end');
+		assertWithin(
+			periodEnd,
+			framework.horizonStart,
+			framework.horizonEnd,
+			'Planning period end',
+			'strategy horizon'
+		);
 		const objectives = await objectiveIds(
 			connection,
 			input.actor.organisationId,
@@ -1211,8 +1226,14 @@ export async function createStrategyInitiative(input: {
 			);
 		const planStart = dateValue(plan.periodStart) ?? '';
 		const planEnd = dateValue(plan.periodEnd) ?? '';
-		assertWithin(startDate, planStart, planEnd, 'Initiative start');
-		assertWithin(endDate, planStart, planEnd, 'Initiative end');
+		assertWithin(
+			startDate,
+			planStart,
+			planEnd,
+			'Initiative start',
+			'selected business plan period'
+		);
+		assertWithin(endDate, planStart, planEnd, 'Initiative end', 'selected business plan period');
 
 		const [objectiveRows] = await connection.execute<(RowDataPacket & { id: string | number })[]>(
 			`SELECT objective.id
@@ -1377,7 +1398,8 @@ export async function createStrategyResourceRequirement(input: {
 				needBy,
 				dateValue(initiative.startDate) ?? framework.horizonStart,
 				dateValue(initiative.endDate) ?? framework.horizonEnd,
-				'Need-by date'
+				'Need-by date',
+				'selected initiative period'
 			);
 		const publicId = randomUUID();
 		await connection.execute(
@@ -1616,7 +1638,13 @@ export async function createStrategyKpi(input: {
 			input.frameworkPublicId
 		);
 		if (targetDate)
-			assertWithin(targetDate, framework.horizonStart, framework.horizonEnd, 'Target date');
+			assertWithin(
+				targetDate,
+				framework.horizonStart,
+				framework.horizonEnd,
+				'Target date',
+				'strategy horizon'
+			);
 		const objectives = await objectiveIds(connection, input.actor.organisationId, framework.id, [
 			input.objectivePublicId
 		]);
@@ -1800,7 +1828,13 @@ export async function recordStrategyKpiObservation(input: {
 			input.actor.organisationId,
 			input.frameworkPublicId
 		);
-		assertWithin(observedOn, framework.horizonStart, framework.horizonEnd, 'Observation date');
+		assertWithin(
+			observedOn,
+			framework.horizonStart,
+			framework.horizonEnd,
+			'Observation date',
+			'strategy horizon'
+		);
 		const [rows] = await connection.execute<
 			(RowDataPacket & { id: string | number; lifecycleStatus: KpiStatus; code: string })[]
 		>(
@@ -1903,7 +1937,13 @@ export async function createStrategyReview(input: {
 			input.actor.organisationId,
 			input.frameworkPublicId
 		);
-		assertWithin(reviewDate, framework.horizonStart, framework.horizonEnd, 'Review date');
+		assertWithin(
+			reviewDate,
+			framework.horizonStart,
+			framework.horizonEnd,
+			'Review date',
+			'strategy horizon'
+		);
 		const [kpiRows] = await connection.execute<
 			(RowDataPacket & {
 				kpiId: string | number;

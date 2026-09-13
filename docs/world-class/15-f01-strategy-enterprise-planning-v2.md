@@ -186,6 +186,7 @@ F01.04 does not create shadow Finance, HCM or Project records.
 6. A cross-functional handoff is a governed request. It remains `requested` until the receiving function accepts/rejects it and, where applicable, returns its canonical record reference.
 7. The downstream function owns the operational record. F01 retains only the link required for strategic traceability.
 8. Business-plan approval is blocked when resource requirements remain identified but have never been handed to an authoritative function.
+9. Temporal context is inherited, not re-keyed: the strategy horizon is the outer envelope; a business plan refines that envelope; initiatives must fit the selected plan period; and dated resource requirements inherit the selected initiative period. Transaction UIs must expose these bounds before submission and prefill deterministic parent context rather than relying on post-submit validation errors.
 
 The intended handoff examples are F14 funding/budget, F15 workforce/capacity, F27 portfolio/programme/project delivery, F20 risk, F09 procurement, F16 technology and F28 change.
 
@@ -197,6 +198,7 @@ The intended handoff examples are F14 funding/budget, F15 workforce/capacity, F2
 4. Actual observations can only be recorded against an approved KPI definition.
 5. Manual observations are explicitly attributable evidence and remain distinguishable from canonical source-backed actuals.
 6. The target state for financial, workforce, project and other domain measures is authoritative source integration with drill-through rather than re-keying.
+7. KPI target and observation date controls inherit the parent strategy/objective temporal context in the transaction UI; known parent target dates may be offered as defaults, while evidence dates that cannot be inferred remain explicit user input inside the governing horizon.
 
 ## 11. F01.07 strategic-review standard
 
@@ -206,6 +208,7 @@ The intended handoff examples are F14 funding/budget, F15 workforce/capacity, F2
 4. Decision types explicitly distinguish continue, accelerate, rephase, pause, stop, revise strategy, revise plan and corrective action.
 5. Decisions may link to the objective, initiative or KPI affected and carry an accountable owner and due date.
 6. Review approval freezes the review as governed enterprise evidence.
+7. Review dates expose the strategy horizon before submission, and decision due dates inherit the selected review date as their earliest valid date; NuBlox carries known temporal context forward without inventing management commitments.
 
 ## 12. Cross-functional digital thread
 

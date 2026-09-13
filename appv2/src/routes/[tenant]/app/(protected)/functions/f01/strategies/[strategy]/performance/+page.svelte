@@ -169,12 +169,19 @@
 								<StatusBadge label="Manual source" tone="neutral" />
 							</div>
 							<div class="form-grid three">
-								<Field id={`observedOn-${kpi.publicId}`} label="Observed on" required>
+								<Field
+									id={`observedOn-${kpi.publicId}`}
+									label="Observed on"
+									hint={`Must fall within the strategy horizon ${data.framework.horizonStart} to ${data.framework.horizonEnd}.`}
+									required
+								>
 									<input
 										class="nb-control"
 										id={`observedOn-${kpi.publicId}`}
 										name="observedOn"
 										type="date"
+										min={data.framework.horizonStart}
+										max={data.framework.horizonEnd}
 										required
 									/>
 								</Field>

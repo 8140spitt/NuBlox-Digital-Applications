@@ -17,6 +17,23 @@
 	function fieldValue(key: string, fallback = ''): string {
 		return values[key] ?? fallback;
 	}
+
+	let selectedObjectivePublicId = $state(
+		fieldValue(
+			'objectivePublicId',
+			data.objectives.length === 1 ? (data.objectives[0]?.publicId ?? '') : ''
+		)
+	);
+	const selectedObjective = $derived(
+		data.objectives.find((objective) => objective.publicId === selectedObjectivePublicId) ?? null
+	);
+	const contributingInitiatives = $derived(
+		selectedObjective
+			? data.initiatives.filter(
+					(initiative) => initiative.objectivePublicId === selectedObjective.publicId
+				)
+			: []
+	);
 </script>
 
 <svelte:head>
@@ -56,7 +73,13 @@
 		>
 			<div class="form-grid two">
 				<Field id="objectivePublicId" label="Strategic objective" required>
-					<select class="nb-control" id="objectivePublicId" name="objectivePublicId" required>
+					<select
+						class="nb-control"
+						id="objectivePublicId"
+						name="objectivePublicId"
+						bind:value={selectedObjectivePublicId}
+						required
+					>
 						<option value="">Choose objective</option>
 						{#each data.objectives as objective (objective.publicId)}
 							<option value={objective.publicId}>{objective.code} · {objective.title}</option>
@@ -134,13 +157,24 @@
 						required
 					/>
 				</Field>
-				<Field id="targetDate" label="Target date">
+				<Field
+					id="targetDate"
+					label="Target date"
+					hint={selectedObjective?.targetDate
+						? `Defaults to the objective target ${selectedObjective.targetDate}; the strategy horizon remains the outer boundary.`
+						: `Must fall within ${data.framework.horizonStart} to ${data.framework.horizonEnd}.`}
+				>
 					<input
 						class="nb-control"
 						id="targetDate"
 						name="targetDate"
 						type="date"
-						value={fieldValue('targetDate')}
+						value={fieldValue(
+							'targetDate',
+							selectedObjective?.targetDate ?? data.framework.horizonEnd
+						)}
+						min={data.framework.horizonStart}
+						max={data.framework.horizonEnd}
 					/>
 				</Field>
 			</div>
@@ -151,7 +185,7 @@
 			description="Optionally identify strategic initiatives expected to move this KPI. NuBlox validates that selected initiatives contribute to the chosen objective."
 		>
 			<div class="selection-list">
-				{#each data.initiatives as initiative (initiative.publicId)}
+				{#each contributingInitiatives as initiative (initiative.publicId)}
 					<label class="selection-row">
 						<input type="checkbox" name="initiativePublicIds" value={initiative.publicId} />
 						<span>
@@ -160,7 +194,11 @@
 						</span>
 					</label>
 				{:else}
-					<p>No initiatives exist yet. A KPI may still measure the objective directly.</p>
+					<p>
+						{selectedObjective
+							? 'No initiatives contribute to this objective yet. The KPI may still measure the objective directly.'
+							: 'Choose the strategic objective first to see its contributing initiatives.'}
+					</p>
 				{/each}
 			</div>
 		</Panel>
