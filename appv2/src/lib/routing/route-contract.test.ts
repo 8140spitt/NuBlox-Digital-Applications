@@ -58,6 +58,26 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		expect(routes.strategyPlanningNew('perspective-bc', 'framework-public-id', 'objective')).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/planning/new/objective'
 		);
+		expect(routes.strategyBusinessPlanning('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/business-planning'
+		);
+		expect(
+			routes.strategyBusinessPlanningNew('perspective-bc', 'framework-public-id', 'initiative')
+		).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/business-planning/new/initiative'
+		);
+		expect(routes.strategyPerformance('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/performance'
+		);
+		expect(routes.strategyPerformanceNew('perspective-bc', 'framework-public-id', 'kpi')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/performance/new/kpi'
+		);
+		expect(routes.strategyReview('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/review'
+		);
+		expect(routes.strategyReviewNew('perspective-bc', 'framework-public-id', 'decision')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/review/new/decision'
+		);
 		expect(() => routes.strategyFramework('perspective-bc', '')).toThrow(/Strategy/);
 	});
 
