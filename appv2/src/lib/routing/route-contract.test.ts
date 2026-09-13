@@ -1,72 +1,99 @@
 import { describe, expect, it } from 'vitest';
 import {
+	appInvitePath,
 	appPath,
-	authInvitePath,
-	authPath,
+	appSignInPath,
 	isRouteSlug,
 	portalPath,
+	portalSignInPath,
 	routes,
-	safeReturnTo
+	safePortalReturnTo,
+	safeTenantAppReturnTo
 } from './route-contract';
 
-describe('NuBlox V2 route contract', () => {
+describe('NuBlox V2 tenant-first route contract', () => {
 	it('accepts stable lowercase route slugs and public ids', () => {
 		expect(isRouteSlug('nublox')).toBe(true);
 		expect(isRouteSlug('perspective-bc')).toBe(true);
 		expect(isRouteSlug('891aaaf5-aa43-4923-8197-a9753c000a87')).toBe(true);
 	});
 
-	it('rejects route slugs that are unsuitable for canonical URLs', () => {
+	it('rejects route slugs unsuitable for canonical URLs', () => {
 		expect(isRouteSlug('Perspective BC')).toBe(false);
 		expect(isRouteSlug('perspective_bc')).toBe(false);
 		expect(isRouteSlug('')).toBe(false);
 	});
 
-	it('builds app-scoped internal tenant URLs', () => {
-		expect(appPath('nublox', 'projects/PRJ-001')).toBe('/app/nublox/projects/PRJ-001');
-		expect(routes.dashboard('nublox')).toBe('/app/nublox/dashboard');
-		expect(routes.myWork('nublox')).toBe('/app/nublox/my-work');
-		expect(routes.projects('nublox')).toBe('/app/nublox/projects');
+	it('keeps new-tenant onboarding outside any tenant boundary', () => {
+		expect(routes.start).toBe('/start');
+		expect(routes.register).toBe('/register');
+		expect(routes.verifyEmail).toBe('/verify-email');
 	});
 
-	it('builds CRM-party-scoped connected portal URLs', () => {
+	it('builds tenant-first internal application URLs', () => {
+		expect(appPath('nublox')).toBe('/nublox/app');
+		expect(appPath('nublox', 'projects/PRJ-001')).toBe('/nublox/app/projects/PRJ-001');
+		expect(routes.dashboard('nublox')).toBe('/nublox/app/dashboard');
+		expect(routes.myWork('nublox')).toBe('/nublox/app/my-work');
+		expect(routes.projects('nublox')).toBe('/nublox/app/projects');
+		expect(routes.functions('nublox')).toBe('/nublox/app/functions');
+	});
+
+	it('builds explicit tenant-scoped authentication URLs', () => {
+		expect(routes.appSignIn('nublox')).toBe('/nublox/app/auth/signin');
+		expect(appSignInPath('nublox', '/nublox/app/projects')).toBe(
+			'/nublox/app/auth/signin?returnTo=%2Fnublox%2Fapp%2Fprojects'
+		);
+		expect(routes.appForgotPassword('nublox')).toBe('/nublox/app/auth/forgot-password');
+		expect(routes.appResetPassword('nublox')).toBe('/nublox/app/auth/reset-password');
+		expect(routes.appNoAccess('nublox')).toBe('/nublox/app/auth/no-access');
+		expect(appInvitePath('nublox', 'abc/123')).toBe('/nublox/app/auth/invite/abc%2F123');
+		expect(() => appInvitePath('nublox', '')).toThrow(/Invitation token/);
+	});
+
+	it('builds tenant-first CRM Party portal URLs', () => {
+		expect(portalPath('nublox', 'perspectivebc')).toBe('/nublox/portal/perspectivebc');
 		expect(portalPath('nublox', 'perspectivebc', 'rfqs/RFQ-001')).toBe(
-			'/portal/nublox/perspectivebc/rfqs/RFQ-001'
+			'/nublox/portal/perspectivebc/rfqs/RFQ-001'
 		);
 		expect(routes.portalDashboard('nublox', 'perspectivebc')).toBe(
-			'/portal/nublox/perspectivebc/dashboard'
+			'/nublox/portal/perspectivebc/dashboard'
 		);
 		expect(routes.portalProjects('nublox', 'perspectivebc')).toBe(
-			'/portal/nublox/perspectivebc/projects'
+			'/nublox/portal/perspectivebc/projects'
+		);
+		expect(routes.portalActions('nublox', 'perspectivebc')).toBe(
+			'/nublox/portal/perspectivebc/actions'
 		);
 	});
 
-	it('defines the complete central auth and context route suite', () => {
-		expect(routes.auth()).toBe('/auth');
-		expect(routes.authStart).toBe('/auth/start');
-		expect(routes.authRegister).toBe('/auth/register');
-		expect(routes.authForgotPassword).toBe('/auth/forgot-password');
-		expect(routes.authResetPassword).toBe('/auth/reset-password');
-		expect(routes.authVerifyEmail).toBe('/auth/verify-email');
-		expect(routes.authContinue).toBe('/auth/continue');
-		expect(routes.authSelectContext).toBe('/auth/select-context');
-		expect(routes.authNoAccess).toBe('/auth/no-access');
-		expect(authInvitePath('abc/123')).toBe('/auth/invite/abc%2F123');
-		expect(() => authInvitePath('')).toThrow(/Invitation token/);
+	it('builds portal sign-in inside the exact tenant and CRM Party context', () => {
+		expect(routes.portalSignIn('nublox', 'perspectivebc')).toBe(
+			'/nublox/portal/perspectivebc/auth/signin'
+		);
+		expect(portalSignInPath('nublox', 'perspectivebc', '/nublox/portal/perspectivebc/projects')).toBe(
+			'/nublox/portal/perspectivebc/auth/signin?returnTo=%2Fnublox%2Fportal%2Fperspectivebc%2Fprojects'
+		);
 	});
 
-	it('only preserves approved post-authentication return destinations', () => {
-		expect(authPath('/app/nublox/dashboard')).toBe('/auth?returnTo=%2Fapp%2Fnublox%2Fdashboard');
-		expect(safeReturnTo('/portal/nublox/perspectivebc/projects')).toBe(
-			'/portal/nublox/perspectivebc/projects'
-		);
-		expect(safeReturnTo('/auth/invite/secure-token')).toBe('/auth/invite/secure-token');
-		expect(safeReturnTo('https://example.com')).toBeNull();
-		expect(safeReturnTo('//example.com')).toBeNull();
-		expect(safeReturnTo('/auth')).toBeNull();
-		expect(safeReturnTo('/auth/register')).toBeNull();
-		expect(safeReturnTo('/auth/continue')).toBeNull();
-		expect(safeReturnTo('/auth/select-context')).toBeNull();
+	it('never carries a return destination across tenant boundaries', () => {
+		expect(safeTenantAppReturnTo('/nublox/app/projects', 'nublox')).toBe('/nublox/app/projects');
+		expect(safeTenantAppReturnTo('/other/app/projects', 'nublox')).toBeNull();
+		expect(safeTenantAppReturnTo('/nublox/app/auth/signin', 'nublox')).toBeNull();
+		expect(safeTenantAppReturnTo('https://example.com', 'nublox')).toBeNull();
+		expect(appSignInPath('nublox', '/other/app/dashboard')).toBe('/nublox/app/auth/signin');
+	});
+
+	it('never carries a return destination across CRM Party boundaries', () => {
+		expect(
+			safePortalReturnTo('/nublox/portal/perspectivebc/projects', 'nublox', 'perspectivebc')
+		).toBe('/nublox/portal/perspectivebc/projects');
+		expect(
+			safePortalReturnTo('/nublox/portal/another-party/projects', 'nublox', 'perspectivebc')
+		).toBeNull();
+		expect(
+			safePortalReturnTo('/other/portal/perspectivebc/projects', 'nublox', 'perspectivebc')
+		).toBeNull();
 	});
 
 	it('does not silently normalise invalid tenant or CRM Party identity', () => {
