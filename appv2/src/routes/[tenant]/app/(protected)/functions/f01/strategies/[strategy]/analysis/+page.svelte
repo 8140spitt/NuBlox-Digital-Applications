@@ -157,6 +157,16 @@
 									: 'factors'}</span
 							>
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'evidence',
+								evidence.publicId
+							)}
+							variant="quiet">Manage</LinkButton
+						>
 					</article>
 				{/each}
 			</div>
@@ -215,6 +225,16 @@
 							<span>{factor.optionCount} strategic option links</span>
 							<span>Confidence {factor.confidenceScore ?? '—'}/5</span>
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'factor',
+								factor.publicId
+							)}
+							variant="quiet">Manage</LinkButton
+						>
 					</article>
 				{/each}
 			</div>
@@ -266,6 +286,16 @@
 							<span>Review <strong>{assumption.reviewBy ?? 'Not set'}</strong></span>
 							<span>Options <strong>{assumption.optionCount}</strong></span>
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'assumption',
+								assumption.publicId
+							)}
+							variant="quiet">Manage</LinkButton
+						>
 					</article>
 				{/each}
 			</div>

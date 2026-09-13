@@ -18,12 +18,7 @@
 		return values[key] ?? fallback;
 	}
 
-	let selectedObjectivePublicId = $state(
-		fieldValue(
-			'objectivePublicId',
-			data.objectives.length === 1 ? (data.objectives[0]?.publicId ?? '') : ''
-		)
-	);
+	let selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));
 	const selectedObjective = $derived(
 		data.objectives.find((objective) => objective.publicId === selectedObjectivePublicId) ?? null
 	);
@@ -34,6 +29,12 @@
 				)
 			: []
 	);
+
+	$effect(() => {
+		if (!selectedObjectivePublicId && data.objectives.length === 1) {
+			selectedObjectivePublicId = data.objectives[0]?.publicId ?? '';
+		}
+	});
 </script>
 
 <svelte:head>

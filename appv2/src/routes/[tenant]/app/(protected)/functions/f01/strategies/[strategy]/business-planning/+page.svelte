@@ -313,6 +313,16 @@
 								<Button type="submit" variant="secondary" size="sm">Approve business plan</Button>
 							</form>
 						{/if}
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'plan',
+								plan.publicId
+							)}
+							variant="quiet">Manage / lifecycle</LinkButton
+						>
 					</article>
 				{/each}
 			</div>
@@ -386,6 +396,16 @@
 								></span
 							>
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'initiative',
+								initiative.publicId
+							)}
+							variant="quiet">Manage / lifecycle</LinkButton
+						>
 					</article>
 				{/each}
 			</div>
@@ -434,6 +454,16 @@
 								tone={statusTone(requirement.lifecycleStatus)}
 							/>
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'requirement',
+								requirement.publicId
+							)}
+							variant="quiet">Manage</LinkButton
+						>
 					</article>
 				{:else}
 					<p class="muted-copy">No quantified resource requirements have been recorded.</p>
@@ -477,6 +507,16 @@
 								tone={statusTone(handoff.lifecycleStatus)}
 							/>
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'handoff',
+								handoff.publicId
+							)}
+							variant="quiet">Manage / lifecycle</LinkButton
+						>
 					</article>
 				{:else}
 					<p class="muted-copy">No downstream execution handoffs have been requested.</p>

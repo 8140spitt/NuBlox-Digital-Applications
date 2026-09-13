@@ -219,6 +219,16 @@
 							</div>
 						</form>
 					{/if}
+
+					<LinkButton
+						href={routes.strategyManage(
+							data.tenant.slug,
+							data.framework.publicId,
+							'kpi',
+							kpi.publicId
+						)}
+						variant="quiet">Manage / lifecycle</LinkButton
+					>
 				</article>
 			{/each}
 		</section>

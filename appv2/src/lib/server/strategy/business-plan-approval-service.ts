@@ -8,6 +8,7 @@ type PlanRow = RowDataPacket & {
 	publicId: string;
 	code: string;
 	lifecycleStatus: 'draft' | 'approved' | 'superseded';
+	supersedesBusinessPlanId: string | number | null;
 	objectiveCount: number | string;
 	initiativeCount: number | string;
 	orphanRequirementCount: number | string;
@@ -24,6 +25,7 @@ async function lockPlan(
 		        plan.public_id AS publicId,
 		        plan.plan_code AS code,
 		        plan.lifecycle_status AS lifecycleStatus,
+		        plan.supersedes_business_plan_id AS supersedesBusinessPlanId,
 		        (SELECT COUNT(*)
 		           FROM strategy_business_plan_objective_links objective_link
 		          WHERE objective_link.strategy_business_plan_id = plan.id) AS objectiveCount,
@@ -115,6 +117,36 @@ export async function approveStrategyBusinessPlan(input: {
 			);
 		}
 
+		const [approvedRows] = await connection.execute<
+			(RowDataPacket & { id: string | number; publicId: string })[]
+		>(
+			`SELECT id, public_id AS publicId
+			 FROM strategy_business_plans
+			 WHERE organisation_id = ?
+			   AND strategy_framework_id = (SELECT strategy_framework_id FROM strategy_business_plans WHERE id = ?)
+			   AND plan_code = ?
+			   AND lifecycle_status = 'approved'
+			   AND id <> ?
+			 LIMIT 1 FOR UPDATE`,
+			[input.actor.organisationId, plan.id, plan.code, plan.id]
+		);
+		const previousApproved = approvedRows[0] ?? null;
+		if (previousApproved) {
+			if (plan.supersedesBusinessPlanId?.toString() !== previousApproved.id.toString()) {
+				throw new StrategyValidationError(
+					'An approved version of this business plan already exists. Approve only a controlled revision of the current version.'
+				);
+			}
+			await connection.execute(
+				`UPDATE strategy_business_plans SET lifecycle_status = 'superseded' WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,
+				[input.actor.organisationId, previousApproved.id]
+			);
+		} else if (plan.supersedesBusinessPlanId) {
+			throw new StrategyValidationError(
+				'The business-plan revision is stale because its predecessor is no longer the current approved version.'
+			);
+		}
+
 		await connection.execute(
 			`UPDATE strategy_business_plans
 			 SET lifecycle_status = 'approved',
@@ -144,7 +176,8 @@ export async function approveStrategyBusinessPlan(input: {
 				lifecycleStatus: 'approved',
 				objectiveCount: Number(plan.objectiveCount),
 				initiativeCount: Number(plan.initiativeCount),
-				orphanRequirementCount: 0
+				orphanRequirementCount: 0,
+				supersededBusinessPlanPublicId: previousApproved?.publicId ?? null
 			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.04'] }
 		});

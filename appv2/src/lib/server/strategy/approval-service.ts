@@ -1,12 +1,7 @@
 import type { PoolConnection, ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';
-import {
-	getStrategyWorkspace,
-	StrategyAccessError,
-	StrategyValidationError,
-	type StrategyFrameworkSummary
-} from './f01-service';
+import { getStrategyWorkspace, StrategyAccessError, StrategyValidationError } from './f01-service';
 
 type FrameworkRow = RowDataPacket & {
 	id: string | number;
@@ -14,6 +9,7 @@ type FrameworkRow = RowDataPacket & {
 	code: string;
 	title: string;
 	lifecycleStatus: 'draft' | 'approved' | 'superseded';
+	supersedesFrameworkId: string | number | null;
 };
 
 async function lockFramework(
@@ -26,7 +22,8 @@ async function lockFramework(
 		        public_id AS publicId,
 		        framework_code AS code,
 		        title,
-		        lifecycle_status AS lifecycleStatus
+		        lifecycle_status AS lifecycleStatus,
+		        supersedes_strategy_framework_id AS supersedesFrameworkId
 		 FROM strategy_frameworks
 		 WHERE organisation_id = ?
 		   AND public_id = ?
@@ -68,21 +65,11 @@ async function findOtherApprovedFramework(
 	connection: PoolConnection,
 	organisationId: string,
 	frameworkId: string
-): Promise<StrategyFrameworkSummary | null> {
+): Promise<{ id: string; publicId: string; code: string } | null> {
 	const [rows] = await connection.execute<
-		(RowDataPacket & {
-			publicId: string;
-			code: string;
-			title: string;
-			horizonStart: Date | string;
-			horizonEnd: Date | string;
-		})[]
+		(RowDataPacket & { id: string | number; publicId: string; code: string })[]
 	>(
-		`SELECT public_id AS publicId,
-		        framework_code AS code,
-		        title,
-		        horizon_start AS horizonStart,
-		        horizon_end AS horizonEnd
+		`SELECT id, public_id AS publicId, framework_code AS code
 		 FROM strategy_frameworks
 		 WHERE organisation_id = ?
 		   AND lifecycle_status = 'approved'
@@ -93,28 +80,7 @@ async function findOtherApprovedFramework(
 		[organisationId, frameworkId]
 	);
 	const row = rows[0];
-	if (!row) return null;
-	return {
-		publicId: row.publicId,
-		code: row.code,
-		versionNumber: 0,
-		title: row.title,
-		horizonStart: String(row.horizonStart).slice(0, 10),
-		horizonEnd: String(row.horizonEnd).slice(0, 10),
-		purpose: '',
-		vision: '',
-		mission: null,
-		lifecycleStatus: 'approved',
-		isOwnedByCurrentMember: false,
-		objectiveCount: 0,
-		environmentFactorCount: 0,
-		businessPlanCount: 0,
-		initiativeCount: 0,
-		operatingModelComponentCount: 0,
-		kpiCount: 0,
-		reviewCount: 0,
-		scenarioCount: 0
-	};
+	return row ? { id: row.id.toString(), publicId: row.publicId, code: row.code } : null;
 }
 
 export async function approveStrategyFramework(input: {
@@ -167,8 +133,20 @@ export async function approveStrategyFramework(input: {
 			framework.id.toString()
 		);
 		if (existingApproved) {
+			if (framework.supersedesFrameworkId?.toString() !== existingApproved.id) {
+				throw new StrategyValidationError(
+					`An approved strategy (${existingApproved.code}) already exists. Only its controlled revision can replace the current enterprise direction.`
+				);
+			}
+			await connection.execute(
+				`UPDATE strategy_frameworks
+				 SET lifecycle_status = 'superseded'
+				 WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,
+				[input.actor.organisationId, existingApproved.id]
+			);
+		} else if (framework.supersedesFrameworkId) {
 			throw new StrategyValidationError(
-				`An approved strategy (${existingApproved.code}) already exists. Create a controlled revision rather than approving a parallel current strategy.`
+				'The strategy revision is stale because its predecessor is no longer the current approved strategy.'
 			);
 		}
 
@@ -201,7 +179,8 @@ export async function approveStrategyFramework(input: {
 				frameworkCode: framework.code,
 				lifecycleStatus: 'approved',
 				traceableObjectiveCount: approvalCandidateObjectiveCount,
-				activatedDraftObjectiveCount: activationResult.affectedRows
+				activatedDraftObjectiveCount: activationResult.affectedRows,
+				supersededFrameworkPublicId: existingApproved?.publicId ?? null
 			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.03', 'F01.04'] }
 		});

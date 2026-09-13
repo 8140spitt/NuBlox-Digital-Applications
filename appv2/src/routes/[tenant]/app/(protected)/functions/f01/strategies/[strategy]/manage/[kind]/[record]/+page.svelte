@@ -47,8 +47,21 @@
 	}
 
 	function statusTone(status: string): 'neutral' | 'info' | 'warning' | 'success' | 'danger' {
-		if (['approved', 'active', 'validated', 'selected', 'completed', 'fulfilled', 'satisfied', 'achieved'].includes(status)) return 'success';
-		if (['draft', 'proposed', 'unvalidated', 'identified', 'requested', 'open'].includes(status)) return 'warning';
+		if (
+			[
+				'approved',
+				'active',
+				'validated',
+				'selected',
+				'completed',
+				'fulfilled',
+				'satisfied',
+				'achieved'
+			].includes(status)
+		)
+			return 'success';
+		if (['draft', 'proposed', 'unvalidated', 'identified', 'requested', 'open'].includes(status))
+			return 'warning';
 		if (['rejected', 'invalidated', 'cancelled'].includes(status)) return 'danger';
 		if (['in_progress', 'committed', 'accepted', 'challenged'].includes(status)) return 'info';
 		return 'neutral';
@@ -189,17 +202,30 @@
 									id={`transitionNote-${transition.to}`}
 									name="transitionNote"
 									rows="3"
-									required></textarea
-								>
+									required></textarea>
 							</Field>
 						{/if}
 						{#if transition.requiresTargetReference}
 							<div class="target-grid">
-								<Field id={`targetRecordType-${transition.to}`} label="Canonical record type" required>
-									<input class="nb-control" id={`targetRecordType-${transition.to}`} name="targetRecordType" required />
+								<Field
+									id={`targetRecordType-${transition.to}`}
+									label="Canonical record type"
+									required
+								>
+									<input
+										class="nb-control"
+										id={`targetRecordType-${transition.to}`}
+										name="targetRecordType"
+										required
+									/>
 								</Field>
 								<Field id={`targetPublicId-${transition.to}`} label="Canonical public ID" required>
-									<input class="nb-control" id={`targetPublicId-${transition.to}`} name="targetPublicId" required />
+									<input
+										class="nb-control"
+										id={`targetPublicId-${transition.to}`}
+										name="targetPublicId"
+										required
+									/>
 								</Field>
 							</div>
 						{/if}
@@ -239,7 +265,13 @@
 					hint="After governance, use retire, cancel or controlled revision instead of deletion."
 					required
 				>
-					<input class="nb-control" id="deleteConfirmation" name="deleteConfirmation" autocomplete="off" required />
+					<input
+						class="nb-control"
+						id="deleteConfirmation"
+						name="deleteConfirmation"
+						autocomplete="off"
+						required
+					/>
 				</Field>
 				<Button type="submit" variant="danger">Delete permanently</Button>
 			</form>

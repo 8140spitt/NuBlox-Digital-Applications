@@ -169,6 +169,16 @@
 								<Button type="submit" variant="secondary" size="sm">Approve review</Button>
 							</form>
 						{/if}
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'review',
+								review.publicId
+							)}
+							variant="quiet">Manage / lifecycle</LinkButton
+						>
 					</article>
 				{/each}
 			</div>
@@ -227,6 +237,16 @@
 								>{/if}
 							{#if decision.kpiCode}<span>KPI <strong>{decision.kpiCode}</strong></span>{/if}
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'decision',
+								decision.publicId
+							)}
+							variant="quiet">Manage / lifecycle</LinkButton
+						>
 					</article>
 				{/each}
 			</div>

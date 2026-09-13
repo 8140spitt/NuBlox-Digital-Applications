@@ -751,6 +751,7 @@ async function listInitiatives(frameworkId: string): Promise<StrategyInitiative[
 		 JOIN strategy_business_plans plan ON plan.id = initiative.strategy_business_plan_id
 		 JOIN strategy_objectives objective ON objective.id = initiative.strategy_objective_id
 		 WHERE plan.strategy_framework_id = ?
+		   AND plan.lifecycle_status <> 'superseded'
 		 ORDER BY initiative.priority_rank, initiative.start_date, initiative.initiative_code`,
 		[frameworkId]
 	);
@@ -799,6 +800,7 @@ async function listRequirements(frameworkId: string): Promise<StrategyResourceRe
 		 JOIN strategy_initiatives initiative ON initiative.id = requirement.strategy_initiative_id
 		 JOIN strategy_business_plans plan ON plan.id = initiative.strategy_business_plan_id
 		 WHERE plan.strategy_framework_id = ?
+		   AND plan.lifecycle_status <> 'superseded'
 		 ORDER BY requirement.need_by, requirement.created_at`,
 		[frameworkId]
 	);
@@ -841,6 +843,7 @@ async function listHandoffs(frameworkId: string): Promise<StrategyInitiativeHand
 		 LEFT JOIN strategy_initiative_resource_requirements requirement
 		   ON requirement.id = handoff.strategy_resource_requirement_id
 		 WHERE plan.strategy_framework_id = ?
+		   AND plan.lifecycle_status <> 'superseded'
 		 ORDER BY handoff.requested_at DESC`,
 		[frameworkId]
 	);
@@ -1767,9 +1770,15 @@ export async function approveStrategyKpi(input: {
 			input.frameworkPublicId
 		);
 		const [rows] = await connection.execute<
-			(RowDataPacket & { id: string | number; code: string; lifecycleStatus: KpiStatus })[]
+			(RowDataPacket & {
+				id: string | number;
+				code: string;
+				lifecycleStatus: KpiStatus;
+				supersedesKpiId: string | number | null;
+			})[]
 		>(
-			`SELECT id, kpi_code AS code, lifecycle_status AS lifecycleStatus
+			`SELECT id, kpi_code AS code, lifecycle_status AS lifecycleStatus,
+			        supersedes_strategy_kpi_id AS supersedesKpiId
 			 FROM strategy_kpis
 			 WHERE organisation_id = ? AND strategy_framework_id = ? AND public_id = ?
 			 LIMIT 1 FOR UPDATE`,
@@ -1779,6 +1788,31 @@ export async function approveStrategyKpi(input: {
 		if (!kpi) throw new StrategyValidationError('KPI is not available in this strategy cycle.');
 		if (kpi.lifecycleStatus !== 'draft')
 			throw new StrategyValidationError('Only a draft KPI can be approved.');
+		const [approvedRows] = await connection.execute<
+			(RowDataPacket & { id: string | number; publicId: string })[]
+		>(
+			`SELECT id, public_id AS publicId FROM strategy_kpis
+			 WHERE organisation_id = ? AND strategy_framework_id = ? AND kpi_code = ?
+			   AND lifecycle_status = 'approved' AND id <> ?
+			 LIMIT 1 FOR UPDATE`,
+			[input.actor.organisationId, framework.id, kpi.code, kpi.id]
+		);
+		const previousApproved = approvedRows[0] ?? null;
+		if (previousApproved) {
+			if (kpi.supersedesKpiId?.toString() !== previousApproved.id.toString()) {
+				throw new StrategyValidationError(
+					'An approved version of this KPI already exists. Approve only a controlled revision of the current definition.'
+				);
+			}
+			await connection.execute(
+				`UPDATE strategy_kpis SET lifecycle_status = 'superseded' WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,
+				[input.actor.organisationId, previousApproved.id]
+			);
+		} else if (kpi.supersedesKpiId) {
+			throw new StrategyValidationError(
+				'The KPI revision is stale because its predecessor is no longer the current approved definition.'
+			);
+		}
 		await connection.execute(
 			`UPDATE strategy_kpis
 			 SET lifecycle_status = 'approved', approved_by_member_id = ?, approved_at = CURRENT_TIMESTAMP(6)
@@ -1790,7 +1824,11 @@ export async function approveStrategyKpi(input: {
 			actionKey: 'strategy.kpi.approve',
 			subjectType: 'strategy_kpi',
 			subjectPublicId: input.kpiPublicId,
-			changeSummary: { kpiCode: kpi.code, lifecycleStatus: 'approved' },
+			changeSummary: {
+				kpiCode: kpi.code,
+				lifecycleStatus: 'approved',
+				supersededKpiPublicId: previousApproved?.publicId ?? null
+			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.06'] }
 		});
 		await connection.commit();

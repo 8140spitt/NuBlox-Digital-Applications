@@ -190,6 +190,16 @@
 								</div>
 							</form>
 						{/if}
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'option',
+								option.publicId
+							)}
+							variant="quiet">Manage</LinkButton
+						>
 					</article>
 				{/each}
 			</div>
@@ -227,6 +237,16 @@
 						<h3>{theme.title}</h3>
 						<p>{theme.description}</p>
 						<strong>{theme.objectiveCount} linked objectives</strong>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'theme',
+								theme.publicId
+							)}
+							variant="quiet">Manage</LinkButton
+						>
 					</article>
 				{/each}
 			</div>
@@ -276,6 +296,16 @@
 								></span
 							>
 						</div>
+
+						<LinkButton
+							href={routes.strategyManage(
+								data.tenant.slug,
+								data.framework.publicId,
+								'objective',
+								objective.publicId
+							)}
+							variant="quiet">Manage</LinkButton
+						>
 					</article>
 				{/each}
 			</div>

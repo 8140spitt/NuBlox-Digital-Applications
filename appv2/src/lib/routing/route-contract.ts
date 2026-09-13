@@ -9,6 +9,23 @@ export type AppDesignSystemPath = `/${string}/app/design-system`;
 export type AppStrategyPath = `/${string}/app/functions/f01`;
 export type AppStrategyNewPath = `/${string}/app/functions/f01/new`;
 export type AppStrategyFrameworkPath = `/${string}/app/functions/f01/strategies/${string}`;
+export type AppStrategyManagePath =
+	`/${string}/app/functions/f01/strategies/${string}/manage/${string}/${string}`;
+export type StrategyManageRecordKind =
+	| 'framework'
+	| 'evidence'
+	| 'factor'
+	| 'assumption'
+	| 'option'
+	| 'theme'
+	| 'objective'
+	| 'plan'
+	| 'initiative'
+	| 'requirement'
+	| 'handoff'
+	| 'kpi'
+	| 'review'
+	| 'decision';
 export type AppStrategyAnalysisPath = `/${string}/app/functions/f01/strategies/${string}/analysis`;
 export type AppStrategyAnalysisNewPath =
 	`/${string}/app/functions/f01/strategies/${string}/analysis/new/${string}`;
@@ -170,6 +187,13 @@ export const routes = {
 		appPath(tenant, 'functions/f01/new') as AppStrategyNewPath,
 	strategyFramework: (tenant: string, strategyPublicId: string): AppStrategyFrameworkPath =>
 		strategyBase(tenant, strategyPublicId) as AppStrategyFrameworkPath,
+	strategyManage: (
+		tenant: string,
+		strategyPublicId: string,
+		recordKind: StrategyManageRecordKind,
+		recordPublicId: string
+	): AppStrategyManagePath =>
+		`${strategyBase(tenant, strategyPublicId)}/manage/${requiredSegment(recordKind, 'Record kind')}/${requiredSegment(recordPublicId, 'Record')}` as AppStrategyManagePath,
 	strategyAnalysis: (tenant: string, strategyPublicId: string): AppStrategyAnalysisPath =>
 		`${strategyBase(tenant, strategyPublicId)}/analysis` as AppStrategyAnalysisPath,
 	strategyAnalysisNew: (

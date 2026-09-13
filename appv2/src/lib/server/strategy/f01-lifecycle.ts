@@ -126,7 +126,9 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 		editable: ['proposed', 'approved', 'in_progress'],
 		deletable: ['proposed'],
 		transitions: {
-			proposed: [{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }],
+			proposed: [
+				{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }
+			],
 			approved: [
 				{ to: 'in_progress', label: 'Start initiative', requiresNote: true },
 				{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }
@@ -143,8 +145,12 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 		editable: ['identified'],
 		deletable: ['identified'],
 		transitions: {
-			identified: [{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }],
-			requested: [{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }],
+			identified: [
+				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
+			],
+			requested: [
+				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
+			],
 			committed: [
 				{ to: 'satisfied', label: 'Mark requirement satisfied', requiresNote: true },
 				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }

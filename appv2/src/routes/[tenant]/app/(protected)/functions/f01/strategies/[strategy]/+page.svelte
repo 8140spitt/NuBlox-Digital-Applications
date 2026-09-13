@@ -31,19 +31,17 @@
 		framework.lifecycleStatus === 'draft'
 			? [
 					{ label: 'Draft', state: 'current' as const },
-					{ label: 'Approved', state: 'upcoming' as const },
-					{ label: 'Superseded', state: 'upcoming' as const }
+					{ label: 'Approval', state: 'upcoming' as const }
 				]
 			: framework.lifecycleStatus === 'approved'
 				? [
 						{ label: 'Draft', state: 'complete' as const },
-						{ label: 'Approved', state: 'current' as const },
-						{ label: 'Superseded', state: 'upcoming' as const }
+						{ label: 'Approved · current', state: 'current' as const }
 					]
 				: [
 						{ label: 'Draft', state: 'complete' as const },
 						{ label: 'Approved', state: 'complete' as const },
-						{ label: 'Superseded', state: 'current' as const }
+						{ label: 'Historical', state: 'current' as const }
 					]
 	);
 
@@ -141,7 +139,18 @@
 			<p class="section-kicker">Controlled version lifecycle</p>
 			<h2 id="version-lifecycle-title">Strategy history is preserved, not overwritten.</h2>
 		</div>
-		<LifecycleStrip steps={lifecycle} label="Strategy version lifecycle" />
+		<div class="lifecycle-controls">
+			<LifecycleStrip steps={lifecycle} label="Strategy version lifecycle" />
+			<LinkButton
+				href={routes.strategyManage(
+					data.tenant.slug,
+					framework.publicId,
+					'framework',
+					framework.publicId
+				)}
+				variant="secondary">Manage / lifecycle</LinkButton
+			>
+		</div>
 	</section>
 
 	<section class="direction-grid" aria-label="Strategic direction">
@@ -304,6 +313,14 @@
 		margin: var(--nb-space-3) 0 0;
 		color: var(--nb-color-text-secondary);
 		line-height: var(--nb-line-relaxed);
+	}
+
+	.lifecycle-controls {
+		display: grid;
+		gap: var(--nb-space-4);
+	}
+	.lifecycle-controls :global(a) {
+		justify-self: end;
 	}
 
 	.workspace-actions {

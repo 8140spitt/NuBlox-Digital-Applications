@@ -19,6 +19,7 @@ export type StrategyApprovalReadiness = {
 type FrameworkRow = RowDataPacket & {
 	id: string | number;
 	lifecycleStatus: 'draft' | 'approved' | 'superseded';
+	supersedesFrameworkId: string | number | null;
 };
 
 type ReadinessRow = RowDataPacket & {
@@ -54,7 +55,8 @@ export async function getStrategyApprovalReadiness(input: {
 	}
 
 	const [frameworkRows] = await getPool().execute<FrameworkRow[]>(
-		`SELECT id, lifecycle_status AS lifecycleStatus
+		`SELECT id, lifecycle_status AS lifecycleStatus,
+		        supersedes_strategy_framework_id AS supersedesFrameworkId
 		 FROM strategy_frameworks
 		 WHERE organisation_id = ?
 		   AND public_id = ?
@@ -152,9 +154,15 @@ export async function getStrategyApprovalReadiness(input: {
 		 WHERE organisation_id = ?
 		   AND lifecycle_status = 'approved'
 		   AND id <> ?
+		   AND (? IS NULL OR id <> ?)
 		 ORDER BY approved_at DESC, id DESC
 		 LIMIT 1`,
-		[input.organisationId, frameworkId]
+		[
+			input.organisationId,
+			frameworkId,
+			framework.supersedesFrameworkId,
+			framework.supersedesFrameworkId
+		]
 	);
 	const conflictingApprovedStrategy = approvedRows[0] ?? null;
 

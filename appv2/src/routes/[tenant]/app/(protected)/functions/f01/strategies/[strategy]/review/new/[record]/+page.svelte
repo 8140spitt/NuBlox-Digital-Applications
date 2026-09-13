@@ -24,12 +24,16 @@
 		return values[key] ?? fallback;
 	}
 
-	let selectedReviewPublicId = $state(
-		fieldValue('reviewPublicId', draftReviews.length === 1 ? (draftReviews[0]?.publicId ?? '') : '')
-	);
+	let selectedReviewPublicId = $state(fieldValue('reviewPublicId'));
 	const selectedReview = $derived(
 		draftReviews.find((review) => review.publicId === selectedReviewPublicId) ?? null
 	);
+
+	$effect(() => {
+		if (!selectedReviewPublicId && draftReviews.length === 1) {
+			selectedReviewPublicId = draftReviews[0]?.publicId ?? '';
+		}
+	});
 </script>
 
 <svelte:head>

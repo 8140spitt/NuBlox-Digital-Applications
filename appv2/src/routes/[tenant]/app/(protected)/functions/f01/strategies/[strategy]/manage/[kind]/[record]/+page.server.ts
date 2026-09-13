@@ -110,16 +110,13 @@ export const actions = {
 			});
 			redirect(
 				303,
-				routes.strategyManage(
-					access.organisationRouteSlug,
-					params.strategy,
-					kind,
-					params.record
-				)
+				routes.strategyManage(access.organisationRouteSlug, params.strategy, kind, params.record)
 			);
 		} catch (cause) {
-			if (cause instanceof StrategyValidationError) return fail(400, { values, formError: cause.message });
-			if (cause instanceof StrategyAccessError) return fail(403, { values, formError: cause.message });
+			if (cause instanceof StrategyValidationError)
+				return fail(400, { values, formError: cause.message });
+			if (cause instanceof StrategyAccessError)
+				return fail(403, { values, formError: cause.message });
 			throw cause;
 		}
 	},
@@ -144,12 +141,7 @@ export const actions = {
 			});
 			redirect(
 				303,
-				routes.strategyManage(
-					access.organisationRouteSlug,
-					params.strategy,
-					kind,
-					params.record
-				)
+				routes.strategyManage(access.organisationRouteSlug, params.strategy, kind, params.record)
 			);
 		} catch (cause) {
 			const transitionValues = { targetStatus, transitionNote, targetRecordType, targetPublicId };
@@ -165,7 +157,9 @@ export const actions = {
 	revise: async ({ request, params, url }) => {
 		const kind = recordKind(params.kind);
 		if (!['framework', 'plan', 'kpi'].includes(kind)) {
-			return fail(400, { formError: 'This record type uses lifecycle actions rather than version revision.' });
+			return fail(400, {
+				formError: 'This record type uses lifecycle actions rather than version revision.'
+			});
 		}
 		const { access, actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
 		try {

@@ -42,16 +42,9 @@
 		return values[key] ?? fallback;
 	}
 
-	let selectedPlanPublicId = $state(
-		fieldValue('planPublicId', draftPlans.length === 1 ? (draftPlans[0]?.publicId ?? '') : '')
-	);
+	let selectedPlanPublicId = $state(fieldValue('planPublicId'));
 	let selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));
-	let selectedInitiativePublicId = $state(
-		fieldValue(
-			'initiativePublicId',
-			openInitiatives.length === 1 ? (openInitiatives[0]?.publicId ?? '') : ''
-		)
-	);
+	let selectedInitiativePublicId = $state(fieldValue('initiativePublicId'));
 	const selectedPlan = $derived(
 		draftPlans.find((plan) => plan.publicId === selectedPlanPublicId) ?? null
 	);
@@ -67,6 +60,12 @@
 	);
 
 	$effect(() => {
+		if (!selectedPlanPublicId && draftPlans.length === 1) {
+			selectedPlanPublicId = draftPlans[0]?.publicId ?? '';
+		}
+		if (!selectedInitiativePublicId && openInitiatives.length === 1) {
+			selectedInitiativePublicId = openInitiatives[0]?.publicId ?? '';
+		}
 		if (!selectedPlan) {
 			selectedObjectivePublicId = '';
 			return;
