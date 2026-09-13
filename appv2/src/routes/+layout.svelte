@@ -1,5 +1,6 @@
 <script lang="ts">
-	import favicon from '$lib/assets/favicon.svg';
+	import '@fontsource-variable/noto-sans';
+	import favicon from '$lib/assets/brand/nublox-logo.svg';
 	import '../app.css';
 
 	let { children } = $props();
@@ -7,10 +8,10 @@
 
 <svelte:head>
 	<link rel="icon" href={favicon} />
-	<title>NuBlox V2</title>
+	<title>NuBlox</title>
 	<meta
 		name="description"
-		content="NuBlox V2 — construction and built-environment operating system"
+		content="NuBlox — construction and built-environment operating system"
 	/>
 </svelte:head>
 
