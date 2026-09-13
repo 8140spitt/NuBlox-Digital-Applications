@@ -1,13 +1,14 @@
-import type { PoolConnection } from 'mysql2/promise';
+import type { PoolConnection, RowDataPacket } from 'mysql2/promise';
 import type { EvidenceActor } from './evidence';
 
 export type GovernedVersionStatus = 'draft' | 'published' | 'historical' | 'discarded';
+export type GovernedActiveVersionStatus = Exclude<GovernedVersionStatus, 'discarded'>;
 
 export type GovernedVersionCoordinates = {
 	major: number;
 	minor: number;
 	label: string;
-	status: GovernedVersionStatus;
+	status: GovernedActiveVersionStatus;
 };
 
 export function governedVersionCoordinates(input: {
@@ -18,10 +19,16 @@ export function governedVersionCoordinates(input: {
 	const minor = Math.max(0, Number(input.minorVersionNumber));
 	if (input.lifecycleStatus === 'draft') {
 		const major = Math.max(0, Number(input.versionNumber) - 1);
-		return { major, minor: Math.max(1, minor), label: `${major}.${Math.max(1, minor)}`, status: 'draft' };
+		return {
+			major,
+			minor: Math.max(1, minor),
+			label: `${major}.${Math.max(1, minor)}`,
+			status: 'draft'
+		};
 	}
 	const major = Math.max(0, Number(input.versionNumber));
-	const status: GovernedVersionStatus = input.lifecycleStatus === 'approved' ? 'published' : 'historical';
+	const status: GovernedActiveVersionStatus =
+		input.lifecycleStatus === 'approved' ? 'published' : 'historical';
 	return { major, minor: 0, label: `${major}.0`, status };
 }
 
@@ -134,14 +141,16 @@ export async function listGovernedVersionHistory(
 ): Promise<GovernedVersionHistoryItem[]> {
 	const limit = Math.min(Math.max(input.limit ?? 12, 1), 50);
 	const [rows] = await connection.query<
-		Array<{
-			majorVersion: number | string;
-			minorVersion: number | string;
-			versionStatus: GovernedVersionStatus;
-			recordPublicId: string;
-			changeNote: string | null;
-			createdAt: Date | string;
-		} & import('mysql2/promise').RowDataPacket>
+		Array<
+			RowDataPacket & {
+				majorVersion: number | string;
+				minorVersion: number | string;
+				versionStatus: GovernedVersionStatus;
+				recordPublicId: string;
+				changeNote: string | null;
+				createdAt: Date | string;
+			}
+		>
 	>(
 		`SELECT major_version AS majorVersion,
 		        minor_version AS minorVersion,
