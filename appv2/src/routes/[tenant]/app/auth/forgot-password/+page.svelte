@@ -48,7 +48,10 @@
 		{#if submitted}
 			<div class="notice" role="status">
 				<h2>Check your email</h2>
-				<p>If an account exists for <strong>{email}</strong>, a time-limited reset link has been sent.</p>
+				<p>
+					If an account exists for <strong>{email}</strong>, a time-limited reset link has been
+					sent.
+				</p>
 			</div>
 		{:else}
 			<p class="lede">Enter the email address you use for this NuBlox tenant.</p>
@@ -58,7 +61,9 @@
 					<input bind:value={email} type="email" autocomplete="email" maxlength="320" required />
 				</label>
 				{#if errorMessage}<p class="form-error" role="alert">{errorMessage}</p>{/if}
-				<button type="submit" disabled={submitting}>{submitting ? 'Sending…' : 'Send reset link'}</button>
+				<button type="submit" disabled={submitting}
+					>{submitting ? 'Sending…' : 'Send reset link'}</button
+				>
 			</form>
 		{/if}
 
@@ -67,13 +72,74 @@
 </main>
 
 <style>
-	.recovery-shell{min-height:100vh;display:grid;place-items:center;padding:28px;background:var(--nb-surface-subtle)}
-	.recovery-card{width:min(100%,500px);border:1px solid var(--nb-border);border-radius:16px;padding:clamp(28px,5vw,46px);background:var(--nb-surface);box-shadow:0 20px 60px rgb(24 33 47 / .08)}
-	.brand{display:inline-block;margin-bottom:56px;font-weight:850;letter-spacing:-.03em;text-decoration:none}
-	h1{margin:0;font-size:clamp(2.25rem,6vw,3.5rem);line-height:1;letter-spacing:-.055em}
-	.lede,.footer-copy,.notice p{color:var(--nb-muted);line-height:1.65}
-	form{display:grid;gap:18px;margin-top:28px} label{display:grid;gap:7px} label span{font-size:.8rem;font-weight:750}
-	input{border:1px solid var(--nb-border);border-radius:10px;padding:12px 13px;background:var(--nb-surface);color:var(--nb-ink);font:inherit}
-	button{min-height:45px;border:0;border-radius:10px;background:var(--nb-ink);color:white;font:inherit;font-weight:780;cursor:pointer}
-	.form-error{margin:0;color:#b42318;font-size:.82rem}
+	.recovery-shell {
+		min-height: 100vh;
+		display: grid;
+		place-items: center;
+		padding: 28px;
+		background: var(--nb-surface-subtle);
+	}
+	.recovery-card {
+		width: min(100%, 500px);
+		border: 1px solid var(--nb-border);
+		border-radius: 16px;
+		padding: clamp(28px, 5vw, 46px);
+		background: var(--nb-surface);
+		box-shadow: 0 20px 60px rgb(24 33 47 / 0.08);
+	}
+	.brand {
+		display: inline-block;
+		margin-bottom: 56px;
+		font-weight: 850;
+		letter-spacing: -0.03em;
+		text-decoration: none;
+	}
+	h1 {
+		margin: 0;
+		font-size: clamp(2.25rem, 6vw, 3.5rem);
+		line-height: 1;
+		letter-spacing: -0.055em;
+	}
+	.lede,
+	.footer-copy,
+	.notice p {
+		color: var(--nb-muted);
+		line-height: 1.65;
+	}
+	form {
+		display: grid;
+		gap: 18px;
+		margin-top: 28px;
+	}
+	label {
+		display: grid;
+		gap: 7px;
+	}
+	label span {
+		font-size: 0.8rem;
+		font-weight: 750;
+	}
+	input {
+		border: 1px solid var(--nb-border);
+		border-radius: 10px;
+		padding: 12px 13px;
+		background: var(--nb-surface);
+		color: var(--nb-ink);
+		font: inherit;
+	}
+	button {
+		min-height: 45px;
+		border: 0;
+		border-radius: 10px;
+		background: var(--nb-ink);
+		color: white;
+		font: inherit;
+		font-weight: 780;
+		cursor: pointer;
+	}
+	.form-error {
+		margin: 0;
+		color: #b42318;
+		font-size: 0.82rem;
+	}
 </style>

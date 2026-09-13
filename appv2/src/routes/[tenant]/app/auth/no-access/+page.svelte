@@ -19,7 +19,10 @@
 
 <svelte:head>
 	<title>No access · NuBlox</title>
-	<meta name="description" content="This identity has no active access to the requested NuBlox tenant." />
+	<meta
+		name="description"
+		content="This identity has no active access to the requested NuBlox tenant."
+	/>
 </svelte:head>
 
 <main class="access-shell">

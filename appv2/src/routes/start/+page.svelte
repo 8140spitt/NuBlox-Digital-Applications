@@ -41,7 +41,9 @@
 		<div class="journey informational">
 			<span class="journey-number">03</span>
 			<strong>Joining by invitation?</strong>
-			<span>Use the secure tenant-specific invitation link sent by the organisation that invited you.</span>
+			<span
+				>Use the secure tenant-specific invitation link sent by the organisation that invited you.</span
+			>
 		</div>
 	</section>
 

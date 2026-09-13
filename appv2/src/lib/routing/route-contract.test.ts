@@ -71,7 +71,9 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		expect(routes.portalSignIn('nublox', 'perspectivebc')).toBe(
 			'/nublox/portal/perspectivebc/auth/signin'
 		);
-		expect(portalSignInPath('nublox', 'perspectivebc', '/nublox/portal/perspectivebc/projects')).toBe(
+		expect(
+			portalSignInPath('nublox', 'perspectivebc', '/nublox/portal/perspectivebc/projects')
+		).toBe(
 			'/nublox/portal/perspectivebc/auth/signin?returnTo=%2Fnublox%2Fportal%2Fperspectivebc%2Fprojects'
 		);
 	});

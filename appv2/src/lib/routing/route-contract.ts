@@ -68,7 +68,10 @@ export function safeTenantAppReturnTo(
 
 	const authBase = `${base}/auth`;
 	const inviteBase = `${authBase}/invite/`;
-	if (candidate === authBase || (candidate.startsWith(`${authBase}/`) && !candidate.startsWith(inviteBase))) {
+	if (
+		candidate === authBase ||
+		(candidate.startsWith(`${authBase}/`) && !candidate.startsWith(inviteBase))
+	) {
 		return null;
 	}
 	return candidate;

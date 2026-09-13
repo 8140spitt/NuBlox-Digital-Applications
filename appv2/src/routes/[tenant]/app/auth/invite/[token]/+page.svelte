@@ -113,11 +113,25 @@
 					</label>
 					<label>
 						<span>Password</span>
-						<input bind:value={password} type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+						<input
+							bind:value={password}
+							type="password"
+							autocomplete="new-password"
+							minlength="12"
+							maxlength="128"
+							required
+						/>
 					</label>
 					<label>
 						<span>Confirm password</span>
-						<input bind:value={confirmPassword} type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
+						<input
+							bind:value={confirmPassword}
+							type="password"
+							autocomplete="new-password"
+							minlength="12"
+							maxlength="128"
+							required
+						/>
 					</label>
 
 					{#if errorMessage}
