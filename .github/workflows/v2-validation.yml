@@ -105,3 +105,5 @@ jobs:
       - name: Run F01 real-MySQL regression
         working-directory: appv2
         run: pnpm test:integration
+
+# F01 golden-thread validation is a permanent V2 quality gate.
