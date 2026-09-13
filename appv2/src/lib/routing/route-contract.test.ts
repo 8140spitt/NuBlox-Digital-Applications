@@ -79,7 +79,10 @@ describe('NuBlox V2 tenant-first route contract', () => {
 	});
 
 	it('never carries a return destination across tenant boundaries', () => {
+		const invitation = appInvitePath('nublox', 'invite-token');
 		expect(safeTenantAppReturnTo('/nublox/app/projects', 'nublox')).toBe('/nublox/app/projects');
+		expect(safeTenantAppReturnTo(invitation, 'nublox')).toBe(invitation);
+		expect(safeTenantAppReturnTo('/other/app/auth/invite/invite-token', 'nublox')).toBeNull();
 		expect(safeTenantAppReturnTo('/other/app/projects', 'nublox')).toBeNull();
 		expect(safeTenantAppReturnTo('/nublox/app/auth/signin', 'nublox')).toBeNull();
 		expect(safeTenantAppReturnTo('https://example.com', 'nublox')).toBeNull();
