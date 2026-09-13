@@ -14,5 +14,6 @@ Business-function routes should compose these components and semantic tokens bef
 - Add a shared component when the same interaction pattern is likely to recur across functions.
 - Do not add function-specific wrappers merely to restyle an existing shared primitive.
 - Use `ReadinessChecklist` for governed transitions with prerequisites. It must explain what is ready, what remains blocked, and provide direct actions where the user can resolve a missing prerequisite. The server remains authoritative and must re-check the transition inside the transaction.
+- When preflight readiness is known, disable the governed action until its prerequisites are met rather than making the user discover routine incompleteness through a failed submission. Reserve error states for an actual failed or conflicting transaction.
 
 The protected `/{tenant}/app/design-system` route is the component laboratory and interaction reference.
