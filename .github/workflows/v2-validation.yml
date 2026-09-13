@@ -106,4 +106,4 @@ jobs:
         working-directory: appv2
         run: pnpm test:integration
 
-# F01 golden-thread validation is a permanent V2 quality gate.
+# Permanent V2 quality gate for the governed F01 golden thread.
