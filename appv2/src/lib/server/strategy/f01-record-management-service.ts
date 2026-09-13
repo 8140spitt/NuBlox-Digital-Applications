@@ -272,6 +272,17 @@ async function singleRow<T extends RowDataPacket>(
 	return row;
 }
 
+async function singleConnectionRow<T extends RowDataPacket>(
+	connection: PoolConnection,
+	query: string,
+	params: Array<string | number | boolean | Date | null>
+): Promise<T> {
+	const [rows] = await connection.execute<T[]>(query, params);
+	const row = rows[0];
+	if (!row) throw new StrategyValidationError('The requested F01 record is no longer available.');
+	return row;
+}
+
 async function statusFor(input: {
 	organisationId: string;
 	frameworkPublicId: string;
@@ -2792,13 +2803,14 @@ export async function reviseF01Record(input: {
 						]
 					);
 			}
-			const versionRow = await singleRow<
+			const versionRow = await singleConnectionRow<
 				RowDataPacket & {
 					versionNumber: number | string;
 					minorVersionNumber: number | string;
 					snapshot: string | Record<string, unknown>;
 				}
 			>(
+				connection,
 				`SELECT version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'horizonStart', horizon_start, 'horizonEnd', horizon_end, 'purpose', purpose_text, 'vision', vision_text, 'mission', mission_text, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
 				[input.actor.organisationId, revisionPublicId]
 			);
@@ -3007,13 +3019,14 @@ export async function reviseF01Record(input: {
 						]
 					);
 			}
-			const versionRow = await singleRow<
+			const versionRow = await singleConnectionRow<
 				RowDataPacket & {
 					versionNumber: number | string;
 					minorVersionNumber: number | string;
 					snapshot: string | Record<string, unknown>;
 				}
 			>(
+				connection,
 				`SELECT version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'periodStart', period_start, 'periodEnd', period_end, 'narrative', narrative, 'currencyCode', currency_code, 'plannedRevenueAmount', planned_revenue_amount, 'plannedOpexAmount', planned_opex_amount, 'plannedCapexAmount', planned_capex_amount, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_business_plans WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
 				[input.actor.organisationId, revisionPublicId]
 			);
@@ -3119,13 +3132,14 @@ export async function reviseF01Record(input: {
 			`INSERT INTO strategy_initiative_kpi_links (organisation_id, strategy_initiative_id, strategy_kpi_id, contribution_type, created_by_member_id) SELECT organisation_id, strategy_initiative_id, ?, contribution_type, ? FROM strategy_initiative_kpi_links WHERE strategy_kpi_id = ?`,
 			[revisionId, input.actor.memberId, source.id]
 		);
-		const versionRow = await singleRow<
+		const versionRow = await singleConnectionRow<
 			RowDataPacket & {
 				versionNumber: number | string;
 				minorVersionNumber: number | string;
 				snapshot: string | Record<string, unknown>;
 			}
 		>(
+			connection,
 			`SELECT version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'description', description, 'unitLabel', unit_label, 'direction', direction, 'baselineValue', baseline_value, 'targetValue', target_value, 'targetDate', target_date, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_kpis WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
 			[input.actor.organisationId, revisionPublicId]
 		);
