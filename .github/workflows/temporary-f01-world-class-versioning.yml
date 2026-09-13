@@ -26,7 +26,9 @@ jobs:
           cache: pnpm
           cache-dependency-path: appv2/pnpm-lock.yaml
       - name: Integrate governed major/minor versioning
-        run: python3 .github/scripts/f01-world-class-versioning.py
+        run: |
+          python3 .github/scripts/fix-f01-versioning-stage.py
+          python3 .github/scripts/f01-world-class-versioning.py
       - name: Install
         working-directory: appv2
         run: pnpm install --frozen-lockfile
@@ -50,6 +52,7 @@ jobs:
         run: |
           rm -f .github/workflows/temporary-f01-world-class-versioning.yml
           rm -f .github/scripts/f01-world-class-versioning.py
+          rm -f .github/scripts/fix-f01-versioning-stage.py
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
