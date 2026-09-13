@@ -86,6 +86,60 @@ guard = """\tif (framework.lifecycleStatus === 'superseded') {
 \t}
 """
 text = text.replace(needle, guard + needle, 1)
+# The original service had a second late superseded check after the authoritative approval dispatches.
+# The early guard above owns this rule and avoids impossible narrowing after the dispatch branches.
+late_guard = "\tif (framework.lifecycleStatus === 'superseded')\n\t\tthrow new StrategyValidationError('Superseded strategy history cannot be changed.');\n"
+late_index = text.find(late_guard, text.find(guard) + len(guard))
+if late_index >= 0:
+    text = text[:late_index] + text[late_index + len(late_guard):]
 p.write_text(text)
+
+# Keep automatic carry-forward selections reactive without capturing derived data in $state initialisers.
+business = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/new/[record]/+page.svelte')
+text = business.read_text()
+text = text.replace(
+    "\tlet selectedPlanPublicId = $state(\n\t\tfieldValue('planPublicId', draftPlans.length === 1 ? (draftPlans[0]?.publicId ?? '') : '')\n\t);\n\tlet selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));\n\tlet selectedInitiativePublicId = $state(\n\t\tfieldValue(\n\t\t\t'initiativePublicId',\n\t\t\topenInitiatives.length === 1 ? (openInitiatives[0]?.publicId ?? '') : ''\n\t\t)\n\t);",
+    "\tlet selectedPlanPublicId = $state(fieldValue('planPublicId'));\n\tlet selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));\n\tlet selectedInitiativePublicId = $state(fieldValue('initiativePublicId'));"
+)
+text = text.replace(
+    "\t$effect(() => {\n\t\tif (!selectedPlan) {",
+    "\t$effect(() => {\n\t\tif (!selectedPlanPublicId && draftPlans.length === 1) {\n\t\t\tselectedPlanPublicId = draftPlans[0]?.publicId ?? '';\n\t\t}\n\t\tif (!selectedInitiativePublicId && openInitiatives.length === 1) {\n\t\t\tselectedInitiativePublicId = openInitiatives[0]?.publicId ?? '';\n\t\t}\n\t\tif (!selectedPlan) {"
+)
+business.write_text(text)
+
+performance = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/performance/new/[record]/+page.svelte')
+text = performance.read_text()
+text = text.replace(
+    "\tlet selectedObjectivePublicId = $state(\n\t\tfieldValue(\n\t\t\t'objectivePublicId',\n\t\t\tdata.objectives.length === 1 ? (data.objectives[0]?.publicId ?? '') : ''\n\t\t)\n\t);",
+    "\tlet selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));"
+)
+text = text.replace(
+    "\tconst contributingInitiatives = $derived(\n\t\tselectedObjective\n\t\t\t? data.initiatives.filter(\n\t\t\t\t\t(initiative) => initiative.objectivePublicId === selectedObjective.publicId\n\t\t\t\t)\n\t\t\t: []\n\t);",
+    "\tconst contributingInitiatives = $derived(\n\t\tselectedObjective\n\t\t\t? data.initiatives.filter(\n\t\t\t\t\t(initiative) => initiative.objectivePublicId === selectedObjective.publicId\n\t\t\t\t)\n\t\t\t: []\n\t);\n\n\t$effect(() => {\n\t\tif (!selectedObjectivePublicId && data.objectives.length === 1) {\n\t\t\tselectedObjectivePublicId = data.objectives[0]?.publicId ?? '';\n\t\t}\n\t});"
+)
+performance.write_text(text)
+
+review = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/review/new/[record]/+page.svelte')
+text = review.read_text()
+text = text.replace(
+    "\tlet selectedReviewPublicId = $state(\n\t\tfieldValue('reviewPublicId', draftReviews.length === 1 ? (draftReviews[0]?.publicId ?? '') : '')\n\t);",
+    "\tlet selectedReviewPublicId = $state(fieldValue('reviewPublicId'));"
+)
+anchor = "\tconst selectedReview = $derived(\n\t\tdraftReviews.find((review) => review.publicId === selectedReviewPublicId) ?? null\n\t);"
+if anchor in text:
+    text = text.replace(
+        anchor,
+        anchor + "\n\n\t$effect(() => {\n\t\tif (!selectedReviewPublicId && draftReviews.length === 1) {\n\t\t\tselectedReviewPublicId = draftReviews[0]?.publicId ?? '';\n\t\t}\n\t});",
+        1,
+    )
+else:
+    # Some versions use selectedReview only for date bounds later; auto-select immediately after state setup.
+    state_line = "\tlet selectedReviewPublicId = $state(fieldValue('reviewPublicId'));"
+    text = text.replace(
+        state_line,
+        state_line + "\n\n\t$effect(() => {\n\t\tif (!selectedReviewPublicId && draftReviews.length === 1) {\n\t\t\tselectedReviewPublicId = draftReviews[0]?.publicId ?? '';\n\t\t}\n\t});",
+        1,
+    )
+review.write_text(text)
 
 print('F01 revision/lifecycle follow-up patches applied')
