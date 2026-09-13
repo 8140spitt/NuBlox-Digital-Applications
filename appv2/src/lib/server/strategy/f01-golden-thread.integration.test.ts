@@ -211,6 +211,7 @@ describe('F01 V2 governed golden thread', () => {
 			frameworkPublicId: frameworkId,
 			evidenceType: 'other',
 			title: 'Disposable evidence',
+			sourceReference: 'TMP-DELETE',
 			observedOn: '2026-12-06',
 			summaryText: 'Temporary evidence used to prove controlled draft deletion.',
 			reliabilityScore: 2
