@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { authClient } from '$lib/auth/auth-client';
+	import NuBloxLogo from '$lib/components/brand/NuBloxLogo.svelte';
 	import { routes } from '$lib/routing/route-contract';
 
 	let legalName = $state('');
@@ -83,9 +84,8 @@
 
 <main class="registration-shell">
 	<section class="registration-story">
-		<a class="brand" href={resolve(routes.start)}>
-			<span class="brand-mark" aria-hidden="true">N</span>
-			<span>NuBlox</span>
+		<a class="brand" href={resolve(routes.start)} aria-label="NuBlox start">
+			<span class="brand-lockup"><NuBloxLogo /></span>
 		</a>
 
 		<div>
@@ -183,21 +183,13 @@
 		color: white;
 	}
 	.brand {
-		display: inline-flex;
-		align-items: center;
+		display: inline-block;
 		align-self: flex-start;
-		gap: 10px;
-		color: white;
-		font-weight: 850;
 		text-decoration: none;
 	}
-	.brand-mark {
-		display: grid;
-		place-items: center;
-		width: 34px;
-		height: 34px;
-		border-radius: 9px;
-		background: var(--nb-accent);
+	.brand-lockup {
+		display: block;
+		width: clamp(172px, 18vw, 220px);
 	}
 	.registration-story h1 {
 		margin: 10px 0 20px;
