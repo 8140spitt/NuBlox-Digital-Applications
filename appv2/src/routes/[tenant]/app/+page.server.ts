@@ -19,5 +19,5 @@ export const load: PageServerLoad = async ({ params, request }) => {
 		redirect(303, routes.appNoAccess(params.tenant));
 	}
 
-	redirect(303, routes.dashboard(access.organisationPublicId));
+	redirect(303, routes.dashboard(access.organisationRouteSlug));
 };
