@@ -1,11 +1,15 @@
 <script lang="ts">
+	import NuBloxLogo from '$lib/components/brand/NuBloxLogo.svelte';
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { routes } from '$lib/routing/route-contract';
 </script>
 
 <section class="nb-page reset-entry">
-	<p class="nb-eyebrow">NuBlox</p>
-	<h1>One platform. Tenant-first access.</h1>
+	<a class="brand" href={resolve(routes.start)} aria-label="Start NuBlox">
+		<span class="brand-lockup"><NuBloxLogo /></span>
+	</a>
+	<p class="nb-eyebrow">Tenant-first access</p>
+	<h1>One platform. One operating system.</h1>
 	<p class="nb-lede">
 		New organisations begin at /start. Existing users enter through their organisation-specific
 		NuBlox address, where the tenant slug establishes context before authentication and permission
@@ -20,7 +24,16 @@
 
 <style>
 	.reset-entry {
-		padding-top: clamp(72px, 12vw, 150px);
+		padding-top: clamp(48px, 9vw, 96px);
+	}
+	.brand {
+		display: inline-block;
+		margin-bottom: clamp(64px, 10vw, 120px);
+		text-decoration: none;
+	}
+	.brand-lockup {
+		display: block;
+		width: clamp(180px, 22vw, 260px);
 	}
 	h1 {
 		max-width: 900px;
