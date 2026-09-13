@@ -33,7 +33,9 @@
 		},
 		{
 			label: 'Functions',
-			items: [{ label: 'Function directory', href: routes.functions(tenant.slug), icon: 'functions' }]
+			items: [
+				{ label: 'Function directory', href: routes.functions(tenant.slug), icon: 'functions' }
+			]
 		},
 		{
 			label: 'Tools',
@@ -82,7 +84,10 @@
 
 		<nav class="rail-navigation" aria-label="Primary navigation">
 			{#each groups as group (group.label)}
-				<section class="navigation-group" aria-labelledby={`nav-${group.label.toLocaleLowerCase()}`}>
+				<section
+					class="navigation-group"
+					aria-labelledby={`nav-${group.label.toLocaleLowerCase()}`}
+				>
 					<h2 id={`nav-${group.label.toLocaleLowerCase()}`}>{group.label}</h2>
 					<div class="navigation-items">
 						{#each group.items as item (item.href)}
@@ -93,13 +98,39 @@
 							>
 								<span class="nav-icon" aria-hidden="true">
 									{#if item.icon === 'home'}
-										<svg viewBox="0 0 24 24"><path d="M3.5 10.4 12 3.5l8.5 6.9v9a1.1 1.1 0 0 1-1.1 1.1H4.6a1.1 1.1 0 0 1-1.1-1.1zM9 20.5v-6h6v6" /></svg>
+										<svg viewBox="0 0 24 24"
+											><path
+												d="M3.5 10.4 12 3.5l8.5 6.9v9a1.1 1.1 0 0 1-1.1 1.1H4.6a1.1 1.1 0 0 1-1.1-1.1zM9 20.5v-6h6v6"
+											/></svg
+										>
 									{:else if item.icon === 'work'}
-										<svg viewBox="0 0 24 24"><path d="M8 6.5V5.2A2.2 2.2 0 0 1 10.2 3h3.6A2.2 2.2 0 0 1 16 5.2v1.3M4 7h16a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 4 7Zm-1.5 5.3c3.2 1.3 6.4 2 9.5 2s6.3-.7 9.5-2" /></svg>
+										<svg viewBox="0 0 24 24"
+											><path
+												d="M8 6.5V5.2A2.2 2.2 0 0 1 10.2 3h3.6A2.2 2.2 0 0 1 16 5.2v1.3M4 7h16a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 20 20H4a1.5 1.5 0 0 1-1.5-1.5v-10A1.5 1.5 0 0 1 4 7Zm-1.5 5.3c3.2 1.3 6.4 2 9.5 2s6.3-.7 9.5-2"
+											/></svg
+										>
 									{:else if item.icon === 'functions'}
-										<svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+										<svg viewBox="0 0 24 24"
+											><rect x="3" y="3" width="7" height="7" rx="1" /><rect
+												x="14"
+												y="3"
+												width="7"
+												height="7"
+												rx="1"
+											/><rect x="3" y="14" width="7" height="7" rx="1" /><rect
+												x="14"
+												y="14"
+												width="7"
+												height="7"
+												rx="1"
+											/></svg
+										>
 									{:else}
-										<svg viewBox="0 0 24 24"><path d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm3 0v16M4 9h4m0 5H4m8-6h5m-5 4h5m-5 4h3" /></svg>
+										<svg viewBox="0 0 24 24"
+											><path
+												d="M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm3 0v16M4 9h4m0 5H4m8-6h5m-5 4h5m-5 4h3"
+											/></svg
+										>
 									{/if}
 								</span>
 								<span>{item.label}</span>
@@ -136,7 +167,11 @@
 		</header>
 
 		<header class="mobile-header">
-			<a class="mobile-brand" href={resolve(routes.dashboard(tenant.slug))} aria-label="NuBlox home">
+			<a
+				class="mobile-brand"
+				href={resolve(routes.dashboard(tenant.slug))}
+				aria-label="NuBlox home"
+			>
 				<NuBloxLogo class="mobile-logo" />
 			</a>
 			<div class="mobile-organisation">
@@ -153,8 +188,7 @@
 								<a
 									href={resolve(item.href)}
 									class:active={isActive(item.href)}
-									aria-current={isActive(item.href) ? 'page' : undefined}
-								>{item.label}</a
+									aria-current={isActive(item.href) ? 'page' : undefined}>{item.label}</a
 								>
 							{/each}
 						</section>
