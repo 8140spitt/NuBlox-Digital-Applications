@@ -2,6 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
+import { getStrategyApprovalReadiness } from '$lib/server/strategy/approval-readiness-service';
 import { approveStrategyFramework } from '$lib/server/strategy/approval-service';
 import { approveStrategyBusinessPlan } from '$lib/server/strategy/business-plan-approval-service';
 import { getStrategyExecutionReviewWorkspace } from '$lib/server/strategy/execution-review-service';
@@ -26,11 +27,19 @@ async function actorFor(request: Request, params: { tenant: string }, returnTo: 
 export const load: PageServerLoad = async ({ parent, params }) => {
 	const { tenant } = await parent();
 	try {
-		return await getStrategyExecutionReviewWorkspace({
-			organisationId: tenant.organisationId,
-			memberId: tenant.memberId,
-			frameworkPublicId: params.strategy
-		});
+		const [workspace, approvalReadiness] = await Promise.all([
+			getStrategyExecutionReviewWorkspace({
+				organisationId: tenant.organisationId,
+				memberId: tenant.memberId,
+				frameworkPublicId: params.strategy
+			}),
+			getStrategyApprovalReadiness({
+				organisationId: tenant.organisationId,
+				memberId: tenant.memberId,
+				frameworkPublicId: params.strategy
+			})
+		]);
+		return { ...workspace, approvalReadiness };
 	} catch (cause) {
 		if (cause instanceof StrategyAccessError) {
 			error(404, 'Business planning is not available in this strategy scope.');
