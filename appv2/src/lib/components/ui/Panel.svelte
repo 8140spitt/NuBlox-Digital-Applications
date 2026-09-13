@@ -4,7 +4,7 @@
 	type Props = {
 		title?: string;
 		description?: string;
-		children: Snippet;
+		children?: Snippet;
 		actions?: Snippet;
 		padding?: 'none' | 'standard' | 'spacious';
 	};
@@ -14,7 +14,7 @@
 
 <section class={`panel panel--${padding}`}>
 	{#if title || description || actions}
-		<header class="panel-header">
+		<header class:panel-header--without-body={!children} class="panel-header">
 			<div class="panel-heading">
 				{#if title}<h2>{title}</h2>{/if}
 				{#if description}<p>{description}</p>{/if}
@@ -22,7 +22,7 @@
 			{#if actions}<div class="panel-actions">{@render actions()}</div>{/if}
 		</header>
 	{/if}
-	<div class="panel-body">{@render children()}</div>
+	{#if children}<div class="panel-body">{@render children()}</div>{/if}
 </section>
 
 <style>
@@ -49,8 +49,14 @@
 		gap: var(--nb-space-4);
 		margin-bottom: var(--nb-space-5);
 	}
+	.panel-header--without-body {
+		margin-bottom: 0;
+	}
 	.panel--none .panel-header {
 		padding: var(--nb-space-5) var(--nb-space-5) 0;
+	}
+	.panel--none .panel-header--without-body {
+		padding-bottom: var(--nb-space-5);
 	}
 	.panel-heading {
 		min-width: 0;
