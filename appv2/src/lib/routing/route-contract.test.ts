@@ -40,6 +40,15 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		expect(routes.designSystem('nublox')).toBe('/nublox/app/design-system');
 	});
 
+	it('builds the F01 strategy workspace inside the active tenant', () => {
+		expect(routes.strategy('perspective-bc')).toBe('/perspective-bc/app/functions/f01');
+		expect(routes.strategyNew('perspective-bc')).toBe('/perspective-bc/app/functions/f01/new');
+		expect(routes.strategyFramework('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id'
+		);
+		expect(() => routes.strategyFramework('perspective-bc', '')).toThrow(/Strategy/);
+	});
+
 	it('builds explicit tenant-scoped authentication URLs', () => {
 		expect(routes.appSignIn('nublox')).toBe('/nublox/app/auth/signin');
 		expect(appSignInPath('nublox', '/nublox/app/projects')).toBe(
