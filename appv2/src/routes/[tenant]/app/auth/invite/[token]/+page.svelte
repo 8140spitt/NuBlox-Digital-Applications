@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { resolve } from '$app/paths';
 	import { authClient } from '$lib/auth/auth-client';
+	import { routes } from '$lib/routing/route-contract';
 
 	let { data, params } = $props();
 	let displayName = $state('');
@@ -10,7 +10,8 @@
 	let submitting = $state(false);
 	let errorMessage = $state('');
 
-	const invitationPath = $derived(`/auth/invite/${encodeURIComponent(params.token)}` as const);
+	const invitationPath = $derived(routes.appInvite(data.tenant, params.token));
+	const invitationSignIn = $derived(routes.appSignIn(data.tenant, invitationPath));
 
 	async function createAccount(event: SubmitEvent) {
 		event.preventDefault();
@@ -28,7 +29,7 @@
 
 		submitting = true;
 		try {
-			const callback = new URL(resolve(invitationPath), window.location.origin);
+			const callback = new URL(invitationPath, window.location.origin);
 			callback.searchParams.set('verified', '1');
 			const result = await authClient.signUp.email({
 				name: displayName.trim(),
@@ -44,9 +45,10 @@
 				return;
 			}
 
-			const verificationPath =
-				`/auth/verify-email?email=${encodeURIComponent(data.invitation.email)}` as `/auth/verify-email?${string}`;
-			await goto(resolve(verificationPath), { replaceState: true, invalidateAll: true });
+			await goto(`${data.verifyEmailHref}?email=${encodeURIComponent(data.invitation.email)}`, {
+				replaceState: true,
+				invalidateAll: true
+			});
 		} finally {
 			submitting = false;
 		}
@@ -55,27 +57,24 @@
 
 <svelte:head>
 	<title>Organisation invitation · NuBlox</title>
-	<meta name="description" content="Accept a secure invitation to join a NuBlox organisation." />
+	<meta name="description" content="Accept a tenant-specific invitation to NuBlox." />
 </svelte:head>
 
 <main class="invite-shell">
 	<section class="invite-card">
-		<a class="brand" href={resolve('/auth/start')}>NuBlox</a>
+		<a class="brand" href={routes.start}>NuBlox</a>
 
 		{#if data.verified}
-			<p class="nb-eyebrow">Invitation accepted</p>
+			<p class="nb-eyebrow">Invitation verified</p>
 			<h1>Your email is verified.</h1>
-			<p class="lede">
-				Your organisation invitation has been activated. Sign in to continue into the NuBlox access
-				available to you.
-			</p>
-			<a class="primary-action" href={resolve('/auth')}>Continue to sign in</a>
+			<p class="lede">Continue through the tenant-specific sign-in boundary to complete access.</p>
+			<a class="primary-action" href={data.signInHref}>Continue to sign in</a>
 		{:else if data.invitation}
 			<p class="nb-eyebrow">Organisation invitation</p>
 			<h1>Join {data.invitation.organisationName}</h1>
 			<p class="lede">
-				This invitation is for <strong>{data.invitation.email}</strong>. Your organisation roles and
-				permissions are assigned by the inviting NuBlox tenant.
+				This invitation is for <strong>{data.invitation.email}</strong>. Roles and permissions are
+				controlled by the inviting tenant.
 			</p>
 
 			{#if data.user}
@@ -91,18 +90,14 @@
 				{:else}
 					<div class="notice" role="alert">
 						This invitation belongs to {data.invitation.email}, but you are signed in as
-						{data.user.email}. Sign out and use the invited identity.
+						{data.user.email}.
 					</div>
-					<a class="secondary-link" href={resolve('/auth')}>Manage signed-in account</a>
+					<a class="secondary-link" href={data.signInHref}>Use the invited account</a>
 				{/if}
 			{:else}
 				<div class="existing-account">
 					<strong>Already use NuBlox?</strong>
-					<a
-						href={resolve(
-							`/auth?returnTo=${encodeURIComponent(invitationPath)}` as `/auth?${string}`
-						)}>Sign in to accept</a
-					>
+					<a href={invitationSignIn}>Sign in to accept</a>
 				</div>
 
 				<div class="divider"><span>or create your NuBlox identity</span></div>
@@ -118,25 +113,11 @@
 					</label>
 					<label>
 						<span>Password</span>
-						<input
-							bind:value={password}
-							type="password"
-							autocomplete="new-password"
-							minlength="12"
-							maxlength="128"
-							required
-						/>
+						<input bind:value={password} type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
 					</label>
 					<label>
 						<span>Confirm password</span>
-						<input
-							bind:value={confirmPassword}
-							type="password"
-							autocomplete="new-password"
-							minlength="12"
-							maxlength="128"
-							required
-						/>
+						<input bind:value={confirmPassword} type="password" autocomplete="new-password" minlength="12" maxlength="128" required />
 					</label>
 
 					{#if errorMessage}
@@ -160,7 +141,6 @@
 		padding: 28px;
 		background: var(--nb-surface-subtle);
 	}
-
 	.invite-card {
 		width: min(100%, 590px);
 		border: 1px solid var(--nb-border);
@@ -169,7 +149,6 @@
 		background: var(--nb-surface);
 		box-shadow: 0 20px 60px rgb(24 33 47 / 0.08);
 	}
-
 	.brand {
 		display: inline-block;
 		margin-bottom: 60px;
@@ -177,20 +156,17 @@
 		letter-spacing: -0.03em;
 		text-decoration: none;
 	}
-
 	h1 {
 		margin: 0;
 		font-size: clamp(2.5rem, 7vw, 4rem);
 		line-height: 0.98;
 		letter-spacing: -0.06em;
 	}
-
 	.lede {
 		margin: 22px 0 0;
 		color: var(--nb-muted);
 		line-height: 1.7;
 	}
-
 	.identity-card,
 	.notice,
 	.existing-account {
@@ -200,39 +176,29 @@
 		padding: 18px;
 		background: var(--nb-surface-subtle);
 	}
-
 	.identity-card {
 		display: grid;
 		gap: 4px;
 	}
-
 	.identity-card span,
 	.identity-card small,
 	.notice {
 		color: var(--nb-muted);
 	}
-
 	.existing-account {
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 16px;
 	}
-
-	.existing-account a,
-	.secondary-link {
-		font-weight: 750;
-	}
-
 	.divider {
 		display: flex;
 		align-items: center;
 		gap: 12px;
 		margin: 30px 0;
 		color: var(--nb-muted);
-		font-size: 0.76rem;
+		font-size: 0.75rem;
 	}
-
 	.divider::before,
 	.divider::after {
 		content: '';
@@ -240,71 +206,41 @@
 		height: 1px;
 		background: var(--nb-border);
 	}
-
 	.signup-form {
 		display: grid;
-		gap: 17px;
+		gap: 15px;
 	}
-
 	label {
 		display: grid;
 		gap: 7px;
+		font-size: 0.82rem;
+		font-weight: 700;
 	}
-
-	label span {
-		font-size: 0.8rem;
-		font-weight: 750;
-	}
-
 	input {
 		border: 1px solid var(--nb-border);
 		border-radius: 10px;
 		padding: 12px 13px;
-		background: var(--nb-surface);
-		color: var(--nb-ink);
+		font: inherit;
 	}
-
-	input:disabled {
-		background: var(--nb-surface-subtle);
-		color: var(--nb-muted);
-	}
-
-	.primary-action {
+	.primary-action,
+	.secondary-link {
 		display: inline-flex;
-		min-height: 45px;
-		align-items: center;
-		justify-content: center;
 		margin-top: 24px;
-		border: 0;
 		border-radius: 10px;
-		padding: 11px 15px;
+		padding: 11px 14px;
+		font-weight: 740;
+		text-decoration: none;
+	}
+	.primary-action {
+		border: 0;
 		background: var(--nb-ink);
 		color: white;
 		font: inherit;
-		font-weight: 780;
-		text-decoration: none;
+		cursor: pointer;
 	}
-
-	.signup-form .primary-action {
-		margin-top: 3px;
-	}
-
-	.primary-action:disabled {
-		cursor: progress;
-		opacity: 0.6;
-	}
-
 	.form-error {
 		margin: 0;
-		border-left: 3px solid var(--nb-accent);
-		padding: 9px 12px;
-		background: var(--nb-surface-subtle);
-		font-size: 0.84rem;
-		line-height: 1.5;
-	}
-
-	.secondary-link {
-		display: inline-block;
-		margin-top: 20px;
+		color: #b42318;
+		font-size: 0.8rem;
 	}
 </style>
