@@ -65,7 +65,12 @@ export function safeTenantAppReturnTo(
 
 	const base = appPath(tenant);
 	if (candidate !== base && !candidate.startsWith(`${base}/`)) return null;
-	if (candidate === `${base}/auth` || candidate.startsWith(`${base}/auth/`)) return null;
+
+	const authBase = `${base}/auth`;
+	const inviteBase = `${authBase}/invite/`;
+	if (candidate === authBase || (candidate.startsWith(`${authBase}/`) && !candidate.startsWith(inviteBase))) {
+		return null;
+	}
 	return candidate;
 }
 
@@ -91,7 +96,7 @@ export function appSignInPath(tenant: string, returnTo?: string | null): AppSign
 export function appInvitePath(tenant: string, token: string): AppInvitePath {
 	const cleanToken = token.trim();
 	if (!cleanToken) throw new Error('Invitation token is required.');
-	return appPath(tenant, `auth/invite/${cleanToken}`) as AppInvitePath;
+	return `${appPath(tenant, 'auth/invite')}/${encodeURIComponent(cleanToken)}` as AppInvitePath;
 }
 
 export function portalSignInPath(
