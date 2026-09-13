@@ -3,6 +3,7 @@
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 	import { page } from '$app/state';
 	import { authClient } from '$lib/auth/auth-client';
+	import NuBloxLogo from '$lib/components/brand/NuBloxLogo.svelte';
 	import { routes } from '$lib/routing/route-contract';
 
 	let { data, children } = $props();
@@ -41,8 +42,8 @@
 					href={resolve(routes.dashboard(data.tenant.slug))}
 					aria-label="NuBlox home"
 				>
-					<span class="brand-mark" aria-hidden="true">N</span>
-					<span>NuBlox</span>
+					<span class="brand-mark"><NuBloxLogo variant="mark" alt="" /></span>
+					<span class="brand-wordmark">NuBlox</span>
 				</a>
 				<div class="tenant-context" aria-label="Current organisation context">
 					<span class="context-label">Organisation</span>
@@ -104,21 +105,18 @@
 		gap: 20px;
 	}
 	.brand {
-		gap: 10px;
-		font-weight: 800;
-		letter-spacing: -0.02em;
+		gap: 9px;
 		text-decoration: none;
 		white-space: nowrap;
 	}
 	.brand-mark {
-		display: grid;
-		place-items: center;
-		width: 32px;
-		height: 32px;
-		border-radius: 9px;
-		background: var(--nb-accent);
-		color: white;
-		font-size: 0.9rem;
+		display: block;
+		width: 34px;
+	}
+	.brand-wordmark {
+		font-size: 0.98rem;
+		font-weight: 800;
+		letter-spacing: -0.035em;
 	}
 	.tenant-context {
 		min-width: 0;
