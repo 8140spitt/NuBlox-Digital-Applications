@@ -1,0 +1,504 @@
+name: Temporary F01 World-Class Versioning
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  integrate-and-validate:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Integrate governed major/minor versioning
+        shell: bash
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text()
+
+          def write(path, text):
+              Path(path).write_text(text)
+
+          def rep(text, old, new, label):
+              if old not in text:
+                  raise SystemExit(f"Missing patch anchor: {label}")
+              return text.replace(old, new, 1)
+
+          # ------------------------------------------------------------------
+          # F01 strategy aggregate: expose 0.1 / 1.0 / 1.1 version semantics.
+          # ------------------------------------------------------------------
+          p = 'appv2/src/lib/server/strategy/f01-service.ts'
+          s = read(p)
+          s = rep(s,
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\n",
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\nimport { appendGovernedVersion, governedVersionCoordinates } from '$lib/server/platform/governed-versioning';\n",
+              'f01-service versioning import')
+          s = rep(s,
+              "\tversionNumber: number;\n\ttitle: string;",
+              "\tversionNumber: number;\n\tminorVersionNumber: number;\n\tversionLabel: string;\n\tversionStage: 'draft' | 'published' | 'historical';\n\ttitle: string;",
+              'framework summary version fields')
+          s = rep(s,
+              "\tversionNumber: number | string;\n\ttitle: string;",
+              "\tversionNumber: number | string;\n\tminorVersionNumber: number | string;\n\ttitle: string;",
+              'framework row minor field')
+          s = rep(s,
+              "function mapFramework(row: FrameworkRow, memberId: string): StrategyFrameworkSummary {\n\treturn {\n\t\tpublicId: row.publicId,\n\t\tcode: row.code,\n\t\tversionNumber: Number(row.versionNumber),",
+              "function mapFramework(row: FrameworkRow, memberId: string): StrategyFrameworkSummary {\n\tconst version = governedVersionCoordinates({\n\t\tversionNumber: Number(row.versionNumber),\n\t\tminorVersionNumber: Number(row.minorVersionNumber),\n\t\tlifecycleStatus: row.lifecycleStatus\n\t});\n\treturn {\n\t\tpublicId: row.publicId,\n\t\tcode: row.code,\n\t\tversionNumber: Number(row.versionNumber),\n\t\tminorVersionNumber: Number(row.minorVersionNumber),\n\t\tversionLabel: version.label,\n\t\tversionStage: version.status,",
+              'map framework version coordinates')
+          s = rep(s,
+              "\t\t        framework.version_number AS versionNumber,\n\t\t        framework.title AS title,",
+              "\t\t        framework.version_number AS versionNumber,\n\t\t        framework.minor_version_number AS minorVersionNumber,\n\t\t        framework.title AS title,",
+              'framework list minor select')
+          s = rep(s,
+              "\t\t\t\t(organisation_id, public_id, framework_code, version_number, title,\n",
+              "\t\t\t\t(organisation_id, public_id, framework_code, version_number, minor_version_number, title,\n",
+              'framework insert minor column')
+          s = rep(s,
+              "\t\t\t VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,",
+              "\t\t\t VALUES (?, ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,",
+              'framework insert minor value')
+          anchor = "\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.framework.create',"
+          version_call = "\t\tawait appendGovernedVersion(connection, {\n\t\t\tactor: input.actor,\n\t\t\tdomainCode: 'F01',\n\t\t\trecordType: 'strategy_framework',\n\t\t\tlineageKey: code,\n\t\t\trecordPublicId: publicId,\n\t\t\tversionNumber: 1,\n\t\t\tminorVersionNumber: 1,\n\t\t\tlifecycleStatus: 'draft',\n\t\t\tsnapshot: { title, horizonStart, horizonEnd, purpose, vision, mission, lifecycleStatus: 'draft' },\n\t\t\tchangeNote: 'Initial working draft'\n\t\t});\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.framework.create',"
+          s = rep(s, anchor, version_call, 'framework create version history')
+          s = rep(s,
+              "\t\t\t\tversionNumber: 1,\n\t\t\t\tlifecycleStatus: 'draft',",
+              "\t\t\t\tversionNumber: 1,\n\t\t\t\tversionLabel: '0.1',\n\t\t\t\tlifecycleStatus: 'draft',",
+              'framework create audit version label')
+          write(p, s)
+
+          # ------------------------------------------------------------------
+          # Strategy approval promotes working minor to next published major.
+          # ------------------------------------------------------------------
+          p = 'appv2/src/lib/server/strategy/approval-service.ts'
+          s = read(p)
+          s = rep(s,
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\n",
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\nimport { appendGovernedVersion, markPublishedVersionHistorical } from '$lib/server/platform/governed-versioning';\n",
+              'approval versioning import')
+          s = rep(s,
+              "\tcode: string;\n\ttitle: string;\n\tlifecycleStatus:",
+              "\tcode: string;\n\tversionNumber: number | string;\n\tminorVersionNumber: number | string;\n\ttitle: string;\n\thorizonStart: Date | string;\n\thorizonEnd: Date | string;\n\tpurpose: string;\n\tvision: string;\n\tmission: string;\n\tlifecycleStatus:",
+              'approval framework row fields')
+          s = rep(s,
+              "\t\t        framework_code AS code,\n\t\t        title,\n\t\t        lifecycle_status AS lifecycleStatus,",
+              "\t\t        framework_code AS code,\n\t\t        version_number AS versionNumber,\n\t\t        minor_version_number AS minorVersionNumber,\n\t\t        title,\n\t\t        horizon_start AS horizonStart,\n\t\t        horizon_end AS horizonEnd,\n\t\t        purpose_text AS purpose,\n\t\t        vision_text AS vision,\n\t\t        mission_text AS mission,\n\t\t        lifecycle_status AS lifecycleStatus,",
+              'approval lock select version fields')
+          s = rep(s,
+              "Promise<{ id: string; publicId: string; code: string } | null>",
+              "Promise<{ id: string; publicId: string; code: string; versionNumber: number } | null>",
+              'approved framework return type')
+          s = rep(s,
+              "(RowDataPacket & { id: string | number; publicId: string; code: string })[]",
+              "(RowDataPacket & { id: string | number; publicId: string; code: string; versionNumber: number | string })[]",
+              'approved framework row type')
+          s = rep(s,
+              "`SELECT id, public_id AS publicId, framework_code AS code\n",
+              "`SELECT id, public_id AS publicId, framework_code AS code, version_number AS versionNumber\n",
+              'approved framework select version')
+          s = rep(s,
+              "return row ? { id: row.id.toString(), publicId: row.publicId, code: row.code } : null;",
+              "return row\n\t\t? { id: row.id.toString(), publicId: row.publicId, code: row.code, versionNumber: Number(row.versionNumber) }\n\t\t: null;",
+              'approved framework map version')
+          marker = "\t\t\tawait connection.execute(\n\t\t\t\t`UPDATE strategy_frameworks\n\t\t\t\t SET lifecycle_status = 'superseded'"
+          if marker not in s: raise SystemExit('Missing predecessor supersede marker')
+          # Insert history status change immediately after the supersede execute block.
+          old = "\t\t\tawait connection.execute(\n\t\t\t\t`UPDATE strategy_frameworks\n\t\t\t\t SET lifecycle_status = 'superseded'\n\t\t\t\t WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,\n\t\t\t\t[input.actor.organisationId, existingApproved.id]\n\t\t\t);"
+          new = old + "\n\t\t\tawait markPublishedVersionHistorical(connection, {\n\t\t\t\torganisationId: input.actor.organisationId,\n\t\t\t\tdomainCode: 'F01',\n\t\t\t\trecordType: 'strategy_framework',\n\t\t\t\tlineageKey: framework.code,\n\t\t\t\tmajorVersion: existingApproved.versionNumber\n\t\t\t});"
+          s = rep(s, old, new, 'framework predecessor version historical')
+          s = rep(s,
+              "\t\t\t SET lifecycle_status = 'approved',\n\t\t\t     approved_by_member_id = ?,",
+              "\t\t\t SET lifecycle_status = 'approved',\n\t\t\t     minor_version_number = 0,\n\t\t\t     approved_by_member_id = ?,",
+              'framework approval zero minor')
+          anchor = "\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.framework.approve',"
+          call = "\n\t\tawait appendGovernedVersion(connection, {\n\t\t\tactor: input.actor,\n\t\t\tdomainCode: 'F01',\n\t\t\trecordType: 'strategy_framework',\n\t\t\tlineageKey: framework.code,\n\t\t\trecordPublicId: framework.publicId,\n\t\t\tversionNumber: Number(framework.versionNumber),\n\t\t\tminorVersionNumber: 0,\n\t\t\tlifecycleStatus: 'approved',\n\t\t\tsnapshot: {\n\t\t\t\ttitle: framework.title,\n\t\t\t\thorizonStart: framework.horizonStart,\n\t\t\t\thorizonEnd: framework.horizonEnd,\n\t\t\t\tpurpose: framework.purpose,\n\t\t\t\tvision: framework.vision,\n\t\t\t\tmission: framework.mission,\n\t\t\t\tlifecycleStatus: 'approved'\n\t\t\t},\n\t\t\tchangeNote: 'Approved strategic direction',\n\t\t\tpublished: true\n\t\t});\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.framework.approve',"
+          s = rep(s, anchor, call, 'framework published version snapshot')
+          s = rep(s,
+              "\t\t\t\tlifecycleStatus: 'approved',\n\t\t\t\ttraceableObjectiveCount:",
+              "\t\t\t\tlifecycleStatus: 'approved',\n\t\t\t\tversionLabel: `${Number(framework.versionNumber)}.0`,\n\t\t\t\ttraceableObjectiveCount:",
+              'framework approval audit label')
+          write(p, s)
+
+          # ------------------------------------------------------------------
+          # Business-plan approval uses the same publish/history mechanism.
+          # ------------------------------------------------------------------
+          p = 'appv2/src/lib/server/strategy/business-plan-approval-service.ts'
+          s = read(p)
+          s = rep(s,
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\n",
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\nimport { appendGovernedVersion, markPublishedVersionHistorical } from '$lib/server/platform/governed-versioning';\n",
+              'plan approval versioning import')
+          s = rep(s,
+              "\tcode: string;\n\tlifecycleStatus:",
+              "\tcode: string;\n\tversionNumber: number | string;\n\tminorVersionNumber: number | string;\n\ttitle: string;\n\tperiodStart: Date | string;\n\tperiodEnd: Date | string;\n\tnarrative: string;\n\tcurrencyCode: string;\n\tplannedRevenueAmount: string | number;\n\tplannedOpexAmount: string | number;\n\tplannedCapexAmount: string | number;\n\tlifecycleStatus:",
+              'plan approval row fields')
+          s = rep(s,
+              "\t\t        plan.plan_code AS code,\n\t\t        plan.lifecycle_status AS lifecycleStatus,",
+              "\t\t        plan.plan_code AS code,\n\t\t        plan.version_number AS versionNumber,\n\t\t        plan.minor_version_number AS minorVersionNumber,\n\t\t        plan.title,\n\t\t        plan.period_start AS periodStart,\n\t\t        plan.period_end AS periodEnd,\n\t\t        plan.narrative,\n\t\t        plan.currency_code AS currencyCode,\n\t\t        plan.planned_revenue_amount AS plannedRevenueAmount,\n\t\t        plan.planned_opex_amount AS plannedOpexAmount,\n\t\t        plan.planned_capex_amount AS plannedCapexAmount,\n\t\t        plan.lifecycle_status AS lifecycleStatus,",
+              'plan approval select fields')
+          s = rep(s,
+              "(RowDataPacket & { id: string | number; publicId: string })[]",
+              "(RowDataPacket & { id: string | number; publicId: string; versionNumber: number | string })[]",
+              'previous plan row version')
+          s = rep(s,
+              "`SELECT id, public_id AS publicId\n",
+              "`SELECT id, public_id AS publicId, version_number AS versionNumber\n",
+              'previous plan select version')
+          old = "\t\t\tawait connection.execute(\n\t\t\t\t`UPDATE strategy_business_plans SET lifecycle_status = 'superseded' WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,\n\t\t\t\t[input.actor.organisationId, previousApproved.id]\n\t\t\t);"
+          new = old + "\n\t\t\tawait markPublishedVersionHistorical(connection, {\n\t\t\t\torganisationId: input.actor.organisationId,\n\t\t\t\tdomainCode: 'F01',\n\t\t\t\trecordType: 'strategy_business_plan',\n\t\t\t\tlineageKey: plan.code,\n\t\t\t\tmajorVersion: Number(previousApproved.versionNumber)\n\t\t\t});"
+          s = rep(s, old, new, 'plan predecessor version historical')
+          s = rep(s,
+              "\t\t\t SET lifecycle_status = 'approved',\n\t\t\t     approved_by_member_id = ?,",
+              "\t\t\t SET lifecycle_status = 'approved',\n\t\t\t     minor_version_number = 0,\n\t\t\t     approved_by_member_id = ?,",
+              'plan approval zero minor')
+          anchor = "\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.business-plan.approve',"
+          call = "\n\t\tawait appendGovernedVersion(connection, {\n\t\t\tactor: input.actor,\n\t\t\tdomainCode: 'F01',\n\t\t\trecordType: 'strategy_business_plan',\n\t\t\tlineageKey: plan.code,\n\t\t\trecordPublicId: plan.publicId,\n\t\t\tversionNumber: Number(plan.versionNumber),\n\t\t\tminorVersionNumber: 0,\n\t\t\tlifecycleStatus: 'approved',\n\t\t\tsnapshot: {\n\t\t\t\ttitle: plan.title,\n\t\t\t\tperiodStart: plan.periodStart,\n\t\t\t\tperiodEnd: plan.periodEnd,\n\t\t\t\tnarrative: plan.narrative,\n\t\t\t\tcurrencyCode: plan.currencyCode,\n\t\t\t\tplannedRevenueAmount: plan.plannedRevenueAmount,\n\t\t\t\tplannedOpexAmount: plan.plannedOpexAmount,\n\t\t\t\tplannedCapexAmount: plan.plannedCapexAmount,\n\t\t\t\tlifecycleStatus: 'approved'\n\t\t\t},\n\t\t\tchangeNote: 'Approved business plan',\n\t\t\tpublished: true\n\t\t});\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.business-plan.approve',"
+          s = rep(s, anchor, call, 'plan published version snapshot')
+          s = rep(s,
+              "\t\t\t\tlifecycleStatus: 'approved',\n\t\t\t\tobjectiveCount:",
+              "\t\t\t\tlifecycleStatus: 'approved',\n\t\t\t\tversionLabel: `${Number(plan.versionNumber)}.0`,\n\t\t\t\tobjectiveCount:",
+              'plan approval audit label')
+          write(p, s)
+
+          # ------------------------------------------------------------------
+          # F01 execution service: version labels, initial minors and KPI publish.
+          # ------------------------------------------------------------------
+          p = 'appv2/src/lib/server/strategy/execution-review-service.ts'
+          s = read(p)
+          s = rep(s,
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\n",
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\nimport { appendGovernedVersion, governedVersionCoordinates, markPublishedVersionHistorical } from '$lib/server/platform/governed-versioning';\n",
+              'execution versioning import')
+          s = rep(s,
+              "\tversionNumber: number;\n\ttitle: string;",
+              "\tversionNumber: number;\n\tminorVersionNumber: number;\n\tversionLabel: string;\n\tversionStage: 'draft' | 'published' | 'historical';\n\ttitle: string;",
+              'plan type version fields')
+          s = rep(s,
+              "export type StrategyKpi = {\n\tpublicId: string;\n\tcode: string;\n\ttitle: string;",
+              "export type StrategyKpi = {\n\tpublicId: string;\n\tcode: string;\n\tversionNumber: number;\n\tminorVersionNumber: number;\n\tversionLabel: string;\n\tversionStage: 'draft' | 'published' | 'historical';\n\ttitle: string;",
+              'kpi type version fields')
+          s = rep(s,
+              "\tversionNumber: number | string;\n\ttitle: string;",
+              "\tversionNumber: number | string;\n\tminorVersionNumber: number | string;\n\ttitle: string;",
+              'plan row minor field')
+          s = rep(s,
+              "type KpiRow = RowDataPacket & {\n\tpublicId: string;\n\tcode: string;\n\ttitle: string;",
+              "type KpiRow = RowDataPacket & {\n\tpublicId: string;\n\tcode: string;\n\tversionNumber: number | string;\n\tminorVersionNumber: number | string;\n\ttitle: string;",
+              'kpi row version fields')
+          s = rep(s,
+              "\t\t        plan.version_number AS versionNumber,\n\t\t        plan.title,",
+              "\t\t        plan.version_number AS versionNumber,\n\t\t        plan.minor_version_number AS minorVersionNumber,\n\t\t        plan.title,",
+              'plan list minor select')
+          old = "\treturn rows.map((row) => ({\n\t\tpublicId: row.publicId,\n\t\tcode: row.code,\n\t\tversionNumber: Number(row.versionNumber),\n\t\ttitle: row.title,"
+          new = "\treturn rows.map((row) => {\n\t\tconst version = governedVersionCoordinates({\n\t\t\tversionNumber: Number(row.versionNumber),\n\t\t\tminorVersionNumber: Number(row.minorVersionNumber),\n\t\t\tlifecycleStatus: row.lifecycleStatus\n\t\t});\n\t\treturn {\n\t\t\tpublicId: row.publicId,\n\t\t\tcode: row.code,\n\t\t\tversionNumber: Number(row.versionNumber),\n\t\t\tminorVersionNumber: Number(row.minorVersionNumber),\n\t\t\tversionLabel: version.label,\n\t\t\tversionStage: version.status,\n\t\t\ttitle: row.title,"
+          s = rep(s, old, new, 'plan map version start')
+          s = rep(s,
+              "\t\tinitiativeCount: Number(row.initiativeCount)\n\t}));\n}\n\nasync function listInitiatives",
+              "\t\t\tinitiativeCount: Number(row.initiativeCount)\n\t\t};\n\t});\n}\n\nasync function listInitiatives",
+              'plan map version end')
+          s = rep(s,
+              "\t\t        kpi.kpi_code AS code,\n\t\t        kpi.title,",
+              "\t\t        kpi.kpi_code AS code,\n\t\t        kpi.version_number AS versionNumber,\n\t\t        kpi.minor_version_number AS minorVersionNumber,\n\t\t        kpi.title,",
+              'kpi list version select')
+          old = "\treturn rows.map((row) => ({\n\t\tpublicId: row.publicId,\n\t\tcode: row.code,\n\t\ttitle: row.title,\n\t\tobjectivePublicId: row.objectivePublicId,"
+          new = "\treturn rows.map((row) => {\n\t\tconst version = governedVersionCoordinates({\n\t\t\tversionNumber: Number(row.versionNumber),\n\t\t\tminorVersionNumber: Number(row.minorVersionNumber),\n\t\t\tlifecycleStatus: row.lifecycleStatus\n\t\t});\n\t\treturn {\n\t\t\tpublicId: row.publicId,\n\t\t\tcode: row.code,\n\t\t\tversionNumber: Number(row.versionNumber),\n\t\t\tminorVersionNumber: Number(row.minorVersionNumber),\n\t\t\tversionLabel: version.label,\n\t\t\tversionStage: version.status,\n\t\t\ttitle: row.title,\n\t\t\tobjectivePublicId: row.objectivePublicId,"
+          s = rep(s, old, new, 'kpi map version start')
+          s = rep(s,
+              "\t\tlatestObservedOn: dateValue(row.latestObservedOn)\n\t}));\n}\n\nasync function listReviews",
+              "\t\t\tlatestObservedOn: dateValue(row.latestObservedOn)\n\t\t};\n\t});\n}\n\nasync function listReviews",
+              'kpi map version end')
+          s = rep(s,
+              "\t\t\t\t(organisation_id, strategy_framework_id, public_id, plan_code, version_number,\n",
+              "\t\t\t\t(organisation_id, strategy_framework_id, public_id, plan_code, version_number, minor_version_number,\n",
+              'plan create minor column')
+          s = rep(s,
+              "\t\t\t VALUES (?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,",
+              "\t\t\t VALUES (?, ?, ?, ?, 1, 1, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', NULL, ?, ?, NULL, NULL)`,",
+              'plan create minor value')
+          anchor = "\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.business-plan.create',"
+          call = "\t\tawait appendGovernedVersion(connection, {\n\t\t\tactor: input.actor,\n\t\t\tdomainCode: 'F01',\n\t\t\trecordType: 'strategy_business_plan',\n\t\t\tlineageKey: code,\n\t\t\trecordPublicId: publicId,\n\t\t\tversionNumber: 1,\n\t\t\tminorVersionNumber: 1,\n\t\t\tlifecycleStatus: 'draft',\n\t\t\tsnapshot: { title, periodStart, periodEnd, narrative, currencyCode, plannedRevenueAmount, plannedOpexAmount, plannedCapexAmount, objectivePublicIds, lifecycleStatus: 'draft' },\n\t\t\tchangeNote: 'Initial business-plan working draft'\n\t\t});\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.business-plan.create',"
+          s = rep(s, anchor, call, 'plan initial version')
+          s = rep(s,
+              "\t\t\t\t kpi_code, version_number, title, description, unit_label, direction,",
+              "\t\t\t\t kpi_code, version_number, minor_version_number, title, description, unit_label, direction,",
+              'kpi create minor column')
+          s = rep(s,
+              "\t\t\t VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, ?, 'latest', ?, ?, NULL, NULL, ?,",
+              "\t\t\t VALUES (?, ?, ?, ?, ?, 1, 1, ?, ?, ?, ?, 'latest', ?, ?, NULL, NULL, ?,",
+              'kpi create minor value')
+          anchor = "\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.kpi.create',"
+          call = "\t\tawait appendGovernedVersion(connection, {\n\t\t\tactor: input.actor,\n\t\t\tdomainCode: 'F01',\n\t\t\trecordType: 'strategy_kpi',\n\t\t\tlineageKey: code,\n\t\t\trecordPublicId: publicId,\n\t\t\tversionNumber: 1,\n\t\t\tminorVersionNumber: 1,\n\t\t\tlifecycleStatus: 'draft',\n\t\t\tsnapshot: { title, description, unitLabel, direction: input.direction, baselineValue, targetValue, targetDate, objectivePublicId: input.objectivePublicId, initiativePublicIds, lifecycleStatus: 'draft' },\n\t\t\tchangeNote: 'Initial KPI working draft'\n\t\t});\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.kpi.create',"
+          s = rep(s, anchor, call, 'kpi initial version')
+          # KPI approval: enrich locked record and predecessor, publish to major.
+          s = rep(s,
+              "\t\t\t\tid: string | number;\n\t\t\t\tcode: string;\n\t\t\t\tlifecycleStatus: KpiStatus;",
+              "\t\t\t\tid: string | number;\n\t\t\t\tcode: string;\n\t\t\t\tversionNumber: number | string;\n\t\t\t\tminorVersionNumber: number | string;\n\t\t\t\ttitle: string;\n\t\t\t\tdescription: string;\n\t\t\t\tunitLabel: string;\n\t\t\t\tdirection: string;\n\t\t\t\tbaselineValue: string | number;\n\t\t\t\ttargetValue: string | number;\n\t\t\t\ttargetDate: Date | string | null;\n\t\t\t\tlifecycleStatus: KpiStatus;",
+              'kpi approval lock fields')
+          s = rep(s,
+              "`SELECT id, kpi_code AS code, lifecycle_status AS lifecycleStatus,\n\t\t\t        supersedes_strategy_kpi_id AS supersedesKpiId",
+              "`SELECT id, kpi_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber,\n\t\t\t        title, description, unit_label AS unitLabel, direction, baseline_value AS baselineValue,\n\t\t\t        target_value AS targetValue, target_date AS targetDate, lifecycle_status AS lifecycleStatus,\n\t\t\t        supersedes_strategy_kpi_id AS supersedesKpiId",
+              'kpi approval select fields')
+          s = rep(s,
+              "(RowDataPacket & { id: string | number; publicId: string })[]",
+              "(RowDataPacket & { id: string | number; publicId: string; versionNumber: number | string })[]",
+              'previous kpi row version')
+          s = rep(s,
+              "`SELECT id, public_id AS publicId FROM strategy_kpis\n",
+              "`SELECT id, public_id AS publicId, version_number AS versionNumber FROM strategy_kpis\n",
+              'previous kpi version select')
+          old = "\t\t\tawait connection.execute(\n\t\t\t\t`UPDATE strategy_kpis SET lifecycle_status = 'superseded' WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,\n\t\t\t\t[input.actor.organisationId, previousApproved.id]\n\t\t\t);"
+          new = old + "\n\t\t\tawait markPublishedVersionHistorical(connection, {\n\t\t\t\torganisationId: input.actor.organisationId,\n\t\t\t\tdomainCode: 'F01',\n\t\t\t\trecordType: 'strategy_kpi',\n\t\t\t\tlineageKey: kpi.code,\n\t\t\t\tmajorVersion: Number(previousApproved.versionNumber)\n\t\t\t});"
+          s = rep(s, old, new, 'kpi predecessor historical')
+          s = rep(s,
+              "\t\t\t SET lifecycle_status = 'approved', approved_by_member_id = ?, approved_at = CURRENT_TIMESTAMP(6)",
+              "\t\t\t SET lifecycle_status = 'approved', minor_version_number = 0, approved_by_member_id = ?, approved_at = CURRENT_TIMESTAMP(6)",
+              'kpi approval zero minor')
+          anchor = "\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.kpi.approve',"
+          call = "\t\tawait appendGovernedVersion(connection, {\n\t\t\tactor: input.actor,\n\t\t\tdomainCode: 'F01',\n\t\t\trecordType: 'strategy_kpi',\n\t\t\tlineageKey: kpi.code,\n\t\t\trecordPublicId: input.kpiPublicId,\n\t\t\tversionNumber: Number(kpi.versionNumber),\n\t\t\tminorVersionNumber: 0,\n\t\t\tlifecycleStatus: 'approved',\n\t\t\tsnapshot: { title: kpi.title, description: kpi.description, unitLabel: kpi.unitLabel, direction: kpi.direction, baselineValue: kpi.baselineValue, targetValue: kpi.targetValue, targetDate: kpi.targetDate, lifecycleStatus: 'approved' },\n\t\t\tchangeNote: 'Approved KPI definition',\n\t\t\tpublished: true\n\t\t});\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: 'strategy.kpi.approve',"
+          s = rep(s, anchor, call, 'kpi published version')
+          s = rep(s,
+              "\t\t\t\tlifecycleStatus: 'approved',\n\t\t\t\tsupersededKpiPublicId:",
+              "\t\t\t\tlifecycleStatus: 'approved',\n\t\t\t\tversionLabel: `${Number(kpi.versionNumber)}.0`,\n\t\t\t\tsupersededKpiPublicId:",
+              'kpi approval audit label')
+          write(p, s)
+
+          # ------------------------------------------------------------------
+          # Managed record workspace: version metadata/history and minor saves.
+          # ------------------------------------------------------------------
+          p = 'appv2/src/lib/server/strategy/f01-record-management-service.ts'
+          s = read(p)
+          s = rep(s,
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\n",
+              "import { appendDomainEvidence, type EvidenceActor } from '$lib/server/platform/evidence';\nimport { appendGovernedVersion, governedVersionCoordinates, listGovernedVersionHistory, type GovernedVersionHistoryItem } from '$lib/server/platform/governed-versioning';\n",
+              'record management versioning import')
+          s = rep(s,
+              "\tstatus: string;\n\tsection:",
+              "\tstatus: string;\n\tversionLabel: string | null;\n\tversionStage: 'draft' | 'published' | 'historical' | null;\n\tversionHistory: GovernedVersionHistoryItem[];\n\tsection:",
+              'managed record version fields')
+          s = rep(s,
+              "\tlet status = '';\n\tlet fields:",
+              "\tlet status = '';\n\tlet versionNumber: number | null = null;\n\tlet minorVersionNumber: number | null = null;\n\tlet fields:",
+              'managed record local version fields')
+          # Framework load.
+          s = rep(s,
+              "\t\t\t\t\tcode: string;\n\t\t\t\t\ttitle: string;",
+              "\t\t\t\t\tcode: string;\n\t\t\t\t\tversionNumber: number | string;\n\t\t\t\t\tminorVersionNumber: number | string;\n\t\t\t\t\ttitle: string;",
+              'managed framework type version')
+          s = rep(s,
+              "`SELECT public_id AS publicId, framework_code AS code, title, horizon_start AS horizonStart,",
+              "`SELECT public_id AS publicId, framework_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, title, horizon_start AS horizonStart,",
+              'managed framework select version')
+          s = rep(s,
+              "\t\t\tcode = row.code;\n\t\t\ttitle = row.title;\n\t\t\tstatus = row.status;",
+              "\t\t\tcode = row.code;\n\t\t\tversionNumber = Number(row.versionNumber);\n\t\t\tminorVersionNumber = Number(row.minorVersionNumber);\n\t\t\ttitle = row.title;\n\t\t\tstatus = row.status;",
+              'managed framework map version')
+          # Plan load: use a narrow regex because this type occurs later.
+          plan_case = s.index("\t\tcase 'plan': {")
+          plan_end = s.index("\n\t\tcase 'initiative':", plan_case)
+          block = s[plan_case:plan_end]
+          block2 = block
+          block2 = block2.replace("\t\t\t\t\tcode: string;\n\t\t\t\t\ttitle: string;", "\t\t\t\t\tcode: string;\n\t\t\t\t\tversionNumber: number | string;\n\t\t\t\t\tminorVersionNumber: number | string;\n\t\t\t\t\ttitle: string;", 1)
+          block2 = block2.replace("`SELECT plan.plan_code AS code, plan.title,", "`SELECT plan.plan_code AS code, plan.version_number AS versionNumber, plan.minor_version_number AS minorVersionNumber, plan.title,", 1)
+          block2 = block2.replace("\t\t\tcode = row.code;\n\t\t\ttitle = row.title;\n\t\t\tstatus = row.status;", "\t\t\tcode = row.code;\n\t\t\tversionNumber = Number(row.versionNumber);\n\t\t\tminorVersionNumber = Number(row.minorVersionNumber);\n\t\t\ttitle = row.title;\n\t\t\tstatus = row.status;", 1)
+          if block2 == block: raise SystemExit('Plan managed record version patch made no changes')
+          s = s[:plan_case] + block2 + s[plan_end:]
+          # KPI load.
+          kpi_case = s.index("\t\tcase 'kpi': {")
+          kpi_end = s.index("\n\t\tcase 'review':", kpi_case)
+          block = s[kpi_case:kpi_end]
+          block2 = block
+          block2 = block2.replace("\t\t\t\t\tcode: string;\n\t\t\t\t\ttitle: string;", "\t\t\t\t\tcode: string;\n\t\t\t\t\tversionNumber: number | string;\n\t\t\t\t\tminorVersionNumber: number | string;\n\t\t\t\t\ttitle: string;", 1)
+          block2 = block2.replace("`SELECT kpi.kpi_code AS code, kpi.title,", "`SELECT kpi.kpi_code AS code, kpi.version_number AS versionNumber, kpi.minor_version_number AS minorVersionNumber, kpi.title,", 1)
+          block2 = block2.replace("\t\t\tcode = row.code;\n\t\t\ttitle = row.title;\n\t\t\tstatus = row.status;", "\t\t\tcode = row.code;\n\t\t\tversionNumber = Number(row.versionNumber);\n\t\t\tminorVersionNumber = Number(row.minorVersionNumber);\n\t\t\ttitle = row.title;\n\t\t\tstatus = row.status;", 1)
+          if block2 == block: raise SystemExit('KPI managed record version patch made no changes')
+          s = s[:kpi_case] + block2 + s[kpi_end:]
+          # Compute version history just before editability rules.
+          anchor = "\n\tconst strategyAllowsEditing = ["
+          insert = "\n\tlet versionLabel: string | null = null;\n\tlet versionStage: 'draft' | 'published' | 'historical' | null = null;\n\tlet versionHistory: GovernedVersionHistoryItem[] = [];\n\tif (versionNumber !== null && minorVersionNumber !== null && code) {\n\t\tconst version = governedVersionCoordinates({\n\t\t\tversionNumber,\n\t\t\tminorVersionNumber,\n\t\t\tlifecycleStatus: status\n\t\t});\n\t\tversionLabel = version.label;\n\t\tversionStage = version.status;\n\t\tconst recordType =\n\t\t\tinput.kind === 'framework'\n\t\t\t\t? 'strategy_framework'\n\t\t\t\t: input.kind === 'plan'\n\t\t\t\t\t? 'strategy_business_plan'\n\t\t\t\t\t: 'strategy_kpi';\n\t\tconst historyConnection = await getPool().getConnection();\n\t\ttry {\n\t\t\tversionHistory = await listGovernedVersionHistory(historyConnection, {\n\t\t\t\torganisationId,\n\t\t\t\tdomainCode: 'F01',\n\t\t\t\trecordType,\n\t\t\t\tlineageKey: code\n\t\t\t});\n\t\t} finally {\n\t\t\thistoryConnection.release();\n\t\t}\n\t}\n\n\tconst strategyAllowsEditing = ["
+          s = rep(s, anchor, insert, 'managed version history calculation')
+          s = rep(s,
+              "\t\tstatus,\n\t\tsection: sectionFor(input.kind),",
+              "\t\tstatus,\n\t\tversionLabel,\n\t\tversionStage,\n\t\tversionHistory,\n\t\tsection: sectionFor(input.kind),",
+              'managed record return version fields')
+          # Meaningful saves create new minor versions for governed aggregate roots.
+          s = rep(s,
+              "`UPDATE strategy_frameworks SET title = ?, horizon_start = ?, horizon_end = ?, purpose_text = ?, vision_text = ?, mission_text = ? WHERE",
+              "`UPDATE strategy_frameworks SET title = ?, horizon_start = ?, horizon_end = ?, purpose_text = ?, vision_text = ?, mission_text = ?, minor_version_number = minor_version_number + 1 WHERE",
+              'framework update increments minor')
+          s = rep(s,
+              "`UPDATE strategy_business_plans SET title = ?, period_start = ?, period_end = ?, narrative = ?, currency_code = ?, planned_revenue_amount = ?, planned_opex_amount = ?, planned_capex_amount = ? WHERE",
+              "`UPDATE strategy_business_plans SET title = ?, period_start = ?, period_end = ?, narrative = ?, currency_code = ?, planned_revenue_amount = ?, planned_opex_amount = ?, planned_capex_amount = ?, minor_version_number = minor_version_number + 1 WHERE",
+              'plan update increments minor')
+          s = rep(s,
+              "`UPDATE strategy_kpis SET title = ?, description = ?, unit_label = ?, direction = ?, baseline_value = ?, target_value = ?, target_date = ? WHERE",
+              "`UPDATE strategy_kpis SET title = ?, description = ?, unit_label = ?, direction = ?, baseline_value = ?, target_value = ?, target_date = ?, minor_version_number = minor_version_number + 1 WHERE",
+              'kpi update increments minor')
+          # Snapshot the just-saved minor. Query JSON snapshots from canonical row.
+          anchor = "\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: `strategy.${input.kind}.update`,"
+          call = "\n\t\tif (['framework', 'plan', 'kpi'].includes(input.kind)) {\n\t\t\tconst metadata =\n\t\t\t\tinput.kind === 'framework'\n\t\t\t\t\t? await singleRow<RowDataPacket & { code: string; versionNumber: number | string; minorVersionNumber: number | string; snapshot: string | Record<string, unknown> }>(\n\t\t\t\t\t\t`SELECT framework_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'horizonStart', horizon_start, 'horizonEnd', horizon_end, 'purpose', purpose_text, 'vision', vision_text, 'mission', mission_text, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? LIMIT 1`,\n\t\t\t\t\t\t[input.actor.organisationId, input.recordPublicId]\n\t\t\t\t\t)\n\t\t\t\t\t: input.kind === 'plan'\n\t\t\t\t\t\t? await singleRow<RowDataPacket & { code: string; versionNumber: number | string; minorVersionNumber: number | string; snapshot: string | Record<string, unknown> }>(\n\t\t\t\t\t\t\t`SELECT plan_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'periodStart', period_start, 'periodEnd', period_end, 'narrative', narrative, 'currencyCode', currency_code, 'plannedRevenueAmount', planned_revenue_amount, 'plannedOpexAmount', planned_opex_amount, 'plannedCapexAmount', planned_capex_amount, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_business_plans WHERE organisation_id = ? AND public_id = ? LIMIT 1`,\n\t\t\t\t\t\t\t[input.actor.organisationId, input.recordPublicId]\n\t\t\t\t\t\t)\n\t\t\t\t\t\t: await singleRow<RowDataPacket & { code: string; versionNumber: number | string; minorVersionNumber: number | string; snapshot: string | Record<string, unknown> }>(\n\t\t\t\t\t\t\t`SELECT kpi_code AS code, version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT('title', title, 'description', description, 'unitLabel', unit_label, 'direction', direction, 'baselineValue', baseline_value, 'targetValue', target_value, 'targetDate', target_date, 'lifecycleStatus', lifecycle_status) AS snapshot FROM strategy_kpis WHERE organisation_id = ? AND public_id = ? LIMIT 1`,\n\t\t\t\t\t\t\t[input.actor.organisationId, input.recordPublicId]\n\t\t\t\t\t\t);\n\t\t\tconst snapshot = typeof metadata.snapshot === 'string' ? JSON.parse(metadata.snapshot) : metadata.snapshot;\n\t\t\tawait appendGovernedVersion(connection, {\n\t\t\t\tactor: input.actor,\n\t\t\t\tdomainCode: 'F01',\n\t\t\t\trecordType: input.kind === 'framework' ? 'strategy_framework' : input.kind === 'plan' ? 'strategy_business_plan' : 'strategy_kpi',\n\t\t\t\tlineageKey: metadata.code,\n\t\t\t\trecordPublicId: input.recordPublicId,\n\t\t\t\tversionNumber: Number(metadata.versionNumber),\n\t\t\t\tminorVersionNumber: Number(metadata.minorVersionNumber),\n\t\t\t\tlifecycleStatus: 'draft',\n\t\t\t\tsnapshot,\n\t\t\t\tchangeNote: 'Saved working revision'\n\t\t\t});\n\t\t}\n\t\tawait appendDomainEvidence(connection, {\n\t\t\tactor: input.actor,\n\t\t\tactionKey: `strategy.${input.kind}.update`,"
+          s = rep(s, anchor, call, 'minor save snapshot')
+          # Revision clone: add minor=1 for framework/plan/KPI inserts.
+          s = s.replace("framework_code, version_number, title,", "framework_code, version_number, minor_version_number, title,", 1)
+          s = s.replace("?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft',", "?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, 'draft',", 1)
+          s = s.replace("plan_code, version_number, title,", "plan_code, version_number, minor_version_number, title,", 1)
+          # Find plan revision VALUES exact and add 1 after version number if not already.
+          s = s.replace("revisionPublicId,\n\t\t\t\t\tsource.code,\n\t\t\t\t\tNumber(source.versionNumber) + 1,\n\t\t\t\t\tsource.title,", "revisionPublicId,\n\t\t\t\t\tsource.code,\n\t\t\t\t\tNumber(source.versionNumber) + 1,\n\t\t\t\t\t1,\n\t\t\t\t\tsource.title,", 2)
+          s = s.replace("kpi_code, version_number, title,", "kpi_code, version_number, minor_version_number, title,", 1)
+          # KPI revision array is the third same source.code/version sequence; patch remaining occurrence.
+          s = s.replace("revisionPublicId,\n\t\t\t\tsource.code,\n\t\t\t\tNumber(source.versionNumber) + 1,\n\t\t\t\tsource.title,", "revisionPublicId,\n\t\t\t\tsource.code,\n\t\t\t\tNumber(source.versionNumber) + 1,\n\t\t\t\t1,\n\t\t\t\tsource.title,", 1)
+          # After each revision creation, capture 0/1 or N.1 draft snapshot using a generic fetch before its evidence action.
+          for kind, action, record_type, table, codecol, fields in [
+              ('framework','strategy.framework.revise','strategy_framework','strategy_frameworks','framework_code', "'title', title, 'horizonStart', horizon_start, 'horizonEnd', horizon_end, 'purpose', purpose_text, 'vision', vision_text, 'mission', mission_text, 'lifecycleStatus', lifecycle_status"),
+              ('plan','strategy.business-plan.revise','strategy_business_plan','strategy_business_plans','plan_code', "'title', title, 'periodStart', period_start, 'periodEnd', period_end, 'narrative', narrative, 'currencyCode', currency_code, 'plannedRevenueAmount', planned_revenue_amount, 'plannedOpexAmount', planned_opex_amount, 'plannedCapexAmount', planned_capex_amount, 'lifecycleStatus', lifecycle_status"),
+              ('kpi','strategy.kpi.revise','strategy_kpi','strategy_kpis','kpi_code', "'title', title, 'description', description, 'unitLabel', unit_label, 'direction', direction, 'baselineValue', baseline_value, 'targetValue', target_value, 'targetDate', target_date, 'lifecycleStatus', lifecycle_status")
+          ]:
+              anchor = f"\t\t\tawait appendDomainEvidence(connection, {{\n\t\t\t\tactor: input.actor,\n\t\t\t\tactionKey: '{action}',"
+              prefix = f"\t\t\tconst versionRow = await singleRow<RowDataPacket & {{ versionNumber: number | string; minorVersionNumber: number | string; snapshot: string | Record<string, unknown> }}>(\n\t\t\t\t`SELECT version_number AS versionNumber, minor_version_number AS minorVersionNumber, JSON_OBJECT({fields}) AS snapshot FROM {table} WHERE organisation_id = ? AND public_id = ? LIMIT 1`,\n\t\t\t\t[input.actor.organisationId, revisionPublicId]\n\t\t\t);\n\t\t\tawait appendGovernedVersion(connection, {{\n\t\t\t\tactor: input.actor,\n\t\t\t\tdomainCode: 'F01',\n\t\t\t\trecordType: '{record_type}',\n\t\t\t\tlineageKey: source.code,\n\t\t\t\trecordPublicId: revisionPublicId,\n\t\t\t\tversionNumber: Number(versionRow.versionNumber),\n\t\t\t\tminorVersionNumber: Number(versionRow.minorVersionNumber),\n\t\t\t\tlifecycleStatus: 'draft',\n\t\t\t\tsnapshot: typeof versionRow.snapshot === 'string' ? JSON.parse(versionRow.snapshot) : versionRow.snapshot,\n\t\t\t\tchangeNote: 'Controlled revision created from published version'\n\t\t\t}});\n" + anchor
+              if anchor not in s: raise SystemExit(f'Missing revision evidence anchor: {kind}')
+              s = s.replace(anchor, prefix, 1)
+          write(p, s)
+
+          # ------------------------------------------------------------------
+          # UI: make lifecycle and version state visibly separate.
+          # ------------------------------------------------------------------
+          p = 'appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte'
+          s = read(p)
+          s = rep(s,
+              "<span>{framework.code} · v{framework.versionNumber}</span>",
+              "<span>{framework.code} · v{framework.versionLabel}</span>",
+              'overview version label')
+          s = rep(s,
+              "<p class=\"section-kicker\">Controlled version lifecycle</p>\n\t\t\t<h2 id=\"version-lifecycle-title\">Strategy history is preserved, not overwritten.</h2>",
+              "<p class=\"section-kicker\">Governed version · v{framework.versionLabel}</p>\n\t\t\t<h2 id=\"version-lifecycle-title\">Version history and business lifecycle are separate controls.</h2>",
+              'overview version heading')
+          write(p, s)
+
+          p = 'appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.svelte'
+          s = read(p)
+          anchor = "\n\t<section class=\"state-card\" aria-labelledby=\"lifecycle-title\">"
+          panel = "\n\t{#if record.versionLabel}\n\t\t<section class=\"version-card\" aria-labelledby=\"version-title\">\n\t\t\t<div>\n\t\t\t\t<p class=\"section-kicker\">Version control</p>\n\t\t\t\t<h2 id=\"version-title\">Version {record.versionLabel}</h2>\n\t\t\t\t<p>\n\t\t\t\t\t{record.versionStage === 'draft'\n\t\t\t\t\t\t? 'Working minor version. Each meaningful save creates the next minor version; approval publishes the next major version.'\n\t\t\t\t\t\t: record.versionStage === 'published'\n\t\t\t\t\t\t\t? 'Current published major version. It is immutable; create a controlled revision to change it.'\n\t\t\t\t\t\t\t: 'Historical published major version retained as immutable enterprise evidence.'}\n\t\t\t\t</p>\n\t\t\t</div>\n\t\t\t<StatusBadge\n\t\t\t\tlabel={record.versionStage === 'draft' ? 'Working draft' : record.versionStage === 'published' ? 'Published' : 'Historical'}\n\t\t\t\ttone={record.versionStage === 'published' ? 'success' : record.versionStage === 'draft' ? 'warning' : 'neutral'}\n\t\t\t/>\n\t\t</section>\n\n\t\t{#if record.versionHistory.length > 0}\n\t\t\t<Panel title=\"Version history\" description=\"Published majors remain immutable; working minors record meaningful saved revisions.\">\n\t\t\t\t<div class=\"version-history\">\n\t\t\t\t\t{#each record.versionHistory as version (`${version.major}.${version.minor}-${version.createdAt}`)}\n\t\t\t\t\t\t<div class=\"version-row\">\n\t\t\t\t\t\t\t<strong>v{version.label}</strong>\n\t\t\t\t\t\t\t<span>{recordLabel(version.status)}</span>\n\t\t\t\t\t\t\t<time datetime={version.createdAt}>{new Date(version.createdAt).toLocaleString()}</time>\n\t\t\t\t\t\t\t<small>{version.changeNote ?? 'Governed version snapshot'}</small>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{/each}\n\t\t\t\t</div>\n\t\t\t</Panel>\n\t\t{/if}\n\t{/if}\n\n\t<section class=\"state-card\" aria-labelledby=\"lifecycle-title\">"
+          s = rep(s, anchor, panel, 'manage version panel')
+          s = rep(s,
+              "\t.state-card {\n",
+              "\t.state-card,\n\t.version-card {\n",
+              'version card style')
+          style_anchor = "\n\t.record-form {\n"
+          style = "\n\t.version-history {\n\t\tdisplay: grid;\n\t\tgap: var(--nb-space-3);\n\t}\n\t.version-row {\n\t\tdisplay: grid;\n\t\tgrid-template-columns: 80px 110px minmax(160px, auto) 1fr;\n\t\tgap: var(--nb-space-3);\n\t\talign-items: baseline;\n\t\tpadding-block: var(--nb-space-3);\n\t\tborder-bottom: 1px solid var(--nb-color-border-subtle);\n\t}\n\t.version-row:last-child { border-bottom: 0; }\n\t.version-row span,\n\t.version-row time,\n\t.version-row small { color: var(--nb-color-text-secondary); }\n\n\t.record-form {\n"
+          s = rep(s, style_anchor, style, 'version history styles')
+          write(p, s)
+
+          # ------------------------------------------------------------------
+          # Governing architecture: replace misleading Draft→Approved→Superseded
+          # workflow with separate version-control and lifecycle semantics.
+          # ------------------------------------------------------------------
+          p = 'docs/world-class/15-f01-strategy-enterprise-planning-v2.md'
+          s = read(p)
+          old = """## 4. Lifecycle and governance
+
+The canonical strategy-version lifecycle is:
+
+```text
+Draft → Approved → Superseded
+```
+
+Draft strategy may be developed by authorised strategy managers. Strategy approval is an explicit governed transition and requires at least one active objective retaining selected-option lineage and a primary theme. Objectives created while a strategy is draft remain draft working records. Strategy approval validates their decision lineage and activates draft objectives in the same governed transaction. Approved strategy is immutable enterprise evidence. Material change requires a controlled revision or new strategy cycle.
+
+F01.04 planning begins from an approved strategy. Business plans use:
+
+```text
+Draft → Approved → Superseded
+```
+
+Business-plan approval requires strategic-objective scope, at least one active initiative, and no identified resource demand left orphaned without an execution handoff. Proposed initiatives are governed as approved execution commitments when their business plan is approved.
+
+KPI definitions use `Draft → Approved → Superseded/Retired`. Actual observations can only be recorded against an approved KPI definition. Strategic reviews use `Draft → Approved`; approval freezes the review as enterprise evidence rather than turning meeting notes into mutable history.
+
+Server-side mutations re-check lifecycle inside the database transaction. A client-visible button or an earlier permission check is never sufficient authority.
+"""
+          new = """## 4. Version control, lifecycle and governance
+
+NuBlox separates **record version** from **business lifecycle**. Superseded is not a workflow step that a current record progresses into; it is the historical condition of a previously published major version after its controlled successor is published.
+
+Versioned governed aggregate roots use SharePoint-style major/minor semantics adapted for enterprise transactions:
+
+```text
+0.1 Working draft
+0.2, 0.3 ... meaningful saved minor revisions
+1.0 Published / approved major
+1.1, 1.2 ... controlled working revision of 1.0
+2.0 Next published / approved major
+```
+
+Rules:
+
+1. A minor version (`x.1`, `x.2`, ...) is a mutable working copy and is visible as draft governance state.
+2. A meaningful explicit save creates the next minor; autosave/keystrokes do not create versions.
+3. Approval publishes the next major (`x.0`) atomically with the governed approval transaction.
+4. Published majors are immutable enterprise evidence.
+5. Editing a published record creates a controlled minor revision; it never overwrites the published major.
+6. When the successor is published, the predecessor major becomes historical automatically.
+7. Version history records actor, timestamp, snapshot and change note and is queryable independently from audit/outbox evidence.
+8. Transactional/event records that are not revision-controlled continue to use their domain lifecycle rather than artificial document versions.
+
+For strategy, a first working cycle is `0.1`; first approval publishes `1.0`. A controlled revision of `1.0` starts at `1.1`; its approval publishes `2.0`. Strategy business lifecycle remains draft/current/historical governance, while objectives and downstream execution records retain their own lifecycle semantics.
+
+Draft strategy may be developed by authorised strategy managers. Strategy approval is an explicit governed transition and requires at least one objective retaining selected-option lineage and a primary theme. Objectives created while a strategy is draft remain draft working records. Strategy approval validates their decision lineage and activates draft objectives in the same governed transaction.
+
+F01.04 planning begins from an approved strategy. Business plans use the same major/minor publishing discipline. Business-plan approval requires strategic-objective scope, at least one active initiative, and no identified resource demand left orphaned without an execution handoff. Proposed initiatives become approved execution commitments when their governing plan major is published.
+
+KPI definitions use the same major/minor publishing discipline and may later be retired as a business lifecycle outcome. Actual observations can only be recorded against a published/approved KPI definition. Strategic reviews use a frozen approval lifecycle; their evidence snapshot is immutable and is not rewritten by later observations.
+
+Server-side mutations re-check lifecycle and version authority inside the database transaction. A client-visible button or an earlier permission check is never sufficient authority.
+"""
+          s = rep(s, old, new, 'governing versioning section')
+          s = s.replace("- controlled strategy revision and approved-version carry-forward semantics for all new V2 traceability records;\n", "", 1)
+          write(p, s)
+          PY
+
+      - name: Install
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+      - name: Format
+        working-directory: appv2
+        run: pnpm exec prettier --write src/lib/server/platform/governed-versioning.ts src/lib/server/platform/governed-versioning.test.ts src/lib/server/strategy/f01-service.ts src/lib/server/strategy/approval-service.ts src/lib/server/strategy/business-plan-approval-service.ts src/lib/server/strategy/execution-review-service.ts src/lib/server/strategy/f01-record-management-service.ts 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte' 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.svelte'
+      - name: Lint
+        working-directory: appv2
+        run: pnpm lint
+      - name: Type-check
+        working-directory: appv2
+        run: pnpm check
+      - name: Unit tests
+        working-directory: appv2
+        run: pnpm test:unit
+      - name: Build
+        working-directory: appv2
+        run: pnpm build
+      - name: Commit validated F01 versioning and remove temporary workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/temporary-f01-world-class-versioning.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(v2): govern F01 major minor versioning"
+          git push origin HEAD:main
+          git push origin --delete fix/f01-crud-lifecycle f01-crud-lifecycle-integrity || true
