@@ -1,0 +1,67 @@
+name: Repair F01 Revision Transaction Read
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/f01-revision-transaction-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Repair transaction-local revision reads
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('appv2/src/lib/server/strategy/f01-record-management-service.ts')
+          text = path.read_text()
+
+          marker = "\treturn row;\n}\n\nasync function statusFor"
+          helper = """\treturn row;\n}\n\nasync function singleConnectionRow<T extends RowDataPacket>(\n\tconnection: PoolConnection,\n\tquery: string,\n\tparams: Array<string | number | boolean | Date | null>\n): Promise<T> {\n\tconst [rows] = await connection.execute<T[]>(query, params);\n\tconst row = rows[0];\n\tif (!row) throw new StrategyValidationError('The requested F01 record is no longer available.');\n\treturn row;\n}\n\nasync function statusFor"""
+          if 'async function singleConnectionRow<' not in text:
+              if marker not in text:
+                  raise SystemExit('singleRow insertion marker not found')
+              text = text.replace(marker, helper, 1)
+
+          pattern = re.compile(
+              r"const versionRow = await singleRow<(?P<type>.*?)>\(\n(?P<indent>\s*)(?=`SELECT)",
+              re.S,
+          )
+
+          def repl(match):
+              indent = match.group('indent')
+              return (
+                  'const versionRow = await singleConnectionRow<'
+                  + match.group('type')
+                  + '>(\n'
+                  + indent
+                  + 'connection,\n'
+                  + indent
+              )
+
+          text, count = pattern.subn(repl, text)
+          if count != 3:
+              raise SystemExit(f'expected 3 transaction-local version reads, changed {count}')
+
+          path.write_text(text)
+          PY
+
+      - name: Commit repair and self-remove
+        run: |
+          rm .github/workflows/f01-revision-transaction-fix.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add appv2/src/lib/server/strategy/f01-record-management-service.ts .github/workflows/f01-revision-transaction-fix.yml
+          git commit -m 'fix(v2): read revision versions inside transaction'
+          git push origin HEAD:main
