@@ -1,0 +1,134 @@
+name: Temporary F01 Initiative Context Inheritance Repair
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/temporary-f01-initiative-context-flow.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Apply initiative context inheritance repair
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          service_path = Path('appv2/src/lib/server/strategy/execution-review-service.ts')
+          service = service_path.read_text()
+
+          old = "\tlifecycleStatus: BusinessPlanStatus;\n\tobjectiveCount: number;\n\tinitiativeCount: number;\n};"
+          new = "\tlifecycleStatus: BusinessPlanStatus;\n\tobjectivePublicIds: string[];\n\tobjectiveCount: number;\n\tinitiativeCount: number;\n};"
+          if old not in service:
+              raise SystemExit('StrategyBusinessPlan shape marker not found')
+          service = service.replace(old, new, 1)
+
+          old = "type InitiativeRow = RowDataPacket & {"
+          new = "type PlanObjectiveLinkRow = RowDataPacket & {\n\tplanPublicId: string;\n\tobjectivePublicId: string;\n};\n\ntype InitiativeRow = RowDataPacket & {"
+          if old not in service:
+              raise SystemExit('InitiativeRow marker not found')
+          service = service.replace(old, new, 1)
+
+          old = "\treturn rows.map((row) => ({\n\t\tpublicId: row.publicId,\n\t\tcode: row.code,\n\t\tversionNumber: Number(row.versionNumber),"
+          new = "\tconst [objectiveLinkRows] = await getPool().execute<PlanObjectiveLinkRow[]>(\n\t\t`SELECT plan.public_id AS planPublicId,\n\t\t        objective.public_id AS objectivePublicId\n\t\t FROM strategy_business_plan_objective_links objective_link\n\t\t JOIN strategy_business_plans plan\n\t\t   ON plan.id = objective_link.strategy_business_plan_id\n\t\t JOIN strategy_objectives objective\n\t\t   ON objective.id = objective_link.strategy_objective_id\n\t\t WHERE plan.strategy_framework_id = ?\n\t\t ORDER BY plan.id, objective.priority_rank, objective.objective_code`,\n\t\t[frameworkId]\n\t);\n\tconst objectivePublicIdsByPlan = new Map<string, string[]>();\n\tfor (const link of objectiveLinkRows) {\n\t\tconst objectivePublicIds = objectivePublicIdsByPlan.get(link.planPublicId) ?? [];\n\t\tobjectivePublicIds.push(link.objectivePublicId);\n\t\tobjectivePublicIdsByPlan.set(link.planPublicId, objectivePublicIds);\n\t}\n\treturn rows.map((row) => ({\n\t\tpublicId: row.publicId,\n\t\tcode: row.code,\n\t\tversionNumber: Number(row.versionNumber),"
+          if old not in service:
+              raise SystemExit('listPlans return marker not found')
+          service = service.replace(old, new, 1)
+
+          old = "\t\tlifecycleStatus: row.lifecycleStatus,\n\t\tobjectiveCount: Number(row.objectiveCount),\n\t\tinitiativeCount: Number(row.initiativeCount)"
+          new = "\t\tlifecycleStatus: row.lifecycleStatus,\n\t\tobjectivePublicIds: objectivePublicIdsByPlan.get(row.publicId) ?? [],\n\t\tobjectiveCount: Number(row.objectiveCount),\n\t\tinitiativeCount: Number(row.initiativeCount)"
+          if old not in service:
+              raise SystemExit('listPlans mapping marker not found')
+          service = service.replace(old, new, 1)
+          service_path.write_text(service)
+
+          page_path = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/new/[record]/+page.svelte')
+          page = page_path.read_text()
+
+          old = "\tfunction fieldValue(key: string, fallback = ''): string {\n\t\treturn values[key] ?? fallback;\n\t}\n</script>"
+          new = "\tfunction fieldValue(key: string, fallback = ''): string {\n\t\treturn values[key] ?? fallback;\n\t}\n\n\tlet selectedPlanPublicId = $state(\n\t\tfieldValue('planPublicId', draftPlans.length === 1 ? (draftPlans[0]?.publicId ?? '') : '')\n\t);\n\tlet selectedObjectivePublicId = $state(fieldValue('objectivePublicId'));\n\tconst selectedPlan = $derived(\n\t\tdraftPlans.find((plan) => plan.publicId === selectedPlanPublicId) ?? null\n\t);\n\tconst planObjectives = $derived(\n\t\tselectedPlan\n\t\t\t? data.objectives.filter((objective) =>\n\t\t\t\t\tselectedPlan.objectivePublicIds.includes(objective.publicId)\n\t\t\t\t)\n\t\t\t: []\n\t);\n\n\t$effect(() => {\n\t\tif (!selectedPlan) {\n\t\t\tselectedObjectivePublicId = '';\n\t\t\treturn;\n\t\t}\n\t\tif (!planObjectives.some((objective) => objective.publicId === selectedObjectivePublicId)) {\n\t\t\tselectedObjectivePublicId =\n\t\t\t\tplanObjectives.length === 1 ? (planObjectives[0]?.publicId ?? '') : '';\n\t\t}\n\t});\n</script>"
+          if old not in page:
+              raise SystemExit('page script marker not found')
+          page = page.replace(old, new, 1)
+
+          old = """\t\t\t\t\t<Field id=\"planPublicId\" label=\"Business plan\" required>\n\t\t\t\t\t\t<select class=\"nb-control\" id=\"planPublicId\" name=\"planPublicId\" required>\n\t\t\t\t\t\t\t<option value=\"\">Choose plan</option>\n\t\t\t\t\t\t\t{#each draftPlans as plan (plan.publicId)}\n\t\t\t\t\t\t\t\t<option value={plan.publicId}>{plan.code} · {plan.title}</option>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</Field>\n\t\t\t\t\t<Field id=\"objectivePublicId\" label=\"Strategic objective\" required>\n\t\t\t\t\t\t<select class=\"nb-control\" id=\"objectivePublicId\" name=\"objectivePublicId\" required>\n\t\t\t\t\t\t\t<option value=\"\">Choose objective</option>\n\t\t\t\t\t\t\t{#each data.objectives as objective (objective.publicId)}\n\t\t\t\t\t\t\t\t<option value={objective.publicId}>{objective.code} · {objective.title}</option>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</Field>"""
+          new = """\t\t\t\t\t<Field\n\t\t\t\t\t\tid=\"planPublicId\"\n\t\t\t\t\t\tlabel=\"Business plan\"\n\t\t\t\t\t\thint=\"The selected plan governs the initiative period, currency and objective scope.\"\n\t\t\t\t\t\trequired\n\t\t\t\t\t>\n\t\t\t\t\t\t<select\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"planPublicId\"\n\t\t\t\t\t\t\tname=\"planPublicId\"\n\t\t\t\t\t\t\tbind:value={selectedPlanPublicId}\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<option value=\"\">Choose plan</option>\n\t\t\t\t\t\t\t{#each draftPlans as plan (plan.publicId)}\n\t\t\t\t\t\t\t\t<option value={plan.publicId}\n\t\t\t\t\t\t\t\t\t>{plan.code} · {plan.title} · {plan.periodStart} → {plan.periodEnd}</option\n\t\t\t\t\t\t\t\t>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</Field>\n\t\t\t\t\t<Field\n\t\t\t\t\t\tid=\"objectivePublicId\"\n\t\t\t\t\t\tlabel=\"Strategic objective\"\n\t\t\t\t\t\thint=\"Only objectives already scoped into the selected business plan are available.\"\n\t\t\t\t\t\trequired\n\t\t\t\t\t>\n\t\t\t\t\t\t<select\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"objectivePublicId\"\n\t\t\t\t\t\t\tname=\"objectivePublicId\"\n\t\t\t\t\t\t\tbind:value={selectedObjectivePublicId}\n\t\t\t\t\t\t\tdisabled={!selectedPlan}\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t>\n\t\t\t\t\t\t\t<option value=\"\">{selectedPlan ? 'Choose objective' : 'Choose a business plan first'}</option>\n\t\t\t\t\t\t\t{#each planObjectives as objective (objective.publicId)}\n\t\t\t\t\t\t\t\t<option value={objective.publicId}>{objective.code} · {objective.title}</option>\n\t\t\t\t\t\t\t{/each}\n\t\t\t\t\t\t</select>\n\t\t\t\t\t</Field>"""
+          if old not in page:
+              raise SystemExit('execution context select marker not found')
+          page = page.replace(old, new, 1)
+
+          old = """\t\t\t<Panel\n\t\t\t\ttitle=\"Timing and planning demand\"\n\t\t\t\tdescription=\"Investment and FTE remain planning demand until accepted by the authoritative downstream function.\"\n\t\t\t>"""
+          new = """\t\t\t<Panel\n\t\t\t\ttitle=\"Timing and planning demand\"\n\t\t\t\tdescription={selectedPlan\n\t\t\t\t\t? `${selectedPlan.code} supplies the default initiative window and planning currency. You can narrow the dates, but not move outside the plan period.`\n\t\t\t\t\t: 'Select a business plan to inherit its planning window and currency.'}\n\t\t\t>"""
+          if old not in page:
+              raise SystemExit('timing panel marker not found')
+          page = page.replace(old, new, 1)
+
+          old = """\t\t\t\t\t<Field id=\"startDate\" label=\"Start date\" required\n\t\t\t\t\t\t><input\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"startDate\"\n\t\t\t\t\t\t\tname=\"startDate\"\n\t\t\t\t\t\t\ttype=\"date\"\n\t\t\t\t\t\t\tvalue={fieldValue('startDate')}\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t/></Field\n\t\t\t\t\t>\n\t\t\t\t\t<Field id=\"endDate\" label=\"End date\" required\n\t\t\t\t\t\t><input\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"endDate\"\n\t\t\t\t\t\t\tname=\"endDate\"\n\t\t\t\t\t\t\ttype=\"date\"\n\t\t\t\t\t\t\tvalue={fieldValue('endDate')}\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t/></Field\n\t\t\t\t\t>"""
+          new = """\t\t\t\t\t<Field\n\t\t\t\t\t\tid=\"startDate\"\n\t\t\t\t\t\tlabel=\"Start date\"\n\t\t\t\t\t\thint={selectedPlan ? `Defaults to ${selectedPlan.periodStart} from ${selectedPlan.code}.` : undefined}\n\t\t\t\t\t\trequired\n\t\t\t\t\t>\n\t\t\t\t\t\t<input\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"startDate\"\n\t\t\t\t\t\t\tname=\"startDate\"\n\t\t\t\t\t\t\ttype=\"date\"\n\t\t\t\t\t\t\tvalue={fieldValue('startDate', selectedPlan?.periodStart ?? '')}\n\t\t\t\t\t\t\tmin={selectedPlan?.periodStart}\n\t\t\t\t\t\t\tmax={selectedPlan?.periodEnd}\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>\n\t\t\t\t\t<Field\n\t\t\t\t\t\tid=\"endDate\"\n\t\t\t\t\t\tlabel=\"End date\"\n\t\t\t\t\t\thint={selectedPlan ? `Defaults to ${selectedPlan.periodEnd} from ${selectedPlan.code}.` : undefined}\n\t\t\t\t\t\trequired\n\t\t\t\t\t>\n\t\t\t\t\t\t<input\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"endDate\"\n\t\t\t\t\t\t\tname=\"endDate\"\n\t\t\t\t\t\t\ttype=\"date\"\n\t\t\t\t\t\t\tvalue={fieldValue('endDate', selectedPlan?.periodEnd ?? '')}\n\t\t\t\t\t\t\tmin={selectedPlan?.periodStart}\n\t\t\t\t\t\t\tmax={selectedPlan?.periodEnd}\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>"""
+          if old not in page:
+              raise SystemExit('initiative date field marker not found')
+          page = page.replace(old, new, 1)
+
+          old = """\t\t\t\t\t<Field id=\"currencyCode\" label=\"Currency\" required\n\t\t\t\t\t\t><input\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"currencyCode\"\n\t\t\t\t\t\t\tname=\"currencyCode\"\n\t\t\t\t\t\t\tvalue={fieldValue('currencyCode', 'GBP')}\n\t\t\t\t\t\t\tmaxlength=\"3\"\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t/></Field\n\t\t\t\t\t>"""
+          new = """\t\t\t\t\t<Field\n\t\t\t\t\t\tid=\"currencyCode\"\n\t\t\t\t\t\tlabel=\"Currency\"\n\t\t\t\t\t\thint={selectedPlan ? `Inherited from ${selectedPlan.code}.` : undefined}\n\t\t\t\t\t\trequired\n\t\t\t\t\t>\n\t\t\t\t\t\t<input\n\t\t\t\t\t\t\tclass=\"nb-control\"\n\t\t\t\t\t\t\tid=\"currencyCode\"\n\t\t\t\t\t\t\tname=\"currencyCode\"\n\t\t\t\t\t\t\tvalue={fieldValue('currencyCode', selectedPlan?.currencyCode ?? 'GBP')}\n\t\t\t\t\t\t\tmaxlength=\"3\"\n\t\t\t\t\t\t\trequired\n\t\t\t\t\t\t/>\n\t\t\t\t\t</Field>"""
+          if old not in page:
+              raise SystemExit('initiative currency field marker not found')
+          page = page.replace(old, new, 1)
+
+          page_path.write_text(page)
+          PY
+
+      - name: Install dependencies
+        run: corepack pnpm --dir appv2 install --frozen-lockfile
+
+      - name: Format changed files
+        run: |
+          corepack pnpm --dir appv2 exec prettier --write \
+            src/lib/server/strategy/execution-review-service.ts \
+            'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/new/[record]/+page.svelte'
+
+      - name: Lint
+        run: corepack pnpm --dir appv2 lint
+
+      - name: Type-check
+        run: corepack pnpm --dir appv2 check
+
+      - name: Unit tests
+        run: corepack pnpm --dir appv2 test:unit
+
+      - name: Production build
+        run: corepack pnpm --dir appv2 build
+
+      - name: Commit validated repair
+        run: |
+          rm .github/workflows/temporary-f01-initiative-context-flow.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add appv2/src/lib/server/strategy/execution-review-service.ts \
+            'appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/business-planning/new/[record]/+page.svelte' \
+            .github/workflows/temporary-f01-initiative-context-flow.yml
+          git commit -m 'fix(v2): inherit initiative context from business plan'
+          git push origin HEAD:main
