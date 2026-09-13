@@ -24,6 +24,7 @@ export type StrategyFrameworkSummary = {
 	environmentFactorCount: number;
 	businessPlanCount: number;
 	initiativeCount: number;
+	operatingModelComponentCount: number;
 	kpiCount: number;
 	reviewCount: number;
 	scenarioCount: number;
@@ -58,6 +59,7 @@ type FrameworkRow = RowDataPacket & {
 	environmentFactorCount: number | string;
 	businessPlanCount: number | string;
 	initiativeCount: number | string;
+	operatingModelComponentCount: number | string;
 	kpiCount: number | string;
 	reviewCount: number | string;
 	scenarioCount: number | string;
@@ -130,6 +132,7 @@ function mapFramework(row: FrameworkRow, memberId: string): StrategyFrameworkSum
 		environmentFactorCount: Number(row.environmentFactorCount),
 		businessPlanCount: Number(row.businessPlanCount),
 		initiativeCount: Number(row.initiativeCount),
+		operatingModelComponentCount: Number(row.operatingModelComponentCount),
 		kpiCount: Number(row.kpiCount),
 		reviewCount: Number(row.reviewCount),
 		scenarioCount: Number(row.scenarioCount)
@@ -181,6 +184,10 @@ async function listFrameworks(input: {
 		          JOIN strategy_business_plans plan ON plan.id = initiative.strategy_business_plan_id
 		          WHERE plan.strategy_framework_id = framework.id
 		            AND initiative.lifecycle_status NOT IN ('completed', 'cancelled')) AS initiativeCount,
+		        (SELECT COUNT(*) FROM strategy_operating_model_components component
+		          JOIN strategy_business_plans plan ON plan.id = component.strategy_business_plan_id
+		          WHERE plan.strategy_framework_id = framework.id
+		            AND component.lifecycle_status <> 'retired') AS operatingModelComponentCount,
 		        (SELECT COUNT(*) FROM strategy_kpis kpi
 		          WHERE kpi.strategy_framework_id = framework.id
 		            AND kpi.lifecycle_status NOT IN ('superseded', 'retired')) AS kpiCount,
