@@ -45,12 +45,11 @@
 	<PageHeader
 		eyebrow="Platform governance"
 		title="Lifecycle administration"
-		description="Define reusable Basic and Advanced lifecycle templates, version them under control, and bind published templates to governed object types."
+		description="A lifecycle governs the legal state of a business object. Start from the F01-F29 object registry for real object templates, or create a bespoke lifecycle when the standard catalogue does not fit."
 	>
 		{#snippet actions()}
-			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary"
-				>Workflow administration</LinkButton
-			>
+			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary">Workflow administration</LinkButton>
+			<LinkButton href={appPath(tenant, 'lifecycle/registry')}>Business object registry</LinkButton>
 		{/snippet}
 	</PageHeader>
 
@@ -67,7 +66,7 @@
 				{#if data.templates.length === 0}
 					<EmptyState
 						title="No tenant lifecycle templates yet"
-						description="F01 continues to use its code-backed reference lifecycles until an administrator publishes and binds a tenant lifecycle template."
+						description="Open the business object registry to install a real starter lifecycle and its associated workflow pack."
 					/>
 				{:else}
 					<div class="template-list">
@@ -103,8 +102,8 @@
 
 		<aside>
 			<Panel
-				title="Create lifecycle template"
-				description="Start with the lightest lifecycle that can safely govern the business object."
+				title="Create bespoke lifecycle"
+				description="Advanced path. Use this only when no canonical object template is suitable; otherwise install from the business object registry."
 				padding="spacious"
 			>
 				<form method="POST" action="?/create" use:enhance class="form-stack">
@@ -112,7 +111,7 @@
 						id="templateKey"
 						label="Template key"
 						required
-						hint="Stable key, for example f01.framework."
+						hint="Stable key, for example project.special-approval."
 					>
 						<input
 							class="nb-control"
@@ -135,7 +134,7 @@
 						id="objectType"
 						label="Object type"
 						required
-						hint="Stable object type, for example F01.framework."
+						hint="Use a stable canonical object key. Check the registry before creating a new one."
 					>
 						<input
 							class="nb-control"
@@ -147,17 +146,12 @@
 					</Field>
 					<Field id="mode" label="Lifecycle mode" required>
 						<select class="nb-control" id="mode" name="mode">
-							<option value="basic" selected={(form?.values?.mode ?? 'basic') === 'basic'}
-								>Basic</option
-							>
-							<option value="advanced" selected={form?.values?.mode === 'advanced'}>Advanced</option
-							>
+							<option value="basic" selected={(form?.values?.mode ?? 'basic') === 'basic'}>Basic</option>
+							<option value="advanced" selected={form?.values?.mode === 'advanced'}>Advanced</option>
 						</select>
 					</Field>
 					<Field id="description" label="Description">
-						<textarea class="nb-control" id="description" name="description"
-							>{form?.values?.description ?? ''}</textarea
-						>
+						<textarea class="nb-control" id="description" name="description">{form?.values?.description ?? ''}</textarea>
 					</Field>
 					<Button type="submit">Create working template</Button>
 				</form>
