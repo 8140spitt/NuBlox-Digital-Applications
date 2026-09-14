@@ -1,0 +1,188 @@
+name: Temporary atomic workflow completion refactor
+
+on:
+  push:
+    branches:
+      - fix/lifecycle-workflow-runtime
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/lifecycle-workflow-runtime
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+      - working-directory: appv2
+        run: pnpm install --frozen-lockfile
+      - name: Apply transaction-bound runtime refactor
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text()
+
+          def write(path, text):
+              Path(path).write_text(text)
+
+          def block_bounds(text, function_name, next_function=None):
+              start = text.index(f'export async function {function_name}')
+              if next_function:
+                  end = text.index(f'\nexport async function {next_function}', start)
+              else:
+                  end = len(text)
+              return start, end
+
+          def optional_transaction(path, function_name, next_function=None):
+              text = read(path)
+              start, end = block_bounds(text, function_name, next_function)
+              block = text[start:end]
+              signature = '}): Promise<void> {'
+              if signature not in block:
+                  raise RuntimeError(f'{function_name}: signature not found')
+              block = block.replace(signature, '}, transactionConnection?: PoolConnection): Promise<void> {', 1)
+              old = 'const connection = await getPool().getConnection();'
+              if old not in block:
+                  raise RuntimeError(f'{function_name}: connection acquisition not found')
+              block = block.replace(
+                  old,
+                  'const connection = transactionConnection ?? (await getPool().getConnection());\n\tconst ownsTransaction = transactionConnection === undefined;',
+                  1,
+              )
+              block = block.replace('await connection.beginTransaction();', 'if (ownsTransaction) await connection.beginTransaction();', 1)
+              block = block.replace('await connection.commit();', 'if (ownsTransaction) await connection.commit();', 1)
+              block = block.replace('await connection.rollback();', 'if (ownsTransaction) await connection.rollback();', 1)
+              block = block.replace('connection.release();', 'if (ownsTransaction) connection.release();', 1)
+              write(path, text[:start] + block + text[end:])
+
+          optional_transaction(
+              'appv2/src/lib/server/strategy/approval-service.ts',
+              'approveStrategyFramework',
+          )
+          optional_transaction(
+              'appv2/src/lib/server/strategy/business-plan-approval-service.ts',
+              'approveStrategyBusinessPlan',
+          )
+          optional_transaction(
+              'appv2/src/lib/server/strategy/execution-review-service.ts',
+              'approveStrategyKpi',
+              'recordStrategyKpiObservation',
+          )
+          optional_transaction(
+              'appv2/src/lib/server/strategy/execution-review-service.ts',
+              'approveStrategyReview',
+          )
+
+          path = 'appv2/src/lib/server/strategy/f01-record-management-service.ts'
+          text = read(path)
+          start, end = block_bounds(text, 'transitionF01Record', 'reviseF01Record')
+          block = text[start:end]
+          block = block.replace('}): Promise<void> {', '}, transactionConnection?: PoolConnection): Promise<void> {', 1)
+          for fn in [
+              'approveStrategyFramework',
+              'approveStrategyBusinessPlan',
+              'approveStrategyKpi',
+              'approveStrategyReview',
+          ]:
+              pattern = rf'(return {fn}\(\{{.*?\n\t\t\}})\);'
+              block, count = re.subn(pattern, rf'\1, transactionConnection);', block, count=1, flags=re.S)
+              if count != 1:
+                  raise RuntimeError(f'transitionF01Record: {fn} call not patched')
+          old = 'const connection = await getPool().getConnection();'
+          if old not in block:
+              raise RuntimeError('transitionF01Record: generic transaction connection not found')
+          block = block.replace(
+              old,
+              'const connection = transactionConnection ?? (await getPool().getConnection());\n\tconst ownsTransaction = transactionConnection === undefined;',
+              1,
+          )
+          block = block.replace('await connection.beginTransaction();', 'if (ownsTransaction) await connection.beginTransaction();', 1)
+          block = block.replace('await connection.commit();', 'if (ownsTransaction) await connection.commit();', 1)
+          block = block.replace('await connection.rollback();', 'if (ownsTransaction) await connection.rollback();', 1)
+          block = block.replace('connection.release();', 'if (ownsTransaction) connection.release();', 1)
+          write(path, text[:start] + block + text[end:])
+
+          path = 'appv2/src/lib/server/platform/workflow-request-service.ts'
+          text = read(path)
+          signature_old = "\tnote?: string | null;\n}): Promise<{\n\tcompleted: boolean;"
+          signature_new = "\tnote?: string | null;\n\tonApprovedCompletion?: (connection: PoolConnection) => Promise<void>;\n}): Promise<{\n\tcompleted: boolean;"
+          if signature_old not in text:
+              raise RuntimeError('finaliseWorkflowRequest: callback signature insertion point not found')
+          text = text.replace(signature_old, signature_new, 1)
+          legacy_old = "\t\tif (!template || !request.currentNodeKey) {\n\t\t\tawait finishRequest(connection, {"
+          legacy_new = "\t\tif (!template || !request.currentNodeKey) {\n\t\t\tif (input.decision === 'approved') {\n\t\t\t\tawait input.onApprovedCompletion?.(connection);\n\t\t\t}\n\t\t\tawait finishRequest(connection, {"
+          if legacy_old not in text:
+              raise RuntimeError('finaliseWorkflowRequest: legacy completion path not found')
+          text = text.replace(legacy_old, legacy_new, 1)
+          end_marker = "\t\tif (next.node.type === 'end') {"
+          end_start = text.index(end_marker)
+          finish_marker = "\t\t\tawait finishRequest(connection, {"
+          finish_at = text.index(finish_marker, end_start)
+          text = text[:finish_at] + "\t\t\tawait input.onApprovedCompletion?.(connection);\n" + text[finish_at:]
+          write(path, text)
+
+          path = 'appv2/src/lib/server/strategy/f01-workflow-service.ts'
+          text = read(path)
+          start, end = block_bounds(text, 'decideF01WorkflowRequest')
+          block = text[start:end]
+          transition_start = block.index("\n\tif (input.decision === 'approved' && task.willCompleteOnApprove) {")
+          runtime_start = block.index('\n\tconst runtime = await finaliseWorkflowRequest', transition_start)
+          block = block[:transition_start] + block[runtime_start:]
+          old_call = "\t\tnote: input.note\n\t});"
+          callback = """\t\tnote: input.note,\n\t\tonApprovedCompletion:\n\t\t\tinput.decision === 'approved' && task.willCompleteOnApprove\n\t\t\t\t? async (connection) => {\n\t\t\t\t\t\tconst record = await getF01ManagedRecord({\n\t\t\t\t\t\t\torganisationId: input.actor.organisationId,\n\t\t\t\t\t\t\tmemberId: input.actor.memberId,\n\t\t\t\t\t\t\tframeworkPublicId: task.contextPublicId,\n\t\t\t\t\t\t\tkind,\n\t\t\t\t\t\t\trecordPublicId: task.sourcePublicId\n\t\t\t\t\t\t});\n\t\t\t\t\t\tif (record.status === task.toState) return;\n\t\t\t\t\t\tif (record.status !== task.fromState) {\n\t\t\t\t\t\t\tthrow new WorkflowValidationError(\n\t\t\t\t\t\t\t\t`The source record is now ${record.status}; this workflow expected ${task.fromState}. The task is stale and must not be applied.`\n\t\t\t\t\t\t\t);\n\t\t\t\t\t\t}\n\t\t\t\t\t\tawait transitionF01Record(\n\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\tactor: input.actor,\n\t\t\t\t\t\t\t\tframeworkPublicId: task.contextPublicId,\n\t\t\t\t\t\t\t\tkind,\n\t\t\t\t\t\t\t\trecordPublicId: task.sourcePublicId,\n\t\t\t\t\t\t\t\ttargetStatus: task.toState,\n\t\t\t\t\t\t\t\tnote: input.note ?? undefined,\n\t\t\t\t\t\t\t\ttargetRecordType: '',\n\t\t\t\t\t\t\t\ttargetPublicId: ''\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\tconnection\n\t\t\t\t\t\t);\n\t\t\t\t\t}\n\t\t\t\t: undefined\n\t});"""
+          if old_call not in block:
+              raise RuntimeError('decideF01WorkflowRequest: finalise call insertion point not found')
+          block = block.replace(old_call, callback, 1)
+          write(path, text[:start] + block + text[end:])
+
+          path = 'appv2/src/lib/server/strategy/f01-configured-workflow.integration.test.ts'
+          text = read(path)
+          text = text.replace(
+              "import { listPendingWorkflowTasks } from '$lib/server/platform/workflow-request-service';",
+              "import {\n\tfinaliseWorkflowRequest,\n\tlistPendingWorkflowTasks\n} from '$lib/server/platform/workflow-request-service';",
+              1,
+          )
+          text = text.replace(
+              "import { createStrategyFramework } from './f01-service';\nimport { getF01ManagedRecord } from './f01-record-management-service';",
+              "import {\n\tcreateStrategyAssumption,\n\tcreateStrategyObjective,\n\tcreateStrategyOption,\n\tcreateStrategyTheme\n} from './analysis-planning-service';\nimport { createStrategyFramework } from './f01-service';\nimport { getF01ManagedRecord, transitionF01Record } from './f01-record-management-service';",
+              1,
+          )
+          lineage_anchor = """\t\tconst framework = await createStrategyFramework({\n\t\t\tactor,\n\t\t\ttitle: 'Configured workflow strategy',\n\t\t\thorizonStart: '2027-01-01',\n\t\t\thorizonEnd: '2030-12-31',\n\t\t\tpurpose: 'Prove installed lifecycle and workflow execution.',\n\t\t\tvision: 'Configured policy drives native business execution.',\n\t\t\tmission: 'Eliminate disconnected administration-only workflow.'\n\t\t});\n"""
+          lineage = lineage_anchor + """\n\t\tconst assumption = await createStrategyAssumption({\n\t\t\tactor,\n\t\t\tframeworkPublicId: framework.publicId,\n\t\t\tstatementText: 'Configured governance remains authoritative through execution.',\n\t\t\trationaleText: 'Required lineage for a valid governed strategy approval candidate.',\n\t\t\tconfidenceScore: 4,\n\t\t\treviewBy: '2027-06-30'\n\t\t});\n\t\tconst option = await createStrategyOption({\n\t\t\tactor,\n\t\t\tframeworkPublicId: framework.publicId,\n\t\t\ttitle: 'Govern through configured runtime',\n\t\t\tdescription: 'Use the published NuBlox workflow graph for accountable strategy approval.',\n\t\t\tevaluationSummary: 'Provides traceable governance without bypassing native strategy rules.',\n\t\t\tpriorityRank: 1,\n\t\t\tfactorPublicIds: [],\n\t\t\tassumptionPublicIds: [assumption.publicId]\n\t\t});\n\t\tawait transitionF01Record({\n\t\t\tactor,\n\t\t\tframeworkPublicId: framework.publicId,\n\t\t\tkind: 'option',\n\t\t\trecordPublicId: option.publicId,\n\t\t\ttargetStatus: 'selected',\n\t\t\tnote: 'Selected to establish traceable strategy approval lineage.'\n\t\t});\n\t\tconst theme = await createStrategyTheme({\n\t\t\tactor,\n\t\t\tframeworkPublicId: framework.publicId,\n\t\t\ttitle: 'Configured governance',\n\t\t\tdescription: 'Execute governed strategy through published lifecycle and workflow policy.',\n\t\t\tpriorityRank: 1\n\t\t});\n\t\tawait createStrategyObjective({\n\t\t\tactor,\n\t\t\tframeworkPublicId: framework.publicId,\n\t\t\ttitle: 'Prove atomic configured workflow execution',\n\t\t\tdescription: 'Advance strategy only when the configured workflow completes atomically.',\n\t\t\tpriorityRank: 1,\n\t\t\ttargetDate: '2029-12-31',\n\t\t\tparentObjectivePublicId: null,\n\t\t\toptionPublicIds: [option.publicId],\n\t\t\tthemePublicId: theme.publicId\n\t\t});\n"""
+          if lineage_anchor not in text:
+              raise RuntimeError('configured workflow test: framework fixture anchor not found')
+          text = text.replace(lineage_anchor, lineage, 1)
+          completion_anchor = """\t\tconst completed = await decideF01WorkflowRequest({\n\t\t\tactor,\n\t\t\trequestPublicId: request!.requestPublicId,\n\t\t\tdecision: 'approved',\n\t\t\tnote: 'Strategy approved after configured workflow completion.'\n\t\t});\n"""
+          rollback_proof = """\t\tawait expect(\n\t\t\tfinaliseWorkflowRequest({\n\t\t\t\tactor,\n\t\t\t\trequestPublicId: request!.requestPublicId,\n\t\t\t\tdecision: 'approved',\n\t\t\t\tnote: 'Prove source lifecycle and workflow completion share one transaction.',\n\t\t\t\tonApprovedCompletion: async (connection) => {\n\t\t\t\t\tawait transitionF01Record(\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\tactor,\n\t\t\t\t\t\t\tframeworkPublicId: framework.publicId,\n\t\t\t\t\t\t\tkind: 'framework',\n\t\t\t\t\t\t\trecordPublicId: framework.publicId,\n\t\t\t\t\t\t\ttargetStatus: 'approved',\n\t\t\t\t\t\t\tnote: 'This approval must roll back with the injected failure.',\n\t\t\t\t\t\t\ttargetRecordType: '',\n\t\t\t\t\t\t\ttargetPublicId: ''\n\t\t\t\t\t\t},\n\t\t\t\t\t\tconnection\n\t\t\t\t\t);\n\t\t\t\t\tthrow new Error('Injected atomic completion failure');\n\t\t\t\t}\n\t\t\t})\n\t\t).rejects.toThrow('Injected atomic completion failure');\n\n\t\tmanaged = await getF01ManagedRecord({\n\t\t\torganisationId,\n\t\t\tmemberId: actor.memberId,\n\t\t\tframeworkPublicId: framework.publicId,\n\t\t\tkind: 'framework',\n\t\t\trecordPublicId: framework.publicId\n\t\t});\n\t\texpect(managed.status).toBe('draft');\n\t\tpending = await listPendingWorkflowTasks({ organisationId, memberId: actor.memberId });\n\t\ttask = pending.find((item) => item.requestPublicId === request!.requestPublicId);\n\t\texpect(task).toMatchObject({\n\t\t\tnodeKey: 'approve',\n\t\t\tstepNumber: 3,\n\t\t\tworkStatus: 'open',\n\t\t\tworkflowState: 'running',\n\t\t\twillCompleteOnApprove: true\n\t\t});\n\n""" + completion_anchor
+          if completion_anchor not in text:
+              raise RuntimeError('configured workflow test: final completion anchor not found')
+          text = text.replace(completion_anchor, rollback_proof, 1)
+          write(path, text)
+          PY
+      - working-directory: appv2
+        run: pnpm exec prettier --write src/lib/server/platform/workflow-request-service.ts src/lib/server/strategy/approval-service.ts src/lib/server/strategy/business-plan-approval-service.ts src/lib/server/strategy/execution-review-service.ts src/lib/server/strategy/f01-record-management-service.ts src/lib/server/strategy/f01-workflow-service.ts src/lib/server/strategy/f01-configured-workflow.integration.test.ts
+      - working-directory: appv2
+        run: pnpm lint
+      - working-directory: appv2
+        run: pnpm check
+      - run: rm .github/workflows/v2-runtime-atomic-fix.yml
+      - run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add appv2/src/lib/server/platform/workflow-request-service.ts appv2/src/lib/server/strategy/approval-service.ts appv2/src/lib/server/strategy/business-plan-approval-service.ts appv2/src/lib/server/strategy/execution-review-service.ts appv2/src/lib/server/strategy/f01-record-management-service.ts appv2/src/lib/server/strategy/f01-workflow-service.ts appv2/src/lib/server/strategy/f01-configured-workflow.integration.test.ts .github/workflows/v2-runtime-atomic-fix.yml
+          git commit -m "fix(v2): commit lifecycle and workflow completion atomically"
+          git push origin HEAD:fix/lifecycle-workflow-runtime
