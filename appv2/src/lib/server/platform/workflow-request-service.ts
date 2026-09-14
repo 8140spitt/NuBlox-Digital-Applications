@@ -139,10 +139,12 @@ function nodeDueAt(node: WorkflowNode, fallback: Date | null): Date | null {
 
 function successors(template: WorkflowTemplate, nodeKey: string, event?: string) {
 	if (event) {
-		const eventRoutes = workflowSuccessors(template, nodeKey, event);
+		const eventRoutes = template.links.filter(
+			(link) => link.from === nodeKey && link.event === event
+		);
 		if (eventRoutes.length > 0) return eventRoutes;
 	}
-	return workflowSuccessors(template, nodeKey);
+	return template.links.filter((link) => link.from === nodeKey && link.event === undefined);
 }
 
 function nextExecutableNode(
@@ -231,6 +233,91 @@ async function insertWorkItem(
 	return result.insertId;
 }
 
+async function resolveWorkItemAssignment(
+	connection: PoolConnection,
+	input: {
+		actor: EvidenceActor;
+		node: WorkflowNode;
+		requiredPermissionKey: string;
+	}
+): Promise<{
+	assignmentScope: 'organisation' | 'team' | 'member';
+	assignedMemberId: string | null;
+	assignedTeamId: string | null;
+	assignmentNote: string;
+}> {
+	const participants = [...(input.node.participants ?? [])];
+	if (participants.length > 1) {
+		throw new WorkflowValidationError(
+			`Workflow node ${input.node.key} defines multiple participants, but the current runtime requires one accountable assignment target.`
+		);
+	}
+	const participant = participants[0];
+	if (participant?.participantType === 'actor') {
+		return {
+			assignmentScope: 'member',
+			assignedMemberId: input.actor.memberId,
+			assignedTeamId: null,
+			assignmentNote: `Workflow node ${input.node.key}: source actor`
+		};
+	}
+	if (participant?.participantType === 'member') {
+		const [rows] = await connection.execute<Array<RowDataPacket & { id: string | number }>>(
+			`SELECT id FROM organisation_members
+			 WHERE organisation_id = ? AND public_id = ? AND status IN ('active', 'suspended') LIMIT 1`,
+			[input.actor.organisationId, participant.participantKey]
+		);
+		if (!rows[0]) {
+			throw new WorkflowValidationError(
+				`Workflow node ${input.node.key} member participant ${participant.participantKey} is not assignable in this organisation.`
+			);
+		}
+		return {
+			assignmentScope: 'member',
+			assignedMemberId: String(rows[0].id),
+			assignedTeamId: null,
+			assignmentNote: `Workflow node ${input.node.key}: member ${participant.participantKey}`
+		};
+	}
+	if (participant?.participantType === 'team') {
+		const [rows] = await connection.execute<Array<RowDataPacket & { id: string | number }>>(
+			`SELECT id FROM teams
+			 WHERE organisation_id = ? AND public_id = ? AND is_active = 1 LIMIT 1`,
+			[input.actor.organisationId, participant.participantKey]
+		);
+		if (!rows[0]) {
+			throw new WorkflowValidationError(
+				`Workflow node ${input.node.key} team participant ${participant.participantKey} is not active in this organisation.`
+			);
+		}
+		return {
+			assignmentScope: 'team',
+			assignedMemberId: null,
+			assignedTeamId: String(rows[0].id),
+			assignmentNote: `Workflow node ${input.node.key}: team ${participant.participantKey}`
+		};
+	}
+	if (participant) {
+		throw new WorkflowValidationError(
+			`Workflow node ${input.node.key} participant type ${participant.participantType} does not yet have a safe runtime resolver.`
+		);
+	}
+	if (input.node.responsibleRoleKey === 'owner') {
+		return {
+			assignmentScope: 'member',
+			assignedMemberId: input.actor.memberId,
+			assignedTeamId: null,
+			assignmentNote: `Workflow node ${input.node.key}: source actor`
+		};
+	}
+	return {
+		assignmentScope: 'organisation',
+		assignedMemberId: null,
+		assignedTeamId: null,
+		assignmentNote: `Workflow node ${input.node.key}: governed gate ${input.requiredPermissionKey}`
+	};
+}
+
 async function assignWorkItem(
 	connection: PoolConnection,
 	input: {
@@ -240,26 +327,22 @@ async function assignWorkItem(
 		requiredPermissionKey: string;
 	}
 ): Promise<void> {
-	const actorOwned =
-		input.node.responsibleRoleKey === 'owner' ||
-		input.node.participants?.some((participant) => participant.participantType === 'actor') ===
-			true;
+	const assignment = await resolveWorkItemAssignment(connection, input);
 	await connection.execute(
 		`INSERT INTO work_item_assignments
 			(work_item_id, work_item_owner_organisation_id, assignment_scope,
 			 assigned_organisation_id, assigned_member_id, assigned_team_id,
 			 assigned_by_member_id, assignment_note)
-		 VALUES (?, ?, ?, ?, ?, NULL, ?, ?)`,
+		 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
 		[
 			input.workItemId,
 			input.actor.organisationId,
-			actorOwned ? 'member' : 'organisation',
+			assignment.assignmentScope,
 			input.actor.organisationId,
-			actorOwned ? input.actor.memberId : null,
+			assignment.assignedMemberId,
+			assignment.assignedTeamId,
 			input.actor.memberId,
-			actorOwned
-				? `Workflow node ${input.node.key}: source actor`
-				: `Workflow node ${input.node.key}: governed gate ${input.requiredPermissionKey}`
+			assignment.assignmentNote
 		]
 	);
 }
@@ -831,7 +914,16 @@ export async function finaliseWorkflowRequest(input: {
 			return { completed: true, decision: input.decision, currentNodeKey: null };
 		}
 
-		if (input.decision !== 'approved') {
+		const routingEvent =
+			input.decision === 'approved'
+				? 'approve'
+				: input.decision === 'returned'
+					? 'return'
+					: 'reject';
+		const hasAuthoredDecisionRoute = template.links.some(
+			(link) => link.from === request.currentNodeKey && link.event === routingEvent
+		);
+		if (input.decision !== 'approved' && !hasAuthoredDecisionRoute) {
 			await finishRequest(connection, {
 				actor: input.actor,
 				request,
@@ -854,7 +946,7 @@ export async function finaliseWorkflowRequest(input: {
 			return { completed: true, decision: input.decision, currentNodeKey: null };
 		}
 
-		const next = nextExecutableNode(template, request.currentNodeKey, 'approve');
+		const next = nextExecutableNode(template, request.currentNodeKey, routingEvent);
 		let stepNumber = Number(request.stepNumber);
 		for (const automaticNode of next.automaticNodes) {
 			stepNumber += 1;
@@ -881,11 +973,13 @@ export async function finaliseWorkflowRequest(input: {
 				outcome: 'automatic',
 				completedByMemberId: input.actor.memberId
 			});
-			await input.onApprovedCompletion?.(connection);
+			if (input.decision === 'approved') {
+				await input.onApprovedCompletion?.(connection);
+			}
 			await finishRequest(connection, {
 				actor: input.actor,
 				request,
-				decision: 'approved',
+				decision: input.decision,
 				note
 			});
 			await connection.execute(
@@ -895,18 +989,18 @@ export async function finaliseWorkflowRequest(input: {
 			);
 			await appendDomainEvidence(connection, {
 				actor: input.actor,
-				actionKey: 'workflow.completed',
+				actionKey: input.decision === 'approved' ? 'workflow.completed' : 'workflow.decided',
 				subjectType: 'workflow_request',
 				subjectPublicId: input.requestPublicId,
 				changeSummary: {
-					decision: 'approved',
+					decision: input.decision,
 					workflowKey: request.workflowKey,
 					endNodeKey: next.node.key
 				},
-				eventMetadata: { mutation: 'workflow-complete' }
+				eventMetadata: { mutation: 'workflow-route-terminal' }
 			});
 			await connection.commit();
-			return { completed: true, decision: 'approved', currentNodeKey: next.node.key };
+			return { completed: true, decision: input.decision, currentNodeKey: next.node.key };
 		}
 
 		stepNumber += 1;

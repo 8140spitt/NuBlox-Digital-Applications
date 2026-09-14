@@ -29,6 +29,43 @@ export function f01LifecycleObjectType(kind: F01ManagedRecordKind): string {
 	return `F01.${kind}`;
 }
 
+export function assertNativeF01LifecycleCompatibility(
+	kind: F01ManagedRecordKind,
+	fallback: LifecycleTemplate,
+	configured: ResolvedLifecycleTemplate
+): ResolvedLifecycleTemplate {
+	if (configured.source !== 'binding') return configured;
+	const nativeStates = Object.keys(fallback.phases).sort();
+	const configuredStates = Object.keys(configured.template.phases).sort();
+	if (
+		nativeStates.length !== configuredStates.length ||
+		nativeStates.some((state, index) => state !== configuredStates[index])
+	) {
+		throw new Error(
+			`Lifecycle binding ${configured.template.key} is incompatible with native F01.${kind} states.`
+		);
+	}
+	if (configured.template.initialState !== fallback.initialState) {
+		throw new Error(
+			`Lifecycle binding ${configured.template.key} initial state ${configured.template.initialState} is incompatible with native F01.${kind} initial state ${fallback.initialState}.`
+		);
+	}
+	const nativeTransitions = new Set(
+		Object.entries(fallback.transitions).flatMap(([from, transitions]) =>
+			transitions.map((transition) => `${from}->${transition.to}`)
+		)
+	);
+	for (const [from, transitions] of Object.entries(configured.template.transitions)) {
+		for (const transition of transitions) {
+			if (!nativeTransitions.has(`${from}->${transition.to}`)) {
+				throw new Error(
+					`Lifecycle binding ${configured.template.key} transition ${from} → ${transition.to} is not executable by native F01.${kind}.`
+				);
+			}
+		}
+	}
+	return configured;
+}
 function overlayStarterWorkflow(
 	fallback: LifecycleTemplate,
 	starter: ResolvedLifecycleTemplate
@@ -65,7 +102,9 @@ async function resolved(organisationId: string, kind: F01ManagedRecordKind) {
 		objectType: f01LifecycleObjectType(kind),
 		fallback
 	});
-	if (exact.source === 'binding') return exact;
+	if (exact.source === 'binding') {
+		return assertNativeF01LifecycleCompatibility(kind, fallback, exact);
+	}
 
 	const starterObjectType = STARTER_OBJECT_TYPES[kind];
 	if (starterObjectType) {
