@@ -10,6 +10,7 @@
 		StatusBadge
 	} from '$lib/components/ui';
 	import { appPath, routes } from '$lib/routing/route-contract';
+	import { resolveInternalPath } from '$lib/routing/resolve-path';
 	let { data, form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
 	function tone(status: string): 'success' | 'info' | 'warning' | 'neutral' {
@@ -80,7 +81,10 @@
 		{:else}
 			<div class="template-list">
 				{#each data.templates as template (template.publicId)}
-					<a class="template-card" href={`${appPath(tenant, 'workflow')}/${template.publicId}`}>
+					<a
+						class="template-card"
+						href={resolveInternalPath(`${appPath(tenant, 'workflow')}/${template.publicId}`)}
+					>
 						<div>
 							<div class="template-heading">
 								<strong>{template.name}</strong><StatusBadge
