@@ -8,12 +8,11 @@
 		Button,
 		EmptyState,
 		Field,
-		LinkButton,
 		PageHeader,
 		Panel,
 		StatusBadge
 	} from '$lib/components/ui';
-	import { appPath, routes } from '$lib/routing/route-contract';
+	import { routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
@@ -27,72 +26,69 @@
 </script>
 
 <svelte:head>
-	<title>Lifecycle administration · NuBlox</title>
+	<title>Workflow administration · NuBlox</title>
 	<meta
 		name="description"
-		content="Govern NuBlox lifecycle templates, phases, transitions, role access and active object bindings."
+		content="Create, version, publish and bind governed NuBlox workflow templates."
 	/>
 </svelte:head>
 
-<div class="nb-page-wide lifecycle-page">
+<div class="nb-page-wide workflow-page">
 	<Breadcrumbs
 		items={[
 			{ label: 'Home', href: routes.dashboard(tenant) },
-			{ label: 'Lifecycle administration' }
+			{ label: 'Lifecycle administration', href: routes.lifecycle(tenant) },
+			{ label: 'Workflow administration' }
 		]}
 	/>
 
 	<PageHeader
 		eyebrow="Platform governance"
-		title="Lifecycle administration"
-		description="Define reusable Basic and Advanced lifecycle templates, version them under control, and bind published templates to governed object types."
-	>
-		{#snippet actions()}
-			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary"
-				>Workflow administration</LinkButton
-			>
-		{/snippet}
-	</PageHeader>
+		title="Workflow administration"
+		description="Define reusable, typed workflow templates for approvals and operational orchestration without embedding executable administrator code."
+	/>
 
 	{#if form?.formError}
-		<Alert tone="danger" title="Lifecycle template not created">{form.formError}</Alert>
+		<Alert tone="danger" title="Workflow template not created">{form.formError}</Alert>
 	{/if}
 
 	<div class="workspace-grid">
-		<section class="template-stack" aria-label="Lifecycle templates">
+		<section aria-label="Workflow templates">
 			<Panel
-				title="Governed lifecycle templates"
-				description="Published major versions are immutable. Amendments are made through controlled minor revisions before the next major publication."
+				title="Governed workflow templates"
+				description="Published major versions are immutable. Revisions are copied into a controlled working version and validated before publication."
 			>
 				{#if data.templates.length === 0}
 					<EmptyState
-						title="No tenant lifecycle templates yet"
-						description="F01 continues to use its code-backed reference lifecycles until an administrator publishes and binds a tenant lifecycle template."
+						title="No workflow templates yet"
+						description="Create the first reusable workflow. A safe Start → End skeleton is created automatically, then you can add typed activities, participants and routing."
 					/>
 				{:else}
 					<div class="template-list">
 						{#each data.templates as template (template.publicId)}
 							<a
 								class="template-card"
-								href={resolve(routes.lifecycleTemplate(tenant, template.publicId))}
+								href={resolve('/[tenant]/app/(protected)/workflow/[template]', {
+									tenant,
+									template: template.publicId
+								})}
 							>
-								<div class="template-main">
-									<div class="template-heading">
-										<strong>{template.name}</strong>
-										<StatusBadge label={template.status} tone={tone(template.status)} />
-										{#if template.isActiveBinding}
-											<StatusBadge label="Active binding" tone="success" />
-										{/if}
-									</div>
-									<p>{template.description ?? 'No description has been supplied.'}</p>
+								<div class="template-heading">
+									<strong>{template.name}</strong>
+									<StatusBadge label={template.status} tone={tone(template.status)} />
+									{#if template.bindingCount > 0}
+										<StatusBadge
+											label={`${template.bindingCount} active binding${template.bindingCount === 1 ? '' : 's'}`}
+											tone="success"
+										/>
+									{/if}
 								</div>
+								<p>{template.description ?? 'No description has been supplied.'}</p>
 								<div class="template-meta">
 									<span>{template.templateKey}</span>
 									<span>v{template.versionLabel}</span>
-									<span>{template.mode}</span>
-									<span>{template.objectType}</span>
-									<span>{template.phaseCount} phases</span>
-									<span>{template.transitionCount} transitions</span>
+									<span>{template.nodeCount} nodes</span>
+									<span>{template.linkCount} routes</span>
 								</div>
 							</a>
 						{/each}
@@ -103,8 +99,8 @@
 
 		<aside>
 			<Panel
-				title="Create lifecycle template"
-				description="Start with the lightest lifecycle that can safely govern the business object."
+				title="Create workflow template"
+				description="Use a stable key because lifecycle gates and business events bind to the published workflow lineage."
 				padding="spacious"
 			>
 				<form method="POST" action="?/create" use:enhance class="form-stack">
@@ -112,7 +108,7 @@
 						id="templateKey"
 						label="Template key"
 						required
-						hint="Stable key, for example f01.framework."
+						hint="For example f01.strategy-approval."
 					>
 						<input
 							class="nb-control"
@@ -131,29 +127,6 @@
 							required
 						/>
 					</Field>
-					<Field
-						id="objectType"
-						label="Object type"
-						required
-						hint="Stable object type, for example F01.framework."
-					>
-						<input
-							class="nb-control"
-							id="objectType"
-							name="objectType"
-							value={form?.values?.objectType ?? ''}
-							required
-						/>
-					</Field>
-					<Field id="mode" label="Lifecycle mode" required>
-						<select class="nb-control" id="mode" name="mode">
-							<option value="basic" selected={(form?.values?.mode ?? 'basic') === 'basic'}
-								>Basic</option
-							>
-							<option value="advanced" selected={form?.values?.mode === 'advanced'}>Advanced</option
-							>
-						</select>
-					</Field>
 					<Field id="description" label="Description">
 						<textarea class="nb-control" id="description" name="description"
 							>{form?.values?.description ?? ''}</textarea
@@ -167,7 +140,7 @@
 </div>
 
 <style>
-	.lifecycle-page {
+	.workflow-page {
 		padding-top: var(--nb-space-5);
 		padding-bottom: var(--nb-space-10);
 	}
@@ -207,8 +180,8 @@
 	.template-heading strong {
 		font-size: var(--nb-font-size-lg);
 	}
-	.template-main p {
-		margin: var(--nb-space-2) 0 0;
+	.template-card p {
+		margin: 0;
 		color: var(--nb-color-text-secondary);
 	}
 	.template-meta {

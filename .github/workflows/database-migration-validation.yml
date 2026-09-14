@@ -63,7 +63,7 @@ jobs:
           check_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.table_constraints WHERE constraint_schema='nublox_migration_validation' AND constraint_type='CHECK';")
           tenant_route_count=$(docker exec "$MYSQL_CONTAINER_ID" mysql -N -B -uroot -pnublox_ci -e "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema='nublox_migration_validation' AND table_name='tenant_route_contexts';")
           echo "V2 platform schema: $table_count tables, $fk_count FKs, $check_count CHECK constraints"
-          test "$table_count" = '552'
-          test "$fk_count" = '1560'
-          test "$check_count" = '887'
+          test "$table_count" = '559'
+          test "$fk_count" = '1580'
+          test "$check_count" = '896'
           test "$tenant_route_count" = '1'
