@@ -561,6 +561,13 @@ async function insertWorkflow(
 	for (let index = 0; index < blueprint.nodes.length - 1; index += 1) {
 		const from = blueprint.nodes[index];
 		const to = blueprint.nodes[index + 1];
+		const fromNodeId = nodeIds.get(from.key);
+		const toNodeId = nodeIds.get(to.key);
+		if (fromNodeId === undefined || toNodeId === undefined) {
+			throw new ObjectTemplateLibraryValidationError(
+				'Workflow starter graph references a node that was not inserted.'
+			);
+		}
 		await connection.execute(
 			`INSERT INTO workflow_template_links
 			 (organisation_id, workflow_template_id, public_id, from_node_id, to_node_id, display_order)
@@ -569,8 +576,8 @@ async function insertWorkflow(
 				actor.organisationId,
 				workflowTemplateId,
 				randomUUID(),
-				nodeIds.get(from.key),
-				nodeIds.get(to.key),
+				fromNodeId,
+				toNodeId,
 				(index + 1) * 10
 			]
 		);
