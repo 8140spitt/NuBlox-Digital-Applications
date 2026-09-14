@@ -12,7 +12,7 @@
 		Panel,
 		StatusBadge
 	} from '$lib/components/ui';
-	import { appPath, routes } from '$lib/routing/route-contract';
+	import { routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
