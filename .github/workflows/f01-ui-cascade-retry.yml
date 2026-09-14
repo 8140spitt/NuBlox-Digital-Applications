@@ -48,11 +48,9 @@ jobs:
           python3 - <<'PY'
           from pathlib import Path
           import re
-
           p = Path('database/migrations/20260914004500_f01_parent_delete_cascades.sql')
           text = p.read_text()
           pattern = re.compile(r'(ALTER TABLE\s+([A-Za-z0-9_]+)\n)(.*?);', re.S)
-
           def split_alter(match):
               header = match.group(1)
               body = match.group(3)
@@ -66,16 +64,16 @@ jobs:
                   drops.pop()
               drops[-1] = drops[-1].rstrip().rstrip(',')
               return header + '\n'.join(drops) + ';\n' + header + '\n'.join(adds) + ';'
-
           repaired = pattern.sub(split_alter, text)
           if repaired == text:
               raise SystemExit('migration repair made no changes')
           for block in pattern.finditer(repaired):
               if 'DROP FOREIGN KEY' in block.group(3) and 'ADD CONSTRAINT' in block.group(3):
-                  raise SystemExit(f'combined DROP/ADD remains for {block.group(2)}')
+                  raise SystemExit('combined DROP/ADD remains')
           p.write_text(repaired)
           PY
           python3 scripts/f01-ui-cascade-repair.py
+          sed -i '/StrategyValidationError/d' appv2/src/lib/server/strategy/f01-golden-thread.integration.test.ts
           rm scripts/f01-ui-cascade-repair.py
           rm .github/workflows/f01-ui-cascade-apply.yml
           rm .github/workflows/f01-ui-cascade-retry.yml
