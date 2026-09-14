@@ -1,4 +1,4 @@
-import { fail } from '@sveltejs/kit';
+import { error, fail } from '@sveltejs/kit';
 import { decidePermissions } from '$lib/server/auth/permission-service';
 import { listJobFamilies, listJobProfiles } from '$lib/server/job-architecture-catalogue';
 import {
@@ -41,9 +41,7 @@ export const load: PageServerLoad = async ({ parent }) => {
 		permissionKeys: ['organisation.structure.view', 'organisation.structure.manage']
 	});
 	if (decisions.get('organisation.structure.view')?.allowed !== true) {
-		throw new OrganisationStructureAccessError(
-			'You do not have permission to view organisation structure.'
-		);
+		error(403, 'You do not have permission to view organisation structure.');
 	}
 	const families = listJobFamilies();
 	const familyNames = new Map(families.map((family) => [family.id, family.name]));
