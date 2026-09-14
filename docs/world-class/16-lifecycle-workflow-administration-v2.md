@@ -45,6 +45,12 @@ The typed workflow kernel models:
 
 Administrator-authored arbitrary server code is intentionally excluded. Automation is represented by typed, allow-listed actions and connectors.
 
+The persisted administration layer stores versioned workflow templates, workflow roles, typed variables, nodes, participants, routes and source-domain event bindings. Administrators work against draft minor versions; every governed mutation appends version evidence. Publication validates the complete persisted graph through the shared workflow kernel, produces an immutable major version and permits activation against business events. A published template can only be changed by creating a controlled successor revision.
+
+Published revisions preserve operational continuity: when an active predecessor is superseded, its existing business-event bindings move atomically to the newly published successor. Runtime consumers resolve only published bound templates and materialise them back through the same typed kernel used for validation.
+
+The first administration experience is intentionally structured and progressively disclosed rather than a free-form canvas. This keeps the platform safe and usable while preserving all data required for a later graphical authoring layer.
+
 ## 4. Governed approval pattern
 
 The production approval pattern is:
@@ -113,4 +119,4 @@ Every business function adopting lifecycle/workflow must preserve these invarian
 
 ## 8. Administration roadmap
 
-The shared kernels are the baseline for expanding administration beyond the F01 proving slice. Subsequent tranches should add reusable workflow-template persistence/version administration, graphical/template editing, participant and deadline administration, process monitoring/intervention, reusable notification/escalation rules, electronic-signature policy integration and adoption by each owning business function. These capabilities must extend the common kernels rather than reintroducing function-specific workflow engines.
+Reusable workflow-template persistence/version administration, structured participant/deadline administration and source-event binding are now part of the governed V2 platform baseline. Subsequent tranches should add graphical authoring over the same persisted model, process monitoring/intervention, reusable notification/escalation policies, electronic-signature provider integration and adoption by each owning business function. These capabilities must extend the common kernels rather than reintroducing function-specific workflow engines.
