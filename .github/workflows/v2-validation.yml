@@ -18,6 +18,43 @@ permissions:
   contents: read
 
 jobs:
+  format-preview:
+    if: github.event_name == 'pull_request' && github.head_ref == 'feat/f01-completion-reset'
+    name: Format F01 completion preview
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Format V2
+        working-directory: appv2
+        run: pnpm format
+
+      - name: Upload formatted V2 source
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatted-appv2
+          path: appv2
+          include-hidden-files: true
+          retention-days: 1
+
   validate-appv2:
     name: Lint, typecheck, test and build V2
     runs-on: ubuntu-latest
