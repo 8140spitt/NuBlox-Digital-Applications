@@ -22,11 +22,7 @@ import {
 	recordStrategyKpiObservation,
 	requestStrategyInitiativeHandoff
 } from './execution-review-service';
-import {
-	createStrategyFramework,
-	getStrategyWorkspace,
-	StrategyValidationError
-} from './f01-service';
+import { createStrategyFramework, getStrategyWorkspace } from './f01-service';
 import {
 	deleteF01Record,
 	getF01ManagedRecord,
@@ -713,14 +709,51 @@ describe('F01 V2 governed golden thread', () => {
 		);
 		expect(discardedRows[0]?.versionStatus).toBe('discarded');
 
-		await expect(
-			deleteF01Record({
-				actor,
-				frameworkPublicId: revision.publicId,
-				kind: 'plan',
-				recordPublicId: plan.publicId
-			})
-		).rejects.toBeInstanceOf(StrategyValidationError);
+		await deleteF01Record({
+			actor,
+			frameworkPublicId: revision.publicId,
+			kind: 'plan',
+			recordPublicId: plan.publicId
+		});
+		const [deletedPlans] = await getPool().execute<IdRow[]>(
+			`SELECT id FROM strategy_business_plans WHERE organisation_id = ? AND public_id = ?`,
+			[organisationId, plan.publicId]
+		);
+		const [deletedInitiatives] = await getPool().execute<IdRow[]>(
+			`SELECT id FROM strategy_initiatives WHERE organisation_id = ? AND public_id = ?`,
+			[organisationId, initiative.publicId]
+		);
+		const [deletedRequirements] = await getPool().execute<IdRow[]>(
+			`SELECT id FROM strategy_initiative_resource_requirements WHERE organisation_id = ? AND public_id = ?`,
+			[organisationId, requirement.publicId]
+		);
+		expect(deletedPlans).toHaveLength(0);
+		expect(deletedInitiatives).toHaveLength(0);
+		expect(deletedRequirements).toHaveLength(0);
+
+		await deleteF01Record({
+			actor,
+			frameworkPublicId: revision.publicId,
+			kind: 'kpi',
+			recordPublicId: kpi.publicId
+		});
+		const [deletedKpis] = await getPool().execute<IdRow[]>(
+			`SELECT id FROM strategy_kpis WHERE organisation_id = ? AND public_id = ?`,
+			[organisationId, kpi.publicId]
+		);
+		expect(deletedKpis).toHaveLength(0);
+
+		await deleteF01Record({
+			actor,
+			frameworkPublicId: revision.publicId,
+			kind: 'framework',
+			recordPublicId: revision.publicId
+		});
+		const [deletedFrameworks] = await getPool().execute<IdRow[]>(
+			`SELECT id FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ?`,
+			[organisationId, revision.publicId]
+		);
+		expect(deletedFrameworks).toHaveLength(0);
 
 		const [auditRows] = await getPool().execute<IdRow[]>(
 			`SELECT id FROM audit_events WHERE acting_organisation_id = ?`,

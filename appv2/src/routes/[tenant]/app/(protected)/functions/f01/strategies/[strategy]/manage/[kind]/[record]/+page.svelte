@@ -73,7 +73,7 @@
 			return 'This is historical enterprise evidence. It remains readable but cannot be edited or moved forward.';
 		}
 		if (record.canRevise) {
-			return 'This approved version remains current and immutable. Create a controlled revision to change it; when the revision is approved, this version becomes superseded automatically.';
+			return 'This approved version is immutable for editing. Create a controlled revision to amend it, or use governed deletion when the business object itself must be removed.';
 		}
 		if (record.transitions.length > 0) {
 			return 'Only the valid next lifecycle actions are available below. NuBlox re-checks every transition on the server before committing it.';
@@ -349,14 +349,18 @@
 
 	{#if record.canDelete}
 		<Panel
-			title="Delete ungoverned record"
-			description="Permanent deletion is only available before the record becomes governed or is depended on by downstream records."
+			title={record.status === 'approved' ? 'Delete governed record' : 'Delete record'}
+			description={record.status === 'approved'
+				? 'Permanent deletion removes this live record and every downstream F01 record it owns. Published version snapshots and audit evidence are retained.'
+				: 'Permanent deletion removes this record and every downstream F01 record it owns.'}
 		>
 			<form method="POST" action="?/delete" use:enhance class="delete-row">
 				<Field
 					id="deleteConfirmation"
 					label="Type DELETE to confirm"
-					hint="After governance, use retire, cancel or controlled revision instead of deletion."
+					hint={record.status === 'approved'
+						? 'Deleting a governed parent cascades through its owned F01 chain. Records owned by another function are not deleted.'
+						: 'Deleting a parent cascades through its owned F01 chain.'}
 					required
 				>
 					<input
@@ -378,8 +382,7 @@
 	.record-form,
 	.lifecycle-actions {
 		display: grid;
-		gap: var(--nb-space-6);
-		padding-bottom: var(--nb-space-16);
+		gap: var(--nb-space-5);
 	}
 	.state-card,
 	.version-card {

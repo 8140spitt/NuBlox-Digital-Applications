@@ -444,7 +444,7 @@
 	}
 
 	.application-main {
-		padding: 34px 0 72px;
+		padding: var(--nb-space-6) 0 var(--nb-space-12);
 	}
 
 	.mobile-header {

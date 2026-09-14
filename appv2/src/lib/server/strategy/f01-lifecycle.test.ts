@@ -16,10 +16,12 @@ describe('F01 lifecycle policies', () => {
 		);
 	});
 
-	it('keeps approved business plans immutable but revisable', () => {
-		expect(canEditF01Record('plan', 'approved')).toBe(false);
-		expect(canDeleteF01Record('plan', 'approved')).toBe(false);
-		expect(canReviseF01Record('plan', 'approved')).toBe(true);
+	it('keeps approved governed roots immutable for editing but explicitly deletable or revisable', () => {
+		for (const kind of ['framework', 'plan', 'kpi'] as const) {
+			expect(canEditF01Record(kind, 'approved')).toBe(false);
+			expect(canDeleteF01Record(kind, 'approved')).toBe(true);
+			expect(canReviseF01Record(kind, 'approved')).toBe(true);
+		}
 	});
 
 	it('never hard deletes governed handoff requests and keeps receiving outcomes outside F01', () => {

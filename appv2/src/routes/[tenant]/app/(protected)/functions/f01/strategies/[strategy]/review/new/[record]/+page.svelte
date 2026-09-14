@@ -246,7 +246,6 @@
 		gap: var(--nb-space-6);
 	}
 	.transaction-page {
-		padding-bottom: var(--nb-space-16);
 	}
 	.form-grid {
 		display: grid;

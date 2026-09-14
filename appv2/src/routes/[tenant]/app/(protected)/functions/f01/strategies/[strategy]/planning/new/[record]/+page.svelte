@@ -353,7 +353,6 @@
 	.transaction-page {
 		display: grid;
 		gap: var(--nb-space-5);
-		padding-bottom: var(--nb-space-16);
 	}
 	.transaction-form {
 		display: grid;

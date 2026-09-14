@@ -1745,7 +1745,7 @@ export async function deleteF01Record(input: {
 		await connection.beginTransaction();
 		const org = input.actor.organisationId;
 		const id = input.recordPublicId;
-		if (['framework', 'plan', 'kpi'].includes(input.kind)) {
+		if (currentStatus === 'draft' && ['framework', 'plan', 'kpi'].includes(input.kind)) {
 			await markWorkingVersionDiscarded(connection, {
 				organisationId: org,
 				domainCode: 'F01',
@@ -1762,60 +1762,14 @@ export async function deleteF01Record(input: {
 			case 'framework': {
 				if (input.frameworkPublicId !== id)
 					throw new StrategyValidationError('Strategy record mismatch.');
-				const frameworkRow = await singleRow<IdRow>(
-					`SELECT id FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft' LIMIT 1`,
+				const row = await singleConnectionRow<IdRow>(
+					connection,
+					`SELECT id FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? AND lifecycle_status IN ('draft','approved') LIMIT 1 FOR UPDATE`,
 					[org, id]
 				);
-				const frameworkId = frameworkRow.id;
 				await connection.execute(
-					`DELETE link FROM strategy_objective_theme_links link JOIN strategy_objectives objective ON objective.id = link.strategy_objective_id WHERE objective.strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE link FROM strategy_objective_option_links link JOIN strategy_objectives objective ON objective.id = link.strategy_objective_id WHERE objective.strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`UPDATE strategy_objectives SET parent_strategy_objective_id = NULL WHERE strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE FROM strategy_objectives WHERE strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE link FROM strategy_option_assumption_links link JOIN strategy_options option_record ON option_record.id = link.strategy_option_id WHERE option_record.strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE link FROM strategy_option_factor_links link JOIN strategy_options option_record ON option_record.id = link.strategy_option_id WHERE option_record.strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(`DELETE FROM strategy_options WHERE strategy_framework_id = ?`, [
-					frameworkId
-				]);
-				await connection.execute(`DELETE FROM strategy_themes WHERE strategy_framework_id = ?`, [
-					frameworkId
-				]);
-				await connection.execute(
-					`DELETE FROM strategy_assumptions WHERE strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE link FROM strategy_environment_factor_evidence_links link JOIN strategy_environment_factors factor ON factor.id = link.strategy_environment_factor_id WHERE factor.strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE FROM strategy_environment_factors WHERE strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE FROM strategy_evidence_items WHERE strategy_framework_id = ?`,
-					[frameworkId]
-				);
-				await connection.execute(
-					`DELETE FROM strategy_frameworks WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'draft'`,
-					[org, frameworkId]
+					`DELETE FROM strategy_frameworks WHERE organisation_id = ? AND id = ?`,
+					[org, row.id]
 				);
 				break;
 			}
@@ -1942,23 +1896,12 @@ export async function deleteF01Record(input: {
 				break;
 			}
 			case 'plan': {
-				const plan = await singleRow<IdRow>(
-					`SELECT id FROM strategy_business_plans WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft' LIMIT 1`,
+				const row = await singleConnectionRow<IdRow>(
+					connection,
+					`SELECT id FROM strategy_business_plans WHERE organisation_id = ? AND public_id = ? AND lifecycle_status IN ('draft','approved') LIMIT 1 FOR UPDATE`,
 					[org, id]
 				);
-				if (
-					await count(
-						connection,
-						`SELECT COUNT(*) AS count FROM strategy_initiatives WHERE strategy_business_plan_id = ?`,
-						[plan.id]
-					)
-				)
-					throw new StrategyValidationError('Delete the plan initiatives first.');
-				await connection.execute(
-					`DELETE FROM strategy_business_plan_objective_links WHERE strategy_business_plan_id = ?`,
-					[plan.id]
-				);
-				await connection.execute(`DELETE FROM strategy_business_plans WHERE id = ?`, [plan.id]);
+				await connection.execute(`DELETE FROM strategy_business_plans WHERE id = ?`, [row.id]);
 				break;
 			}
 			case 'initiative': {
@@ -2007,25 +1950,12 @@ export async function deleteF01Record(input: {
 					'Requested handoffs are enterprise evidence and are cancelled rather than deleted.'
 				);
 			case 'kpi': {
-				const kpi = await singleRow<IdRow>(
-					`SELECT id FROM strategy_kpis WHERE organisation_id = ? AND public_id = ? AND lifecycle_status = 'draft' LIMIT 1`,
+				const row = await singleConnectionRow<IdRow>(
+					connection,
+					`SELECT id FROM strategy_kpis WHERE organisation_id = ? AND public_id = ? AND lifecycle_status IN ('draft','approved') LIMIT 1 FOR UPDATE`,
 					[org, id]
 				);
-				if (
-					await count(
-						connection,
-						`SELECT (SELECT COUNT(*) FROM strategy_kpi_observations WHERE strategy_kpi_id = ?) + (SELECT COUNT(*) FROM strategy_review_kpis WHERE strategy_kpi_id = ?) AS count`,
-						[kpi.id, kpi.id]
-					)
-				)
-					throw new StrategyValidationError(
-						'KPI cannot be deleted after performance evidence has been recorded.'
-					);
-				await connection.execute(
-					`DELETE FROM strategy_initiative_kpi_links WHERE strategy_kpi_id = ?`,
-					[kpi.id]
-				);
-				await connection.execute(`DELETE FROM strategy_kpis WHERE id = ?`, [kpi.id]);
+				await connection.execute(`DELETE FROM strategy_kpis WHERE id = ?`, [row.id]);
 				break;
 			}
 			case 'review': {

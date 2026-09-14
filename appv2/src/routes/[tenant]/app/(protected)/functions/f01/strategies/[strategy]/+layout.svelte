@@ -39,16 +39,11 @@
 		position: sticky;
 		top: 0;
 		z-index: 8;
-		max-width: var(--nb-page-wide, 1440px);
+		width: 100%;
+		max-width: calc(var(--nb-content-wide) + var(--nb-page-gutter) + var(--nb-page-gutter));
 		margin-inline: auto;
-		padding: 0 var(--nb-space-6);
+		padding-inline: var(--nb-page-gutter);
 		background: color-mix(in srgb, var(--nb-color-bg-canvas) 94%, transparent);
 		backdrop-filter: blur(12px);
-	}
-
-	@media (max-width: 640px) {
-		.strategy-context-nav {
-			padding-inline: var(--nb-space-4);
-		}
 	}
 </style>

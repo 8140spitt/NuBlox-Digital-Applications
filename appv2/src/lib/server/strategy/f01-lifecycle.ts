@@ -32,7 +32,7 @@ type LifecyclePolicy = {
 export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, LifecyclePolicy>> = {
 	framework: {
 		editable: ['draft'],
-		deletable: ['draft'],
+		deletable: ['draft', 'approved'],
 		revisable: ['approved'],
 		transitions: {
 			draft: [{ to: 'approved', label: 'Approve strategy' }],
@@ -114,7 +114,7 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 	},
 	plan: {
 		editable: ['draft'],
-		deletable: ['draft'],
+		deletable: ['draft', 'approved'],
 		revisable: ['approved'],
 		transitions: {
 			draft: [{ to: 'approved', label: 'Approve business plan' }],
@@ -172,7 +172,7 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 	},
 	kpi: {
 		editable: ['draft'],
-		deletable: ['draft'],
+		deletable: ['draft', 'approved'],
 		revisable: ['approved'],
 		transitions: {
 			draft: [{ to: 'approved', label: 'Approve KPI' }],
