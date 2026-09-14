@@ -53,7 +53,7 @@
 	<div class="orientation-grid">
 		<div>
 			<strong>1</strong><span>Design</span>
-			<p>Build the graph, participants, roles and variables.</p>
+			<p>Build and arrange the graph, participants, roles and variables.</p>
 		</div>
 		<div>
 			<strong>2</strong><span>Publish</span>
@@ -71,7 +71,7 @@
 
 	<Panel
 		title="Template library"
-		description="Open a workflow to design or govern it. Creation is a focused action rather than a permanent form beside the library."
+		description="Open a workflow directly in the graphical designer. Creation is a focused action rather than a permanent form beside the library."
 	>
 		{#if data.templates.length === 0}
 			<EmptyState
@@ -83,7 +83,9 @@
 				{#each data.templates as template (template.publicId)}
 					<a
 						class="template-card"
-						href={resolveInternalPath(`${appPath(tenant, 'workflow')}/${template.publicId}`)}
+						href={resolveInternalPath(
+							`${appPath(tenant, 'workflow')}/${template.publicId}/designer`
+						)}
 					>
 						<div>
 							<div class="template-heading">
