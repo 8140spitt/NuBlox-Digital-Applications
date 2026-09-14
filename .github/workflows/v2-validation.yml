@@ -47,12 +47,29 @@ jobs:
         working-directory: appv2
         run: pnpm format
 
-      - name: Upload formatted V2 source
+      - name: Upload formatted F01 files
         uses: actions/upload-artifact@v4
         with:
-          name: formatted-appv2
-          path: appv2
-          include-hidden-files: true
+          name: formatted-f01
+          path: |
+            appv2/src/lib/routing/route-contract.ts
+            appv2/src/lib/routing/route-contract.test.ts
+            appv2/src/lib/server/strategy/business-plan-approval-service.ts
+            appv2/src/lib/server/strategy/f01-business-workflow-status.ts
+            appv2/src/lib/server/strategy/f01-operating-foresight.integration.test.ts
+            appv2/src/lib/server/strategy/operating-foresight-service.ts
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+layout.svelte
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.server.ts
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/foresight/+page.server.ts
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/foresight/+page.svelte
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/foresight/new/+page.server.ts
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/foresight/new/+page.svelte
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.svelte
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/operating-model/+page.server.ts
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/operating-model/+page.svelte
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/operating-model/new/+page.server.ts
+            appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/operating-model/new/+page.svelte
           retention-days: 1
 
   validate-appv2:
