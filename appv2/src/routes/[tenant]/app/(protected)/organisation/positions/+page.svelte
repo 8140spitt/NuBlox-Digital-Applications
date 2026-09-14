@@ -1,7 +1,15 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
 	import { page } from '$app/state';
-	import { Alert, Breadcrumbs, Button, LinkButton, PageHeader, Panel, StatusBadge } from '$lib/components/ui';
+	import {
+		Alert,
+		Breadcrumbs,
+		Button,
+		LinkButton,
+		PageHeader,
+		Panel,
+		StatusBadge
+	} from '$lib/components/ui';
 	import { appPath, routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
@@ -57,7 +65,13 @@
 			<form class="position-form" method="POST" action="?/create" use:enhance>
 				<label>
 					<span>Position code</span>
-					<input class="nb-control" name="positionCode" maxlength="64" placeholder="PROC-001" required />
+					<input
+						class="nb-control"
+						name="positionCode"
+						maxlength="64"
+						placeholder="PROC-001"
+						required
+					/>
 				</label>
 				<label class="profile-field">
 					<span>Canonical job profile</span>
@@ -65,7 +79,10 @@
 						<option value="">Select a profile</option>
 						{#each data.profiles as profile (profile.id)}
 							<option value={profile.id}>
-								{profile.title} · {profile.familyName} · {profile.level}{profile.status === 'candidate' ? ' · candidate' : ''}
+								{profile.title} · {profile.familyName} · {profile.level}{profile.status ===
+								'candidate'
+									? ' · candidate'
+									: ''}
 							</option>
 						{/each}
 					</select>
@@ -85,7 +102,16 @@
 				</label>
 				<label>
 					<span>FTE</span>
-					<input class="nb-control" name="fte" type="number" min="0.01" max="1" step="0.01" value="1" required />
+					<input
+						class="nb-control"
+						name="fte"
+						type="number"
+						min="0.01"
+						max="1"
+						step="0.01"
+						value="1"
+						required
+					/>
 				</label>
 				<label>
 					<span>Valid from</span>
@@ -105,7 +131,9 @@
 		description="Positions are tenant records. Their canonical job definition stays anchored to the generated job architecture."
 	>
 		{#if data.positions.length === 0}
-			<p class="empty-copy">No positions have been created yet. Start from a canonical job profile above.</p>
+			<p class="empty-copy">
+				No positions have been created yet. Start from a canonical job profile above.
+			</p>
 		{:else}
 			<div class="position-list">
 				{#each data.positions as position (position.publicId)}
@@ -118,14 +146,24 @@
 							</div>
 							<StatusBadge
 								label={position.status}
-								tone={position.status === 'open' ? 'success' : position.status === 'frozen' ? 'warning' : 'neutral'}
+								tone={position.status === 'open'
+									? 'success'
+									: position.status === 'frozen'
+										? 'warning'
+										: 'neutral'}
 							/>
 						</div>
 						<div class="position-metadata">
 							<span>{position.fte} FTE</span>
-							<span>{position.reportsToCode ? `Reports to ${position.reportsToCode}` : 'No reporting position'}</span>
+							<span
+								>{position.reportsToCode
+									? `Reports to ${position.reportsToCode}`
+									: 'No reporting position'}</span
+							>
 							<span>{position.validFrom ?? 'Open start'} → {position.validTo ?? 'Open ended'}</span>
-							<a href={appPath(tenant, `organisation/job-architecture/${position.jobProfileKey}`)}>Canonical profile</a>
+							<a href={appPath(tenant, `organisation/job-architecture/${position.jobProfileKey}`)}
+								>Canonical profile</a
+							>
 						</div>
 
 						<div class="assignment-section">
@@ -177,7 +215,16 @@
 										</label>
 										<label>
 											<span>Allocation %</span>
-											<input class="nb-control" type="number" name="allocationPercent" min="0.01" max="100" step="0.01" value="100" required />
+											<input
+												class="nb-control"
+												type="number"
+												name="allocationPercent"
+												min="0.01"
+												max="100"
+												step="0.01"
+												value="100"
+												required
+											/>
 										</label>
 										<label>
 											<span>Start date</span>
@@ -187,7 +234,9 @@
 											<span>End date</span>
 											<input class="nb-control" type="date" name="endDate" />
 										</label>
-										<div class="form-action"><Button type="submit" variant="secondary">Assign person</Button></div>
+										<div class="form-action">
+											<Button type="submit" variant="secondary">Assign person</Button>
+										</div>
 									</form>
 								</details>
 							{/if}

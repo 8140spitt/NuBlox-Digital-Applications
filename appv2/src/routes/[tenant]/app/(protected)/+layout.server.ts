@@ -42,8 +42,7 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 		},
 		toolAccess: {
 			lifecycle: toolPermissions.get('lifecycle.view')?.allowed === true,
-			organisationStructure:
-				toolPermissions.get('organisation.structure.view')?.allowed === true
+			organisationStructure: toolPermissions.get('organisation.structure.view')?.allowed === true
 		}
 	};
 };

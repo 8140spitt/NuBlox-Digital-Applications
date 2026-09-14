@@ -163,7 +163,8 @@ export function getJobProfileDetail(id: string): {
 	const profile = getJobProfile(id);
 	if (!profile) return null;
 	const family = getJobFamily(profile.jobFamilyId);
-	if (!family) throw new Error(`Job profile ${profile.id} references unknown family ${profile.jobFamilyId}.`);
+	if (!family)
+		throw new Error(`Job profile ${profile.id} references unknown family ${profile.jobFamilyId}.`);
 	return {
 		profile,
 		family,
@@ -172,7 +173,10 @@ export function getJobProfileDetail(id: string): {
 	};
 }
 
-export function jobProfileContainsFunctionalRole(jobProfileId: string, functionalRoleId: string): boolean {
+export function jobProfileContainsFunctionalRole(
+	jobProfileId: string,
+	functionalRoleId: string
+): boolean {
 	const profile = getJobProfile(jobProfileId);
 	if (!profile) return false;
 	return (

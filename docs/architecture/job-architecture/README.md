@@ -174,9 +174,11 @@ JP-PPM-PROJECT-MANAGER
 
 Stable source mappings remain attached regardless of display title.
 
-## 9. Planned persistence
+## 9. Product persistence and runtime use
 
-The eventual relational model should introduce separate entities for:
+NuBlox V2 now consumes the generated families, functional roles and job profiles as deterministic canonical reference data. Tenant-specific organisation structure is persisted separately through `organisation_positions` and `position_assignments`; those records point back to stable canonical job-profile IDs and do not become access-control grants.
+
+The remaining curation model should introduce separate entities for:
 
 - `functional_roles`;
 - `functional_role_subfunctions`;
@@ -190,7 +192,6 @@ The eventual relational model should introduce separate entities for:
 - `job_performance_measures`;
 - `job_title_aliases`;
 - `job_profile_careers`;
-- `organisation_positions`;
-- `position_assignments`.
+- canonical job-family/profile curation records when candidate content is promoted beyond the generated baseline.
 
-Database implementation should be a separate schema package/ADR after this architecture baseline is reviewed.
+`organisation_positions` and `position_assignments` are now implemented as the tenant operational bridge. Any future canonical curation tables must preserve generated source IDs and must not collapse job architecture into RBAC.

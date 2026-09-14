@@ -39,7 +39,9 @@
 
 	<div class="metric-grid" aria-label="Job architecture coverage">
 		<div><strong>{data.coverage.generated.jobFamilies}</strong><span>Job families</span></div>
-		<div><strong>{data.coverage.generated.functionalRoles}</strong><span>Functional roles</span></div>
+		<div>
+			<strong>{data.coverage.generated.functionalRoles}</strong><span>Functional roles</span>
+		</div>
 		<div><strong>{data.coverage.generated.jobProfiles}</strong><span>Job profiles</span></div>
 		<div><strong>{data.coverage.source.activities}</strong><span>Source activities</span></div>
 	</div>
@@ -49,9 +51,11 @@
 		description="Job architecture describes who performs work. It does not grant application authority."
 	>
 		<div class="model-chain" aria-label="NuBlox job architecture model">
-			<span>Enterprise function</span><b aria-hidden="true">→</b><span>Functional role</span
-			><b aria-hidden="true">→</b><span>Job profile</span><b aria-hidden="true">→</b
-			><span>Organisation position</span><b aria-hidden="true">→</b><span>Person</span>
+			<span>Enterprise function</span><b aria-hidden="true">→</b><span>Functional role</span><b
+				aria-hidden="true">→</b
+			><span>Job profile</span><b aria-hidden="true">→</b><span>Organisation position</span><b
+				aria-hidden="true">→</b
+			><span>Person</span>
 		</div>
 		<p class="model-note">
 			Access roles and permission grants remain a separate security model. Generated records are
@@ -136,8 +140,9 @@
 								<span>+{profile.subfunctionIds.length - 5}</span>
 							{/if}
 						</div>
-						<LinkButton href={appPath(tenant, `organisation/job-architecture/${profile.id}`)} variant="secondary"
-							>Open profile</LinkButton
+						<LinkButton
+							href={appPath(tenant, `organisation/job-architecture/${profile.id}`)}
+							variant="secondary">Open profile</LinkButton
 						>
 					</article>
 				{/each}

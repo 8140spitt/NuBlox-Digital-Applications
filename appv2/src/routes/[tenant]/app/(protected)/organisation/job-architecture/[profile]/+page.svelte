@@ -41,17 +41,27 @@
 		<div><span>Profile ID</span><strong>{data.profile.id}</strong></div>
 		<div><span>Level</span><strong>{data.profile.level}</strong></div>
 		<div><span>Job family</span><strong>{data.family.name}</strong></div>
-		<div><span>Source functions</span><strong>{data.profile.sourceMappings.functionIds.join(', ')}</strong></div>
+		<div>
+			<span>Source functions</span><strong
+				>{data.profile.sourceMappings.functionIds.join(', ')}</strong
+			>
+		</div>
 	</div>
 
 	<div class="content-grid">
 		<div class="primary-column">
-			<Panel title="Functional roles" description="The work and accountability composed into this job profile.">
+			<Panel
+				title="Functional roles"
+				description="The work and accountability composed into this job profile."
+			>
 				<div class="role-list">
 					{#each data.primaryRoles as role (role.id)}
 						<article class="role-card">
 							<div class="role-heading">
-								<div><code>{role.id}</code><h2>{role.name}</h2></div>
+								<div>
+									<code>{role.id}</code>
+									<h2>{role.name}</h2>
+								</div>
 								<StatusBadge label="Primary" tone="info" />
 							</div>
 							<p>{role.purpose}</p>
@@ -66,7 +76,10 @@
 					{#each data.secondaryRoles as role (role.id)}
 						<article class="role-card">
 							<div class="role-heading">
-								<div><code>{role.id}</code><h2>{role.name}</h2></div>
+								<div>
+									<code>{role.id}</code>
+									<h2>{role.name}</h2>
+								</div>
 								<StatusBadge label="Secondary" tone="neutral" />
 							</div>
 							<p>{role.purpose}</p>
@@ -75,13 +88,19 @@
 				</div>
 			</Panel>
 
-			<Panel title="Key accountabilities" description="The canonical accountability baseline for this profile.">
+			<Panel
+				title="Key accountabilities"
+				description="The canonical accountability baseline for this profile."
+			>
 				<ul class="evidence-list">
 					{#each data.profile.keyAccountabilities as item (item)}<li>{item}</li>{/each}
 				</ul>
 			</Panel>
 
-			<Panel title="Expected outputs" description="Controlled outcomes and deliverables expected from the role.">
+			<Panel
+				title="Expected outputs"
+				description="Controlled outcomes and deliverables expected from the role."
+			>
 				<ul class="evidence-list">
 					{#each data.profile.expectedOutputs as item (item)}<li>{item}</li>{/each}
 				</ul>
@@ -123,7 +142,8 @@
 
 			<Panel title="Taxonomy coverage">
 				<div class="tag-list">
-					{#each data.profile.sourceMappings.subfunctionIds as item (item)}<span>{item}</span>{/each}
+					{#each data.profile.sourceMappings.subfunctionIds as item (item)}<span>{item}</span
+						>{/each}
 				</div>
 			</Panel>
 		</div>

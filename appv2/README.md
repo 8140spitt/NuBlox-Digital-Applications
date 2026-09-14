@@ -66,6 +66,18 @@ Governed workflow administration is a protected tenant capability rather than a 
 
 The workflow library separates template discovery from focused creation and opens templates directly in the graphical designer. Draft workflow steps can be dragged into design order; Start and End remain fixed; node-to-node routes can be connected directly; the resulting order is persisted as governed minor-version evidence. The template governance workspace separately handles People & data, Activation and History. Workflow Operations monitors the canonical workflow-request and Work Kernel runtime, including health, evidence and assignment history, and exposes suspend/resume, escalation, delegation/reassignment and controlled termination without directly forging the source business lifecycle state.
 
+### Organisation design and job architecture
+
+NuBlox V2 consumes the deterministic generated job architecture as canonical reference data while keeping tenant structure operational and separate from RBAC:
+
+```text
+/[tenant]/app/organisation/job-architecture
+/[tenant]/app/organisation/job-architecture/[profile]
+/[tenant]/app/organisation/positions
+```
+
+The catalogue exposes all 29 job families, 353 functional roles and 382 candidate job profiles generated from the enterprise taxonomy. Organisation positions reference stable canonical job-profile IDs and position assignments connect those positions to active organisation members. Neither a job profile nor a position grants permissions; organisation access roles and permission overrides remain the security authority.
+
 ### Connected CRM Party portal
 
 ```text

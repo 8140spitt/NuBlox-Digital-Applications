@@ -95,7 +95,9 @@ function validateDateRange(start: string | null, end: string | null): void {
 
 function fteValue(value: number): number {
 	if (!Number.isFinite(value) || value <= 0 || value > 1) {
-		throw new OrganisationStructureValidationError('FTE must be greater than 0 and no more than 1.00.');
+		throw new OrganisationStructureValidationError(
+			'FTE must be greater than 0 and no more than 1.00.'
+		);
 	}
 	return Math.round(value * 100) / 100;
 }
@@ -408,7 +410,8 @@ export async function assignOrganisationMemberToPosition(input: {
 			[input.actor.organisationId, input.memberPublicId]
 		);
 		const memberId = memberRows[0] ? String(memberRows[0].id) : null;
-		if (!memberId) throw new OrganisationStructureValidationError('Organisation member was not found.');
+		if (!memberId)
+			throw new OrganisationStructureValidationError('Organisation member was not found.');
 
 		if (input.assignmentType === 'primary') {
 			const [overlapRows] = await connection.execute<Array<RowDataPacket & { id: string }>>(

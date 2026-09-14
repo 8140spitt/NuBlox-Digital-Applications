@@ -89,9 +89,7 @@ export const actions: Actions = {
 				positionPublicId: String(formData.get('positionPublicId') ?? ''),
 				memberPublicId: String(formData.get('memberPublicId') ?? ''),
 				assignmentType: String(formData.get('assignmentType') ?? 'primary') as
-					| 'primary'
-					| 'acting'
-					| 'secondary',
+					'primary' | 'acting' | 'secondary',
 				allocationPercent: Number(formData.get('allocationPercent') ?? 100),
 				startDate: String(formData.get('startDate') ?? ''),
 				endDate: String(formData.get('endDate') ?? '')

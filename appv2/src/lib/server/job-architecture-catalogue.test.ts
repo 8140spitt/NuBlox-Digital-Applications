@@ -31,8 +31,8 @@ describe('job architecture catalogue', () => {
 		const procurement = listJobProfiles({ jobFamilyId: 'JF-F09' });
 		expect(procurement.length).toBeGreaterThan(1);
 		expect(procurement.every((profile) => profile.jobFamilyId === 'JF-F09')).toBe(true);
-		expect(listJobProfiles({ query: 'Strategic Analysis Specialist' }).map((profile) => profile.id)).toContain(
-			'JP-F01.02-PROFESSIONAL'
-		);
+		expect(
+			listJobProfiles({ query: 'Strategic Analysis Specialist' }).map((profile) => profile.id)
+		).toContain('JP-F01.02-PROFESSIONAL');
 	});
 });

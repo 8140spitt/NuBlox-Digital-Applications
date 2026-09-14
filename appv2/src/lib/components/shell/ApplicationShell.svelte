@@ -4,7 +4,7 @@
 	import type { Snippet } from 'svelte';
 	import NuBloxLogo from '$lib/components/brand/NuBloxLogo.svelte';
 	import { authClient } from '$lib/auth/auth-client';
-	import { routes } from '$lib/routing/route-contract';
+	import { appPath, routes } from '$lib/routing/route-contract';
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 
 	type NavIcon = 'home' | 'work' | 'functions' | 'system';
@@ -19,7 +19,7 @@
 	}: {
 		tenant: { slug: string; displayName: string };
 		user: { name: string; email: string };
-		toolAccess: { lifecycle: boolean };
+		toolAccess: { lifecycle: boolean; organisationStructure: boolean };
 		children: Snippet;
 	} = $props();
 
@@ -39,6 +39,25 @@
 				{ label: 'Function directory', href: routes.functions(tenant.slug), icon: 'functions' }
 			]
 		},
+		...(toolAccess.organisationStructure
+			? [
+					{
+						label: 'Organisation',
+						items: [
+							{
+								label: 'Job architecture',
+								href: appPath(tenant.slug, 'organisation/job-architecture'),
+								icon: 'system' as const
+							},
+							{
+								label: 'Positions',
+								href: appPath(tenant.slug, 'organisation/positions'),
+								icon: 'system' as const
+							}
+						]
+					}
+				]
+			: []),
 		{
 			label: 'Tools',
 			items: [
