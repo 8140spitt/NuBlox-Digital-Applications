@@ -10,7 +10,6 @@ permissions:
 
 jobs:
   patch:
-    if: github.event.head_commit.message != 'fix(v2): resolve final F01 lint findings'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -19,32 +18,48 @@ jobs:
           ref: feat/f01-completion-reset
           fetch-depth: 0
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
       - name: Apply lint fixes
         run: |
           python - <<'PY'
           from pathlib import Path
-
           service = Path('appv2/src/lib/server/strategy/operating-foresight-service.ts')
           text = service.read_text()
           text = text.replace('PoolConnection, ResultSetHeader, RowDataPacket', 'PoolConnection, RowDataPacket')
           service.write_text(text)
-
           page = Path('appv2/src/routes/[tenant]/app/(protected)/functions/[functionId]/+page.svelte')
           text = page.read_text()
-          text = text.replace("<script lang=\"ts\">\n", "<script lang=\"ts\">\n\timport { resolve } from '$app/paths';\n", 1)
+          if "import { resolve } from '$app/paths';" not in text:
+              text = text.replace("<script lang=\"ts\">\n", "<script lang=\"ts\">\n\timport { resolve } from '$app/paths';\n", 1)
           text = text.replace('<a href={architectureHref}>Open job architecture</a>', '<a href={resolve(architectureHref)}>Open job architecture</a>')
           page.write_text(text)
-
           strategy = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte')
           text = strategy.read_text()
-          text = text.replace("\timport { enhance } from '$app/forms';\n", "\timport { enhance } from '$app/forms';\n\timport { resolve } from '$app/paths';\n", 1)
+          if "import { resolve } from '$app/paths';" not in text:
+              text = text.replace("\timport { enhance } from '$app/forms';\n", "\timport { enhance } from '$app/forms';\n\timport { resolve } from '$app/paths';\n", 1)
           text = text.replace('<a href={area.href} class="area-card">', '<a href={resolve(area.href)} class="area-card">')
           strategy.write_text(text)
           PY
 
       - name: Format affected files
         working-directory: appv2
-        run: npx prettier --write src/lib/server/strategy/operating-foresight-service.ts 'src/routes/[tenant]/app/(protected)/functions/[functionId]/+page.svelte' 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte'
+        run: pnpm exec prettier --write src/lib/server/strategy/operating-foresight-service.ts 'src/routes/[tenant]/app/(protected)/functions/[functionId]/+page.svelte' 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/+page.svelte'
 
       - name: Commit fixes
         run: |
