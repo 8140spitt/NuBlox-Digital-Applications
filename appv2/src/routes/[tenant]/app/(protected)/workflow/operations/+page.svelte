@@ -9,6 +9,7 @@
 		StatusBadge
 	} from '$lib/components/ui';
 	import { appPath, routes } from '$lib/routing/route-contract';
+	import { resolveInternalPath } from '$lib/routing/resolve-path';
 	let { data } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
 	function healthTone(health: string): 'success' | 'warning' | 'danger' | 'neutral' {
@@ -65,7 +66,9 @@
 				{#each data.operations as operation (operation.requestPublicId)}
 					<a
 						class="operation-row"
-						href={`${appPath(tenant, 'workflow/operations')}/${operation.requestPublicId}`}
+						href={resolveInternalPath(
+							`${appPath(tenant, 'workflow/operations')}/${operation.requestPublicId}`
+						)}
 					>
 						<div class="operation-main">
 							<div class="heading">
