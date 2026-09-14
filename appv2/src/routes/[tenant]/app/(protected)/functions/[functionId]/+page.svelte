@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import FunctionBlueprint from '$lib/components/enterprise/FunctionBlueprint.svelte';
 	import { Breadcrumbs, Panel, Stat } from '$lib/components/ui';
 	import { appPath, routes } from '$lib/routing/route-contract';
@@ -62,7 +63,7 @@
 					model.
 				</p>
 			</div>
-			<a href={architectureHref}>Open job architecture</a>
+			<a href={resolve(architectureHref)}>Open job architecture</a>
 		</div>
 	</Panel>
 </div>

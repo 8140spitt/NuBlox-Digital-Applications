@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import {
 		Alert,
 		Breadcrumbs,
@@ -292,7 +293,7 @@
 		</div>
 		<div class="area-grid">
 			{#each areas as area (area.id)}
-				<a href={area.href} class="area-card">
+				<a href={resolve(area.href)} class="area-card">
 					<span class="area-id">{area.id}</span>
 					<h3>{area.name}</h3>
 					<p>{area.detail}</p>
