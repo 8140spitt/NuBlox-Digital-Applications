@@ -35,7 +35,7 @@ jobs:
           fetch-depth: 2
 
       - name: Apply lifecycle administration integration
-        run: python3 scripts/apply-lifecycle-administration-integration.py
+        run: python3 scripts/apply-lifecycle-administration-integration-v2.py
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -84,6 +84,7 @@ jobs:
       - name: Commit validated tranche and remove temporary machinery
         run: |
           rm scripts/apply-lifecycle-administration-integration.py
+          rm scripts/apply-lifecycle-administration-integration-v2.py
           rm .github/workflows/lifecycle-administration-once.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
