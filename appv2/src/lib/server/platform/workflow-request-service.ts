@@ -6,7 +6,6 @@ import { appendDomainEvidence, type EvidenceActor } from './evidence';
 import {
 	workflowNode,
 	workflowStartNode,
-	workflowSuccessors,
 	type WorkflowNode,
 	type WorkflowNodeType,
 	type WorkflowTemplate
