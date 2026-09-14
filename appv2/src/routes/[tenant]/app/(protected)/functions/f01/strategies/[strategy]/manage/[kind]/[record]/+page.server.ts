@@ -3,6 +3,10 @@ import { routes } from '$lib/routing/route-contract';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
 import { getAuth } from '$lib/server/auth/auth';
 import {
+	WorkflowAccessError,
+	WorkflowValidationError
+} from '$lib/server/platform/workflow-request-service';
+import {
 	deleteF01Record,
 	getF01ManagedRecord,
 	reviseF01Record,
@@ -15,6 +19,7 @@ import {
 	updateF01Relationships
 } from '$lib/server/strategy/f01-relationship-service';
 import { StrategyAccessError, StrategyValidationError } from '$lib/server/strategy/f01-service';
+import { submitF01WorkflowTransition } from '$lib/server/strategy/f01-workflow-service';
 import type { Actions, PageServerLoad } from './$types';
 
 const MANAGED_KINDS = new Set<F01ManagedRecordKind>([
@@ -169,6 +174,27 @@ export const actions = {
 		const targetPublicId = String(formData.get('targetPublicId') ?? '').trim();
 		const { access, actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
 		try {
+			const workflow = await submitF01WorkflowTransition({
+				actor,
+				frameworkPublicId: params.strategy,
+				kind,
+				recordPublicId: params.record,
+				targetStatus,
+				note: transitionNote
+			});
+			if (workflow) {
+				const target = routes.strategyManage(
+					access.organisationRouteSlug,
+					params.strategy,
+					kind,
+					params.record
+				);
+				redirect(
+					303,
+					`${target}?workflowSubmitted=1&workflowRequest=${encodeURIComponent(workflow.requestPublicId)}`
+				);
+			}
+
 			await transitionF01Record({
 				actor,
 				frameworkPublicId: params.strategy,
@@ -185,10 +211,10 @@ export const actions = {
 			);
 		} catch (cause) {
 			const transitionValues = { targetStatus, transitionNote, targetRecordType, targetPublicId };
-			if (cause instanceof StrategyValidationError) {
+			if (cause instanceof StrategyValidationError || cause instanceof WorkflowValidationError) {
 				return fail(400, { transitionValues, formError: cause.message });
 			}
-			if (cause instanceof StrategyAccessError) {
+			if (cause instanceof StrategyAccessError || cause instanceof WorkflowAccessError) {
 				return fail(403, { transitionValues, formError: cause.message });
 			}
 			throw cause;
