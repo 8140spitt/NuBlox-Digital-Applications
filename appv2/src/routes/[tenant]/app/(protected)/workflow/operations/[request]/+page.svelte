@@ -15,6 +15,9 @@
 	const tenant = $derived(page.params.tenant ?? 'tenant');
 	const operation = $derived(data.operation);
 	const pending = $derived(operation.requestStatus === 'pending');
+	const overdue = $derived(
+		pending && operation.dueAt ? new Date(operation.dueAt).getTime() < Date.now() : false
+	);
 	function healthTone(health: string): 'success' | 'warning' | 'danger' | 'neutral' {
 		if (health === 'green') return 'success';
 		if (health === 'amber') return 'warning';
@@ -48,9 +51,22 @@
 			>{form.formError}</Alert
 		>{:else if form?.success}<Alert tone="success" title="Workflow updated">{form.success}</Alert
 		>{/if}
+	{#if operation.health === 'red'}
+		<Alert tone="danger" title="Workflow exception requires investigation">
+			The runtime is marked stale or inconsistent. Automated restart is deliberately unavailable; use the evidence below to establish a safe recovery path.
+		</Alert>
+	{:else if operation.workStatus === 'blocked'}
+		<Alert tone="warning" title="Workflow suspended">
+			This work is intentionally blocked. Resume it only when the recorded reason has been resolved.
+		</Alert>
+	{:else if overdue}
+		<Alert tone="warning" title="Workflow is overdue">
+			The configured deadline has passed. Escalate, delegate or suspend the work as appropriate.
+		</Alert>
+	{/if}
 
 	<div class="fact-strip">
-		<div><span>Work status</span><strong>{operation.workStatus.replaceAll('_', ' ')}</strong></div>
+		<div><span>Execution</span><strong>{operation.workStatus === 'blocked' ? 'Suspended' : operation.workStatus.replaceAll('_', ' ')}</strong></div>
 		<div><span>Priority</span><strong>{operation.priority}</strong></div>
 		<div>
 			<span>Submitted</span><strong>{new Date(operation.submittedAt).toLocaleString()}</strong>
@@ -81,7 +97,7 @@
 			</Panel>
 			<Panel
 				title="Activity and evidence"
-				description="Append-only work events show what happened, who intervened and when."
+				description="Append-only work events show decisions, suspension/resume, escalation, assignment changes and termination evidence."
 			>
 				<div class="timeline">
 					{#each operation.events as event (event.id)}<article>
@@ -100,7 +116,7 @@
 			</Panel>
 			<Panel
 				title="Assignment history"
-				description="Reassignment never overwrites history; previous assignments are closed and retained."
+				description="Delegation never overwrites history; previous assignments are closed and retained."
 			>
 				<div class="timeline">
 					{#each operation.assignments as assignment (assignment.id)}<article>
@@ -121,47 +137,61 @@
 
 		<aside class="side-stack">
 			<Panel
-				title="Operational controls"
-				description="Interventions affect the work item, not the underlying business lifecycle. Every change is evidenced."
+				title="Intervention controls"
+				description="Suspend/resume and escalation change workflow work only. They never advance or rewrite the source business lifecycle."
 				padding="spacious"
 			>
 				{#if pending}
-					<form method="POST" action="?/status" use:enhance class="form-stack">
-						<Field id="status" label="Work status"
-							><select class="nb-control" id="status" name="status" value={operation.workStatus}
-								><option value="open">Open</option><option value="in_progress">In progress</option
-								><option value="blocked">Blocked</option></select
-							></Field
-						>
-						<Field id="statusReason" label="Reason"
-							><textarea class="nb-control" id="statusReason" name="reason"></textarea></Field
-						>
-						<Button type="submit" variant="secondary">Update status</Button>
-					</form>
-					<form method="POST" action="?/priority" use:enhance class="form-stack section-rule">
-						<Field id="priority" label="Priority"
-							><select class="nb-control" id="priority" name="priority" value={operation.priority}
-								><option value="low">Low</option><option value="normal">Normal</option><option
-									value="high">High</option
-								><option value="urgent">Urgent</option><option value="critical">Critical</option
-								></select
-							></Field
-						>
-						<input type="hidden" name="reason" value="Operational priority change" />
-						<Button type="submit" variant="secondary">Update priority</Button>
-					</form>
+					{#if operation.workStatus === 'blocked'}
+						<form method="POST" action="?/status" use:enhance class="form-stack intervention-block">
+							<input type="hidden" name="status" value="in_progress" />
+							<Field id="resumeReason" label="Resume note" hint="Record why the suspension condition is now resolved.">
+								<textarea class="nb-control" id="resumeReason" name="reason"></textarea>
+							</Field>
+							<Button type="submit">Resume workflow</Button>
+						</form>
+					{:else}
+						<form method="POST" action="?/status" use:enhance class="form-stack intervention-block">
+							<input type="hidden" name="status" value="blocked" />
+							<Field id="suspendReason" label="Suspension reason" required>
+								<textarea class="nb-control" id="suspendReason" name="reason" required></textarea>
+							</Field>
+							<Button type="submit" variant="secondary">Suspend workflow</Button>
+						</form>
+					{/if}
+					{#if operation.priority !== 'critical'}
+						<form method="POST" action="?/priority" use:enhance class="form-stack intervention-block section-rule">
+							<input type="hidden" name="priority" value="critical" />
+							<Field id="escalationReason" label="Escalation reason" required>
+								<textarea class="nb-control" id="escalationReason" name="reason" required></textarea>
+							</Field>
+							<Button type="submit" variant="secondary">Escalate to critical</Button>
+						</form>
+					{/if}
+					<details class="priority-disclosure">
+						<summary>Set triage priority</summary>
+						<form method="POST" action="?/priority" use:enhance class="form-stack priority-form">
+							<Field id="priority" label="Priority">
+								<select class="nb-control" id="priority" name="priority" value={operation.priority}>
+									<option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="critical">Critical</option>
+								</select>
+							</Field>
+							<input type="hidden" name="reason" value="Manual workflow triage priority change" />
+							<Button type="submit" variant="secondary">Set priority</Button>
+						</form>
+					</details>
 				{:else}<p class="muted">
-						This workflow is closed. Operational controls are locked; evidence remains available.
+						This workflow is closed. Intervention controls are locked; evidence remains available.
 					</p>{/if}
 			</Panel>
 			{#if pending}
 				<Panel
-					title="Reassign work"
-					description="Choose an active organisation member. The prior assignment remains in history."
+					title="Delegate or reassign"
+					description="Transfer responsibility to an active organisation member. The previous assignment remains attributable history."
 					padding="spacious"
 				>
 					<form method="POST" action="?/reassign" use:enhance class="form-stack">
-						<Field id="memberId" label="New assignee" required
+						<Field id="memberId" label="New responsible member" required
 							><select class="nb-control" id="memberId" name="memberId" required
 								><option value="">Select member</option
 								>{#each operation.members as member (member.memberId)}<option
@@ -169,22 +199,22 @@
 									>{/each}</select
 							></Field
 						>
-						<Field id="reassignReason" label="Reason"
-							><textarea class="nb-control" id="reassignReason" name="reason"></textarea></Field
+						<Field id="reassignReason" label="Delegation reason" required
+							><textarea class="nb-control" id="reassignReason" name="reason" required></textarea></Field
 						>
-						<Button type="submit" variant="secondary">Reassign</Button>
+						<Button type="submit" variant="secondary">Delegate responsibility</Button>
 					</form>
 				</Panel>
 				<Panel
-					title="Cancel workflow"
-					description="Use only when the workflow should no longer continue. This closes the work item and records a withdrawn workflow request."
+					title="Terminate workflow"
+					description="Stop this pending workflow without advancing the source lifecycle. The request becomes withdrawn and the canonical work item becomes cancelled."
 					padding="spacious"
 				>
 					<form method="POST" action="?/cancel" use:enhance class="form-stack">
-						<Field id="cancelReason" label="Cancellation reason" required
+						<Field id="cancelReason" label="Termination reason" required
 							><textarea class="nb-control" id="cancelReason" name="reason" required
 							></textarea></Field
-						><Button type="submit" variant="danger">Cancel workflow</Button>
+						><Button type="submit" variant="danger">Terminate workflow</Button>
 					</form>
 				</Panel>
 			{/if}
@@ -220,7 +250,7 @@
 	}
 	.workspace-grid {
 		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+		grid-template-columns: minmax(0, 1fr) minmax(300px, 380px);
 		gap: var(--nb-space-5);
 		align-items: start;
 	}
@@ -258,9 +288,22 @@
 		border-left: 3px solid var(--nb-color-border-strong);
 		color: var(--nb-color-text-secondary);
 	}
+	.intervention-block + .intervention-block,
 	.section-rule {
 		border-top: 1px solid var(--nb-color-border-subtle);
 		padding-top: var(--nb-space-4);
+	}
+	.priority-disclosure {
+		border-top: 1px solid var(--nb-color-border-subtle);
+		padding-top: var(--nb-space-3);
+	}
+	.priority-disclosure summary {
+		cursor: pointer;
+		color: var(--nb-color-action-primary);
+		font-weight: var(--nb-weight-semibold);
+	}
+	.priority-form {
+		margin-top: var(--nb-space-3);
 	}
 	code {
 		overflow-wrap: anywhere;
