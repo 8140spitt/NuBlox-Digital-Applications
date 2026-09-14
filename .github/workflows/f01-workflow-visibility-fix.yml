@@ -1,0 +1,137 @@
+name: Apply F01 workflow visibility fix
+
+on:
+  push:
+    branches:
+      - fix/f01-workflow-visibility
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/f01-workflow-visibility
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+      - name: Patch runtime visibility and UX
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace_once(path, old, new):
+              p = Path(path)
+              text = p.read_text()
+              if old not in text:
+                  raise SystemExit(f'marker not found in {path}: {old[:120]!r}')
+              p.write_text(text.replace(old, new, 1))
+
+          service = 'appv2/src/lib/server/platform/workflow-request-service.ts'
+          replace_once(
+              service,
+              "};\n\ntype AssignmentTarget = {",
+              "};\n\nexport type ActiveWorkflowRequest = PendingWorkflowTask & {\n\tactionableByMember: boolean;\n\tassigneeLabel: string;\n};\n\ntype AssignmentTarget = {"
+          )
+
+          replace_once(
+              service,
+              "function publicTask(row: WorkflowTaskRow): PendingWorkflowTask {\n\treturn {\n\t\t...row,\n\t\tstepNumber: Number(row.stepNumber),\n\t\twillCompleteOnApprove: willCompleteOnApprove(row)\n\t};\n}\n\nasync function taskAllowed(",
+              "function publicTask(row: WorkflowTaskRow): PendingWorkflowTask {\n\treturn {\n\t\t...row,\n\t\tstepNumber: Number(row.stepNumber),\n\t\twillCompleteOnApprove: willCompleteOnApprove(row)\n\t};\n}\n\nasync function sourceTaskRows(input: {\n\torganisationId: string;\n\tsourceDomain: string;\n\tsourceType: string;\n\tsourcePublicId: string;\n}): Promise<WorkflowTaskRow[]> {\n\tconst [rows] = await getPool().execute<WorkflowTaskRow[]>(\n\t\t`SELECT request.public_id AS requestPublicId,\n\t\t        item.public_id AS workItemPublicId,\n\t\t        request.workflow_key AS workflowKey,\n\t\t        request.workflow_definition AS workflowDefinition,\n\t\t        request.current_node_key AS nodeKey,\n\t\t        request.current_node_type AS nodeType,\n\t\t        request.step_number AS stepNumber,\n\t\t        request.workflow_state AS workflowState,\n\t\t        request.source_domain AS sourceDomain,\n\t\t        request.source_type AS sourceType,\n\t\t        request.source_public_id AS sourcePublicId,\n\t\t        request.context_public_id AS contextPublicId,\n\t\t        request.lifecycle_from_state AS fromState,\n\t\t        request.lifecycle_to_state AS toState,\n\t\t        request.transition_label AS transitionLabel,\n\t\t        request.required_permission_key AS requiredPermissionKey,\n\t\t        item.title, item.description, item.priority, item.status AS workStatus,\n\t\t        request.submission_note AS submissionNote, request.submitted_at AS submittedAt,\n\t\t        item.due_at AS dueAt,\n\t\t        assignment.assignment_scope AS assignmentScope,\n\t\t        CAST(assignment.assigned_member_id AS CHAR) AS assignedMemberId,\n\t\t        CAST(assignment.assigned_team_id AS CHAR) AS assignedTeamId\n\t\t FROM workflow_requests request\n\t\t JOIN work_items item ON item.id = request.work_item_id\n\t\t  AND item.owning_organisation_id = request.organisation_id\n\t\t JOIN work_item_assignments assignment ON assignment.work_item_id = item.id\n\t\t  AND assignment.work_item_owner_organisation_id = request.organisation_id\n\t\t  AND assignment.ended_at IS NULL\n\t\t WHERE request.organisation_id = ? AND request.status = 'pending'\n\t\t   AND request.source_domain = ? AND request.source_type = ? AND request.source_public_id = ?\n\t\t ORDER BY request.submitted_at DESC`,\n\t\t[input.organisationId, input.sourceDomain, input.sourceType, input.sourcePublicId]\n\t);\n\treturn rows;\n}\n\nasync function taskAllowed("
+          )
+
+          replace_once(
+              service,
+              "export async function listPendingWorkflowTasks(input: {\n\torganisationId: string;\n\tmemberId: string;\n}): Promise<PendingWorkflowTask[]> {",
+              "export async function listActiveWorkflowRequestsForSource(input: {\n\torganisationId: string;\n\tmemberId: string;\n\tsourceDomain: string;\n\tsourceType: string;\n\tsourcePublicId: string;\n}): Promise<ActiveWorkflowRequest[]> {\n\tconst rows = await sourceTaskRows(input);\n\tconst active: ActiveWorkflowRequest[] = [];\n\tfor (const row of rows) {\n\t\tconst actionableByMember = await taskAllowed(row, input.organisationId, input.memberId);\n\t\tlet assigneeLabel = 'Authorised approvers';\n\t\tif (row.assignmentScope === 'member') {\n\t\t\tassigneeLabel = row.assignedMemberId === input.memberId ? 'You' : 'Another named member';\n\t\t} else if (row.assignmentScope === 'team') {\n\t\t\tassigneeLabel = actionableByMember ? 'Your assigned team' : 'Another assigned team';\n\t\t} else if (actionableByMember) {\n\t\t\tassigneeLabel = 'You and other authorised approvers';\n\t\t}\n\t\tactive.push({ ...publicTask(row), actionableByMember, assigneeLabel });\n\t}\n\treturn active;\n}\n\nexport async function listPendingWorkflowTasks(input: {\n\torganisationId: string;\n\tmemberId: string;\n}): Promise<PendingWorkflowTask[]> {"
+          )
+
+          manage_server = 'appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.server.ts'
+          replace_once(
+              manage_server,
+              "import {\n\tWorkflowAccessError,\n\tWorkflowValidationError\n} from '$lib/server/platform/workflow-request-service';",
+              "import {\n\tlistActiveWorkflowRequestsForSource,\n\tWorkflowAccessError,\n\tWorkflowValidationError\n} from '$lib/server/platform/workflow-request-service';"
+          )
+          replace_once(
+              manage_server,
+              "\t\tconst relationshipEditor = managedRecord.canEdit\n\t\t\t? await getF01RelationshipEditor({\n\t\t\t\t\torganisationId: tenant.organisationId,\n\t\t\t\t\tmemberId: tenant.memberId,\n\t\t\t\t\tframeworkPublicId: params.strategy,\n\t\t\t\t\tkind,\n\t\t\t\t\trecordPublicId: params.record\n\t\t\t\t})\n\t\t\t: null;\n\t\treturn { managedRecord, relationshipEditor };",
+              "\t\tconst relationshipEditor = managedRecord.canEdit\n\t\t\t? await getF01RelationshipEditor({\n\t\t\t\t\torganisationId: tenant.organisationId,\n\t\t\t\t\tmemberId: tenant.memberId,\n\t\t\t\t\tframeworkPublicId: params.strategy,\n\t\t\t\t\tkind,\n\t\t\t\t\trecordPublicId: params.record\n\t\t\t\t})\n\t\t\t: null;\n\t\tconst activeWorkflows = await listActiveWorkflowRequestsForSource({\n\t\t\torganisationId: tenant.organisationId,\n\t\t\tmemberId: tenant.memberId,\n\t\t\tsourceDomain: 'F01',\n\t\t\tsourceType: kind,\n\t\t\tsourcePublicId: params.record\n\t\t});\n\t\treturn { managedRecord, relationshipEditor, activeWorkflows };"
+          )
+
+          manage_page = 'appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.svelte'
+          replace_once(
+              manage_page,
+              "\tconst record = $derived(data.managedRecord);\n\tconst relationshipEditor = $derived(data.relationshipEditor);",
+              "\tconst record = $derived(data.managedRecord);\n\tconst relationshipEditor = $derived(data.relationshipEditor);\n\tconst activeWorkflows = $derived(data.activeWorkflows ?? []);"
+          )
+          replace_once(
+              manage_page,
+              "\t<section class=\"state-card\" aria-labelledby=\"lifecycle-title\">\n\t\t<div>\n\t\t\t<p class=\"section-kicker\">Current lifecycle position</p>\n\t\t\t<h2 id=\"lifecycle-title\">{recordLabel(record.status)}</h2>\n\t\t\t<p>{lifecycleExplanation()}</p>\n\t\t</div>\n\t\t<StatusBadge label={recordLabel(record.status)} tone={statusTone(record.status)} />\n\t</section>\n",
+              "\t<section class=\"state-card\" aria-labelledby=\"lifecycle-title\">\n\t\t<div>\n\t\t\t<p class=\"section-kicker\">Current lifecycle position</p>\n\t\t\t<h2 id=\"lifecycle-title\">{recordLabel(record.status)}</h2>\n\t\t\t<p>{lifecycleExplanation()}</p>\n\t\t</div>\n\t\t<StatusBadge label={recordLabel(record.status)} tone={statusTone(record.status)} />\n\t</section>\n\n\t{#if activeWorkflows.length > 0}\n\t\t<Panel\n\t\t\ttitle=\"Workflow in progress\"\n\t\t\tdescription=\"This business object remains in its current lifecycle state until the configured workflow reaches its governed outcome.\"\n\t\t>\n\t\t\t<div class=\"workflow-progress-list\">\n\t\t\t\t{#each activeWorkflows as workflow (workflow.requestPublicId)}\n\t\t\t\t\t<article class=\"workflow-progress\">\n\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t<p class=\"section-kicker\">{workflow.transitionLabel}</p>\n\t\t\t\t\t\t\t<h3>{workflow.title}</h3>\n\t\t\t\t\t\t\t<p>{recordLabel(workflow.fromState)} → {recordLabel(workflow.toState)} · Step {workflow.stepNumber}</p>\n\t\t\t\t\t\t\t<p>Assigned to: {workflow.assigneeLabel}.</p>\n\t\t\t\t\t\t</div>\n\t\t\t\t\t\t{#if workflow.actionableByMember}\n\t\t\t\t\t\t\t<LinkButton href={routes.myWork(data.tenant.slug)}>Open in My work</LinkButton>\n\t\t\t\t\t\t{:else}\n\t\t\t\t\t\t\t<StatusBadge label=\"Awaiting another participant\" tone=\"info\" />\n\t\t\t\t\t\t{/if}\n\t\t\t\t\t</article>\n\t\t\t\t{/each}\n\t\t\t</div>\n\t\t</Panel>\n\t{/if}\n"
+          )
+          replace_once(
+              manage_page,
+              "\t\t\t\t{#each record.transitions as transition (`${record.status}-${transition.to}`)}\n\t\t\t\t\t<form method=\"POST\" action=\"?/transition\" use:enhance class=\"transition-card\">",
+              "\t\t\t\t{#each record.transitions as transition (`${record.status}-${transition.to}`)}\n\t\t\t\t\t{#if activeWorkflows.some((workflow) => workflow.toState === transition.to)}\n\t\t\t\t\t\t<div class=\"transition-card pending-transition\">\n\t\t\t\t\t\t\t<div>\n\t\t\t\t\t\t\t\t<strong>{transition.label}</strong>\n\t\t\t\t\t\t\t\t<p>{recordLabel(record.status)} → {recordLabel(transition.to)}</p>\n\t\t\t\t\t\t\t\t<p>This transition has already been submitted and cannot be submitted again while its workflow is active.</p>\n\t\t\t\t\t\t\t</div>\n\t\t\t\t\t\t\t<StatusBadge label=\"Workflow in progress\" tone=\"info\" />\n\t\t\t\t\t\t</div>\n\t\t\t\t\t{:else}\n\t\t\t\t\t\t<form method=\"POST\" action=\"?/transition\" use:enhance class=\"transition-card\">"
+          )
+          replace_once(
+              manage_page,
+              "\t\t\t\t\t</form>\n\t\t\t\t{/each}\n",
+              "\t\t\t\t\t\t</form>\n\t\t\t\t\t{/if}\n\t\t\t\t{/each}\n"
+          )
+          replace_once(
+              manage_page,
+              "</style>\n",
+              "\t.workflow-progress-list {\n\t\tdisplay: grid;\n\t\tgap: var(--nb-space-4);\n\t}\n\n\t.workflow-progress {\n\t\tdisplay: flex;\n\t\talign-items: flex-start;\n\t\tjustify-content: space-between;\n\t\tgap: var(--nb-space-5);\n\t\tpadding: var(--nb-space-4);\n\t\tborder: 1px solid var(--nb-color-border-default);\n\t\tborder-radius: var(--nb-radius-md);\n\t\tbackground: var(--nb-color-bg-subtle);\n\t}\n\n\t.workflow-progress h3,\n\t.workflow-progress p {\n\t\tmargin-top: 0;\n\t}\n\n\t.pending-transition {\n\t\topacity: 0.9;\n\t}\n\n</style>\n"
+          )
+
+          my_work = 'appv2/src/routes/[tenant]/app/(protected)/my-work/+page.svelte'
+          replace_once(
+              my_work,
+              "\t\t{:else}\n\t\t\t<div class=\"empty-state\">\n\t\t\t\t<p class=\"empty-kicker\">Queue ready</p>\n\t\t\t\t<h3>No governed work is connected yet.</h3>\n\t\t\t\t<p>\n\t\t\t\t\tV2 will only place an item here when its source record, accountable actor, lifecycle\n\t\t\t\t\tstate, next action and downstream consequence are explicit. We will connect real work\n\t\t\t\t\tsources as each business function is rebuilt.\n\t\t\t\t</p>\n\t\t\t</div>\n\t\t{/if}",
+              "\t\t{:else}\n\t\t\t<div class=\"empty-state\">\n\t\t\t\t<p class=\"empty-kicker\">Queue ready</p>\n\t\t\t\t{#if data.work.connected}\n\t\t\t\t\t<h3>Nothing is assigned to you right now.</h3>\n\t\t\t\t\t<p>\n\t\t\t\t\t\tGoverned work sources are connected. Tasks assigned to another member, another team or\n\t\t\t\t\t\tan approval group you are not authorised to act for will not appear in your personal\n\t\t\t\t\t\tqueue. When a workflow step becomes your responsibility, it will appear here automatically.\n\t\t\t\t\t</p>\n\t\t\t\t{:else}\n\t\t\t\t\t<h3>No governed work sources are connected.</h3>\n\t\t\t\t\t<p>Connect a governed work source before expecting items in this queue.</p>\n\t\t\t\t{/if}\n\t\t\t</div>\n\t\t{/if}"
+          )
+
+          runtime_test = 'appv2/src/lib/server/platform/workflow-request-runtime.integration.test.ts'
+          replace_once(
+              runtime_test,
+              "\tgetPendingWorkflowTask,\n\tlistPendingWorkflowTasks,",
+              "\tgetPendingWorkflowTask,\n\tlistActiveWorkflowRequestsForSource,\n\tlistPendingWorkflowTasks,"
+          )
+          replace_once(
+              runtime_test,
+              "\t\t});\n\n\t\tawait expect(\n\t\t\tgetPendingWorkflowTask({",
+              "\t\t});\n\n\t\tconst submitterView = await listActiveWorkflowRequestsForSource({\n\t\t\torganisationId,\n\t\t\tmemberId: actor.memberId,\n\t\t\tsourceDomain: 'test',\n\t\t\tsourceType: 'controlled-object',\n\t\t\tsourcePublicId: request.sourcePublicId ?? ''\n\t\t});\n\t\texpect(submitterView).toMatchObject([\n\t\t\t{\n\t\t\t\trequestPublicId: request.requestPublicId,\n\t\t\t\tnodeKey: 'prepare',\n\t\t\t\tactionableByMember: true,\n\t\t\t\tassigneeLabel: 'You'\n\t\t\t}\n\t\t]);\n\n\t\tawait expect(\n\t\t\tgetPendingWorkflowTask({"
+          )
+
+          p = Path(runtime_test)
+          text = p.read_text()
+          text = text.replace("\t\tconst request = await submitLifecycleWorkflow({\n", "\t\tconst sourcePublicId = randomUUID();\n\t\tconst request = await submitLifecycleWorkflow({\n", 1)
+          text = text.replace("\t\t\tsourcePublicId: randomUUID(),\n", "\t\t\tsourcePublicId,\n", 1)
+          text = text.replace("\t\t\tsourcePublicId: request.sourcePublicId ?? ''\n", "\t\t\tsourcePublicId\n", 1)
+          p.write_text(text)
+          PY
+      - name: Install and validate V2
+        working-directory: appv2
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write src/lib/server/platform/workflow-request-service.ts src/lib/server/platform/workflow-request-runtime.integration.test.ts 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.server.ts' 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.svelte' 'src/routes/[tenant]/app/(protected)/my-work/+page.svelte'
+          pnpm lint
+          pnpm check
+          pnpm test:unit
+      - name: Commit fix and remove temporary workflow
+        run: |
+          rm .github/workflows/f01-workflow-visibility-fix.yml
+          git config user.name "8140spitt"
+          git config user.email "56647740+8140spitt@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(v2): expose pending F01 workflow state"
+          git push origin HEAD:fix/f01-workflow-visibility
