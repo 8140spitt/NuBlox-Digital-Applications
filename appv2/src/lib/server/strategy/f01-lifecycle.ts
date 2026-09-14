@@ -1,3 +1,13 @@
+import {
+	assertLifecycleTransition as assertPlatformLifecycleTransition,
+	canLifecycleOperation,
+	defineLifecycleTemplate,
+	lifecycleTransitions as platformLifecycleTransitions,
+	phasePermissionKeysForRoles,
+	type LifecycleTemplate,
+	type LifecycleTransition
+} from '$lib/server/platform/lifecycle-kernel';
+
 export type F01ManagedRecordKind =
 	| 'framework'
 	| 'evidence'
@@ -14,52 +24,135 @@ export type F01ManagedRecordKind =
 	| 'review'
 	| 'decision';
 
-export type F01LifecycleTransition = {
-	to: string;
-	label: string;
-	requiresNote?: boolean;
-	requiresTargetReference?: boolean;
-	tone?: 'default' | 'danger';
-};
+export type F01LifecycleTransition = LifecycleTransition;
 
-type LifecyclePolicy = {
-	editable: readonly string[];
-	deletable: readonly string[];
-	revisable?: readonly string[];
-	transitions: Readonly<Record<string, readonly F01LifecycleTransition[]>>;
-};
+const managerAccess = [
+	{ roleKey: 'strategy.manager', permissionKeys: ['strategy.view', 'strategy.manage'] },
+	{ roleKey: 'strategy.approver', permissionKeys: ['strategy.view', 'strategy.approve'] }
+] as const;
 
-export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, LifecyclePolicy>> = {
-	framework: {
-		editable: ['draft'],
-		deletable: ['draft', 'approved'],
-		revisable: ['approved'],
-		transitions: {
-			draft: [{ to: 'approved', label: 'Approve strategy' }],
+const publishedAccess = [
+	{ roleKey: 'strategy.manager', permissionKeys: ['strategy.view', 'strategy.manage'] },
+	{ roleKey: 'strategy.approver', permissionKeys: ['strategy.view', 'strategy.approve'] },
+	{ roleKey: 'strategy.viewer', permissionKeys: ['strategy.view'] }
+] as const;
+
+function basicTemplate(
+	key: string,
+	initialState: string,
+	phases: LifecycleTemplate['phases'],
+	transitions: LifecycleTemplate['transitions']
+): LifecycleTemplate {
+	return defineLifecycleTemplate({
+		key: `f01.${key}`,
+		version: '1.0',
+		mode: 'basic',
+		enabled: true,
+		objectType: key,
+		initialState,
+		phases,
+		transitions
+	});
+}
+
+function advancedTemplate(
+	key: string,
+	initialState: string,
+	phases: LifecycleTemplate['phases'],
+	transitions: LifecycleTemplate['transitions']
+): LifecycleTemplate {
+	return defineLifecycleTemplate({
+		key: `f01.${key}`,
+		version: '1.0',
+		mode: 'advanced',
+		enabled: true,
+		objectType: key,
+		initialState,
+		phases,
+		transitions
+	});
+}
+
+export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, LifecycleTemplate>> = {
+	framework: advancedTemplate(
+		'framework',
+		'draft',
+		{
+			draft: {
+				state: 'draft',
+				label: 'Draft',
+				editable: true,
+				deletable: true,
+				accessRules: managerAccess
+			},
+			approved: {
+				state: 'approved',
+				label: 'Approved',
+				deletable: true,
+				revisable: true,
+				accessRules: publishedAccess
+			},
+			superseded: {
+				state: 'superseded',
+				label: 'Historical',
+				accessRules: publishedAccess
+			}
+		},
+		{
+			draft: [{ to: 'approved', label: 'Approve strategy', requiredPermissionKey: 'strategy.approve' }],
 			approved: [],
 			superseded: []
 		}
-	},
-	evidence: {
-		editable: ['active'],
-		deletable: ['active'],
-		transitions: {
-			active: [{ to: 'retired', label: 'Retire evidence', tone: 'danger' }],
+	),
+	evidence: basicTemplate(
+		'evidence',
+		'active',
+		{
+			active: { state: 'active', label: 'Active', editable: true, deletable: true },
+			retired: { state: 'retired', label: 'Retired' }
+		},
+		{
+			active: [
+				{
+					to: 'retired',
+					label: 'Retire evidence',
+					tone: 'danger',
+					requiredPermissionKey: 'strategy.manage'
+				}
+			],
 			retired: []
 		}
-	},
-	factor: {
-		editable: ['active'],
-		deletable: ['active'],
-		transitions: {
-			active: [{ to: 'retired', label: 'Retire factor', tone: 'danger' }],
+	),
+	factor: basicTemplate(
+		'factor',
+		'active',
+		{
+			active: { state: 'active', label: 'Active', editable: true, deletable: true },
+			retired: { state: 'retired', label: 'Retired' }
+		},
+		{
+			active: [
+				{
+					to: 'retired',
+					label: 'Retire factor',
+					tone: 'danger',
+					requiredPermissionKey: 'strategy.manage'
+				}
+			],
 			retired: []
 		}
-	},
-	assumption: {
-		editable: ['unvalidated', 'validated', 'challenged', 'invalidated'],
-		deletable: ['unvalidated'],
-		transitions: {
+	),
+	assumption: basicTemplate(
+		'assumption',
+		'unvalidated',
+		{
+			unvalidated: { state: 'unvalidated', label: 'Unvalidated', editable: true, deletable: true },
+			validated: { state: 'validated', label: 'Validated', editable: true },
+			challenged: { state: 'challenged', label: 'Challenged', editable: true },
+			invalidated: { state: 'invalidated', label: 'Invalidated', editable: true },
+			retired: { state: 'retired', label: 'Retired' }
+		},
+		{
 			unvalidated: [
 				{ to: 'validated', label: 'Validate assumption', requiresNote: true },
 				{ to: 'challenged', label: 'Challenge assumption', requiresNote: true },
@@ -78,31 +171,57 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 			invalidated: [{ to: 'retired', label: 'Retire assumption', tone: 'danger' }],
 			retired: []
 		}
-	},
-	option: {
-		editable: ['proposed'],
-		deletable: ['proposed'],
-		transitions: {
+	),
+	option: basicTemplate(
+		'option',
+		'proposed',
+		{
+			proposed: { state: 'proposed', label: 'Proposed', editable: true, deletable: true },
+			selected: { state: 'selected', label: 'Selected' },
+			rejected: { state: 'rejected', label: 'Rejected' }
+		},
+		{
 			proposed: [
-				{ to: 'selected', label: 'Select option', requiresNote: true },
-				{ to: 'rejected', label: 'Reject option', requiresNote: true, tone: 'danger' }
+				{
+					to: 'selected',
+					label: 'Select option',
+					requiresNote: true,
+					requiredPermissionKey: 'strategy.approve'
+				},
+				{
+					to: 'rejected',
+					label: 'Reject option',
+					requiresNote: true,
+					tone: 'danger',
+					requiredPermissionKey: 'strategy.approve'
+				}
 			],
 			selected: [],
 			rejected: []
 		}
-	},
-	theme: {
-		editable: ['active'],
-		deletable: ['active'],
-		transitions: {
+	),
+	theme: basicTemplate(
+		'theme',
+		'active',
+		{
+			active: { state: 'active', label: 'Active', editable: true, deletable: true },
+			retired: { state: 'retired', label: 'Retired' }
+		},
+		{
 			active: [{ to: 'retired', label: 'Retire theme', tone: 'danger' }],
 			retired: []
 		}
-	},
-	objective: {
-		editable: ['draft'],
-		deletable: ['draft'],
-		transitions: {
+	),
+	objective: basicTemplate(
+		'objective',
+		'draft',
+		{
+			draft: { state: 'draft', label: 'Draft', editable: true, deletable: true },
+			active: { state: 'active', label: 'Active' },
+			achieved: { state: 'achieved', label: 'Achieved' },
+			retired: { state: 'retired', label: 'Retired' }
+		},
+		{
 			draft: [],
 			active: [
 				{ to: 'achieved', label: 'Mark achieved', requiresNote: true },
@@ -111,24 +230,47 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 			achieved: [{ to: 'retired', label: 'Retire objective', requiresNote: true, tone: 'danger' }],
 			retired: []
 		}
-	},
-	plan: {
-		editable: ['draft'],
-		deletable: ['draft', 'approved'],
-		revisable: ['approved'],
-		transitions: {
-			draft: [{ to: 'approved', label: 'Approve business plan' }],
+	),
+	plan: advancedTemplate(
+		'plan',
+		'draft',
+		{
+			draft: {
+				state: 'draft',
+				label: 'Draft',
+				editable: true,
+				deletable: true,
+				accessRules: managerAccess
+			},
+			approved: {
+				state: 'approved',
+				label: 'Approved',
+				deletable: true,
+				revisable: true,
+				accessRules: publishedAccess
+			},
+			superseded: { state: 'superseded', label: 'Historical', accessRules: publishedAccess }
+		},
+		{
+			draft: [
+				{ to: 'approved', label: 'Approve business plan', requiredPermissionKey: 'strategy.approve' }
+			],
 			approved: [],
 			superseded: []
 		}
-	},
-	initiative: {
-		editable: ['proposed', 'approved', 'in_progress'],
-		deletable: ['proposed'],
-		transitions: {
-			proposed: [
-				{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }
-			],
+	),
+	initiative: basicTemplate(
+		'initiative',
+		'proposed',
+		{
+			proposed: { state: 'proposed', label: 'Proposed', editable: true, deletable: true },
+			approved: { state: 'approved', label: 'Approved', editable: true },
+			in_progress: { state: 'in_progress', label: 'In progress', editable: true },
+			completed: { state: 'completed', label: 'Completed' },
+			cancelled: { state: 'cancelled', label: 'Cancelled' }
+		},
+		{
+			proposed: [{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }],
 			approved: [
 				{ to: 'in_progress', label: 'Start initiative', requiresNote: true },
 				{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }
@@ -140,17 +282,20 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 			completed: [],
 			cancelled: []
 		}
-	},
-	requirement: {
-		editable: ['identified'],
-		deletable: ['identified'],
-		transitions: {
-			identified: [
-				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
-			],
-			requested: [
-				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
-			],
+	),
+	requirement: basicTemplate(
+		'requirement',
+		'identified',
+		{
+			identified: { state: 'identified', label: 'Identified', editable: true, deletable: true },
+			requested: { state: 'requested', label: 'Requested' },
+			committed: { state: 'committed', label: 'Committed' },
+			satisfied: { state: 'satisfied', label: 'Satisfied' },
+			cancelled: { state: 'cancelled', label: 'Cancelled' }
+		},
+		{
+			identified: [{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }],
+			requested: [{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }],
 			committed: [
 				{ to: 'satisfied', label: 'Mark requirement satisfied', requiresNote: true },
 				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
@@ -158,41 +303,81 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 			satisfied: [],
 			cancelled: []
 		}
-	},
-	handoff: {
-		editable: ['requested'],
-		deletable: [],
-		transitions: {
+	),
+	handoff: basicTemplate(
+		'handoff',
+		'requested',
+		{
+			requested: { state: 'requested', label: 'Requested', editable: true },
+			accepted: { state: 'accepted', label: 'Accepted' },
+			rejected: { state: 'rejected', label: 'Rejected' },
+			fulfilled: { state: 'fulfilled', label: 'Fulfilled' },
+			cancelled: { state: 'cancelled', label: 'Cancelled' }
+		},
+		{
 			requested: [{ to: 'cancelled', label: 'Cancel handoff', requiresNote: true, tone: 'danger' }],
 			accepted: [],
 			rejected: [],
 			fulfilled: [],
 			cancelled: []
 		}
-	},
-	kpi: {
-		editable: ['draft'],
-		deletable: ['draft', 'approved'],
-		revisable: ['approved'],
-		transitions: {
-			draft: [{ to: 'approved', label: 'Approve KPI' }],
+	),
+	kpi: advancedTemplate(
+		'kpi',
+		'draft',
+		{
+			draft: {
+				state: 'draft',
+				label: 'Draft',
+				editable: true,
+				deletable: true,
+				accessRules: managerAccess
+			},
+			approved: {
+				state: 'approved',
+				label: 'Approved',
+				deletable: true,
+				revisable: true,
+				accessRules: publishedAccess
+			},
+			superseded: { state: 'superseded', label: 'Historical', accessRules: publishedAccess },
+			retired: { state: 'retired', label: 'Retired', accessRules: publishedAccess }
+		},
+		{
+			draft: [{ to: 'approved', label: 'Approve KPI', requiredPermissionKey: 'strategy.approve' }],
 			approved: [{ to: 'retired', label: 'Retire KPI', requiresNote: true, tone: 'danger' }],
 			superseded: [],
 			retired: []
 		}
-	},
-	review: {
-		editable: ['draft'],
-		deletable: ['draft'],
-		transitions: {
-			draft: [{ to: 'approved', label: 'Approve review' }],
+	),
+	review: advancedTemplate(
+		'review',
+		'draft',
+		{
+			draft: {
+				state: 'draft',
+				label: 'Draft',
+				editable: true,
+				deletable: true,
+				accessRules: managerAccess
+			},
+			approved: { state: 'approved', label: 'Approved', accessRules: publishedAccess }
+		},
+		{
+			draft: [{ to: 'approved', label: 'Approve review', requiredPermissionKey: 'strategy.approve' }],
 			approved: []
 		}
-	},
-	decision: {
-		editable: ['open', 'in_progress'],
-		deletable: ['open'],
-		transitions: {
+	),
+	decision: basicTemplate(
+		'decision',
+		'open',
+		{
+			open: { state: 'open', label: 'Open', editable: true, deletable: true },
+			in_progress: { state: 'in_progress', label: 'In progress', editable: true },
+			completed: { state: 'completed', label: 'Completed' },
+			cancelled: { state: 'cancelled', label: 'Cancelled' }
+		},
+		{
 			open: [
 				{ to: 'in_progress', label: 'Start action', requiresNote: true },
 				{ to: 'completed', label: 'Complete action', requiresNote: true },
@@ -205,30 +390,30 @@ export const F01_LIFECYCLE_POLICIES: Readonly<Record<F01ManagedRecordKind, Lifec
 			completed: [],
 			cancelled: []
 		}
-	}
+	)
 };
 
-export function lifecyclePolicy(kind: F01ManagedRecordKind): LifecyclePolicy {
-	return F01_LIFECYCLE_POLICIES[kind];
+export function lifecycleTemplate(kind: F01ManagedRecordKind): LifecycleTemplate {
+	return F01_LIFECYCLE_TEMPLATES[kind];
 }
 
 export function canEditF01Record(kind: F01ManagedRecordKind, status: string): boolean {
-	return lifecyclePolicy(kind).editable.includes(status);
+	return canLifecycleOperation(lifecycleTemplate(kind), status, 'edit');
 }
 
 export function canDeleteF01Record(kind: F01ManagedRecordKind, status: string): boolean {
-	return lifecyclePolicy(kind).deletable.includes(status);
+	return canLifecycleOperation(lifecycleTemplate(kind), status, 'delete');
 }
 
 export function canReviseF01Record(kind: F01ManagedRecordKind, status: string): boolean {
-	return lifecyclePolicy(kind).revisable?.includes(status) ?? false;
+	return canLifecycleOperation(lifecycleTemplate(kind), status, 'revise');
 }
 
 export function lifecycleTransitions(
 	kind: F01ManagedRecordKind,
 	status: string
 ): readonly F01LifecycleTransition[] {
-	return lifecyclePolicy(kind).transitions[status] ?? [];
+	return platformLifecycleTransitions(lifecycleTemplate(kind), status);
 }
 
 export function assertLifecycleTransition(
@@ -236,9 +421,13 @@ export function assertLifecycleTransition(
 	from: string,
 	to: string
 ): F01LifecycleTransition {
-	const transition = lifecycleTransitions(kind, from).find((candidate) => candidate.to === to);
-	if (!transition) {
-		throw new Error(`Invalid ${kind} lifecycle transition: ${from} → ${to}.`);
-	}
-	return transition;
+	return assertPlatformLifecycleTransition(lifecycleTemplate(kind), from, to);
+}
+
+export function f01PhasePermissionKeys(
+	kind: F01ManagedRecordKind,
+	status: string,
+	roleKeys: readonly string[]
+): readonly string[] {
+	return phasePermissionKeysForRoles(lifecycleTemplate(kind), status, roleKeys);
 }
