@@ -3,6 +3,7 @@
 	import { page } from '$app/state';
 	import { Alert, Breadcrumbs, Button, Field, PageHeader, Panel } from '$lib/components/ui';
 	import { appPath, routes } from '$lib/routing/route-contract';
+	import { resolveInternalPath } from '$lib/routing/resolve-path';
 
 	let { form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
@@ -54,7 +55,7 @@
 				>
 			</Field>
 			<div class="actions">
-				<a class="cancel" href={appPath(tenant, 'workflow')}>Cancel</a>
+				<a class="cancel" href={resolveInternalPath(appPath(tenant, 'workflow'))}>Cancel</a>
 				<Button type="submit">Create and open designer</Button>
 			</div>
 		</form>
