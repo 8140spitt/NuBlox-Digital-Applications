@@ -1,0 +1,112 @@
+name: Repair and Validate F01 Cascade
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/f01-ui-cascade-retry.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  repair-validate-commit:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_f01_validation
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Repair migration and apply product changes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('database/migrations/20260914004500_f01_parent_delete_cascades.sql')
+          text = p.read_text()
+          parts = text.split(';')
+          out = []
+          for part in parts:
+              if part.lstrip().startswith('ALTER TABLE') and 'DROP FOREIGN KEY' in part and 'ADD CONSTRAINT' in part:
+                  lines = part.splitlines()
+                  header = lines[0]
+                  idx = next(i for i, line in enumerate(lines) if 'ADD CONSTRAINT' in line)
+                  drops = lines[1:idx]
+                  adds = lines[idx:]
+                  if drops:
+                      drops[-1] = drops[-1].rstrip().rstrip(',')
+                  out.append('\n'.join([header] + drops) + ';')
+                  out.append('\n'.join([header] + adds) + ';')
+              else:
+                  out.append(part + (';' if part != parts[-1] else ''))
+          p.write_text(''.join(out))
+          PY
+          python3 scripts/f01-ui-cascade-repair.py
+          rm scripts/f01-ui-cascade-repair.py
+          rm .github/workflows/f01-ui-cascade-apply.yml
+          rm .github/workflows/f01-ui-cascade-retry.yml
+
+      - name: Apply migrations
+        run: pnpm dlx dbmate@2.34.1 --migrations-dir database/migrations --no-dump-schema up
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Format
+        working-directory: appv2
+        run: pnpm format
+
+      - name: Lint
+        working-directory: appv2
+        run: pnpm lint
+
+      - name: Type-check
+        working-directory: appv2
+        run: pnpm check
+
+      - name: Unit tests
+        working-directory: appv2
+        run: pnpm test:unit
+
+      - name: F01 real-MySQL golden thread
+        working-directory: appv2
+        run: pnpm test:integration
+
+      - name: Production build
+        working-directory: appv2
+        run: pnpm build
+
+      - name: Commit validated repair
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git diff --cached --quiet && exit 1
+          git commit -m 'fix(v2): normalize F01 spacing and governed cascade deletion'
+          git push origin HEAD:main
