@@ -1,9 +1,11 @@
+import { hasPermission } from '$lib/server/auth/permission-service';
 import type { EvidenceActor } from '$lib/server/platform/evidence';
 import {
 	finaliseWorkflowRequest,
 	getPendingWorkflowTask,
 	submitLifecycleWorkflow,
 	type WorkflowDecision,
+	WorkflowAccessError,
 	WorkflowValidationError
 } from '$lib/server/platform/workflow-request-service';
 import type { F01ManagedRecordKind } from './f01-lifecycle';
@@ -66,6 +68,18 @@ export async function submitF01WorkflowTransition(input: {
 	if (transition.requiresTargetReference) {
 		throw new StrategyValidationError(
 			'This workflow transition requires a governed target reference and is not yet eligible for generic routing.'
+		);
+	}
+
+	const submitPermissionKey = transition.requiredPermissionKey ?? 'strategy.manage';
+	const canSubmit = await hasPermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		permissionKey: submitPermissionKey
+	});
+	if (!canSubmit) {
+		throw new WorkflowAccessError(
+			`You are not authorised to submit this lifecycle transition (${submitPermissionKey}).`
 		);
 	}
 
