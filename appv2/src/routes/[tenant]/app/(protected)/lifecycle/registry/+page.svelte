@@ -109,7 +109,7 @@
 					<div class="definition-block">
 						<strong>Starter workflows</strong>
 						<ul>
-							{#each object.workflows as workflow}
+							{#each object.workflows as workflow (workflow.family)}
 								<li>{workflow.name}</li>
 							{/each}
 						</ul>
