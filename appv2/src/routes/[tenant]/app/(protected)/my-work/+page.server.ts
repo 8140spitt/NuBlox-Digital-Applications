@@ -17,13 +17,15 @@ function workStatus(status: string): WorkItem['status'] {
 
 export const load: PageServerLoad = async ({ parent, params }) => {
 	const { tenant } = await parent();
-	const tasks = await listPendingWorkflowTasks({
-		organisationId: tenant.organisationId,
-		memberId: tenant.memberId
-	});
+	const tasks = (
+		await listPendingWorkflowTasks({
+			organisationId: tenant.organisationId,
+			memberId: tenant.memberId
+		})
+	).filter((task) => task.sourceDomain === 'F01');
 	const items: WorkItem[] = tasks.map((task) => ({
 		id: task.requestPublicId,
-		functionId: task.sourceDomain === 'F01' ? 'F01' : 'F01',
+		functionId: 'F01',
 		kind: 'approval',
 		priority: workPriority(task.priority),
 		status: workStatus(task.workStatus),
