@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { enhance } from '$app/forms';
 	import {
+		Alert,
 		Breadcrumbs,
-		LifecycleStrip,
+		Button,
 		LinkButton,
 		Panel,
 		RecordHeader,
@@ -10,98 +12,119 @@
 	} from '$lib/components/ui';
 	import { routes } from '$lib/routing/route-contract';
 
-	let { data } = $props();
+	let { data, form } = $props();
 	const framework = $derived(data.framework);
+	const readiness = $derived(data.readiness);
+	const approval = $derived(data.approvalStatus);
 
-	function statusLabel(status: 'draft' | 'approved' | 'superseded'): string {
-		if (status === 'approved') return 'Approved';
-		if (status === 'superseded') return 'Superseded';
-		return 'Draft';
+	function statusLabel(): string {
+		if (approval) return 'Under review';
+		if (framework.lifecycleStatus === 'approved') return 'Active strategy';
+		if (framework.lifecycleStatus === 'superseded') return 'Historical';
+		return 'Working draft';
 	}
 
-	function statusTone(
-		status: 'draft' | 'approved' | 'superseded'
-	): 'warning' | 'success' | 'neutral' {
-		if (status === 'approved') return 'success';
-		if (status === 'superseded') return 'neutral';
+	function statusTone(): 'warning' | 'success' | 'neutral' | 'info' {
+		if (approval) return 'info';
+		if (framework.lifecycleStatus === 'approved') return 'success';
+		if (framework.lifecycleStatus === 'superseded') return 'neutral';
 		return 'warning';
 	}
 
-	const lifecycle = $derived(
-		framework.lifecycleStatus === 'draft'
-			? [
-					{ label: 'Draft', state: 'current' as const },
-					{ label: 'Approval', state: 'upcoming' as const }
-				]
-			: framework.lifecycleStatus === 'approved'
-				? [
-						{ label: 'Draft', state: 'complete' as const },
-						{ label: 'Approved · current', state: 'current' as const }
-					]
-				: [
-						{ label: 'Draft', state: 'complete' as const },
-						{ label: 'Approved', state: 'complete' as const },
-						{ label: 'Historical', state: 'current' as const }
-					]
-	);
+	const readinessItems = $derived([
+		{
+			label: 'Strategic choice selected',
+			ready: readiness.selectedOptionCount > 0,
+			detail: `${readiness.selectedOptionCount} selected option${readiness.selectedOptionCount === 1 ? '' : 's'}`
+		},
+		{
+			label: 'Strategic themes established',
+			ready: readiness.activeThemeCount > 0,
+			detail: `${readiness.activeThemeCount} active theme${readiness.activeThemeCount === 1 ? '' : 's'}`
+		},
+		{
+			label: 'Objectives trace to choice and theme',
+			ready:
+				readiness.traceableCandidateObjectiveCount > 0 &&
+				readiness.traceableCandidateObjectiveCount === readiness.approvalCandidateObjectiveCount,
+			detail: `${readiness.traceableCandidateObjectiveCount}/${readiness.approvalCandidateObjectiveCount} traceable objectives`
+		},
+		{
+			label: 'No competing approved strategy',
+			ready: readiness.conflictingApprovedStrategy === null,
+			detail: readiness.conflictingApprovedStrategy
+				? `${readiness.conflictingApprovedStrategy.code} is currently approved`
+				: 'Clear to proceed'
+		}
+	]);
 
 	const areas = $derived([
-		{ id: 'F01.01', name: 'Direction', detail: 'Purpose, vision and mission', value: 'Defined' },
+		{
+			id: 'F01.01',
+			name: 'Direction',
+			detail: 'Purpose, vision and mission',
+			value: 'Defined',
+			href: routes.strategyManage(data.tenant.slug, framework.publicId, 'framework', framework.publicId)
+		},
 		{
 			id: 'F01.02',
 			name: 'Environment',
-			detail: 'Internal and external evidence',
-			value: `${framework.environmentFactorCount} factors`
+			detail: 'Evidence, factors and assumptions',
+			value: `${framework.environmentFactorCount} factors`,
+			href: routes.strategyAnalysis(data.tenant.slug, framework.publicId)
 		},
 		{
 			id: 'F01.03',
-			name: 'Objectives',
-			detail: 'Strategic choices and outcomes',
-			value: `${framework.objectiveCount} objectives`
+			name: 'Strategic choices',
+			detail: 'Options, themes and objectives',
+			value: `${framework.objectiveCount} objectives`,
+			href: routes.strategyPlanning(data.tenant.slug, framework.publicId)
 		},
 		{
 			id: 'F01.04',
 			name: 'Business plan',
 			detail: 'Plans, initiatives and resources',
-			value: `${framework.businessPlanCount} plans · ${framework.initiativeCount} initiatives`
+			value: `${framework.businessPlanCount} plans · ${framework.initiativeCount} initiatives`,
+			href: routes.strategyBusinessPlanning(data.tenant.slug, framework.publicId)
 		},
 		{
 			id: 'F01.05',
 			name: 'Operating model',
 			detail: 'Current-to-target enterprise design',
-			value: `${framework.operatingModelComponentCount} components`
+			value: `${framework.operatingModelComponentCount} components`,
+			href: routes.strategyOperatingModel(data.tenant.slug, framework.publicId)
 		},
 		{
 			id: 'F01.06',
 			name: 'Performance',
-			detail: 'Goals, KPIs, targets and actuals',
-			value: `${framework.kpiCount} KPIs`
+			detail: 'KPIs, targets and actuals',
+			value: `${framework.kpiCount} KPIs`,
+			href: routes.strategyPerformance(data.tenant.slug, framework.publicId)
 		},
 		{
 			id: 'F01.07',
-			name: 'Review',
+			name: 'Strategic review',
 			detail: 'Evidence, decisions and corrective action',
-			value: `${framework.reviewCount} reviews`
+			value: `${framework.reviewCount} reviews`,
+			href: routes.strategyReview(data.tenant.slug, framework.publicId)
 		},
 		{
 			id: 'F01.08',
-			name: 'Foresight',
-			detail: 'Scenarios and alternative futures',
-			value: `${framework.scenarioCount} scenarios`
+			name: 'Scenario & foresight',
+			detail: 'Alternative futures and stress testing',
+			value: `${framework.scenarioCount} scenarios`,
+			href: routes.strategyForesight(data.tenant.slug, framework.publicId)
 		}
 	]);
 </script>
 
 <svelte:head>
 	<title>{framework.title} · Strategy · NuBlox</title>
-	<meta name="description" content="Governed F01 strategy record workspace." />
+	<meta name="description" content="F01 strategy management workspace." />
 </svelte:head>
 
 {#snippet recordStatus()}
-	<StatusBadge
-		label={statusLabel(framework.lifecycleStatus)}
-		tone={statusTone(framework.lifecycleStatus)}
-	/>
+	<StatusBadge label={statusLabel()} tone={statusTone()} />
 {/snippet}
 
 {#snippet recordMeta()}
@@ -109,10 +132,7 @@
 		<span>{framework.code} · v{framework.versionLabel}</span>
 		<span aria-hidden="true">•</span>
 		<span>{framework.horizonStart} → {framework.horizonEnd}</span>
-		{#if framework.isOwnedByCurrentMember}
-			<span aria-hidden="true">•</span>
-			<span>Owned by you</span>
-		{/if}
+		{#if framework.isOwnedByCurrentMember}<span aria-hidden="true">•</span><span>Owned by you</span>{/if}
 	</div>
 {/snippet}
 
@@ -134,348 +154,131 @@
 		meta={recordMeta}
 	/>
 
-	<section class="lifecycle-panel" aria-labelledby="version-lifecycle-title">
-		<div>
-			<p class="section-kicker">Governed version · v{framework.versionLabel}</p>
-			<h2 id="version-lifecycle-title">
-				Version history and business lifecycle are separate controls.
-			</h2>
-		</div>
-		<div class="lifecycle-controls">
-			<LifecycleStrip steps={lifecycle} label="Strategy version lifecycle" />
-			<LinkButton
-				href={routes.strategyManage(
-					data.tenant.slug,
-					framework.publicId,
-					'framework',
-					framework.publicId
-				)}
-				variant="secondary">Manage / lifecycle</LinkButton
-			>
-		</div>
-	</section>
+	{#if form?.formError}<Alert tone="danger" title="Action not completed">{form.formError}</Alert>{/if}
+
+	{#if approval}
+		<section class="approval-card" aria-labelledby="approval-title">
+			<div>
+				<p class="section-kicker">Strategy review in progress</p>
+				<h2 id="approval-title">{approval.activityTitle}</h2>
+				<p>
+					Submitted {new Date(approval.submittedAt).toLocaleString()}. The strategy remains a working
+					draft until the review reaches an approved outcome.
+				</p>
+				<p class="assignment">Currently with: <strong>{approval.assigneeLabel}</strong></p>
+			</div>
+			{#if approval.actionableByMember}
+				<LinkButton href={routes.myWork(data.tenant.slug)}>Open my review task</LinkButton>
+			{:else}
+				<StatusBadge label="Awaiting review" tone="info" />
+			{/if}
+		</section>
+	{/if}
+
+	{#if framework.lifecycleStatus === 'draft' && !approval}
+		<section class="readiness-card" aria-labelledby="readiness-title">
+			<div class="readiness-heading">
+				<div>
+					<p class="section-kicker">Approval readiness</p>
+					<h2 id="readiness-title">Is the strategy ready for review?</h2>
+				</div>
+				<StatusBadge label={readiness.ready ? 'Ready for review' : 'Development required'} tone={readiness.ready ? 'success' : 'warning'} />
+			</div>
+			<div class="readiness-grid">
+				{#each readinessItems as item (item.label)}
+					<div class:ready={item.ready}>
+						<span aria-hidden="true">{item.ready ? '✓' : '○'}</span>
+						<div><strong>{item.label}</strong><small>{item.detail}</small></div>
+					</div>
+				{/each}
+			</div>
+			<div class="readiness-actions">
+				{#if data.permissions.canManage}
+					<LinkButton href={routes.strategyManage(data.tenant.slug, framework.publicId, 'framework', framework.publicId)} variant="secondary">Edit direction</LinkButton>
+				{/if}
+				{#if readiness.ready}
+					<form method="POST" action="?/submitForReview" use:enhance><Button type="submit">Submit strategy for review</Button></form>
+				{/if}
+			</div>
+		</section>
+	{:else if framework.lifecycleStatus === 'approved'}
+		<section class="active-card">
+			<div>
+				<p class="section-kicker">Approved strategic direction</p>
+				<h2>This strategy is the current governing context for planning and execution.</h2>
+				<p>Business plans, target operating model, KPIs, strategic reviews and foresight all reference this approved strategy version.</p>
+			</div>
+			{#if data.permissions.canManage}
+				<LinkButton href={routes.strategyManage(data.tenant.slug, framework.publicId, 'framework', framework.publicId)} variant="secondary">Create controlled revision</LinkButton>
+			{/if}
+		</section>
+	{/if}
 
 	<section class="direction-grid" aria-label="Strategic direction">
-		<Panel
-			title="Purpose"
-			description="Why the organisation exists and the enduring value it creates."
-		>
-			<p class="direction-copy">{framework.purpose}</p>
-		</Panel>
-		<Panel title="Vision" description="The future state this strategy is intended to achieve.">
-			<p class="direction-copy">{framework.vision}</p>
-		</Panel>
-		<Panel
-			title="Mission"
-			description="How the organisation expresses its enduring remit within this strategic frame."
-		>
-			<p class="direction-copy">
-				{framework.mission ?? 'No separate mission statement has been defined.'}
-			</p>
-		</Panel>
+		<Panel title="Purpose" description="Why the organisation exists and the enduring value it creates."><p class="direction-copy">{framework.purpose}</p></Panel>
+		<Panel title="Vision" description="The future state this strategy is intended to achieve."><p class="direction-copy">{framework.vision}</p></Panel>
+		<Panel title="Mission" description="How the organisation expresses its enduring remit within this strategic frame."><p class="direction-copy">{framework.mission ?? 'No separate mission statement has been defined.'}</p></Panel>
 	</section>
 
 	<section class="stat-grid" aria-label="Strategy system summary">
-		<Stat
-			label="Environmental evidence"
-			value={String(framework.environmentFactorCount)}
-			detail="Active factors"
-			tone="info"
-		/>
+		<Stat label="Environmental factors" value={String(framework.environmentFactorCount)} detail="Evidence-led context" tone="info" />
 		<Stat label="Objectives" value={String(framework.objectiveCount)} detail="Strategic outcomes" />
-		<Stat
-			label="Initiatives"
-			value={String(framework.initiativeCount)}
-			detail="Open delivery commitments"
-		/>
+		<Stat label="Initiatives" value={String(framework.initiativeCount)} detail="Delivery commitments" />
 		<Stat label="KPIs" value={String(framework.kpiCount)} detail="Outcome measures" />
-	</section>
-
-	<section class="active-workspaces" aria-labelledby="active-workspaces-title">
-		<div>
-			<p class="section-kicker">Active strategy workflow</p>
-			<h2 id="active-workspaces-title">
-				Move from evidence to strategic choice without losing the thread.
-			</h2>
-			<p>
-				F01.02 now governs structured evidence, environmental factors, implications and assumptions.
-				F01.03 consumes those records as drivers for options, decisions, themes and traceable
-				objectives.
-			</p>
-		</div>
-		<div class="workspace-actions">
-			<LinkButton
-				href={routes.strategyAnalysis(data.tenant.slug, framework.publicId)}
-				variant="secondary">F01.02 Environmental analysis</LinkButton
-			>
-			<LinkButton href={routes.strategyPlanning(data.tenant.slug, framework.publicId)}
-				>F01.03 Strategic planning</LinkButton
-			>
-		</div>
 	</section>
 
 	<section class="management-system" aria-labelledby="management-system-title">
 		<div class="section-heading">
 			<div>
 				<p class="section-kicker">F01.01–F01.08</p>
-				<h2 id="management-system-title">One strategy record, eight connected management areas</h2>
+				<h2 id="management-system-title">One strategy, eight connected management areas</h2>
 			</div>
-			<p>
-				This workspace remains the stable strategic context. F01.02 and F01.03 now have focused
-				record workspaces and governed transactions; later sub-functions will attach to the same
-				strategy cycle rather than creating parallel applications.
-			</p>
+			<p>Work through the strategy as a connected management cycle. Each area contributes to the same controlled strategy context and evidence trail.</p>
 		</div>
-
 		<div class="area-grid">
 			{#each areas as area (area.id)}
-				<article>
+				<a href={area.href} class="area-card">
 					<span class="area-id">{area.id}</span>
 					<h3>{area.name}</h3>
 					<p>{area.detail}</p>
 					<strong>{area.value}</strong>
-				</article>
+				</a>
 			{/each}
 		</div>
 	</section>
-
-	<Panel
-		title="Current control position"
-		description="NuBlox separates record state from future workflow controls so authority is never implied by a button that is not yet implemented."
-	>
-		<div class="control-position">
-			<div>
-				<strong>{statusLabel(framework.lifecycleStatus)}</strong>
-				<p>
-					{#if framework.lifecycleStatus === 'draft'}
-						This version can be developed by authorised strategy managers. Approval will remain
-						gated by evidence, strategic choices and objectives rather than a generic status edit.
-					{:else if framework.lifecycleStatus === 'approved'}
-						This version is approved enterprise evidence. Material change must be introduced through
-						a controlled revision rather than editing approved history.
-					{:else}
-						This version remains preserved as enterprise history and is no longer the current
-						approved strategic direction.
-					{/if}
-				</p>
-			</div>
-			<div class="permission-summary">
-				<span>View</span><strong>Yes</strong>
-				<span>Manage</span><strong>{data.permissions.canManage ? 'Yes' : 'No'}</strong>
-				<span>Approve</span><strong>{data.permissions.canApprove ? 'Yes' : 'No'}</strong>
-			</div>
-		</div>
-	</Panel>
 </div>
 
 <style>
-	.strategy-workspace {
-		display: grid;
-		gap: var(--nb-space-8);
-		padding-bottom: var(--nb-space-16);
+	.strategy-workspace { display: grid; gap: var(--nb-space-8); padding-bottom: var(--nb-space-16); }
+	.record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: var(--nb-space-2); }
+	.section-kicker { margin: 0; color: var(--nb-color-text-muted); font-size: var(--nb-font-size-xs); font-weight: var(--nb-weight-semibold); letter-spacing: .09em; text-transform: uppercase; }
+	.approval-card, .readiness-card, .active-card { border: 1px solid var(--nb-color-border-default); border-radius: var(--nb-radius-lg); background: var(--nb-color-bg-surface); padding: var(--nb-space-6); }
+	.approval-card, .active-card { display: flex; align-items: center; justify-content: space-between; gap: var(--nb-space-8); }
+	.approval-card h2, .readiness-card h2, .active-card h2, .section-heading h2 { margin: var(--nb-space-2) 0 0; font-size: var(--nb-font-size-xl); letter-spacing: -.025em; }
+	.approval-card p, .active-card p, .section-heading p { color: var(--nb-color-text-secondary); line-height: var(--nb-line-relaxed); }
+	.assignment { margin-bottom: 0; }
+	.readiness-heading, .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--nb-space-6); }
+	.readiness-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--nb-space-3); margin-top: var(--nb-space-5); }
+	.readiness-grid > div { display: flex; gap: var(--nb-space-3); padding: var(--nb-space-4); border: 1px solid var(--nb-color-border-default); border-radius: var(--nb-radius-md); background: var(--nb-color-bg-subtle); }
+	.readiness-grid > div.ready > span { color: var(--nb-color-success-text); }
+	.readiness-grid small { display: block; margin-top: 3px; color: var(--nb-color-text-muted); }
+	.readiness-actions { display: flex; justify-content: flex-end; gap: var(--nb-space-3); margin-top: var(--nb-space-5); }
+	.direction-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--nb-space-5); }
+	.direction-copy { margin: 0; color: var(--nb-color-text-secondary); line-height: var(--nb-line-relaxed); }
+	.stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--nb-space-5); }
+	.management-system { display: grid; gap: var(--nb-space-5); }
+	.section-heading > p { max-width: 660px; margin: 0; }
+	.area-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--nb-space-4); }
+	.area-card { display: grid; gap: var(--nb-space-2); min-height: 180px; padding: var(--nb-space-5); border: 1px solid var(--nb-color-border-default); border-radius: var(--nb-radius-lg); background: var(--nb-color-bg-surface); color: inherit; text-decoration: none; }
+	.area-card:hover { border-color: var(--nb-blue-60); }
+	.area-id { color: var(--nb-color-text-muted); font-size: var(--nb-font-size-xs); font-weight: var(--nb-weight-semibold); letter-spacing: .08em; }
+	.area-card h3 { margin: 0; }
+	.area-card p { margin: 0; color: var(--nb-color-text-secondary); }
+	.area-card strong { align-self: end; }
+	@media (max-width: 900px) {
+		.area-grid, .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+		.direction-grid, .readiness-grid { grid-template-columns: 1fr; }
+		.approval-card, .active-card, .readiness-heading, .section-heading { align-items: flex-start; flex-direction: column; }
 	}
-
-	.record-meta {
-		display: flex;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: var(--nb-space-2);
-	}
-
-	.lifecycle-panel,
-	.active-workspaces {
-		display: grid;
-		grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
-		gap: var(--nb-space-10);
-		align-items: center;
-		padding: var(--nb-space-6);
-		border: 1px solid var(--nb-color-border-default);
-		border-radius: var(--nb-radius-lg);
-		background: var(--nb-color-bg-surface);
-	}
-
-	.section-kicker {
-		margin: 0;
-		color: var(--nb-color-text-muted);
-		font-size: var(--nb-font-size-xs);
-		font-weight: var(--nb-weight-semibold);
-		letter-spacing: 0.1em;
-		text-transform: uppercase;
-	}
-
-	.lifecycle-panel h2,
-	.active-workspaces h2,
-	.section-heading h2 {
-		margin: var(--nb-space-2) 0 0;
-		font-size: var(--nb-font-size-xl);
-		letter-spacing: -0.025em;
-	}
-
-	.active-workspaces p {
-		margin: var(--nb-space-3) 0 0;
-		color: var(--nb-color-text-secondary);
-		line-height: var(--nb-line-relaxed);
-	}
-
-	.lifecycle-controls {
-		display: grid;
-		gap: var(--nb-space-4);
-	}
-	.lifecycle-controls :global(a) {
-		justify-self: end;
-	}
-
-	.workspace-actions {
-		display: flex;
-		justify-content: flex-end;
-		flex-wrap: wrap;
-		gap: var(--nb-space-3);
-	}
-
-	.direction-grid {
-		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
-		gap: var(--nb-space-5);
-	}
-
-	.direction-copy {
-		margin: 0;
-		color: var(--nb-color-text-secondary);
-		line-height: var(--nb-line-relaxed);
-		white-space: pre-wrap;
-	}
-
-	.stat-grid {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		gap: var(--nb-space-5);
-		padding-block: var(--nb-space-3);
-	}
-
-	.management-system {
-		display: grid;
-		gap: var(--nb-space-5);
-	}
-
-	.section-heading {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) minmax(300px, 520px);
-		gap: var(--nb-space-8);
-		align-items: end;
-	}
-
-	.section-heading > p {
-		margin: 0;
-		color: var(--nb-color-text-secondary);
-		line-height: var(--nb-line-relaxed);
-	}
-
-	.area-grid {
-		display: grid;
-		grid-template-columns: repeat(4, minmax(0, 1fr));
-		border-top: 1px solid var(--nb-color-border-default);
-		border-left: 1px solid var(--nb-color-border-default);
-		border-radius: var(--nb-radius-lg);
-		overflow: hidden;
-	}
-
-	.area-grid article {
-		display: flex;
-		min-height: 190px;
-		flex-direction: column;
-		padding: var(--nb-space-5);
-		border-right: 1px solid var(--nb-color-border-default);
-		border-bottom: 1px solid var(--nb-color-border-default);
-		background: var(--nb-color-bg-surface);
-	}
-
-	.area-id {
-		color: var(--nb-color-text-muted);
-		font-size: var(--nb-font-size-xs);
-		font-weight: var(--nb-weight-semibold);
-		letter-spacing: 0.07em;
-	}
-
-	.area-grid h3 {
-		margin: var(--nb-space-5) 0 var(--nb-space-2);
-		font-size: var(--nb-font-size-md);
-	}
-
-	.area-grid p {
-		margin: 0 0 var(--nb-space-4);
-		color: var(--nb-color-text-secondary);
-		font-size: var(--nb-font-size-sm);
-		line-height: var(--nb-line-relaxed);
-	}
-
-	.area-grid strong {
-		margin-top: auto;
-		font-size: var(--nb-font-size-xs);
-	}
-
-	.control-position {
-		display: grid;
-		grid-template-columns: minmax(0, 1fr) auto;
-		gap: var(--nb-space-8);
-		align-items: start;
-	}
-
-	.control-position > div:first-child > strong {
-		font-size: var(--nb-font-size-md);
-	}
-
-	.control-position p {
-		max-width: 780px;
-		margin: var(--nb-space-2) 0 0;
-		color: var(--nb-color-text-secondary);
-		font-size: var(--nb-font-size-sm);
-		line-height: var(--nb-line-relaxed);
-	}
-
-	.permission-summary {
-		display: grid;
-		grid-template-columns: auto auto;
-		gap: var(--nb-space-2) var(--nb-space-5);
-		min-width: 160px;
-		font-size: var(--nb-font-size-xs);
-	}
-
-	.permission-summary span {
-		color: var(--nb-color-text-muted);
-	}
-
-	.permission-summary strong {
-		text-align: right;
-	}
-
-	@media (max-width: 1050px) {
-		.area-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-		.direction-grid {
-			grid-template-columns: 1fr;
-		}
-	}
-
-	@media (max-width: 820px) {
-		.lifecycle-panel,
-		.active-workspaces,
-		.section-heading,
-		.control-position {
-			grid-template-columns: 1fr;
-		}
-		.workspace-actions {
-			justify-content: flex-start;
-		}
-		.stat-grid {
-			grid-template-columns: repeat(2, minmax(0, 1fr));
-		}
-	}
-
-	@media (max-width: 600px) {
-		.area-grid,
-		.stat-grid {
-			grid-template-columns: 1fr;
-		}
-	}
+	@media (max-width: 560px) { .area-grid, .stat-grid { grid-template-columns: 1fr; } }
 </style>
