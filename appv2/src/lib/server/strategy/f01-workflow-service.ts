@@ -9,7 +9,11 @@ import {
 import type { F01ManagedRecordKind } from './f01-lifecycle';
 import { getF01ManagedRecord, transitionF01Record } from './f01-record-management-service';
 import { StrategyValidationError } from './f01-service';
-import { defaultF01WorkflowKey, f01WorkflowTemplate } from './f01-workflows';
+import {
+	defaultF01WorkflowKey,
+	f01WorkflowDecisionPermissionKey,
+	f01WorkflowTemplate
+} from './f01-workflows';
 
 const MANAGED_KINDS = new Set<F01ManagedRecordKind>([
 	'framework',
@@ -33,18 +37,6 @@ function asManagedKind(value: string): F01ManagedRecordKind {
 		throw new WorkflowValidationError(`Unsupported F01 workflow source type: ${value}.`);
 	}
 	return value as F01ManagedRecordKind;
-}
-
-function requiredPermission(
-	kind: F01ManagedRecordKind,
-	toState: string,
-	configured?: string
-): string {
-	if (configured?.trim()) return configured;
-	if (toState === 'approved' || (kind === 'option' && ['selected', 'rejected'].includes(toState))) {
-		return 'strategy.approve';
-	}
-	return 'strategy.manage';
 }
 
 export async function submitF01WorkflowTransition(input: {
@@ -85,6 +77,12 @@ export async function submitF01WorkflowTransition(input: {
 			`Workflow template ${workflowKey} is not available for execution.`
 		);
 	}
+	const decisionPermissionKey = f01WorkflowDecisionPermissionKey(workflowKey);
+	if (!decisionPermissionKey) {
+		throw new StrategyValidationError(
+			`Workflow template ${workflowKey} has no governed decision authority configured.`
+		);
+	}
 
 	const request = await submitLifecycleWorkflow({
 		actor: input.actor,
@@ -96,11 +94,7 @@ export async function submitF01WorkflowTransition(input: {
 		fromState: record.status,
 		toState: input.targetStatus,
 		transitionLabel: transition.label,
-		requiredPermissionKey: requiredPermission(
-			input.kind,
-			input.targetStatus,
-			transition.requiredPermissionKey
-		),
+		requiredPermissionKey: decisionPermissionKey,
 		note: input.note
 	});
 	return { ...request, workflowKey };
