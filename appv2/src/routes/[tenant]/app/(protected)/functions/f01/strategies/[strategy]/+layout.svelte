@@ -20,8 +20,16 @@
 		{ label: 'Overview', href: overview, active: pathname === overview },
 		{ label: 'F01.02 Environment', href: analysis, active: pathname.startsWith(analysis) },
 		{ label: 'F01.03 Strategy', href: planning, active: pathname.startsWith(planning) },
-		{ label: 'F01.04 Business plan', href: businessPlanning, active: pathname.startsWith(businessPlanning) },
-		{ label: 'F01.05 Operating model', href: operatingModel, active: pathname.startsWith(operatingModel) },
+		{
+			label: 'F01.04 Business plan',
+			href: businessPlanning,
+			active: pathname.startsWith(businessPlanning)
+		},
+		{
+			label: 'F01.05 Operating model',
+			href: operatingModel,
+			active: pathname.startsWith(operatingModel)
+		},
 		{ label: 'F01.06 Performance', href: performance, active: pathname.startsWith(performance) },
 		{ label: 'F01.07 Review', href: review, active: pathname.startsWith(review) },
 		{ label: 'F01.08 Foresight', href: foresight, active: pathname.startsWith(foresight) }

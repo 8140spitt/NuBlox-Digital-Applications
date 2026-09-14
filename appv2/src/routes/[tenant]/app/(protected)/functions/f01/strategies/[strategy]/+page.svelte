@@ -64,7 +64,12 @@
 			name: 'Direction',
 			detail: 'Purpose, vision and mission',
 			value: 'Defined',
-			href: routes.strategyManage(data.tenant.slug, framework.publicId, 'framework', framework.publicId)
+			href: routes.strategyManage(
+				data.tenant.slug,
+				framework.publicId,
+				'framework',
+				framework.publicId
+			)
 		},
 		{
 			id: 'F01.02',
@@ -132,7 +137,8 @@
 		<span>{framework.code} · v{framework.versionLabel}</span>
 		<span aria-hidden="true">•</span>
 		<span>{framework.horizonStart} → {framework.horizonEnd}</span>
-		{#if framework.isOwnedByCurrentMember}<span aria-hidden="true">•</span><span>Owned by you</span>{/if}
+		{#if framework.isOwnedByCurrentMember}<span aria-hidden="true">•</span><span>Owned by you</span
+			>{/if}
 	</div>
 {/snippet}
 
@@ -154,7 +160,8 @@
 		meta={recordMeta}
 	/>
 
-	{#if form?.formError}<Alert tone="danger" title="Action not completed">{form.formError}</Alert>{/if}
+	{#if form?.formError}<Alert tone="danger" title="Action not completed">{form.formError}</Alert
+		>{/if}
 
 	{#if approval}
 		<section class="approval-card" aria-labelledby="approval-title">
@@ -162,8 +169,8 @@
 				<p class="section-kicker">Strategy review in progress</p>
 				<h2 id="approval-title">{approval.activityTitle}</h2>
 				<p>
-					Submitted {new Date(approval.submittedAt).toLocaleString()}. The strategy remains a working
-					draft until the review reaches an approved outcome.
+					Submitted {new Date(approval.submittedAt).toLocaleString()}. The strategy remains a
+					working draft until the review reaches an approved outcome.
 				</p>
 				<p class="assignment">Currently with: <strong>{approval.assigneeLabel}</strong></p>
 			</div>
@@ -182,7 +189,10 @@
 					<p class="section-kicker">Approval readiness</p>
 					<h2 id="readiness-title">Is the strategy ready for review?</h2>
 				</div>
-				<StatusBadge label={readiness.ready ? 'Ready for review' : 'Development required'} tone={readiness.ready ? 'success' : 'warning'} />
+				<StatusBadge
+					label={readiness.ready ? 'Ready for review' : 'Development required'}
+					tone={readiness.ready ? 'success' : 'warning'}
+				/>
 			</div>
 			<div class="readiness-grid">
 				{#each readinessItems as item (item.label)}
@@ -194,10 +204,20 @@
 			</div>
 			<div class="readiness-actions">
 				{#if data.permissions.canManage}
-					<LinkButton href={routes.strategyManage(data.tenant.slug, framework.publicId, 'framework', framework.publicId)} variant="secondary">Edit direction</LinkButton>
+					<LinkButton
+						href={routes.strategyManage(
+							data.tenant.slug,
+							framework.publicId,
+							'framework',
+							framework.publicId
+						)}
+						variant="secondary">Edit direction</LinkButton
+					>
 				{/if}
 				{#if readiness.ready}
-					<form method="POST" action="?/submitForReview" use:enhance><Button type="submit">Submit strategy for review</Button></form>
+					<form method="POST" action="?/submitForReview" use:enhance>
+						<Button type="submit">Submit strategy for review</Button>
+					</form>
 				{/if}
 			</div>
 		</section>
@@ -206,24 +226,56 @@
 			<div>
 				<p class="section-kicker">Approved strategic direction</p>
 				<h2>This strategy is the current governing context for planning and execution.</h2>
-				<p>Business plans, target operating model, KPIs, strategic reviews and foresight all reference this approved strategy version.</p>
+				<p>
+					Business plans, target operating model, KPIs, strategic reviews and foresight all
+					reference this approved strategy version.
+				</p>
 			</div>
 			{#if data.permissions.canManage}
-				<LinkButton href={routes.strategyManage(data.tenant.slug, framework.publicId, 'framework', framework.publicId)} variant="secondary">Create controlled revision</LinkButton>
+				<LinkButton
+					href={routes.strategyManage(
+						data.tenant.slug,
+						framework.publicId,
+						'framework',
+						framework.publicId
+					)}
+					variant="secondary">Create controlled revision</LinkButton
+				>
 			{/if}
 		</section>
 	{/if}
 
 	<section class="direction-grid" aria-label="Strategic direction">
-		<Panel title="Purpose" description="Why the organisation exists and the enduring value it creates."><p class="direction-copy">{framework.purpose}</p></Panel>
-		<Panel title="Vision" description="The future state this strategy is intended to achieve."><p class="direction-copy">{framework.vision}</p></Panel>
-		<Panel title="Mission" description="How the organisation expresses its enduring remit within this strategic frame."><p class="direction-copy">{framework.mission ?? 'No separate mission statement has been defined.'}</p></Panel>
+		<Panel
+			title="Purpose"
+			description="Why the organisation exists and the enduring value it creates."
+			><p class="direction-copy">{framework.purpose}</p></Panel
+		>
+		<Panel title="Vision" description="The future state this strategy is intended to achieve."
+			><p class="direction-copy">{framework.vision}</p></Panel
+		>
+		<Panel
+			title="Mission"
+			description="How the organisation expresses its enduring remit within this strategic frame."
+			><p class="direction-copy">
+				{framework.mission ?? 'No separate mission statement has been defined.'}
+			</p></Panel
+		>
 	</section>
 
 	<section class="stat-grid" aria-label="Strategy system summary">
-		<Stat label="Environmental factors" value={String(framework.environmentFactorCount)} detail="Evidence-led context" tone="info" />
+		<Stat
+			label="Environmental factors"
+			value={String(framework.environmentFactorCount)}
+			detail="Evidence-led context"
+			tone="info"
+		/>
 		<Stat label="Objectives" value={String(framework.objectiveCount)} detail="Strategic outcomes" />
-		<Stat label="Initiatives" value={String(framework.initiativeCount)} detail="Delivery commitments" />
+		<Stat
+			label="Initiatives"
+			value={String(framework.initiativeCount)}
+			detail="Delivery commitments"
+		/>
 		<Stat label="KPIs" value={String(framework.kpiCount)} detail="Outcome measures" />
 	</section>
 
@@ -233,7 +285,10 @@
 				<p class="section-kicker">F01.01–F01.08</p>
 				<h2 id="management-system-title">One strategy, eight connected management areas</h2>
 			</div>
-			<p>Work through the strategy as a connected management cycle. Each area contributes to the same controlled strategy context and evidence trail.</p>
+			<p>
+				Work through the strategy as a connected management cycle. Each area contributes to the same
+				controlled strategy context and evidence trail.
+			</p>
 		</div>
 		<div class="area-grid">
 			{#each areas as area (area.id)}
@@ -249,36 +304,171 @@
 </div>
 
 <style>
-	.strategy-workspace { display: grid; gap: var(--nb-space-8); padding-bottom: var(--nb-space-16); }
-	.record-meta { display: flex; align-items: center; flex-wrap: wrap; gap: var(--nb-space-2); }
-	.section-kicker { margin: 0; color: var(--nb-color-text-muted); font-size: var(--nb-font-size-xs); font-weight: var(--nb-weight-semibold); letter-spacing: .09em; text-transform: uppercase; }
-	.approval-card, .readiness-card, .active-card { border: 1px solid var(--nb-color-border-default); border-radius: var(--nb-radius-lg); background: var(--nb-color-bg-surface); padding: var(--nb-space-6); }
-	.approval-card, .active-card { display: flex; align-items: center; justify-content: space-between; gap: var(--nb-space-8); }
-	.approval-card h2, .readiness-card h2, .active-card h2, .section-heading h2 { margin: var(--nb-space-2) 0 0; font-size: var(--nb-font-size-xl); letter-spacing: -.025em; }
-	.approval-card p, .active-card p, .section-heading p { color: var(--nb-color-text-secondary); line-height: var(--nb-line-relaxed); }
-	.assignment { margin-bottom: 0; }
-	.readiness-heading, .section-heading { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--nb-space-6); }
-	.readiness-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--nb-space-3); margin-top: var(--nb-space-5); }
-	.readiness-grid > div { display: flex; gap: var(--nb-space-3); padding: var(--nb-space-4); border: 1px solid var(--nb-color-border-default); border-radius: var(--nb-radius-md); background: var(--nb-color-bg-subtle); }
-	.readiness-grid > div.ready > span { color: var(--nb-color-success-text); }
-	.readiness-grid small { display: block; margin-top: 3px; color: var(--nb-color-text-muted); }
-	.readiness-actions { display: flex; justify-content: flex-end; gap: var(--nb-space-3); margin-top: var(--nb-space-5); }
-	.direction-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--nb-space-5); }
-	.direction-copy { margin: 0; color: var(--nb-color-text-secondary); line-height: var(--nb-line-relaxed); }
-	.stat-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--nb-space-5); }
-	.management-system { display: grid; gap: var(--nb-space-5); }
-	.section-heading > p { max-width: 660px; margin: 0; }
-	.area-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--nb-space-4); }
-	.area-card { display: grid; gap: var(--nb-space-2); min-height: 180px; padding: var(--nb-space-5); border: 1px solid var(--nb-color-border-default); border-radius: var(--nb-radius-lg); background: var(--nb-color-bg-surface); color: inherit; text-decoration: none; }
-	.area-card:hover { border-color: var(--nb-blue-60); }
-	.area-id { color: var(--nb-color-text-muted); font-size: var(--nb-font-size-xs); font-weight: var(--nb-weight-semibold); letter-spacing: .08em; }
-	.area-card h3 { margin: 0; }
-	.area-card p { margin: 0; color: var(--nb-color-text-secondary); }
-	.area-card strong { align-self: end; }
-	@media (max-width: 900px) {
-		.area-grid, .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-		.direction-grid, .readiness-grid { grid-template-columns: 1fr; }
-		.approval-card, .active-card, .readiness-heading, .section-heading { align-items: flex-start; flex-direction: column; }
+	.strategy-workspace {
+		display: grid;
+		gap: var(--nb-space-8);
+		padding-bottom: var(--nb-space-16);
 	}
-	@media (max-width: 560px) { .area-grid, .stat-grid { grid-template-columns: 1fr; } }
+	.record-meta {
+		display: flex;
+		align-items: center;
+		flex-wrap: wrap;
+		gap: var(--nb-space-2);
+	}
+	.section-kicker {
+		margin: 0;
+		color: var(--nb-color-text-muted);
+		font-size: var(--nb-font-size-xs);
+		font-weight: var(--nb-weight-semibold);
+		letter-spacing: 0.09em;
+		text-transform: uppercase;
+	}
+	.approval-card,
+	.readiness-card,
+	.active-card {
+		border: 1px solid var(--nb-color-border-default);
+		border-radius: var(--nb-radius-lg);
+		background: var(--nb-color-bg-surface);
+		padding: var(--nb-space-6);
+	}
+	.approval-card,
+	.active-card {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--nb-space-8);
+	}
+	.approval-card h2,
+	.readiness-card h2,
+	.active-card h2,
+	.section-heading h2 {
+		margin: var(--nb-space-2) 0 0;
+		font-size: var(--nb-font-size-xl);
+		letter-spacing: -0.025em;
+	}
+	.approval-card p,
+	.active-card p,
+	.section-heading p {
+		color: var(--nb-color-text-secondary);
+		line-height: var(--nb-line-relaxed);
+	}
+	.assignment {
+		margin-bottom: 0;
+	}
+	.readiness-heading,
+	.section-heading {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--nb-space-6);
+	}
+	.readiness-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--nb-space-3);
+		margin-top: var(--nb-space-5);
+	}
+	.readiness-grid > div {
+		display: flex;
+		gap: var(--nb-space-3);
+		padding: var(--nb-space-4);
+		border: 1px solid var(--nb-color-border-default);
+		border-radius: var(--nb-radius-md);
+		background: var(--nb-color-bg-subtle);
+	}
+	.readiness-grid > div.ready > span {
+		color: var(--nb-color-success-text);
+	}
+	.readiness-grid small {
+		display: block;
+		margin-top: 3px;
+		color: var(--nb-color-text-muted);
+	}
+	.readiness-actions {
+		display: flex;
+		justify-content: flex-end;
+		gap: var(--nb-space-3);
+		margin-top: var(--nb-space-5);
+	}
+	.direction-grid {
+		display: grid;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--nb-space-5);
+	}
+	.direction-copy {
+		margin: 0;
+		color: var(--nb-color-text-secondary);
+		line-height: var(--nb-line-relaxed);
+	}
+	.stat-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--nb-space-5);
+	}
+	.management-system {
+		display: grid;
+		gap: var(--nb-space-5);
+	}
+	.section-heading > p {
+		max-width: 660px;
+		margin: 0;
+	}
+	.area-grid {
+		display: grid;
+		grid-template-columns: repeat(4, minmax(0, 1fr));
+		gap: var(--nb-space-4);
+	}
+	.area-card {
+		display: grid;
+		gap: var(--nb-space-2);
+		min-height: 180px;
+		padding: var(--nb-space-5);
+		border: 1px solid var(--nb-color-border-default);
+		border-radius: var(--nb-radius-lg);
+		background: var(--nb-color-bg-surface);
+		color: inherit;
+		text-decoration: none;
+	}
+	.area-card:hover {
+		border-color: var(--nb-blue-60);
+	}
+	.area-id {
+		color: var(--nb-color-text-muted);
+		font-size: var(--nb-font-size-xs);
+		font-weight: var(--nb-weight-semibold);
+		letter-spacing: 0.08em;
+	}
+	.area-card h3 {
+		margin: 0;
+	}
+	.area-card p {
+		margin: 0;
+		color: var(--nb-color-text-secondary);
+	}
+	.area-card strong {
+		align-self: end;
+	}
+	@media (max-width: 900px) {
+		.area-grid,
+		.stat-grid {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.direction-grid,
+		.readiness-grid {
+			grid-template-columns: 1fr;
+		}
+		.approval-card,
+		.active-card,
+		.readiness-heading,
+		.section-heading {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+	}
+	@media (max-width: 560px) {
+		.area-grid,
+		.stat-grid {
+			grid-template-columns: 1fr;
+		}
+	}
 </style>

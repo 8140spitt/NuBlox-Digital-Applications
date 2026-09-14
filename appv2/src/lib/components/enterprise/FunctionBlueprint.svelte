@@ -104,12 +104,27 @@
 			<p>These services stay consistent across all 29 enterprise functions.</p>
 		</div>
 		<div class="service-grid">
-			<article><strong>Object registry</strong><span>Canonical business records and ownership.</span></article>
-			<article><strong>Lifecycle</strong><span>States, transitions and business rules.</span></article>
-			<article><strong>Workflow</strong><span>Reviews, approvals and accountable hand-offs.</span></article>
-			<article><strong>Permissions</strong><span>Role, position, team and separation-of-duty control.</span></article>
-			<article><strong>Version control</strong><span>Controlled revisions and immutable published evidence.</span></article>
-			<article><strong>Audit & evidence</strong><span>Decisions, changes, provenance and history.</span></article>
+			<article>
+				<strong>Object registry</strong><span>Canonical business records and ownership.</span>
+			</article>
+			<article>
+				<strong>Lifecycle</strong><span>States, transitions and business rules.</span>
+			</article>
+			<article>
+				<strong>Workflow</strong><span>Reviews, approvals and accountable hand-offs.</span>
+			</article>
+			<article>
+				<strong>Permissions</strong><span>Role, position, team and separation-of-duty control.</span
+				>
+			</article>
+			<article>
+				<strong>Version control</strong><span
+					>Controlled revisions and immutable published evidence.</span
+				>
+			</article>
+			<article>
+				<strong>Audit & evidence</strong><span>Decisions, changes, provenance and history.</span>
+			</article>
 		</div>
 	</section>
 
@@ -121,10 +136,24 @@
 			</div>
 		</div>
 		<div class="data-grid">
-			<article><strong>Internal data</strong><span>Trusted records from connected NuBlox domains.</span></article>
-			<article><strong>External data</strong><span>Market, regulatory, partner and specialist sources.</span></article>
-			<article><strong>Analytics & reporting</strong><span>Measures, dashboards, insight and decision support.</span></article>
-			<article><strong>APIs & ecosystem</strong><span>Controlled exchange with external enterprise systems.</span></article>
+			<article>
+				<strong>Internal data</strong><span>Trusted records from connected NuBlox domains.</span>
+			</article>
+			<article>
+				<strong>External data</strong><span
+					>Market, regulatory, partner and specialist sources.</span
+				>
+			</article>
+			<article>
+				<strong>Analytics & reporting</strong><span
+					>Measures, dashboards, insight and decision support.</span
+				>
+			</article>
+			<article>
+				<strong>APIs & ecosystem</strong><span
+					>Controlled exchange with external enterprise systems.</span
+				>
+			</article>
 		</div>
 	</section>
 </section>

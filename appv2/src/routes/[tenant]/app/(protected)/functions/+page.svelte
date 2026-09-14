@@ -37,9 +37,9 @@
 			<p class="nb-eyebrow">{data.tenant.displayName} · Enterprise operating system</p>
 			<h1>29 functions. One NuBlox.</h1>
 			<p class="nb-lede">
-				Every function uses the same visual language, business-process structure and platform controls.
-				Open any function to see its sub-functions, canonical business objects, user journey and
-				underpinning services.
+				Every function uses the same visual language, business-process structure and platform
+				controls. Open any function to see its sub-functions, canonical business objects, user
+				journey and underpinning services.
 			</p>
 		</div>
 		<label class="function-search">
@@ -49,7 +49,10 @@
 	</header>
 
 	<div class="directory-meta">
-		<div><strong>{filteredFunctions.length}</strong> <span>{filteredFunctions.length === 1 ? 'function' : 'functions'}</span></div>
+		<div>
+			<strong>{filteredFunctions.length}</strong>
+			<span>{filteredFunctions.length === 1 ? 'function' : 'functions'}</span>
+		</div>
 		<span>F01 is operational · F02–F29 expose the governed capability blueprint</span>
 	</div>
 
@@ -66,7 +69,9 @@
 					<p>{entry.purpose}</p>
 				</div>
 				<div class="function-footer">
-					<span class:live={entry.id === 'F01'}>{entry.id === 'F01' ? 'Operating workspace' : 'Capability blueprint'}</span>
+					<span class:live={entry.id === 'F01'}
+						>{entry.id === 'F01' ? 'Operating workspace' : 'Capability blueprint'}</span
+					>
 					<strong>Open →</strong>
 				</div>
 			</a>
@@ -93,7 +98,11 @@
 		padding: var(--nb-space-6);
 		border: 1px solid var(--nb-blue-80);
 		border-radius: var(--nb-radius-xl);
-		background: linear-gradient(135deg, color-mix(in srgb, var(--nb-blue-95) 70%, white), white 72%);
+		background: linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--nb-blue-95) 70%, white),
+			white 72%
+		);
 	}
 
 	h1 {
@@ -168,7 +177,11 @@
 
 	.function-card.active-function {
 		border-color: var(--nb-blue-60);
-		background: linear-gradient(160deg, color-mix(in srgb, var(--nb-blue-95) 65%, white), white 70%);
+		background: linear-gradient(
+			160deg,
+			color-mix(in srgb, var(--nb-blue-95) 65%, white),
+			white 70%
+		);
 	}
 
 	.function-id {

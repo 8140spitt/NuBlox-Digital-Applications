@@ -168,7 +168,10 @@ async function cleanup(): Promise<void> {
 				[table.tableName]
 			);
 			for (const column of columns) {
-				await connection.query(`DELETE FROM \`${table.tableName}\` WHERE \`${column.columnName}\` = ?`, [organisationId]);
+				await connection.query(
+					`DELETE FROM \`${table.tableName}\` WHERE \`${column.columnName}\` = ?`,
+					[organisationId]
+				);
 			}
 		}
 		const [actingTables] = await connection.query<Array<RowDataPacket & { tableName: string }>>(
@@ -177,7 +180,10 @@ async function cleanup(): Promise<void> {
 		);
 		for (const table of actingTables) {
 			if (/^[A-Za-z0-9_]+$/.test(table.tableName)) {
-				await connection.query(`DELETE FROM \`${table.tableName}\` WHERE acting_organisation_id = ?`, [organisationId]);
+				await connection.query(
+					`DELETE FROM \`${table.tableName}\` WHERE acting_organisation_id = ?`,
+					[organisationId]
+				);
 			}
 		}
 		await connection.query('DELETE FROM organisations WHERE id = ?', [organisationId]);
@@ -226,7 +232,12 @@ describe('F01.05 operating model and F01.08 scenario & foresight', () => {
 			frameworkPublicId
 		});
 		expect(operating.components).toMatchObject([
-			{ publicId: component.publicId, status: 'proposed', accountabilityCount: 1, initiativeCount: 1 }
+			{
+				publicId: component.publicId,
+				status: 'proposed',
+				accountabilityCount: 1,
+				initiativeCount: 1
+			}
 		]);
 
 		await approveStrategyBusinessPlan({ actor, frameworkPublicId, planPublicId });
@@ -235,7 +246,10 @@ describe('F01.05 operating model and F01.08 scenario & foresight', () => {
 			memberId: actor.memberId,
 			frameworkPublicId
 		});
-		expect(operating.components[0]).toMatchObject({ publicId: component.publicId, status: 'approved' });
+		expect(operating.components[0]).toMatchObject({
+			publicId: component.publicId,
+			status: 'approved'
+		});
 
 		const scenario = await createStrategyScenario({
 			actor,
@@ -269,17 +283,35 @@ describe('F01.05 operating model and F01.08 scenario & foresight', () => {
 			projectedValue: '24',
 			rationale: 'Capacity pressure slows end-to-end delivery.'
 		});
-		await approveStrategyScenario({ actor, frameworkPublicId, scenarioPublicId: scenario.publicId });
-		let foresight = await getForesightWorkspace({ organisationId, memberId: actor.memberId, frameworkPublicId });
+		await approveStrategyScenario({
+			actor,
+			frameworkPublicId,
+			scenarioPublicId: scenario.publicId
+		});
+		let foresight = await getForesightWorkspace({
+			organisationId,
+			memberId: actor.memberId,
+			frameworkPublicId
+		});
 		expect(foresight.scenarios.find((item) => item.publicId === scenario.publicId)).toMatchObject({
 			status: 'approved',
 			assumptionCount: 1,
 			projectionCount: 1
 		});
 
-		const revision = await reviseStrategyScenario({ actor, frameworkPublicId, scenarioPublicId: scenario.publicId });
-		foresight = await getForesightWorkspace({ organisationId, memberId: actor.memberId, frameworkPublicId });
-		expect(foresight.scenarios.find((item) => item.publicId === scenario.publicId)?.status).toBe('approved');
+		const revision = await reviseStrategyScenario({
+			actor,
+			frameworkPublicId,
+			scenarioPublicId: scenario.publicId
+		});
+		foresight = await getForesightWorkspace({
+			organisationId,
+			memberId: actor.memberId,
+			frameworkPublicId
+		});
+		expect(foresight.scenarios.find((item) => item.publicId === scenario.publicId)?.status).toBe(
+			'approved'
+		);
 		expect(foresight.scenarios.find((item) => item.publicId === revision.publicId)).toMatchObject({
 			status: 'draft',
 			versionNumber: 2,
@@ -287,9 +319,21 @@ describe('F01.05 operating model and F01.08 scenario & foresight', () => {
 			projectionCount: 1
 		});
 
-		await approveStrategyScenario({ actor, frameworkPublicId, scenarioPublicId: revision.publicId });
-		foresight = await getForesightWorkspace({ organisationId, memberId: actor.memberId, frameworkPublicId });
-		expect(foresight.scenarios.find((item) => item.publicId === scenario.publicId)?.status).toBe('superseded');
-		expect(foresight.scenarios.find((item) => item.publicId === revision.publicId)?.status).toBe('approved');
+		await approveStrategyScenario({
+			actor,
+			frameworkPublicId,
+			scenarioPublicId: revision.publicId
+		});
+		foresight = await getForesightWorkspace({
+			organisationId,
+			memberId: actor.memberId,
+			frameworkPublicId
+		});
+		expect(foresight.scenarios.find((item) => item.publicId === scenario.publicId)?.status).toBe(
+			'superseded'
+		);
+		expect(foresight.scenarios.find((item) => item.publicId === revision.publicId)?.status).toBe(
+			'approved'
+		);
 	});
 });

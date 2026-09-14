@@ -21,11 +21,7 @@ export type OperatingModelComponentType =
 	| 'partner_ecosystem'
 	| 'location';
 export type OperatingModelAccountabilityType =
-	| 'accountable'
-	| 'responsible'
-	| 'consulted'
-	| 'informed'
-	| 'assured';
+	'accountable' | 'responsible' | 'consulted' | 'informed' | 'assured';
 export type OperatingModelChangeRole = 'create' | 'transform' | 'enable' | 'consume' | 'retire';
 export type ScenarioType = 'baseline' | 'upside' | 'downside' | 'stress' | 'custom';
 export type ScenarioStatus = 'draft' | 'approved' | 'superseded';
@@ -311,13 +307,17 @@ function dateValue(value: Date | string): string {
 
 function decimal(value: string | number, label: string): string {
 	const raw = String(value).trim();
-	if (!/^-?\d+(?:\.\d+)?$/.test(raw)) throw new StrategyValidationError(`${label} must be numeric.`);
+	if (!/^-?\d+(?:\.\d+)?$/.test(raw))
+		throw new StrategyValidationError(`${label} must be numeric.`);
 	const number = Number(raw);
 	if (!Number.isFinite(number)) throw new StrategyValidationError(`${label} must be numeric.`);
 	return raw;
 }
 
-function nonNegativeDecimal(value: string | number | null | undefined, label: string): string | null {
+function nonNegativeDecimal(
+	value: string | number | null | undefined,
+	label: string
+): string | null {
 	if (value === null || value === undefined || String(value).trim() === '') return null;
 	const parsed = decimal(value, label);
 	if (Number(parsed) < 0) throw new StrategyValidationError(`${label} must not be negative.`);
@@ -340,7 +340,8 @@ async function requireContext(input: {
 		memberId: input.memberId
 	});
 	const framework = workspace.frameworks.find((item) => item.publicId === input.frameworkPublicId);
-	if (!framework) throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
+	if (!framework)
+		throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
 	const [rows] = await getPool().execute<ContextRow[]>(
 		`SELECT id, horizon_start AS horizonStart, horizon_end AS horizonEnd, lifecycle_status AS status
 		 FROM strategy_frameworks
@@ -348,7 +349,8 @@ async function requireContext(input: {
 		[input.organisationId, input.frameworkPublicId]
 	);
 	const row = rows[0];
-	if (!row) throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
+	if (!row)
+		throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
 	return {
 		framework,
 		permissions: workspace.permissions,
@@ -531,7 +533,10 @@ export async function createOperatingModelComponent(input: {
 				   AND lifecycle_status = 'proposed' LIMIT 1`,
 				[input.actor.organisationId, plan.id, input.parentComponentPublicId.trim()]
 			);
-			if (!parents[0]) throw new StrategyValidationError('Parent component must be proposed in the same draft business plan.');
+			if (!parents[0])
+				throw new StrategyValidationError(
+					'Parent component must be proposed in the same draft business plan.'
+				);
 			parentId = parents[0].id;
 		}
 		const publicId = randomUUID();
@@ -558,7 +563,11 @@ export async function createOperatingModelComponent(input: {
 			actionKey: 'strategy.operating-model-component.create',
 			subjectType: 'strategy_operating_model_component',
 			subjectPublicId: publicId,
-			changeSummary: { componentCode: code, componentType: input.componentType, planPublicId: input.planPublicId },
+			changeSummary: {
+				componentCode: code,
+				componentType: input.componentType,
+				planPublicId: input.planPublicId
+			},
 			subfunction: 'F01.05'
 		});
 		await connection.commit();
@@ -593,14 +602,18 @@ export async function addOperatingModelAccountability(input: {
 			   AND component.lifecycle_status = 'proposed' AND plan.lifecycle_status = 'draft' LIMIT 1 FOR UPDATE`,
 			[input.actor.organisationId, input.componentPublicId, input.frameworkPublicId]
 		);
-		if (!components[0]) throw new StrategyValidationError('Accountabilities can only be changed while the target operating model is in a draft business plan.');
+		if (!components[0])
+			throw new StrategyValidationError(
+				'Accountabilities can only be changed while the target operating model is in a draft business plan.'
+			);
 		let memberId: string | number | null = null;
 		if (input.memberPublicId?.trim()) {
 			const [members] = await connection.execute<Array<RowDataPacket & { id: string | number }>>(
 				`SELECT id FROM organisation_members WHERE organisation_id = ? AND public_id = ? AND status = 'active' LIMIT 1`,
 				[input.actor.organisationId, input.memberPublicId.trim()]
 			);
-			if (!members[0]) throw new StrategyValidationError('Assigned member must be active in this organisation.');
+			if (!members[0])
+				throw new StrategyValidationError('Assigned member must be active in this organisation.');
 			memberId = members[0].id;
 		}
 		const publicId = randomUUID();
@@ -625,7 +638,11 @@ export async function addOperatingModelAccountability(input: {
 			actionKey: 'strategy.operating-model-accountability.assign',
 			subjectType: 'strategy_operating_model_component',
 			subjectPublicId: input.componentPublicId,
-			changeSummary: { accountabilityType: input.accountabilityType, positionLabel, memberPublicId: input.memberPublicId ?? null },
+			changeSummary: {
+				accountabilityType: input.accountabilityType,
+				positionLabel,
+				memberPublicId: input.memberPublicId ?? null
+			},
 			subfunction: 'F01.05'
 		});
 		await connection.commit();
@@ -660,16 +677,30 @@ export async function linkInitiativeToOperatingModel(input: {
 			   AND component.public_id = ? AND initiative.public_id = ?
 			   AND component.lifecycle_status = 'proposed' AND plan.lifecycle_status = 'draft'
 			   AND initiative.lifecycle_status = 'proposed' LIMIT 1 FOR UPDATE`,
-			[input.actor.organisationId, input.frameworkPublicId, input.componentPublicId, input.initiativePublicId]
+			[
+				input.actor.organisationId,
+				input.frameworkPublicId,
+				input.componentPublicId,
+				input.initiativePublicId
+			]
 		);
 		const row = rows[0];
-		if (!row) throw new StrategyValidationError('The component and initiative must belong to the same draft business plan.');
+		if (!row)
+			throw new StrategyValidationError(
+				'The component and initiative must belong to the same draft business plan.'
+			);
 		await connection.execute(
 			`INSERT INTO strategy_initiative_operating_model_links
 				(organisation_id, initiative_id, operating_model_component_id, change_role, created_by_member_id)
 			 VALUES (?, ?, ?, ?, ?)
 			 ON DUPLICATE KEY UPDATE change_role = VALUES(change_role), created_by_member_id = VALUES(created_by_member_id)`,
-			[input.actor.organisationId, row.initiativeId, row.componentId, input.changeRole, input.actor.memberId]
+			[
+				input.actor.organisationId,
+				row.initiativeId,
+				row.componentId,
+				input.changeRole,
+				input.actor.memberId
+			]
 		);
 		await evidence(connection, {
 			actor: input.actor,
@@ -777,7 +808,12 @@ export async function getForesightWorkspace(input: {
 
 async function scenarioLock(
 	connection: PoolConnection,
-	input: { organisationId: string; frameworkPublicId: string; scenarioPublicId: string; status?: ScenarioStatus }
+	input: {
+		organisationId: string;
+		frameworkPublicId: string;
+		scenarioPublicId: string;
+		status?: ScenarioStatus;
+	}
 ): Promise<
 	RowDataPacket & {
 		id: string | number;
@@ -792,7 +828,11 @@ async function scenarioLock(
 		supersedesId: string | number | null;
 	}
 > {
-	const values: Array<string | number> = [input.organisationId, input.scenarioPublicId, input.frameworkPublicId];
+	const values: Array<string | number> = [
+		input.organisationId,
+		input.scenarioPublicId,
+		input.frameworkPublicId
+	];
 	const statusSql = input.status ? ' AND scenario.lifecycle_status = ?' : '';
 	if (input.status) values.push(input.status);
 	const [rows] = await connection.execute<
@@ -821,7 +861,8 @@ async function scenarioLock(
 		 LIMIT 1 FOR UPDATE`,
 		values
 	);
-	if (!rows[0]) throw new StrategyValidationError('Scenario is not available in the required state.');
+	if (!rows[0])
+		throw new StrategyValidationError('Scenario is not available in the required state.');
 	return rows[0];
 }
 
@@ -839,9 +880,12 @@ export async function createStrategyScenario(input: {
 	const code = controlledCode(input.scenarioCode, 'Scenario code');
 	const start = dateOnly(input.horizonStart, 'Scenario horizon start');
 	const end = dateOnly(input.horizonEnd, 'Scenario horizon end');
-	if (end < start) throw new StrategyValidationError('Scenario horizon end must not precede its start.');
+	if (end < start)
+		throw new StrategyValidationError('Scenario horizon end must not precede its start.');
 	if (start < context.horizonStart || end > context.horizonEnd) {
-		throw new StrategyValidationError('Scenario horizon must sit inside the governing strategy horizon.');
+		throw new StrategyValidationError(
+			'Scenario horizon must sit inside the governing strategy horizon.'
+		);
 	}
 	const connection = await getPool().getConnection();
 	try {
@@ -850,7 +894,8 @@ export async function createStrategyScenario(input: {
 			`SELECT 1 FROM strategy_scenarios WHERE organisation_id = ? AND strategy_framework_id = ? AND scenario_code = ? LIMIT 1 FOR UPDATE`,
 			[input.actor.organisationId, context.frameworkId, code]
 		);
-		if (existing.length) throw new StrategyValidationError('Scenario code already exists in this strategy cycle.');
+		if (existing.length)
+			throw new StrategyValidationError('Scenario code already exists in this strategy cycle.');
 		const publicId = randomUUID();
 		await connection.execute(
 			`INSERT INTO strategy_scenarios
@@ -876,7 +921,12 @@ export async function createStrategyScenario(input: {
 			actionKey: 'strategy.scenario.create',
 			subjectType: 'strategy_scenario',
 			subjectPublicId: publicId,
-			changeSummary: { scenarioCode: code, scenarioType: input.scenarioType, horizonStart: start, horizonEnd: end },
+			changeSummary: {
+				scenarioCode: code,
+				scenarioType: input.scenarioType,
+				horizonStart: start,
+				horizonEnd: end
+			},
 			subfunction: 'F01.08'
 		});
 		await connection.commit();
@@ -937,7 +987,10 @@ export async function addScenarioAssumption(input: {
 			actionKey: 'strategy.scenario-assumption.add',
 			subjectType: 'strategy_scenario',
 			subjectPublicId: input.scenarioPublicId,
-			changeSummary: { assumptionCode: controlledCode(input.assumptionCode, 'Assumption code'), variableKey: variableKey(input.variableKey) },
+			changeSummary: {
+				assumptionCode: controlledCode(input.assumptionCode, 'Assumption code'),
+				variableKey: variableKey(input.variableKey)
+			},
 			subfunction: 'F01.08'
 		});
 		await connection.commit();
@@ -969,7 +1022,10 @@ export async function addScenarioProjection(input: {
 			status: 'draft'
 		});
 		const projectionDate = dateOnly(input.projectionDate, 'Projection date');
-		if (projectionDate < dateValue(scenario.horizonStart) || projectionDate > dateValue(scenario.horizonEnd)) {
+		if (
+			projectionDate < dateValue(scenario.horizonStart) ||
+			projectionDate > dateValue(scenario.horizonEnd)
+		) {
 			throw new StrategyValidationError('Projection date must sit inside the scenario horizon.');
 		}
 		const [kpis] = await connection.execute<Array<RowDataPacket & { id: string | number }>>(
@@ -979,7 +1035,10 @@ export async function addScenarioProjection(input: {
 			   AND kpi.lifecycle_status = 'approved' LIMIT 1`,
 			[input.actor.organisationId, input.kpiPublicId, input.frameworkPublicId]
 		);
-		if (!kpis[0]) throw new StrategyValidationError('Scenario projection requires an approved KPI from this strategy.');
+		if (!kpis[0])
+			throw new StrategyValidationError(
+				'Scenario projection requires an approved KPI from this strategy.'
+			);
 		const publicId = randomUUID();
 		await connection.execute(
 			`INSERT INTO strategy_scenario_kpi_projections
@@ -1002,7 +1061,11 @@ export async function addScenarioProjection(input: {
 			actionKey: 'strategy.scenario-projection.add',
 			subjectType: 'strategy_scenario',
 			subjectPublicId: input.scenarioPublicId,
-			changeSummary: { kpiPublicId: input.kpiPublicId, projectionDate, projectedValue: String(input.projectedValue) },
+			changeSummary: {
+				kpiPublicId: input.kpiPublicId,
+				projectionDate,
+				projectedValue: String(input.projectedValue)
+			},
 			subfunction: 'F01.08'
 		});
 		await connection.commit();
@@ -1024,8 +1087,10 @@ export async function approveStrategyScenario(input: {
 		memberId: input.actor.memberId,
 		frameworkPublicId: input.frameworkPublicId
 	});
-	if (!context.permissions.canApprove) throw new StrategyAccessError('You do not have authority to approve strategic scenarios.');
-	if (context.framework.lifecycleStatus !== 'approved') throw new StrategyValidationError('Scenario approval requires the current approved strategy.');
+	if (!context.permissions.canApprove)
+		throw new StrategyAccessError('You do not have authority to approve strategic scenarios.');
+	if (context.framework.lifecycleStatus !== 'approved')
+		throw new StrategyValidationError('Scenario approval requires the current approved strategy.');
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
@@ -1035,22 +1100,30 @@ export async function approveStrategyScenario(input: {
 			scenarioPublicId: input.scenarioPublicId,
 			status: 'draft'
 		});
-		const [counts] = await connection.execute<Array<RowDataPacket & { assumptions: number | string; projections: number | string }>>(
+		const [counts] = await connection.execute<
+			Array<RowDataPacket & { assumptions: number | string; projections: number | string }>
+		>(
 			`SELECT
 			   (SELECT COUNT(*) FROM strategy_scenario_assumptions WHERE strategy_scenario_id = ?) AS assumptions,
 			   (SELECT COUNT(*) FROM strategy_scenario_kpi_projections WHERE strategy_scenario_id = ?) AS projections`,
 			[scenario.id, scenario.id]
 		);
 		if (Number(counts[0]?.assumptions ?? 0) < 1 || Number(counts[0]?.projections ?? 0) < 1) {
-			throw new StrategyValidationError('Scenario approval requires at least one explicit assumption and one KPI projection.');
+			throw new StrategyValidationError(
+				'Scenario approval requires at least one explicit assumption and one KPI projection.'
+			);
 		}
 		if (scenario.supersedesId) {
-			const [predecessors] = await connection.execute<Array<RowDataPacket & { status: ScenarioStatus }>>(
+			const [predecessors] = await connection.execute<
+				Array<RowDataPacket & { status: ScenarioStatus }>
+			>(
 				`SELECT lifecycle_status AS status FROM strategy_scenarios WHERE organisation_id = ? AND id = ? LIMIT 1 FOR UPDATE`,
 				[input.actor.organisationId, scenario.supersedesId]
 			);
 			if (predecessors[0]?.status !== 'approved') {
-				throw new StrategyValidationError('Scenario revision is stale because its predecessor is no longer current.');
+				throw new StrategyValidationError(
+					'Scenario revision is stale because its predecessor is no longer current.'
+				);
 			}
 			await connection.execute(
 				`UPDATE strategy_scenarios SET lifecycle_status = 'superseded' WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'approved'`,
@@ -1105,13 +1178,16 @@ export async function reviseStrategyScenario(input: {
 			 WHERE organisation_id = ? AND scenario_code = ? AND lifecycle_status = 'draft' LIMIT 1 FOR UPDATE`,
 			[input.actor.organisationId, source.code]
 		);
-		if (drafts.length) throw new StrategyValidationError('A working revision of this scenario already exists.');
+		if (drafts.length)
+			throw new StrategyValidationError('A working revision of this scenario already exists.');
 		const publicId = randomUUID();
 		const nextVersion = Number(source.versionNumber) + 1;
-		const [frameworkRows] = await connection.execute<Array<RowDataPacket & { id: string | number }>>(
-			`SELECT id FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? LIMIT 1`,
-			[input.actor.organisationId, input.frameworkPublicId]
-		);
+		const [frameworkRows] = await connection.execute<
+			Array<RowDataPacket & { id: string | number }>
+		>(`SELECT id FROM strategy_frameworks WHERE organisation_id = ? AND public_id = ? LIMIT 1`, [
+			input.actor.organisationId,
+			input.frameworkPublicId
+		]);
 		await connection.execute(
 			`INSERT INTO strategy_scenarios
 				(organisation_id, strategy_framework_id, public_id, scenario_code, version_number, title,
@@ -1160,7 +1236,11 @@ export async function reviseStrategyScenario(input: {
 			actionKey: 'strategy.scenario.revise',
 			subjectType: 'strategy_scenario',
 			subjectPublicId: publicId,
-			changeSummary: { scenarioCode: source.code, versionNumber: nextVersion, supersedesPublicId: input.scenarioPublicId },
+			changeSummary: {
+				scenarioCode: source.code,
+				versionNumber: nextVersion,
+				supersedesPublicId: input.scenarioPublicId
+			},
 			subfunction: 'F01.08'
 		});
 		await connection.commit();

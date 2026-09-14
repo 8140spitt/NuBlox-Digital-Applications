@@ -70,8 +70,10 @@ export const actions = {
 			});
 			redirect(303, routes.strategyOperatingModel(access.organisationRouteSlug, params.strategy));
 		} catch (cause) {
-			if (cause instanceof StrategyValidationError) return fail(400, { values: submitted, formError: cause.message });
-			if (cause instanceof StrategyAccessError) return fail(403, { values: submitted, formError: cause.message });
+			if (cause instanceof StrategyValidationError)
+				return fail(400, { values: submitted, formError: cause.message });
+			if (cause instanceof StrategyAccessError)
+				return fail(403, { values: submitted, formError: cause.message });
 			throw cause;
 		}
 	}

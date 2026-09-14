@@ -5,7 +5,10 @@ export type FunctionJourneyStep = {
 	detail: string;
 };
 
-export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly FunctionJourneyStep[]> = {
+export const functionBusinessJourneys: Record<
+	EnterpriseFunctionId,
+	readonly FunctionJourneyStep[]
+> = {
 	F01: [
 		{ label: 'Develop', detail: 'Build direction, evidence, choices and the enterprise plan.' },
 		{ label: 'Submit', detail: 'Submit the strategy or plan for governed review.' },
@@ -15,23 +18,38 @@ export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly Fun
 		{ label: 'Monitor', detail: 'Track performance, review outcomes and refresh direction.' }
 	],
 	F02: [
-		{ label: 'Establish', detail: 'Define governance bodies, authority, policy and accountabilities.' },
-		{ label: 'Prepare', detail: 'Prepare meetings, decisions, declarations and governance evidence.' },
+		{
+			label: 'Establish',
+			detail: 'Define governance bodies, authority, policy and accountabilities.'
+		},
+		{
+			label: 'Prepare',
+			detail: 'Prepare meetings, decisions, declarations and governance evidence.'
+		},
 		{ label: 'Decide', detail: 'Exercise delegated authority and record accountable decisions.' },
 		{ label: 'Assign', detail: 'Issue actions, attestations and policy obligations.' },
 		{ label: 'Assure', detail: 'Monitor governance effectiveness, conduct and compliance.' }
 	],
 	F03: [
-		{ label: 'Set measures', detail: 'Define performance frameworks, periods, measures and targets.' },
+		{
+			label: 'Set measures',
+			detail: 'Define performance frameworks, periods, measures and targets.'
+		},
 		{ label: 'Collect', detail: 'Assemble trusted actuals and reporting evidence.' },
 		{ label: 'Explain', detail: 'Analyse variance, root cause and benefit performance.' },
 		{ label: 'Decide', detail: 'Agree corrective actions and accountable interventions.' },
 		{ label: 'Review', detail: 'Track outcomes and improve the management cycle.' }
 	],
 	F04: [
-		{ label: 'Identify', detail: 'Capture acquisition, divestiture and partnership opportunities.' },
+		{
+			label: 'Identify',
+			detail: 'Capture acquisition, divestiture and partnership opportunities.'
+		},
 		{ label: 'Evaluate', detail: 'Develop valuation, strategic fit and investment cases.' },
-		{ label: 'Diligence', detail: 'Coordinate due diligence, findings and transaction conditions.' },
+		{
+			label: 'Diligence',
+			detail: 'Coordinate due diligence, findings and transaction conditions.'
+		},
 		{ label: 'Execute', detail: 'Govern approvals, transaction milestones and completion.' },
 		{ label: 'Integrate', detail: 'Deliver integration, separation and value-realisation plans.' }
 	],
@@ -71,8 +89,14 @@ export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly Fun
 		{ label: 'Manage', detail: 'Monitor supplier performance, risk and relationships.' }
 	],
 	F10: [
-		{ label: 'Plan demand', detail: 'Translate demand into supply, inventory and capacity requirements.' },
-		{ label: 'Position stock', detail: 'Control material masters, stock policy and warehouse positions.' },
+		{
+			label: 'Plan demand',
+			detail: 'Translate demand into supply, inventory and capacity requirements.'
+		},
+		{
+			label: 'Position stock',
+			detail: 'Control material masters, stock policy and warehouse positions.'
+		},
 		{ label: 'Move', detail: 'Execute goods movements, transport and shipment activity.' },
 		{ label: 'Deliver', detail: 'Coordinate distribution, trade compliance and receipt.' },
 		{ label: 'Balance', detail: 'Review constraints, exceptions and supply-chain risk.' }
@@ -92,7 +116,10 @@ export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly Fun
 		{ label: 'Accept', detail: 'Confirm acceptance, quality and service performance.' }
 	],
 	F13: [
-		{ label: 'Plan quality', detail: 'Define quality plans, ITPs, standards and acceptance criteria.' },
+		{
+			label: 'Plan quality',
+			detail: 'Define quality plans, ITPs, standards and acceptance criteria.'
+		},
 		{ label: 'Inspect', detail: 'Perform inspections, tests and attributable checks.' },
 		{ label: 'Control', detail: 'Record non-conformance and contain quality failures.' },
 		{ label: 'Correct', detail: 'Investigate root cause and execute CAPA.' },
@@ -106,14 +133,20 @@ export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly Fun
 		{ label: 'Report', detail: 'Produce traceable financial, tax and management reporting.' }
 	],
 	F15: [
-		{ label: 'Plan workforce', detail: 'Shape organisation, positions, jobs and workforce demand.' },
+		{
+			label: 'Plan workforce',
+			detail: 'Shape organisation, positions, jobs and workforce demand.'
+		},
 		{ label: 'Acquire', detail: 'Recruit, assess, offer and onboard people.' },
 		{ label: 'Deploy', detail: 'Manage employment, time, attendance, reward and assignments.' },
 		{ label: 'Develop', detail: 'Manage performance, learning, talent and succession.' },
 		{ label: 'Transition', detail: 'Manage employee relations, absence, change and offboarding.' }
 	],
 	F16: [
-		{ label: 'Architect', detail: 'Set technology strategy, standards and architecture decisions.' },
+		{
+			label: 'Architect',
+			detail: 'Set technology strategy, standards and architecture decisions.'
+		},
 		{ label: 'Build', detail: 'Develop, deploy and change applications and infrastructure.' },
 		{ label: 'Operate', detail: 'Run services, platforms, networks, endpoints and configuration.' },
 		{ label: 'Support', detail: 'Resolve requests, incidents and problems.' },
@@ -130,7 +163,10 @@ export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly Fun
 		{ label: 'Protect', detail: 'Set security policy, architecture and access controls.' },
 		{ label: 'Detect', detail: 'Monitor vulnerabilities, threats, alerts and control health.' },
 		{ label: 'Respond', detail: 'Triage and contain security incidents and exceptions.' },
-		{ label: 'Recover', detail: 'Remediate vulnerabilities, restore service and evidence recovery.' },
+		{
+			label: 'Recover',
+			detail: 'Remediate vulnerabilities, restore service and evidence recovery.'
+		},
 		{ label: 'Assure', detail: 'Test controls, suppliers, awareness and compliance.' }
 	],
 	F19: [
@@ -148,7 +184,10 @@ export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly Fun
 		{ label: 'Monitor', detail: 'Track residual risk, findings and remediation closure.' }
 	],
 	F21: [
-		{ label: 'Discover', detail: 'Identify processing, personal data and information obligations.' },
+		{
+			label: 'Discover',
+			detail: 'Identify processing, personal data and information obligations.'
+		},
 		{ label: 'Assess', detail: 'Perform privacy assessments, DPIAs and transfer reviews.' },
 		{ label: 'Control', detail: 'Manage consent, preference, retention and access.' },
 		{ label: 'Respond', detail: 'Fulfil data-subject rights and privacy incident actions.' },
@@ -205,7 +244,10 @@ export const functionBusinessJourneys: Record<EnterpriseFunctionId, readonly Fun
 	],
 	F29: [
 		{ label: 'Discover', detail: 'Map processes, ownership, measures and compliance context.' },
-		{ label: 'Analyse', detail: 'Assess performance, waste, controls and improvement opportunity.' },
+		{
+			label: 'Analyse',
+			detail: 'Assess performance, waste, controls and improvement opportunity.'
+		},
 		{ label: 'Redesign', detail: 'Design target processes, SOPs and automation.' },
 		{ label: 'Implement', detail: 'Deploy controlled process and workflow changes.' },
 		{ label: 'Improve', detail: 'Monitor performance, compliance and continuous improvement.' }
