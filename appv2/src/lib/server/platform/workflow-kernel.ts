@@ -1,11 +1,6 @@
 export type WorkflowTemplateStatus = 'draft' | 'published' | 'superseded';
 export type WorkflowExecutionState =
-	| 'not_started'
-	| 'running'
-	| 'suspended'
-	| 'completed'
-	| 'terminated'
-	| 'aborted';
+	'not_started' | 'running' | 'suspended' | 'completed' | 'terminated' | 'aborted';
 export type WorkflowHealth = 'green' | 'amber' | 'red';
 
 export type WorkflowNodeType =
@@ -36,9 +31,7 @@ export type WorkflowParticipantType =
 	| 'variable';
 
 export type WorkflowCompletionRule =
-	| { type: 'any' }
-	| { type: 'all' }
-	| { type: 'count'; count: number };
+	{ type: 'any' } | { type: 'all' } | { type: 'count'; count: number };
 
 export type WorkflowParticipantRule = {
 	participantType: WorkflowParticipantType;
@@ -128,14 +121,16 @@ function requiredKey(value: string, label: string): string {
 
 export function defineWorkflowTemplate<T extends WorkflowTemplate>(template: T): T {
 	requiredKey(template.key, 'Workflow template key');
-	if (!template.version.trim()) throw new Error(`Workflow template ${template.key} requires a version.`);
+	if (!template.version.trim())
+		throw new Error(`Workflow template ${template.key} requires a version.`);
 	if (!template.name.trim()) throw new Error(`Workflow template ${template.key} requires a name.`);
 
 	const nodeKeys = new Set<string>();
 	let starts = 0;
 	for (const node of template.nodes) {
 		const key = requiredKey(node.key, 'Workflow node key');
-		if (nodeKeys.has(key)) throw new Error(`Workflow template ${template.key} has duplicate node ${key}.`);
+		if (nodeKeys.has(key))
+			throw new Error(`Workflow template ${template.key} has duplicate node ${key}.`);
 		nodeKeys.add(key);
 		if (node.type === 'start') starts += 1;
 		if (node.type === 'threshold') {
@@ -152,7 +147,10 @@ export function defineWorkflowTemplate<T extends WorkflowTemplate>(template: T):
 		if (node.type === 'integration' && !node.integrationKey?.trim()) {
 			throw new Error(`Integration node ${node.key} requires an integration key.`);
 		}
-		if (node.type === 'timer' && (!Number.isFinite(node.timerMinutes) || (node.timerMinutes ?? 0) < 0)) {
+		if (
+			node.type === 'timer' &&
+			(!Number.isFinite(node.timerMinutes) || (node.timerMinutes ?? 0) < 0)
+		) {
 			throw new Error(`Timer node ${node.key} requires a non-negative timer duration.`);
 		}
 		if (node.type === 'synchronize' && !node.synchronizeEventKey?.trim()) {
@@ -165,18 +163,22 @@ export function defineWorkflowTemplate<T extends WorkflowTemplate>(template: T):
 			throw new Error(`Workflow node ${node.key} requires a positive completion count.`);
 		}
 	}
-	if (starts !== 1) throw new Error(`Workflow template ${template.key} must contain exactly one start node.`);
+	if (starts !== 1)
+		throw new Error(`Workflow template ${template.key} must contain exactly one start node.`);
 
 	for (const link of template.links) {
-		if (!nodeKeys.has(link.from)) throw new Error(`Workflow link source ${link.from} is not defined.`);
+		if (!nodeKeys.has(link.from))
+			throw new Error(`Workflow link source ${link.from} is not defined.`);
 		if (!nodeKeys.has(link.to)) throw new Error(`Workflow link target ${link.to} is not defined.`);
-		if (link.event !== undefined && !link.event.trim()) throw new Error('Workflow link event cannot be blank.');
+		if (link.event !== undefined && !link.event.trim())
+			throw new Error('Workflow link event cannot be blank.');
 	}
 
 	const variableKeys = new Set<string>();
 	for (const variable of template.variables ?? []) {
 		const key = requiredKey(variable.key, 'Workflow variable key');
-		if (variableKeys.has(key)) throw new Error(`Workflow template ${template.key} has duplicate variable ${key}.`);
+		if (variableKeys.has(key))
+			throw new Error(`Workflow template ${template.key} has duplicate variable ${key}.`);
 		variableKeys.add(key);
 	}
 
@@ -217,10 +219,7 @@ export function completionSatisfied(input: {
 	return input.completedParticipants >= input.requiredParticipants;
 }
 
-export function deriveWorkflowHealth(input: {
-	errors: number;
-	warnings: number;
-}): WorkflowHealth {
+export function deriveWorkflowHealth(input: { errors: number; warnings: number }): WorkflowHealth {
 	if (input.errors > 0) return 'red';
 	if (input.warnings > 0) return 'amber';
 	return 'green';

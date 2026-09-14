@@ -12,12 +12,15 @@ import { StrategyAccessError, StrategyValidationError } from '$lib/server/strate
 import { decideF01WorkflowRequest } from '$lib/server/strategy/f01-workflow-service';
 import type { Actions, PageServerLoad } from './$types';
 
-function sourceHref(tenant: string, task: {
-	sourceDomain: string;
-	sourceType: string;
-	sourcePublicId: string;
-	contextPublicId: string;
-}): string {
+function sourceHref(
+	tenant: string,
+	task: {
+		sourceDomain: string;
+		sourceType: string;
+		sourcePublicId: string;
+		contextPublicId: string;
+	}
+): string {
 	if (task.sourceDomain === 'F01') {
 		return `/${tenant}/app/functions/f01/strategies/${task.contextPublicId}/manage/${task.sourceType}/${task.sourcePublicId}`;
 	}
@@ -66,7 +69,11 @@ export const actions = {
 		if (!['approved', 'returned', 'rejected'].includes(decision)) {
 			return fail(400, { formError: 'Choose approve, return or reject.' });
 		}
-		const { access, actor } = await actorFor(request, params.tenant, `${url.pathname}${url.search}`);
+		const { access, actor } = await actorFor(
+			request,
+			params.tenant,
+			`${url.pathname}${url.search}`
+		);
 		try {
 			const result = await decideF01WorkflowRequest({
 				actor,

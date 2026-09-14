@@ -1,4 +1,7 @@
-import { defineWorkflowTemplate, type WorkflowTemplate } from '$lib/server/platform/workflow-kernel';
+import {
+	defineWorkflowTemplate,
+	type WorkflowTemplate
+} from '$lib/server/platform/workflow-kernel';
 import type { F01ManagedRecordKind } from './f01-lifecycle';
 
 function approvalTemplate(key: string, name: string): WorkflowTemplate {
@@ -49,7 +52,10 @@ function approvalTemplate(key: string, name: string): WorkflowTemplate {
 
 export const F01_WORKFLOW_TEMPLATES: Readonly<Record<string, WorkflowTemplate>> = {
 	'f01.strategy-approval': approvalTemplate('f01.strategy-approval', 'Strategy approval'),
-	'f01.business-plan-approval': approvalTemplate('f01.business-plan-approval', 'Business plan approval'),
+	'f01.business-plan-approval': approvalTemplate(
+		'f01.business-plan-approval',
+		'Business plan approval'
+	),
 	'f01.kpi-approval': approvalTemplate('f01.kpi-approval', 'KPI approval'),
 	'f01.strategic-review-approval': approvalTemplate(
 		'f01.strategic-review-approval',

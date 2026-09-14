@@ -55,7 +55,13 @@ function activeKey(input: {
 	workflowKey: string;
 	toState: string;
 }): string {
-	return [input.sourceDomain, input.sourceType, input.sourcePublicId, input.workflowKey, input.toState]
+	return [
+		input.sourceDomain,
+		input.sourceType,
+		input.sourcePublicId,
+		input.workflowKey,
+		input.toState
+	]
 		.join(':')
 		.slice(0, 255);
 }
@@ -65,16 +71,19 @@ function normalizeNote(value: string | null | undefined): string | null {
 	return normalized ? normalized.slice(0, 10000) : null;
 }
 
-async function insertWorkItem(connection: PoolConnection, input: {
-	actor: EvidenceActor;
-	publicId: string;
-	sourceDomain: string;
-	sourceType: string;
-	sourcePublicId: string;
-	title: string;
-	description: string | null;
-	dueAt: Date | null;
-}): Promise<number> {
+async function insertWorkItem(
+	connection: PoolConnection,
+	input: {
+		actor: EvidenceActor;
+		publicId: string;
+		sourceDomain: string;
+		sourceType: string;
+		sourcePublicId: string;
+		title: string;
+		description: string | null;
+		dueAt: Date | null;
+	}
+): Promise<number> {
 	const [result] = await connection.execute<ResultSetHeader>(
 		`INSERT INTO work_items
 			(owning_organisation_id, public_id, project_id, work_item_kind, source_domain,
@@ -130,7 +139,9 @@ export async function submitLifecycleWorkflow(input: {
 			[input.actor.organisationId, requestActiveKey]
 		);
 		if (existing[0]) {
-			throw new WorkflowValidationError('A workflow request is already pending for this transition.');
+			throw new WorkflowValidationError(
+				'A workflow request is already pending for this transition.'
+			);
 		}
 
 		const workItemId = await insertWorkItem(connection, {
@@ -235,7 +246,10 @@ export async function submitLifecycleWorkflow(input: {
 	}
 }
 
-async function taskRows(organisationId: string, requestPublicId?: string): Promise<WorkflowTaskRow[]> {
+async function taskRows(
+	organisationId: string,
+	requestPublicId?: string
+): Promise<WorkflowTaskRow[]> {
 	const params: string[] = [organisationId];
 	let requestFilter = '';
 	if (requestPublicId) {
@@ -304,7 +318,8 @@ export async function getPendingWorkflowTask(input: {
 		memberId: input.memberId,
 		permissionKey: task.requiredPermissionKey
 	});
-	if (!allowed) throw new WorkflowAccessError('You are not authorised to decide this workflow task.');
+	if (!allowed)
+		throw new WorkflowAccessError('You are not authorised to decide this workflow task.');
 	return task;
 }
 
@@ -346,14 +361,16 @@ export async function finaliseWorkflowRequest(input: {
 		);
 		const request = rows[0];
 		if (!request) throw new WorkflowValidationError('Workflow request was not found.');
-		if (request.status !== 'pending') throw new WorkflowValidationError('Workflow request has already been decided.');
+		if (request.status !== 'pending')
+			throw new WorkflowValidationError('Workflow request has already been decided.');
 
 		const allowed = await hasPermission({
 			organisationId: input.actor.organisationId,
 			memberId: input.actor.memberId,
 			permissionKey: request.requiredPermissionKey
 		});
-		if (!allowed) throw new WorkflowAccessError('You are not authorised to decide this workflow task.');
+		if (!allowed)
+			throw new WorkflowAccessError('You are not authorised to decide this workflow task.');
 
 		await connection.execute(
 			`UPDATE workflow_requests
@@ -384,13 +401,7 @@ export async function finaliseWorkflowRequest(input: {
 			`INSERT INTO work_item_decisions
 				(work_item_id, work_item_owner_organisation_id, decision, decided_by_member_id, decision_note)
 			 VALUES (?, ?, ?, ?, ?)`,
-			[
-				request.workItemId,
-				input.actor.organisationId,
-				input.decision,
-				input.actor.memberId,
-				note
-			]
+			[request.workItemId, input.actor.organisationId, input.decision, input.actor.memberId, note]
 		);
 		await connection.execute(
 			`INSERT INTO work_item_events

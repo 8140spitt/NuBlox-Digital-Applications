@@ -35,7 +35,11 @@ function asManagedKind(value: string): F01ManagedRecordKind {
 	return value as F01ManagedRecordKind;
 }
 
-function requiredPermission(kind: F01ManagedRecordKind, toState: string, configured?: string): string {
+function requiredPermission(
+	kind: F01ManagedRecordKind,
+	toState: string,
+	configured?: string
+): string {
 	if (configured?.trim()) return configured;
 	if (toState === 'approved' || (kind === 'option' && ['selected', 'rejected'].includes(toState))) {
 		return 'strategy.approve';
@@ -77,7 +81,9 @@ export async function submitF01WorkflowTransition(input: {
 		transition.workflowKey ?? defaultF01WorkflowKey(input.kind, record.status, input.targetStatus);
 	if (!workflowKey) return null;
 	if (!f01WorkflowTemplate(workflowKey)) {
-		throw new StrategyValidationError(`Workflow template ${workflowKey} is not available for execution.`);
+		throw new StrategyValidationError(
+			`Workflow template ${workflowKey} is not available for execution.`
+		);
 	}
 
 	const request = await submitLifecycleWorkflow({
@@ -90,7 +96,11 @@ export async function submitF01WorkflowTransition(input: {
 		fromState: record.status,
 		toState: input.targetStatus,
 		transitionLabel: transition.label,
-		requiredPermissionKey: requiredPermission(input.kind, input.targetStatus, transition.requiredPermissionKey),
+		requiredPermissionKey: requiredPermission(
+			input.kind,
+			input.targetStatus,
+			transition.requiredPermissionKey
+		),
 		note: input.note
 	});
 	return { ...request, workflowKey };

@@ -21,7 +21,11 @@ describe('workflow kernel', () => {
 					label: 'Approve strategy',
 					type: 'activity' as const,
 					participants: [
-						{ participantType: 'workflow_role' as const, participantKey: 'approver', required: true }
+						{
+							participantType: 'workflow_role' as const,
+							participantKey: 'approver',
+							required: true
+						}
 					],
 					completionRule: { type: 'all' as const },
 					routingEvents: ['approve', 'return', 'reject'],
@@ -66,10 +70,18 @@ describe('workflow kernel', () => {
 
 	it('supports all, any and count completion semantics', () => {
 		expect(
-			completionSatisfied({ rule: { type: 'all' }, requiredParticipants: 3, completedParticipants: 2 })
+			completionSatisfied({
+				rule: { type: 'all' },
+				requiredParticipants: 3,
+				completedParticipants: 2
+			})
 		).toBe(false);
 		expect(
-			completionSatisfied({ rule: { type: 'any' }, requiredParticipants: 3, completedParticipants: 1 })
+			completionSatisfied({
+				rule: { type: 'any' },
+				requiredParticipants: 3,
+				completedParticipants: 1
+			})
 		).toBe(true);
 		expect(
 			completionSatisfied({
