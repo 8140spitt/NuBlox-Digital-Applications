@@ -1,7 +1,7 @@
 # NuBlox V2 Lifecycle & Workflow Administration
 
 **Status:** governed authoring and operations baseline  
-**Scope:** reusable lifecycle policy, workflow orchestration, approval work, authority, audit evidence, workflow authoring and operational intervention across F01–F29.
+**Scope:** reusable lifecycle policy, workflow orchestration, approval work, authority, audit evidence, graphical workflow authoring and operational intervention across F01–F29.
 
 ## 1. Architectural separation
 
@@ -49,7 +49,9 @@ The persisted administration layer stores versioned workflow templates, workflow
 
 Published revisions preserve operational continuity: when an active predecessor is superseded, its existing business-event bindings move atomically to the newly published successor. Runtime consumers resolve only published bound templates and materialise them back through the same typed kernel used for validation.
 
-The V2 authoring experience now follows the NuBlox UI/UX operating model rather than presenting all administration controls on one continuous page. Template creation is a focused action. The template workspace separates Designer, People & data, Activation and History. The Designer presents the persisted process graph visually with local routing, participant, deadline and control information while advanced execution controls remain progressively disclosed.
+The V2 authoring experience follows the NuBlox UI/UX operating model rather than presenting all administration controls on one continuous page. Template creation is a focused action. The governance workspace separates Designer, People & data, Activation and History. A dedicated graphical designer provides direct drag/reposition authoring for draft process steps, keeps Start and End fixed, supports direct node-to-node route creation and exposes event/loop routing separately when expert detail is needed. Graphical ordering is persisted as a governed minor workflow version with audit/outbox evidence rather than as client-only layout state.
+
+Published workflow templates are themselves reusable governed policy packages. Participant resolution, deadlines, overdue consequences, completion rules, routing, notification/service/integration actions and signature requirements are versioned with the reusable template lineage and therefore do not need to be recopied into each consuming business function.
 
 ## 4. Governed approval pattern
 
@@ -101,7 +103,15 @@ The real-MySQL golden thread proves that a submitted draft remains draft, appear
 
 Workflow orchestration does not create a parallel task model. Human approval activities create canonical Work Kernel records and assignments. My Work is the user-facing queue for authorised pending work. Decision history, work-item events, domain audit evidence and outbox evidence remain independently queryable.
 
-Workflow Operations uses those same canonical records rather than introducing another runtime model. Administrators with `workflow.manage` can monitor active and recent workflow requests, see derived green/amber/red health, inspect assignment and event evidence, change operational work status, reprioritise work, reassign to an active organisation member or cancel a pending workflow with an attributable reason. Reassignment closes the previous assignment and appends a successor assignment; cancellation withdraws the workflow request and cancels the canonical work item without forging a lifecycle transition.
+Workflow Operations uses those same canonical records rather than introducing another runtime model. Administrators with `workflow.manage` can monitor active and recent workflow requests, see derived green/amber/red health, inspect assignment and event evidence and intervene through governed controls:
+
+- **Suspend** maps a pending workflow work item to the canonical blocked state with a recorded reason.
+- **Resume** returns safely suspended work to in-progress execution while retaining the suspension evidence.
+- **Escalate** raises triage priority to critical with an attributable reason; other priority changes remain available through progressive disclosure.
+- **Delegate / reassign** closes the current assignment and appends a new member assignment without overwriting history.
+- **Terminate** withdraws the pending workflow request and cancels its canonical work item without advancing or rewriting the source lifecycle.
+
+A red/stale runtime is deliberately not given a blind restart button. The evidence remains visible for investigation so recovery can be chosen only when the source and workflow state make it safe.
 
 ## 7. Platform invariants for F01–F29
 
@@ -117,16 +127,19 @@ Every business function adopting lifecycle/workflow must preserve these invarian
 - return/reject does not masquerade as an approved business-state transition;
 - published versions are immutable and revision lineage is explicit;
 - audit and outbox evidence is appended with governed mutations;
+- graphical authoring changes are governed draft mutations, not disposable client state;
 - operational intervention changes workflow/work state, not business lifecycle state;
 - arbitrary administrator-authored executable server code is prohibited.
 
 ## 8. Delivered administration experience
 
-The V2 workflow administration product now includes:
+The V2 workflow administration product includes:
 
 - a focused template-creation journey rather than a permanent creation form beside the library;
 - a reusable template library with clear version, publication and binding status;
-- a visual process designer over the governed persisted graph;
+- a dedicated graphical process designer with drag/reposition authoring and direct route connection;
+- governed persistence of graphical ordering as minor workflow versions;
+- visible routes, participants, deadlines and execution cues on the design canvas;
 - progressively disclosed advanced node, deadline, routing and execution controls;
 - dedicated People & data administration for roles, participants and typed variables;
 - dedicated Activation administration for immutable publication and business-event binding;
@@ -134,6 +147,7 @@ The V2 workflow administration product now includes:
 - a workflow-operations monitor with active, attention and closed summaries;
 - workflow health derived independently from lifecycle state;
 - per-workflow evidence, assignment history and source/context visibility;
-- operational status, priority, reassignment and cancellation controls backed by canonical Work Kernel evidence.
+- explicit suspend/resume, escalation, delegation/reassignment and termination controls backed by canonical Work Kernel evidence;
+- production integration through F01 lifecycle gates and My Work rather than a disconnected administration-only runtime.
 
-Further platform enhancement may add richer graphical manipulation such as direct drag/reposition authoring, reusable notification/escalation policy libraries, electronic-signature provider integration and broader adoption by each owning business function. Those enhancements must extend the same kernels and interaction grammar rather than reintroducing function-specific workflow engines or returning to an everything-on-one-page administration pattern.
+Further product adoption should connect additional owning business functions to the same lifecycle/workflow kernels. Provider-backed electronic signatures and additional typed connectors may extend the platform, but they must not reintroduce function-specific workflow engines, administrator-authored arbitrary code or an everything-on-one-page administration pattern.
