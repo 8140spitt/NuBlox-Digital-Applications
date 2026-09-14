@@ -47,11 +47,12 @@ Governed workflow administration is a protected tenant capability rather than a 
 /[tenant]/app/workflow
 /[tenant]/app/workflow/new
 /[tenant]/app/workflow/[template]
+/[tenant]/app/workflow/[template]/designer
 /[tenant]/app/workflow/operations
 /[tenant]/app/workflow/operations/[request]
 ```
 
-The workflow library separates template discovery from focused creation. A template workspace separates Designer, People & data, Activation and History. Workflow Operations monitors the canonical workflow-request and Work Kernel runtime, including health, evidence, assignment history, status, priority, reassignment and controlled cancellation. Operational intervention never directly forges the source business lifecycle state.
+The workflow library separates template discovery from focused creation and opens templates directly in the graphical designer. Draft workflow steps can be dragged into design order; Start and End remain fixed; node-to-node routes can be connected directly; the resulting order is persisted as governed minor-version evidence. The template governance workspace separately handles People & data, Activation and History. Workflow Operations monitors the canonical workflow-request and Work Kernel runtime, including health, evidence and assignment history, and exposes suspend/resume, escalation, delegation/reassignment and controlled termination without directly forging the source business lifecycle state.
 
 ### Connected CRM Party portal
 
