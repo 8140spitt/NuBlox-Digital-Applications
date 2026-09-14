@@ -48,7 +48,9 @@
 		description="Define reusable Basic and Advanced lifecycle templates, version them under control, and bind published templates to governed object types."
 	>
 		{#snippet actions()}
-			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary">Workflow administration</LinkButton>
+			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary"
+				>Workflow administration</LinkButton
+			>
 		{/snippet}
 	</PageHeader>
 
