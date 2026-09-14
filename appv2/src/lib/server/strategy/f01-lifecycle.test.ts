@@ -4,6 +4,8 @@ import {
 	canDeleteF01Record,
 	canEditF01Record,
 	canReviseF01Record,
+	f01PhasePermissionKeys,
+	lifecycleTemplate,
 	lifecycleTransitions
 } from './f01-lifecycle';
 
@@ -22,6 +24,25 @@ describe('F01 lifecycle policies', () => {
 			expect(canDeleteF01Record(kind, 'approved')).toBe(true);
 			expect(canReviseF01Record(kind, 'approved')).toBe(true);
 		}
+	});
+
+	it('models governed roots as advanced lifecycle templates with phase-scoped access', () => {
+		expect(lifecycleTemplate('framework').mode).toBe('advanced');
+		expect(f01PhasePermissionKeys('framework', 'draft', ['strategy.manager'])).toEqual([
+			'strategy.manage',
+			'strategy.view'
+		]);
+		expect(f01PhasePermissionKeys('framework', 'approved', ['strategy.viewer'])).toEqual([
+			'strategy.view'
+		]);
+		expect(assertLifecycleTransition('framework', 'draft', 'approved').requiredPermissionKey).toBe(
+			'strategy.approve'
+		);
+	});
+
+	it('keeps ordinary operational state machines basic unless phase access or workflow is required', () => {
+		expect(lifecycleTemplate('initiative').mode).toBe('basic');
+		expect(f01PhasePermissionKeys('initiative', 'in_progress', ['strategy.manager'])).toEqual([]);
 	});
 
 	it('never hard deletes governed handoff requests and keeps receiving outcomes outside F01', () => {
