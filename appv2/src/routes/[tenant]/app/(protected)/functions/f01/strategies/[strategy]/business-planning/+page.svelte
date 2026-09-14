@@ -85,11 +85,11 @@
 		},
 		{
 			key: 'approval-authority',
-			label: 'Approval authority available',
+			label: 'Submission authority available',
 			ready: data.approvalReadiness.canApprove,
 			detail: data.approvalReadiness.canApprove
-				? 'Your effective permissions include strategy approval authority.'
-				: 'Your effective permissions do not include strategy approval. An authorised approver must complete the governed transition.'
+				? 'Your effective permissions include authority to submit this strategy into governed approval workflow.'
+				: 'Your effective permissions do not include authority to submit this strategy. An authorised strategy manager must submit it; an authorised approver decides the resulting work item.'
 		},
 		{
 			key: 'current-strategy-slot',
@@ -191,14 +191,14 @@
 
 		{#if data.approvalReadiness.canApprove && data.framework.lifecycleStatus === 'draft'}
 			<Panel
-				title="Approve the strategic direction"
+				title="Submit the strategic direction for approval"
 				description={data.approvalReadiness.ready
-					? 'All approval prerequisites are satisfied. NuBlox will re-check them inside the approval transaction before committing the strategy.'
-					: 'Complete every approval prerequisite above before committing this strategy as the current enterprise direction.'}
+					? 'All submission prerequisites are satisfied. NuBlox will re-check them before creating the governed approval work item; the strategy remains draft until an authorised approver accepts it.'
+					: 'Complete every prerequisite above before submitting this strategy into governed approval workflow.'}
 			>
 				<form method="POST" action="?/approveStrategy" use:enhance>
 					<Button type="submit" disabled={!data.approvalReadiness.ready}>
-						Approve strategy for business planning
+						Submit strategy for approval
 					</Button>
 				</form>
 			</Panel>
@@ -310,7 +310,9 @@
 										requirement left without a downstream handoff.
 									</p>
 								</div>
-								<Button type="submit" variant="secondary" size="sm">Approve business plan</Button>
+								<Button type="submit" variant="secondary" size="sm"
+									>Submit business plan for approval</Button
+								>
 							</form>
 						{/if}
 

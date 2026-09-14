@@ -3,11 +3,15 @@ import { routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
 import {
-	approveStrategyKpi,
+	WorkflowAccessError,
+	WorkflowValidationError
+} from '$lib/server/platform/workflow-request-service';
+import {
 	getStrategyExecutionReviewWorkspace,
 	recordStrategyKpiObservation
 } from '$lib/server/strategy/execution-review-service';
 import { StrategyAccessError, StrategyValidationError } from '$lib/server/strategy/f01-service';
+import { submitF01WorkflowTransition } from '$lib/server/strategy/f01-workflow-service';
 import type { Actions, PageServerLoad } from './$types';
 
 function text(formData: FormData, key: string): string {
@@ -51,13 +55,23 @@ export const actions = {
 		const kpiPublicId = text(formData, 'kpiPublicId');
 		const { access, actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
 		try {
-			await approveStrategyKpi({ actor, frameworkPublicId: params.strategy, kpiPublicId });
-			redirect(303, routes.strategyPerformance(access.organisationRouteSlug, params.strategy));
+			const workflow = await submitF01WorkflowTransition({
+				actor,
+				frameworkPublicId: params.strategy,
+				kind: 'kpi',
+				recordPublicId: kpiPublicId,
+				targetStatus: 'approved'
+			});
+			if (!workflow) throw new StrategyValidationError('KPI approval workflow is not configured.');
+			redirect(
+				303,
+				`${routes.strategyPerformance(access.organisationRouteSlug, params.strategy)}?workflowSubmitted=1&workflowRequest=${encodeURIComponent(workflow.requestPublicId)}`
+			);
 		} catch (cause) {
-			if (cause instanceof StrategyValidationError) {
+			if (cause instanceof StrategyValidationError || cause instanceof WorkflowValidationError) {
 				return fail(400, { action: 'approveKpi', kpiPublicId, formError: cause.message });
 			}
-			if (cause instanceof StrategyAccessError) {
+			if (cause instanceof StrategyAccessError || cause instanceof WorkflowAccessError) {
 				return fail(403, { action: 'approveKpi', kpiPublicId, formError: cause.message });
 			}
 			throw cause;

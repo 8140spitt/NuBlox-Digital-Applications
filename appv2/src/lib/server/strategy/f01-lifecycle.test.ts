@@ -35,9 +35,9 @@ describe('F01 lifecycle policies', () => {
 		expect(f01PhasePermissionKeys('framework', 'approved', ['strategy.viewer'])).toEqual([
 			'strategy.view'
 		]);
-		expect(assertLifecycleTransition('framework', 'draft', 'approved').requiredPermissionKey).toBe(
-			'strategy.approve'
-		);
+		const approvalGate = assertLifecycleTransition('framework', 'draft', 'approved');
+		expect(approvalGate.requiredPermissionKey).toBe('strategy.manage');
+		expect(approvalGate.workflowKey).toBe('f01.strategy-approval');
 	});
 
 	it('keeps ordinary operational state machines basic unless phase access or workflow is required', () => {

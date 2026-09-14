@@ -149,9 +149,12 @@
 							<input type="hidden" name="kpiPublicId" value={kpi.publicId} />
 							<div>
 								<strong>Govern KPI definition</strong>
-								<p>Approve this definition before actual performance can be recorded against it.</p>
+								<p>
+									Submit this definition for approval before actual performance can be recorded
+									against it.
+								</p>
 							</div>
-							<Button type="submit" variant="secondary" size="sm">Approve KPI</Button>
+							<Button type="submit" variant="secondary" size="sm">Submit KPI for approval</Button>
 						</form>
 					{/if}
 
