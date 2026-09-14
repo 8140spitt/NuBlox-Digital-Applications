@@ -1,4 +1,7 @@
-import { error, fail } from '@sveltejs/kit';
+import { error, fail, redirect } from '@sveltejs/kit';
+import { routes } from '$lib/routing/route-contract';
+import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
+import { getAuth } from '$lib/server/auth/auth';
 import { decidePermissions } from '$lib/server/auth/permission-service';
 import { listJobFamilies, listJobProfiles } from '$lib/server/job-architecture-catalogue';
 import {
@@ -11,7 +14,7 @@ import {
 } from '$lib/server/organisation-structure-service';
 import type { Actions, PageServerLoad } from './$types';
 
-async function contextFor(parent: Parameters<PageServerLoad>[0]['parent']) {
+async function loadContext(parent: Parameters<PageServerLoad>[0]['parent']) {
 	const context = await parent();
 	return {
 		context,
@@ -20,6 +23,18 @@ async function contextFor(parent: Parameters<PageServerLoad>[0]['parent']) {
 			memberId: context.tenant.memberId,
 			userId: context.user.id
 		}
+	};
+}
+
+async function actorFor(request: Request, tenantSlug: string, returnTo: string) {
+	const session = await getAuth().api.getSession({ headers: request.headers });
+	if (!session) redirect(303, routes.appSignIn(tenantSlug, returnTo));
+	const access = await resolveActiveInternalTenant(session.user.id, tenantSlug);
+	if (!access) redirect(303, routes.appNoAccess(tenantSlug));
+	return {
+		organisationId: access.organisationId,
+		memberId: access.memberId,
+		userId: access.userId
 	};
 }
 
@@ -34,7 +49,7 @@ function handled(cause: unknown) {
 }
 
 export const load: PageServerLoad = async ({ parent }) => {
-	const { context, actor } = await contextFor(parent);
+	const { context, actor } = await loadContext(parent);
 	const decisions = await decidePermissions({
 		organisationId: actor.organisationId,
 		memberId: actor.memberId,
@@ -60,9 +75,9 @@ export const load: PageServerLoad = async ({ parent }) => {
 	};
 };
 
-export const actions: Actions = {
-	create: async ({ parent, request }) => {
-		const { actor } = await contextFor(parent);
+export const actions = {
+	create: async ({ params, request, url }) => {
+		const actor = await actorFor(request, params.tenant, `${url.pathname}${url.search}`);
 		const formData = await request.formData();
 		try {
 			const publicId = await createOrganisationPosition({
@@ -80,8 +95,8 @@ export const actions: Actions = {
 			return handled(cause);
 		}
 	},
-	assign: async ({ parent, request }) => {
-		const { actor } = await contextFor(parent);
+	assign: async ({ params, request, url }) => {
+		const actor = await actorFor(request, params.tenant, `${url.pathname}${url.search}`);
 		const formData = await request.formData();
 		try {
 			const publicId = await assignOrganisationMemberToPosition({
@@ -99,4 +114,4 @@ export const actions: Actions = {
 			return handled(cause);
 		}
 	}
-};
+} satisfies Actions;
