@@ -1,8 +1,8 @@
 <script lang="ts">
-	import { resolve } from '$app/paths';
 	import FunctionBlueprint from '$lib/components/enterprise/FunctionBlueprint.svelte';
 	import { Breadcrumbs, Panel, Stat } from '$lib/components/ui';
 	import { appPath, routes } from '$lib/routing/route-contract';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 
 	let { data } = $props();
 
