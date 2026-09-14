@@ -1,0 +1,65 @@
+name: F01 Type Fix
+
+on:
+  push:
+    branches:
+      - feat/f01-completion-reset
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/f01-completion-reset
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Add workflow status to managed record load
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('appv2/src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.server.ts')
+          text = path.read_text()
+          marker = "import type { F01ManagedRecordKind } from '$lib/server/strategy/f01-lifecycle';\n"
+          addition = "import { getF01BusinessWorkflowStatus } from '$lib/server/strategy/f01-business-workflow-status';\n"
+          if addition not in text:
+              text = text.replace(marker, addition + marker)
+          old = """\t\tconst relationshipEditor = managedRecord.canEdit\n\t\t\t? await getF01RelationshipEditor({\n\t\t\t\t\torganisationId: tenant.organisationId,\n\t\t\t\t\tmemberId: tenant.memberId,\n\t\t\t\t\tframeworkPublicId: params.strategy,\n\t\t\t\t\tkind,\n\t\t\t\t\trecordPublicId: params.record\n\t\t\t\t})\n\t\t\t: null;\n\t\treturn { managedRecord, relationshipEditor };\n"""
+          new = """\t\tconst [relationshipEditor, approvalStatus] = await Promise.all([\n\t\t\tmanagedRecord.canEdit\n\t\t\t\t? getF01RelationshipEditor({\n\t\t\t\t\t\torganisationId: tenant.organisationId,\n\t\t\t\t\t\tmemberId: tenant.memberId,\n\t\t\t\t\t\tframeworkPublicId: params.strategy,\n\t\t\t\t\t\tkind,\n\t\t\t\t\t\trecordPublicId: params.record\n\t\t\t\t\t})\n\t\t\t\t: Promise.resolve(null),\n\t\t\tgetF01BusinessWorkflowStatus({\n\t\t\t\torganisationId: tenant.organisationId,\n\t\t\t\tmemberId: tenant.memberId,\n\t\t\t\tkind,\n\t\t\t\trecordPublicId: params.record\n\t\t\t})\n\t\t]);\n\t\treturn { managedRecord, relationshipEditor, approvalStatus };\n"""
+          if old not in text:
+              raise SystemExit('expected managed-record load block not found')
+          path.write_text(text.replace(old, new))
+          PY
+
+      - name: Format file
+        working-directory: appv2
+        run: pnpm exec prettier --write 'src/routes/[tenant]/app/(protected)/functions/f01/strategies/[strategy]/manage/[kind]/[record]/+page.server.ts'
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appv2
+          git commit -m "fix(v2): expose managed record review status"
+          git push origin HEAD:feat/f01-completion-reset
