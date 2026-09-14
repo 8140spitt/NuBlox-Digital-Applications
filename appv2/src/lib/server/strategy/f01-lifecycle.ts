@@ -99,7 +99,9 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 			}
 		},
 		{
-			draft: [{ to: 'approved', label: 'Approve strategy', requiredPermissionKey: 'strategy.approve' }],
+			draft: [
+				{ to: 'approved', label: 'Approve strategy', requiredPermissionKey: 'strategy.approve' }
+			],
 			approved: [],
 			superseded: []
 		}
@@ -253,7 +255,11 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 		},
 		{
 			draft: [
-				{ to: 'approved', label: 'Approve business plan', requiredPermissionKey: 'strategy.approve' }
+				{
+					to: 'approved',
+					label: 'Approve business plan',
+					requiredPermissionKey: 'strategy.approve'
+				}
 			],
 			approved: [],
 			superseded: []
@@ -270,7 +276,9 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 			cancelled: { state: 'cancelled', label: 'Cancelled' }
 		},
 		{
-			proposed: [{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }],
+			proposed: [
+				{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }
+			],
 			approved: [
 				{ to: 'in_progress', label: 'Start initiative', requiresNote: true },
 				{ to: 'cancelled', label: 'Cancel initiative', requiresNote: true, tone: 'danger' }
@@ -294,8 +302,12 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 			cancelled: { state: 'cancelled', label: 'Cancelled' }
 		},
 		{
-			identified: [{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }],
-			requested: [{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }],
+			identified: [
+				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
+			],
+			requested: [
+				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
+			],
 			committed: [
 				{ to: 'satisfied', label: 'Mark requirement satisfied', requiresNote: true },
 				{ to: 'cancelled', label: 'Cancel requirement', requiresNote: true, tone: 'danger' }
@@ -364,7 +376,9 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 			approved: { state: 'approved', label: 'Approved', accessRules: publishedAccess }
 		},
 		{
-			draft: [{ to: 'approved', label: 'Approve review', requiredPermissionKey: 'strategy.approve' }],
+			draft: [
+				{ to: 'approved', label: 'Approve review', requiredPermissionKey: 'strategy.approve' }
+			],
 			approved: []
 		}
 	),

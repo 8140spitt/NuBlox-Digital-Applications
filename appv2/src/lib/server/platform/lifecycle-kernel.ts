@@ -39,7 +39,8 @@ export type LifecycleTemplate = {
 
 export function defineLifecycleTemplate<T extends LifecycleTemplate>(template: T): T {
 	if (!template.key.trim()) throw new Error('Lifecycle template key is required.');
-	if (!template.version.trim()) throw new Error(`Lifecycle template ${template.key} requires a version.`);
+	if (!template.version.trim())
+		throw new Error(`Lifecycle template ${template.key} requires a version.`);
 	if (!template.enabled) return template;
 	if (!template.phases[template.initialState]) {
 		throw new Error(
@@ -49,7 +50,9 @@ export function defineLifecycleTemplate<T extends LifecycleTemplate>(template: T
 
 	for (const [state, phase] of Object.entries(template.phases)) {
 		if (phase.state !== state) {
-			throw new Error(`Lifecycle template ${template.key} phase key ${state} does not match ${phase.state}.`);
+			throw new Error(
+				`Lifecycle template ${template.key} phase key ${state} does not match ${phase.state}.`
+			);
 		}
 		if (template.mode === 'basic' && (phase.accessRules?.length ?? 0) > 0) {
 			throw new Error(
@@ -60,7 +63,9 @@ export function defineLifecycleTemplate<T extends LifecycleTemplate>(template: T
 
 	for (const [from, transitions] of Object.entries(template.transitions)) {
 		if (!template.phases[from]) {
-			throw new Error(`Lifecycle template ${template.key} transition source ${from} is not a phase.`);
+			throw new Error(
+				`Lifecycle template ${template.key} transition source ${from} is not a phase.`
+			);
 		}
 		for (const transition of transitions) {
 			if (!template.phases[transition.to]) {
