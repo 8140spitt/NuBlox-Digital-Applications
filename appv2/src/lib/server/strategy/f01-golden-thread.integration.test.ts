@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import type { ResultSetHeader, RowDataPacket } from 'mysql2/promise';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { getPool } from '$lib/server/db/pool';
+import { listPendingWorkflowTasks } from '$lib/server/platform/workflow-request-service';
 import {
 	createStrategyAssumption,
 	createStrategyEnvironmentFactor,
@@ -31,6 +32,7 @@ import {
 	updateF01Record
 } from './f01-record-management-service';
 import { getF01RelationshipEditor, updateF01Relationships } from './f01-relationship-service';
+import { decideF01WorkflowRequest, submitF01WorkflowTransition } from './f01-workflow-service';
 
 type Actor = { organisationId: string; userId: string; memberId: string };
 type IdRow = RowDataPacket & { id: string | number };
@@ -370,12 +372,89 @@ describe('F01 V2 governed golden thread', () => {
 			}
 		});
 
-		await transitionF01Record({
+		const returnedWorkflow = await submitF01WorkflowTransition({
 			actor,
 			frameworkPublicId: frameworkId,
 			kind: 'framework',
 			recordPublicId: frameworkId,
 			targetStatus: 'approved'
+		});
+		expect(returnedWorkflow).not.toBeNull();
+		let pendingTasks = await listPendingWorkflowTasks({
+			organisationId,
+			memberId: actor.memberId
+		});
+		expect(
+			pendingTasks.find((task) => task.requestPublicId === returnedWorkflow!.requestPublicId)
+		).toMatchObject({
+			requiredPermissionKey: 'strategy.approve',
+			fromState: 'draft',
+			toState: 'approved'
+		});
+		managed = await getF01ManagedRecord({
+			organisationId,
+			memberId: actor.memberId,
+			frameworkPublicId: frameworkId,
+			kind: 'framework',
+			recordPublicId: frameworkId
+		});
+		expect(managed.status).toBe('draft');
+
+		await decideF01WorkflowRequest({
+			actor,
+			requestPublicId: returnedWorkflow!.requestPublicId,
+			decision: 'returned',
+			note: 'Return for one final governance check.'
+		});
+		pendingTasks = await listPendingWorkflowTasks({ organisationId, memberId: actor.memberId });
+		expect(
+			pendingTasks.some((task) => task.requestPublicId === returnedWorkflow!.requestPublicId)
+		).toBe(false);
+		managed = await getF01ManagedRecord({
+			organisationId,
+			memberId: actor.memberId,
+			frameworkPublicId: frameworkId,
+			kind: 'framework',
+			recordPublicId: frameworkId
+		});
+		expect(managed.status).toBe('draft');
+
+		const rejectedWorkflow = await submitF01WorkflowTransition({
+			actor,
+			frameworkPublicId: frameworkId,
+			kind: 'framework',
+			recordPublicId: frameworkId,
+			targetStatus: 'approved'
+		});
+		expect(rejectedWorkflow).not.toBeNull();
+		await decideF01WorkflowRequest({
+			actor,
+			requestPublicId: rejectedWorkflow!.requestPublicId,
+			decision: 'rejected',
+			note: 'Reject this submission without changing the governed source state.'
+		});
+		managed = await getF01ManagedRecord({
+			organisationId,
+			memberId: actor.memberId,
+			frameworkPublicId: frameworkId,
+			kind: 'framework',
+			recordPublicId: frameworkId
+		});
+		expect(managed.status).toBe('draft');
+
+		const approvedWorkflow = await submitF01WorkflowTransition({
+			actor,
+			frameworkPublicId: frameworkId,
+			kind: 'framework',
+			recordPublicId: frameworkId,
+			targetStatus: 'approved'
+		});
+		expect(approvedWorkflow).not.toBeNull();
+		await decideF01WorkflowRequest({
+			actor,
+			requestPublicId: approvedWorkflow!.requestPublicId,
+			decision: 'approved',
+			note: 'Approve after governed workflow review.'
 		});
 		let workspace = await getStrategyWorkspace({ organisationId, memberId: actor.memberId });
 		expect(workspace.activeFramework?.versionLabel).toBe('1.0');

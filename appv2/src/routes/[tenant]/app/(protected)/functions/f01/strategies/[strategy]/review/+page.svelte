@@ -166,7 +166,9 @@
 										evidence.
 									</p>
 								</div>
-								<Button type="submit" variant="secondary" size="sm">Approve review</Button>
+								<Button type="submit" variant="secondary" size="sm"
+									>Submit review for approval</Button
+								>
 							</form>
 						{/if}
 
