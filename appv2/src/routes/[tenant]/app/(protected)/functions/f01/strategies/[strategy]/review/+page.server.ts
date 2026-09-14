@@ -3,10 +3,12 @@ import { routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
 import {
-	approveStrategyReview,
-	getStrategyExecutionReviewWorkspace
-} from '$lib/server/strategy/execution-review-service';
+	WorkflowAccessError,
+	WorkflowValidationError
+} from '$lib/server/platform/workflow-request-service';
+import { getStrategyExecutionReviewWorkspace } from '$lib/server/strategy/execution-review-service';
 import { StrategyAccessError, StrategyValidationError } from '$lib/server/strategy/f01-service';
+import { submitF01WorkflowTransition } from '$lib/server/strategy/f01-workflow-service';
 import type { Actions, PageServerLoad } from './$types';
 
 function text(formData: FormData, key: string): string {
@@ -38,21 +40,29 @@ export const actions = {
 		const access = await resolveActiveInternalTenant(session.user.id, params.tenant);
 		if (!access) redirect(303, routes.appNoAccess(params.tenant));
 		try {
-			await approveStrategyReview({
+			const workflow = await submitF01WorkflowTransition({
 				actor: {
 					organisationId: access.organisationId,
 					userId: access.userId,
 					memberId: access.memberId
 				},
 				frameworkPublicId: params.strategy,
-				reviewPublicId
+				kind: 'review',
+				recordPublicId: reviewPublicId,
+				targetStatus: 'approved'
 			});
-			redirect(303, routes.strategyReview(access.organisationRouteSlug, params.strategy));
+			if (!workflow) {
+				throw new StrategyValidationError('Strategic review approval workflow is not configured.');
+			}
+			redirect(
+				303,
+				`${routes.strategyReview(access.organisationRouteSlug, params.strategy)}?workflowSubmitted=1&workflowRequest=${encodeURIComponent(workflow.requestPublicId)}`
+			);
 		} catch (cause) {
-			if (cause instanceof StrategyValidationError) {
+			if (cause instanceof StrategyValidationError || cause instanceof WorkflowValidationError) {
 				return fail(400, { reviewPublicId, formError: cause.message });
 			}
-			if (cause instanceof StrategyAccessError) {
+			if (cause instanceof StrategyAccessError || cause instanceof WorkflowAccessError) {
 				return fail(403, { reviewPublicId, formError: cause.message });
 			}
 			throw cause;
