@@ -13,6 +13,7 @@ import {
 	transitionF01Record,
 	updateF01Record
 } from '$lib/server/strategy/f01-record-management-service';
+import { getF01BusinessWorkflowStatus } from '$lib/server/strategy/f01-business-workflow-status';
 import type { F01ManagedRecordKind } from '$lib/server/strategy/f01-lifecycle';
 import {
 	getF01RelationshipEditor,
@@ -93,16 +94,24 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 			kind,
 			recordPublicId: params.record
 		});
-		const relationshipEditor = managedRecord.canEdit
-			? await getF01RelationshipEditor({
-					organisationId: tenant.organisationId,
-					memberId: tenant.memberId,
-					frameworkPublicId: params.strategy,
-					kind,
-					recordPublicId: params.record
-				})
-			: null;
-		return { managedRecord, relationshipEditor };
+		const [relationshipEditor, approvalStatus] = await Promise.all([
+			managedRecord.canEdit
+				? getF01RelationshipEditor({
+						organisationId: tenant.organisationId,
+						memberId: tenant.memberId,
+						frameworkPublicId: params.strategy,
+						kind,
+						recordPublicId: params.record
+					})
+				: Promise.resolve(null),
+			getF01BusinessWorkflowStatus({
+				organisationId: tenant.organisationId,
+				memberId: tenant.memberId,
+				kind,
+				recordPublicId: params.record
+			})
+		]);
+		return { managedRecord, relationshipEditor, approvalStatus };
 	} catch (cause) {
 		if (cause instanceof StrategyAccessError) {
 			error(404, 'F01 record is not available in this scope.');

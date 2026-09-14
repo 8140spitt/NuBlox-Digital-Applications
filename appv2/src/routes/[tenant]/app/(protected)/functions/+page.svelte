@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enterpriseFunctions } from '$lib/enterprise/enterprise-functions';
-	import { routes } from '$lib/routing/route-contract';
+	import { appPath, routes } from '$lib/routing/route-contract';
 	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 
 	let { data } = $props();
@@ -15,16 +15,31 @@
 				.includes(needle);
 		})
 	);
+
+	function functionHref(id: string): string {
+		return id === 'F01'
+			? routes.strategy(data.tenant.slug)
+			: appPath(data.tenant.slug, `functions/${id.toLowerCase()}`);
+	}
 </script>
 
-<section class="nb-page function-page">
+<svelte:head>
+	<title>Enterprise functions · NuBlox</title>
+	<meta
+		name="description"
+		content="Browse the 29 NuBlox enterprise functions as one coherent operating-system capability map."
+	/>
+</svelte:head>
+
+<section class="nb-page-wide function-page">
 	<header class="page-heading">
 		<div>
-			<p class="nb-eyebrow">{data.tenant.displayName} · Enterprise functions</p>
-			<h1>How the business operates</h1>
+			<p class="nb-eyebrow">{data.tenant.displayName} · Enterprise operating system</p>
+			<h1>29 functions. One NuBlox.</h1>
 			<p class="nb-lede">
-				The 29 enterprise functions are NuBlox's stable business taxonomy. They define outcomes and
-				ownership; they do not become 29 disconnected applications.
+				Every function uses the same visual language, business-process structure and platform
+				controls. Open any function to see its sub-functions, canonical business objects, user
+				journey and underpinning services.
 			</p>
 		</div>
 		<label class="function-search">
@@ -34,32 +49,32 @@
 	</header>
 
 	<div class="directory-meta">
-		<strong>{filteredFunctions.length}</strong>
-		<span>{filteredFunctions.length === 1 ? 'function' : 'functions'}</span>
+		<div>
+			<strong>{filteredFunctions.length}</strong>
+			<span>{filteredFunctions.length === 1 ? 'function' : 'functions'}</span>
+		</div>
+		<span>F01 is operational · F02–F29 expose the governed capability blueprint</span>
 	</div>
 
 	<div class="function-directory">
 		{#each filteredFunctions as entry (entry.id)}
-			<article class:active-function={entry.id === 'F01'}>
+			<a
+				class="function-card"
+				class:active-function={entry.id === 'F01'}
+				href={resolve(functionHref(entry.id))}
+			>
 				<div class="function-id">{entry.id}</div>
 				<div class="function-copy">
-					<h2>
-						{#if entry.id === 'F01'}
-							<a href={resolve(routes.strategy(data.tenant.slug))}>{entry.name}</a>
-						{:else}
-							{entry.name}
-						{/if}
-					</h2>
+					<h2>{entry.name}</h2>
 					<p>{entry.purpose}</p>
 				</div>
-				{#if entry.id === 'F01'}
-					<a class="function-state active-state" href={resolve(routes.strategy(data.tenant.slug))}
-						>Open workspace</a
+				<div class="function-footer">
+					<span class:live={entry.id === 'F01'}
+						>{entry.id === 'F01' ? 'Operating workspace' : 'Capability blueprint'}</span
 					>
-				{:else}
-					<div class="function-state">Not yet activated in V2</div>
-				{/if}
-			</article>
+					<strong>Open →</strong>
+				</div>
+			</a>
 		{:else}
 			<div class="no-results">
 				<h2>No matching function</h2>
@@ -72,148 +87,183 @@
 <style>
 	.function-page {
 		display: grid;
-		gap: 28px;
+		gap: var(--nb-space-6);
 	}
 
 	.page-heading {
 		display: grid;
 		grid-template-columns: minmax(0, 1fr) minmax(260px, 360px);
 		align-items: end;
-		gap: 40px;
+		gap: var(--nb-space-10);
+		padding: var(--nb-space-6);
+		border: 1px solid var(--nb-blue-80);
+		border-radius: var(--nb-radius-xl);
+		background: linear-gradient(
+			135deg,
+			color-mix(in srgb, var(--nb-blue-95) 70%, white),
+			white 72%
+		);
 	}
 
 	h1 {
-		margin: 0 0 16px;
+		margin: 0 0 var(--nb-space-3);
 		font-size: clamp(2rem, 5vw, 3.4rem);
 		letter-spacing: -0.045em;
 	}
 
 	.function-search {
 		display: grid;
-		gap: 7px;
+		gap: var(--nb-space-2);
 	}
 
 	.function-search span {
-		font-size: 0.78rem;
-		font-weight: 750;
-		color: var(--nb-muted);
+		font-size: var(--nb-font-size-xs);
+		font-weight: var(--nb-weight-semibold);
+		color: var(--nb-color-text-muted);
 	}
 
 	.function-search input {
 		width: 100%;
-		border: 1px solid var(--nb-border);
-		border-radius: 10px;
-		padding: 11px 12px;
-		background: var(--nb-surface);
-		color: var(--nb-ink);
+		border: 1px solid var(--nb-color-border-default);
+		border-radius: var(--nb-radius-md);
+		padding: 12px 14px;
+		background: rgba(255, 255, 255, 0.9);
+		color: var(--nb-color-text-primary);
 		font: inherit;
 	}
 
 	.directory-meta {
 		display: flex;
 		align-items: baseline;
-		gap: 7px;
-		padding-top: 8px;
-		border-top: 1px solid var(--nb-border);
-		color: var(--nb-muted);
+		justify-content: space-between;
+		gap: var(--nb-space-4);
+		color: var(--nb-color-text-muted);
+		font-size: var(--nb-font-size-xs);
 	}
 
 	.directory-meta strong {
-		font-size: 1.1rem;
-		color: var(--nb-ink);
+		font-size: var(--nb-font-size-lg);
+		color: var(--nb-color-text-primary);
 	}
 
 	.function-directory {
 		display: grid;
-		border-top: 1px solid var(--nb-border);
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		gap: var(--nb-space-4);
 	}
 
-	.function-directory article {
+	.function-card {
 		display: grid;
-		grid-template-columns: 72px minmax(0, 1fr) 180px;
-		gap: 20px;
-		align-items: start;
-		padding: 22px 0;
-		border-bottom: 1px solid var(--nb-border);
+		align-content: start;
+		gap: var(--nb-space-4);
+		min-height: 250px;
+		padding: var(--nb-space-5);
+		border: 1px solid var(--nb-color-border-subtle);
+		border-radius: var(--nb-radius-xl);
+		background: var(--nb-color-bg-surface);
+		color: inherit;
+		text-decoration: none;
+		transition:
+			transform 140ms ease,
+			border-color 140ms ease,
+			box-shadow 140ms ease;
 	}
 
-	.function-directory article.active-function {
-		margin-inline: -16px;
-		padding-inline: 16px;
-		background: color-mix(in srgb, var(--nb-blue-95) 52%, transparent);
+	.function-card:hover {
+		transform: translateY(-2px);
+		border-color: var(--nb-blue-70);
+		box-shadow: 0 12px 30px rgba(12, 52, 82, 0.08);
+	}
+
+	.function-card.active-function {
+		border-color: var(--nb-blue-60);
+		background: linear-gradient(
+			160deg,
+			color-mix(in srgb, var(--nb-blue-95) 65%, white),
+			white 70%
+		);
 	}
 
 	.function-id {
-		font-size: 0.78rem;
-		font-weight: 850;
+		display: inline-grid;
+		place-items: center;
+		width: 54px;
+		height: 38px;
+		border-radius: var(--nb-radius-md);
+		background: var(--nb-blue-10);
+		color: white;
+		font-size: 0.72rem;
+		font-weight: var(--nb-weight-bold);
 		letter-spacing: 0.08em;
-		color: var(--nb-accent);
 	}
 
 	.function-copy h2 {
-		margin: 0 0 6px;
-		font-size: 1rem;
-		letter-spacing: -0.015em;
-	}
-
-	.function-copy h2 a {
-		text-decoration: none;
-	}
-
-	.function-copy h2 a:hover {
-		text-decoration: underline;
-		text-underline-offset: 3px;
+		margin: 0 0 var(--nb-space-2);
+		font-size: var(--nb-font-size-lg);
+		letter-spacing: -0.02em;
 	}
 
 	.function-copy p {
 		margin: 0;
-		line-height: 1.55;
-		color: var(--nb-muted);
+		color: var(--nb-color-text-secondary);
+		font-size: var(--nb-font-size-sm);
+		line-height: var(--nb-line-relaxed);
 	}
 
-	.function-state {
-		justify-self: end;
-		font-size: 0.76rem;
-		font-weight: 700;
-		color: var(--nb-muted);
+	.function-footer {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--nb-space-4);
+		margin-top: auto;
+		padding-top: var(--nb-space-4);
+		border-top: 1px solid var(--nb-color-border-subtle);
+		font-size: var(--nb-font-size-xs);
 	}
 
-	.active-state {
+	.function-footer span {
+		color: var(--nb-color-text-muted);
+		font-weight: var(--nb-weight-semibold);
+	}
+
+	.function-footer span.live,
+	.function-footer strong {
 		color: var(--nb-color-action-primary);
-		text-decoration: none;
-	}
-
-	.active-state:hover {
-		text-decoration: underline;
-		text-underline-offset: 3px;
 	}
 
 	.no-results {
-		padding: 48px 0;
+		grid-column: 1 / -1;
+		padding: var(--nb-space-12) 0;
 	}
 
 	.no-results h2 {
-		margin: 0 0 8px;
+		margin: 0 0 var(--nb-space-2);
 	}
 
 	.no-results p {
 		margin: 0;
-		color: var(--nb-muted);
+		color: var(--nb-color-text-muted);
 	}
 
-	@media (max-width: 800px) {
-		.page-heading {
+	@media (max-width: 1050px) {
+		.function-directory {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+	}
+
+	@media (max-width: 760px) {
+		.page-heading,
+		.function-directory {
 			grid-template-columns: 1fr;
-			gap: 24px;
 		}
 
-		.function-directory article {
-			grid-template-columns: 54px minmax(0, 1fr);
+		.page-heading {
+			gap: var(--nb-space-5);
 		}
 
-		.function-state {
-			grid-column: 2;
-			justify-self: start;
+		.directory-meta {
+			align-items: start;
+			flex-direction: column;
 		}
 	}
 </style>

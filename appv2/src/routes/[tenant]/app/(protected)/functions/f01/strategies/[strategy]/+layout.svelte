@@ -12,8 +12,10 @@
 	const analysis = $derived(routes.strategyAnalysis(tenant, strategy));
 	const planning = $derived(routes.strategyPlanning(tenant, strategy));
 	const businessPlanning = $derived(routes.strategyBusinessPlanning(tenant, strategy));
+	const operatingModel = $derived(routes.strategyOperatingModel(tenant, strategy));
 	const performance = $derived(routes.strategyPerformance(tenant, strategy));
 	const review = $derived(routes.strategyReview(tenant, strategy));
+	const foresight = $derived(routes.strategyForesight(tenant, strategy));
 	const tabs = $derived([
 		{ label: 'Overview', href: overview, active: pathname === overview },
 		{ label: 'F01.02 Environment', href: analysis, active: pathname.startsWith(analysis) },
@@ -23,8 +25,14 @@
 			href: businessPlanning,
 			active: pathname.startsWith(businessPlanning)
 		},
+		{
+			label: 'F01.05 Operating model',
+			href: operatingModel,
+			active: pathname.startsWith(operatingModel)
+		},
 		{ label: 'F01.06 Performance', href: performance, active: pathname.startsWith(performance) },
-		{ label: 'F01.07 Review', href: review, active: pathname.startsWith(review) }
+		{ label: 'F01.07 Review', href: review, active: pathname.startsWith(review) },
+		{ label: 'F01.08 Foresight', href: foresight, active: pathname.startsWith(foresight) }
 	]);
 </script>
 

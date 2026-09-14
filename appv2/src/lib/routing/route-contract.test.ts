@@ -40,7 +40,7 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		expect(routes.designSystem('nublox')).toBe('/nublox/app/design-system');
 	});
 
-	it('builds the F01 strategy workspace inside the active tenant', () => {
+	it('builds the complete F01 strategy workspace inside the active tenant', () => {
 		expect(routes.strategy('perspective-bc')).toBe('/perspective-bc/app/functions/f01');
 		expect(routes.strategyNew('perspective-bc')).toBe('/perspective-bc/app/functions/f01/new');
 		expect(routes.strategyFramework('perspective-bc', 'framework-public-id')).toBe(
@@ -66,6 +66,12 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/business-planning/new/initiative'
 		);
+		expect(routes.strategyOperatingModel('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/operating-model'
+		);
+		expect(routes.strategyOperatingModelNew('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/operating-model/new'
+		);
 		expect(routes.strategyPerformance('perspective-bc', 'framework-public-id')).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/performance'
 		);
@@ -77,6 +83,12 @@ describe('NuBlox V2 tenant-first route contract', () => {
 		);
 		expect(routes.strategyReviewNew('perspective-bc', 'framework-public-id', 'decision')).toBe(
 			'/perspective-bc/app/functions/f01/strategies/framework-public-id/review/new/decision'
+		);
+		expect(routes.strategyForesight('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/foresight'
+		);
+		expect(routes.strategyForesightNew('perspective-bc', 'framework-public-id')).toBe(
+			'/perspective-bc/app/functions/f01/strategies/framework-public-id/foresight/new'
 		);
 		expect(() => routes.strategyFramework('perspective-bc', '')).toThrow(/Strategy/);
 	});
