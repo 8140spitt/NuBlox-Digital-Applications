@@ -11,6 +11,7 @@
 		StatusBadge
 	} from '$lib/components/ui';
 	import { appPath, routes } from '$lib/routing/route-contract';
+	import { resolveInternalPath as resolve } from '$lib/routing/resolve-path';
 
 	let { data, form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
@@ -161,8 +162,10 @@
 									: 'No reporting position'}</span
 							>
 							<span>{position.validFrom ?? 'Open start'} → {position.validTo ?? 'Open ended'}</span>
-							<a href={appPath(tenant, `organisation/job-architecture/${position.jobProfileKey}`)}
-								>Canonical profile</a
+							<a
+								href={resolve(
+									appPath(tenant, `organisation/job-architecture/${position.jobProfileKey}`)
+								)}>Canonical profile</a
 							>
 						</div>
 
