@@ -38,6 +38,10 @@ export type AppStrategyBusinessPlanningPath =
 	`/${string}/app/functions/f01/strategies/${string}/business-planning`;
 export type AppStrategyBusinessPlanningNewPath =
 	`/${string}/app/functions/f01/strategies/${string}/business-planning/new/${string}`;
+export type AppStrategyOperatingModelPath =
+	`/${string}/app/functions/f01/strategies/${string}/operating-model`;
+export type AppStrategyOperatingModelNewPath =
+	`/${string}/app/functions/f01/strategies/${string}/operating-model/new`;
 export type AppStrategyPerformancePath =
 	`/${string}/app/functions/f01/strategies/${string}/performance`;
 export type AppStrategyPerformanceNewPath =
@@ -45,6 +49,10 @@ export type AppStrategyPerformanceNewPath =
 export type AppStrategyReviewPath = `/${string}/app/functions/f01/strategies/${string}/review`;
 export type AppStrategyReviewNewPath =
 	`/${string}/app/functions/f01/strategies/${string}/review/new/${string}`;
+export type AppStrategyForesightPath =
+	`/${string}/app/functions/f01/strategies/${string}/foresight`;
+export type AppStrategyForesightNewPath =
+	`/${string}/app/functions/f01/strategies/${string}/foresight/new`;
 export type StrategyAnalysisRecordKind = 'evidence' | 'factor' | 'assumption';
 export type StrategyPlanningRecordKind = 'option' | 'theme' | 'objective';
 export type StrategyBusinessPlanningRecordKind = 'plan' | 'initiative' | 'requirement' | 'handoff';
@@ -186,8 +194,7 @@ export const routes = {
 	lifecycle: (tenant: string): AppLifecyclePath => appPath(tenant, 'lifecycle') as AppLifecyclePath,
 	lifecycleTemplate: (tenant: string, templatePublicId: string): AppLifecycleTemplatePath =>
 		`${appPath(tenant, 'lifecycle')}/${requiredSegment(templatePublicId, 'Lifecycle template')}` as AppLifecycleTemplatePath,
-	strategy: (tenant: string): AppStrategyPath =>
-		appPath(tenant, 'functions/f01') as AppStrategyPath,
+	strategy: (tenant: string): AppStrategyPath => appPath(tenant, 'functions/f01') as AppStrategyPath,
 	strategyNew: (tenant: string): AppStrategyNewPath =>
 		appPath(tenant, 'functions/f01/new') as AppStrategyNewPath,
 	strategyFramework: (tenant: string, strategyPublicId: string): AppStrategyFrameworkPath =>
@@ -226,6 +233,16 @@ export const routes = {
 		recordKind: StrategyBusinessPlanningRecordKind
 	): AppStrategyBusinessPlanningNewPath =>
 		`${strategyBase(tenant, strategyPublicId)}/business-planning/new/${recordKind}` as AppStrategyBusinessPlanningNewPath,
+	strategyOperatingModel: (
+		tenant: string,
+		strategyPublicId: string
+	): AppStrategyOperatingModelPath =>
+		`${strategyBase(tenant, strategyPublicId)}/operating-model` as AppStrategyOperatingModelPath,
+	strategyOperatingModelNew: (
+		tenant: string,
+		strategyPublicId: string
+	): AppStrategyOperatingModelNewPath =>
+		`${strategyBase(tenant, strategyPublicId)}/operating-model/new` as AppStrategyOperatingModelNewPath,
 	strategyPerformance: (tenant: string, strategyPublicId: string): AppStrategyPerformancePath =>
 		`${strategyBase(tenant, strategyPublicId)}/performance` as AppStrategyPerformancePath,
 	strategyPerformanceNew: (
@@ -242,6 +259,10 @@ export const routes = {
 		recordKind: StrategyReviewRecordKind
 	): AppStrategyReviewNewPath =>
 		`${strategyBase(tenant, strategyPublicId)}/review/new/${recordKind}` as AppStrategyReviewNewPath,
+	strategyForesight: (tenant: string, strategyPublicId: string): AppStrategyForesightPath =>
+		`${strategyBase(tenant, strategyPublicId)}/foresight` as AppStrategyForesightPath,
+	strategyForesightNew: (tenant: string, strategyPublicId: string): AppStrategyForesightNewPath =>
+		`${strategyBase(tenant, strategyPublicId)}/foresight/new` as AppStrategyForesightNewPath,
 	portal: (tenant: string, crmParty: string): PortalPath =>
 		portalPath(tenant, crmParty) as PortalPath,
 	portalSignIn: portalSignInPath,
