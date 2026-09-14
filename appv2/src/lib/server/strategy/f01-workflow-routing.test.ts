@@ -33,16 +33,19 @@ describe('F01 governed workflow routing', () => {
 		}
 	);
 
-	it.each(governedApprovals)('publishes an approve/return/reject decision activity for $kind', ({ workflowKey }) => {
-		const template = f01WorkflowTemplate(workflowKey);
-		expect(template).not.toBeNull();
-		const approval = template!.nodes.find((node) => node.key === 'approval');
-		expect(approval).toMatchObject({
-			type: 'activity',
-			responsibleRoleKey: 'approver',
-			routingEvents: ['approve', 'return', 'reject'],
-			recordVotes: true,
-			recordReassignments: true
-		});
-	});
+	it.each(governedApprovals)(
+		'publishes an approve/return/reject decision activity for $kind',
+		({ workflowKey }) => {
+			const template = f01WorkflowTemplate(workflowKey);
+			expect(template).not.toBeNull();
+			const approval = template!.nodes.find((node) => node.key === 'approval');
+			expect(approval).toMatchObject({
+				type: 'activity',
+				responsibleRoleKey: 'approver',
+				routingEvents: ['approve', 'return', 'reject'],
+				recordVotes: true,
+				recordReassignments: true
+			});
+		}
+	);
 });
