@@ -14,7 +14,7 @@
 				after an approval decision successfully passes the source-domain invariants.
 			</p>
 		</div>
-		<StatusBadge tone="info">Pending</StatusBadge>
+		<StatusBadge label="Pending" tone="info" />
 	</header>
 
 	{#if form?.formError}
