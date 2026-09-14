@@ -39,6 +39,18 @@ NuBlox is tenant-first. Public onboarding creates a tenancy; existing users ente
 
 `/[tenant]/app` is an authoritative entry resolver: anonymous users go to that tenant's sign-in route, authorised members go to that tenant's dashboard, and authenticated identities without membership go to the tenant-scoped no-access state.
 
+### Lifecycle & business object registry
+
+Lifecycle administration includes the canonical F01–F29 business-object catalogue and starter-template installer:
+
+```text
+/[tenant]/app/lifecycle
+/[tenant]/app/lifecycle/registry
+/[tenant]/app/lifecycle/[template]
+```
+
+The registry distinguishes the governed business object, its legal lifecycle states and the workflows used to perform controlled work against lifecycle transitions. Installing a starter pack creates tenant-owned lifecycle and workflow drafts in the existing platform engines; installation never auto-publishes or activates them. Administrators review and adapt participants, permissions, deadlines, routing and event bindings before normal publication and activation.
+
 ### Workflow administration
 
 Governed workflow administration is a protected tenant capability rather than a separate application:
