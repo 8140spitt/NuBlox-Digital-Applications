@@ -331,14 +331,14 @@
 							<div class="form-grid">
 								<Field id="fromNodeKey" label="From node" required
 									><select class="nb-control" id="fromNodeKey" name="fromNodeKey"
-										>{#each template.nodes as node}<option value={node.nodeKey}
+										>{#each template.nodes as node (node.publicId)}<option value={node.nodeKey}
 												>{node.label} · {node.nodeKey}</option
 											>{/each}</select
 									></Field
 								>
 								<Field id="toNodeKey" label="To node" required
 									><select class="nb-control" id="toNodeKey" name="toNodeKey"
-										>{#each template.nodes as node}<option value={node.nodeKey}
+										>{#each template.nodes as node (node.publicId)}<option value={node.nodeKey}
 												>{node.label} · {node.nodeKey}</option
 											>{/each}</select
 									></Field
@@ -399,7 +399,7 @@
 							<div class="form-grid">
 								<Field id="participantNodeKey" label="Node" required
 									><select class="nb-control" id="participantNodeKey" name="nodeKey"
-										>{#each template.nodes as node}<option value={node.nodeKey}
+										>{#each template.nodes as node (node.publicId)}<option value={node.nodeKey}
 												>{node.label} · {node.nodeKey}</option
 											>{/each}</select
 									></Field
@@ -604,7 +604,7 @@
 				padding="spacious"
 			>
 				<div class="history-list">
-					{#each template.versionHistory as version}<div>
+					{#each template.versionHistory as version (version.label)}<div>
 							<div>
 								<strong>v{version.label}</strong><StatusBadge
 									label={version.status}

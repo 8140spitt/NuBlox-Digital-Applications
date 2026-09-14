@@ -409,14 +409,14 @@ async function definitionForTemplate(
 				toNodeKey: string;
 				eventKey: string | null;
 				conditionJson: unknown;
-				loop: number | boolean;
+				isLoop: number | boolean;
 				terminateOpenPredecessors: number | boolean;
 			}
 		>
 	>(
 		`SELECT source.node_key AS fromNodeKey, target.node_key AS toNodeKey,
 		        link.event_key AS eventKey, link.condition_json AS conditionJson,
-		        link.is_loop AS loop, link.terminate_open_predecessors AS terminateOpenPredecessors
+		        link.is_loop AS isLoop, link.terminate_open_predecessors AS terminateOpenPredecessors
 		 FROM workflow_template_links link
 		 JOIN workflow_template_nodes source ON source.id = link.from_node_id
 		 JOIN workflow_template_nodes target ON target.id = link.to_node_id
@@ -531,7 +531,7 @@ async function definitionForTemplate(
 			condition: link.conditionJson
 				? jsonValue<WorkflowRule | undefined>(link.conditionJson, undefined)
 				: undefined,
-			loop: bool(link.loop),
+			loop: bool(link.isLoop),
 			terminateOpenPredecessors: bool(link.terminateOpenPredecessors)
 		}))
 	};
@@ -659,7 +659,7 @@ export async function getWorkflowTemplate(
 	try {
 		const row = await templateRow(connection, actor, publicId);
 		const templateId = Number(row.id);
-		const [roles] = await connection.execute<WorkflowRoleAdmin[]>(
+		const [roles] = await connection.execute<Array<RowDataPacket & WorkflowRoleAdmin>>(
 			`SELECT role_key AS roleKey, label, description FROM workflow_template_roles
 			 WHERE organisation_id = ? AND workflow_template_id = ? ORDER BY role_key`,
 			[actor.organisationId, templateId]
@@ -719,7 +719,7 @@ export async function getWorkflowTemplate(
 		>(
 			`SELECT link.public_id AS publicId, source.node_key AS fromNodeKey,
 			        target.node_key AS toNodeKey, link.event_key AS eventKey,
-			        link.condition_json AS conditionJson, link.is_loop AS loop,
+			        link.condition_json AS conditionJson, link.is_loop AS isLoop,
 			        link.terminate_open_predecessors AS terminateOpenPredecessors,
 			        link.display_order AS displayOrder
 			 FROM workflow_template_links link
@@ -778,7 +778,7 @@ export async function getWorkflowTemplate(
 				condition: link.conditionJson
 					? jsonValue<WorkflowRule | null>(link.conditionJson, null)
 					: null,
-				loop: bool(link.loop),
+				loop: bool(link.isLoop),
 				terminateOpenPredecessors: bool(link.terminateOpenPredecessors),
 				displayOrder: Number(link.displayOrder)
 			})),
