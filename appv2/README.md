@@ -39,6 +39,20 @@ NuBlox is tenant-first. Public onboarding creates a tenancy; existing users ente
 
 `/[tenant]/app` is an authoritative entry resolver: anonymous users go to that tenant's sign-in route, authorised members go to that tenant's dashboard, and authenticated identities without membership go to the tenant-scoped no-access state.
 
+### Workflow administration
+
+Governed workflow administration is a protected tenant capability rather than a separate application:
+
+```text
+/[tenant]/app/workflow
+/[tenant]/app/workflow/new
+/[tenant]/app/workflow/[template]
+/[tenant]/app/workflow/operations
+/[tenant]/app/workflow/operations/[request]
+```
+
+The workflow library separates template discovery from focused creation. A template workspace separates Designer, People & data, Activation and History. Workflow Operations monitors the canonical workflow-request and Work Kernel runtime, including health, evidence, assignment history, status, priority, reassignment and controlled cancellation. Operational intervention never directly forges the source business lifecycle state.
+
 ### Connected CRM Party portal
 
 ```text
