@@ -53,7 +53,8 @@
 		>{/if}
 	{#if operation.health === 'red'}
 		<Alert tone="danger" title="Workflow exception requires investigation">
-			The runtime is marked stale or inconsistent. Automated restart is deliberately unavailable; use the evidence below to establish a safe recovery path.
+			The runtime is marked stale or inconsistent. Automated restart is deliberately unavailable;
+			use the evidence below to establish a safe recovery path.
 		</Alert>
 	{:else if operation.workStatus === 'blocked'}
 		<Alert tone="warning" title="Workflow suspended">
@@ -66,7 +67,13 @@
 	{/if}
 
 	<div class="fact-strip">
-		<div><span>Execution</span><strong>{operation.workStatus === 'blocked' ? 'Suspended' : operation.workStatus.replaceAll('_', ' ')}</strong></div>
+		<div>
+			<span>Execution</span><strong
+				>{operation.workStatus === 'blocked'
+					? 'Suspended'
+					: operation.workStatus.replaceAll('_', ' ')}</strong
+			>
+		</div>
 		<div><span>Priority</span><strong>{operation.priority}</strong></div>
 		<div>
 			<span>Submitted</span><strong>{new Date(operation.submittedAt).toLocaleString()}</strong>
@@ -145,7 +152,11 @@
 					{#if operation.workStatus === 'blocked'}
 						<form method="POST" action="?/status" use:enhance class="form-stack intervention-block">
 							<input type="hidden" name="status" value="in_progress" />
-							<Field id="resumeReason" label="Resume note" hint="Record why the suspension condition is now resolved.">
+							<Field
+								id="resumeReason"
+								label="Resume note"
+								hint="Record why the suspension condition is now resolved."
+							>
 								<textarea class="nb-control" id="resumeReason" name="reason"></textarea>
 							</Field>
 							<Button type="submit">Resume workflow</Button>
@@ -160,10 +171,16 @@
 						</form>
 					{/if}
 					{#if operation.priority !== 'critical'}
-						<form method="POST" action="?/priority" use:enhance class="form-stack intervention-block section-rule">
+						<form
+							method="POST"
+							action="?/priority"
+							use:enhance
+							class="form-stack intervention-block section-rule"
+						>
 							<input type="hidden" name="priority" value="critical" />
 							<Field id="escalationReason" label="Escalation reason" required>
-								<textarea class="nb-control" id="escalationReason" name="reason" required></textarea>
+								<textarea class="nb-control" id="escalationReason" name="reason" required
+								></textarea>
 							</Field>
 							<Button type="submit" variant="secondary">Escalate to critical</Button>
 						</form>
@@ -173,7 +190,9 @@
 						<form method="POST" action="?/priority" use:enhance class="form-stack priority-form">
 							<Field id="priority" label="Priority">
 								<select class="nb-control" id="priority" name="priority" value={operation.priority}>
-									<option value="low">Low</option><option value="normal">Normal</option><option value="high">High</option><option value="urgent">Urgent</option><option value="critical">Critical</option>
+									<option value="low">Low</option><option value="normal">Normal</option><option
+										value="high">High</option
+									><option value="urgent">Urgent</option><option value="critical">Critical</option>
 								</select>
 							</Field>
 							<input type="hidden" name="reason" value="Manual workflow triage priority change" />
@@ -200,7 +219,8 @@
 							></Field
 						>
 						<Field id="reassignReason" label="Delegation reason" required
-							><textarea class="nb-control" id="reassignReason" name="reason" required></textarea></Field
+							><textarea class="nb-control" id="reassignReason" name="reason" required
+							></textarea></Field
 						>
 						<Button type="submit" variant="secondary">Delegate responsibility</Button>
 					</form>
