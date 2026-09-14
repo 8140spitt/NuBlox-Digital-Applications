@@ -1,0 +1,112 @@
+name: Integrate job architecture navigation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/integrate-job-architecture.yml
+
+permissions:
+  contents: write
+
+jobs:
+  integrate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Integrate organisation navigation and docs
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          shell_path = Path('appv2/src/lib/components/shell/ApplicationShell.svelte')
+          shell = shell_path.read_text()
+          shell = shell.replace(
+              "import { routes } from '$lib/routing/route-contract';",
+              "import { appPath, routes } from '$lib/routing/route-contract';",
+              1,
+          )
+          shell = shell.replace(
+              "\t\ttoolAccess: { lifecycle: boolean };",
+              "\t\ttoolAccess: { lifecycle: boolean; organisationStructure: boolean };",
+              1,
+          )
+          marker = """\t\t{\n\t\t\tlabel: 'Tools',\n\t\t\titems: [\n"""
+          organisation_group = """\t\t...(toolAccess.organisationStructure\n\t\t\t? [\n\t\t\t\t\t{\n\t\t\t\t\t\tlabel: 'Organisation',\n\t\t\t\t\t\titems: [\n\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\tlabel: 'Job architecture',\n\t\t\t\t\t\t\t\thref: appPath(tenant.slug, 'organisation/job-architecture'),\n\t\t\t\t\t\t\t\ticon: 'system' as const\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\tlabel: 'Positions',\n\t\t\t\t\t\t\t\thref: appPath(tenant.slug, 'organisation/positions'),\n\t\t\t\t\t\t\t\ticon: 'system' as const\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t]\n\t\t\t\t\t}\n\t\t\t\t]\n\t\t\t: []),\n"""
+          if marker not in shell:
+              raise SystemExit('ApplicationShell Tools group marker not found')
+          shell = shell.replace(marker, organisation_group + marker, 1)
+          shell_path.write_text(shell)
+
+          readme_path = Path('appv2/README.md')
+          readme = readme_path.read_text()
+          marker = "### Connected CRM Party portal"
+          section = """### Organisation design and job architecture\n\nNuBlox V2 consumes the deterministic generated job architecture as canonical reference data while keeping tenant structure operational and separate from RBAC:\n\n```text\n/[tenant]/app/organisation/job-architecture\n/[tenant]/app/organisation/job-architecture/[profile]\n/[tenant]/app/organisation/positions\n```\n\nThe catalogue exposes all 29 job families, 353 functional roles and 382 candidate job profiles generated from the enterprise taxonomy. Organisation positions reference stable canonical job-profile IDs and position assignments connect those positions to active organisation members. Neither a job profile nor a position grants permissions; organisation access roles and permission overrides remain the security authority.\n\n"""
+          if marker not in readme:
+              raise SystemExit('appv2 README insertion marker not found')
+          readme = readme.replace(marker, section + marker, 1)
+          readme_path.write_text(readme)
+
+          architecture_path = Path('docs/architecture/job-architecture/README.md')
+          architecture = architecture_path.read_text()
+          old = """## 9. Planned persistence\n\nThe eventual relational model should introduce separate entities for:\n"""
+          new = """## 9. Product persistence and runtime use\n\nNuBlox V2 now consumes the generated families, functional roles and job profiles as deterministic canonical reference data. Tenant-specific organisation structure is persisted separately through `organisation_positions` and `position_assignments`; those records point back to stable canonical job-profile IDs and do not become access-control grants.\n\nThe remaining curation model should introduce separate entities for:\n"""
+          if old not in architecture:
+              raise SystemExit('job architecture persistence section marker not found')
+          architecture = architecture.replace(old, new, 1)
+          architecture = architecture.replace(
+              "- `organisation_positions`;\n- `position_assignments`.\n\nDatabase implementation should be a separate schema package/ADR after this architecture baseline is reviewed.",
+              "- canonical job-family/profile curation records when candidate content is promoted beyond the generated baseline.\n\n`organisation_positions` and `position_assignments` are now implemented as the tenant operational bridge. Any future canonical curation tables must preserve generated source IDs and must not collapse job architecture into RBAC.",
+              1,
+          )
+          architecture_path.write_text(architecture)
+          PY
+
+      - name: Format V2 job architecture changes
+        working-directory: appv2
+        run: |
+          pnpm exec prettier --write \
+            src/lib/components/shell/ApplicationShell.svelte \
+            src/lib/server/job-architecture-catalogue.ts \
+            src/lib/server/job-architecture-catalogue.test.ts \
+            src/lib/server/organisation-structure-service.ts \
+            'src/routes/[tenant]/app/(protected)/+layout.server.ts' \
+            'src/routes/[tenant]/app/(protected)/organisation/job-architecture/+page.server.ts' \
+            'src/routes/[tenant]/app/(protected)/organisation/job-architecture/+page.svelte' \
+            'src/routes/[tenant]/app/(protected)/organisation/job-architecture/[profile]/+page.server.ts' \
+            'src/routes/[tenant]/app/(protected)/organisation/job-architecture/[profile]/+page.svelte' \
+            'src/routes/[tenant]/app/(protected)/organisation/positions/+page.server.ts' \
+            'src/routes/[tenant]/app/(protected)/organisation/positions/+page.svelte' \
+            README.md
+
+      - name: Commit integration and remove one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appv2 docs/architecture/job-architecture/README.md database/migrations/20260914140000_job_architecture_positions.sql
+          git rm .github/workflows/integrate-job-architecture.yml
+          git commit -m "feat(v2): integrate job architecture into organisation design"
+          git push origin HEAD:main
