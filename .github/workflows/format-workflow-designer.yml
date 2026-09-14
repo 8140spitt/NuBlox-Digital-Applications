@@ -1,0 +1,50 @@
+name: One-time graphical workflow designer formatter
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/format-workflow-designer.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  format-and-remove:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+      - name: Format graphical workflow designer files
+        working-directory: appv2
+        run: |
+          pnpm exec prettier --write \
+            'src/lib/server/platform/workflow-designer-service.ts' \
+            'src/routes/[tenant]/app/(protected)/workflow/+page.svelte' \
+            'src/routes/[tenant]/app/(protected)/workflow/[template]/designer-order/+server.ts' \
+            'src/routes/[tenant]/app/(protected)/workflow/[template]/designer/+page.server.ts' \
+            'src/routes/[tenant]/app/(protected)/workflow/[template]/designer/+page.svelte'
+      - name: Commit formatted files and remove formatter
+        run: |
+          git rm .github/workflows/format-workflow-designer.yml
+          git add -A
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'style(v2): format graphical workflow designer'
+          git push origin HEAD:main
