@@ -108,7 +108,10 @@
 		items={[
 			{ label: 'Home', href: routes.dashboard(tenant) },
 			{ label: 'Workflow administration', href: appPath(tenant, 'workflow') },
-			{ label: template.name, href: resolveInternalPath(`${appPath(tenant, 'workflow')}/${template.publicId}`) },
+			{
+				label: template.name,
+				href: resolveInternalPath(`${appPath(tenant, 'workflow')}/${template.publicId}`)
+			},
 			{ label: 'Designer' }
 		]}
 	/>
@@ -124,15 +127,24 @@
 				variant="secondary">Governance settings</LinkButton
 			>
 			{#if template.status === 'draft' && template.canPublish}
-				<form method="POST" action="?/publish" use:enhance><Button type="submit">Publish version</Button></form>
+				<form method="POST" action="?/publish" use:enhance>
+					<Button type="submit">Publish version</Button>
+				</form>
 			{:else if template.status === 'published' && template.canManage}
-				<form method="POST" action="?/revise" use:enhance><Button type="submit" variant="secondary">Create revision</Button></form>
+				<form method="POST" action="?/revise" use:enhance>
+					<Button type="submit" variant="secondary">Create revision</Button>
+				</form>
 			{/if}
 		{/snippet}
 	</PageHeader>
 
-	{#if form?.formError}<Alert tone="danger" title="Designer change not applied">{form.formError}</Alert>{:else if form?.success}<Alert tone="success" title="Workflow updated">{form.success}</Alert>{/if}
-	{#if canvasError}<Alert tone="danger" title="Design order not saved">{canvasError}</Alert>{:else if canvasMessage}<Alert tone="success" title="Design order saved">{canvasMessage}</Alert>{/if}
+	{#if form?.formError}<Alert tone="danger" title="Designer change not applied"
+			>{form.formError}</Alert
+		>{:else if form?.success}<Alert tone="success" title="Workflow updated">{form.success}</Alert
+		>{/if}
+	{#if canvasError}<Alert tone="danger" title="Design order not saved">{canvasError}</Alert
+		>{:else if canvasMessage}<Alert tone="success" title="Design order saved">{canvasMessage}</Alert
+		>{/if}
 
 	<div class="designer-status">
 		<div><span>Steps</span><strong>{template.nodes.length}</strong></div>
@@ -159,7 +171,10 @@
 						ondrop={(event) => dropBefore(event, node.nodeKey)}
 					>
 						{#if index > 0}<div class="flow-arrow" aria-hidden="true">→</div>{/if}
-						<article class="node-card" class:terminal={node.nodeType === 'start' || node.nodeType === 'end'}>
+						<article
+							class="node-card"
+							class:terminal={node.nodeType === 'start' || node.nodeType === 'end'}
+						>
 							<div class="node-topline">
 								<span class="node-type">{node.nodeType.replaceAll('_', ' ')}</span>
 								{#if editable && node.nodeType !== 'start' && node.nodeType !== 'end'}
@@ -177,28 +192,57 @@
 							<code>{node.nodeKey}</code>
 							<div class="node-facts">
 								{#if node.responsibleRoleKey}<span>Role · {node.responsibleRoleKey}</span>{/if}
-								{#if node.deadlineMinutes !== null}<span>Due · {node.deadlineMinutes} min</span>{/if}
+								{#if node.deadlineMinutes !== null}<span>Due · {node.deadlineMinutes} min</span
+									>{/if}
 								{#if node.requiresElectronicSignature}<span>E-signature</span>{/if}
 							</div>
 							{#if participants(node.nodeKey).length > 0}
 								<div class="participant-list">
-									{#each participants(node.nodeKey) as participant (participant.id)}<span>{participant.participantKey}</span>{/each}
+									{#each participants(node.nodeKey) as participant (participant.id)}<span
+											>{participant.participantKey}</span
+										>{/each}
 								</div>
 							{/if}
 							<div class="outgoing">
 								<span class="section-label">Routes</span>
-								{#if outgoing(node.nodeKey).length === 0}<span class="muted">None</span>{:else}{#each outgoing(node.nodeKey) as link (link.publicId)}<span class="route-chip">{link.eventKey ? `${link.eventKey} → ` : '→ '}{link.toNodeKey}</span>{/each}{/if}
+								{#if outgoing(node.nodeKey).length === 0}<span class="muted">None</span
+									>{:else}{#each outgoing(node.nodeKey) as link (link.publicId)}<span
+											class="route-chip"
+											>{link.eventKey ? `${link.eventKey} → ` : '→ '}{link.toNodeKey}</span
+										>{/each}{/if}
 							</div>
 							{#if editable && node.nodeType !== 'end'}
 								<div class="node-actions">
-									{#if routeFrom === node.nodeKey}<Button type="button" variant="secondary" size="sm" onclick={() => (routeFrom = null)}>Cancel route</Button>{:else}<Button type="button" variant="secondary" size="sm" onclick={() => (routeFrom = node.nodeKey)}>Route from here</Button>{/if}
+									{#if routeFrom === node.nodeKey}<Button
+											type="button"
+											variant="secondary"
+											size="sm"
+											onclick={() => (routeFrom = null)}>Cancel route</Button
+										>{:else}<Button
+											type="button"
+											variant="secondary"
+											size="sm"
+											onclick={() => (routeFrom = node.nodeKey)}>Route from here</Button
+										>{/if}
 									{#if node.nodeType !== 'start'}
-										<form method="POST" action="?/deleteNode" use:enhance><input type="hidden" name="nodeKey" value={node.nodeKey} /><Button type="submit" variant="danger" size="sm">Remove</Button></form>
+										<form method="POST" action="?/deleteNode" use:enhance>
+											<input type="hidden" name="nodeKey" value={node.nodeKey} /><Button
+												type="submit"
+												variant="danger"
+												size="sm">Remove</Button
+											>
+										</form>
 									{/if}
 								</div>
 							{/if}
 							{#if editable && routeFrom && routeFrom !== node.nodeKey && node.nodeType !== 'start'}
-								<form class="connect-target" method="POST" action="?/addLink" use:enhance onsubmit={() => (routeFrom = null)}>
+								<form
+									class="connect-target"
+									method="POST"
+									action="?/addLink"
+									use:enhance
+									onsubmit={() => (routeFrom = null)}
+								>
 									<input type="hidden" name="fromNodeKey" value={routeFrom} />
 									<input type="hidden" name="toNodeKey" value={node.nodeKey} />
 									<input type="hidden" name="displayOrder" value="50" />
@@ -214,24 +258,74 @@
 
 	{#if editable}
 		<div class="authoring-grid">
-			<Panel title="Add process step" description="Add the step on the canvas, then use Governance settings for deadlines, completion rules, electronic signatures and other expert controls." padding="spacious">
+			<Panel
+				title="Add process step"
+				description="Add the step on the canvas, then use Governance settings for deadlines, completion rules, electronic signatures and other expert controls."
+				padding="spacious"
+			>
 				<form method="POST" action="?/addNode" use:enhance class="form-stack">
-					<Field id="nodeLabel" label="Step label" required><input class="nb-control" id="nodeLabel" name="label" required /></Field>
-					<Field id="nodeKey" label="Stable key" hint="Lowercase key, for example commercial_review." required><input class="nb-control" id="nodeKey" name="nodeKey" required /></Field>
-					<Field id="nodeType" label="Step type" required><select class="nb-control" id="nodeType" name="nodeType"><option value="activity">Human activity</option><option value="ad_hoc_activity">Ad-hoc activity</option><option value="subprocess">Subprocess</option><option value="and">AND gateway</option><option value="or">OR gateway</option><option value="threshold">Threshold gateway</option><option value="conditional">Conditional router</option><option value="notification">Notification</option><option value="timer">Timer</option><option value="checkpoint">Checkpoint</option><option value="service">Service action</option><option value="synchronize">Synchronization</option><option value="integration">Integration</option></select></Field>
+					<Field id="nodeLabel" label="Step label" required
+						><input class="nb-control" id="nodeLabel" name="label" required /></Field
+					>
+					<Field
+						id="nodeKey"
+						label="Stable key"
+						hint="Lowercase key, for example commercial_review."
+						required><input class="nb-control" id="nodeKey" name="nodeKey" required /></Field
+					>
+					<Field id="nodeType" label="Step type" required
+						><select class="nb-control" id="nodeType" name="nodeType"
+							><option value="activity">Human activity</option><option value="ad_hoc_activity"
+								>Ad-hoc activity</option
+							><option value="subprocess">Subprocess</option><option value="and">AND gateway</option
+							><option value="or">OR gateway</option><option value="threshold"
+								>Threshold gateway</option
+							><option value="conditional">Conditional router</option><option value="notification"
+								>Notification</option
+							><option value="timer">Timer</option><option value="checkpoint">Checkpoint</option
+							><option value="service">Service action</option><option value="synchronize"
+								>Synchronization</option
+							><option value="integration">Integration</option></select
+						></Field
+					>
 					<input type="hidden" name="displayOrder" value="80" />
 					<Button type="submit">Add to canvas</Button>
 				</form>
 			</Panel>
 
-			<Panel title="Route editor" description="Use direct Connect here for a simple path. Use this editor when a route needs a named event, loop or predecessor termination." padding="spacious">
+			<Panel
+				title="Route editor"
+				description="Use direct Connect here for a simple path. Use this editor when a route needs a named event, loop or predecessor termination."
+				padding="spacious"
+			>
 				<form method="POST" action="?/addLink" use:enhance class="form-stack">
 					<div class="two-fields">
-						<Field id="routeFrom" label="From" required><select class="nb-control" id="routeFrom" name="fromNodeKey" required>{#each nodes.filter((node) => node.nodeType !== 'end') as node (node.publicId)}<option value={node.nodeKey}>{node.label}</option>{/each}</select></Field>
-						<Field id="routeTo" label="To" required><select class="nb-control" id="routeTo" name="toNodeKey" required>{#each nodes.filter((node) => node.nodeType !== 'start') as node (node.publicId)}<option value={node.nodeKey}>{node.label}</option>{/each}</select></Field>
+						<Field id="routeFrom" label="From" required
+							><select class="nb-control" id="routeFrom" name="fromNodeKey" required
+								>{#each nodes.filter((node) => node.nodeType !== 'end') as node (node.publicId)}<option
+										value={node.nodeKey}>{node.label}</option
+									>{/each}</select
+							></Field
+						>
+						<Field id="routeTo" label="To" required
+							><select class="nb-control" id="routeTo" name="toNodeKey" required
+								>{#each nodes.filter((node) => node.nodeType !== 'start') as node (node.publicId)}<option
+										value={node.nodeKey}>{node.label}</option
+									>{/each}</select
+							></Field
+						>
 					</div>
-					<Field id="eventKey" label="Routing event" hint="Optional, for example approve, reject or return."><input class="nb-control" id="eventKey" name="eventKey" /></Field>
-					<div class="checks"><label><input type="checkbox" name="loop" /> Loop route</label><label><input type="checkbox" name="terminateOpenPredecessors" /> Terminate unneeded predecessors</label></div>
+					<Field
+						id="eventKey"
+						label="Routing event"
+						hint="Optional, for example approve, reject or return."
+						><input class="nb-control" id="eventKey" name="eventKey" /></Field
+					>
+					<div class="checks">
+						<label><input type="checkbox" name="loop" /> Loop route</label><label
+							><input type="checkbox" name="terminateOpenPredecessors" /> Terminate unneeded predecessors</label
+						>
+					</div>
 					<input type="hidden" name="displayOrder" value="50" />
 					<Button type="submit">Add route</Button>
 				</form>
@@ -239,44 +333,236 @@
 		</div>
 	{/if}
 
-	<Panel title="Route inspector" description="The executable graph is explicit. Removing a route changes the draft only and is recorded as a governed minor version.">
-		{#if template.links.length === 0}<EmptyState title="No routes" description="Connect Start to the process and ensure every valid branch can reach End before publication." />{:else}<div class="route-table">{#each template.links as link (link.publicId)}<div><div><strong>{link.fromNodeKey}</strong><span>→</span><strong>{link.toNodeKey}</strong>{#if link.eventKey}<code>{link.eventKey}</code>{/if}{#if link.loop}<span>Loop</span>{/if}</div>{#if editable}<form method="POST" action="?/deleteLink" use:enhance><input type="hidden" name="linkPublicId" value={link.publicId} /><Button type="submit" variant="danger" size="sm">Remove</Button></form>{/if}</div>{/each}</div>{/if}
+	<Panel
+		title="Route inspector"
+		description="The executable graph is explicit. Removing a route changes the draft only and is recorded as a governed minor version."
+	>
+		{#if template.links.length === 0}<EmptyState
+				title="No routes"
+				description="Connect Start to the process and ensure every valid branch can reach End before publication."
+			/>{:else}<div class="route-table">
+				{#each template.links as link (link.publicId)}<div>
+						<div>
+							<strong>{link.fromNodeKey}</strong><span>→</span><strong>{link.toNodeKey}</strong
+							>{#if link.eventKey}<code>{link.eventKey}</code>{/if}{#if link.loop}<span>Loop</span
+								>{/if}
+						</div>
+						{#if editable}<form method="POST" action="?/deleteLink" use:enhance>
+								<input type="hidden" name="linkPublicId" value={link.publicId} /><Button
+									type="submit"
+									variant="danger"
+									size="sm">Remove</Button
+								>
+							</form>{/if}
+					</div>{/each}
+			</div>{/if}
 	</Panel>
 </div>
 
 <style>
-	.designer-page { padding-top: var(--nb-space-5); padding-bottom: var(--nb-space-10); }
-	.designer-status { display: flex; flex-wrap: wrap; gap: var(--nb-space-2); margin: var(--nb-space-5) 0; }
-	.designer-status > div { display: flex; align-items: baseline; gap: var(--nb-space-2); min-width: 110px; padding: var(--nb-space-2) var(--nb-space-3); border: 1px solid var(--nb-color-border-subtle); border-radius: var(--nb-radius-md); background: var(--nb-color-bg-surface); }
-	.designer-status span { color: var(--nb-color-text-muted); font-size: var(--nb-font-size-sm); }
-	.canvas-shell { overflow-x: auto; padding: var(--nb-space-2) 0 var(--nb-space-4); }
-	.process-canvas { display: flex; align-items: stretch; gap: 42px; min-width: max-content; margin: 0; padding: var(--nb-space-3); list-style: none; }
-	.canvas-node { position: relative; width: 250px; min-height: 300px; transition: transform .12s ease, opacity .12s ease; }
-	.canvas-node.dragging { opacity: .45; transform: scale(.98); }
-	.canvas-node.route-source .node-card { outline: 2px solid var(--nb-color-action-primary); outline-offset: 2px; }
-	.flow-arrow { position: absolute; left: -34px; top: 68px; color: var(--nb-color-text-muted); font-size: 24px; }
-	.node-card { position: relative; display: grid; align-content: start; gap: var(--nb-space-2); height: 100%; padding: var(--nb-space-4); border: 1px solid var(--nb-color-border-subtle); border-radius: var(--nb-radius-lg); background: var(--nb-color-bg-surface); box-shadow: var(--nb-shadow-xs); }
-	.node-card.terminal { background: var(--nb-color-bg-subtle); }
-	.node-topline, .node-actions { display: flex; align-items: center; justify-content: space-between; gap: var(--nb-space-2); }
-	.node-type, .section-label { color: var(--nb-color-text-muted); font-size: var(--nb-font-size-xs); font-weight: var(--nb-weight-semibold); text-transform: uppercase; letter-spacing: .04em; }
-	.drag-handle { border: 0; background: transparent; color: var(--nb-color-action-primary); font: inherit; font-size: var(--nb-font-size-xs); font-weight: var(--nb-weight-semibold); cursor: grab; }
-	.drag-handle:active { cursor: grabbing; }
-	.node-label { font-size: var(--nb-font-size-lg); }
-	.node-facts, .participant-list, .outgoing { display: flex; flex-wrap: wrap; gap: var(--nb-space-1); }
-	.node-facts span, .participant-list span, .route-chip { padding: 3px 7px; border-radius: var(--nb-radius-sm); background: var(--nb-color-bg-subtle); color: var(--nb-color-text-secondary); font-size: var(--nb-font-size-xs); }
-	.outgoing { margin-top: var(--nb-space-2); padding-top: var(--nb-space-2); border-top: 1px solid var(--nb-color-border-subtle); }
-	.node-actions { margin-top: auto; padding-top: var(--nb-space-3); align-items: flex-end; }
-	.connect-target { margin-top: var(--nb-space-2); padding: var(--nb-space-2); border: 1px dashed var(--nb-color-action-primary); border-radius: var(--nb-radius-md); text-align: center; }
-	.authoring-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--nb-space-5); margin: var(--nb-space-5) 0; align-items: start; }
-	.form-stack { display: grid; gap: var(--nb-space-3); }
-	.two-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--nb-space-3); }
-	.checks { display: grid; gap: var(--nb-space-2); color: var(--nb-color-text-secondary); font-size: var(--nb-font-size-sm); }
-	.checks label { display: flex; align-items: center; gap: var(--nb-space-2); }
-	.route-table { display: grid; gap: var(--nb-space-2); }
-	.route-table > div { display: flex; justify-content: space-between; align-items: center; gap: var(--nb-space-3); padding: var(--nb-space-3); border: 1px solid var(--nb-color-border-subtle); border-radius: var(--nb-radius-md); }
-	.route-table > div > div { display: flex; flex-wrap: wrap; align-items: center; gap: var(--nb-space-2); }
-	.muted { color: var(--nb-color-text-muted); font-size: var(--nb-font-size-sm); }
-	code { overflow-wrap: anywhere; }
-	@media (max-width: 880px) { .authoring-grid { grid-template-columns: 1fr; } }
-	@media (max-width: 620px) { .two-fields { grid-template-columns: 1fr; } .route-table > div { align-items: flex-start; flex-direction: column; } }
+	.designer-page {
+		padding-top: var(--nb-space-5);
+		padding-bottom: var(--nb-space-10);
+	}
+	.designer-status {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--nb-space-2);
+		margin: var(--nb-space-5) 0;
+	}
+	.designer-status > div {
+		display: flex;
+		align-items: baseline;
+		gap: var(--nb-space-2);
+		min-width: 110px;
+		padding: var(--nb-space-2) var(--nb-space-3);
+		border: 1px solid var(--nb-color-border-subtle);
+		border-radius: var(--nb-radius-md);
+		background: var(--nb-color-bg-surface);
+	}
+	.designer-status span {
+		color: var(--nb-color-text-muted);
+		font-size: var(--nb-font-size-sm);
+	}
+	.canvas-shell {
+		overflow-x: auto;
+		padding: var(--nb-space-2) 0 var(--nb-space-4);
+	}
+	.process-canvas {
+		display: flex;
+		align-items: stretch;
+		gap: 42px;
+		min-width: max-content;
+		margin: 0;
+		padding: var(--nb-space-3);
+		list-style: none;
+	}
+	.canvas-node {
+		position: relative;
+		width: 250px;
+		min-height: 300px;
+		transition:
+			transform 0.12s ease,
+			opacity 0.12s ease;
+	}
+	.canvas-node.dragging {
+		opacity: 0.45;
+		transform: scale(0.98);
+	}
+	.canvas-node.route-source .node-card {
+		outline: 2px solid var(--nb-color-action-primary);
+		outline-offset: 2px;
+	}
+	.flow-arrow {
+		position: absolute;
+		left: -34px;
+		top: 68px;
+		color: var(--nb-color-text-muted);
+		font-size: 24px;
+	}
+	.node-card {
+		position: relative;
+		display: grid;
+		align-content: start;
+		gap: var(--nb-space-2);
+		height: 100%;
+		padding: var(--nb-space-4);
+		border: 1px solid var(--nb-color-border-subtle);
+		border-radius: var(--nb-radius-lg);
+		background: var(--nb-color-bg-surface);
+		box-shadow: var(--nb-shadow-xs);
+	}
+	.node-card.terminal {
+		background: var(--nb-color-bg-subtle);
+	}
+	.node-topline,
+	.node-actions {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--nb-space-2);
+	}
+	.node-type,
+	.section-label {
+		color: var(--nb-color-text-muted);
+		font-size: var(--nb-font-size-xs);
+		font-weight: var(--nb-weight-semibold);
+		text-transform: uppercase;
+		letter-spacing: 0.04em;
+	}
+	.drag-handle {
+		border: 0;
+		background: transparent;
+		color: var(--nb-color-action-primary);
+		font: inherit;
+		font-size: var(--nb-font-size-xs);
+		font-weight: var(--nb-weight-semibold);
+		cursor: grab;
+	}
+	.drag-handle:active {
+		cursor: grabbing;
+	}
+	.node-label {
+		font-size: var(--nb-font-size-lg);
+	}
+	.node-facts,
+	.participant-list,
+	.outgoing {
+		display: flex;
+		flex-wrap: wrap;
+		gap: var(--nb-space-1);
+	}
+	.node-facts span,
+	.participant-list span,
+	.route-chip {
+		padding: 3px 7px;
+		border-radius: var(--nb-radius-sm);
+		background: var(--nb-color-bg-subtle);
+		color: var(--nb-color-text-secondary);
+		font-size: var(--nb-font-size-xs);
+	}
+	.outgoing {
+		margin-top: var(--nb-space-2);
+		padding-top: var(--nb-space-2);
+		border-top: 1px solid var(--nb-color-border-subtle);
+	}
+	.node-actions {
+		margin-top: auto;
+		padding-top: var(--nb-space-3);
+		align-items: flex-end;
+	}
+	.connect-target {
+		margin-top: var(--nb-space-2);
+		padding: var(--nb-space-2);
+		border: 1px dashed var(--nb-color-action-primary);
+		border-radius: var(--nb-radius-md);
+		text-align: center;
+	}
+	.authoring-grid {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--nb-space-5);
+		margin: var(--nb-space-5) 0;
+		align-items: start;
+	}
+	.form-stack {
+		display: grid;
+		gap: var(--nb-space-3);
+	}
+	.two-fields {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: var(--nb-space-3);
+	}
+	.checks {
+		display: grid;
+		gap: var(--nb-space-2);
+		color: var(--nb-color-text-secondary);
+		font-size: var(--nb-font-size-sm);
+	}
+	.checks label {
+		display: flex;
+		align-items: center;
+		gap: var(--nb-space-2);
+	}
+	.route-table {
+		display: grid;
+		gap: var(--nb-space-2);
+	}
+	.route-table > div {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+		gap: var(--nb-space-3);
+		padding: var(--nb-space-3);
+		border: 1px solid var(--nb-color-border-subtle);
+		border-radius: var(--nb-radius-md);
+	}
+	.route-table > div > div {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: var(--nb-space-2);
+	}
+	.muted {
+		color: var(--nb-color-text-muted);
+		font-size: var(--nb-font-size-sm);
+	}
+	code {
+		overflow-wrap: anywhere;
+	}
+	@media (max-width: 880px) {
+		.authoring-grid {
+			grid-template-columns: 1fr;
+		}
+	}
+	@media (max-width: 620px) {
+		.two-fields {
+			grid-template-columns: 1fr;
+		}
+		.route-table > div {
+			align-items: flex-start;
+			flex-direction: column;
+		}
+	}
 </style>

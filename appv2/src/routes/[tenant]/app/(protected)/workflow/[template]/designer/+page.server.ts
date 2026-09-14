@@ -51,7 +51,8 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 			)
 		};
 	} catch (cause) {
-		if (cause instanceof WorkflowAdministrationAccessError) redirect(303, routes.dashboard(tenant.slug));
+		if (cause instanceof WorkflowAdministrationAccessError)
+			redirect(303, routes.dashboard(tenant.slug));
 		if (cause instanceof WorkflowAdministrationValidationError) {
 			redirect(303, appPath(tenant.slug, 'workflow'));
 		}

@@ -14,7 +14,11 @@ export const POST: RequestHandler = async ({ request, params }) => {
 	const access = await resolveActiveInternalTenant(session.user.id, params.tenant);
 	if (!access) return json({ error: 'Tenant access is required.' }, { status: 403 });
 	const body = (await request.json().catch(() => null)) as { nodeKeys?: unknown } | null;
-	if (!body || !Array.isArray(body.nodeKeys) || body.nodeKeys.some((value) => typeof value !== 'string')) {
+	if (
+		!body ||
+		!Array.isArray(body.nodeKeys) ||
+		body.nodeKeys.some((value) => typeof value !== 'string')
+	) {
 		return json({ error: 'A valid workflow node order is required.' }, { status: 400 });
 	}
 	try {

@@ -83,7 +83,9 @@ export async function reorderWorkflowNodes(input: {
 		const start = nodes.find((node) => node.nodeType === 'start');
 		const end = nodes.find((node) => node.nodeType === 'end');
 		if (!start || !end || requested[0] !== start.nodeKey || requested.at(-1) !== end.nodeKey) {
-			throw new WorkflowDesignerValidationError('Start must remain first and End must remain last.');
+			throw new WorkflowDesignerValidationError(
+				'Start must remain first and End must remain last.'
+			);
 		}
 
 		for (const [index, nodeKey] of requested.entries()) {
@@ -100,7 +102,9 @@ export async function reorderWorkflowNodes(input: {
 			 WHERE organisation_id = ? AND id = ? AND lifecycle_status = 'draft'`,
 			[input.actor.organisationId, templateId]
 		);
-		const [refreshedRows] = await connection.execute<Array<RowDataPacket & { minorVersionNumber: number | string }>>(
+		const [refreshedRows] = await connection.execute<
+			Array<RowDataPacket & { minorVersionNumber: number | string }>
+		>(
 			`SELECT minor_version_number AS minorVersionNumber
 			 FROM workflow_templates WHERE organisation_id = ? AND id = ? LIMIT 1`,
 			[input.actor.organisationId, templateId]
@@ -117,7 +121,9 @@ export async function reorderWorkflowNodes(input: {
 			lineageKey: template.templateKey,
 			recordPublicId: template.publicId,
 			versionNumber: Number(template.versionNumber),
-			minorVersionNumber: Number(refreshedRows[0]?.minorVersionNumber ?? template.minorVersionNumber),
+			minorVersionNumber: Number(
+				refreshedRows[0]?.minorVersionNumber ?? template.minorVersionNumber
+			),
 			lifecycleStatus: 'draft',
 			snapshot: JSON.parse(JSON.stringify(definition)) as Record<string, unknown>,
 			changeNote: 'Workflow graphical design reordered'
