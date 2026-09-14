@@ -1,6 +1,10 @@
 import type { RowDataPacket } from 'mysql2/promise';
 import { getPool } from '$lib/server/db/pool';
 import { getStrategyWorkspace, StrategyAccessError } from './f01-service';
+import {
+	assertF01LifecycleTransition,
+	decideF01LifecyclePermission
+} from './f01-lifecycle-resolver';
 
 export type StrategyApprovalReadiness = {
 	isDraft: boolean;
@@ -178,7 +182,27 @@ export async function getStrategyApprovalReadiness(input: {
 	);
 	const traceableCandidateObjectiveCount = Number(counts?.traceableCandidateObjectiveCount ?? 0);
 	const isDraft = framework.lifecycleStatus === 'draft';
-	const canApprove = workspace.permissions.canApprove;
+	let canApprove = false;
+	if (isDraft) {
+		try {
+			const transition = await assertF01LifecycleTransition(
+				input.organisationId,
+				'framework',
+				'draft',
+				'approved'
+			);
+			const authority = await decideF01LifecyclePermission({
+				organisationId: input.organisationId,
+				memberId: input.memberId,
+				kind: 'framework',
+				state: 'draft',
+				permissionKey: transition.requiredPermissionKey ?? 'strategy.approve'
+			});
+			canApprove = authority.allowed;
+		} catch {
+			canApprove = false;
+		}
+	}
 
 	return {
 		isDraft,

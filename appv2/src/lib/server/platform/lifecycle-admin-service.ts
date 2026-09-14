@@ -110,7 +110,9 @@ function iso(value: Date | string): string {
 	return value instanceof Date ? value.toISOString() : String(value);
 }
 
-function versionLabel(row: Pick<TemplateRow, 'status' | 'versionNumber' | 'minorVersionNumber'>): string {
+function versionLabel(
+	row: Pick<TemplateRow, 'status' | 'versionNumber' | 'minorVersionNumber'>
+): string {
 	const major = Number(row.versionNumber);
 	const minor = Number(row.minorVersionNumber);
 	return row.status === 'draft' ? `${Math.max(0, major - 1)}.${Math.max(1, minor)}` : `${major}.0`;
@@ -119,7 +121,9 @@ function versionLabel(row: Pick<TemplateRow, 'status' | 'versionNumber' | 'minor
 function requiredText(value: string | undefined, label: string, max: number): string {
 	const normalized = value?.trim() ?? '';
 	if (!normalized || normalized.length > max) {
-		throw new LifecycleAdministrationValidationError(`${label} must be between 1 and ${max} characters.`);
+		throw new LifecycleAdministrationValidationError(
+			`${label} must be between 1 and ${max} characters.`
+		);
 	}
 	return normalized;
 }
@@ -146,7 +150,9 @@ function key(value: string | undefined): string {
 function stateKey(value: string | undefined, label = 'State key'): string {
 	const normalized = value?.trim().toLowerCase() ?? '';
 	if (!STATE.test(normalized)) {
-		throw new LifecycleAdministrationValidationError(`${label} must use lowercase letters, numbers, underscores or hyphens.`);
+		throw new LifecycleAdministrationValidationError(
+			`${label} must use lowercase letters, numbers, underscores or hyphens.`
+		);
 	}
 	return normalized;
 }
@@ -193,7 +199,9 @@ async function requirePermission(actor: EvidenceActor, permissionKeyValue: strin
 	}
 }
 
-async function permissionFlags(actor: EvidenceActor): Promise<{ canManage: boolean; canPublish: boolean }> {
+async function permissionFlags(
+	actor: EvidenceActor
+): Promise<{ canManage: boolean; canPublish: boolean }> {
 	const decisions = await decidePermissions({
 		organisationId: actor.organisationId,
 		memberId: actor.memberId,
@@ -245,7 +253,8 @@ async function snapshot(connection: PoolConnection, actor: EvidenceActor, templa
 		[actor.organisationId, templateId]
 	);
 	const template = templates[0];
-	if (!template) throw new LifecycleAdministrationValidationError('Lifecycle template was not found.');
+	if (!template)
+		throw new LifecycleAdministrationValidationError('Lifecycle template was not found.');
 	const [phases] = await connection.execute<RowDataPacket[]>(
 		`SELECT phase_key AS phaseKey, label, display_order AS displayOrder, is_editable AS editable,
 		        is_deletable AS deletable, is_revisable AS revisable
@@ -281,7 +290,12 @@ async function snapshot(connection: PoolConnection, actor: EvidenceActor, templa
 		mode: template.mode,
 		initialState: template.initialState,
 		lifecycleStatus: template.status,
-		phases: phases.map((row) => ({ ...row, editable: bool(row.editable), deletable: bool(row.deletable), revisable: bool(row.revisable) })),
+		phases: phases.map((row) => ({
+			...row,
+			editable: bool(row.editable),
+			deletable: bool(row.deletable),
+			revisable: bool(row.revisable)
+		})),
 		roles,
 		accessRules: rules,
 		transitions: transitions.map((row) => ({
@@ -335,18 +349,27 @@ async function bumpDraft(
 	await appendTemplateVersion(connection, actor, refreshed, changeNote);
 }
 
-async function ensurePermissionExists(connection: PoolConnection, value: string | null): Promise<void> {
+async function ensurePermissionExists(
+	connection: PoolConnection,
+	value: string | null
+): Promise<void> {
 	if (!value) return;
 	const [rows] = await connection.execute<RowDataPacket[]>(
 		`SELECT id FROM permissions WHERE permission_key = ? AND is_active = 1 LIMIT 1`,
 		[value]
 	);
 	if (!rows[0]) {
-		throw new LifecycleAdministrationValidationError(`Permission ${value} is not active in the platform catalogue.`);
+		throw new LifecycleAdministrationValidationError(
+			`Permission ${value} is not active in the platform catalogue.`
+		);
 	}
 }
 
-async function validateDraft(connection: PoolConnection, actor: EvidenceActor, row: TemplateRow): Promise<void> {
+async function validateDraft(
+	connection: PoolConnection,
+	actor: EvidenceActor,
+	row: TemplateRow
+): Promise<void> {
 	const [phaseRows] = await connection.execute<RowDataPacket[]>(
 		`SELECT phase_key AS phaseKey FROM lifecycle_template_phases
 		 WHERE organisation_id = ? AND lifecycle_template_id = ?`,
@@ -354,7 +377,9 @@ async function validateDraft(connection: PoolConnection, actor: EvidenceActor, r
 	);
 	const phases = new Set(phaseRows.map((phase) => String(phase.phaseKey)));
 	if (!phases.has(row.initialState)) {
-		throw new LifecycleAdministrationValidationError('The initial state must reference a defined lifecycle phase.');
+		throw new LifecycleAdministrationValidationError(
+			'The initial state must reference a defined lifecycle phase.'
+		);
 	}
 	if (row.mode === 'basic') {
 		const [rules] = await connection.execute<RowDataPacket[]>(
@@ -378,13 +403,17 @@ async function validateDraft(connection: PoolConnection, actor: EvidenceActor, r
 	);
 	for (const transition of transitionRows) {
 		if (!phases.has(transition.fromState) || !phases.has(transition.toState)) {
-			throw new LifecycleAdministrationValidationError('Every transition must connect two defined lifecycle phases.');
+			throw new LifecycleAdministrationValidationError(
+				'Every transition must connect two defined lifecycle phases.'
+			);
 		}
 		await ensurePermissionExists(connection, transition.permissionKey);
 	}
 }
 
-export async function listLifecycleTemplates(actor: EvidenceActor): Promise<LifecycleTemplateSummary[]> {
+export async function listLifecycleTemplates(
+	actor: EvidenceActor
+): Promise<LifecycleTemplateSummary[]> {
 	await requirePermission(actor, 'lifecycle.view');
 	const [rows] = await getPool().execute<
 		Array<
@@ -433,12 +462,18 @@ export async function listLifecycleTemplates(actor: EvidenceActor): Promise<Life
 	}));
 }
 
-export async function listLifecycleReferenceData(actor: EvidenceActor): Promise<LifecycleReferenceData> {
+export async function listLifecycleReferenceData(
+	actor: EvidenceActor
+): Promise<LifecycleReferenceData> {
 	await requirePermission(actor, 'lifecycle.view');
-	const [permissions] = await getPool().execute<Array<RowDataPacket & { key: string; name: string }>>(
+	const [permissions] = await getPool().execute<
+		Array<RowDataPacket & { key: string; name: string }>
+	>(
 		`SELECT permission_key AS \`key\`, name FROM permissions WHERE is_active = 1 ORDER BY permission_key`
 	);
-	const [roles] = await getPool().execute<Array<RowDataPacket & { publicId: string; name: string }>>(
+	const [roles] = await getPool().execute<
+		Array<RowDataPacket & { publicId: string; name: string }>
+	>(
 		`SELECT public_id AS publicId, name FROM organisation_roles
 		 WHERE organisation_id = ? AND is_active = 1 ORDER BY name`,
 		[actor.organisationId]
@@ -446,7 +481,10 @@ export async function listLifecycleReferenceData(actor: EvidenceActor): Promise<
 	return { permissions, organisationRoles: roles };
 }
 
-export async function getLifecycleTemplate(actor: EvidenceActor, publicId: string): Promise<LifecycleTemplateDetail> {
+export async function getLifecycleTemplate(
+	actor: EvidenceActor,
+	publicId: string
+): Promise<LifecycleTemplateDetail> {
 	await requirePermission(actor, 'lifecycle.view');
 	const flags = await permissionFlags(actor);
 	const connection = await getPool().getConnection();
@@ -491,7 +529,14 @@ export async function getLifecycleTemplate(actor: EvidenceActor, publicId: strin
 			[actor.organisationId, templateId]
 		);
 		const [accessRows] = await connection.execute<
-			Array<RowDataPacket & { id: number | string; phaseKey: string; roleKey: string; permissionKey: string }>
+			Array<
+				RowDataPacket & {
+					id: number | string;
+					phaseKey: string;
+					roleKey: string;
+					permissionKey: string;
+				}
+			>
 		>(
 			`SELECT id, phase_key AS phaseKey, role_key AS roleKey, permission_key AS permissionKey
 			 FROM lifecycle_template_phase_access_rules
@@ -598,7 +643,9 @@ export async function createLifecycleTemplate(input: {
 			[input.actor.organisationId, templateKeyValue]
 		);
 		if (existing[0]) {
-			throw new LifecycleAdministrationValidationError('That lifecycle template key already exists. Revise the published template instead.');
+			throw new LifecycleAdministrationValidationError(
+				'That lifecycle template key already exists. Revise the published template instead.'
+			);
 		}
 		const [insert] = await connection.execute<ResultSetHeader>(
 			`INSERT INTO lifecycle_templates
@@ -629,7 +676,11 @@ export async function createLifecycleTemplate(input: {
 			actionKey: 'lifecycle.template.create',
 			subjectType: 'lifecycle_template',
 			subjectPublicId: publicId,
-			changeSummary: { templateKey: templateKeyValue, objectType: objectTypeValue, mode: input.mode },
+			changeSummary: {
+				templateKey: templateKeyValue,
+				objectType: objectTypeValue,
+				mode: input.mode
+			},
 			eventMetadata: { function: 'PLATFORM', mutation: 'create' }
 		});
 		await connection.commit();
@@ -655,13 +706,19 @@ export async function updateLifecycleTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
 		const initialState = stateKey(input.initialState, 'Initial state');
 		const [phaseRows] = await connection.execute<RowDataPacket[]>(
 			`SELECT id FROM lifecycle_template_phases WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ? LIMIT 1`,
 			[input.actor.organisationId, row.id, initialState]
 		);
-		if (!phaseRows[0]) throw new LifecycleAdministrationValidationError('Initial state must reference an existing phase.');
+		if (!phaseRows[0])
+			throw new LifecycleAdministrationValidationError(
+				'Initial state must reference an existing phase.'
+			);
 		await connection.execute(
 			`UPDATE lifecycle_templates
 			 SET name = ?, description = ?, object_type = ?, initial_state = ?
@@ -706,13 +763,18 @@ export async function addLifecyclePhase(input: {
 	await requirePermission(input.actor, 'lifecycle.manage');
 	const phaseKeyValue = stateKey(input.phaseKey, 'Phase key');
 	if (!Number.isInteger(input.displayOrder) || input.displayOrder < 0) {
-		throw new LifecycleAdministrationValidationError('Display order must be a non-negative whole number.');
+		throw new LifecycleAdministrationValidationError(
+			'Display order must be a non-negative whole number.'
+		);
 	}
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
 		await connection.execute(
 			`INSERT INTO lifecycle_template_phases
 			 (organisation_id, lifecycle_template_id, phase_key, label, display_order, is_editable, is_deletable, is_revisable)
@@ -749,14 +811,23 @@ export async function deleteLifecyclePhase(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
-		if (row.initialState === phaseKeyValue) throw new LifecycleAdministrationValidationError('The initial phase cannot be deleted. Select another initial phase first.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
+		if (row.initialState === phaseKeyValue)
+			throw new LifecycleAdministrationValidationError(
+				'The initial phase cannot be deleted. Select another initial phase first.'
+			);
 		const [transitionRows] = await connection.execute<RowDataPacket[]>(
 			`SELECT id FROM lifecycle_template_transitions
 			 WHERE organisation_id = ? AND lifecycle_template_id = ? AND (from_state = ? OR to_state = ?) LIMIT 1`,
 			[input.actor.organisationId, row.id, phaseKeyValue, phaseKeyValue]
 		);
-		if (transitionRows[0]) throw new LifecycleAdministrationValidationError('Remove transitions connected to this phase before deleting it.');
+		if (transitionRows[0])
+			throw new LifecycleAdministrationValidationError(
+				'Remove transitions connected to this phase before deleting it.'
+			);
 		await connection.execute(
 			`DELETE FROM lifecycle_template_phase_access_rules
 			 WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ?`,
@@ -767,7 +838,8 @@ export async function deleteLifecyclePhase(input: {
 			 WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ?`,
 			[input.actor.organisationId, row.id, phaseKeyValue]
 		);
-		if (!result.affectedRows) throw new LifecycleAdministrationValidationError('Lifecycle phase was not found.');
+		if (!result.affectedRows)
+			throw new LifecycleAdministrationValidationError('Lifecycle phase was not found.');
 		await bumpDraft(connection, input.actor, row, `Lifecycle phase ${phaseKeyValue} removed`);
 		await connection.commit();
 	} catch (error) {
@@ -791,8 +863,14 @@ export async function addLifecycleRole(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
-		if (row.mode !== 'advanced') throw new LifecycleAdministrationValidationError('Lifecycle roles are available only on Advanced templates.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
+		if (row.mode !== 'advanced')
+			throw new LifecycleAdministrationValidationError(
+				'Lifecycle roles are available only on Advanced templates.'
+			);
 		await connection.execute(
 			`INSERT INTO lifecycle_template_roles
 			 (organisation_id, lifecycle_template_id, role_key, label, description)
@@ -826,7 +904,10 @@ export async function deleteLifecycleRole(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
 		await connection.execute(
 			`DELETE FROM lifecycle_template_phase_access_rules WHERE organisation_id = ? AND lifecycle_template_id = ? AND role_key = ?`,
 			[input.actor.organisationId, row.id, roleKeyValue]
@@ -839,7 +920,8 @@ export async function deleteLifecycleRole(input: {
 			`DELETE FROM lifecycle_template_roles WHERE organisation_id = ? AND lifecycle_template_id = ? AND role_key = ?`,
 			[input.actor.organisationId, row.id, roleKeyValue]
 		);
-		if (!result.affectedRows) throw new LifecycleAdministrationValidationError('Lifecycle role was not found.');
+		if (!result.affectedRows)
+			throw new LifecycleAdministrationValidationError('Lifecycle role was not found.');
 		await bumpDraft(connection, input.actor, row, `Lifecycle role ${roleKeyValue} removed`);
 		await connection.commit();
 	} catch (error) {
@@ -862,25 +944,37 @@ export async function bindOrganisationRole(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Role mappings are changed through a draft lifecycle-template revision.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Role mappings are changed through a draft lifecycle-template revision.'
+			);
 		const [lifecycleRoles] = await connection.execute<RowDataPacket[]>(
 			`SELECT id FROM lifecycle_template_roles WHERE organisation_id = ? AND lifecycle_template_id = ? AND role_key = ? LIMIT 1`,
 			[input.actor.organisationId, row.id, roleKeyValue]
 		);
-		if (!lifecycleRoles[0]) throw new LifecycleAdministrationValidationError('Lifecycle role was not found.');
-		const [organisationRoles] = await connection.execute<Array<RowDataPacket & { id: number | string }>>(
+		if (!lifecycleRoles[0])
+			throw new LifecycleAdministrationValidationError('Lifecycle role was not found.');
+		const [organisationRoles] = await connection.execute<
+			Array<RowDataPacket & { id: number | string }>
+		>(
 			`SELECT id FROM organisation_roles WHERE organisation_id = ? AND public_id = ? AND is_active = 1 LIMIT 1`,
 			[input.actor.organisationId, input.organisationRolePublicId]
 		);
 		const organisationRole = organisationRoles[0];
-		if (!organisationRole) throw new LifecycleAdministrationValidationError('Organisation role was not found.');
+		if (!organisationRole)
+			throw new LifecycleAdministrationValidationError('Organisation role was not found.');
 		await connection.execute(
 			`INSERT IGNORE INTO lifecycle_role_bindings
 			 (organisation_id, lifecycle_template_id, lifecycle_role_key, organisation_role_id, bound_by_member_id)
 			 VALUES (?, ?, ?, ?, ?)`,
 			[input.actor.organisationId, row.id, roleKeyValue, organisationRole.id, input.actor.memberId]
 		);
-		await bumpDraft(connection, input.actor, row, `Organisation role mapped to lifecycle role ${roleKeyValue}`);
+		await bumpDraft(
+			connection,
+			input.actor,
+			row,
+			`Organisation role mapped to lifecycle role ${roleKeyValue}`
+		);
 		await connection.commit();
 	} catch (error) {
 		await connection.rollback();
@@ -901,15 +995,28 @@ export async function unbindOrganisationRole(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Role mappings are changed through a draft lifecycle-template revision.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Role mappings are changed through a draft lifecycle-template revision.'
+			);
 		await connection.execute(
 			`DELETE binding FROM lifecycle_role_bindings binding
 			 JOIN organisation_roles organisation_role ON organisation_role.id = binding.organisation_role_id
 			 WHERE binding.organisation_id = ? AND binding.lifecycle_template_id = ?
 			   AND binding.lifecycle_role_key = ? AND organisation_role.public_id = ?`,
-			[input.actor.organisationId, row.id, roleKey(input.lifecycleRoleKey), input.organisationRolePublicId]
+			[
+				input.actor.organisationId,
+				row.id,
+				roleKey(input.lifecycleRoleKey),
+				input.organisationRolePublicId
+			]
 		);
-		await bumpDraft(connection, input.actor, row, `Organisation role mapping removed from ${input.lifecycleRoleKey}`);
+		await bumpDraft(
+			connection,
+			input.actor,
+			row,
+			`Organisation role mapping removed from ${input.lifecycleRoleKey}`
+		);
 		await connection.commit();
 	} catch (error) {
 		await connection.rollback();
@@ -934,8 +1041,14 @@ export async function addLifecycleAccessRule(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
-		if (row.mode !== 'advanced') throw new LifecycleAdministrationValidationError('Phase-scoped access rules require an Advanced lifecycle template.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
+		if (row.mode !== 'advanced')
+			throw new LifecycleAdministrationValidationError(
+				'Phase-scoped access rules require an Advanced lifecycle template.'
+			);
 		await ensurePermissionExists(connection, permissionKeyValue);
 		const [phaseRows] = await connection.execute<RowDataPacket[]>(
 			`SELECT id FROM lifecycle_template_phases WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ? LIMIT 1`,
@@ -945,14 +1058,22 @@ export async function addLifecycleAccessRule(input: {
 			`SELECT id FROM lifecycle_template_roles WHERE organisation_id = ? AND lifecycle_template_id = ? AND role_key = ? LIMIT 1`,
 			[input.actor.organisationId, row.id, roleKeyValue]
 		);
-		if (!phaseRows[0] || !roleRows[0]) throw new LifecycleAdministrationValidationError('The selected phase and lifecycle role must both exist.');
+		if (!phaseRows[0] || !roleRows[0])
+			throw new LifecycleAdministrationValidationError(
+				'The selected phase and lifecycle role must both exist.'
+			);
 		await connection.execute(
 			`INSERT IGNORE INTO lifecycle_template_phase_access_rules
 			 (organisation_id, lifecycle_template_id, phase_key, role_key, permission_key)
 			 VALUES (?, ?, ?, ?, ?)`,
 			[input.actor.organisationId, row.id, phaseKeyValue, roleKeyValue, permissionKeyValue]
 		);
-		await bumpDraft(connection, input.actor, row, `Phase access ${roleKeyValue} → ${permissionKeyValue} added`);
+		await bumpDraft(
+			connection,
+			input.actor,
+			row,
+			`Phase access ${roleKeyValue} → ${permissionKeyValue} added`
+		);
 		await connection.commit();
 	} catch (error) {
 		await connection.rollback();
@@ -972,7 +1093,10 @@ export async function deleteLifecycleAccessRule(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
 		await connection.execute(
 			`DELETE FROM lifecycle_template_phase_access_rules WHERE organisation_id = ? AND lifecycle_template_id = ? AND id = ?`,
 			[input.actor.organisationId, row.id, input.ruleId]
@@ -1002,20 +1126,25 @@ export async function addLifecycleTransition(input: {
 	await requirePermission(input.actor, 'lifecycle.manage');
 	const fromState = stateKey(input.fromState, 'Source state');
 	const toState = stateKey(input.toState, 'Target state');
-	if (fromState === toState) throw new LifecycleAdministrationValidationError('A lifecycle transition must change state.');
+	if (fromState === toState)
+		throw new LifecycleAdministrationValidationError('A lifecycle transition must change state.');
 	const requiredPermissionKey = permissionKey(input.requiredPermissionKey);
 	const workflowKey = optionalText(input.workflowKey, 160);
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
 		await ensurePermissionExists(connection, requiredPermissionKey);
 		const [phaseRows] = await connection.execute<RowDataPacket[]>(
 			`SELECT phase_key AS phaseKey FROM lifecycle_template_phases WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key IN (?, ?)`,
 			[input.actor.organisationId, row.id, fromState, toState]
 		);
-		if (phaseRows.length !== 2) throw new LifecycleAdministrationValidationError('Source and target states must both exist.');
+		if (phaseRows.length !== 2)
+			throw new LifecycleAdministrationValidationError('Source and target states must both exist.');
 		await connection.execute(
 			`INSERT INTO lifecycle_template_transitions
 			 (organisation_id, lifecycle_template_id, public_id, from_state, to_state, label,
@@ -1055,7 +1184,10 @@ export async function deleteLifecycleTransition(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only draft lifecycle templates can be modified.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
 		await connection.execute(
 			`DELETE FROM lifecycle_template_transitions WHERE organisation_id = ? AND lifecycle_template_id = ? AND public_id = ?`,
 			[input.actor.organisationId, row.id, input.transitionPublicId]
@@ -1079,7 +1211,10 @@ export async function publishLifecycleTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Only a draft lifecycle template can be published.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Only a draft lifecycle template can be published.'
+			);
 		await validateDraft(connection, input.actor, row);
 		const [previousRows] = await connection.execute<TemplateRow[]>(
 			`SELECT id, public_id AS publicId, template_key AS templateKey, version_number AS versionNumber,
@@ -1114,7 +1249,13 @@ export async function publishLifecycleTemplate(input: {
 			[input.actor.memberId, input.actor.organisationId, row.id]
 		);
 		const published = await templateRow(connection, input.actor, input.publicId, true);
-		await appendTemplateVersion(connection, input.actor, published, 'Lifecycle template published', true);
+		await appendTemplateVersion(
+			connection,
+			input.actor,
+			published,
+			'Lifecycle template published',
+			true
+		);
 		await connection.execute(
 			`INSERT INTO lifecycle_object_bindings
 			 (organisation_id, object_type, lifecycle_template_id, bound_by_member_id)
@@ -1155,7 +1296,10 @@ export async function activateLifecycleTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'published') throw new LifecycleAdministrationValidationError('Only a published lifecycle template can be activated.');
+		if (row.status !== 'published')
+			throw new LifecycleAdministrationValidationError(
+				'Only a published lifecycle template can be activated.'
+			);
 		await connection.execute(
 			`INSERT INTO lifecycle_object_bindings
 			 (organisation_id, object_type, lifecycle_template_id, bound_by_member_id)
@@ -1191,12 +1335,18 @@ export async function reviseLifecycleTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const source = await templateRow(connection, input.actor, input.publicId, true);
-		if (source.status !== 'published') throw new LifecycleAdministrationValidationError('Only a published lifecycle template can be revised.');
+		if (source.status !== 'published')
+			throw new LifecycleAdministrationValidationError(
+				'Only a published lifecycle template can be revised.'
+			);
 		const [existingDraft] = await connection.execute<RowDataPacket[]>(
 			`SELECT id FROM lifecycle_templates WHERE organisation_id = ? AND template_key = ? AND lifecycle_status = 'draft' LIMIT 1 FOR UPDATE`,
 			[input.actor.organisationId, source.templateKey]
 		);
-		if (existingDraft[0]) throw new LifecycleAdministrationValidationError('A working lifecycle-template revision already exists.');
+		if (existingDraft[0])
+			throw new LifecycleAdministrationValidationError(
+				'A working lifecycle-template revision already exists.'
+			);
 		const revisionPublicId = randomUUID();
 		const [insert] = await connection.execute<ResultSetHeader>(
 			`INSERT INTO lifecycle_templates
@@ -1257,13 +1407,21 @@ export async function reviseLifecycleTemplate(input: {
 			[revisionId, input.actor.memberId, source.id]
 		);
 		const revision = await templateRow(connection, input.actor, revisionPublicId, true);
-		await appendTemplateVersion(connection, input.actor, revision, 'Controlled lifecycle-template revision created');
+		await appendTemplateVersion(
+			connection,
+			input.actor,
+			revision,
+			'Controlled lifecycle-template revision created'
+		);
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'lifecycle.template.revise',
 			subjectType: 'lifecycle_template',
 			subjectPublicId: revisionPublicId,
-			changeSummary: { templateKey: source.templateKey, supersedesTemplatePublicId: source.publicId },
+			changeSummary: {
+				templateKey: source.templateKey,
+				supersedesTemplatePublicId: source.publicId
+			},
 			eventMetadata: { function: 'PLATFORM', mutation: 'revision' }
 		});
 		await connection.commit();
@@ -1285,7 +1443,10 @@ export async function discardLifecycleTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new LifecycleAdministrationValidationError('Published lifecycle templates cannot be discarded.');
+		if (row.status !== 'draft')
+			throw new LifecycleAdministrationValidationError(
+				'Published lifecycle templates cannot be discarded.'
+			);
 		await markWorkingVersionDiscarded(connection, {
 			organisationId: input.actor.organisationId,
 			domainCode: 'PLATFORM',

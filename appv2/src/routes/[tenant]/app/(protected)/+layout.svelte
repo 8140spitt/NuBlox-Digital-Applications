@@ -4,6 +4,6 @@
 	let { data, children } = $props();
 </script>
 
-<ApplicationShell tenant={data.tenant} user={data.user}>
+<ApplicationShell tenant={data.tenant} user={data.user} toolAccess={data.toolAccess}>
 	{@render children()}
 </ApplicationShell>

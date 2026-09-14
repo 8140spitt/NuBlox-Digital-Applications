@@ -6,6 +6,8 @@ export type AppMyWorkPath = `/${string}/app/my-work`;
 export type AppFunctionsPath = `/${string}/app/functions`;
 export type AppProjectsPath = `/${string}/app/projects`;
 export type AppDesignSystemPath = `/${string}/app/design-system`;
+export type AppLifecyclePath = `/${string}/app/lifecycle`;
+export type AppLifecycleTemplatePath = `/${string}/app/lifecycle/${string}`;
 export type AppStrategyPath = `/${string}/app/functions/f01`;
 export type AppStrategyNewPath = `/${string}/app/functions/f01/new`;
 export type AppStrategyFrameworkPath = `/${string}/app/functions/f01/strategies/${string}`;
@@ -181,6 +183,9 @@ export const routes = {
 	projects: (tenant: string): AppProjectsPath => appPath(tenant, 'projects') as AppProjectsPath,
 	designSystem: (tenant: string): AppDesignSystemPath =>
 		appPath(tenant, 'design-system') as AppDesignSystemPath,
+	lifecycle: (tenant: string): AppLifecyclePath => appPath(tenant, 'lifecycle') as AppLifecyclePath,
+	lifecycleTemplate: (tenant: string, templatePublicId: string): AppLifecycleTemplatePath =>
+		`${appPath(tenant, 'lifecycle')}/${requiredSegment(templatePublicId, 'Lifecycle template')}` as AppLifecycleTemplatePath,
 	strategy: (tenant: string): AppStrategyPath =>
 		appPath(tenant, 'functions/f01') as AppStrategyPath,
 	strategyNew: (tenant: string): AppStrategyNewPath =>

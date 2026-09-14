@@ -20,11 +20,11 @@
 	const published = $derived(template.status === 'published');
 	const advanced = $derived(template.mode === 'advanced');
 
-	function statusTone(status: string): 'success' | 'info' | 'warning' | 'default' {
+	function statusTone(status: string): 'success' | 'info' | 'warning' | 'neutral' {
 		if (status === 'published') return 'success';
 		if (status === 'draft') return 'info';
 		if (status === 'superseded') return 'warning';
-		return 'default';
+		return 'neutral';
 	}
 </script>
 
@@ -48,12 +48,13 @@
 	<PageHeader
 		eyebrow="Lifecycle template governance"
 		title={template.name}
-		description={template.description ?? 'No description has been supplied for this lifecycle template.'}
+		description={template.description ??
+			'No description has been supplied for this lifecycle template.'}
 	/>
 
 	<div class="summary-row" aria-label="Lifecycle template summary">
 		<StatusBadge label={template.status} tone={statusTone(template.status)} />
-		<StatusBadge label={template.mode} tone={advanced ? 'info' : 'default'} />
+		<StatusBadge label={template.mode} tone={advanced ? 'info' : 'neutral'} />
 		{#if template.isActiveBinding}
 			<StatusBadge label="Active binding" tone="success" />
 		{/if}
@@ -68,7 +69,8 @@
 
 	{#if published}
 		<Alert tone="success" title="Published major version">
-			This version is immutable. Create a controlled revision to change phases, transitions, roles or access rules.
+			This version is immutable. Create a controlled revision to change phases, transitions, roles
+			or access rules.
 		</Alert>
 	{:else if template.status === 'superseded'}
 		<Alert tone="info" title="Historical lifecycle version">
@@ -100,7 +102,10 @@
 						<Field id="initialState" label="Initial phase" required>
 							<select class="nb-control" id="initialState" name="initialState">
 								{#each template.phases as phase (phase.phaseKey)}
-									<option value={phase.phaseKey} selected={phase.phaseKey === template.initialState}>
+									<option
+										value={phase.phaseKey}
+										selected={phase.phaseKey === template.initialState}
+									>
 										{phase.label} ({phase.phaseKey})
 									</option>
 								{/each}
@@ -108,17 +113,31 @@
 						</Field>
 						<div class="full">
 							<Field id="description" label="Description">
-								<textarea class="nb-control" id="description" name="description">{template.description ?? ''}</textarea>
+								<textarea class="nb-control" id="description" name="description"
+									>{template.description ?? ''}</textarea
+								>
 							</Field>
 						</div>
 						<div class="full"><Button type="submit">Save template definition</Button></div>
 					</form>
 				{:else}
 					<dl class="definition-list">
-						<div><dt>Template key</dt><dd>{template.templateKey}</dd></div>
-						<div><dt>Object type</dt><dd>{template.objectType}</dd></div>
-						<div><dt>Mode</dt><dd>{template.mode}</dd></div>
-						<div><dt>Initial phase</dt><dd>{template.initialState}</dd></div>
+						<div>
+							<dt>Template key</dt>
+							<dd>{template.templateKey}</dd>
+						</div>
+						<div>
+							<dt>Object type</dt>
+							<dd>{template.objectType}</dd>
+						</div>
+						<div>
+							<dt>Mode</dt>
+							<dd>{template.mode}</dd>
+						</div>
+						<div>
+							<dt>Initial phase</dt>
+							<dd>{template.initialState}</dd>
+						</div>
 					</dl>
 				{/if}
 			</Panel>
@@ -151,9 +170,28 @@
 
 				{#if draft && template.canManage}
 					<form method="POST" action="?/addPhase" use:enhance class="inline-form">
-						<input class="nb-control" name="phaseKey" placeholder="phase_key" aria-label="Phase key" required />
-						<input class="nb-control" name="label" placeholder="Phase label" aria-label="Phase label" required />
-						<input class="nb-control order" type="number" min="0" name="displayOrder" value="20" aria-label="Display order" />
+						<input
+							class="nb-control"
+							name="phaseKey"
+							placeholder="phase_key"
+							aria-label="Phase key"
+							required
+						/>
+						<input
+							class="nb-control"
+							name="label"
+							placeholder="Phase label"
+							aria-label="Phase label"
+							required
+						/>
+						<input
+							class="nb-control order"
+							type="number"
+							min="0"
+							name="displayOrder"
+							value="20"
+							aria-label="Display order"
+						/>
 						<label class="check"><input type="checkbox" name="editable" /> Edit</label>
 						<label class="check"><input type="checkbox" name="deletable" /> Delete</label>
 						<label class="check"><input type="checkbox" name="revisable" /> Revise</label>
@@ -167,7 +205,10 @@
 				description="Transitions are explicit business events. Permission and workflow bindings are optional gates, not substitutes for domain invariants."
 			>
 				{#if template.transitions.length === 0}
-					<EmptyState title="No transitions yet" description="Add the legal state changes before publishing this lifecycle." />
+					<EmptyState
+						title="No transitions yet"
+						description="Add the legal state changes before publishing this lifecycle."
+					/>
 				{:else}
 					<div class="record-list">
 						{#each template.transitions as transition (transition.publicId)}
@@ -176,7 +217,9 @@
 									<strong>{transition.label}</strong>
 									<div class="record-meta">
 										<span>{transition.fromState} → {transition.toState}</span>
-										{#if transition.requiredPermissionKey}<span>{transition.requiredPermissionKey}</span>{/if}
+										{#if transition.requiredPermissionKey}<span
+												>{transition.requiredPermissionKey}</span
+											>{/if}
 										{#if transition.workflowKey}<span>Workflow: {transition.workflowKey}</span>{/if}
 										{#if transition.requiresNote}<span>Note required</span>{/if}
 									</div>
@@ -196,12 +239,16 @@
 					<form method="POST" action="?/addTransition" use:enhance class="transition-form">
 						<Field id="fromState" label="From" required>
 							<select class="nb-control" id="fromState" name="fromState">
-								{#each template.phases as phase (phase.phaseKey)}<option value={phase.phaseKey}>{phase.label}</option>{/each}
+								{#each template.phases as phase (phase.phaseKey)}<option value={phase.phaseKey}
+										>{phase.label}</option
+									>{/each}
 							</select>
 						</Field>
 						<Field id="toState" label="To" required>
 							<select class="nb-control" id="toState" name="toState">
-								{#each template.phases as phase (phase.phaseKey)}<option value={phase.phaseKey}>{phase.label}</option>{/each}
+								{#each template.phases as phase (phase.phaseKey)}<option value={phase.phaseKey}
+										>{phase.label}</option
+									>{/each}
 							</select>
 						</Field>
 						<Field id="transitionLabel" label="Label" required>
@@ -216,14 +263,26 @@
 							</select>
 						</Field>
 						<Field id="workflowKey" label="Workflow hook">
-							<input class="nb-control" id="workflowKey" name="workflowKey" placeholder="Optional work-kernel process key" />
+							<input
+								class="nb-control"
+								id="workflowKey"
+								name="workflowKey"
+								placeholder="Optional work-kernel process key"
+							/>
 						</Field>
 						<Field id="tone" label="Tone">
-							<select class="nb-control" id="tone" name="tone"><option value="default">Default</option><option value="danger">Danger</option></select>
+							<select class="nb-control" id="tone" name="tone"
+								><option value="default">Default</option><option value="danger">Danger</option
+								></select
+							>
 						</Field>
 						<div class="full transition-options">
-							<label class="check"><input type="checkbox" name="requiresNote" /> Require rationale / note</label>
-							<label class="check"><input type="checkbox" name="requiresTargetReference" /> Require canonical target reference</label>
+							<label class="check"
+								><input type="checkbox" name="requiresNote" /> Require rationale / note</label
+							>
+							<label class="check"
+								><input type="checkbox" name="requiresTargetReference" /> Require canonical target reference</label
+							>
 							<Button type="submit" variant="secondary" size="sm">Add transition</Button>
 						</div>
 					</form>
@@ -236,27 +295,43 @@
 					description="Advanced lifecycle grants are contextual and additive. Explicit member denies and tenant security remain authoritative."
 				>
 					{#if template.roles.length === 0}
-						<EmptyState title="No lifecycle roles" description="Define roles such as Author, Reviewer or Approver, then map organisation roles to them." />
+						<EmptyState
+							title="No lifecycle roles"
+							description="Define roles such as Author, Reviewer or Approver, then map organisation roles to them."
+						/>
 					{:else}
 						<div class="role-grid">
 							{#each template.roles as role (role.roleKey)}
 								<div class="role-card">
-									<div class="role-heading"><strong>{role.label}</strong><span>{role.roleKey}</span></div>
+									<div class="role-heading">
+										<strong>{role.label}</strong><span>{role.roleKey}</span>
+									</div>
 									{#if role.description}<p>{role.description}</p>{/if}
 									<div class="chips">
 										{#each role.organisationRoles as organisationRole (`${role.roleKey}-${organisationRole.publicId}`)}
 											<form method="POST" action="?/unbindRole" use:enhance class="chip-form">
 												<input type="hidden" name="lifecycleRoleKey" value={role.roleKey} />
-												<input type="hidden" name="organisationRolePublicId" value={organisationRole.publicId} />
+												<input
+													type="hidden"
+													name="organisationRolePublicId"
+													value={organisationRole.publicId}
+												/>
 												<span>{organisationRole.name}</span>
-												{#if draft && template.canManage}<button type="submit" aria-label={`Remove ${organisationRole.name}`}>×</button>{/if}
+												{#if draft && template.canManage}<button
+														type="submit"
+														aria-label={`Remove ${organisationRole.name}`}>×</button
+													>{/if}
 											</form>
 										{/each}
 									</div>
 									{#if draft && template.canManage}
 										<form method="POST" action="?/bindRole" use:enhance class="compact-form">
 											<input type="hidden" name="lifecycleRoleKey" value={role.roleKey} />
-											<select class="nb-control" name="organisationRolePublicId" aria-label={`Map organisation role to ${role.label}`}>
+											<select
+												class="nb-control"
+												name="organisationRolePublicId"
+												aria-label={`Map organisation role to ${role.label}`}
+											>
 												{#each data.referenceData.organisationRoles as organisationRole (organisationRole.publicId)}
 													<option value={organisationRole.publicId}>{organisationRole.name}</option>
 												{/each}
@@ -265,7 +340,8 @@
 										</form>
 										<form method="POST" action="?/deleteRole" use:enhance>
 											<input type="hidden" name="roleKey" value={role.roleKey} />
-											<Button type="submit" variant="danger" size="sm">Remove lifecycle role</Button>
+											<Button type="submit" variant="danger" size="sm">Remove lifecycle role</Button
+											>
 										</form>
 									{/if}
 								</div>
@@ -275,9 +351,26 @@
 
 					{#if draft && template.canManage}
 						<form method="POST" action="?/addRole" use:enhance class="inline-form role-create">
-							<input class="nb-control" name="roleKey" placeholder="role.key" aria-label="Lifecycle role key" required />
-							<input class="nb-control" name="label" placeholder="Role label" aria-label="Lifecycle role label" required />
-							<input class="nb-control" name="description" placeholder="Description" aria-label="Lifecycle role description" />
+							<input
+								class="nb-control"
+								name="roleKey"
+								placeholder="role.key"
+								aria-label="Lifecycle role key"
+								required
+							/>
+							<input
+								class="nb-control"
+								name="label"
+								placeholder="Role label"
+								aria-label="Lifecycle role label"
+								required
+							/>
+							<input
+								class="nb-control"
+								name="description"
+								placeholder="Description"
+								aria-label="Lifecycle role description"
+							/>
 							<Button type="submit" variant="secondary" size="sm">Add lifecycle role</Button>
 						</form>
 					{/if}
@@ -290,7 +383,9 @@
 							<div class="record-list compact">
 								{#each template.accessRules as rule (rule.id)}
 									<div class="record-row">
-										<span><strong>{rule.phaseKey}</strong> · {rule.roleKey} → {rule.permissionKey}</span>
+										<span
+											><strong>{rule.phaseKey}</strong> · {rule.roleKey} → {rule.permissionKey}</span
+										>
 										{#if draft && template.canManage}
 											<form method="POST" action="?/deleteAccessRule" use:enhance>
 												<input type="hidden" name="ruleId" value={rule.id} />
@@ -305,13 +400,19 @@
 						{#if draft && template.canManage && template.roles.length > 0}
 							<form method="POST" action="?/addAccessRule" use:enhance class="access-form">
 								<select class="nb-control" name="phaseKey" aria-label="Lifecycle phase">
-									{#each template.phases as phase (phase.phaseKey)}<option value={phase.phaseKey}>{phase.label}</option>{/each}
+									{#each template.phases as phase (phase.phaseKey)}<option value={phase.phaseKey}
+											>{phase.label}</option
+										>{/each}
 								</select>
 								<select class="nb-control" name="roleKey" aria-label="Lifecycle role">
-									{#each template.roles as role (role.roleKey)}<option value={role.roleKey}>{role.label}</option>{/each}
+									{#each template.roles as role (role.roleKey)}<option value={role.roleKey}
+											>{role.label}</option
+										>{/each}
 								</select>
 								<select class="nb-control" name="permissionKey" aria-label="Permission">
-									{#each data.referenceData.permissions as permission (permission.key)}<option value={permission.key}>{permission.key}</option>{/each}
+									{#each data.referenceData.permissions as permission (permission.key)}<option
+											value={permission.key}>{permission.key}</option
+										>{/each}
 								</select>
 								<Button type="submit" variant="secondary" size="sm">Add phase grant</Button>
 							</form>
@@ -343,7 +444,9 @@
 					{/if}
 					{#if published && template.canPublish && !template.isActiveBinding}
 						<form method="POST" action="?/activate" use:enhance>
-							<Button type="submit" variant="secondary">Make active for {template.objectType}</Button>
+							<Button type="submit" variant="secondary"
+								>Make active for {template.objectType}</Button
+							>
 						</form>
 					{/if}
 				</div>

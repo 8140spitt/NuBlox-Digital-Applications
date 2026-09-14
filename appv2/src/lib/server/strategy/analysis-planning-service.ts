@@ -9,6 +9,10 @@ import {
 	type StrategyFrameworkSummary,
 	type StrategyPermissionFlags
 } from './f01-service';
+import {
+	assertF01LifecycleTransition,
+	decideF01LifecyclePermission
+} from './f01-lifecycle-resolver';
 
 export type EvidenceType =
 	| 'internal_data'
@@ -1036,15 +1040,49 @@ export async function decideStrategyOption(input: {
 	decisionStatus: Exclude<OptionDecisionStatus, 'proposed'>;
 	decisionRationale: string;
 }): Promise<void> {
-	await requireManage({
+	const { framework } = await requireWorkspace({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
 		frameworkPublicId: input.frameworkPublicId
 	});
+	if (framework.lifecycleStatus !== 'draft') {
+		throw new StrategyValidationError(
+			'Approved or superseded strategy is immutable. Create a controlled revision before changing it.'
+		);
+	}
 	if (!['selected', 'rejected'].includes(input.decisionStatus)) {
 		throw new StrategyValidationError('Option decision is invalid.');
 	}
 	const decisionRationale = requiredText(input.decisionRationale, 'Decision rationale', 20_000);
+	const [optionRows] = await getPool().execute<
+		Array<RowDataPacket & { decisionStatus: OptionDecisionStatus }>
+	>(
+		`SELECT option_record.decision_status AS decisionStatus
+		 FROM strategy_options option_record
+		 JOIN strategy_frameworks framework ON framework.id = option_record.strategy_framework_id
+		 WHERE option_record.organisation_id = ? AND framework.public_id = ? AND option_record.public_id = ?
+		 LIMIT 1`,
+		[input.actor.organisationId, input.frameworkPublicId, input.optionPublicId]
+	);
+	const option = optionRows[0];
+	if (!option)
+		throw new StrategyValidationError('Strategic option is not available in this strategy cycle.');
+	const transition = await assertF01LifecycleTransition(
+		input.actor.organisationId,
+		'option',
+		option.decisionStatus,
+		input.decisionStatus
+	);
+	const authority = await decideF01LifecyclePermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		kind: 'option',
+		state: option.decisionStatus,
+		permissionKey: transition.requiredPermissionKey ?? 'strategy.approve'
+	});
+	if (!authority.allowed) {
+		throw new StrategyAccessError('You do not have authority to decide strategic options.');
+	}
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();

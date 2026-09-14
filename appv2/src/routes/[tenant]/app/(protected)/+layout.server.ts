@@ -2,6 +2,7 @@ import { error, redirect } from '@sveltejs/kit';
 import { isRouteSlug, routes } from '$lib/routing/route-contract';
 import { getAuth } from '$lib/server/auth/auth';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
+import { decidePermissions } from '$lib/server/auth/permission-service';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ params, request, url }) => {
@@ -19,6 +20,12 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 		redirect(303, routes.appNoAccess(params.tenant));
 	}
 
+	const toolPermissions = await decidePermissions({
+		organisationId: access.organisationId,
+		memberId: access.memberId,
+		permissionKeys: ['lifecycle.view']
+	});
+
 	return {
 		tenant: {
 			slug: access.organisationRouteSlug,
@@ -32,6 +39,9 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 			id: session.user.id,
 			name: session.user.name,
 			email: session.user.email
+		},
+		toolAccess: {
+			lifecycle: toolPermissions.get('lifecycle.view')?.allowed === true
 		}
 	};
 };

@@ -20,11 +20,23 @@ export function f01LifecycleObjectType(kind: F01ManagedRecordKind): string {
 }
 
 async function resolved(organisationId: string, kind: F01ManagedRecordKind) {
-	return resolveLifecycleTemplate({
+	const fallback = lifecycleTemplate(kind);
+	const lifecycle = await resolveLifecycleTemplate({
 		organisationId,
 		objectType: f01LifecycleObjectType(kind),
-		fallback: lifecycleTemplate(kind)
+		fallback
 	});
+	if (lifecycle.source === 'binding') {
+		const unsupported = Object.keys(lifecycle.template.phases).filter(
+			(state) => !fallback.phases[state]
+		);
+		if (unsupported.length > 0) {
+			throw new Error(
+				`Lifecycle binding ${lifecycle.persistedTemplatePublicId ?? lifecycle.template.key} contains unsupported ${f01LifecycleObjectType(kind)} states: ${unsupported.join(', ')}.`
+			);
+		}
+	}
+	return lifecycle;
 }
 
 export async function canF01LifecycleOperation(

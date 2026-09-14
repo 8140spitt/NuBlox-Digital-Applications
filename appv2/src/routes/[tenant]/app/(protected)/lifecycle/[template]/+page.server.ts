@@ -50,8 +50,10 @@ function numberValue(formData: FormData, name: string, fallback = 0): number {
 }
 
 function handle(cause: unknown) {
-	if (cause instanceof LifecycleAdministrationValidationError) return fail(400, { formError: cause.message });
-	if (cause instanceof LifecycleAdministrationAccessError) return fail(403, { formError: cause.message });
+	if (cause instanceof LifecycleAdministrationValidationError)
+		return fail(400, { formError: cause.message });
+	if (cause instanceof LifecycleAdministrationAccessError)
+		return fail(403, { formError: cause.message });
 	throw cause;
 }
 
@@ -69,7 +71,8 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 		]);
 		return { template, referenceData };
 	} catch (cause) {
-		if (cause instanceof LifecycleAdministrationAccessError) redirect(303, routes.dashboard(tenant.slug));
+		if (cause instanceof LifecycleAdministrationAccessError)
+			redirect(303, routes.dashboard(tenant.slug));
 		if (cause instanceof LifecycleAdministrationValidationError) error(404, cause.message);
 		throw cause;
 	}
@@ -281,7 +284,9 @@ export const actions = {
 	discard: async ({ request, params, url }) => {
 		const formData = await request.formData();
 		if (String(formData.get('confirmation') ?? '') !== 'DISCARD') {
-			return fail(400, { formError: 'Type DISCARD to remove the working lifecycle-template revision.' });
+			return fail(400, {
+				formError: 'Type DISCARD to remove the working lifecycle-template revision.'
+			});
 		}
 		const { access, actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
 		try {

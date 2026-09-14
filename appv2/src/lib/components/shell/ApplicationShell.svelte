@@ -14,10 +14,12 @@
 	let {
 		tenant,
 		user,
+		toolAccess,
 		children
 	}: {
 		tenant: { slug: string; displayName: string };
 		user: { name: string; email: string };
+		toolAccess: { lifecycle: boolean };
 		children: Snippet;
 	} = $props();
 
@@ -39,7 +41,18 @@
 		},
 		{
 			label: 'Tools',
-			items: [{ label: 'Design system', href: routes.designSystem(tenant.slug), icon: 'system' }]
+			items: [
+				...(toolAccess.lifecycle
+					? [
+							{
+								label: 'Lifecycle administration',
+								href: routes.lifecycle(tenant.slug),
+								icon: 'system' as const
+							}
+						]
+					: []),
+				{ label: 'Design system', href: routes.designSystem(tenant.slug), icon: 'system' }
+			]
 		}
 	]);
 

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
+	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import {
 		Alert,
@@ -16,11 +17,11 @@
 	let { data, form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
 
-	function tone(status: string): 'success' | 'info' | 'warning' | 'default' {
+	function tone(status: string): 'success' | 'info' | 'warning' | 'neutral' {
 		if (status === 'published') return 'success';
 		if (status === 'draft') return 'info';
 		if (status === 'superseded') return 'warning';
-		return 'default';
+		return 'neutral';
 	}
 </script>
 
@@ -64,7 +65,10 @@
 				{:else}
 					<div class="template-list">
 						{#each data.templates as template (template.publicId)}
-							<a class="template-card" href={routes.lifecycleTemplate(tenant, template.publicId)}>
+							<a
+								class="template-card"
+								href={resolve(routes.lifecycleTemplate(tenant, template.publicId))}
+							>
 								<div class="template-main">
 									<div class="template-heading">
 										<strong>{template.name}</strong>
@@ -97,7 +101,12 @@
 				padding="spacious"
 			>
 				<form method="POST" action="?/create" use:enhance class="form-stack">
-					<Field id="templateKey" label="Template key" required hint="Stable key, for example f01.framework.">
+					<Field
+						id="templateKey"
+						label="Template key"
+						required
+						hint="Stable key, for example f01.framework."
+					>
 						<input
 							class="nb-control"
 							id="templateKey"
@@ -107,9 +116,20 @@
 						/>
 					</Field>
 					<Field id="name" label="Name" required>
-						<input class="nb-control" id="name" name="name" value={form?.values?.name ?? ''} required />
+						<input
+							class="nb-control"
+							id="name"
+							name="name"
+							value={form?.values?.name ?? ''}
+							required
+						/>
 					</Field>
-					<Field id="objectType" label="Object type" required hint="Stable object type, for example F01.framework.">
+					<Field
+						id="objectType"
+						label="Object type"
+						required
+						hint="Stable object type, for example F01.framework."
+					>
 						<input
 							class="nb-control"
 							id="objectType"
@@ -120,12 +140,17 @@
 					</Field>
 					<Field id="mode" label="Lifecycle mode" required>
 						<select class="nb-control" id="mode" name="mode">
-							<option value="basic" selected={(form?.values?.mode ?? 'basic') === 'basic'}>Basic</option>
-							<option value="advanced" selected={form?.values?.mode === 'advanced'}>Advanced</option>
+							<option value="basic" selected={(form?.values?.mode ?? 'basic') === 'basic'}
+								>Basic</option
+							>
+							<option value="advanced" selected={form?.values?.mode === 'advanced'}>Advanced</option
+							>
 						</select>
 					</Field>
 					<Field id="description" label="Description">
-						<textarea class="nb-control" id="description" name="description">{form?.values?.description ?? ''}</textarea>
+						<textarea class="nb-control" id="description" name="description"
+							>{form?.values?.description ?? ''}</textarea
+						>
 					</Field>
 					<Button type="submit">Create working template</Button>
 				</form>

@@ -57,3 +57,21 @@ Approved/issued/executed/posted facts are corrected through controlled revision,
 Deletion is orthogonal to lifecycle maturity. Where domain policy permits governed deletion of an approved business object, the operation must be explicitly authorised, impact-aware, transactional, cascade only through records owned by that domain, and retain published version snapshots and audit evidence.
 
 The Work Kernel supplies shared task/action/approval execution semantics. The Lifecycle Kernel supplies common lifecycle mechanics. Neither replaces domain lifecycle authority.
+
+## Lifecycle administration
+
+Tenant administrators with `lifecycle.view`, `lifecycle.manage` and `lifecycle.publish` authority use the V2 Lifecycle administration workspace at `/{tenant}/app/lifecycle`.
+
+Lifecycle definitions are governed business configuration, not mutable application constants:
+
+- a new template begins as a working minor version (`0.1`);
+- meaningful changes advance the working minor version;
+- publishing produces an immutable major version (`1.0`, `2.0`, ...);
+- changing a published template creates a controlled draft revision;
+- publication of the successor makes the previous major historical/superseded;
+- object-type bindings point only to published versions;
+- Advanced lifecycle roles are mapped to existing tenant organisation roles rather than creating a second identity or RBAC model; and
+- phase-scoped grants are evaluated only after explicit member denies, so a lifecycle can add contextual authority but cannot defeat an absolute deny.
+
+F01 is the first runtime consumer. Each F01 object type resolves an active tenant binding such as `F01.framework`; if no published tenant binding exists, the code-backed F01 reference template remains the safe fallback. This allows controlled adoption without changing the semantics of existing tenants.
+

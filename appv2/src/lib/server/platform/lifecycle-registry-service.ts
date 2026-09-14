@@ -216,10 +216,7 @@ export async function decideLifecyclePermission(input: {
 	const central = decisions.get(input.permissionKey);
 	if (central?.reason === 'member-deny') return { allowed: false, source: 'member-deny' };
 	if (central?.allowed) return { allowed: true, source: 'central-authority' };
-	if (
-		input.resolved.template.mode !== 'advanced' ||
-		input.resolved.persistedTemplateId === null
-	) {
+	if (input.resolved.template.mode !== 'advanced' || input.resolved.persistedTemplateId === null) {
 		return { allowed: false, source: 'default-deny' };
 	}
 

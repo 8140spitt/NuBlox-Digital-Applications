@@ -6,6 +6,10 @@ import {
 	markPublishedVersionHistorical
 } from '$lib/server/platform/governed-versioning';
 import { getStrategyWorkspace, StrategyAccessError, StrategyValidationError } from './f01-service';
+import {
+	assertF01LifecycleTransition,
+	decideF01LifecyclePermission
+} from './f01-lifecycle-resolver';
 
 type PlanRow = RowDataPacket & {
 	id: string | number;
@@ -102,7 +106,20 @@ export async function approveStrategyBusinessPlan(input: {
 	if (!framework) {
 		throw new StrategyAccessError('Strategy cycle was not found in the active organisation.');
 	}
-	if (!workspace.permissions.canApprove) {
+	const transition = await assertF01LifecycleTransition(
+		input.actor.organisationId,
+		'plan',
+		'draft',
+		'approved'
+	);
+	const approvalAuthority = await decideF01LifecyclePermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		kind: 'plan',
+		state: 'draft',
+		permissionKey: transition.requiredPermissionKey ?? 'strategy.approve'
+	});
+	if (!approvalAuthority.allowed) {
 		throw new StrategyAccessError(
 			'You do not have authority to approve enterprise business plans.'
 		);

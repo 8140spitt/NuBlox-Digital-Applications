@@ -14,6 +14,10 @@ import {
 	type StrategyFrameworkSummary,
 	type StrategyPermissionFlags
 } from './f01-service';
+import {
+	assertF01LifecycleTransition,
+	decideF01LifecyclePermission
+} from './f01-lifecycle-resolver';
 
 export type BusinessPlanStatus = 'draft' | 'approved' | 'superseded';
 export type InitiativeStatus = 'proposed' | 'approved' | 'in_progress' | 'completed' | 'cancelled';
@@ -493,16 +497,30 @@ async function requireApprove(input: {
 	organisationId: string;
 	memberId: string;
 	frameworkPublicId: string;
+	kind: 'kpi' | 'review';
 }): Promise<{ framework: StrategyFrameworkSummary; permissions: StrategyPermissionFlags }> {
 	const context = await requireWorkspace(input);
-	if (!context.permissions.canApprove) {
-		throw new StrategyAccessError(
-			'You do not have authority to approve enterprise planning records.'
-		);
-	}
 	if (context.framework.lifecycleStatus !== 'approved') {
 		throw new StrategyValidationError(
 			'Approval actions require an approved governing strategy version.'
+		);
+	}
+	const transition = await assertF01LifecycleTransition(
+		input.organisationId,
+		input.kind,
+		'draft',
+		'approved'
+	);
+	const authority = await decideF01LifecyclePermission({
+		organisationId: input.organisationId,
+		memberId: input.memberId,
+		kind: input.kind,
+		state: 'draft',
+		permissionKey: transition.requiredPermissionKey ?? 'strategy.approve'
+	});
+	if (!authority.allowed) {
+		throw new StrategyAccessError(
+			'You do not have authority to approve enterprise planning records.'
 		);
 	}
 	return context;
@@ -1844,7 +1862,8 @@ export async function approveStrategyKpi(input: {
 	await requireApprove({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
-		frameworkPublicId: input.frameworkPublicId
+		frameworkPublicId: input.frameworkPublicId,
+		kind: 'kpi'
 	});
 	const connection = await getPool().getConnection();
 	try {
@@ -2381,7 +2400,8 @@ export async function approveStrategyReview(input: {
 	await requireApprove({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
-		frameworkPublicId: input.frameworkPublicId
+		frameworkPublicId: input.frameworkPublicId,
+		kind: 'review'
 	});
 	const connection = await getPool().getConnection();
 	try {

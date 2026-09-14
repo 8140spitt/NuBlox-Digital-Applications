@@ -6,6 +6,10 @@ import {
 	markPublishedVersionHistorical
 } from '$lib/server/platform/governed-versioning';
 import { getStrategyWorkspace, StrategyAccessError, StrategyValidationError } from './f01-service';
+import {
+	assertF01LifecycleTransition,
+	decideF01LifecyclePermission
+} from './f01-lifecycle-resolver';
 
 type FrameworkRow = RowDataPacket & {
 	id: string | number;
@@ -121,9 +125,6 @@ export async function approveStrategyFramework(input: {
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId
 	});
-	if (!workspace.permissions.canApprove) {
-		throw new StrategyAccessError('You do not have authority to approve enterprise strategy.');
-	}
 	const visibleFramework = workspace.frameworks.find(
 		(framework) => framework.publicId === input.frameworkPublicId
 	);
@@ -132,6 +133,22 @@ export async function approveStrategyFramework(input: {
 	}
 	if (visibleFramework.lifecycleStatus !== 'draft') {
 		throw new StrategyValidationError('Only a draft strategy version can be approved.');
+	}
+	const transition = await assertF01LifecycleTransition(
+		input.actor.organisationId,
+		'framework',
+		'draft',
+		'approved'
+	);
+	const approvalAuthority = await decideF01LifecyclePermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		kind: 'framework',
+		state: 'draft',
+		permissionKey: transition.requiredPermissionKey ?? 'strategy.approve'
+	});
+	if (!approvalAuthority.allowed) {
+		throw new StrategyAccessError('You do not have authority to approve enterprise strategy.');
 	}
 
 	const connection = await getPool().getConnection();

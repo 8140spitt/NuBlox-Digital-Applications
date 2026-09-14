@@ -189,7 +189,7 @@
 			items={approvalReadinessItems}
 		/>
 
-		{#if data.permissions.canApprove && data.framework.lifecycleStatus === 'draft'}
+		{#if data.approvalReadiness.canApprove && data.framework.lifecycleStatus === 'draft'}
 			<Panel
 				title="Approve the strategic direction"
 				description={data.approvalReadiness.ready

@@ -20,15 +20,13 @@ import {
 	type StrategyFrameworkSummary,
 	type StrategyPermissionFlags
 } from './f01-service';
+import type { F01LifecycleTransition, F01ManagedRecordKind } from './f01-lifecycle';
 import {
-	assertLifecycleTransition,
-	canDeleteF01Record,
-	canEditF01Record,
-	canReviseF01Record,
-	lifecycleTransitions,
-	type F01LifecycleTransition,
-	type F01ManagedRecordKind
-} from './f01-lifecycle';
+	assertF01LifecycleTransition,
+	canF01LifecycleOperation,
+	decideF01LifecyclePermission,
+	f01LifecycleTransitions
+} from './f01-lifecycle-resolver';
 
 export type F01ManagedField = {
 	name: string;
@@ -240,28 +238,6 @@ async function frameworkContext(input: {
 	return { framework, permissions: workspace.permissions };
 }
 
-async function requireManage(input: {
-	actor: EvidenceActor;
-	frameworkPublicId: string;
-}): Promise<{ framework: StrategyFrameworkSummary; permissions: StrategyPermissionFlags }> {
-	const context = await frameworkContext({
-		organisationId: input.actor.organisationId,
-		memberId: input.actor.memberId,
-		frameworkPublicId: input.frameworkPublicId
-	});
-	if (!context.permissions.canManage) {
-		throw new StrategyAccessError(
-			'You do not have authority to manage enterprise strategy records.'
-		);
-	}
-	if (context.framework.lifecycleStatus === 'superseded') {
-		throw new StrategyValidationError(
-			'Superseded strategy versions are immutable enterprise history.'
-		);
-	}
-	return context;
-}
-
 async function singleRow<T extends RowDataPacket>(
 	query: string,
 	params: Array<string | number | boolean | Date | null>
@@ -313,20 +289,34 @@ async function statusFor(input: {
 	return row.status;
 }
 
-function permissionFilteredTransitions(
+async function permissionFilteredTransitions(
+	organisationId: string,
+	memberId: string,
 	kind: F01ManagedRecordKind,
-	status: string,
-	permissions: StrategyPermissionFlags
-): readonly F01LifecycleTransition[] {
-	return lifecycleTransitions(kind, status).filter((transition) => {
-		if (
-			transition.to === 'approved' ||
-			(kind === 'option' && ['selected', 'rejected'].includes(transition.to))
-		) {
-			return permissions.canApprove;
-		}
-		return permissions.canManage;
-	});
+	status: string
+): Promise<readonly F01LifecycleTransition[]> {
+	const transitions = await f01LifecycleTransitions(organisationId, kind, status);
+	const decisions = await Promise.all(
+		transitions.map(async (transition) => {
+			const requiredPermissionKey =
+				transition.requiredPermissionKey ??
+				(transition.to === 'approved' ||
+				(kind === 'option' && ['selected', 'rejected'].includes(transition.to))
+					? 'strategy.approve'
+					: 'strategy.manage');
+			const decision = await decideF01LifecyclePermission({
+				organisationId,
+				memberId,
+				kind,
+				state: status,
+				permissionKey: requiredPermissionKey
+			});
+			return decision.allowed ? transition : null;
+		})
+	);
+	return decisions.filter(
+		(transition): transition is F01LifecycleTransition => transition !== null
+	);
 }
 
 export async function getF01ManagedRecord(input: {
@@ -1247,6 +1237,22 @@ export async function getF01ManagedRecord(input: {
 		: input.kind === 'framework'
 			? true
 			: framework.lifecycleStatus === 'approved';
+	const manageAuthority = await decideF01LifecyclePermission({
+		organisationId,
+		memberId: input.memberId,
+		kind: input.kind,
+		state: status,
+		permissionKey: 'strategy.manage'
+	});
+	const [policyCanEdit, policyCanDelete, policyCanRevise, permittedTransitions] = await Promise.all(
+		[
+			canF01LifecycleOperation(organisationId, input.kind, status, 'edit'),
+			canF01LifecycleOperation(organisationId, input.kind, status, 'delete'),
+			canF01LifecycleOperation(organisationId, input.kind, status, 'revise'),
+			permissionFilteredTransitions(organisationId, input.memberId, input.kind, status)
+		]
+	);
+
 	return {
 		kind: input.kind,
 		publicId,
@@ -1258,11 +1264,10 @@ export async function getF01ManagedRecord(input: {
 		versionHistory,
 		section: sectionFor(input.kind),
 		fields,
-		canEdit: permissions.canManage && strategyAllowsEditing && canEditF01Record(input.kind, status),
-		canDelete:
-			permissions.canManage && strategyAllowsEditing && canDeleteF01Record(input.kind, status),
-		canRevise: permissions.canManage && canReviseF01Record(input.kind, status),
-		transitions: permissionFilteredTransitions(input.kind, status, permissions).filter(() => {
+		canEdit: manageAuthority.allowed && strategyAllowsEditing && policyCanEdit,
+		canDelete: manageAuthority.allowed && strategyAllowsEditing && policyCanDelete,
+		canRevise: manageAuthority.allowed && policyCanRevise,
+		transitions: permittedTransitions.filter(() => {
 			if (framework.lifecycleStatus === 'superseded') return false;
 			if (['evidence', 'factor', 'option', 'theme'].includes(input.kind)) {
 				return framework.lifecycleStatus === 'draft';
@@ -1315,7 +1320,16 @@ export async function updateF01Record(input: {
 	recordPublicId: string;
 	values: Readonly<Record<string, string>>;
 }): Promise<void> {
-	const { framework } = await requireManage(input);
+	const { framework } = await frameworkContext({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		frameworkPublicId: input.frameworkPublicId
+	});
+	if (framework.lifecycleStatus === 'superseded') {
+		throw new StrategyValidationError(
+			'Superseded strategy versions are immutable enterprise history.'
+		);
+	}
 	await ensureFrameworkPhase(framework, input.kind);
 	const currentStatus = await statusFor({
 		organisationId: input.actor.organisationId,
@@ -1323,7 +1337,21 @@ export async function updateF01Record(input: {
 		kind: input.kind,
 		recordPublicId: input.recordPublicId
 	});
-	if (!canEditF01Record(input.kind, currentStatus)) {
+	const manageAuthority = await decideF01LifecyclePermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		kind: input.kind,
+		state: currentStatus,
+		permissionKey: 'strategy.manage'
+	});
+	if (!manageAuthority.allowed) {
+		throw new StrategyAccessError(
+			'You do not have authority to edit this record in its current lifecycle phase.'
+		);
+	}
+	if (
+		!(await canF01LifecycleOperation(input.actor.organisationId, input.kind, currentStatus, 'edit'))
+	) {
 		throw new StrategyValidationError(
 			`The ${input.kind} record cannot be edited while it is ${currentStatus}.`
 		);
@@ -1728,7 +1756,16 @@ export async function deleteF01Record(input: {
 	kind: F01ManagedRecordKind;
 	recordPublicId: string;
 }): Promise<void> {
-	const { framework } = await requireManage(input);
+	const { framework } = await frameworkContext({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		frameworkPublicId: input.frameworkPublicId
+	});
+	if (framework.lifecycleStatus === 'superseded') {
+		throw new StrategyValidationError(
+			'Superseded strategy versions are immutable enterprise history.'
+		);
+	}
 	await ensureFrameworkPhase(framework, input.kind);
 	const currentStatus = await statusFor({
 		organisationId: input.actor.organisationId,
@@ -1736,7 +1773,26 @@ export async function deleteF01Record(input: {
 		kind: input.kind,
 		recordPublicId: input.recordPublicId
 	});
-	if (!canDeleteF01Record(input.kind, currentStatus))
+	const manageAuthority = await decideF01LifecyclePermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		kind: input.kind,
+		state: currentStatus,
+		permissionKey: 'strategy.manage'
+	});
+	if (!manageAuthority.allowed) {
+		throw new StrategyAccessError(
+			'You do not have authority to delete this record in its current lifecycle phase.'
+		);
+	}
+	if (
+		!(await canF01LifecycleOperation(
+			input.actor.organisationId,
+			input.kind,
+			currentStatus,
+			'delete'
+		))
+	)
 		throw new StrategyValidationError(
 			`The ${input.kind} record cannot be deleted while it is ${currentStatus}. Use its lifecycle action instead.`
 		);
@@ -2017,7 +2073,7 @@ export async function transitionF01Record(input: {
 	targetRecordType?: string | null;
 	targetPublicId?: string | null;
 }): Promise<void> {
-	const { framework, permissions } = await frameworkContext({
+	const { framework } = await frameworkContext({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
 		frameworkPublicId: input.frameworkPublicId
@@ -2054,18 +2110,30 @@ export async function transitionF01Record(input: {
 			'Execution and review lifecycle transitions require the current approved strategy.'
 		);
 	}
-	const transition = assertLifecycleTransition(input.kind, currentStatus, input.targetStatus);
-	const requiresApproval =
-		input.targetStatus === 'approved' ||
-		(input.kind === 'option' && ['selected', 'rejected'].includes(input.targetStatus));
-	if (requiresApproval && !permissions.canApprove)
+	const transition = await assertF01LifecycleTransition(
+		input.actor.organisationId,
+		input.kind,
+		currentStatus,
+		input.targetStatus
+	);
+	const requiredPermissionKey =
+		transition.requiredPermissionKey ??
+		(input.targetStatus === 'approved' ||
+		(input.kind === 'option' && ['selected', 'rejected'].includes(input.targetStatus))
+			? 'strategy.approve'
+			: 'strategy.manage');
+	const transitionAuthority = await decideF01LifecyclePermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		kind: input.kind,
+		state: currentStatus,
+		permissionKey: requiredPermissionKey
+	});
+	if (!transitionAuthority.allowed) {
 		throw new StrategyAccessError(
-			'You do not have authority to complete this approval or decision.'
+			`You do not have ${requiredPermissionKey} authority for this lifecycle transition.`
 		);
-	if (!requiresApproval && !permissions.canManage)
-		throw new StrategyAccessError(
-			'You do not have authority to move this record through its lifecycle.'
-		);
+	}
 	if (transition.requiresNote && !input.note?.trim())
 		throw new StrategyValidationError(
 			'A rationale or completion note is required for this lifecycle transition.'
@@ -2306,14 +2374,42 @@ export async function reviseF01Record(input: {
 	kind: 'framework' | 'plan' | 'kpi';
 	recordPublicId: string;
 }): Promise<{ publicId: string }> {
-	await requireManage(input);
+	const { framework } = await frameworkContext({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		frameworkPublicId: input.frameworkPublicId
+	});
+	if (framework.lifecycleStatus === 'superseded') {
+		throw new StrategyValidationError(
+			'Superseded strategy versions are immutable enterprise history.'
+		);
+	}
 	const currentStatus = await statusFor({
 		organisationId: input.actor.organisationId,
 		frameworkPublicId: input.frameworkPublicId,
 		kind: input.kind,
 		recordPublicId: input.recordPublicId
 	});
-	if (!canReviseF01Record(input.kind, currentStatus))
+	const manageAuthority = await decideF01LifecyclePermission({
+		organisationId: input.actor.organisationId,
+		memberId: input.actor.memberId,
+		kind: input.kind,
+		state: currentStatus,
+		permissionKey: 'strategy.manage'
+	});
+	if (!manageAuthority.allowed) {
+		throw new StrategyAccessError(
+			'You do not have authority to revise this record in its current lifecycle phase.'
+		);
+	}
+	if (
+		!(await canF01LifecycleOperation(
+			input.actor.organisationId,
+			input.kind,
+			currentStatus,
+			'revise'
+		))
+	)
 		throw new StrategyValidationError(`Only an approved ${input.kind} can be revised.`);
 	const connection = await getPool().getConnection();
 	try {
