@@ -1,0 +1,43 @@
+name: Fix object registry link type invariant
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-object-registry-link-types.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Apply typed node-link invariant
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('appv2/src/lib/server/platform/object-template-library-service.ts')
+          text = path.read_text()
+          old = """\tfor (let index = 0; index < blueprint.nodes.length - 1; index += 1) {\n\t\tconst from = blueprint.nodes[index];\n\t\tconst to = blueprint.nodes[index + 1];\n\t\tawait connection.execute(\n\t\t\t`INSERT INTO workflow_template_links\n\t\t\t (organisation_id, workflow_template_id, public_id, from_node_id, to_node_id, display_order)\n\t\t\t VALUES (?, ?, ?, ?, ?, ?)`,\n\t\t\t[\n\t\t\t\tactor.organisationId,\n\t\t\t\tworkflowTemplateId,\n\t\t\t\trandomUUID(),\n\t\t\t\tnodeIds.get(from.key),\n\t\t\t\tnodeIds.get(to.key),\n\t\t\t\t(index + 1) * 10\n\t\t\t]\n\t\t);\n\t}\n"""
+          new = """\tfor (let index = 0; index < blueprint.nodes.length - 1; index += 1) {\n\t\tconst from = blueprint.nodes[index];\n\t\tconst to = blueprint.nodes[index + 1];\n\t\tconst fromNodeId = nodeIds.get(from.key);\n\t\tconst toNodeId = nodeIds.get(to.key);\n\t\tif (fromNodeId === undefined || toNodeId === undefined) {\n\t\t\tthrow new ObjectTemplateLibraryValidationError(\n\t\t\t\t'Workflow starter graph references a node that was not inserted.'\n\t\t\t);\n\t\t}\n\t\tawait connection.execute(\n\t\t\t`INSERT INTO workflow_template_links\n\t\t\t (organisation_id, workflow_template_id, public_id, from_node_id, to_node_id, display_order)\n\t\t\t VALUES (?, ?, ?, ?, ?, ?)`,\n\t\t\t[\n\t\t\t\tactor.organisationId,\n\t\t\t\tworkflowTemplateId,\n\t\t\t\trandomUUID(),\n\t\t\t\tfromNodeId,\n\t\t\t\ttoNodeId,\n\t\t\t\t(index + 1) * 10\n\t\t\t]\n\t\t);\n\t}\n"""
+          if old not in text:
+              raise SystemExit('Target block not found')
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Commit fix and remove one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appv2/src/lib/server/platform/object-template-library-service.ts
+          git rm .github/workflows/fix-object-registry-link-types.yml
+          git commit -m "fix(v2): enforce workflow starter node link invariant"
+          git push origin HEAD:main
