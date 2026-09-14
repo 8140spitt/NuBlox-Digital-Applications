@@ -128,38 +128,42 @@ export async function decideF01WorkflowRequest(input: {
 	}
 	const kind = asManagedKind(task.sourceType);
 
-	if (input.decision === 'approved' && task.willCompleteOnApprove) {
-		const record = await getF01ManagedRecord({
-			organisationId: input.actor.organisationId,
-			memberId: input.actor.memberId,
-			frameworkPublicId: task.contextPublicId,
-			kind,
-			recordPublicId: task.sourcePublicId
-		});
-		if (record.status !== task.toState) {
-			if (record.status !== task.fromState) {
-				throw new WorkflowValidationError(
-					`The source record is now ${record.status}; this workflow expected ${task.fromState}. The task is stale and must not be applied.`
-				);
-			}
-			await transitionF01Record({
-				actor: input.actor,
-				frameworkPublicId: task.contextPublicId,
-				kind,
-				recordPublicId: task.sourcePublicId,
-				targetStatus: task.toState,
-				note: input.note ?? undefined,
-				targetRecordType: '',
-				targetPublicId: ''
-			});
-		}
-	}
-
 	const runtime = await finaliseWorkflowRequest({
 		actor: input.actor,
 		requestPublicId: input.requestPublicId,
 		decision: input.decision,
-		note: input.note
+		note: input.note,
+		onApprovedCompletion:
+			input.decision === 'approved' && task.willCompleteOnApprove
+				? async (connection) => {
+						const record = await getF01ManagedRecord({
+							organisationId: input.actor.organisationId,
+							memberId: input.actor.memberId,
+							frameworkPublicId: task.contextPublicId,
+							kind,
+							recordPublicId: task.sourcePublicId
+						});
+						if (record.status === task.toState) return;
+						if (record.status !== task.fromState) {
+							throw new WorkflowValidationError(
+								`The source record is now ${record.status}; this workflow expected ${task.fromState}. The task is stale and must not be applied.`
+							);
+						}
+						await transitionF01Record(
+							{
+								actor: input.actor,
+								frameworkPublicId: task.contextPublicId,
+								kind,
+								recordPublicId: task.sourcePublicId,
+								targetStatus: task.toState,
+								note: input.note ?? undefined,
+								targetRecordType: '',
+								targetPublicId: ''
+							},
+							connection
+						);
+					}
+				: undefined
 	});
 	return {
 		frameworkPublicId: task.contextPublicId,

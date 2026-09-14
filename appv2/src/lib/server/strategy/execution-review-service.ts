@@ -1854,20 +1854,24 @@ export async function createStrategyKpi(input: {
 	}
 }
 
-export async function approveStrategyKpi(input: {
-	actor: EvidenceActor;
-	frameworkPublicId: string;
-	kpiPublicId: string;
-}): Promise<void> {
+export async function approveStrategyKpi(
+	input: {
+		actor: EvidenceActor;
+		frameworkPublicId: string;
+		kpiPublicId: string;
+	},
+	transactionConnection?: PoolConnection
+): Promise<void> {
 	await requireApprove({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
 		frameworkPublicId: input.frameworkPublicId,
 		kind: 'kpi'
 	});
-	const connection = await getPool().getConnection();
+	const connection = transactionConnection ?? (await getPool().getConnection());
+	const ownsTransaction = transactionConnection === undefined;
 	try {
-		await connection.beginTransaction();
+		if (ownsTransaction) await connection.beginTransaction();
 		const framework = await lockApprovedFramework(
 			connection,
 			input.actor.organisationId,
@@ -1974,12 +1978,12 @@ export async function approveStrategyKpi(input: {
 			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.06'] }
 		});
-		await connection.commit();
+		if (ownsTransaction) await connection.commit();
 	} catch (error) {
-		await connection.rollback();
+		if (ownsTransaction) await connection.rollback();
 		throw error;
 	} finally {
-		connection.release();
+		if (ownsTransaction) connection.release();
 	}
 }
 
@@ -2392,20 +2396,24 @@ export async function createStrategyReviewDecision(input: {
 	}
 }
 
-export async function approveStrategyReview(input: {
-	actor: EvidenceActor;
-	frameworkPublicId: string;
-	reviewPublicId: string;
-}): Promise<void> {
+export async function approveStrategyReview(
+	input: {
+		actor: EvidenceActor;
+		frameworkPublicId: string;
+		reviewPublicId: string;
+	},
+	transactionConnection?: PoolConnection
+): Promise<void> {
 	await requireApprove({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
 		frameworkPublicId: input.frameworkPublicId,
 		kind: 'review'
 	});
-	const connection = await getPool().getConnection();
+	const connection = transactionConnection ?? (await getPool().getConnection());
+	const ownsTransaction = transactionConnection === undefined;
 	try {
-		await connection.beginTransaction();
+		if (ownsTransaction) await connection.beginTransaction();
 		const framework = await lockApprovedFramework(
 			connection,
 			input.actor.organisationId,
@@ -2457,11 +2465,11 @@ export async function approveStrategyReview(input: {
 			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.07'] }
 		});
-		await connection.commit();
+		if (ownsTransaction) await connection.commit();
 	} catch (error) {
-		await connection.rollback();
+		if (ownsTransaction) await connection.rollback();
 		throw error;
 	} finally {
-		connection.release();
+		if (ownsTransaction) connection.release();
 	}
 }

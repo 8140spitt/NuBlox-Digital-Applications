@@ -765,6 +765,7 @@ export async function finaliseWorkflowRequest(input: {
 	requestPublicId: string;
 	decision: WorkflowDecision;
 	note?: string | null;
+	onApprovedCompletion?: (connection: PoolConnection) => Promise<void>;
 }): Promise<{
 	completed: boolean;
 	decision: WorkflowDecision | null;
@@ -817,6 +818,9 @@ export async function finaliseWorkflowRequest(input: {
 		});
 		const template = workflowDefinition(request.workflowDefinition);
 		if (!template || !request.currentNodeKey) {
+			if (input.decision === 'approved') {
+				await input.onApprovedCompletion?.(connection);
+			}
 			await finishRequest(connection, {
 				actor: input.actor,
 				request,
@@ -877,6 +881,7 @@ export async function finaliseWorkflowRequest(input: {
 				outcome: 'automatic',
 				completedByMemberId: input.actor.memberId
 			});
+			await input.onApprovedCompletion?.(connection);
 			await finishRequest(connection, {
 				actor: input.actor,
 				request,

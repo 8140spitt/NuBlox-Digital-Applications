@@ -93,11 +93,14 @@ async function lockPlan(
 	return plan;
 }
 
-export async function approveStrategyBusinessPlan(input: {
-	actor: EvidenceActor;
-	frameworkPublicId: string;
-	planPublicId: string;
-}): Promise<void> {
+export async function approveStrategyBusinessPlan(
+	input: {
+		actor: EvidenceActor;
+		frameworkPublicId: string;
+		planPublicId: string;
+	},
+	transactionConnection?: PoolConnection
+): Promise<void> {
 	const workspace = await getStrategyWorkspace({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId
@@ -130,9 +133,10 @@ export async function approveStrategyBusinessPlan(input: {
 		);
 	}
 
-	const connection = await getPool().getConnection();
+	const connection = transactionConnection ?? (await getPool().getConnection());
+	const ownsTransaction = transactionConnection === undefined;
 	try {
-		await connection.beginTransaction();
+		if (ownsTransaction) await connection.beginTransaction();
 		const plan = await lockPlan(
 			connection,
 			input.actor.organisationId,
@@ -254,11 +258,11 @@ export async function approveStrategyBusinessPlan(input: {
 			},
 			eventMetadata: { function: 'F01', subfunctions: ['F01.04'] }
 		});
-		await connection.commit();
+		if (ownsTransaction) await connection.commit();
 	} catch (error) {
-		await connection.rollback();
+		if (ownsTransaction) await connection.rollback();
 		throw error;
 	} finally {
-		connection.release();
+		if (ownsTransaction) connection.release();
 	}
 }

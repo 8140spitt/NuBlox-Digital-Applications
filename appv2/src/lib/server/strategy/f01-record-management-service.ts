@@ -2063,16 +2063,19 @@ export async function deleteF01Record(input: {
 	}
 }
 
-export async function transitionF01Record(input: {
-	actor: EvidenceActor;
-	frameworkPublicId: string;
-	kind: F01ManagedRecordKind;
-	recordPublicId: string;
-	targetStatus: string;
-	note?: string | null;
-	targetRecordType?: string | null;
-	targetPublicId?: string | null;
-}): Promise<void> {
+export async function transitionF01Record(
+	input: {
+		actor: EvidenceActor;
+		frameworkPublicId: string;
+		kind: F01ManagedRecordKind;
+		recordPublicId: string;
+		targetStatus: string;
+		note?: string | null;
+		targetRecordType?: string | null;
+		targetPublicId?: string | null;
+	},
+	transactionConnection?: PoolConnection
+): Promise<void> {
 	const { framework } = await frameworkContext({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
@@ -2146,28 +2149,40 @@ export async function transitionF01Record(input: {
 			'Fulfilment requires the canonical target record type and public ID.'
 		);
 	if (input.kind === 'framework' && input.targetStatus === 'approved')
-		return approveStrategyFramework({
-			actor: input.actor,
-			frameworkPublicId: input.frameworkPublicId
-		});
+		return approveStrategyFramework(
+			{
+				actor: input.actor,
+				frameworkPublicId: input.frameworkPublicId
+			},
+			transactionConnection
+		);
 	if (input.kind === 'plan' && input.targetStatus === 'approved')
-		return approveStrategyBusinessPlan({
-			actor: input.actor,
-			frameworkPublicId: input.frameworkPublicId,
-			planPublicId: input.recordPublicId
-		});
+		return approveStrategyBusinessPlan(
+			{
+				actor: input.actor,
+				frameworkPublicId: input.frameworkPublicId,
+				planPublicId: input.recordPublicId
+			},
+			transactionConnection
+		);
 	if (input.kind === 'kpi' && input.targetStatus === 'approved')
-		return approveStrategyKpi({
-			actor: input.actor,
-			frameworkPublicId: input.frameworkPublicId,
-			kpiPublicId: input.recordPublicId
-		});
+		return approveStrategyKpi(
+			{
+				actor: input.actor,
+				frameworkPublicId: input.frameworkPublicId,
+				kpiPublicId: input.recordPublicId
+			},
+			transactionConnection
+		);
 	if (input.kind === 'review' && input.targetStatus === 'approved')
-		return approveStrategyReview({
-			actor: input.actor,
-			frameworkPublicId: input.frameworkPublicId,
-			reviewPublicId: input.recordPublicId
-		});
+		return approveStrategyReview(
+			{
+				actor: input.actor,
+				frameworkPublicId: input.frameworkPublicId,
+				reviewPublicId: input.recordPublicId
+			},
+			transactionConnection
+		);
 	if (input.kind === 'option' && ['selected', 'rejected'].includes(input.targetStatus))
 		return decideStrategyOption({
 			actor: input.actor,
@@ -2176,9 +2191,10 @@ export async function transitionF01Record(input: {
 			decisionStatus: input.targetStatus as Exclude<OptionDecisionStatus, 'proposed'>,
 			decisionRationale: input.note ?? ''
 		}).then(() => undefined);
-	const connection = await getPool().getConnection();
+	const connection = transactionConnection ?? (await getPool().getConnection());
+	const ownsTransaction = transactionConnection === undefined;
 	try {
-		await connection.beginTransaction();
+		if (ownsTransaction) await connection.beginTransaction();
 		const org = input.actor.organisationId;
 		const id = input.recordPublicId;
 		const note = input.note?.trim() || null;
@@ -2350,12 +2366,12 @@ export async function transitionF01Record(input: {
 			},
 			eventMetadata: { function: 'F01', mutation: 'transition' }
 		});
-		await connection.commit();
+		if (ownsTransaction) await connection.commit();
 	} catch (error) {
-		await connection.rollback();
+		if (ownsTransaction) await connection.rollback();
 		throw error;
 	} finally {
-		connection.release();
+		if (ownsTransaction) connection.release();
 	}
 }
 

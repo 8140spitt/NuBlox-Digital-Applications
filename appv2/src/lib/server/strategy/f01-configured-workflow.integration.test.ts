@@ -9,9 +9,18 @@ import {
 } from '$lib/server/platform/lifecycle-admin-service';
 import { installObjectTemplatePack } from '$lib/server/platform/object-template-library-service';
 import { publishWorkflowTemplate } from '$lib/server/platform/workflow-admin-service';
-import { listPendingWorkflowTasks } from '$lib/server/platform/workflow-request-service';
+import {
+	finaliseWorkflowRequest,
+	listPendingWorkflowTasks
+} from '$lib/server/platform/workflow-request-service';
+import {
+	createStrategyAssumption,
+	createStrategyObjective,
+	createStrategyOption,
+	createStrategyTheme
+} from './analysis-planning-service';
 import { createStrategyFramework } from './f01-service';
-import { getF01ManagedRecord } from './f01-record-management-service';
+import { getF01ManagedRecord, transitionF01Record } from './f01-record-management-service';
 import { decideF01WorkflowRequest, submitF01WorkflowTransition } from './f01-workflow-service';
 
 type Actor = { organisationId: string; userId: string; memberId: string };
@@ -154,6 +163,51 @@ describe('configured lifecycle and authored workflow runtime', () => {
 			mission: 'Eliminate disconnected administration-only workflow.'
 		});
 
+		const assumption = await createStrategyAssumption({
+			actor,
+			frameworkPublicId: framework.publicId,
+			statementText: 'Configured governance remains authoritative through execution.',
+			rationaleText: 'Required lineage for a valid governed strategy approval candidate.',
+			confidenceScore: 4,
+			reviewBy: '2027-06-30'
+		});
+		const option = await createStrategyOption({
+			actor,
+			frameworkPublicId: framework.publicId,
+			title: 'Govern through configured runtime',
+			description: 'Use the published NuBlox workflow graph for accountable strategy approval.',
+			evaluationSummary: 'Provides traceable governance without bypassing native strategy rules.',
+			priorityRank: 1,
+			factorPublicIds: [],
+			assumptionPublicIds: [assumption.publicId]
+		});
+		await transitionF01Record({
+			actor,
+			frameworkPublicId: framework.publicId,
+			kind: 'option',
+			recordPublicId: option.publicId,
+			targetStatus: 'selected',
+			note: 'Selected to establish traceable strategy approval lineage.'
+		});
+		const theme = await createStrategyTheme({
+			actor,
+			frameworkPublicId: framework.publicId,
+			title: 'Configured governance',
+			description: 'Execute governed strategy through published lifecycle and workflow policy.',
+			priorityRank: 1
+		});
+		await createStrategyObjective({
+			actor,
+			frameworkPublicId: framework.publicId,
+			title: 'Prove atomic configured workflow execution',
+			description: 'Advance strategy only when the configured workflow completes atomically.',
+			priorityRank: 1,
+			targetDate: '2029-12-31',
+			parentObjectivePublicId: null,
+			optionPublicIds: [option.publicId],
+			themePublicId: theme.publicId
+		});
+
 		let managed = await getF01ManagedRecord({
 			organisationId,
 			memberId: actor.memberId,
@@ -223,6 +277,49 @@ describe('configured lifecycle and authored workflow runtime', () => {
 		pending = await listPendingWorkflowTasks({ organisationId, memberId: actor.memberId });
 		task = pending.find((item) => item.requestPublicId === request!.requestPublicId);
 		expect(task).toMatchObject({ nodeKey: 'approve', stepNumber: 3, willCompleteOnApprove: true });
+
+		await expect(
+			finaliseWorkflowRequest({
+				actor,
+				requestPublicId: request!.requestPublicId,
+				decision: 'approved',
+				note: 'Prove source lifecycle and workflow completion share one transaction.',
+				onApprovedCompletion: async (connection) => {
+					await transitionF01Record(
+						{
+							actor,
+							frameworkPublicId: framework.publicId,
+							kind: 'framework',
+							recordPublicId: framework.publicId,
+							targetStatus: 'approved',
+							note: 'This approval must roll back with the injected failure.',
+							targetRecordType: '',
+							targetPublicId: ''
+						},
+						connection
+					);
+					throw new Error('Injected atomic completion failure');
+				}
+			})
+		).rejects.toThrow('Injected atomic completion failure');
+
+		managed = await getF01ManagedRecord({
+			organisationId,
+			memberId: actor.memberId,
+			frameworkPublicId: framework.publicId,
+			kind: 'framework',
+			recordPublicId: framework.publicId
+		});
+		expect(managed.status).toBe('draft');
+		pending = await listPendingWorkflowTasks({ organisationId, memberId: actor.memberId });
+		task = pending.find((item) => item.requestPublicId === request!.requestPublicId);
+		expect(task).toMatchObject({
+			nodeKey: 'approve',
+			stepNumber: 3,
+			workStatus: 'open',
+			workflowState: 'running',
+			willCompleteOnApprove: true
+		});
 
 		const completed = await decideF01WorkflowRequest({
 			actor,
