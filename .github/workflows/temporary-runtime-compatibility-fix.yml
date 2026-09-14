@@ -1,0 +1,66 @@
+name: Temporary Runtime Compatibility Fix
+
+on:
+  push:
+    branches:
+      - fix/lifecycle-workflow-runtime
+    paths:
+      - '.github/workflows/temporary-runtime-compatibility-fix.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/lifecycle-workflow-runtime
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Apply compatibility cleanup
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          request = Path('appv2/src/lib/server/platform/workflow-request-service.ts')
+          text = request.read_text()
+          old = "\tworkflowStartNode,\n\tworkflowSuccessors,\n\ttype WorkflowNode,"
+          new = "\tworkflowStartNode,\n\ttype WorkflowNode,"
+          if old not in text:
+              raise SystemExit('workflowSuccessors import pattern not found')
+          request.write_text(text.replace(old, new, 1))
+
+          fallback = Path('appv2/src/lib/server/strategy/f01-workflows.ts')
+          text = fallback.read_text()
+          old = "\t\t\t\tresponsibleRoleKey: 'approver',\n\t\t\t\tparticipants: [\n\t\t\t\t\t{ participantType: 'workflow_role', participantKey: 'approver', required: true }\n\t\t\t\t],\n\t\t\t\tcompletionRule: { type: 'any' },"
+          new = "\t\t\t\tresponsibleRoleKey: 'approver',\n\t\t\t\tcompletionRule: { type: 'any' },"
+          if old not in text:
+              raise SystemExit('legacy F01 workflow participant pattern not found')
+          fallback.write_text(text.replace(old, new, 1))
+          PY
+
+      - name: Format changed files
+        working-directory: appv2
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm exec prettier --write src/lib/server/platform/workflow-request-service.ts src/lib/server/strategy/f01-workflows.ts
+
+      - name: Commit cleanup and remove temporary workflow
+        run: |
+          git config user.name "8140spitt"
+          git config user.email "56647740+8140spitt@users.noreply.github.com"
+          git rm .github/workflows/temporary-runtime-compatibility-fix.yml
+          git add appv2/src/lib/server/platform/workflow-request-service.ts appv2/src/lib/server/strategy/f01-workflows.ts
+          git commit -m "fix(v2): preserve governed F01 fallback workflow authority"
+          git push origin HEAD:fix/lifecycle-workflow-runtime
