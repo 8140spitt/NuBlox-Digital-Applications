@@ -23,7 +23,7 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 	const toolPermissions = await decidePermissions({
 		organisationId: access.organisationId,
 		memberId: access.memberId,
-		permissionKeys: ['lifecycle.view']
+		permissionKeys: ['lifecycle.view', 'organisation.structure.view']
 	});
 
 	return {
@@ -41,7 +41,9 @@ export const load: LayoutServerLoad = async ({ params, request, url }) => {
 			email: session.user.email
 		},
 		toolAccess: {
-			lifecycle: toolPermissions.get('lifecycle.view')?.allowed === true
+			lifecycle: toolPermissions.get('lifecycle.view')?.allowed === true,
+			organisationStructure:
+				toolPermissions.get('organisation.structure.view')?.allowed === true
 		}
 	};
 };
