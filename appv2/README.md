@@ -78,7 +78,7 @@ NuBlox V2 consumes the deterministic generated job architecture as canonical ref
 
 The catalogue exposes all 29 job families, 353 functional roles and 382 candidate job profiles generated from the enterprise taxonomy. Organisation positions reference stable canonical job-profile IDs and position assignments connect those positions to active organisation members. Neither a job profile nor a position grants permissions; organisation access roles and permission overrides remain the security authority.
 
-The generated source remains `docs/architecture/job-architecture/generated`; V2 reads that deterministic catalogue directly so taxonomy regeneration and product behaviour cannot silently diverge.
+The generated source remains `docs/architecture/job-architecture/generated`; V2 reads that deterministic catalogue directly so taxonomy regeneration and product behaviour cannot silently diverge. The Organisation navigation exposes both the catalogue and tenant position workspace to members with organisation-structure view authority.
 
 ### Connected CRM Party portal
 
