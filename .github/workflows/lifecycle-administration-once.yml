@@ -1,0 +1,92 @@
+name: Validate lifecycle administration once
+
+on:
+  push:
+    branches:
+      - feat/platform-lifecycle-administration
+    paths:
+      - '.github/workflows/lifecycle-administration-once.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  validate-and-finalise:
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: nublox_ci
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -uroot -pnublox_ci --silent"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=30
+    env:
+      DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_lifecycle_validation
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Apply lifecycle administration integration
+        run: python3 scripts/apply-lifecycle-administration-integration.py
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Format V2
+        working-directory: appv2
+        run: pnpm format
+
+      - name: Lint V2
+        working-directory: appv2
+        run: pnpm lint
+
+      - name: Type-check V2
+        working-directory: appv2
+        run: pnpm check
+
+      - name: Run V2 unit tests
+        working-directory: appv2
+        run: pnpm test:unit
+
+      - name: Build V2
+        working-directory: appv2
+        run: pnpm build
+
+      - name: Apply authoritative migrations to clean MySQL
+        run: pnpm dlx dbmate@2.34.1 --migrations-dir database/migrations --no-dump-schema up
+
+      - name: Run V2 real-MySQL integration tests
+        working-directory: appv2
+        run: pnpm test:integration
+
+      - name: Commit validated tranche and remove temporary machinery
+        run: |
+          rm scripts/apply-lifecycle-administration-integration.py
+          rm .github/workflows/lifecycle-administration-once.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'feat(platform): govern lifecycle administration'
+          git push origin HEAD:feat/platform-lifecycle-administration
