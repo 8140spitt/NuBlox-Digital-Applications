@@ -30,6 +30,8 @@ type PlanRow = RowDataPacket & {
 	objectiveCount: number | string;
 	initiativeCount: number | string;
 	orphanRequirementCount: number | string;
+	operatingModelComponentCount: number | string;
+	ungovernedOperatingModelComponentCount: number | string;
 };
 
 async function lockPlan(
@@ -72,7 +74,32 @@ async function lockPlan(
 		                  FROM strategy_initiative_handoffs handoff
 		                 WHERE handoff.strategy_resource_requirement_id = requirement.id
 		                   AND handoff.lifecycle_status <> 'cancelled'
-		            )) AS orphanRequirementCount
+		            )) AS orphanRequirementCount,
+		        (SELECT COUNT(*)
+		           FROM strategy_operating_model_components component
+		          WHERE component.strategy_business_plan_id = plan.id
+		            AND component.lifecycle_status = 'proposed') AS operatingModelComponentCount,
+		        (SELECT COUNT(*)
+		           FROM strategy_operating_model_components component
+		          WHERE component.strategy_business_plan_id = plan.id
+		            AND component.lifecycle_status = 'proposed'
+		            AND (
+		                NOT EXISTS (
+		                    SELECT 1
+		                      FROM strategy_operating_model_accountabilities accountability
+		                     WHERE accountability.operating_model_component_id = component.id
+		                       AND accountability.accountability_type = 'accountable'
+		                )
+		                OR NOT EXISTS (
+		                    SELECT 1
+		                      FROM strategy_initiative_operating_model_links operating_link
+		                      JOIN strategy_initiatives linked_initiative
+		                        ON linked_initiative.id = operating_link.initiative_id
+		                     WHERE operating_link.operating_model_component_id = component.id
+		                       AND linked_initiative.strategy_business_plan_id = plan.id
+		                       AND linked_initiative.lifecycle_status <> 'cancelled'
+		                )
+		            )) AS ungovernedOperatingModelComponentCount
 		 FROM strategy_business_plans plan
 		 JOIN strategy_frameworks framework ON framework.id = plan.strategy_framework_id
 		 WHERE plan.organisation_id = ?
@@ -161,6 +188,11 @@ export async function approveStrategyBusinessPlan(
 				'Every identified resource requirement must be handed to its authoritative business function before the business plan can be approved.'
 			);
 		}
+		if (Number(plan.ungovernedOperatingModelComponentCount) > 0) {
+			throw new StrategyValidationError(
+				'Every proposed operating-model component must have an accountable role and at least one active delivery initiative before the business plan can be approved.'
+			);
+		}
 
 		const [approvedRows] = await connection.execute<
 			(RowDataPacket & { id: string | number; publicId: string; versionNumber: number | string })[]
@@ -218,6 +250,14 @@ export async function approveStrategyBusinessPlan(
 			   AND lifecycle_status = 'proposed'`,
 			[input.actor.organisationId, plan.id]
 		);
+		await connection.execute(
+			`UPDATE strategy_operating_model_components
+			 SET lifecycle_status = 'approved'
+			 WHERE organisation_id = ?
+			   AND strategy_business_plan_id = ?
+			   AND lifecycle_status = 'proposed'`,
+			[input.actor.organisationId, plan.id]
+		);
 
 		await appendGovernedVersion(connection, {
 			actor: input.actor,
@@ -254,9 +294,15 @@ export async function approveStrategyBusinessPlan(
 				objectiveCount: Number(plan.objectiveCount),
 				initiativeCount: Number(plan.initiativeCount),
 				orphanRequirementCount: 0,
+				operatingModelComponentCount: Number(plan.operatingModelComponentCount),
+				ungovernedOperatingModelComponentCount: 0,
 				supersededBusinessPlanPublicId: previousApproved?.publicId ?? null
 			},
-			eventMetadata: { function: 'F01', subfunctions: ['F01.04'] }
+			eventMetadata: {
+				function: 'F01',
+				subfunctions:
+					Number(plan.operatingModelComponentCount) > 0 ? ['F01.04', 'F01.05'] : ['F01.04']
+			}
 		});
 		if (ownsTransaction) await connection.commit();
 	} catch (error) {
