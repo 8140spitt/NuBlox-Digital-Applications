@@ -43,7 +43,9 @@ jobs:
 
           service = Path('appv2/src/lib/server/platform/workflow-admin-service.ts')
           text = service.read_text()
-          text = text.replace('link.is_loop AS loop', 'link.is_loop AS `loop`')
+          text = text.replace('link.is_loop AS loop', 'link.is_loop AS isLoop')
+          text = text.replace('loop: number | boolean;\n\t\t\t\tterminateOpenPredecessors:', 'isLoop: number | boolean;\n\t\t\t\tterminateOpenPredecessors:')
+          text = text.replace('loop: bool(link.loop)', 'loop: bool(link.isLoop)')
           text = text.replace('connection.execute<WorkflowRoleAdmin[]>(', 'connection.execute<Array<RowDataPacket & WorkflowRoleAdmin>>(')
           service.write_text(text)
           PY
