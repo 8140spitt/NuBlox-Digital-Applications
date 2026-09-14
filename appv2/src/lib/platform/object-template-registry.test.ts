@@ -55,7 +55,9 @@ describe('object template registry', () => {
 			'maintenance.work-order',
 			'process.process'
 		];
-		expect(featuredObjectTemplates.map((object) => object.objectType).sort()).toEqual(required.sort());
+		expect(featuredObjectTemplates.map((object) => object.objectType).sort()).toEqual(
+			required.sort()
+		);
 		for (const objectType of required) {
 			expect(getObjectTypeDefinition(objectType)).not.toBeNull();
 		}

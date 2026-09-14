@@ -14,7 +14,9 @@
 
 	let { data, form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
-	const featured = $derived(data.groups.flatMap((group) => group.objects).filter((object) => object.featuredStarter));
+	const featured = $derived(
+		data.groups.flatMap((group) => group.objects).filter((object) => object.featuredStarter)
+	);
 </script>
 
 <svelte:head>
@@ -40,8 +42,12 @@
 		description="Start from a real NuBlox business object. Each object carries an initial lifecycle and reusable workflow pack that becomes a tenant-owned draft when installed."
 	>
 		{#snippet actions()}
-			<LinkButton href={routes.lifecycle(tenant)} variant="secondary">Lifecycle templates</LinkButton>
-			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary">Workflow templates</LinkButton>
+			<LinkButton href={routes.lifecycle(tenant)} variant="secondary"
+				>Lifecycle templates</LinkButton
+			>
+			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary"
+				>Workflow templates</LinkButton
+			>
 		{/snippet}
 	</PageHeader>
 
@@ -52,15 +58,23 @@
 	<div class="concept-grid" aria-label="How lifecycle and workflow fit together">
 		<div>
 			<strong>Business object</strong>
-			<p>The thing the enterprise governs: purchase order, project, contract, risk, asset or document.</p>
+			<p>
+				The thing the enterprise governs: purchase order, project, contract, risk, asset or
+				document.
+			</p>
 		</div>
 		<div>
 			<strong>Lifecycle</strong>
-			<p>The legal states that object may occupy and the controlled transitions between those states.</p>
+			<p>
+				The legal states that object may occupy and the controlled transitions between those states.
+			</p>
 		</div>
 		<div>
 			<strong>Workflow</strong>
-			<p>The human and system work used to review, approve, execute, resolve or close those transitions.</p>
+			<p>
+				The human and system work used to review, approve, execute, resolve or close those
+				transitions.
+			</p>
 		</div>
 	</div>
 
@@ -101,7 +115,10 @@
 						</ul>
 					</div>
 					<div class="install-row">
-						<span>{object.lifecycleInstalled ? 'Lifecycle installed' : 'Lifecycle not installed'} · {object.installedWorkflowCount}/{object.workflowCount} workflows</span>
+						<span
+							>{object.lifecycleInstalled ? 'Lifecycle installed' : 'Lifecycle not installed'} · {object.installedWorkflowCount}/{object.workflowCount}
+							workflows</span
+						>
 						<form method="POST" action="?/install" use:enhance>
 							<input type="hidden" name="objectType" value={object.objectType} />
 							<Button type="submit" disabled={object.fullyInstalled}>
@@ -141,10 +158,18 @@
 										<StatusBadge label={object.pattern} tone="neutral" />
 									{/if}
 								</div>
-								<p class="lifecycle-line">{object.lifecycle.states.map((state) => state.label).join(' → ')}</p>
-								<p class="workflow-line"><strong>Workflows:</strong> {object.workflows.map((workflow) => workflow.name).join(' · ')}</p>
+								<p class="lifecycle-line">
+									{object.lifecycle.states.map((state) => state.label).join(' → ')}
+								</p>
+								<p class="workflow-line">
+									<strong>Workflows:</strong>
+									{object.workflows.map((workflow) => workflow.name).join(' · ')}
+								</p>
 								<div class="install-row compact-install">
-									<span>{object.ownerDomain} · {object.installedWorkflowCount}/{object.workflowCount} workflows installed</span>
+									<span
+										>{object.ownerDomain} · {object.installedWorkflowCount}/{object.workflowCount} workflows
+										installed</span
+									>
 									<form method="POST" action="?/install" use:enhance>
 										<input type="hidden" name="objectType" value={object.objectType} />
 										<Button type="submit" variant="secondary" disabled={object.fullyInstalled}>

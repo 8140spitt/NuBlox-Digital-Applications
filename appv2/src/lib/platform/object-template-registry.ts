@@ -1,4 +1,7 @@
-import { enterpriseFunctions, type EnterpriseFunctionId } from '$lib/enterprise/enterprise-functions';
+import {
+	enterpriseFunctions,
+	type EnterpriseFunctionId
+} from '$lib/enterprise/enterprise-functions';
 
 export type LifecyclePatternKey =
 	| 'GOV'
@@ -86,9 +89,21 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		transitions: [
 			{ from: 'draft', to: 'in_review', label: 'Submit for review', workflowFamily: 'review' },
 			{ from: 'in_review', to: 'approved', label: 'Approve', workflowFamily: 'approval' },
-			{ from: 'in_review', to: 'draft', label: 'Return for amendment', workflowFamily: 'revision', requiresNote: true },
+			{
+				from: 'in_review',
+				to: 'draft',
+				label: 'Return for amendment',
+				workflowFamily: 'revision',
+				requiresNote: true
+			},
 			{ from: 'approved', to: 'superseded', label: 'Supersede', workflowFamily: 'revision' },
-			{ from: 'approved', to: 'retired', label: 'Retire', workflowFamily: 'closure', requiresNote: true }
+			{
+				from: 'approved',
+				to: 'retired',
+				label: 'Retire',
+				workflowFamily: 'closure',
+				requiresNote: true
+			}
 		]
 	},
 	MASTER: {
@@ -104,9 +119,28 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		transitions: [
 			{ from: 'proposed', to: 'validated', label: 'Validate', workflowFamily: 'qualification' },
 			{ from: 'validated', to: 'active', label: 'Activate', workflowFamily: 'approval' },
-			{ from: 'active', to: 'suspended', label: 'Suspend', workflowFamily: 'exception', requiresNote: true, tone: 'danger' },
-			{ from: 'suspended', to: 'active', label: 'Reactivate', workflowFamily: 'review', requiresNote: true },
-			{ from: 'active', to: 'retired', label: 'Retire', workflowFamily: 'closure', requiresNote: true }
+			{
+				from: 'active',
+				to: 'suspended',
+				label: 'Suspend',
+				workflowFamily: 'exception',
+				requiresNote: true,
+				tone: 'danger'
+			},
+			{
+				from: 'suspended',
+				to: 'active',
+				label: 'Reactivate',
+				workflowFamily: 'review',
+				requiresNote: true
+			},
+			{
+				from: 'active',
+				to: 'retired',
+				label: 'Retire',
+				workflowFamily: 'closure',
+				requiresNote: true
+			}
 		]
 	},
 	PLAN: {
@@ -123,7 +157,13 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		transitions: [
 			{ from: 'draft', to: 'review', label: 'Submit for review', workflowFamily: 'review' },
 			{ from: 'review', to: 'approved', label: 'Approve plan', workflowFamily: 'approval' },
-			{ from: 'review', to: 'draft', label: 'Return for amendment', workflowFamily: 'revision', requiresNote: true },
+			{
+				from: 'review',
+				to: 'draft',
+				label: 'Return for amendment',
+				workflowFamily: 'revision',
+				requiresNote: true
+			},
 			{ from: 'approved', to: 'active', label: 'Activate plan', workflowFamily: 'execution' },
 			{ from: 'active', to: 'completed', label: 'Complete plan', workflowFamily: 'review' },
 			{ from: 'completed', to: 'closed', label: 'Close plan', workflowFamily: 'closure' }
@@ -144,11 +184,32 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		transitions: [
 			{ from: 'draft', to: 'submitted', label: 'Submit', workflowFamily: 'review' },
 			{ from: 'submitted', to: 'approved', label: 'Approve', workflowFamily: 'approval' },
-			{ from: 'submitted', to: 'rejected', label: 'Reject', workflowFamily: 'approval', requiresNote: true, tone: 'danger' },
+			{
+				from: 'submitted',
+				to: 'rejected',
+				label: 'Reject',
+				workflowFamily: 'approval',
+				requiresNote: true,
+				tone: 'danger'
+			},
 			{ from: 'approved', to: 'executed', label: 'Execute', workflowFamily: 'execution' },
 			{ from: 'executed', to: 'closed', label: 'Close', workflowFamily: 'closure' },
-			{ from: 'draft', to: 'cancelled', label: 'Cancel', workflowFamily: 'closure', requiresNote: true, tone: 'danger' },
-			{ from: 'approved', to: 'cancelled', label: 'Cancel approved transaction', workflowFamily: 'exception', requiresNote: true, tone: 'danger' }
+			{
+				from: 'draft',
+				to: 'cancelled',
+				label: 'Cancel',
+				workflowFamily: 'closure',
+				requiresNote: true,
+				tone: 'danger'
+			},
+			{
+				from: 'approved',
+				to: 'cancelled',
+				label: 'Cancel approved transaction',
+				workflowFamily: 'exception',
+				requiresNote: true,
+				tone: 'danger'
+			}
 		]
 	},
 	CASE: {
@@ -165,13 +226,35 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		],
 		transitions: [
 			{ from: 'new', to: 'triage', label: 'Begin triage', workflowFamily: 'case-resolution' },
-			{ from: 'triage', to: 'in_progress', label: 'Assign and progress', workflowFamily: 'case-resolution' },
-			{ from: 'in_progress', to: 'pending', label: 'Place pending', workflowFamily: 'exception', requiresNote: true },
+			{
+				from: 'triage',
+				to: 'in_progress',
+				label: 'Assign and progress',
+				workflowFamily: 'case-resolution'
+			},
+			{
+				from: 'in_progress',
+				to: 'pending',
+				label: 'Place pending',
+				workflowFamily: 'exception',
+				requiresNote: true
+			},
 			{ from: 'pending', to: 'in_progress', label: 'Resume', workflowFamily: 'case-resolution' },
 			{ from: 'in_progress', to: 'resolved', label: 'Resolve', workflowFamily: 'case-resolution' },
 			{ from: 'resolved', to: 'closed', label: 'Close', workflowFamily: 'closure' },
-			{ from: 'closed', to: 'reopened', label: 'Reopen', workflowFamily: 'exception', requiresNote: true },
-			{ from: 'reopened', to: 'in_progress', label: 'Resume reopened case', workflowFamily: 'case-resolution' }
+			{
+				from: 'closed',
+				to: 'reopened',
+				label: 'Reopen',
+				workflowFamily: 'exception',
+				requiresNote: true
+			},
+			{
+				from: 'reopened',
+				to: 'in_progress',
+				label: 'Resume reopened case',
+				workflowFamily: 'case-resolution'
+			}
 		]
 	},
 	RISK: {
@@ -188,8 +271,19 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		transitions: [
 			{ from: 'identified', to: 'assessed', label: 'Assess', workflowFamily: 'review' },
 			{ from: 'assessed', to: 'treatment', label: 'Approve treatment', workflowFamily: 'approval' },
-			{ from: 'treatment', to: 'monitoring', label: 'Begin monitoring', workflowFamily: 'execution' },
-			{ from: 'assessed', to: 'accepted', label: 'Accept risk', workflowFamily: 'approval', requiresNote: true },
+			{
+				from: 'treatment',
+				to: 'monitoring',
+				label: 'Begin monitoring',
+				workflowFamily: 'execution'
+			},
+			{
+				from: 'assessed',
+				to: 'accepted',
+				label: 'Accept risk',
+				workflowFamily: 'approval',
+				requiresNote: true
+			},
 			{ from: 'monitoring', to: 'closed', label: 'Close risk', workflowFamily: 'closure' },
 			{ from: 'accepted', to: 'closed', label: 'Close accepted risk', workflowFamily: 'closure' }
 		]
@@ -229,7 +323,13 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		transitions: [
 			{ from: 'draft', to: 'review', label: 'Submit for review', workflowFamily: 'review' },
 			{ from: 'review', to: 'approved', label: 'Approve', workflowFamily: 'approval' },
-			{ from: 'review', to: 'draft', label: 'Return for revision', workflowFamily: 'revision', requiresNote: true },
+			{
+				from: 'review',
+				to: 'draft',
+				label: 'Return for revision',
+				workflowFamily: 'revision',
+				requiresNote: true
+			},
 			{ from: 'approved', to: 'issued', label: 'Issue', workflowFamily: 'execution' },
 			{ from: 'issued', to: 'superseded', label: 'Supersede', workflowFamily: 'revision' },
 			{ from: 'superseded', to: 'archived', label: 'Archive', workflowFamily: 'closure' }
@@ -253,8 +353,22 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 			{ from: 'mobilising', to: 'active', label: 'Start delivery', workflowFamily: 'stage-gate' },
 			{ from: 'active', to: 'handover', label: 'Enter handover', workflowFamily: 'stage-gate' },
 			{ from: 'handover', to: 'closed', label: 'Close', workflowFamily: 'closure' },
-			{ from: 'proposed', to: 'cancelled', label: 'Cancel proposal', workflowFamily: 'closure', requiresNote: true, tone: 'danger' },
-			{ from: 'active', to: 'cancelled', label: 'Terminate', workflowFamily: 'exception', requiresNote: true, tone: 'danger' }
+			{
+				from: 'proposed',
+				to: 'cancelled',
+				label: 'Cancel proposal',
+				workflowFamily: 'closure',
+				requiresNote: true,
+				tone: 'danger'
+			},
+			{
+				from: 'active',
+				to: 'cancelled',
+				label: 'Terminate',
+				workflowFamily: 'exception',
+				requiresNote: true,
+				tone: 'danger'
+			}
 		]
 	},
 	ASSET: {
@@ -271,12 +385,35 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 		],
 		transitions: [
 			{ from: 'proposed', to: 'acquired', label: 'Acquire / create', workflowFamily: 'approval' },
-			{ from: 'acquired', to: 'active', label: 'Commission / activate', workflowFamily: 'qualification' },
-			{ from: 'active', to: 'maintained', label: 'Complete maintenance', workflowFamily: 'execution' },
+			{
+				from: 'acquired',
+				to: 'active',
+				label: 'Commission / activate',
+				workflowFamily: 'qualification'
+			},
+			{
+				from: 'active',
+				to: 'maintained',
+				label: 'Complete maintenance',
+				workflowFamily: 'execution'
+			},
 			{ from: 'maintained', to: 'active', label: 'Return to service', workflowFamily: 'review' },
-			{ from: 'active', to: 'suspended', label: 'Suspend', workflowFamily: 'exception', requiresNote: true, tone: 'danger' },
+			{
+				from: 'active',
+				to: 'suspended',
+				label: 'Suspend',
+				workflowFamily: 'exception',
+				requiresNote: true,
+				tone: 'danger'
+			},
 			{ from: 'suspended', to: 'active', label: 'Return to service', workflowFamily: 'review' },
-			{ from: 'active', to: 'retired', label: 'Retire', workflowFamily: 'approval', requiresNote: true },
+			{
+				from: 'active',
+				to: 'retired',
+				label: 'Retire',
+				workflowFamily: 'approval',
+				requiresNote: true
+			},
 			{ from: 'retired', to: 'disposed', label: 'Dispose', workflowFamily: 'closure' }
 		]
 	},
@@ -289,58 +426,168 @@ const patterns: Record<LifecyclePatternKey, LifecycleTemplateDefinition> = {
 			{ key: 'voided', label: 'Voided', terminal: true }
 		],
 		transitions: [
-			{ from: 'recorded', to: 'corrected', label: 'Record correction', workflowFamily: 'review', requiresNote: true },
-			{ from: 'recorded', to: 'voided', label: 'Void record', workflowFamily: 'approval', requiresNote: true, tone: 'danger' }
+			{
+				from: 'recorded',
+				to: 'corrected',
+				label: 'Record correction',
+				workflowFamily: 'review',
+				requiresNote: true
+			},
+			{
+				from: 'recorded',
+				to: 'voided',
+				label: 'Void record',
+				workflowFamily: 'approval',
+				requiresNote: true,
+				tone: 'danger'
+			}
 		]
 	}
 };
 
 const defaultWorkflows: Record<LifecyclePatternKey, WorkflowStarterTemplate[]> = {
 	GOV: [
-		{ family: 'approval', name: 'Review and approval', purpose: 'Review the governed definition and record an attributable approval decision.' },
-		{ family: 'revision', name: 'Controlled revision', purpose: 'Assess, amend and reapprove a controlled revision without overwriting published evidence.' }
+		{
+			family: 'approval',
+			name: 'Review and approval',
+			purpose: 'Review the governed definition and record an attributable approval decision.'
+		},
+		{
+			family: 'revision',
+			name: 'Controlled revision',
+			purpose:
+				'Assess, amend and reapprove a controlled revision without overwriting published evidence.'
+		}
 	],
 	MASTER: [
-		{ family: 'qualification', name: 'Validate and activate', purpose: 'Validate the master record before controlled activation.' },
-		{ family: 'exception', name: 'Suspend or reinstate', purpose: 'Govern exceptional suspension, remediation and reinstatement.' }
+		{
+			family: 'qualification',
+			name: 'Validate and activate',
+			purpose: 'Validate the master record before controlled activation.'
+		},
+		{
+			family: 'exception',
+			name: 'Suspend or reinstate',
+			purpose: 'Govern exceptional suspension, remediation and reinstatement.'
+		}
 	],
 	PLAN: [
-		{ family: 'approval', name: 'Plan approval', purpose: 'Review and approve the plan before activation.' },
-		{ family: 'periodic-review', name: 'Plan review', purpose: 'Review progress, evidence and corrective actions.' },
-		{ family: 'closure', name: 'Plan closure', purpose: 'Confirm completion and close the plan with evidence.' }
+		{
+			family: 'approval',
+			name: 'Plan approval',
+			purpose: 'Review and approve the plan before activation.'
+		},
+		{
+			family: 'periodic-review',
+			name: 'Plan review',
+			purpose: 'Review progress, evidence and corrective actions.'
+		},
+		{
+			family: 'closure',
+			name: 'Plan closure',
+			purpose: 'Confirm completion and close the plan with evidence.'
+		}
 	],
 	TXN: [
-		{ family: 'approval', name: 'Transaction approval', purpose: 'Review and approve the transaction before execution.' },
-		{ family: 'exception', name: 'Transaction exception', purpose: 'Resolve rejection, cancellation or execution exceptions.' }
+		{
+			family: 'approval',
+			name: 'Transaction approval',
+			purpose: 'Review and approve the transaction before execution.'
+		},
+		{
+			family: 'exception',
+			name: 'Transaction exception',
+			purpose: 'Resolve rejection, cancellation or execution exceptions.'
+		}
 	],
 	CASE: [
-		{ family: 'case-resolution', name: 'Case resolution', purpose: 'Triage, assign, resolve and verify the case.' },
-		{ family: 'exception', name: 'Case escalation', purpose: 'Escalate blocked, overdue or high-risk cases.' }
+		{
+			family: 'case-resolution',
+			name: 'Case resolution',
+			purpose: 'Triage, assign, resolve and verify the case.'
+		},
+		{
+			family: 'exception',
+			name: 'Case escalation',
+			purpose: 'Escalate blocked, overdue or high-risk cases.'
+		}
 	],
 	RISK: [
-		{ family: 'review', name: 'Assessment and treatment review', purpose: 'Assess exposure and agree treatment or acceptance.' },
-		{ family: 'periodic-review', name: 'Risk monitoring review', purpose: 'Review risk evidence, treatment progress and residual exposure.' }
+		{
+			family: 'review',
+			name: 'Assessment and treatment review',
+			purpose: 'Assess exposure and agree treatment or acceptance.'
+		},
+		{
+			family: 'periodic-review',
+			name: 'Risk monitoring review',
+			purpose: 'Review risk evidence, treatment progress and residual exposure.'
+		}
 	],
 	WORK: [
-		{ family: 'execution', name: 'Work execution', purpose: 'Plan, execute, verify and accept controlled work.' },
-		{ family: 'exception', name: 'Work exception', purpose: 'Resolve blocked, failed or overdue work.' }
+		{
+			family: 'execution',
+			name: 'Work execution',
+			purpose: 'Plan, execute, verify and accept controlled work.'
+		},
+		{
+			family: 'exception',
+			name: 'Work exception',
+			purpose: 'Resolve blocked, failed or overdue work.'
+		}
 	],
 	DOC: [
-		{ family: 'approval', name: 'Document review and approval', purpose: 'Review and approve controlled information before issue.' },
-		{ family: 'revision', name: 'Controlled document revision', purpose: 'Revise issued information without losing version history.' }
+		{
+			family: 'approval',
+			name: 'Document review and approval',
+			purpose: 'Review and approve controlled information before issue.'
+		},
+		{
+			family: 'revision',
+			name: 'Controlled document revision',
+			purpose: 'Revise issued information without losing version history.'
+		}
 	],
 	PROJECT: [
-		{ family: 'stage-gate', name: 'Stage-gate review', purpose: 'Review evidence and authorise progression through delivery gates.' },
-		{ family: 'revision', name: 'Change control', purpose: 'Assess, approve and implement controlled delivery change.' },
-		{ family: 'closure', name: 'Delivery closure', purpose: 'Confirm handover, acceptance and controlled closure.' }
+		{
+			family: 'stage-gate',
+			name: 'Stage-gate review',
+			purpose: 'Review evidence and authorise progression through delivery gates.'
+		},
+		{
+			family: 'revision',
+			name: 'Change control',
+			purpose: 'Assess, approve and implement controlled delivery change.'
+		},
+		{
+			family: 'closure',
+			name: 'Delivery closure',
+			purpose: 'Confirm handover, acceptance and controlled closure.'
+		}
 	],
 	ASSET: [
-		{ family: 'qualification', name: 'Commission and activate', purpose: 'Verify readiness and place the asset into controlled service.' },
-		{ family: 'execution', name: 'Maintain or change asset', purpose: 'Plan, execute and verify controlled asset work.' },
-		{ family: 'closure', name: 'Retire and dispose', purpose: 'Authorise retirement, decommissioning and disposal.' }
+		{
+			family: 'qualification',
+			name: 'Commission and activate',
+			purpose: 'Verify readiness and place the asset into controlled service.'
+		},
+		{
+			family: 'execution',
+			name: 'Maintain or change asset',
+			purpose: 'Plan, execute and verify controlled asset work.'
+		},
+		{
+			family: 'closure',
+			name: 'Retire and dispose',
+			purpose: 'Authorise retirement, decommissioning and disposal.'
+		}
 	],
 	EVENT: [
-		{ family: 'review', name: 'Evidence correction review', purpose: 'Review a proposed correction or void while preserving immutable evidence.' }
+		{
+			family: 'review',
+			name: 'Evidence correction review',
+			purpose: 'Review a proposed correction or void while preserving immutable evidence.'
+		}
 	]
 };
 
@@ -367,78 +614,235 @@ const featuredObjects = new Set([
 
 const workflowOverrides: Record<string, WorkflowStarterTemplate[]> = {
 	'strategy.strategy-cycle': [
-		{ family: 'approval', name: 'Strategy approval', purpose: 'Review strategic direction, objective lineage and approve a governed strategy major version.' },
-		{ family: 'periodic-review', name: 'Strategic review', purpose: 'Freeze evidence, conduct executive review and assign governed decisions and corrective actions.' },
-		{ family: 'revision', name: 'Controlled strategy revision', purpose: 'Create and govern the next strategy revision without overwriting published evidence.' }
+		{
+			family: 'approval',
+			name: 'Strategy approval',
+			purpose:
+				'Review strategic direction, objective lineage and approve a governed strategy major version.'
+		},
+		{
+			family: 'periodic-review',
+			name: 'Strategic review',
+			purpose:
+				'Freeze evidence, conduct executive review and assign governed decisions and corrective actions.'
+		},
+		{
+			family: 'revision',
+			name: 'Controlled strategy revision',
+			purpose:
+				'Create and govern the next strategy revision without overwriting published evidence.'
+		}
 	],
 	'governance.decision': [
-		{ family: 'approval', name: 'Governance decision', purpose: 'Prepare a decision, confirm authority and quorum, record the outcome and assign actions.' }
+		{
+			family: 'approval',
+			name: 'Governance decision',
+			purpose:
+				'Prepare a decision, confirm authority and quorum, record the outcome and assign actions.'
+		}
 	],
 	'sales.opportunity': [
-		{ family: 'stage-gate', name: 'Opportunity stage gate', purpose: 'Qualify the opportunity and govern progression through pursuit, proposal and negotiation.' }
+		{
+			family: 'stage-gate',
+			name: 'Opportunity stage gate',
+			purpose:
+				'Qualify the opportunity and govern progression through pursuit, proposal and negotiation.'
+		}
 	],
 	'commercial.contract': [
-		{ family: 'approval', name: 'Contract approval', purpose: 'Coordinate commercial and legal review before controlled execution.' },
-		{ family: 'revision', name: 'Contract amendment', purpose: 'Assess, approve and execute a controlled contract amendment.' }
+		{
+			family: 'approval',
+			name: 'Contract approval',
+			purpose: 'Coordinate commercial and legal review before controlled execution.'
+		},
+		{
+			family: 'revision',
+			name: 'Contract amendment',
+			purpose: 'Assess, approve and execute a controlled contract amendment.'
+		}
 	],
 	'procurement.supplier': [
-		{ family: 'qualification', name: 'Supplier qualification', purpose: 'Perform due diligence, approve onboarding and activate the supplier.' },
-		{ family: 'exception', name: 'Supplier suspension and reinstatement', purpose: 'Govern supplier restriction, remediation and reinstatement.' }
+		{
+			family: 'qualification',
+			name: 'Supplier qualification',
+			purpose: 'Perform due diligence, approve onboarding and activate the supplier.'
+		},
+		{
+			family: 'exception',
+			name: 'Supplier suspension and reinstatement',
+			purpose: 'Govern supplier restriction, remediation and reinstatement.'
+		}
 	],
 	'procurement.requisition': [
-		{ family: 'approval', name: 'Requisition approval', purpose: 'Validate demand, budget and authority before procurement commitment.' }
+		{
+			family: 'approval',
+			name: 'Requisition approval',
+			purpose: 'Validate demand, budget and authority before procurement commitment.'
+		}
 	],
 	'procurement.purchase-order': [
-		{ family: 'approval', name: 'Purchase order approval', purpose: 'Review commercial commitment and approve issue to the supplier.' },
-		{ family: 'revision', name: 'Purchase order amendment', purpose: 'Assess and approve controlled changes to an issued purchase order.' },
-		{ family: 'exception', name: 'Purchase order exception', purpose: 'Resolve cancellation, fulfilment and commercial exceptions.' }
+		{
+			family: 'approval',
+			name: 'Purchase order approval',
+			purpose: 'Review commercial commitment and approve issue to the supplier.'
+		},
+		{
+			family: 'revision',
+			name: 'Purchase order amendment',
+			purpose: 'Assess and approve controlled changes to an issued purchase order.'
+		},
+		{
+			family: 'exception',
+			name: 'Purchase order exception',
+			purpose: 'Resolve cancellation, fulfilment and commercial exceptions.'
+		}
 	],
 	'finance.supplier-invoice': [
-		{ family: 'approval', name: 'Supplier invoice approval', purpose: 'Validate, match and approve the supplier invoice before posting and payment.' },
-		{ family: 'exception', name: 'Invoice exception resolution', purpose: 'Resolve match, tax, coding or approval exceptions without losing evidence.' }
+		{
+			family: 'approval',
+			name: 'Supplier invoice approval',
+			purpose: 'Validate, match and approve the supplier invoice before posting and payment.'
+		},
+		{
+			family: 'exception',
+			name: 'Invoice exception resolution',
+			purpose: 'Resolve match, tax, coding or approval exceptions without losing evidence.'
+		}
 	],
 	'supply.material': [
-		{ family: 'qualification', name: 'Material master approval', purpose: 'Validate classification, units, controls and activate the material master.' },
-		{ family: 'revision', name: 'Material master change', purpose: 'Govern controlled amendments to active material data.' }
+		{
+			family: 'qualification',
+			name: 'Material master approval',
+			purpose: 'Validate classification, units, controls and activate the material master.'
+		},
+		{
+			family: 'revision',
+			name: 'Material master change',
+			purpose: 'Govern controlled amendments to active material data.'
+		}
 	],
 	'project.project': [
-		{ family: 'approval', name: 'Project approval', purpose: 'Approve initiation, mandate, ownership and initial delivery controls.' },
-		{ family: 'stage-gate', name: 'Project stage-gate review', purpose: 'Review readiness and evidence before progression through delivery and handover.' },
-		{ family: 'closure', name: 'Project closure', purpose: 'Confirm technical, commercial and information closeout before final closure.' }
+		{
+			family: 'approval',
+			name: 'Project approval',
+			purpose: 'Approve initiation, mandate, ownership and initial delivery controls.'
+		},
+		{
+			family: 'stage-gate',
+			name: 'Project stage-gate review',
+			purpose: 'Review readiness and evidence before progression through delivery and handover.'
+		},
+		{
+			family: 'closure',
+			name: 'Project closure',
+			purpose: 'Confirm technical, commercial and information closeout before final closure.'
+		}
 	],
 	'project.change-request': [
-		{ family: 'revision', name: 'Project change control', purpose: 'Assess impact, obtain authority and govern implementation of project change.' }
+		{
+			family: 'revision',
+			name: 'Project change control',
+			purpose: 'Assess impact, obtain authority and govern implementation of project change.'
+		}
 	],
 	'information.document': [
-		{ family: 'approval', name: 'Document review and approval', purpose: 'Coordinate review, approval and controlled issue.' },
-		{ family: 'revision', name: 'Document revision', purpose: 'Revise issued information while preserving the superseded record.' }
+		{
+			family: 'approval',
+			name: 'Document review and approval',
+			purpose: 'Coordinate review, approval and controlled issue.'
+		},
+		{
+			family: 'revision',
+			name: 'Document revision',
+			purpose: 'Revise issued information while preserving the superseded record.'
+		}
 	],
 	'quality.non-conformance': [
-		{ family: 'case-resolution', name: 'NCR resolution', purpose: 'Contain, investigate, disposition and verify a non-conformance.' },
-		{ family: 'execution', name: 'Corrective action', purpose: 'Implement and verify corrective or preventive action.' }
+		{
+			family: 'case-resolution',
+			name: 'NCR resolution',
+			purpose: 'Contain, investigate, disposition and verify a non-conformance.'
+		},
+		{
+			family: 'execution',
+			name: 'Corrective action',
+			purpose: 'Implement and verify corrective or preventive action.'
+		}
 	],
 	'risk.risk': [
-		{ family: 'review', name: 'Risk assessment and treatment', purpose: 'Assess exposure, agree response and assign treatment.' },
-		{ family: 'periodic-review', name: 'Risk review', purpose: 'Review residual risk, treatment effectiveness and escalation.' }
+		{
+			family: 'review',
+			name: 'Risk assessment and treatment',
+			purpose: 'Assess exposure, agree response and assign treatment.'
+		},
+		{
+			family: 'periodic-review',
+			name: 'Risk review',
+			purpose: 'Review residual risk, treatment effectiveness and escalation.'
+		}
 	],
 	'people.employment': [
-		{ family: 'approval', name: 'Employment approval', purpose: 'Approve employment or engagement before activation.' },
-		{ family: 'revision', name: 'Employment change', purpose: 'Govern changes to employment terms, position or status.' },
-		{ family: 'closure', name: 'Employment offboarding', purpose: 'Coordinate controlled exit, access removal and final obligations.' }
+		{
+			family: 'approval',
+			name: 'Employment approval',
+			purpose: 'Approve employment or engagement before activation.'
+		},
+		{
+			family: 'revision',
+			name: 'Employment change',
+			purpose: 'Govern changes to employment terms, position or status.'
+		},
+		{
+			family: 'closure',
+			name: 'Employment offboarding',
+			purpose: 'Coordinate controlled exit, access removal and final obligations.'
+		}
 	],
 	'asset.physical-asset': [
-		{ family: 'qualification', name: 'Asset commissioning', purpose: 'Verify installation, testing and handover before placing the asset into service.' },
-		{ family: 'execution', name: 'Asset maintenance', purpose: 'Plan, execute and verify controlled maintenance.' },
-		{ family: 'closure', name: 'Asset retirement and disposal', purpose: 'Approve retirement, decommissioning and final disposal.' }
+		{
+			family: 'qualification',
+			name: 'Asset commissioning',
+			purpose: 'Verify installation, testing and handover before placing the asset into service.'
+		},
+		{
+			family: 'execution',
+			name: 'Asset maintenance',
+			purpose: 'Plan, execute and verify controlled maintenance.'
+		},
+		{
+			family: 'closure',
+			name: 'Asset retirement and disposal',
+			purpose: 'Approve retirement, decommissioning and final disposal.'
+		}
 	],
 	'maintenance.work-order': [
-		{ family: 'execution', name: 'Maintenance work execution', purpose: 'Plan, schedule, execute and evidence maintenance work.' },
-		{ family: 'review', name: 'Maintenance acceptance', purpose: 'Verify completion and return the asset or facility to service.' }
+		{
+			family: 'execution',
+			name: 'Maintenance work execution',
+			purpose: 'Plan, schedule, execute and evidence maintenance work.'
+		},
+		{
+			family: 'review',
+			name: 'Maintenance acceptance',
+			purpose: 'Verify completion and return the asset or facility to service.'
+		}
 	],
 	'process.process': [
-		{ family: 'approval', name: 'Process approval', purpose: 'Review and approve the governed enterprise process before publication.' },
-		{ family: 'revision', name: 'Process change control', purpose: 'Assess and implement controlled process redesign.' },
-		{ family: 'periodic-review', name: 'Process performance review', purpose: 'Review compliance, performance and improvement actions.' }
+		{
+			family: 'approval',
+			name: 'Process approval',
+			purpose: 'Review and approve the governed enterprise process before publication.'
+		},
+		{
+			family: 'revision',
+			name: 'Process change control',
+			purpose: 'Assess and implement controlled process redesign.'
+		},
+		{
+			family: 'periodic-review',
+			name: 'Process performance review',
+			purpose: 'Review compliance, performance and improvement actions.'
+		}
 	]
 };
 
@@ -451,7 +855,9 @@ type FunctionSeed = {
 
 const seeds: FunctionSeed[] = [
 	{
-		functionId: 'F01', ownerDomain: 'D8', objects: [
+		functionId: 'F01',
+		ownerDomain: 'D8',
+		objects: [
 			['strategy.strategy-cycle', 'Strategy cycle / framework', 'GOV'],
 			['strategy.business-plan', 'Business plan', 'PLAN'],
 			['strategy.initiative', 'Strategic initiative', 'PROJECT'],
@@ -461,7 +867,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F02', ownerDomain: 'D1', objects: [
+		functionId: 'F02',
+		ownerDomain: 'D1',
+		objects: [
 			['governance.framework', 'Governance framework', 'GOV'],
 			['governance.body', 'Governance body', 'MASTER'],
 			['governance.meeting', 'Governance meeting', 'TXN'],
@@ -471,7 +879,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F03', ownerDomain: 'D8', objects: [
+		functionId: 'F03',
+		ownerDomain: 'D8',
+		objects: [
 			['performance.framework', 'Performance framework', 'GOV'],
 			['performance.reporting-pack', 'Performance reporting pack', 'GOV'],
 			['performance.variance-case', 'Performance variance case', 'CASE'],
@@ -479,7 +889,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F04', ownerDomain: 'D8', objects: [
+		functionId: 'F04',
+		ownerDomain: 'D8',
+		objects: [
 			['corporate-development.opportunity', 'Corporate-development opportunity', 'CASE'],
 			['corporate-development.valuation-case', 'Valuation / investment case', 'GOV'],
 			['corporate-development.due-diligence', 'Due-diligence case', 'PROJECT'],
@@ -489,7 +901,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F05', ownerDomain: 'D6', objects: [
+		functionId: 'F05',
+		ownerDomain: 'D6',
+		objects: [
 			['product-service.offering', 'Product / service offering', 'ASSET'],
 			['product-service.business-case', 'Product / service business case', 'GOV'],
 			['product-service.design', 'Product / service design', 'DOC'],
@@ -500,7 +914,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F06', ownerDomain: 'D2', objects: [
+		functionId: 'F06',
+		ownerDomain: 'D2',
+		objects: [
 			['marketing.market-insight', 'Market insight', 'GOV'],
 			['marketing.customer-segment', 'Customer segment', 'MASTER'],
 			['marketing.brand', 'Brand', 'MASTER'],
@@ -512,7 +928,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F07', ownerDomain: 'D2', objects: [
+		functionId: 'F07',
+		ownerDomain: 'D2',
+		objects: [
 			['sales.account-plan', 'Account plan', 'PLAN'],
 			['sales.opportunity', 'Sales opportunity', 'CASE'],
 			['estimating.estimate', 'Estimate', 'GOV'],
@@ -525,7 +943,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F08', ownerDomain: 'D17', objects: [
+		functionId: 'F08',
+		ownerDomain: 'D17',
+		objects: [
 			['customer.onboarding', 'Customer onboarding', 'WORK'],
 			['customer.service-case', 'Customer service case', 'CASE'],
 			['customer.complaint', 'Customer complaint', 'CASE'],
@@ -537,7 +957,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F09', ownerDomain: 'D9', objects: [
+		functionId: 'F09',
+		ownerDomain: 'D9',
+		objects: [
 			['procurement.strategy', 'Procurement strategy', 'GOV'],
 			['procurement.category', 'Procurement category', 'MASTER'],
 			['procurement.supplier', 'Supplier', 'MASTER'],
@@ -550,7 +972,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F10', ownerDomain: 'D10', objects: [
+		functionId: 'F10',
+		ownerDomain: 'D10',
+		objects: [
 			['supply.demand-plan', 'Demand plan', 'PLAN'],
 			['supply.supply-plan', 'Supply plan', 'PLAN'],
 			['supply.material', 'Material / item master', 'MASTER'],
@@ -564,7 +988,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F11', ownerDomain: 'D11', objects: [
+		functionId: 'F11',
+		ownerDomain: 'D11',
+		objects: [
 			['production.bill-of-materials', 'Bill of materials', 'GOV'],
 			['production.routing', 'Production routing / process plan', 'GOV'],
 			['production.work-centre', 'Work centre', 'MASTER'],
@@ -577,7 +1003,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F12', ownerDomain: 'D17', objects: [
+		functionId: 'F12',
+		ownerDomain: 'D17',
+		objects: [
 			['service.plan', 'Service delivery plan', 'PLAN'],
 			['service.request', 'Service request', 'CASE'],
 			['service.work-order', 'Service work order', 'WORK'],
@@ -590,7 +1018,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F13', ownerDomain: 'D14', objects: [
+		functionId: 'F13',
+		ownerDomain: 'D14',
+		objects: [
 			['quality.quality-plan', 'Quality plan', 'PLAN'],
 			['quality.itp', 'Inspection and test plan', 'PLAN'],
 			['quality.inspection', 'Inspection', 'WORK'],
@@ -603,7 +1033,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F14', ownerDomain: 'D7', objects: [
+		functionId: 'F14',
+		ownerDomain: 'D7',
+		objects: [
 			['finance.budget', 'Budget', 'GOV'],
 			['finance.forecast', 'Financial forecast', 'GOV'],
 			['finance.journal', 'Journal', 'TXN'],
@@ -622,7 +1054,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F15', ownerDomain: 'D12', objects: [
+		functionId: 'F15',
+		ownerDomain: 'D12',
+		objects: [
 			['people.workforce-plan', 'Workforce plan', 'PLAN'],
 			['people.organisation-unit', 'Organisation unit', 'MASTER'],
 			['people.position', 'Position', 'MASTER'],
@@ -642,7 +1076,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F16', ownerDomain: 'D19', objects: [
+		functionId: 'F16',
+		ownerDomain: 'D19',
+		objects: [
 			['it.strategy', 'IT strategy', 'GOV'],
 			['it.architecture-decision', 'Architecture decision', 'GOV'],
 			['it.technology-service', 'Application / technology service', 'ASSET'],
@@ -661,7 +1097,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F17', ownerDomain: 'D19', objects: [
+		functionId: 'F17',
+		ownerDomain: 'D19',
+		objects: [
 			['data.policy', 'Data policy / standard', 'GOV'],
 			['data.domain', 'Data domain', 'MASTER'],
 			['data.product', 'Data product / dataset', 'ASSET'],
@@ -679,7 +1117,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F18', ownerDomain: 'D14', objects: [
+		functionId: 'F18',
+		ownerDomain: 'D14',
+		objects: [
 			['security.policy', 'Security policy / standard', 'GOV'],
 			['security.privileged-access-request', 'Privileged-access request', 'TXN'],
 			['security.vulnerability', 'Vulnerability', 'RISK'],
@@ -695,7 +1135,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F19', ownerDomain: 'D4', objects: [
+		functionId: 'F19',
+		ownerDomain: 'D4',
+		objects: [
 			['legal.matter', 'Legal matter', 'CASE'],
 			['legal.advice-request', 'Legal-advice request', 'CASE'],
 			['legal.contract-obligation', 'Contract obligation', 'WORK'],
@@ -710,7 +1152,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F20', ownerDomain: 'D14', objects: [
+		functionId: 'F20',
+		ownerDomain: 'D14',
+		objects: [
 			['risk.framework', 'Risk framework', 'GOV'],
 			['risk.risk', 'Enterprise / operational risk', 'RISK'],
 			['risk.assessment', 'Risk assessment', 'GOV'],
@@ -728,7 +1172,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F21', ownerDomain: 'D14', objects: [
+		functionId: 'F21',
+		ownerDomain: 'D14',
+		objects: [
 			['privacy.policy', 'Privacy framework / policy', 'GOV'],
 			['privacy.processing-activity', 'Processing activity', 'MASTER'],
 			['privacy.dpia', 'Data-protection impact assessment', 'GOV'],
@@ -740,7 +1186,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F22', ownerDomain: 'D16', objects: [
+		functionId: 'F22',
+		ownerDomain: 'D16',
+		objects: [
 			['asset.strategy', 'Asset / property strategy', 'GOV'],
 			['asset.capital-plan', 'Capital plan', 'PLAN'],
 			['property.property', 'Property', 'ASSET'],
@@ -757,7 +1205,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F23', ownerDomain: 'D14', objects: [
+		functionId: 'F23',
+		ownerDomain: 'D14',
+		objects: [
 			['hse.management-plan', 'H&S / environmental management plan', 'PLAN'],
 			['hse.hazard', 'Hazard', 'RISK'],
 			['hse.rams', 'RAMS / task risk assessment', 'GOV'],
@@ -776,7 +1226,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F24', ownerDomain: 'D14', objects: [
+		functionId: 'F24',
+		ownerDomain: 'D14',
+		objects: [
 			['continuity.framework', 'Business-continuity framework', 'GOV'],
 			['continuity.business-impact-assessment', 'Business-impact assessment', 'GOV'],
 			['continuity.plan', 'Business-continuity plan', 'GOV'],
@@ -792,7 +1244,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F25', ownerDomain: 'D2', objects: [
+		functionId: 'F25',
+		ownerDomain: 'D2',
+		objects: [
 			['communications.plan', 'Communications plan', 'PLAN'],
 			['communications.item', 'Communication item', 'DOC'],
 			['communications.media-enquiry', 'Media enquiry', 'CASE'],
@@ -806,7 +1260,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F26', ownerDomain: 'D6', objects: [
+		functionId: 'F26',
+		ownerDomain: 'D6',
+		objects: [
 			['knowledge.article', 'Knowledge article', 'DOC'],
 			['knowledge.collection', 'Knowledge collection', 'MASTER'],
 			['information.document', 'Controlled document / information container', 'DOC'],
@@ -819,7 +1275,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F27', ownerDomain: 'D5', objects: [
+		functionId: 'F27',
+		ownerDomain: 'D5',
+		objects: [
 			['portfolio.portfolio', 'Portfolio', 'GOV'],
 			['portfolio.investment-proposal', 'Investment proposal', 'TXN'],
 			['programme.programme', 'Programme', 'PROJECT'],
@@ -839,7 +1297,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F28', ownerDomain: 'D5', objects: [
+		functionId: 'F28',
+		ownerDomain: 'D5',
+		objects: [
 			['transformation.portfolio', 'Transformation portfolio', 'GOV'],
 			['transformation.initiative', 'Transformation initiative', 'PROJECT'],
 			['change.impact-assessment', 'Change-impact assessment', 'GOV'],
@@ -853,7 +1313,9 @@ const seeds: FunctionSeed[] = [
 		]
 	},
 	{
-		functionId: 'F29', ownerDomain: 'D19', objects: [
+		functionId: 'F29',
+		ownerDomain: 'D19',
+		objects: [
 			['process.architecture', 'Process architecture', 'GOV'],
 			['process.process', 'Enterprise process', 'GOV'],
 			['process.model', 'Process model / version', 'GOV'],
@@ -905,11 +1367,13 @@ export const objectTypeRegistry: readonly ObjectTypeDefinition[] = seeds.flatMap
 	}));
 });
 
-export const functionObjectRegistry: readonly FunctionObjectGroup[] = enterpriseFunctions.map((entry) => ({
-	functionId: entry.id,
-	functionName: entry.name,
-	objects: objectTypeRegistry.filter((object) => object.functionId === entry.id)
-}));
+export const functionObjectRegistry: readonly FunctionObjectGroup[] = enterpriseFunctions.map(
+	(entry) => ({
+		functionId: entry.id,
+		functionName: entry.name,
+		objects: objectTypeRegistry.filter((object) => object.functionId === entry.id)
+	})
+);
 
 export const featuredObjectTemplates: readonly ObjectTypeDefinition[] = objectTypeRegistry.filter(
 	(object) => object.featuredStarter

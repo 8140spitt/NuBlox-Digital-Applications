@@ -40,8 +40,12 @@
 		description="A workflow governs the work people and systems perform against business objects. Start from the F01-F29 object registry for real approval, review, execution and exception flows, or design a bespoke workflow."
 	>
 		{#snippet actions()}
-			<LinkButton href={appPath(tenant, 'workflow/operations')} variant="secondary">Monitor live workflows</LinkButton>
-			<LinkButton href={appPath(tenant, 'lifecycle/registry')} variant="secondary">Business object registry</LinkButton>
+			<LinkButton href={appPath(tenant, 'workflow/operations')} variant="secondary"
+				>Monitor live workflows</LinkButton
+			>
+			<LinkButton href={appPath(tenant, 'lifecycle/registry')} variant="secondary"
+				>Business object registry</LinkButton
+			>
 			<LinkButton href={appPath(tenant, 'workflow/new')}>Create bespoke workflow</LinkButton>
 		{/snippet}
 	</PageHeader>

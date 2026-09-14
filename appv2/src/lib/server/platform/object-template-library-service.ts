@@ -50,9 +50,19 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		],
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
-			{ key: 'prepare', label: 'Prepare decision pack', type: 'activity', responsibleRoleKey: 'owner' },
+			{
+				key: 'prepare',
+				label: 'Prepare decision pack',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
 			{ key: 'review', label: 'Review evidence', type: 'activity', responsibleRoleKey: 'reviewer' },
-			{ key: 'approve', label: 'Approve or reject', type: 'checkpoint', responsibleRoleKey: 'approver' },
+			{
+				key: 'approve',
+				label: 'Approve or reject',
+				type: 'checkpoint',
+				responsibleRoleKey: 'approver'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -65,7 +75,12 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 			{ key: 'start', label: 'Start', type: 'start' },
 			{ key: 'gather', label: 'Gather evidence', type: 'activity', responsibleRoleKey: 'owner' },
 			{ key: 'review', label: 'Review evidence', type: 'activity', responsibleRoleKey: 'reviewer' },
-			{ key: 'record', label: 'Record review outcome', type: 'checkpoint', responsibleRoleKey: 'reviewer' },
+			{
+				key: 'record',
+				label: 'Record review outcome',
+				type: 'checkpoint',
+				responsibleRoleKey: 'reviewer'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -77,10 +92,25 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		],
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
-			{ key: 'assess_change', label: 'Assess proposed change', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'revise', label: 'Prepare controlled revision', type: 'activity', responsibleRoleKey: 'owner' },
+			{
+				key: 'assess_change',
+				label: 'Assess proposed change',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
+			{
+				key: 'revise',
+				label: 'Prepare controlled revision',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
 			{ key: 'review', label: 'Review revision', type: 'activity', responsibleRoleKey: 'reviewer' },
-			{ key: 'approve', label: 'Approve change', type: 'checkpoint', responsibleRoleKey: 'approver' },
+			{
+				key: 'approve',
+				label: 'Approve change',
+				type: 'checkpoint',
+				responsibleRoleKey: 'approver'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -92,8 +122,18 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
 			{ key: 'triage', label: 'Triage and assign', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'resolve', label: 'Investigate and resolve', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'verify', label: 'Verify resolution', type: 'checkpoint', responsibleRoleKey: 'reviewer' },
+			{
+				key: 'resolve',
+				label: 'Investigate and resolve',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
+			{
+				key: 'verify',
+				label: 'Verify resolution',
+				type: 'checkpoint',
+				responsibleRoleKey: 'reviewer'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -106,7 +146,12 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 			{ key: 'start', label: 'Start', type: 'start' },
 			{ key: 'plan', label: 'Plan work', type: 'activity', responsibleRoleKey: 'owner' },
 			{ key: 'execute', label: 'Execute work', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'verify', label: 'Verify and accept', type: 'checkpoint', responsibleRoleKey: 'reviewer' },
+			{
+				key: 'verify',
+				label: 'Verify and accept',
+				type: 'checkpoint',
+				responsibleRoleKey: 'reviewer'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -118,8 +163,18 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
 			{ key: 'triage', label: 'Triage exception', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'decide', label: 'Decide response', type: 'checkpoint', responsibleRoleKey: 'approver' },
-			{ key: 'implement', label: 'Implement response', type: 'activity', responsibleRoleKey: 'owner' },
+			{
+				key: 'decide',
+				label: 'Decide response',
+				type: 'checkpoint',
+				responsibleRoleKey: 'approver'
+			},
+			{
+				key: 'implement',
+				label: 'Implement response',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -131,9 +186,19 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		],
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
-			{ key: 'gather', label: 'Gather current evidence', type: 'activity', responsibleRoleKey: 'owner' },
+			{
+				key: 'gather',
+				label: 'Gather current evidence',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
 			{ key: 'review', label: 'Conduct review', type: 'activity', responsibleRoleKey: 'reviewer' },
-			{ key: 'actions', label: 'Agree decisions and actions', type: 'checkpoint', responsibleRoleKey: 'approver' },
+			{
+				key: 'actions',
+				label: 'Agree decisions and actions',
+				type: 'checkpoint',
+				responsibleRoleKey: 'approver'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -144,8 +209,18 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		],
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
-			{ key: 'evidence', label: 'Confirm completion evidence', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'close', label: 'Approve closure', type: 'checkpoint', responsibleRoleKey: 'approver' },
+			{
+				key: 'evidence',
+				label: 'Confirm completion evidence',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
+			{
+				key: 'close',
+				label: 'Approve closure',
+				type: 'checkpoint',
+				responsibleRoleKey: 'approver'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -157,9 +232,24 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		],
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
-			{ key: 'evidence', label: 'Collect qualification evidence', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'validate', label: 'Validate requirements', type: 'activity', responsibleRoleKey: 'reviewer' },
-			{ key: 'activate', label: 'Approve activation', type: 'checkpoint', responsibleRoleKey: 'approver' },
+			{
+				key: 'evidence',
+				label: 'Collect qualification evidence',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
+			{
+				key: 'validate',
+				label: 'Validate requirements',
+				type: 'activity',
+				responsibleRoleKey: 'reviewer'
+			},
+			{
+				key: 'activate',
+				label: 'Approve activation',
+				type: 'checkpoint',
+				responsibleRoleKey: 'approver'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	},
@@ -171,9 +261,24 @@ const workflowBlueprints: Record<WorkflowFamilyKey, WorkflowBlueprint> = {
 		],
 		nodes: [
 			{ key: 'start', label: 'Start', type: 'start' },
-			{ key: 'readiness', label: 'Prepare gate evidence', type: 'activity', responsibleRoleKey: 'owner' },
-			{ key: 'review', label: 'Review readiness', type: 'activity', responsibleRoleKey: 'reviewer' },
-			{ key: 'gate', label: 'Pass, condition or stop', type: 'checkpoint', responsibleRoleKey: 'approver' },
+			{
+				key: 'readiness',
+				label: 'Prepare gate evidence',
+				type: 'activity',
+				responsibleRoleKey: 'owner'
+			},
+			{
+				key: 'review',
+				label: 'Review readiness',
+				type: 'activity',
+				responsibleRoleKey: 'reviewer'
+			},
+			{
+				key: 'gate',
+				label: 'Pass, condition or stop',
+				type: 'checkpoint',
+				responsibleRoleKey: 'approver'
+			},
 			{ key: 'end', label: 'End', type: 'end' }
 		]
 	}
@@ -480,7 +585,13 @@ async function insertWorkflow(
 		versionNumber: 1,
 		minorVersionNumber: 1,
 		lifecycleStatus: 'draft',
-		snapshot: workflowSnapshot(object, workflow.family, workflow.name, workflow.purpose, templateKey),
+		snapshot: workflowSnapshot(
+			object,
+			workflow.family,
+			workflow.name,
+			workflow.purpose,
+			templateKey
+		),
 		changeNote: 'Starter workflow installed from the NuBlox object registry',
 		published: false
 	});

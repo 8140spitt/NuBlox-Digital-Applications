@@ -48,7 +48,9 @@
 		description="A lifecycle governs the legal state of a business object. Start from the F01-F29 object registry for real object templates, or create a bespoke lifecycle when the standard catalogue does not fit."
 	>
 		{#snippet actions()}
-			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary">Workflow administration</LinkButton>
+			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary"
+				>Workflow administration</LinkButton
+			>
 			<LinkButton href={appPath(tenant, 'lifecycle/registry')}>Business object registry</LinkButton>
 		{/snippet}
 	</PageHeader>
@@ -146,12 +148,17 @@
 					</Field>
 					<Field id="mode" label="Lifecycle mode" required>
 						<select class="nb-control" id="mode" name="mode">
-							<option value="basic" selected={(form?.values?.mode ?? 'basic') === 'basic'}>Basic</option>
-							<option value="advanced" selected={form?.values?.mode === 'advanced'}>Advanced</option>
+							<option value="basic" selected={(form?.values?.mode ?? 'basic') === 'basic'}
+								>Basic</option
+							>
+							<option value="advanced" selected={form?.values?.mode === 'advanced'}>Advanced</option
+							>
 						</select>
 					</Field>
 					<Field id="description" label="Description">
-						<textarea class="nb-control" id="description" name="description">{form?.values?.description ?? ''}</textarea>
+						<textarea class="nb-control" id="description" name="description"
+							>{form?.values?.description ?? ''}</textarea
+						>
 					</Field>
 					<Button type="submit">Create working template</Button>
 				</form>
