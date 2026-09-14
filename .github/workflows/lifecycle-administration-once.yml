@@ -27,7 +27,7 @@ jobs:
           --health-retries=30
     env:
       DATABASE_URL: mysql://root:nublox_ci@127.0.0.1:3306/nublox_lifecycle_validation
-      VALIDATION_ATTEMPT: '3'
+      VALIDATION_ATTEMPT: '4'
 
     steps:
       - name: Checkout branch
