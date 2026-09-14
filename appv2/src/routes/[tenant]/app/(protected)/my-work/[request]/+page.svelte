@@ -12,7 +12,8 @@
 			<h1>{data.task.title}</h1>
 			<p class="nb-lede">
 				Complete the current authored workflow step. The governed business lifecycle only advances
-				after the published workflow reaches its approved end and the source-domain rules pass again.
+				after the published workflow reaches its approved end and the source-domain rules pass
+				again.
 			</p>
 		</div>
 		<StatusBadge label="Running" tone="info" />
@@ -28,21 +29,41 @@
 			description="This work item was created from the published workflow graph."
 		>
 			<dl class="facts">
-				<div><dt>Workflow</dt><dd>{data.task.workflowKey}</dd></div>
 				<div>
-					<dt>Node</dt><dd>{data.task.nodeKey ?? 'Legacy gate'} · {data.task.nodeType ?? 'approval'}</dd>
+					<dt>Workflow</dt>
+					<dd>{data.task.workflowKey}</dd>
 				</div>
-				<div><dt>Source</dt><dd>{data.task.sourceDomain} · {data.task.sourceType}</dd></div>
-				<div><dt>Lifecycle target</dt><dd>{data.task.fromState} → {data.task.toState}</dd></div>
-				<div><dt>Required authority</dt><dd>{data.task.requiredPermissionKey}</dd></div>
-				<div><dt>Submitted</dt><dd>{new Date(data.task.submittedAt).toLocaleString()}</dd></div>
+				<div>
+					<dt>Node</dt>
+					<dd>{data.task.nodeKey ?? 'Legacy gate'} · {data.task.nodeType ?? 'approval'}</dd>
+				</div>
+				<div>
+					<dt>Source</dt>
+					<dd>{data.task.sourceDomain} · {data.task.sourceType}</dd>
+				</div>
+				<div>
+					<dt>Lifecycle target</dt>
+					<dd>{data.task.fromState} → {data.task.toState}</dd>
+				</div>
+				<div>
+					<dt>Required authority</dt>
+					<dd>{data.task.requiredPermissionKey}</dd>
+				</div>
+				<div>
+					<dt>Submitted</dt>
+					<dd>{new Date(data.task.submittedAt).toLocaleString()}</dd>
+				</div>
 				{#if data.task.dueAt}
-					<div><dt>Due</dt><dd>{new Date(data.task.dueAt).toLocaleString()}</dd></div>
+					<div>
+						<dt>Due</dt>
+						<dd>{new Date(data.task.dueAt).toLocaleString()}</dd>
+					</div>
 				{/if}
 			</dl>
 			{#if data.task.submissionNote}
 				<div class="submission-note">
-					<strong>Submission note</strong><p>{data.task.submissionNote}</p>
+					<strong>Submission note</strong>
+					<p>{data.task.submissionNote}</p>
 				</div>
 			{/if}
 			<a class="source-link" href={data.sourceHref}>Open governed source record</a>
@@ -62,7 +83,8 @@
 					class="nb-control"
 					rows="6"
 					placeholder="Record the evidence or rationale for this workflow step."
-				>{form?.note ?? ''}</textarea>
+					>{form?.note ?? ''}</textarea
+				>
 				<div class="decision-actions">
 					<Button type="submit" name="decision" value="approved">{actionLabel}</Button>
 					<Button type="submit" name="decision" value="returned" variant="secondary">Return</Button>

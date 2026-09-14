@@ -93,7 +93,13 @@ function activeKey(input: {
 	workflowKey: string;
 	toState: string;
 }): string {
-	return [input.sourceDomain, input.sourceType, input.sourcePublicId, input.workflowKey, input.toState]
+	return [
+		input.sourceDomain,
+		input.sourceType,
+		input.sourcePublicId,
+		input.workflowKey,
+		input.toState
+	]
 		.join(':')
 		.slice(0, 255);
 }
@@ -236,7 +242,8 @@ async function assignWorkItem(
 ): Promise<void> {
 	const actorOwned =
 		input.node.responsibleRoleKey === 'owner' ||
-		input.node.participants?.some((participant) => participant.participantType === 'actor') === true;
+		input.node.participants?.some((participant) => participant.participantType === 'actor') ===
+			true;
 	await connection.execute(
 		`INSERT INTO work_item_assignments
 			(work_item_id, work_item_owner_organisation_id, assignment_scope,
@@ -433,7 +440,9 @@ export async function submitLifecycleWorkflow(input: {
 			[input.actor.organisationId, requestActiveKey]
 		);
 		if (existing[0]) {
-			throw new WorkflowValidationError('A workflow request is already pending for this transition.');
+			throw new WorkflowValidationError(
+				'A workflow request is already pending for this transition.'
+			);
 		}
 
 		const workItemPublicId = randomUUID();
@@ -756,7 +765,11 @@ export async function finaliseWorkflowRequest(input: {
 	requestPublicId: string;
 	decision: WorkflowDecision;
 	note?: string | null;
-}): Promise<{ completed: boolean; decision: WorkflowDecision | null; currentNodeKey: string | null }> {
+}): Promise<{
+	completed: boolean;
+	decision: WorkflowDecision | null;
+	currentNodeKey: string | null;
+}> {
 	const note = normalizeNote(input.note);
 	if (input.decision !== 'approved' && !note) {
 		throw new WorkflowValidationError('A reason is required when returning or rejecting work.');

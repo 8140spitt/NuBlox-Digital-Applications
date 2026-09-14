@@ -162,9 +162,9 @@ describe('configured lifecycle and authored workflow runtime', () => {
 			recordPublicId: framework.publicId
 		});
 		expect(managed.status).toBe('draft');
-		expect(managed.transitions.find((transition) => transition.to === 'approved')?.workflowKey).toBe(
-			approvalKey
-		);
+		expect(
+			managed.transitions.find((transition) => transition.to === 'approved')?.workflowKey
+		).toBe(approvalKey);
 
 		const request = await submitF01WorkflowTransition({
 			actor,
