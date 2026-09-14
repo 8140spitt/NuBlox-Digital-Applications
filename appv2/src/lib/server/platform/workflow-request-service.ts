@@ -46,6 +46,11 @@ export type PendingWorkflowTask = {
 	willCompleteOnApprove: boolean;
 };
 
+export type ActiveWorkflowRequest = PendingWorkflowTask & {
+	actionableByMember: boolean;
+	assigneeLabel: string;
+};
+
 type AssignmentTarget = {
 	assignmentScope: 'organisation' | 'team' | 'member';
 	assignedMemberId: string | null;
@@ -704,6 +709,49 @@ function publicTask(row: WorkflowTaskRow): PendingWorkflowTask {
 	};
 }
 
+async function sourceTaskRows(input: {
+	organisationId: string;
+	sourceDomain: string;
+	sourceType: string;
+	sourcePublicId: string;
+}): Promise<WorkflowTaskRow[]> {
+	const [rows] = await getPool().execute<WorkflowTaskRow[]>(
+		`SELECT request.public_id AS requestPublicId,
+		        item.public_id AS workItemPublicId,
+		        request.workflow_key AS workflowKey,
+		        request.workflow_definition AS workflowDefinition,
+		        request.current_node_key AS nodeKey,
+		        request.current_node_type AS nodeType,
+		        request.step_number AS stepNumber,
+		        request.workflow_state AS workflowState,
+		        request.source_domain AS sourceDomain,
+		        request.source_type AS sourceType,
+		        request.source_public_id AS sourcePublicId,
+		        request.context_public_id AS contextPublicId,
+		        request.lifecycle_from_state AS fromState,
+		        request.lifecycle_to_state AS toState,
+		        request.transition_label AS transitionLabel,
+		        request.required_permission_key AS requiredPermissionKey,
+		        item.title, item.description, item.priority, item.status AS workStatus,
+		        request.submission_note AS submissionNote, request.submitted_at AS submittedAt,
+		        item.due_at AS dueAt,
+		        assignment.assignment_scope AS assignmentScope,
+		        CAST(assignment.assigned_member_id AS CHAR) AS assignedMemberId,
+		        CAST(assignment.assigned_team_id AS CHAR) AS assignedTeamId
+		 FROM workflow_requests request
+		 JOIN work_items item ON item.id = request.work_item_id
+		  AND item.owning_organisation_id = request.organisation_id
+		 JOIN work_item_assignments assignment ON assignment.work_item_id = item.id
+		  AND assignment.work_item_owner_organisation_id = request.organisation_id
+		  AND assignment.ended_at IS NULL
+		 WHERE request.organisation_id = ? AND request.status = 'pending'
+		   AND request.source_domain = ? AND request.source_type = ? AND request.source_public_id = ?
+		 ORDER BY request.submitted_at DESC`,
+		[input.organisationId, input.sourceDomain, input.sourceType, input.sourcePublicId]
+	);
+	return rows;
+}
+
 async function taskAllowed(
 	target: AssignmentTarget,
 	organisationId: string,
@@ -723,6 +771,30 @@ async function taskAllowed(
 		memberId,
 		permissionKey: target.requiredPermissionKey
 	});
+}
+
+export async function listActiveWorkflowRequestsForSource(input: {
+	organisationId: string;
+	memberId: string;
+	sourceDomain: string;
+	sourceType: string;
+	sourcePublicId: string;
+}): Promise<ActiveWorkflowRequest[]> {
+	const rows = await sourceTaskRows(input);
+	const active: ActiveWorkflowRequest[] = [];
+	for (const row of rows) {
+		const actionableByMember = await taskAllowed(row, input.organisationId, input.memberId);
+		let assigneeLabel = 'Authorised approvers';
+		if (row.assignmentScope === 'member') {
+			assigneeLabel = row.assignedMemberId === input.memberId ? 'You' : 'Another named member';
+		} else if (row.assignmentScope === 'team') {
+			assigneeLabel = actionableByMember ? 'Your assigned team' : 'Another assigned team';
+		} else if (actionableByMember) {
+			assigneeLabel = 'You and other authorised approvers';
+		}
+		active.push({ ...publicTask(row), actionableByMember, assigneeLabel });
+	}
+	return active;
 }
 
 export async function listPendingWorkflowTasks(input: {

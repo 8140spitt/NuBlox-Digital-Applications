@@ -3,6 +3,7 @@ import { routes } from '$lib/routing/route-contract';
 import { resolveActiveInternalTenant } from '$lib/server/auth/access-context';
 import { getAuth } from '$lib/server/auth/auth';
 import {
+	listActiveWorkflowRequestsForSource,
 	WorkflowAccessError,
 	WorkflowValidationError
 } from '$lib/server/platform/workflow-request-service';
@@ -102,7 +103,14 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 					recordPublicId: params.record
 				})
 			: null;
-		return { managedRecord, relationshipEditor };
+		const activeWorkflows = await listActiveWorkflowRequestsForSource({
+			organisationId: tenant.organisationId,
+			memberId: tenant.memberId,
+			sourceDomain: 'F01',
+			sourceType: kind,
+			sourcePublicId: params.record
+		});
+		return { managedRecord, relationshipEditor, activeWorkflows };
 	} catch (cause) {
 		if (cause instanceof StrategyAccessError) {
 			error(404, 'F01 record is not available in this scope.');

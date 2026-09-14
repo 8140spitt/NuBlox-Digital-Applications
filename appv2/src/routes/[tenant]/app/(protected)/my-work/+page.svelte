@@ -71,12 +71,18 @@
 		{:else}
 			<div class="empty-state">
 				<p class="empty-kicker">Queue ready</p>
-				<h3>No governed work is connected yet.</h3>
-				<p>
-					V2 will only place an item here when its source record, accountable actor, lifecycle
-					state, next action and downstream consequence are explicit. We will connect real work
-					sources as each business function is rebuilt.
-				</p>
+				{#if data.work.connected}
+					<h3>Nothing is assigned to you right now.</h3>
+					<p>
+						Governed work sources are connected. Tasks assigned to another member, another team or
+						an approval group you are not authorised to act for will not appear in your personal
+						queue. When a workflow step becomes your responsibility, it will appear here
+						automatically.
+					</p>
+				{:else}
+					<h3>No governed work sources are connected.</h3>
+					<p>Connect a governed work source before expecting items in this queue.</p>
+				{/if}
 			</div>
 		{/if}
 	</section>

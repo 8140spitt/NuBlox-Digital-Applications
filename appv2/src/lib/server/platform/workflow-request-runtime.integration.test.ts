@@ -6,6 +6,7 @@ import {
 	WorkflowAccessError,
 	finaliseWorkflowRequest,
 	getPendingWorkflowTask,
+	listActiveWorkflowRequestsForSource,
 	listPendingWorkflowTasks,
 	submitLifecycleWorkflow
 } from './workflow-request-service';
@@ -197,12 +198,13 @@ afterAll(cleanup);
 
 describe('workflow runtime assignment and authored decision routing', () => {
 	it('enforces member/team targets and follows return/reject routes', async () => {
+		const sourcePublicId = randomUUID();
 		const request = await submitLifecycleWorkflow({
 			actor,
 			workflowKey: 'test.runtime-routing',
 			sourceDomain: 'test',
 			sourceType: 'controlled-object',
-			sourcePublicId: randomUUID(),
+			sourcePublicId,
 			contextPublicId: randomUUID(),
 			fromState: 'draft',
 			toState: 'approved',
@@ -210,6 +212,22 @@ describe('workflow runtime assignment and authored decision routing', () => {
 			requiredPermissionKey: 'strategy.approve',
 			note: 'Start participant and routing regression.'
 		});
+
+		const submitterView = await listActiveWorkflowRequestsForSource({
+			organisationId,
+			memberId: actor.memberId,
+			sourceDomain: 'test',
+			sourceType: 'controlled-object',
+			sourcePublicId
+		});
+		expect(submitterView).toMatchObject([
+			{
+				requestPublicId: request.requestPublicId,
+				nodeKey: 'prepare',
+				actionableByMember: true,
+				assigneeLabel: 'You'
+			}
+		]);
 
 		await expect(
 			getPendingWorkflowTask({

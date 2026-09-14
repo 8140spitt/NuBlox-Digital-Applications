@@ -15,6 +15,7 @@
 	let { data, form } = $props();
 	const record = $derived(data.managedRecord);
 	const relationshipEditor = $derived(data.relationshipEditor);
+	const activeWorkflows = $derived(data.activeWorkflows ?? []);
 	const postedValues = $derived((form?.values ?? {}) as Record<string, string>);
 
 	function recordLabel(kind: string): string {
@@ -169,6 +170,33 @@
 		<StatusBadge label={recordLabel(record.status)} tone={statusTone(record.status)} />
 	</section>
 
+	{#if activeWorkflows.length > 0}
+		<Panel
+			title="Workflow in progress"
+			description="This business object remains in its current lifecycle state until the configured workflow reaches its governed outcome."
+		>
+			<div class="workflow-progress-list">
+				{#each activeWorkflows as workflow (workflow.requestPublicId)}
+					<article class="workflow-progress">
+						<div>
+							<p class="section-kicker">{workflow.transitionLabel}</p>
+							<h3>{workflow.title}</h3>
+							<p>
+								{recordLabel(workflow.fromState)} → {recordLabel(workflow.toState)} · Step {workflow.stepNumber}
+							</p>
+							<p>Assigned to: {workflow.assigneeLabel}.</p>
+						</div>
+						{#if workflow.actionableByMember}
+							<LinkButton href={routes.myWork(data.tenant.slug)}>Open in My work</LinkButton>
+						{:else}
+							<StatusBadge label="Awaiting another participant" tone="info" />
+						{/if}
+					</article>
+				{/each}
+			</div>
+		</Panel>
+	{/if}
+
 	{#if record.canEdit}
 		<Panel
 			title="Modify record"
@@ -279,54 +307,72 @@
 			</div>
 			<div class="transition-grid">
 				{#each record.transitions as transition (`${record.status}-${transition.to}`)}
-					<form method="POST" action="?/transition" use:enhance class="transition-card">
-						<input type="hidden" name="targetStatus" value={transition.to} />
-						<div>
-							<strong>{transition.label}</strong>
-							<p>{recordLabel(record.status)} → {recordLabel(transition.to)}</p>
+					{#if activeWorkflows.some((workflow) => workflow.toState === transition.to)}
+						<div class="transition-card pending-transition">
+							<div>
+								<strong>{transition.label}</strong>
+								<p>{recordLabel(record.status)} → {recordLabel(transition.to)}</p>
+								<p>
+									This transition has already been submitted and cannot be submitted again while its
+									workflow is active.
+								</p>
+							</div>
+							<StatusBadge label="Workflow in progress" tone="info" />
 						</div>
-						{#if transition.requiresNote}
-							<Field
-								id={`transitionNote-${transition.to}`}
-								label="Rationale / completion note"
-								required
-							>
-								<textarea
-									class="nb-control"
-									id={`transitionNote-${transition.to}`}
-									name="transitionNote"
-									rows="3"
-									required></textarea>
-							</Field>
-						{/if}
-						{#if transition.requiresTargetReference}
-							<div class="target-grid">
+					{:else}
+						<form method="POST" action="?/transition" use:enhance class="transition-card">
+							<input type="hidden" name="targetStatus" value={transition.to} />
+							<div>
+								<strong>{transition.label}</strong>
+								<p>{recordLabel(record.status)} → {recordLabel(transition.to)}</p>
+							</div>
+							{#if transition.requiresNote}
 								<Field
-									id={`targetRecordType-${transition.to}`}
-									label="Canonical record type"
+									id={`transitionNote-${transition.to}`}
+									label="Rationale / completion note"
 									required
 								>
-									<input
+									<textarea
 										class="nb-control"
+										id={`transitionNote-${transition.to}`}
+										name="transitionNote"
+										rows="3"
+										required></textarea>
+								</Field>
+							{/if}
+							{#if transition.requiresTargetReference}
+								<div class="target-grid">
+									<Field
 										id={`targetRecordType-${transition.to}`}
-										name="targetRecordType"
+										label="Canonical record type"
 										required
-									/>
-								</Field>
-								<Field id={`targetPublicId-${transition.to}`} label="Canonical public ID" required>
-									<input
-										class="nb-control"
+									>
+										<input
+											class="nb-control"
+											id={`targetRecordType-${transition.to}`}
+											name="targetRecordType"
+											required
+										/>
+									</Field>
+									<Field
 										id={`targetPublicId-${transition.to}`}
-										name="targetPublicId"
+										label="Canonical public ID"
 										required
-									/>
-								</Field>
-							</div>
-						{/if}
-						<Button type="submit" variant={transition.tone === 'danger' ? 'danger' : 'secondary'}>
-							{transition.label}
-						</Button>
-					</form>
+									>
+										<input
+											class="nb-control"
+											id={`targetPublicId-${transition.to}`}
+											name="targetPublicId"
+											required
+										/>
+									</Field>
+								</div>
+							{/if}
+							<Button type="submit" variant={transition.tone === 'danger' ? 'danger' : 'secondary'}>
+								{transition.label}
+							</Button>
+						</form>
+					{/if}
 				{/each}
 			</div>
 		</section>
@@ -529,5 +575,29 @@
 		padding: var(--nb-space-3);
 		border: 1px solid var(--nb-color-border-subtle);
 		border-radius: var(--nb-radius-md);
+	}
+	.workflow-progress-list {
+		display: grid;
+		gap: var(--nb-space-4);
+	}
+
+	.workflow-progress {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: var(--nb-space-5);
+		padding: var(--nb-space-4);
+		border: 1px solid var(--nb-color-border-default);
+		border-radius: var(--nb-radius-md);
+		background: var(--nb-color-bg-subtle);
+	}
+
+	.workflow-progress h3,
+	.workflow-progress p {
+		margin-top: 0;
+	}
+
+	.pending-transition {
+		opacity: 0.9;
 	}
 </style>
