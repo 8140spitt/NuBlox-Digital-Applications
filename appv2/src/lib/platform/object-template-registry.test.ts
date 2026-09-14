@@ -34,6 +34,15 @@ describe('object template registry', () => {
 		}
 	});
 
+	it('assigns a unique starter workflow lineage within each object type', () => {
+		for (const object of objectTypeRegistry) {
+			const workflowKeys = object.workflows.map((workflow) =>
+				workflowTemplateKey(object.objectType, workflow.family)
+			);
+			expect(new Set(workflowKeys).size).toBe(workflowKeys.length);
+		}
+	});
+
 	it('exposes the cross-enterprise starter pack requested for initial implementation', () => {
 		const required = [
 			'strategy.strategy-cycle',
