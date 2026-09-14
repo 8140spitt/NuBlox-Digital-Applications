@@ -1,0 +1,70 @@
+name: Fix job architecture navigation
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/fix-job-architecture-navigation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Resolve position profile navigation
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('appv2/src/routes/[tenant]/app/(protected)/organisation/positions/+page.svelte')
+          text = path.read_text()
+          old_import = "import { appPath, routes } from '$lib/routing/route-contract';"
+          new_import = old_import + "\n\timport { resolveInternalPath as resolve } from '$lib/routing/resolve-path';"
+          if old_import not in text:
+              raise SystemExit('route import marker not found')
+          text = text.replace(old_import, new_import, 1)
+          old_link = "href={appPath(tenant, `organisation/job-architecture/${position.jobProfileKey}`)}"
+          new_link = "href={resolve(appPath(tenant, `organisation/job-architecture/${position.jobProfileKey}`))}"
+          if old_link not in text:
+              raise SystemExit('profile link marker not found')
+          text = text.replace(old_link, new_link, 1)
+          path.write_text(text)
+          PY
+
+      - name: Format file
+        working-directory: appv2
+        run: pnpm exec prettier --write 'src/routes/[tenant]/app/(protected)/organisation/positions/+page.svelte'
+
+      - name: Commit fix and remove one-time workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add 'appv2/src/routes/[tenant]/app/(protected)/organisation/positions/+page.svelte'
+          git rm .github/workflows/fix-job-architecture-navigation.yml
+          git commit -m "fix(v2): resolve job architecture profile navigation"
+          git push origin HEAD:main
