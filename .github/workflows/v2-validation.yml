@@ -106,4 +106,4 @@ jobs:
         working-directory: appv2
         run: pnpm test:integration
 
-# Permanent V2 quality gate for governed F01 lifecycle and transaction integrity.
+# Permanent V2 quality gate for the platform lifecycle kernel and governed F01 transaction integrity.
