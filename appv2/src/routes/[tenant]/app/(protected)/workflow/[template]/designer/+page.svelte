@@ -20,7 +20,7 @@
 	const tenant = $derived(page.params.tenant ?? 'tenant');
 	const template = $derived(data.template);
 	const editable = $derived(template.status === 'draft' && template.canManage);
-	let nodes = $state([...data.template.nodes]);
+	let nodes = $state<Array<(typeof data.template.nodes)[number]>>([]);
 	let dragKey = $state<string | null>(null);
 	let routeFrom = $state<string | null>(null);
 	let savingOrder = $state(false);

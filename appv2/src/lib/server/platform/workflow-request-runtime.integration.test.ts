@@ -120,11 +120,11 @@ async function seed(): Promise<void> {
 		[
 			organisationId,
 			templateId,
-			nodeIds.get('prepare'),
+			nodeIds.get('prepare')!,
 			actorMemberPublicId,
 			organisationId,
 			templateId,
-			nodeIds.get('review'),
+			nodeIds.get('review')!,
 			teamPublicId
 		]
 	);
@@ -146,8 +146,8 @@ async function seed(): Promise<void> {
 				organisationId,
 				templateId,
 				randomUUID(),
-				nodeIds.get(from),
-				nodeIds.get(to),
+				nodeIds.get(from)!,
+				nodeIds.get(to)!,
 				event,
 				(index + 1) * 10
 			]
