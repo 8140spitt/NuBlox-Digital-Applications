@@ -70,6 +70,13 @@ const DEFAULT_APPROVAL_WORKFLOW: Partial<Record<F01ManagedRecordKind, string>> =
 	review: 'f01.strategic-review-approval'
 };
 
+const WORKFLOW_DECISION_PERMISSION: Readonly<Record<string, string>> = {
+	'f01.strategy-approval': 'strategy.approve',
+	'f01.business-plan-approval': 'strategy.approve',
+	'f01.kpi-approval': 'strategy.approve',
+	'f01.strategic-review-approval': 'strategy.approve'
+};
+
 export function defaultF01WorkflowKey(
 	kind: F01ManagedRecordKind,
 	fromState: string,
@@ -81,4 +88,8 @@ export function defaultF01WorkflowKey(
 
 export function f01WorkflowTemplate(key: string): WorkflowTemplate | null {
 	return F01_WORKFLOW_TEMPLATES[key] ?? null;
+}
+
+export function f01WorkflowDecisionPermissionKey(key: string): string | null {
+	return WORKFLOW_DECISION_PERMISSION[key] ?? null;
 }
