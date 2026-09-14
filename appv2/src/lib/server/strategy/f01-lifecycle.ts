@@ -100,7 +100,12 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 		},
 		{
 			draft: [
-				{ to: 'approved', label: 'Approve strategy', requiredPermissionKey: 'strategy.approve' }
+				{
+					to: 'approved',
+					label: 'Submit strategy for approval',
+					requiredPermissionKey: 'strategy.manage',
+					workflowKey: 'f01.strategy-approval'
+				}
 			],
 			approved: [],
 			superseded: []
@@ -257,8 +262,9 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 			draft: [
 				{
 					to: 'approved',
-					label: 'Approve business plan',
-					requiredPermissionKey: 'strategy.approve'
+					label: 'Submit business plan for approval',
+					requiredPermissionKey: 'strategy.manage',
+					workflowKey: 'f01.business-plan-approval'
 				}
 			],
 			approved: [],
@@ -356,7 +362,14 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 			retired: { state: 'retired', label: 'Retired', accessRules: publishedAccess }
 		},
 		{
-			draft: [{ to: 'approved', label: 'Approve KPI', requiredPermissionKey: 'strategy.approve' }],
+			draft: [
+				{
+					to: 'approved',
+					label: 'Submit KPI for approval',
+					requiredPermissionKey: 'strategy.manage',
+					workflowKey: 'f01.kpi-approval'
+				}
+			],
 			approved: [{ to: 'retired', label: 'Retire KPI', requiresNote: true, tone: 'danger' }],
 			superseded: [],
 			retired: []
@@ -377,7 +390,12 @@ export const F01_LIFECYCLE_TEMPLATES: Readonly<Record<F01ManagedRecordKind, Life
 		},
 		{
 			draft: [
-				{ to: 'approved', label: 'Approve review', requiredPermissionKey: 'strategy.approve' }
+				{
+					to: 'approved',
+					label: 'Submit review for approval',
+					requiredPermissionKey: 'strategy.manage',
+					workflowKey: 'f01.strategic-review-approval'
+				}
 			],
 			approved: []
 		}
