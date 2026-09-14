@@ -133,6 +133,7 @@ export async function decideF01WorkflowRequest(input: {
 		requestPublicId: input.requestPublicId,
 		decision: input.decision,
 		note: input.note,
+		// Keep the native lifecycle mutation inside the workflow transaction so both commit or roll back together.
 		onApprovedCompletion:
 			input.decision === 'approved' && task.willCompleteOnApprove
 				? async (connection) => {
