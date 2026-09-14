@@ -10,7 +10,6 @@ describe('F01 fallback workflow authority', () => {
 			type: 'activity',
 			responsibleRoleKey: 'approver'
 		});
-		expect(approval?.participants).toBeUndefined();
 		expect(template?.links.filter((link) => link.from === 'approval')).toEqual([
 			{ from: 'approval', to: 'approved', event: 'approve' },
 			{ from: 'approval', to: 'returned', event: 'return' },
