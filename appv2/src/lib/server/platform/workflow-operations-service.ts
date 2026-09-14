@@ -142,7 +142,10 @@ async function requireManage(actor: EvidenceActor): Promise<void> {
 	if (!allowed) throw new WorkflowOperationsAccessError('Workflow operations access is required.');
 }
 
-async function operationRows(organisationId: string, requestPublicId?: string): Promise<OperationRow[]> {
+async function operationRows(
+	organisationId: string,
+	requestPublicId?: string
+): Promise<OperationRow[]> {
 	const params: Array<string> = [organisationId];
 	const filter = requestPublicId ? ' AND request.public_id = ?' : '';
 	if (requestPublicId) params.push(requestPublicId);
@@ -248,7 +251,10 @@ export async function getWorkflowOperation(
 			endedAt: iso(assignment.endedAt)
 		})),
 		events: events.map((event) => ({ ...event, occurredAt: iso(event.occurredAt)! })),
-		members: members.map((member) => ({ memberId: Number(member.memberId), displayName: member.displayName }))
+		members: members.map((member) => ({
+			memberId: Number(member.memberId),
+			displayName: member.displayName
+		}))
 	};
 }
 
@@ -272,7 +278,9 @@ async function lockPending(
 	const row = rows[0];
 	if (!row) throw new WorkflowOperationsValidationError('Workflow operation was not found.');
 	if (row.requestStatus !== 'pending') {
-		throw new WorkflowOperationsValidationError('Only a pending workflow can be operationally changed.');
+		throw new WorkflowOperationsValidationError(
+			'Only a pending workflow can be operationally changed.'
+		);
 	}
 	return row;
 }
@@ -426,7 +434,8 @@ export async function reassignWorkflowWorkItem(input: {
 			 WHERE id = ? AND organisation_id = ? AND status = 'active' LIMIT 1`,
 			[input.memberId, input.actor.organisationId]
 		);
-		if (!members[0]) throw new WorkflowOperationsValidationError('The selected member is not active.');
+		if (!members[0])
+			throw new WorkflowOperationsValidationError('The selected member is not active.');
 		await connection.execute(
 			`UPDATE work_item_assignments
 			 SET ended_by_member_id = ?, ended_at = CURRENT_TIMESTAMP(6)

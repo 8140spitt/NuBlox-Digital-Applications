@@ -18,12 +18,15 @@ export const load: PageServerLoad = async ({ parent }) => {
 			operations,
 			summary: {
 				active: operations.filter((item) => item.requestStatus === 'pending').length,
-				attention: operations.filter((item) => item.requestStatus === 'pending' && item.health !== 'green').length,
+				attention: operations.filter(
+					(item) => item.requestStatus === 'pending' && item.health !== 'green'
+				).length,
 				closed: operations.filter((item) => item.requestStatus !== 'pending').length
 			}
 		};
 	} catch (cause) {
-		if (cause instanceof WorkflowOperationsAccessError) redirect(303, routes.dashboard(tenant.slug));
+		if (cause instanceof WorkflowOperationsAccessError)
+			redirect(303, routes.dashboard(tenant.slug));
 		throw cause;
 	}
 };
