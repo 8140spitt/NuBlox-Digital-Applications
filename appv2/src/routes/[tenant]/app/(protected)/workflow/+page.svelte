@@ -21,12 +21,10 @@
 	}
 </script>
 
-<svelte:head
-	><title>Workflow administration · NuBlox</title><meta
-		name="description"
-		content="Design, publish and operate governed NuBlox workflows."
-	/></svelte:head
->
+<svelte:head>
+	<title>Workflow administration · NuBlox</title>
+	<meta name="description" content="Design, publish and operate governed NuBlox workflows." />
+</svelte:head>
 
 <div class="nb-page-wide workflow-page">
 	<Breadcrumbs
@@ -39,44 +37,45 @@
 	<PageHeader
 		eyebrow="Platform governance"
 		title="Workflow administration"
-		description="Design reusable workflow definitions, publish controlled versions and monitor live execution from one governed workspace."
+		description="A workflow governs the work people and systems perform against business objects. Start from the F01-F29 object registry for real approval, review, execution and exception flows, or design a bespoke workflow."
 	>
-		{#snippet actions()}<LinkButton
-				href={appPath(tenant, 'workflow/operations')}
-				variant="secondary">Monitor live workflows</LinkButton
-			><LinkButton href={appPath(tenant, 'workflow/new')}>Create template</LinkButton>{/snippet}
+		{#snippet actions()}
+			<LinkButton href={appPath(tenant, 'workflow/operations')} variant="secondary">Monitor live workflows</LinkButton>
+			<LinkButton href={appPath(tenant, 'lifecycle/registry')} variant="secondary">Business object registry</LinkButton>
+			<LinkButton href={appPath(tenant, 'workflow/new')}>Create bespoke workflow</LinkButton>
+		{/snippet}
 	</PageHeader>
-	{#if form?.formError}<Alert tone="danger" title="Workflow change not applied"
-			>{form.formError}</Alert
-		>{/if}
+	{#if form?.formError}
+		<Alert tone="danger" title="Workflow change not applied">{form.formError}</Alert>
+	{/if}
 
 	<div class="orientation-grid">
 		<div>
-			<strong>1</strong><span>Design</span>
-			<p>Build and arrange the graph, participants, roles and variables.</p>
+			<strong>1</strong><span>Object</span>
+			<p>Start with the business object whose work must be governed.</p>
 		</div>
 		<div>
-			<strong>2</strong><span>Publish</span>
-			<p>Validate and freeze an immutable major version.</p>
+			<strong>2</strong><span>Design</span>
+			<p>Arrange activities, participants, roles, deadlines and routing.</p>
 		</div>
 		<div>
-			<strong>3</strong><span>Activate</span>
-			<p>Bind published versions to controlled business events.</p>
+			<strong>3</strong><span>Publish & activate</span>
+			<p>Freeze an immutable major version and bind it to controlled business events.</p>
 		</div>
 		<div>
 			<strong>4</strong><span>Operate</span>
-			<p>Monitor assignments, deadlines and exceptions.</p>
+			<p>Monitor assignments, deadlines, intervention evidence and exceptions.</p>
 		</div>
 	</div>
 
 	<Panel
-		title="Template library"
-		description="Open a workflow directly in the graphical designer. Creation is a focused action rather than a permanent form beside the library."
+		title="Tenant workflow templates"
+		description="Installed object starter packs appear here as normal editable workflow drafts. Open one directly in the graphical designer, adapt it, then publish and bind it under control."
 	>
 		{#if data.templates.length === 0}
 			<EmptyState
 				title="No workflow templates yet"
-				description="Create the first reusable workflow. NuBlox starts it with a safe Start → End skeleton."
+				description="Open the business object registry to install a real workflow pack, or create a bespoke workflow from a Start → End skeleton."
 			/>
 		{:else}
 			<div class="template-list">
@@ -89,20 +88,21 @@
 					>
 						<div>
 							<div class="template-heading">
-								<strong>{template.name}</strong><StatusBadge
-									label={template.status}
-									tone={tone(template.status)}
-								/>{#if template.bindingCount > 0}<StatusBadge
+								<strong>{template.name}</strong>
+								<StatusBadge label={template.status} tone={tone(template.status)} />
+								{#if template.bindingCount > 0}
+									<StatusBadge
 										label={`${template.bindingCount} active binding${template.bindingCount === 1 ? '' : 's'}`}
 										tone="success"
-									/>{/if}
+									/>
+								{/if}
 							</div>
 							<p>{template.description ?? 'No purpose has been supplied.'}</p>
 						</div>
 						<div class="template-meta">
-							<span>v{template.versionLabel}</span><span>{template.nodeCount} nodes</span><span
-								>{template.linkCount} routes</span
-							>
+							<span>v{template.versionLabel}</span>
+							<span>{template.nodeCount} nodes</span>
+							<span>{template.linkCount} routes</span>
 						</div>
 					</a>
 				{/each}
