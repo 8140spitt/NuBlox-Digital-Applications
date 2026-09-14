@@ -1,0 +1,52 @@
+name: F01 Branch Formatter
+
+on:
+  push:
+    branches:
+      - feat/f01-completion-reset
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    if: github.event.head_commit.message != 'chore(v2): format F01 completion'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/f01-completion-reset
+          fetch-depth: 0
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+          run_install: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+
+      - name: Format V2
+        working-directory: appv2
+        run: pnpm format
+
+      - name: Commit formatting
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add appv2
+          if git diff --cached --quiet; then
+            exit 0
+          fi
+          git commit -m "chore(v2): format F01 completion"
+          git push origin HEAD:feat/f01-completion-reset
