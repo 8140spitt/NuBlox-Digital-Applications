@@ -148,23 +148,67 @@
 			>
 				<div class="record-list">
 					{#each template.phases as phase (phase.phaseKey)}
-						<div class="record-row">
-							<div>
-								<strong>{phase.label}</strong>
-								<div class="record-meta">
-									<span>{phase.phaseKey}</span><span>Order {phase.displayOrder}</span>
-									{#if phase.editable}<span>Edit</span>{/if}
-									{#if phase.deletable}<span>Delete</span>{/if}
-									{#if phase.revisable}<span>Revise</span>{/if}
+						{#if draft && template.canManage}
+							<div class="phase-editor">
+								<form method="POST" action="?/updatePhase" use:enhance class="phase-edit-form">
+									<input type="hidden" name="originalPhaseKey" value={phase.phaseKey} />
+									<label class="phase-field">
+										<span>Phase key</span>
+										<input class="nb-control" name="phaseKey" value={phase.phaseKey} required />
+									</label>
+									<label class="phase-field phase-label">
+										<span>Label</span>
+										<input class="nb-control" name="label" value={phase.label} required />
+									</label>
+									<label class="phase-field phase-order">
+										<span>Order</span>
+										<input
+											class="nb-control"
+											type="number"
+											min="0"
+											name="displayOrder"
+											value={phase.displayOrder}
+											required
+										/>
+									</label>
+									<div class="phase-capabilities" aria-label={`Capabilities for ${phase.label}`}>
+										<label class="check"
+											><input type="checkbox" name="editable" checked={phase.editable} /> Edit</label
+										>
+										<label class="check"
+											><input type="checkbox" name="deletable" checked={phase.deletable} /> Delete</label
+										>
+										<label class="check"
+											><input type="checkbox" name="revisable" checked={phase.revisable} /> Revise</label
+										>
+									</div>
+									<div class="phase-actions">
+										{#if phase.phaseKey === template.initialState}<span class="initial-phase"
+												>Initial phase</span
+											>{/if}
+										<Button type="submit" variant="secondary" size="sm">Save phase</Button>
+									</div>
+								</form>
+								{#if phase.phaseKey !== template.initialState}
+									<form method="POST" action="?/deletePhase" use:enhance class="phase-remove-form">
+										<input type="hidden" name="phaseKey" value={phase.phaseKey} />
+										<Button type="submit" variant="danger" size="sm">Remove phase</Button>
+									</form>
+								{/if}
+							</div>
+						{:else}
+							<div class="record-row">
+								<div>
+									<strong>{phase.label}</strong>
+									<div class="record-meta">
+										<span>{phase.phaseKey}</span><span>Order {phase.displayOrder}</span>
+										{#if phase.editable}<span>Edit</span>{/if}
+										{#if phase.deletable}<span>Delete</span>{/if}
+										{#if phase.revisable}<span>Revise</span>{/if}
+									</div>
 								</div>
 							</div>
-							{#if draft && template.canManage && phase.phaseKey !== template.initialState}
-								<form method="POST" action="?/deletePhase" use:enhance>
-									<input type="hidden" name="phaseKey" value={phase.phaseKey} />
-									<Button type="submit" variant="danger" size="sm">Remove</Button>
-								</form>
-							{/if}
-						</div>
+						{/if}
 					{/each}
 				</div>
 
@@ -562,6 +606,49 @@
 		padding: var(--nb-space-3) 0;
 		border-bottom: 1px solid var(--nb-color-border-subtle);
 	}
+	.phase-editor {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: var(--nb-space-3);
+		align-items: end;
+		padding: var(--nb-space-4) 0;
+		border-bottom: 1px solid var(--nb-color-border-subtle);
+	}
+	.phase-edit-form {
+		display: grid;
+		grid-template-columns: minmax(150px, 1fr) minmax(190px, 1.4fr) 92px auto auto;
+		gap: var(--nb-space-2);
+		align-items: end;
+	}
+	.phase-field {
+		display: grid;
+		gap: var(--nb-space-1);
+		font-size: var(--nb-font-size-xs);
+		font-weight: var(--nb-weight-semibold);
+		color: var(--nb-color-text-secondary);
+	}
+	.phase-capabilities,
+	.phase-actions {
+		display: flex;
+		align-items: center;
+		gap: var(--nb-space-2);
+		min-height: 40px;
+	}
+	.phase-capabilities {
+		flex-wrap: wrap;
+	}
+	.phase-actions {
+		justify-content: flex-end;
+	}
+	.phase-remove-form {
+		padding-bottom: 2px;
+	}
+	.initial-phase {
+		white-space: nowrap;
+		font-size: var(--nb-font-size-xs);
+		font-weight: var(--nb-weight-semibold);
+		color: var(--nb-color-text-muted);
+	}
 	.record-list.compact .record-row {
 		padding: var(--nb-space-2) 0;
 	}
@@ -654,6 +741,17 @@
 		grid-column: 1 / -1;
 		margin: 0;
 		color: var(--nb-color-text-secondary);
+	}
+	@media (max-width: 1180px) {
+		.phase-editor {
+			grid-template-columns: 1fr;
+		}
+		.phase-edit-form {
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+		}
+		.phase-actions {
+			justify-content: flex-start;
+		}
 	}
 	@media (max-width: 1050px) {
 		.governance-grid,

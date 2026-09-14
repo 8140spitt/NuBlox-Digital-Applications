@@ -21,6 +21,7 @@ import {
 	publishLifecycleTemplate,
 	reviseLifecycleTemplate,
 	unbindOrganisationRole,
+	updateLifecyclePhase,
 	updateLifecycleTemplate
 } from '$lib/server/platform/lifecycle-admin-service';
 import type { Actions, PageServerLoad } from './$types';
@@ -106,6 +107,26 @@ export const actions = {
 				phaseKey: String(formData.get('phaseKey') ?? ''),
 				label: String(formData.get('label') ?? ''),
 				displayOrder: numberValue(formData, 'displayOrder', 10),
+				editable: checked(formData, 'editable'),
+				deletable: checked(formData, 'deletable'),
+				revisable: checked(formData, 'revisable')
+			});
+			redirect(303, url.pathname);
+		} catch (cause) {
+			return handle(cause);
+		}
+	},
+	updatePhase: async ({ request, params, url }) => {
+		const formData = await request.formData();
+		const { actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
+		try {
+			await updateLifecyclePhase({
+				actor,
+				publicId: params.template,
+				phaseKey: String(formData.get('originalPhaseKey') ?? ''),
+				nextPhaseKey: String(formData.get('phaseKey') ?? ''),
+				label: String(formData.get('label') ?? ''),
+				displayOrder: numberValue(formData, 'displayOrder', 0),
 				editable: checked(formData, 'editable'),
 				deletable: checked(formData, 'deletable'),
 				revisable: checked(formData, 'revisable')

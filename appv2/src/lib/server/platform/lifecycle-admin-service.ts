@@ -800,6 +800,131 @@ export async function addLifecyclePhase(input: {
 	}
 }
 
+export async function updateLifecyclePhase(input: {
+	actor: EvidenceActor;
+	publicId: string;
+	phaseKey: string;
+	nextPhaseKey: string;
+	label: string;
+	displayOrder: number;
+	editable: boolean;
+	deletable: boolean;
+	revisable: boolean;
+}): Promise<void> {
+	await requirePermission(input.actor, 'lifecycle.manage');
+	const phaseKeyValue = stateKey(input.phaseKey, 'Current phase key');
+	const nextPhaseKeyValue = stateKey(input.nextPhaseKey, 'Phase key');
+	if (!Number.isInteger(input.displayOrder) || input.displayOrder < 0) {
+		throw new LifecycleAdministrationValidationError(
+			'Display order must be a non-negative whole number.'
+		);
+	}
+	const connection = await getPool().getConnection();
+	try {
+		await connection.beginTransaction();
+		const row = await templateRow(connection, input.actor, input.publicId, true);
+		if (row.status !== 'draft') {
+			throw new LifecycleAdministrationValidationError(
+				'Only draft lifecycle templates can be modified.'
+			);
+		}
+		const [phaseRows] = await connection.execute<RowDataPacket[]>(
+			`SELECT id FROM lifecycle_template_phases
+			 WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ?
+			 LIMIT 1 FOR UPDATE`,
+			[input.actor.organisationId, row.id, phaseKeyValue]
+		);
+		if (!phaseRows[0]) {
+			throw new LifecycleAdministrationValidationError('Lifecycle phase was not found.');
+		}
+
+		if (nextPhaseKeyValue !== phaseKeyValue) {
+			const [existingRows] = await connection.execute<RowDataPacket[]>(
+				`SELECT id FROM lifecycle_template_phases
+				 WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ? LIMIT 1`,
+				[input.actor.organisationId, row.id, nextPhaseKeyValue]
+			);
+			if (existingRows[0]) {
+				throw new LifecycleAdministrationValidationError(
+					`Lifecycle phase ${nextPhaseKeyValue} already exists.`
+				);
+			}
+			await connection.execute(
+				`UPDATE lifecycle_template_transitions
+				 SET from_state = ?
+				 WHERE organisation_id = ? AND lifecycle_template_id = ? AND from_state = ?`,
+				[nextPhaseKeyValue, input.actor.organisationId, row.id, phaseKeyValue]
+			);
+			await connection.execute(
+				`UPDATE lifecycle_template_transitions
+				 SET to_state = ?
+				 WHERE organisation_id = ? AND lifecycle_template_id = ? AND to_state = ?`,
+				[nextPhaseKeyValue, input.actor.organisationId, row.id, phaseKeyValue]
+			);
+			await connection.execute(
+				`UPDATE lifecycle_template_phase_access_rules
+				 SET phase_key = ?
+				 WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ?`,
+				[nextPhaseKeyValue, input.actor.organisationId, row.id, phaseKeyValue]
+			);
+		}
+
+		await connection.execute(
+			`UPDATE lifecycle_template_phases
+			 SET phase_key = ?, label = ?, display_order = ?,
+			     is_editable = ?, is_deletable = ?, is_revisable = ?
+			 WHERE organisation_id = ? AND lifecycle_template_id = ? AND phase_key = ?`,
+			[
+				nextPhaseKeyValue,
+				requiredText(input.label, 'Phase label', 120),
+				input.displayOrder,
+				input.editable,
+				input.deletable,
+				input.revisable,
+				input.actor.organisationId,
+				row.id,
+				phaseKeyValue
+			]
+		);
+		if (row.initialState === phaseKeyValue && nextPhaseKeyValue !== phaseKeyValue) {
+			await connection.execute(
+				`UPDATE lifecycle_templates SET initial_state = ? WHERE organisation_id = ? AND id = ?`,
+				[nextPhaseKeyValue, input.actor.organisationId, row.id]
+			);
+		}
+
+		const changeNote =
+			nextPhaseKeyValue === phaseKeyValue
+				? `Lifecycle phase ${phaseKeyValue} updated`
+				: `Lifecycle phase ${phaseKeyValue} renamed to ${nextPhaseKeyValue}`;
+		await bumpDraft(connection, input.actor, row, changeNote);
+		await appendDomainEvidence(connection, {
+			actor: input.actor,
+			actionKey: 'lifecycle.phase.update',
+			subjectType: 'lifecycle_template',
+			subjectPublicId: input.publicId,
+			changeSummary: {
+				previousPhaseKey: phaseKeyValue,
+				phaseKey: nextPhaseKeyValue,
+				label: requiredText(input.label, 'Phase label', 120),
+				displayOrder: input.displayOrder,
+				editable: input.editable,
+				deletable: input.deletable,
+				revisable: input.revisable,
+				initialPhaseRenamed:
+					row.initialState === phaseKeyValue && nextPhaseKeyValue !== phaseKeyValue
+			},
+			eventMetadata: { function: 'PLATFORM', mutation: 'update-phase' }
+		});
+		await connection.commit();
+	} catch (error) {
+		await connection.rollback();
+		throw error;
+	} finally {
+		connection.release();
+	}
+}
+
 export async function deleteLifecyclePhase(input: {
 	actor: EvidenceActor;
 	publicId: string;
