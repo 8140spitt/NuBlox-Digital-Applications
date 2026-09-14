@@ -194,7 +194,8 @@ export const routes = {
 	lifecycle: (tenant: string): AppLifecyclePath => appPath(tenant, 'lifecycle') as AppLifecyclePath,
 	lifecycleTemplate: (tenant: string, templatePublicId: string): AppLifecycleTemplatePath =>
 		`${appPath(tenant, 'lifecycle')}/${requiredSegment(templatePublicId, 'Lifecycle template')}` as AppLifecycleTemplatePath,
-	strategy: (tenant: string): AppStrategyPath => appPath(tenant, 'functions/f01') as AppStrategyPath,
+	strategy: (tenant: string): AppStrategyPath =>
+		appPath(tenant, 'functions/f01') as AppStrategyPath,
 	strategyNew: (tenant: string): AppStrategyNewPath =>
 		appPath(tenant, 'functions/f01/new') as AppStrategyNewPath,
 	strategyFramework: (tenant: string, strategyPublicId: string): AppStrategyFrameworkPath =>
