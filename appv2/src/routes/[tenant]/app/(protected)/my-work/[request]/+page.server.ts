@@ -67,7 +67,7 @@ export const actions = {
 		const decision = String(formData.get('decision') ?? '') as WorkflowDecision;
 		const note = String(formData.get('note') ?? '').trim();
 		if (!['approved', 'returned', 'rejected'].includes(decision)) {
-			return fail(400, { formError: 'Choose approve, return or reject.' });
+			return fail(400, { formError: 'Choose approve, return or reject.', decision, note });
 		}
 		const { access, actor } = await actorFor(
 			request,
