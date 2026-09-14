@@ -81,6 +81,9 @@ export const actions = {
 				decision,
 				note
 			});
+			if (!result.workflowCompleted && decision === 'approved') {
+				redirect(303, `${url.pathname}?stepAdvanced=1`);
+			}
 			const target = `/${access.organisationRouteSlug}/app/functions/f01/strategies/${result.frameworkPublicId}/manage/${result.kind}/${result.recordPublicId}`;
 			redirect(303, `${target}?workflowDecision=${decision}`);
 		} catch (cause) {

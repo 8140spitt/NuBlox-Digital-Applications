@@ -601,8 +601,6 @@
 		display: grid;
 		gap: var(--nb-space-6);
 	}
-	.transaction-page {
-	}
 	.form-grid {
 		display: grid;
 		gap: var(--nb-space-5);

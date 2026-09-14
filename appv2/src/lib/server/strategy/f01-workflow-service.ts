@@ -86,17 +86,8 @@ export async function submitF01WorkflowTransition(input: {
 	const workflowKey =
 		transition.workflowKey ?? defaultF01WorkflowKey(input.kind, record.status, input.targetStatus);
 	if (!workflowKey) return null;
-	if (!f01WorkflowTemplate(workflowKey)) {
-		throw new StrategyValidationError(
-			`Workflow template ${workflowKey} is not available for execution.`
-		);
-	}
-	const decisionPermissionKey = f01WorkflowDecisionPermissionKey(workflowKey);
-	if (!decisionPermissionKey) {
-		throw new StrategyValidationError(
-			`Workflow template ${workflowKey} has no governed decision authority configured.`
-		);
-	}
+	const fallbackTemplate = f01WorkflowTemplate(workflowKey);
+	const decisionPermissionKey = f01WorkflowDecisionPermissionKey(workflowKey) ?? 'strategy.approve';
 
 	const request = await submitLifecycleWorkflow({
 		actor: input.actor,
@@ -109,7 +100,8 @@ export async function submitF01WorkflowTransition(input: {
 		toState: input.targetStatus,
 		transitionLabel: transition.label,
 		requiredPermissionKey: decisionPermissionKey,
-		note: input.note
+		note: input.note,
+		fallbackTemplate
 	});
 	return { ...request, workflowKey };
 }
@@ -119,7 +111,13 @@ export async function decideF01WorkflowRequest(input: {
 	requestPublicId: string;
 	decision: WorkflowDecision;
 	note?: string | null;
-}): Promise<{ frameworkPublicId: string; kind: F01ManagedRecordKind; recordPublicId: string }> {
+}): Promise<{
+	frameworkPublicId: string;
+	kind: F01ManagedRecordKind;
+	recordPublicId: string;
+	workflowCompleted: boolean;
+	currentNodeKey: string | null;
+}> {
 	const task = await getPendingWorkflowTask({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId,
@@ -130,42 +128,49 @@ export async function decideF01WorkflowRequest(input: {
 	}
 	const kind = asManagedKind(task.sourceType);
 
-	if (input.decision === 'approved') {
-		const record = await getF01ManagedRecord({
-			organisationId: input.actor.organisationId,
-			memberId: input.actor.memberId,
-			frameworkPublicId: task.contextPublicId,
-			kind,
-			recordPublicId: task.sourcePublicId
-		});
-		if (record.status !== task.toState) {
-			if (record.status !== task.fromState) {
-				throw new WorkflowValidationError(
-					`The source record is now ${record.status}; this workflow expected ${task.fromState}. The task is stale and must not be applied.`
-				);
-			}
-			await transitionF01Record({
-				actor: input.actor,
-				frameworkPublicId: task.contextPublicId,
-				kind,
-				recordPublicId: task.sourcePublicId,
-				targetStatus: task.toState,
-				note: input.note ?? undefined,
-				targetRecordType: '',
-				targetPublicId: ''
-			});
-		}
-	}
-
-	await finaliseWorkflowRequest({
+	const runtime = await finaliseWorkflowRequest({
 		actor: input.actor,
 		requestPublicId: input.requestPublicId,
 		decision: input.decision,
-		note: input.note
+		note: input.note,
+		// Keep the native lifecycle mutation inside the workflow transaction so both commit or roll back together.
+		onApprovedCompletion:
+			input.decision === 'approved' && task.willCompleteOnApprove
+				? async (connection) => {
+						const record = await getF01ManagedRecord({
+							organisationId: input.actor.organisationId,
+							memberId: input.actor.memberId,
+							frameworkPublicId: task.contextPublicId,
+							kind,
+							recordPublicId: task.sourcePublicId
+						});
+						if (record.status === task.toState) return;
+						if (record.status !== task.fromState) {
+							throw new WorkflowValidationError(
+								`The source record is now ${record.status}; this workflow expected ${task.fromState}. The task is stale and must not be applied.`
+							);
+						}
+						await transitionF01Record(
+							{
+								actor: input.actor,
+								frameworkPublicId: task.contextPublicId,
+								kind,
+								recordPublicId: task.sourcePublicId,
+								targetStatus: task.toState,
+								note: input.note ?? undefined,
+								targetRecordType: '',
+								targetPublicId: ''
+							},
+							connection
+						);
+					}
+				: undefined
 	});
 	return {
 		frameworkPublicId: task.contextPublicId,
 		kind,
-		recordPublicId: task.sourcePublicId
+		recordPublicId: task.sourcePublicId,
+		workflowCompleted: runtime.completed,
+		currentNodeKey: runtime.currentNodeKey
 	};
 }

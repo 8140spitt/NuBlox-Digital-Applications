@@ -2,19 +2,21 @@
 	import { Button, Panel, StatusBadge } from '$lib/components/ui';
 
 	let { data, form } = $props();
+	const actionLabel = $derived(data.task.nodeType === 'checkpoint' ? 'Approve' : 'Complete step');
 </script>
 
 <section class="nb-page task-page">
 	<header class="task-heading">
 		<div>
-			<p class="nb-eyebrow">My work · Governed approval</p>
+			<p class="nb-eyebrow">My work · Workflow step {data.task.stepNumber}</p>
 			<h1>{data.task.title}</h1>
 			<p class="nb-lede">
-				Review the governed source record before deciding. The business lifecycle will only advance
-				after an approval decision successfully passes the source-domain invariants.
+				Complete the current authored workflow step. The governed business lifecycle only advances
+				after the published workflow reaches its approved end and the source-domain rules pass
+				again.
 			</p>
 		</div>
-		<StatusBadge label="Pending" tone="info" />
+		<StatusBadge label="Running" tone="info" />
 	</header>
 
 	{#if form?.formError}
@@ -23,8 +25,8 @@
 
 	<div class="task-grid">
 		<Panel
-			title="Workflow gate"
-			description="Workflow execution is separate from the business lifecycle state."
+			title="Workflow step"
+			description="This work item was created from the published workflow graph."
 		>
 			<dl class="facts">
 				<div>
@@ -32,11 +34,15 @@
 					<dd>{data.task.workflowKey}</dd>
 				</div>
 				<div>
+					<dt>Node</dt>
+					<dd>{data.task.nodeKey ?? 'Legacy gate'} · {data.task.nodeType ?? 'approval'}</dd>
+				</div>
+				<div>
 					<dt>Source</dt>
 					<dd>{data.task.sourceDomain} · {data.task.sourceType}</dd>
 				</div>
 				<div>
-					<dt>Lifecycle</dt>
+					<dt>Lifecycle target</dt>
 					<dd>{data.task.fromState} → {data.task.toState}</dd>
 				</div>
 				<div>
@@ -64,21 +70,23 @@
 		</Panel>
 
 		<Panel
-			title="Decision"
-			description="Return and reject require a reason. Approval remains subject to the F01 domain approval rules."
+			title="Step outcome"
+			description={data.task.willCompleteOnApprove
+				? 'Approval completes this workflow. The source lifecycle will then be revalidated and advanced.'
+				: 'Approval completes this step and routes the workflow to its next authored node.'}
 		>
 			<form method="POST" action="?/decide" class="decision-form">
-				<label for="decision-note">Decision note</label>
+				<label for="decision-note">Decision / completion note</label>
 				<textarea
 					id="decision-note"
 					name="note"
 					class="nb-control"
 					rows="6"
-					placeholder="Record the decision rationale, especially when returning or rejecting."
+					placeholder="Record the evidence or rationale for this workflow step."
 					>{form?.note ?? ''}</textarea
 				>
 				<div class="decision-actions">
-					<Button type="submit" name="decision" value="approved">Approve</Button>
+					<Button type="submit" name="decision" value="approved">{actionLabel}</Button>
 					<Button type="submit" name="decision" value="returned" variant="secondary">Return</Button>
 					<Button type="submit" name="decision" value="rejected" variant="danger">Reject</Button>
 				</div>

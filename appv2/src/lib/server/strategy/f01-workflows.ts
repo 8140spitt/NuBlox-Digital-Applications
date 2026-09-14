@@ -28,9 +28,6 @@ function approvalTemplate(key: string, name: string): WorkflowTemplate {
 				label: name,
 				type: 'activity',
 				responsibleRoleKey: 'approver',
-				participants: [
-					{ participantType: 'workflow_role', participantKey: 'approver', required: true }
-				],
 				completionRule: { type: 'any' },
 				routingEvents: ['approve', 'return', 'reject'],
 				recordVotes: true,

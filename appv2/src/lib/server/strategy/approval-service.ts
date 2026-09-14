@@ -117,10 +117,13 @@ async function findOtherApprovedFramework(
 		: null;
 }
 
-export async function approveStrategyFramework(input: {
-	actor: EvidenceActor;
-	frameworkPublicId: string;
-}): Promise<void> {
+export async function approveStrategyFramework(
+	input: {
+		actor: EvidenceActor;
+		frameworkPublicId: string;
+	},
+	transactionConnection?: PoolConnection
+): Promise<void> {
 	const workspace = await getStrategyWorkspace({
 		organisationId: input.actor.organisationId,
 		memberId: input.actor.memberId
@@ -151,9 +154,10 @@ export async function approveStrategyFramework(input: {
 		throw new StrategyAccessError('You do not have authority to approve enterprise strategy.');
 	}
 
-	const connection = await getPool().getConnection();
+	const connection = transactionConnection ?? (await getPool().getConnection());
+	const ownsTransaction = transactionConnection === undefined;
 	try {
-		await connection.beginTransaction();
+		if (ownsTransaction) await connection.beginTransaction();
 		const framework = await lockFramework(
 			connection,
 			input.actor.organisationId,
@@ -262,11 +266,11 @@ export async function approveStrategyFramework(input: {
 			eventMetadata: { function: 'F01', subfunctions: ['F01.03', 'F01.04'] }
 		});
 
-		await connection.commit();
+		if (ownsTransaction) await connection.commit();
 	} catch (error) {
-		await connection.rollback();
+		if (ownsTransaction) await connection.rollback();
 		throw error;
 	} finally {
-		connection.release();
+		if (ownsTransaction) connection.release();
 	}
 }
