@@ -35,7 +35,8 @@ export const load: PageServerLoad = async ({ parent }) => {
 	try {
 		return { templates: await listWorkflowTemplates(actor) };
 	} catch (cause) {
-		if (cause instanceof WorkflowAdministrationAccessError) redirect(303, routes.dashboard(tenant.slug));
+		if (cause instanceof WorkflowAdministrationAccessError)
+			redirect(303, routes.dashboard(tenant.slug));
 		throw cause;
 	}
 };

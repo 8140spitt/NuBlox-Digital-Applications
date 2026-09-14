@@ -74,7 +74,10 @@
 									<strong>{template.name}</strong>
 									<StatusBadge label={template.status} tone={tone(template.status)} />
 									{#if template.bindingCount > 0}
-										<StatusBadge label={`${template.bindingCount} active binding${template.bindingCount === 1 ? '' : 's'}`} tone="success" />
+										<StatusBadge
+											label={`${template.bindingCount} active binding${template.bindingCount === 1 ? '' : 's'}`}
+											tone="success"
+										/>
 									{/if}
 								</div>
 								<p>{template.description ?? 'No description has been supplied.'}</p>
@@ -98,7 +101,12 @@
 				padding="spacious"
 			>
 				<form method="POST" action="?/create" use:enhance class="form-stack">
-					<Field id="templateKey" label="Template key" required hint="For example f01.strategy-approval.">
+					<Field
+						id="templateKey"
+						label="Template key"
+						required
+						hint="For example f01.strategy-approval."
+					>
 						<input
 							class="nb-control"
 							id="templateKey"
@@ -108,10 +116,18 @@
 						/>
 					</Field>
 					<Field id="name" label="Name" required>
-						<input class="nb-control" id="name" name="name" value={form?.values?.name ?? ''} required />
+						<input
+							class="nb-control"
+							id="name"
+							name="name"
+							value={form?.values?.name ?? ''}
+							required
+						/>
 					</Field>
 					<Field id="description" label="Description">
-						<textarea class="nb-control" id="description" name="description">{form?.values?.description ?? ''}</textarea>
+						<textarea class="nb-control" id="description" name="description"
+							>{form?.values?.description ?? ''}</textarea
+						>
 					</Field>
 					<Button type="submit">Create working template</Button>
 				</form>

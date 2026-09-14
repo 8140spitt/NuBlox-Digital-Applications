@@ -19,7 +19,11 @@ import {
 	WorkflowAdministrationAccessError,
 	WorkflowAdministrationValidationError
 } from '$lib/server/platform/workflow-admin-service';
-import type { WorkflowNodeType, WorkflowParticipantType, WorkflowVariableDefinition } from '$lib/server/platform/workflow-kernel';
+import type {
+	WorkflowNodeType,
+	WorkflowParticipantType,
+	WorkflowVariableDefinition
+} from '$lib/server/platform/workflow-kernel';
 import type { Actions, PageServerLoad } from './$types';
 
 function checked(formData: FormData, key: string): boolean {
@@ -49,8 +53,10 @@ async function actorFor(request: Request, params: { tenant: string }, returnTo: 
 }
 
 function handled(cause: unknown) {
-	if (cause instanceof WorkflowAdministrationValidationError) return fail(400, { formError: cause.message });
-	if (cause instanceof WorkflowAdministrationAccessError) return fail(403, { formError: cause.message });
+	if (cause instanceof WorkflowAdministrationValidationError)
+		return fail(400, { formError: cause.message });
+	if (cause instanceof WorkflowAdministrationAccessError)
+		return fail(403, { formError: cause.message });
 	throw cause;
 }
 
@@ -64,8 +70,10 @@ export const load: PageServerLoad = async ({ parent, params }) => {
 	try {
 		return { template: await getWorkflowTemplate(actor, params.template) };
 	} catch (cause) {
-		if (cause instanceof WorkflowAdministrationAccessError) redirect(303, routes.dashboard(tenant.slug));
-		if (cause instanceof WorkflowAdministrationValidationError) redirect(303, appPath(tenant.slug, 'workflow'));
+		if (cause instanceof WorkflowAdministrationAccessError)
+			redirect(303, routes.dashboard(tenant.slug));
+		if (cause instanceof WorkflowAdministrationValidationError)
+			redirect(303, appPath(tenant.slug, 'workflow'));
 		throw cause;
 	}
 };
@@ -110,8 +118,12 @@ export const actions = {
 				actor,
 				publicId: params.template,
 				variableKey: String(formData.get('variableKey') ?? ''),
-				variableType: String(formData.get('variableType') ?? 'string') as WorkflowVariableDefinition['type'],
-				variableScope: String(formData.get('variableScope') ?? 'process') as WorkflowVariableDefinition['scope'],
+				variableType: String(
+					formData.get('variableType') ?? 'string'
+				) as WorkflowVariableDefinition['type'],
+				variableScope: String(
+					formData.get('variableScope') ?? 'process'
+				) as WorkflowVariableDefinition['scope'],
 				visible: checked(formData, 'visible'),
 				required: checked(formData, 'required'),
 				readOnly: checked(formData, 'readOnly'),
@@ -141,12 +153,15 @@ export const actions = {
 				label: String(formData.get('label') ?? ''),
 				nodeType: String(formData.get('nodeType') ?? 'activity') as WorkflowNodeType,
 				responsibleRoleKey: String(formData.get('responsibleRoleKey') ?? ''),
-				completionRuleType: (String(formData.get('completionRuleType') ?? '') || undefined) as 'any' | 'all' | 'count' | undefined,
+				completionRuleType: (String(formData.get('completionRuleType') ?? '') || undefined) as
+					'any' | 'all' | 'count' | undefined,
 				completionCount: optionalNumber(formData, 'completionCount'),
 				routingEvents,
 				deadlineMinutes: optionalNumber(formData, 'deadlineMinutes'),
-				deadlineRelativeTo: (String(formData.get('deadlineRelativeTo') ?? '') || undefined) as 'node_start' | 'process_start' | undefined,
-				overdueAction: (String(formData.get('overdueAction') ?? '') || undefined) as 'notify' | 'reassign' | 'skip' | 'complete' | 'escalate' | 'block' | undefined,
+				deadlineRelativeTo: (String(formData.get('deadlineRelativeTo') ?? '') || undefined) as
+					'node_start' | 'process_start' | undefined,
+				overdueAction: (String(formData.get('overdueAction') ?? '') || undefined) as
+					'notify' | 'reassign' | 'skip' | 'complete' | 'escalate' | 'block' | undefined,
 				deadlineResponsibleRoleKey: String(formData.get('deadlineResponsibleRoleKey') ?? ''),
 				deadlineNotifyRoleKeys: notifyRoles,
 				requiresElectronicSignature: checked(formData, 'requiresElectronicSignature'),
@@ -176,7 +191,9 @@ export const actions = {
 				actor,
 				publicId: params.template,
 				nodeKey: String(formData.get('nodeKey') ?? ''),
-				participantType: String(formData.get('participantType') ?? 'workflow_role') as WorkflowParticipantType,
+				participantType: String(
+					formData.get('participantType') ?? 'workflow_role'
+				) as WorkflowParticipantType,
 				participantKey: String(formData.get('participantKey') ?? ''),
 				required: checked(formData, 'required')
 			});
@@ -208,7 +225,11 @@ export const actions = {
 		const formData = await request.formData();
 		const { actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
 		try {
-			await deleteWorkflowLink({ actor, publicId: params.template, linkPublicId: String(formData.get('linkPublicId') ?? '') });
+			await deleteWorkflowLink({
+				actor,
+				publicId: params.template,
+				linkPublicId: String(formData.get('linkPublicId') ?? '')
+			});
 			return { success: 'Workflow route removed.' };
 		} catch (cause) {
 			return handled(cause);
@@ -218,7 +239,11 @@ export const actions = {
 		const formData = await request.formData();
 		const { actor } = await actorFor(request, params, `${url.pathname}${url.search}`);
 		try {
-			await deleteWorkflowNode({ actor, publicId: params.template, nodeKey: String(formData.get('nodeKey') ?? '') });
+			await deleteWorkflowNode({
+				actor,
+				publicId: params.template,
+				nodeKey: String(formData.get('nodeKey') ?? '')
+			});
 			return { success: 'Workflow node removed.' };
 		} catch (cause) {
 			return handled(cause);

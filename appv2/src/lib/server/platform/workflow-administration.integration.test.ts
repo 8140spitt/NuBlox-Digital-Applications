@@ -74,13 +74,17 @@ async function cleanup(): Promise<void> {
 	const connection = await getPool().getConnection();
 	try {
 		await connection.query('SET FOREIGN_KEY_CHECKS = 0');
-		const [organisationTables] = await connection.query<Array<RowDataPacket & { tableName: string }>>(
+		const [organisationTables] = await connection.query<
+			Array<RowDataPacket & { tableName: string }>
+		>(
 			`SELECT DISTINCT TABLE_NAME AS tableName FROM information_schema.COLUMNS
 			 WHERE TABLE_SCHEMA = DATABASE() AND COLUMN_NAME = 'organisation_id'`
 		);
 		for (const table of organisationTables) {
 			if (!/^[A-Za-z0-9_]+$/.test(table.tableName)) continue;
-			await connection.query(`DELETE FROM \`${table.tableName}\` WHERE organisation_id = ?`, [organisationId]);
+			await connection.query(`DELETE FROM \`${table.tableName}\` WHERE organisation_id = ?`, [
+				organisationId
+			]);
 		}
 		const [actingTables] = await connection.query<Array<RowDataPacket & { tableName: string }>>(
 			`SELECT DISTINCT TABLE_NAME AS tableName FROM information_schema.COLUMNS
@@ -88,7 +92,10 @@ async function cleanup(): Promise<void> {
 		);
 		for (const table of actingTables) {
 			if (!/^[A-Za-z0-9_]+$/.test(table.tableName)) continue;
-			await connection.query(`DELETE FROM \`${table.tableName}\` WHERE acting_organisation_id = ?`, [organisationId]);
+			await connection.query(
+				`DELETE FROM \`${table.tableName}\` WHERE acting_organisation_id = ?`,
+				[organisationId]
+			);
 		}
 		await connection.query('DELETE FROM organisations WHERE id = ?', [organisationId]);
 		await connection.query('DELETE FROM users WHERE id = ?', [userId]);

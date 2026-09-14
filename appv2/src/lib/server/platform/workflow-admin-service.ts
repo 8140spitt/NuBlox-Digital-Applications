@@ -194,7 +194,9 @@ function versionLabel(row: Pick<TemplateRow, 'status' | 'versionNumber' | 'minor
 function requiredText(value: string | undefined, label: string, max: number): string {
 	const normalized = value?.trim() ?? '';
 	if (!normalized || normalized.length > max) {
-		throw new WorkflowAdministrationValidationError(`${label} must be between 1 and ${max} characters.`);
+		throw new WorkflowAdministrationValidationError(
+			`${label} must be between 1 and ${max} characters.`
+		);
 	}
 	return normalized;
 }
@@ -239,7 +241,9 @@ function bindingKey(value: string | undefined, label: string): string {
 function nonNegativeInteger(value: number | null | undefined, label: string): number | null {
 	if (value === null || value === undefined) return null;
 	if (!Number.isInteger(value) || value < 0) {
-		throw new WorkflowAdministrationValidationError(`${label} must be a non-negative whole number.`);
+		throw new WorkflowAdministrationValidationError(
+			`${label} must be a non-negative whole number.`
+		);
 	}
 	return value;
 }
@@ -440,12 +444,18 @@ async function definitionForTemplate(
 		}
 	}
 	for (const participant of participantRows) {
-		if (participant.participantType === 'workflow_role' && !roleKeys.has(participant.participantKey)) {
+		if (
+			participant.participantType === 'workflow_role' &&
+			!roleKeys.has(participant.participantKey)
+		) {
 			throw new WorkflowAdministrationValidationError(
 				`Workflow participant references undefined workflow role ${participant.participantKey}.`
 			);
 		}
-		if (participant.participantType === 'variable' && !variableKeys.has(participant.participantKey)) {
+		if (
+			participant.participantType === 'variable' &&
+			!variableKeys.has(participant.participantKey)
+		) {
 			throw new WorkflowAdministrationValidationError(
 				`Workflow participant references undefined variable ${participant.participantKey}.`
 			);
@@ -518,7 +528,9 @@ async function definitionForTemplate(
 			from: link.fromNodeKey,
 			to: link.toNodeKey,
 			event: link.eventKey ?? undefined,
-			condition: link.conditionJson ? jsonValue<WorkflowRule | undefined>(link.conditionJson, undefined) : undefined,
+			condition: link.conditionJson
+				? jsonValue<WorkflowRule | undefined>(link.conditionJson, undefined)
+				: undefined,
 			loop: bool(link.loop),
 			terminateOpenPredecessors: bool(link.terminateOpenPredecessors)
 		}))
@@ -598,7 +610,9 @@ async function bumpDraft(
 	await appendTemplateVersion(connection, actor, refreshed, changeNote);
 }
 
-export async function listWorkflowTemplates(actor: EvidenceActor): Promise<WorkflowTemplateSummary[]> {
+export async function listWorkflowTemplates(
+	actor: EvidenceActor
+): Promise<WorkflowTemplateSummary[]> {
 	await requirePermission(actor, 'workflow.view');
 	const [rows] = await getPool().execute<
 		Array<
@@ -652,12 +666,13 @@ export async function getWorkflowTemplate(
 		);
 		const [variables] = await connection.execute<
 			Array<
-				RowDataPacket & WorkflowVariableAdmin & {
-					visible: number | boolean;
-					required: number | boolean;
-					readOnly: number | boolean;
-					resettable: number | boolean;
-				}
+				RowDataPacket &
+					WorkflowVariableAdmin & {
+						visible: number | boolean;
+						required: number | boolean;
+						readOnly: number | boolean;
+						resettable: number | boolean;
+					}
 			>
 		>(
 			`SELECT variable_key AS variableKey, variable_type AS variableType,
@@ -760,7 +775,9 @@ export async function getWorkflowTemplate(
 				fromNodeKey: link.fromNodeKey,
 				toNodeKey: link.toNodeKey,
 				eventKey: link.eventKey,
-				condition: link.conditionJson ? jsonValue<WorkflowRule | null>(link.conditionJson, null) : null,
+				condition: link.conditionJson
+					? jsonValue<WorkflowRule | null>(link.conditionJson, null)
+					: null,
 				loop: bool(link.loop),
 				terminateOpenPredecessors: bool(link.terminateOpenPredecessors),
 				displayOrder: Number(link.displayOrder)
@@ -855,15 +872,18 @@ export async function updateWorkflowTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
 		await connection.execute(
 			`UPDATE workflow_templates SET name = ?, description = ? WHERE organisation_id = ? AND id = ?`,
-		[
-			requiredText(input.name, 'Template name', 200),
-			optionalText(input.description, 4000),
-			input.actor.organisationId,
-			row.id
-		]
+			[
+				requiredText(input.name, 'Template name', 200),
+				optionalText(input.description, 4000),
+				input.actor.organisationId,
+				row.id
+			]
 		);
 		await bumpDraft(connection, input.actor, row, 'Workflow template metadata updated');
 		await connection.commit();
@@ -888,17 +908,20 @@ export async function addWorkflowRole(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
 		await connection.execute(
 			`INSERT INTO workflow_template_roles
 			 (organisation_id, workflow_template_id, role_key, label, description) VALUES (?, ?, ?, ?, ?)`,
-		[
-			input.actor.organisationId,
-			row.id,
-			roleKey,
-			requiredText(input.label, 'Workflow role label', 120),
-			optionalText(input.description, 2000)
-		]
+			[
+				input.actor.organisationId,
+				row.id,
+				roleKey,
+				requiredText(input.label, 'Workflow role label', 120),
+				optionalText(input.description, 2000)
+			]
 		);
 		await bumpDraft(connection, input.actor, row, `Workflow role ${roleKey} added`);
 		await connection.commit();
@@ -925,30 +948,35 @@ export async function addWorkflowVariable(input: {
 	await requirePermission(input.actor, 'workflow.manage');
 	const variableKey = itemKey(input.variableKey, 'Variable key');
 	const validTypes = ['string', 'number', 'boolean', 'date', 'json', 'object_reference'];
-	if (!validTypes.includes(input.variableType)) throw new WorkflowAdministrationValidationError('Variable type is invalid.');
-	if (!['process', 'node'].includes(input.variableScope)) throw new WorkflowAdministrationValidationError('Variable scope is invalid.');
+	if (!validTypes.includes(input.variableType))
+		throw new WorkflowAdministrationValidationError('Variable type is invalid.');
+	if (!['process', 'node'].includes(input.variableScope))
+		throw new WorkflowAdministrationValidationError('Variable scope is invalid.');
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
 		await connection.execute(
 			`INSERT INTO workflow_template_variables
 			 (organisation_id, workflow_template_id, variable_key, variable_type, variable_scope,
 			  is_visible, is_required, is_read_only, is_resettable, default_value)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS JSON))`,
-		[
-			input.actor.organisationId,
-			row.id,
-			variableKey,
-			input.variableType,
-			input.variableScope,
-			input.visible ?? true,
-			input.required ?? false,
-			input.readOnly ?? false,
-			input.resettable ?? false,
-			JSON.stringify(input.defaultValue ?? null)
-		]
+			[
+				input.actor.organisationId,
+				row.id,
+				variableKey,
+				input.variableType,
+				input.variableScope,
+				input.visible ?? true,
+				input.required ?? false,
+				input.readOnly ?? false,
+				input.resettable ?? false,
+				JSON.stringify(input.defaultValue ?? null)
+			]
 		);
 		await bumpDraft(connection, input.actor, row, `Workflow variable ${variableKey} added`);
 		await connection.commit();
@@ -992,10 +1020,25 @@ export async function addWorkflowNode(input: {
 	await requirePermission(input.actor, 'workflow.manage');
 	const nodeKey = itemKey(input.nodeKey, 'Node key');
 	const validTypes: WorkflowNodeType[] = [
-		'start', 'activity', 'ad_hoc_activity', 'subprocess', 'block', 'and', 'or', 'threshold',
-		'conditional', 'notification', 'timer', 'checkpoint', 'service', 'synchronize', 'integration', 'end'
+		'start',
+		'activity',
+		'ad_hoc_activity',
+		'subprocess',
+		'block',
+		'and',
+		'or',
+		'threshold',
+		'conditional',
+		'notification',
+		'timer',
+		'checkpoint',
+		'service',
+		'synchronize',
+		'integration',
+		'end'
 	];
-	if (!validTypes.includes(input.nodeType)) throw new WorkflowAdministrationValidationError('Workflow node type is invalid.');
+	if (!validTypes.includes(input.nodeType))
+		throw new WorkflowAdministrationValidationError('Workflow node type is invalid.');
 	const displayOrder = nonNegativeInteger(input.displayOrder, 'Display order') ?? 0;
 	const completionCount = nonNegativeInteger(input.completionCount, 'Completion count');
 	const deadlineMinutes = nonNegativeInteger(input.deadlineMinutes, 'Deadline minutes');
@@ -1005,7 +1048,10 @@ export async function addWorkflowNode(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
 		await connection.execute(
 			`INSERT INTO workflow_template_nodes
 			 (organisation_id, workflow_template_id, public_id, node_key, label, node_type,
@@ -1016,36 +1062,42 @@ export async function addWorkflowNode(input: {
 			  record_variable_changes, record_votes, record_reassignments, abort_on_error,
 			  abort_parent_on_error, display_order)
 			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		[
-			input.actor.organisationId,
-			row.id,
-			randomUUID(),
-			nodeKey,
-			requiredText(input.label, 'Node label', 160),
-			input.nodeType,
-			input.responsibleRoleKey ? itemKey(input.responsibleRoleKey, 'Responsible role') : null,
-			input.completionRuleType ?? null,
-			completionCount,
-			JSON.stringify((input.routingEvents ?? []).map((event) => itemKey(event, 'Routing event'))),
-			deadlineMinutes,
-			input.deadlineRelativeTo ?? null,
-			input.overdueAction ?? null,
-			input.deadlineResponsibleRoleKey ? itemKey(input.deadlineResponsibleRoleKey, 'Deadline role') : null,
-			JSON.stringify((input.deadlineNotifyRoleKeys ?? []).map((role) => itemKey(role, 'Notify role'))),
-			input.requiresElectronicSignature ?? false,
-			thresholdCount,
-			input.subprocessKey ? itemKey(input.subprocessKey, 'Subprocess key') : null,
-			input.serviceActionKey ? itemKey(input.serviceActionKey, 'Service action key') : null,
-			input.integrationKey ? itemKey(input.integrationKey, 'Integration key') : null,
-			timerMinutes,
-			input.synchronizeEventKey ? itemKey(input.synchronizeEventKey, 'Synchronize event key') : null,
-			input.recordVariableChanges ?? false,
-			input.recordVotes ?? false,
-			input.recordReassignments ?? false,
-			input.abortOnError ?? false,
-			input.abortParentOnError ?? false,
-			displayOrder
-		]
+			[
+				input.actor.organisationId,
+				row.id,
+				randomUUID(),
+				nodeKey,
+				requiredText(input.label, 'Node label', 160),
+				input.nodeType,
+				input.responsibleRoleKey ? itemKey(input.responsibleRoleKey, 'Responsible role') : null,
+				input.completionRuleType ?? null,
+				completionCount,
+				JSON.stringify((input.routingEvents ?? []).map((event) => itemKey(event, 'Routing event'))),
+				deadlineMinutes,
+				input.deadlineRelativeTo ?? null,
+				input.overdueAction ?? null,
+				input.deadlineResponsibleRoleKey
+					? itemKey(input.deadlineResponsibleRoleKey, 'Deadline role')
+					: null,
+				JSON.stringify(
+					(input.deadlineNotifyRoleKeys ?? []).map((role) => itemKey(role, 'Notify role'))
+				),
+				input.requiresElectronicSignature ?? false,
+				thresholdCount,
+				input.subprocessKey ? itemKey(input.subprocessKey, 'Subprocess key') : null,
+				input.serviceActionKey ? itemKey(input.serviceActionKey, 'Service action key') : null,
+				input.integrationKey ? itemKey(input.integrationKey, 'Integration key') : null,
+				timerMinutes,
+				input.synchronizeEventKey
+					? itemKey(input.synchronizeEventKey, 'Synchronize event key')
+					: null,
+				input.recordVariableChanges ?? false,
+				input.recordVotes ?? false,
+				input.recordReassignments ?? false,
+				input.abortOnError ?? false,
+				input.abortParentOnError ?? false,
+				displayOrder
+			]
 		);
 		await bumpDraft(connection, input.actor, row, `Workflow node ${nodeKey} added`);
 		await connection.commit();
@@ -1069,24 +1121,42 @@ export async function addWorkflowParticipant(input: {
 	const nodeKey = itemKey(input.nodeKey, 'Node key');
 	const participantKey = bindingKey(input.participantKey, 'Participant key');
 	const validTypes: WorkflowParticipantType[] = [
-		'member', 'team', 'organisation_role', 'lifecycle_role', 'workflow_role', 'actor', 'variable'
+		'member',
+		'team',
+		'organisation_role',
+		'lifecycle_role',
+		'workflow_role',
+		'actor',
+		'variable'
 	];
-	if (!validTypes.includes(input.participantType)) throw new WorkflowAdministrationValidationError('Participant type is invalid.');
+	if (!validTypes.includes(input.participantType))
+		throw new WorkflowAdministrationValidationError('Participant type is invalid.');
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
 		const [nodes] = await connection.execute<Array<RowDataPacket & { id: number | string }>>(
 			`SELECT id FROM workflow_template_nodes WHERE organisation_id = ? AND workflow_template_id = ? AND node_key = ? LIMIT 1`,
 			[input.actor.organisationId, row.id, nodeKey]
 		);
-		if (!nodes[0]) throw new WorkflowAdministrationValidationError(`Workflow node ${nodeKey} was not found.`);
+		if (!nodes[0])
+			throw new WorkflowAdministrationValidationError(`Workflow node ${nodeKey} was not found.`);
 		await connection.execute(
 			`INSERT INTO workflow_node_participants
 			 (organisation_id, workflow_template_id, workflow_node_id, participant_type, participant_key, is_required)
 			 VALUES (?, ?, ?, ?, ?, ?)`,
-		[input.actor.organisationId, row.id, nodes[0].id, input.participantType, participantKey, input.required ?? true]
+			[
+				input.actor.organisationId,
+				row.id,
+				nodes[0].id,
+				input.participantType,
+				participantKey,
+				input.required ?? true
+			]
 		);
 		await bumpDraft(connection, input.actor, row, `Participant added to workflow node ${nodeKey}`);
 		await connection.commit();
@@ -1117,32 +1187,38 @@ export async function addWorkflowLink(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
-		const [nodes] = await connection.execute<Array<RowDataPacket & { id: number | string; nodeKey: string }>>(
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
+		const [nodes] = await connection.execute<
+			Array<RowDataPacket & { id: number | string; nodeKey: string }>
+		>(
 			`SELECT id, node_key AS nodeKey FROM workflow_template_nodes
 			 WHERE organisation_id = ? AND workflow_template_id = ? AND node_key IN (?, ?)`,
 			[input.actor.organisationId, row.id, from, to]
 		);
 		const source = nodes.find((node) => node.nodeKey === from);
 		const target = nodes.find((node) => node.nodeKey === to);
-		if (!source || !target) throw new WorkflowAdministrationValidationError('Both workflow link nodes must exist.');
+		if (!source || !target)
+			throw new WorkflowAdministrationValidationError('Both workflow link nodes must exist.');
 		await connection.execute(
 			`INSERT INTO workflow_template_links
 			 (organisation_id, workflow_template_id, public_id, from_node_id, to_node_id, event_key,
 			  condition_json, is_loop, terminate_open_predecessors, display_order)
 			 VALUES (?, ?, ?, ?, ?, ?, CAST(? AS JSON), ?, ?, ?)`,
-		[
-			input.actor.organisationId,
-			row.id,
-			randomUUID(),
-			source.id,
-			target.id,
-			input.eventKey ? itemKey(input.eventKey, 'Routing event') : null,
-			JSON.stringify(input.condition ?? null),
-			input.loop ?? false,
-			input.terminateOpenPredecessors ?? false,
-			displayOrder
-		]
+			[
+				input.actor.organisationId,
+				row.id,
+				randomUUID(),
+				source.id,
+				target.id,
+				input.eventKey ? itemKey(input.eventKey, 'Routing event') : null,
+				JSON.stringify(input.condition ?? null),
+				input.loop ?? false,
+				input.terminateOpenPredecessors ?? false,
+				displayOrder
+			]
 		);
 		await bumpDraft(connection, input.actor, row, `Workflow route ${from} → ${to} added`);
 		await connection.commit();
@@ -1154,18 +1230,26 @@ export async function addWorkflowLink(input: {
 	}
 }
 
-export async function deleteWorkflowLink(input: { actor: EvidenceActor; publicId: string; linkPublicId: string }) {
+export async function deleteWorkflowLink(input: {
+	actor: EvidenceActor;
+	publicId: string;
+	linkPublicId: string;
+}) {
 	await requirePermission(input.actor, 'workflow.manage');
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
 		const [result] = await connection.execute<ResultSetHeader>(
 			`DELETE FROM workflow_template_links WHERE organisation_id = ? AND workflow_template_id = ? AND public_id = ?`,
 			[input.actor.organisationId, row.id, input.linkPublicId]
 		);
-		if (!result.affectedRows) throw new WorkflowAdministrationValidationError('Workflow route was not found.');
+		if (!result.affectedRows)
+			throw new WorkflowAdministrationValidationError('Workflow route was not found.');
 		await bumpDraft(connection, input.actor, row, 'Workflow route removed');
 		await connection.commit();
 	} catch (error) {
@@ -1176,19 +1260,27 @@ export async function deleteWorkflowLink(input: { actor: EvidenceActor; publicId
 	}
 }
 
-export async function deleteWorkflowNode(input: { actor: EvidenceActor; publicId: string; nodeKey: string }) {
+export async function deleteWorkflowNode(input: {
+	actor: EvidenceActor;
+	publicId: string;
+	nodeKey: string;
+}) {
 	await requirePermission(input.actor, 'workflow.manage');
 	const nodeKey = itemKey(input.nodeKey, 'Node key');
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be modified.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be modified.'
+			);
 		const [result] = await connection.execute<ResultSetHeader>(
 			`DELETE FROM workflow_template_nodes WHERE organisation_id = ? AND workflow_template_id = ? AND node_key = ?`,
 			[input.actor.organisationId, row.id, nodeKey]
 		);
-		if (!result.affectedRows) throw new WorkflowAdministrationValidationError('Workflow node was not found.');
+		if (!result.affectedRows)
+			throw new WorkflowAdministrationValidationError('Workflow node was not found.');
 		await bumpDraft(connection, input.actor, row, `Workflow node ${nodeKey} removed`);
 		await connection.commit();
 	} catch (error) {
@@ -1205,7 +1297,10 @@ export async function publishWorkflowTemplate(input: { actor: EvidenceActor; pub
 	try {
 		await connection.beginTransaction();
 		let row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'draft') throw new WorkflowAdministrationValidationError('Only draft workflow templates can be published.');
+		if (row.status !== 'draft')
+			throw new WorkflowAdministrationValidationError(
+				'Only draft workflow templates can be published.'
+			);
 		await definitionForTemplate(connection, input.actor.organisationId, row);
 		await connection.execute(
 			`UPDATE workflow_templates
@@ -1225,7 +1320,9 @@ export async function publishWorkflowTemplate(input: { actor: EvidenceActor; pub
 			);
 			const previous = previousRows[0];
 			if (!previous || previous.status !== 'published') {
-				throw new WorkflowAdministrationValidationError('The predecessor workflow template is no longer publishable as a revision source.');
+				throw new WorkflowAdministrationValidationError(
+					'The predecessor workflow template is no longer publishable as a revision source.'
+				);
 			}
 			await connection.execute(
 				`UPDATE workflow_templates SET lifecycle_status = 'superseded'
@@ -1274,27 +1371,33 @@ export async function reviseWorkflowTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'published') throw new WorkflowAdministrationValidationError('Only published workflow templates can be revised.');
+		if (row.status !== 'published')
+			throw new WorkflowAdministrationValidationError(
+				'Only published workflow templates can be revised.'
+			);
 		const [existing] = await connection.execute<RowDataPacket[]>(
 			`SELECT id FROM workflow_templates WHERE organisation_id = ? AND template_key = ? AND lifecycle_status = 'draft' LIMIT 1 FOR UPDATE`,
 			[input.actor.organisationId, row.templateKey]
 		);
-		if (existing[0]) throw new WorkflowAdministrationValidationError('A working revision already exists for this workflow template.');
+		if (existing[0])
+			throw new WorkflowAdministrationValidationError(
+				'A working revision already exists for this workflow template.'
+			);
 		const [insert] = await connection.execute<ResultSetHeader>(
 			`INSERT INTO workflow_templates
 			 (organisation_id, public_id, template_key, version_number, minor_version_number,
 			  name, description, lifecycle_status, supersedes_workflow_template_id, created_by_member_id)
 			 VALUES (?, ?, ?, ?, 1, ?, ?, 'draft', ?, ?)`,
-		[
-			input.actor.organisationId,
-			nextPublicId,
-			row.templateKey,
-			Number(row.versionNumber) + 1,
-			row.name,
-			row.description,
-			row.id,
-			input.actor.memberId
-		]
+			[
+				input.actor.organisationId,
+				nextPublicId,
+				row.templateKey,
+				Number(row.versionNumber) + 1,
+				row.name,
+				row.description,
+				row.id,
+				input.actor.memberId
+			]
 		);
 		const nextId = insert.insertId;
 		await connection.execute(
@@ -1364,7 +1467,12 @@ export async function reviseWorkflowTemplate(input: {
 			[nextId, nextId, nextId, input.actor.organisationId, row.id]
 		);
 		const revision = await templateRow(connection, input.actor, nextPublicId, true);
-		await appendTemplateVersion(connection, input.actor, revision, 'Controlled workflow revision created');
+		await appendTemplateVersion(
+			connection,
+			input.actor,
+			revision,
+			'Controlled workflow revision created'
+		);
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
 			actionKey: 'workflow.template.revise',
@@ -1398,7 +1506,10 @@ export async function bindWorkflowTemplate(input: {
 	try {
 		await connection.beginTransaction();
 		const row = await templateRow(connection, input.actor, input.publicId, true);
-		if (row.status !== 'published') throw new WorkflowAdministrationValidationError('Only published workflow templates can be activated.');
+		if (row.status !== 'published')
+			throw new WorkflowAdministrationValidationError(
+				'Only published workflow templates can be activated.'
+			);
 		await connection.execute(
 			`INSERT INTO workflow_object_bindings
 			 (organisation_id, source_domain, source_type, event_key, workflow_template_id, bound_by_member_id)
@@ -1406,7 +1517,7 @@ export async function bindWorkflowTemplate(input: {
 			 ON DUPLICATE KEY UPDATE workflow_template_id = VALUES(workflow_template_id),
 			                         bound_by_member_id = VALUES(bound_by_member_id),
 			                         bound_at = CURRENT_TIMESTAMP(6)`,
-		[input.actor.organisationId, sourceDomain, sourceType, eventKey, row.id, input.actor.memberId]
+			[input.actor.organisationId, sourceDomain, sourceType, eventKey, row.id, input.actor.memberId]
 		);
 		await appendDomainEvidence(connection, {
 			actor: input.actor,
@@ -1427,12 +1538,21 @@ export async function bindWorkflowTemplate(input: {
 
 export async function unbindWorkflowTemplate(input: { actor: EvidenceActor; bindingId: number }) {
 	await requirePermission(input.actor, 'workflow.publish');
-	if (!Number.isInteger(input.bindingId) || input.bindingId < 1) throw new WorkflowAdministrationValidationError('Workflow binding is invalid.');
+	if (!Number.isInteger(input.bindingId) || input.bindingId < 1)
+		throw new WorkflowAdministrationValidationError('Workflow binding is invalid.');
 	const connection = await getPool().getConnection();
 	try {
 		await connection.beginTransaction();
 		const [rows] = await connection.execute<
-			Array<RowDataPacket & { id: number | string; templatePublicId: string; sourceDomain: string; sourceType: string; eventKey: string }>
+			Array<
+				RowDataPacket & {
+					id: number | string;
+					templatePublicId: string;
+					sourceDomain: string;
+					sourceType: string;
+					eventKey: string;
+				}
+			>
 		>(
 			`SELECT binding.id, template.public_id AS templatePublicId,
 			        binding.source_domain AS sourceDomain, binding.source_type AS sourceType, binding.event_key AS eventKey
@@ -1442,7 +1562,8 @@ export async function unbindWorkflowTemplate(input: { actor: EvidenceActor; bind
 			[input.actor.organisationId, input.bindingId]
 		);
 		const binding = rows[0];
-		if (!binding) throw new WorkflowAdministrationValidationError('Workflow binding was not found.');
+		if (!binding)
+			throw new WorkflowAdministrationValidationError('Workflow binding was not found.');
 		await connection.execute(
 			`DELETE FROM workflow_object_bindings WHERE organisation_id = ? AND id = ?`,
 			[input.actor.organisationId, input.bindingId]
@@ -1452,7 +1573,11 @@ export async function unbindWorkflowTemplate(input: { actor: EvidenceActor; bind
 			actionKey: 'workflow.template.unbind',
 			subjectType: 'workflow_template',
 			subjectPublicId: binding.templatePublicId,
-			changeSummary: { sourceDomain: binding.sourceDomain, sourceType: binding.sourceType, eventKey: binding.eventKey },
+			changeSummary: {
+				sourceDomain: binding.sourceDomain,
+				sourceType: binding.sourceType,
+				eventKey: binding.eventKey
+			},
 			eventMetadata: { function: 'PLATFORM', mutation: 'unbind' }
 		});
 		await connection.commit();
