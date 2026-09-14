@@ -178,6 +178,8 @@ Stable source mappings remain attached regardless of display title.
 
 NuBlox V2 now consumes the generated families, functional roles and job profiles as deterministic canonical reference data. Tenant-specific organisation structure is persisted separately through `organisation_positions` and `position_assignments`; those records point back to stable canonical job-profile IDs and do not become access-control grants.
 
+The live organisation-design surfaces use this same generated source for browsing profiles and instantiating tenant positions, so the system does not maintain a second, divergent copy of the candidate architecture.
+
 The remaining curation model should introduce separate entities for:
 
 - `functional_roles`;
