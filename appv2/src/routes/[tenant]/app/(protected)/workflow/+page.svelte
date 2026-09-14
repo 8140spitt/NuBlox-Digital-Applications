@@ -1,6 +1,5 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { resolve } from '$app/paths';
 	import { page } from '$app/state';
 	import {
 		Alert,
@@ -66,10 +65,7 @@
 				{:else}
 					<div class="template-list">
 						{#each data.templates as template (template.publicId)}
-							<a
-								class="template-card"
-								href={resolve(`${appPath(tenant, 'workflow')}/${template.publicId}`)}
-							>
+							<a class="template-card" href={`${appPath(tenant, 'workflow')}/${template.publicId}`}>
 								<div class="template-heading">
 									<strong>{template.name}</strong>
 									<StatusBadge label={template.status} tone={tone(template.status)} />

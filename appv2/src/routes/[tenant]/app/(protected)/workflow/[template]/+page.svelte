@@ -677,8 +677,7 @@
 		letter-spacing: 0.04em;
 	}
 	.node-meta,
-	.participant-row,
-	.template-meta {
+	.participant-row {
 		display: flex;
 		flex-wrap: wrap;
 		gap: var(--nb-space-2);
