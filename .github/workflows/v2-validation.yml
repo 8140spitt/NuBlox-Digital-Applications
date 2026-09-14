@@ -15,51 +15,9 @@ on:
       - '.github/workflows/v2-validation.yml'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  format-preview:
-    if: github.event_name == 'pull_request' && github.head_ref == 'feat/f01-completion-reset'
-    name: Format F01 completion branch
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout feature branch
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.head_ref }}
-
-      - name: Set up pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.14.0
-          run_install: false
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-          cache-dependency-path: appv2/pnpm-lock.yaml
-
-      - name: Install V2 dependencies
-        working-directory: appv2
-        run: pnpm install --frozen-lockfile
-
-      - name: Format V2
-        working-directory: appv2
-        run: pnpm format
-
-      - name: Commit formatting
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add appv2
-          if git diff --cached --quiet; then
-            exit 0
-          fi
-          git commit -m "chore(v2): format F01 completion"
-          git push origin HEAD:${{ github.head_ref }}
-
   validate-appv2:
     name: Lint, typecheck, test and build V2
     runs-on: ubuntu-latest
