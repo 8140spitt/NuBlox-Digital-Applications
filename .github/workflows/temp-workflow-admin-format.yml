@@ -1,0 +1,57 @@
+name: Temporary workflow administration formatter
+
+on:
+  push:
+    branches:
+      - feat/platform-workflow-administration
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: feat/platform-workflow-administration
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.14.0
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: appv2/pnpm-lock.yaml
+      - name: Install V2 dependencies
+        working-directory: appv2
+        run: pnpm install --frozen-lockfile
+      - name: Format workflow administration files
+        working-directory: appv2
+        run: >-
+          pnpm exec prettier --write
+          'src/lib/server/platform/workflow-admin-service.ts'
+          'src/lib/server/platform/workflow-administration.integration.test.ts'
+          'src/routes/[tenant]/app/(protected)/workflow/[template]/+page.server.ts'
+          'src/routes/[tenant]/app/(protected)/workflow/[template]/+page.svelte'
+          'src/routes/[tenant]/app/(protected)/workflow/+page.server.ts'
+          'src/routes/[tenant]/app/(protected)/workflow/+page.svelte'
+      - name: Commit formatting
+        run: |
+          if git diff --quiet; then
+            echo 'No formatting changes required.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add appv2/src/lib/server/platform/workflow-admin-service.ts \
+                  appv2/src/lib/server/platform/workflow-administration.integration.test.ts \
+                  'appv2/src/routes/[tenant]/app/(protected)/workflow/[template]/+page.server.ts' \
+                  'appv2/src/routes/[tenant]/app/(protected)/workflow/[template]/+page.svelte' \
+                  'appv2/src/routes/[tenant]/app/(protected)/workflow/+page.server.ts' \
+                  'appv2/src/routes/[tenant]/app/(protected)/workflow/+page.svelte'
+          git commit -m 'style(v2): format workflow administration tranche'
+          git push origin HEAD:feat/platform-workflow-administration
