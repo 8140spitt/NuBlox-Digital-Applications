@@ -8,11 +8,12 @@
 		Button,
 		EmptyState,
 		Field,
+		LinkButton,
 		PageHeader,
 		Panel,
 		StatusBadge
 	} from '$lib/components/ui';
-	import { routes } from '$lib/routing/route-contract';
+	import { appPath, routes } from '$lib/routing/route-contract';
 
 	let { data, form } = $props();
 	const tenant = $derived(page.params.tenant ?? 'tenant');
@@ -45,7 +46,11 @@
 		eyebrow="Platform governance"
 		title="Lifecycle administration"
 		description="Define reusable Basic and Advanced lifecycle templates, version them under control, and bind published templates to governed object types."
-	/>
+	>
+		{#snippet actions()}
+			<LinkButton href={appPath(tenant, 'workflow')} variant="secondary">Workflow administration</LinkButton>
+		{/snippet}
+	</PageHeader>
 
 	{#if form?.formError}
 		<Alert tone="danger" title="Lifecycle template not created">{form.formError}</Alert>
