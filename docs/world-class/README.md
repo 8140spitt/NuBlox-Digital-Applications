@@ -42,6 +42,7 @@ See [07-world-class-baseline.md](07-world-class-baseline.md) and [10-capability-
 | --- | --- |
 | Product ambition, value streams and delivery priorities | this `docs/world-class/` suite |
 | How all 29 enterprise functions / 353 sub-functions are carried out through native NuBlox capability | [`12-enterprise-function-native-capability-map.md`](12-enterprise-function-native-capability-map.md) and its detailed crosswalk shards |
+| How functions are governed, people are deployed and the 84 careers produce controlled work products | [`13-functional-governance-delivery-deployment-work-products.md`](13-functional-governance-delivery-deployment-work-products.md) plus the 84-career capability matrix |
 | Bottom-up architecture and invariants | [`../architecture/bottom-up/README.md`](../architecture/bottom-up/README.md) |
 | Target-state market/category breadth | [`../architecture/bottom-up/platform-coverage-contract.md`](../architecture/bottom-up/platform-coverage-contract.md) |
 | Construction and Built Environment domain model | [`../construction-and-built-environment.md`](../construction-and-built-environment.md) |
@@ -66,6 +67,7 @@ No document in this suite replaces the bottom-up architecture. This suite govern
 8. **No happy-path-only capability.** Rejection, correction, reversal, dispute, concurrency and evidence matter.
 9. **Construction is the deepest specialisation, not the entire enterprise boundary.**
 10. **Current maturity must stay honest.** Planned and partial capability must not be presented as fully delivered.
+11. **Manage the work product, not only the task.** Drawings, models, calculations, manufactured items, installed work, inspections, handover data and other controlled outputs must remain attributable through review, issue/release, baseline, change and downstream use.
 
 ## The rebaseline suite
 
@@ -81,6 +83,7 @@ No document in this suite replaces the bottom-up architecture. This suite govern
 10. [`10-capability-control-matrix.md`](10-capability-control-matrix.md) — the evidence-led 19-domain × value-stream × golden-journey control matrix and current World-Class readiness.
 11. [`11-sap-benchmark-coverage.md`](11-sap-benchmark-coverage.md) — how the 64-reference SAP coverage register challenges enterprise breadth without becoming NuBlox architecture or delivery sequencing.
 12. [`12-enterprise-function-native-capability-map.md`](12-enterprise-function-native-capability-map.md) — the complete 29-function / 353-sub-function map into native NuBlox domains, value streams and practical operating surfaces.
+13. [`13-functional-governance-delivery-deployment-work-products.md`](13-functional-governance-delivery-deployment-work-products.md) — how functional governance, functional delivery, workforce deployment, the 84 careers and controlled work products fit together.
 
 ## North-star outcome
 
