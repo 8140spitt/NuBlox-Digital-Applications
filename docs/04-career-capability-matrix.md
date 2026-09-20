@@ -2,22 +2,13 @@
 
 ## Purpose
 
-This matrix translates the 84-career taxonomy into software capability requirements. It is the canonical 84/84 specialist-work and work-product coverage register, interpreted through [`world-class/13-functional-governance-delivery-deployment-work-products.md`](world-class/13-functional-governance-delivery-deployment-work-products.md). It is not a claim that every listed activity is exclusive to that career.
+This matrix translates the 84-career taxonomy into software capability requirements. It is a product-planning baseline, not a claim that every listed activity is exclusive to that career.
 
 Every career inherits the shared Business OS as authorised:
 
 **CRM, contacts, opportunities, quotes, contracts, invoices, procurement, workforce, time, scheduling, documents, notifications, reporting and audit.**
 
 The table therefore concentrates on the **specialist work layer**.
-
-The operating interpretation is:
-
-- **Primary domain** — professional composition context, not an access-control boundary;
-- **Specialist capability focus** — the work the career typically needs NuBlox to enable;
-- **Primary structured records** — representative controlled work products/deliverables and evidence, not merely files;
-- **Typical lifecycle stage** — common deployment context, not a restriction on where the career can work.
-
-Functional governance, deployment, authority and permission are resolved separately. A career may contribute across several enterprise functions and native capability domains.
 
 | # | Career | Primary domain | Specialist capability focus | Primary structured records | Typical lifecycle stage |
 |---:|---|---|---|---|---|
@@ -105,10 +96,6 @@ Functional governance, deployment, authority and permission are resolved separat
 | 82 | Water network operative | Utilities & Networks | Work orders; network asset location; repairs; leakage; tests; reinstatement; as-builts | Job packs; network records; test results; as-builts | Infrastructure construction → Maintenance |
 | 83 | Welder | Supply Chain & Manufacturing | Work packs; weld procedures/references; material traceability; weld logs; inspections; repairs | Weld logs; material records; inspection/NDT references; work orders | Fabrication → Construction |
 | 84 | Wood machinist | Supply Chain & Manufacturing | Cut lists; machine jobs; BOM/material stock; quality; production output | Cut lists; work orders; material records; QC records | Manufacture |
-
-## Coverage control
-
-This register contains all **84** canonical Construction and Built Environment careers. Product completeness for a row requires more than visibility in the catalogue: the career must be supportable through appropriate competence, job/position composition, contextual deployment, native capability, structured work products, review/change lifecycle, permissions, evidence and downstream project/asset/commercial consequences as defined by World-Class document 13.
 
 ## Capability implementation rule
 
