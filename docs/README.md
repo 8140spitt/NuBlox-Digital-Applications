@@ -45,11 +45,12 @@ When sources disagree:
 3. **Bottom-up architecture** in [`architecture/bottom-up/`](architecture/bottom-up/) governs architectural semantics and design method.
 4. **Complete platform coverage contract** in [`architecture/bottom-up/platform-coverage-contract.md`](architecture/bottom-up/platform-coverage-contract.md) governs the target-state one-product ERP/PLM/PDM/CDE/EAM/etc. breadth requirement; it is not an implementation-completeness claim.
 5. **[`construction-and-built-environment.md`](construction-and-built-environment.md)** governs the Construction & Built Environment sector/lifecycle overlay (Layer 7).
-6. **Security/privacy requirements** in [`11-security-privacy-compliance.md`](11-security-privacy-compliance.md) supplement the Layer 2 trust model.
-7. **ADRs** in [`adr/`](adr/) record accepted technical decisions and explicit exceptions.
-8. **Enterprise taxonomy** in [`architecture/taxonomy/`](architecture/taxonomy/) catalogues work enterprises perform; it is mapped to, not substituted for, capability domains or delivery sequencing.
-9. **Database package docs** in [`../database/docs/`](../database/docs/) explain implementation intent; migrations win if implementation has advanced.
-10. **Older product/functional requirement documents** remain reference material where they do not conflict with the authorities above; they do not independently govern post-rebaseline sequencing.
+6. **[`world-class/13-functional-governance-delivery-deployment-work-products.md`](world-class/13-functional-governance-delivery-deployment-work-products.md)** governs how functional governance, delivery, workforce deployment, the 84 careers and controlled work products fit together.
+7. **Security/privacy requirements** in [`11-security-privacy-compliance.md`](11-security-privacy-compliance.md) supplement the Layer 2 trust model.
+8. **ADRs** in [`adr/`](adr/) record accepted technical decisions and explicit exceptions.
+9. **Enterprise taxonomy** in [`architecture/taxonomy/`](architecture/taxonomy/) catalogues work enterprises perform; it is mapped to, not substituted for, capability domains or delivery sequencing.
+10. **Database package docs** in [`../database/docs/`](../database/docs/) explain implementation intent; migrations win if implementation has advanced.
+11. **Older product/functional requirement documents** remain reference material where they do not conflict with the authorities above; they do not independently govern post-rebaseline sequencing.
 
 ## Governing product set
 
@@ -65,6 +66,8 @@ When sources disagree:
 - [`world-class/09-delivery-governance.md`](world-class/09-delivery-governance.md) — scorecard and definition of done.
 - [`world-class/10-capability-control-matrix.md`](world-class/10-capability-control-matrix.md) — implementation maturity/evidence control matrix.
 - [`world-class/11-sap-benchmark-coverage.md`](world-class/11-sap-benchmark-coverage.md) — SAP benchmark interpretation; benchmark, not architecture.
+- [`world-class/12-enterprise-function-native-capability-map.md`](world-class/12-enterprise-function-native-capability-map.md) — complete function/sub-function to native-capability operating crosswalk.
+- [`world-class/13-functional-governance-delivery-deployment-work-products.md`](world-class/13-functional-governance-delivery-deployment-work-products.md) — functional governance, delivery, deployment and work-product control model.
 
 ## Governing architecture set
 
@@ -85,7 +88,7 @@ When sources disagree:
 
 - [`construction-and-built-environment.md`](construction-and-built-environment.md) — complete sector/lifecycle model.
 - [`architecture/taxonomy/`](architecture/taxonomy/) — 29-function enterprise activity taxonomy.
-- [`03-career-taxonomy.md`](03-career-taxonomy.md) and [`04-career-capability-matrix.md`](04-career-capability-matrix.md) — profession/career composition references.
+- [`03-career-taxonomy.md`](03-career-taxonomy.md) and [`04-career-capability-matrix.md`](04-career-capability-matrix.md) — the canonical 84-career composition and specialist work-product coverage references, interpreted through World-Class document 13.
 - [`17-sources-and-standards.md`](17-sources-and-standards.md) — current external standards and source register.
 - [`work-kernel-foundation.md`](work-kernel-foundation.md) — current Work Kernel implementation foundation.
 - [`branding/`](branding/) — NuBlox brand system.
