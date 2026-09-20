@@ -158,8 +158,9 @@ Canonical concepts include:
 - portfolio, programme, project and job;
 - site, phase, zone and work area;
 - WBS, work package, task/activity and milestone;
+- work-product requirement, deliverable register and deliverable item;
 - schedule, dependency, baseline and progress measure;
-- project participant, responsibility and governance body;
+- project participant, responsibility assignment and governance body;
 - risk, issue, decision, action and change;
 - budget, forecast, commitment, actual and earned/progress measure.
 
@@ -200,15 +201,19 @@ Canonical concepts include:
 
 Canonical concepts include:
 
-- information requirement;
-- document, drawing, model and information container;
-- revision, status, suitability and issue purpose;
+- information requirement and work-product requirement;
+- deliverable item as the planned obligation to provide a controlled output;
+- work product, including informational, evidential and physical outputs where relevant;
+- document, drawing, model and information container used to fulfil a deliverable;
+- configuration item and approved baseline where formal configuration control applies;
+- revision, status, suitability, issue purpose, release and supersession;
 - transmittal and distribution;
 - specification and schedule;
 - RFI, technical query, submittal and response;
 - design review, comment, coordination issue and clash/issue record;
 - calculation and technical evidence;
-- asset information requirement and handover deliverable.
+- asset information requirement and handover deliverable;
+- linked change/impact/implementation evidence so approved information can be reconciled with procured, fabricated, installed and handed-over configuration.
 
 ### 5.7 Contract and commercial
 
